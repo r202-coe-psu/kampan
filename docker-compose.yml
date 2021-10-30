@@ -1,0 +1,38 @@
+version: '3'
+services:
+    mongodb:
+        image: mongo
+        container_name: kampan-mongodb
+        volumes:
+            - ../deployment/kampan/mongodb/data/db:/data/db
+            - /etc/localtime:/etc/localtime:ro
+        restart: always
+        networks:
+            - default
+ 
+    web:
+        build: .
+        image: kampan-image
+        container_name: kampan-web
+        volumes:
+            - ../deployment:/deployment
+            - /etc/localtime:/etc/localtime:ro
+        ports:
+            - 9000:9000
+        links:
+            - mongodb
+        networks:
+            - default
+        restart: always
+        environment:
+            KAMPAN_SETTINGS: /app/kampan-production.cfg
+        command:
+            uwsgi --lazy-apps --ini scripts/kampan-uwsgi.ini
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
+    
+
+networks:
+    default:
