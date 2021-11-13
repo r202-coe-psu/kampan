@@ -15,9 +15,9 @@ class User(me.Document):
 class Inventory(me.Document):
     meta = {"collection":"inventory"}
 
-    itemdate = me.DocumentField(Item)
-    itemregisteration = me.DocumentField(Itemregisteration)
-    checkout = me.DocumentField(checkout)
+    itemdate = me.ReferenceField("Item", dbref=True)
+    itemregisteration = me.ReferenceField("Itemregisteration", dbref=True)
+    checkout = me.ReferenceField("checkout", dbref=True)
 
 class ItemStatus(me.Document):
     meta = {"collection":"status"}
