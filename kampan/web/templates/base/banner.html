@@ -1,0 +1,17 @@
+<div class="ui inverted vertical center aligned segment">
+    <div class="ui text container">
+      <div>
+        {#<img width="300px" src="{{ url_for('static', filename='images/lotus-500px.png') }}"#}
+        <i class="ui icon sun massive" ></i>
+      </div> 
+       <h1 class="ui huge inverted header" style="font-size:4em">{{ config.get('APP_TITLE') }} </h1>
+       <h2>Student Online Timestamp System, Please Login.</h2>
+      <div style="padding-top: 20px;">
+        <a href="{{ url_for('accounts.login') }}" class="ui huge primary button"><i class="signup icon"></i>Login</a>
+      </div>
+      <div style="padding: 5vh;">
+        ผู้เป็นบัณฑิต ควรพยายามร่ำไป ไม่พึงเบื่อหน่ายในกิจของตน
+      </div>
+    </div>
+</div>
+

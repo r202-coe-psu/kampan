@@ -1,0 +1,23 @@
+{% extends "/base/default-page.html" %}
+
+{% block title %}Register Success{% endblock %}
+
+{% block additional_head %}
+<script type="text/javascript">
+  console.log('script update')
+  setTimeout(function () {
+       window.location.href = "{{ url_for('accounts.login') }}";
+  }, 2000);
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="row" style="min-height: 40vh;">
+  <div class="col s12">
+    <h3>Register Success</h3>
+    Going to <a href="{{ url_for('accounts.login') }}">login</a> page!
+  </div>
+</div>
+
+{% endblock %}

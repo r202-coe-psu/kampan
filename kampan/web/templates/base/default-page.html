@@ -1,0 +1,23 @@
+{% extends "/base/base-layout.html" %}
+{% block body %}
+<header>
+{% block header %}
+  {% include "/base/toolbar.html" %}
+  {% if request.path == '/' %}
+    {% include "/base/banner.html" %}
+  {% else %}
+    <div style="padding-top:50px;"></div>
+  {% endif %}
+{% endblock %}
+</header>
+
+<main>
+  <div class="container" style="min-height: 50vh;">
+    {% block content %}{% endblock content %}
+  </div>
+</main>
+
+<footer class="ui vertical footer segment" style="padding-top: 2em;">
+{% include "/base/footer.html" %}
+</footer>
+{% endblock %}

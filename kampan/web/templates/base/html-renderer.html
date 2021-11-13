@@ -1,0 +1,62 @@
+{% import '/base/error-handler.html' as eh %}
+
+{% macro render_field(field, class_='') -%}
+{%- set style = '%s' | format(eh.get_validate_class(field.errors)) -%}
+{%- if class_ != '' -%}
+{%- set style = '%s %s' | format(class_, eh.get_validate_class(field.errors)) -%}
+{%- endif -%}
+<div class="field">
+{{ field.label }}
+{{ field(class_=style) }}
+</div>
+{{ eh.get_error_messages(field.errors) }}
+{%- endmacro %}
+
+{% macro render_checkbox(field) -%}
+<div class="field">
+  <div class="ui checkbox">
+    {{ field }}
+    {{ field.label }}
+  </div>
+</div>
+{%- endmacro %}
+
+
+{% macro render_fileinput(field) -%}
+<div class="field">
+  {{ field.label }}
+  <div class="ui action input">
+    <input type="text" placeholder="{{ field.label.text }}" readonly class="attach-file-{{field.name}}">
+    {{ field(style="display: none;") }}
+    <div class="ui icon button attach-file-{{field.name}}">
+      <i class="attach icon"></i>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+
+{% macro render_select(field) -%}
+{{ render_field(field, class_='ui dropdown') }}
+{%- endmacro %}
+
+
+{% macro render_multiple_select(field) -%}
+{{ render_field(field, class_='ui fluid dropdown') }}
+{%- endmacro %}
+
+{% macro render_search_multiple_select(field) -%}
+{{ render_field(field, class_='ui fluid search dropdown') }}
+{%- endmacro %}
+
+{% macro render_calendar(field, calendar_id='calendar') -%}
+<div class="field">
+  {{ field.label }}
+  <div class="ui calendar" id="{{ calendar_id }}">
+    <div class="ui input left icon">
+      <i class="calendar icon"></i>
+      {{ field(autocomplete='off') }}
+    </div>
+  </div>
+</div>
+{%- endmacro %}

@@ -1,0 +1,16 @@
+{% macro get_validate_class(errors) -%}
+{%- set class_str = 'validate' -%}
+{% if errors | count > 0 -%}
+{% set class_str = class_str + ' ' + 'invalid' %}
+{%- endif %}
+{{- class_str -}}
+{%- endmacro %}
+
+{% macro get_error_messages(errors) -%}
+	{% if errors %}
+  <div class="ui negative message">
+    {{ ', '.join(errors) }}
+  </div>
+  {% endif %}
+{%- endmacro %}
+

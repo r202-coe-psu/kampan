@@ -18,7 +18,7 @@ def create_app():
 
     models.init_db(app)
     acl.init_acl(app)
-    oauth2.init_oauth2(app)
+    oauth2.init_oauth(app)
 
     views.register_blueprint(app)
 

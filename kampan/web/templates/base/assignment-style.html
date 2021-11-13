@@ -1,0 +1,10 @@
+{%- macro get_assignment_class(current_score, ass_score) -%}
+{%- set class_str = '' -%}
+{% if current_score == ass_score -%}
+  {% set class_str = 'positive' %}
+{% elif current_score > 0  %}
+  {% set class_str = 'negative' %}
+{%- endif %}
+{{- class_str -}}
+{%- endmacro %}
+

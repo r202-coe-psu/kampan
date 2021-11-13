@@ -1,0 +1,40 @@
+{% extends '/accounts/index.html' %}
+{% import '/base/error-handler.html' as eh %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<i class="right angle icon divider"></i>
+<div class="active section">Edit Profile</div>
+{% endblock %}
+
+{% block content %}
+<div class="ui content">
+  <div class="ui segment">
+    <h2>Profile</h2>
+    <form method="POST" class="ui form">
+      {{ form.csrf_token }}
+      <div class="two fields">
+        {{ renderer.render_field(form.first_name) }}
+        {{ renderer.render_field(form.last_name) }}
+      </div>
+      <div class="two fields">
+        {{ renderer.render_field(form.thai_first_name) }}
+        {{ renderer.render_field(form.thai_last_name) }}
+      </div>
+      <div class="two fields">
+        {{ renderer.render_field(form.student_id) }}
+        {{ renderer.render_field(form.organization) }}
+      </div>
+
+      <button name="create" type="submit" class="ui primary button">Change</button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col s12">
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "/base/default-page.html" %}
+{% block content %}
+<style>
+[type=checkbox]:not(:checked) {
+  left: inherit;
+  margin-top: 8px;
+}
+</style>
+{% macro get_validate_class(errors) -%}
+{%- set class_str = 'validate' -%}
+{% if errors | count > 0 -%}
+{% set class_str = class_str + ' ' + 'invalid' %}
+{%- endif %}
+{{- class_str -}}
+{%- endmacro %}
+
+{% macro get_error_messages(errors) -%}
+{{ errors | join(', ') }}
+{%- endmacro %}
+
+
+<div class="row">
+  <div class="col s12">
+    <h3>Register</h3>
+    {% if errors is not undefined %}
+    <div class="card red lighten-5">
+      <div class="card-content red-text text-darken-4">
+        <span class="card-title">Errors</span>
+          {% for error in errors %}
+          <p>{{ error.detail }}</p>
+          {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+    <form method="post" action="{{request.path}}">
+      {{ form.csrf_token }}
+      <div class="row"> 
+        <div class="input-field col s12">
+          {{ form.username(class_=get_validate_class(form.username.errors)) }}
+          {{ form.username.label(data_error=get_error_messages(form.username.errors)) }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="input-field col s12">
+          {{ form.email(class_=get_validate_class(form.email.errors)) }}
+          {{ form.email.label(data_error=get_error_messages(form.email.errors)) }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="input-field col s6">
+          {{ form.password(class_=get_validate_class(form.password.errors)) }}
+          {{ form.password.label(data_error=get_error_messages(form.password.errors)) }}
+        </div>
+        <div class="input-field col s6">
+          {{ form.password_conf(class_=get_validate_class(form.password_conf.errors)) }}
+          {{ form.password_conf.label(data_error=get_error_messages(form.password_conf.errors)) }}
+        </div>
+      </div> 
+      <div class="row">
+        <div class="input-field col s6">
+          {{ form.first_name(class_=get_validate_class(form.first_name.errors)) }}
+          {{ form.first_name.label(data_error=get_error_messages(form.first_name.errors)) }}
+        </div>
+        <div class="input-field col s6">
+          {{ form.last_name(class_=get_validate_class(form.last_name.errors)) }}
+          {{ form.last_name.label(data_error=get_error_messages(form.last_name.errors)) }}
+        </div>
+      </div>
+      <div class="row" style="padding-top:10px;">
+        <div class="col s12">
+          {{ form.agree_term(class_="filled-in "+get_validate_class(form.agree_term.errors)) }}
+          {{ form.agree_term.label(text='Agree with terms and conditions?', data_error=get_error_messages(form.agree_term.errors)) }} 
+          <span class="red-text">{{ get_error_messages(form.agree_term.errors) }}</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col s12">
+          <button class="btn" type="submit">Register</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
