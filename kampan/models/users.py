@@ -17,6 +17,7 @@ class User(me.Document, UserMixin):
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
+    metadata = me.DictField()
     resources = me.DictField()
 
     meta = {"collection": "users"}
