@@ -8,114 +8,32 @@
   </div>
 </div>
 
-{#
-<div class="ui segment">
-  <h2 class="header">
-    Scores
-  </h2>
-  <div class="ui large divided list">
-    {% for class_ in available_classes %}
-      {% set class_score = class_.get_assignment_score(current_user) %}
-      <div class="item">
-        <i class="large inbox middle aligned icon green"></i>
-        <div class="content">
-          <a class="header" href="{{ url_for('classes.view', class_id=class_.id) }}">{{ class_.name }}</a>
-          <div class="description">
-            <b><span class="ui red text">{{ '{:.2f}'.format(class_score['total_user_score']) }}</span> / <span class="ui blue text">{{  class_score['total_score'] }}</span></b>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
+<div style="padding: 1em;">
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  {{ form.name.label }}
+  {{ form.name}}
+
+  {{ form.description.label }}
+  {{ form.description }}
+
+  {{ form.weight.label }}
+  {{ form.weight }}
+  
+  {{ form.categories.label }}
+  {{ form.categories }}
+
+  <button type="submit">Submit</button>
+</form>
+</div>
+
+
+<div class="row">
+  <div class="column">
+    <h3><button class="ui button">Add</button></h3>
   </div>
 </div>
-#}
 
 
-<div class="ui segment">
-  <h2 class="header">
-    Activity Log
-  </h2>
-  {% if activities | count == 0 %}
-    There are no activity log now
-  {% else %}
-  <div class="ui large divided list">
-    {% for activity in activities if activity.is_action(current_user) or activity.ended_date < now %}
-    <div class="item">
-      {% if activity.is_action(current_user) %}
-        <i class="large laptop code middle aligned icon green"></i>
-      {% else %}
-        <i class="large laptop code middle aligned icon red"></i>
-      {% endif %}
-
-      <div class="content">
-        <a class="header" href="{{ url_for('activities.register', activity_id=activity.id, class_id=activity.class_.id) }}">{{ activity.name }}</a>
-        <div class="description">
-          <p>{{ activity.description }}</p>
-          <p>
-            <b>Class:</b> {{ activity.class_.name }}</br/>
-            <b>Start:</b> {{ activity.started_date }}<br/>
-            <b>End:</b> {{ activity.ended_date }}<br/>
-            <b>Done:</b> {{ activity.is_action(current_user) }} <br/>
-            {% if activity.is_action(current_user) %}
-              {{ activity.get_participator_info(current_user).registration_date }}
-            {% endif %}
-            {#
-            <b>Score:</b> <b><span class="ui red text">{{ '{:.2f}'.format(assignment.get_score(class_, current_user)) }}</span>/<span class="ui blue text">{{ assignment.score }}</span></b><br/>
-            #}
-            {#
-          <p>Status: 
-          {% if activity.is_action(current_user) %}
-            Submitted
-          {% else %}
-            Waiting
-          {% endif %}
-          </p>
-          #}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
-
-{#
-<div class="ui segment">
-  <h2 class="header">
-    Available Class
-  </h2>
-  {% if available_classes | count == 0 %}
-    <h3>No Class for You</h3>
-  {% else %}
-    <div class="ui large divided list">
-      {% for class_ in available_classes %}
-        <div class="item">
-          {% if class_.is_enrolled(current_user.id) %}
-          <i class="large play middle aligned icon green"></i>
-          {% else %}
-          <i class="large folder middle aligned icon"></i>
-          {% endif %}
-          <div class="content">
-            <a class="header" href="{{ url_for('classes.view', class_id=class_.id) }}">{{ class_.name }}</a>
-            <div class="description">
-              <p>{{ class_.description }}</p>
-              <p>Start {{ class_.started_date.date() }} <br>
-                 End {{ class_.ended_date.date() }} <br>
-                 Enroll {{ class_.is_enrolled(current_user.id) }}
-              </p>
-            </div>
-            {% if not class_.is_enrolled(current_user.id) %}
-            <div class="extra">
-              <div class="ui right floated">
-                <a href="{{ url_for('classes.enroll', class_id=class_.id) }}" class="ui primary button"><i class="users icon"></i>Enroll</a>
-              </div>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif%}
-</div>
-#}
 {% endblock %}

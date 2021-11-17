@@ -11,7 +11,7 @@ class Item(me.Document):
     
     name = me.StringField(required=True)
     description = me.StringField()
-    size = me.EmbeddedDocumentField(ItemSize)
+    size = me.ReferenceField('ItemSize', dbref=True)
     weight = me.FloatField()
     categories = me.ListField(me.StringField(required=True))
     user = me.ReferenceField("User", dbref=True)
