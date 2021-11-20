@@ -9,9 +9,6 @@
 {% endblock %}
 
 {% block content %}
-<a class="ui primary button" href="{{ url_for('items.add') }}"> 
-    Add
-  </a>
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -32,6 +29,9 @@
   </tbody>
   </table>
 </div>
+<a class="ui primary button" href="{{ url_for('items.add') }}"> 
+  Add
+</a>
   
 {% endblock %}
 
