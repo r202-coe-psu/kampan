@@ -12,7 +12,7 @@ class ItemForm(FlaskForm):
     description = fields.StringField()
     weight = fields.FloatField(default=0)
     categories =  TagListField(
-            'categories',
+            'Categories',
             validators=[validators.InputRequired(),
                         validators.Length(min=1)])
 

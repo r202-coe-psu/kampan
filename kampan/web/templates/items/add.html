@@ -5,28 +5,36 @@
 
 {% block breadcrumbs %}
   <div class="ui breadcrumb">
-    <div class="active section">Items</div>
+    <div class="active section">Add</div>
   </div>
 {% endblock %}
 
 {% block content %}
-<div style="padding: 1em;">
-    <form method="POST">
-      {{ form.hidden_tag() }}
-    
-      {{ form.name.label }}
-      {{ form.name}}
-    
-      {{ form.description.label }}
-      {{ form.description }}
-    
-      {{ form.weight.label }}
-      {{ form.weight }}
+    <div>
+    <form class="ui form" method="POST">
       
-      {{ form.categories.label }}
-      {{ form.categories }}
-    
-      <button type="submit">Submit</button>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        <label>{{ form.name.label }}</label>
+         {{ form.name }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.description.label }}</label>
+         {{ form.description }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.weight.label }}</label>
+         {{ form.weight }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.categories.label }}</label>
+        {{ form.categories }}
+      </div>
+
+      <button class="ui button" type="submit">Submit</button>
     </form>
     </div>
 {% endblock %}

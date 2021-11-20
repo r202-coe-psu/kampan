@@ -34,6 +34,7 @@ def add():
         description=form.description.data,
         weight=form.weight.data,
         categories=form.categories.data,
+        user=current_user._get_current_object(),
     )
 
     item.save()
