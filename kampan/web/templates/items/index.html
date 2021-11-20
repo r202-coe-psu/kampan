@@ -12,15 +12,25 @@
 <a class="ui primary button" href="{{ url_for('items.add') }}"> 
     Add
   </a>
-
 <div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr><th>Name</th>
+      <th>Description</th>
+      <th>Weight</th>
+      <th>Categories</th>
+  </tr></thead>
+  <tbody>
+  <tr>
     {% for item in items %}
-     {{ item.name }}
-     {{ item.description }}
-     {{ item.weight }}
-     {{ item.categories }}
-     <br/>
+      <td data-label="Name">{{ item.name }}</td>
+      <td data-label="Description">{{ item.description }}</td>
+      <td data-label="Weight">{{ item.weight }}</td>
+      <td data-label="Categories">{{ item.categories|join(', ') }}</td>
+  </tr>
     {% endfor %}
+  </tbody>
+  </table>
 </div>
   
 {% endblock %}
