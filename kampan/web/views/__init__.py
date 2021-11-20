@@ -3,6 +3,7 @@ import datetime
 from . import sites
 from . import accounts
 from . import dashboard
+from . import items
 
 
 def add_date_url(url):
@@ -24,7 +25,7 @@ def get_subblueprints(views=[]):
 
 def register_blueprint(app):
     app.add_template_filter(add_date_url)
-    blueprints = get_subblueprints([sites, accounts, dashboard])
+    blueprints = get_subblueprints([sites, accounts, dashboard, items])
 
     for blueprint in blueprints:
         app.register_blueprint(blueprint)

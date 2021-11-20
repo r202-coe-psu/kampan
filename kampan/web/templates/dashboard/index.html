@@ -4,36 +4,11 @@
 <div class="row">
   <div class="column">
     <h3>Hello {{ current_user.first_name }} {{ current_user.last_name }}</h3>
-    <p><i class="clock icon"></i> {{ now.ctime() }} </p>
   </div>
 </div>
 
-<div style="padding: 1em;">
-<form method="POST">
-  {{ form.hidden_tag() }}
-
-  {{ form.name.label }}
-  {{ form.name}}
-
-  {{ form.description.label }}
-  {{ form.description }}
-
-  {{ form.weight.label }}
-  {{ form.weight }}
-  
-  {{ form.categories.label }}
-  {{ form.categories }}
-
-  <button type="submit">Submit</button>
-</form>
-</div>
-
-
-<div class="row">
-  <div class="column">
-    <h3><button class="ui button">Add</button></h3>
-  </div>
-</div>
-
+<a class="ui primary button" href="{{ url_for('items.index') }}"> 
+  Items
+</a>
 
 {% endblock %}

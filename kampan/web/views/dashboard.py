@@ -19,32 +19,7 @@ def index_admin():
 
 
 def index_user():
-
-    user = current_user
-    now = datetime.datetime.now()
-    form = forms.items.ItemForm()
-    if not form.validate_on_submit():
-        return render_template(
-            '/dashboard/index.html',
-            form=form,
-            available_classes=[],
-            activities=[],
-            now=datetime.datetime.now(),
-            )
-    item = models.Item(
-        name=form.name.data,
-        description=form.description.data,
-        weight=form.weight.data,
-        categories=form.categories.data,
-    )
-
-    item.save()
-
-    return render_template('/dashboard/index.html',
-                           available_classes=[],
-                           activities=[],
-                           now=datetime.datetime.now(),
-                           )
+    return render_template('/dashboard/index.html')
 
 
 @module.route('/')

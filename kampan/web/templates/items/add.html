@@ -1,0 +1,32 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Add{% endblock %}
+{% block dashboard_title %}Add{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="ui breadcrumb">
+    <div class="active section">Items</div>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 1em;">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+    
+      {{ form.name.label }}
+      {{ form.name}}
+    
+      {{ form.description.label }}
+      {{ form.description }}
+    
+      {{ form.weight.label }}
+      {{ form.weight }}
+      
+      {{ form.categories.label }}
+      {{ form.categories }}
+    
+      <button type="submit">Submit</button>
+    </form>
+    </div>
+{% endblock %}

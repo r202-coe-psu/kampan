@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import fields,validators
+from .fields import TagListField, TextListField
 
 
 
@@ -10,5 +11,8 @@ class ItemForm(FlaskForm):
     )
     description = fields.StringField()
     weight = fields.FloatField(default=0)
-    categories = fields.StringField()
+    categories =  TagListField(
+            'categories',
+            validators=[validators.InputRequired(),
+                        validators.Length(min=1)])
 
