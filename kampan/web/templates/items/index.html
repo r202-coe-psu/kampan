@@ -16,6 +16,7 @@
       <th>Description</th>
       <th>Weight</th>
       <th>Categories</th>
+      <th>Username</th>
   </tr></thead>
   <tbody>
   <tr>
@@ -24,6 +25,7 @@
       <td data-label="Description">{{ item.description }}</td>
       <td data-label="Weight">{{ item.weight }}</td>
       <td data-label="Categories">{{ item.categories|join(', ') }}</td>
+      <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
   </tr>
     {% endfor %}
   </tbody>

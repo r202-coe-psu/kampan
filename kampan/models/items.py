@@ -1,7 +1,7 @@
 import mongoengine as me
 import datetime 
 
-class ItemSize(me.EmbeddedDocumentField):
+class ItemSize(me.EmbeddedDocument):
     width = me.FloatField()
     height = me.FloatField()
     deep = me.FloatField()
@@ -11,7 +11,7 @@ class Item(me.Document):
     
     name = me.StringField(required=True)
     description = me.StringField()
-    size = me.ReferenceField('ItemSize', dbref=True)
+    size = me.EmbeddedDocumentField(ItemSize)
     weight = me.FloatField()
     categories = me.ListField(me.StringField(required=True))
     user = me.ReferenceField("User", dbref=True)
