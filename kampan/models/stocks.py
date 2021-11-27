@@ -6,12 +6,6 @@ class Supplier(me.Document):
     orderfrom = me.StringField(required=True)
     description = me.StringField()
 
-class Users(me.Document):
-    meta = {"collection":"users"}
-
-    name = me.StringField(required=True)
-    userid = me.FloatField()
-
 class Inventory(me.Document):
     meta = {"collection":"inventory"}
 
