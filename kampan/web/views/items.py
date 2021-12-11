@@ -41,4 +41,30 @@ def add():
 
     return redirect(url_for('items.index'))
 
+@module.route('/<item_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit(item_id):
+    item = models.Item.objects().get(id=item_id)
+    form = forms.items.ItemForm(obj=item)
     
+    if not form.validate_on_submit():
+        return render_template(
+            '/items/item_edit.html',
+            form=form,
+            )
+    
+    form.populate_obj(item)
+    item.save()
+
+    return redirect(url_for('items.index'))
+
+
+@module.route('/<item_id>/delete')
+@login_required
+def delete(item_id):
+    item = models.Item.objects().get(id=item_id)
+    item.delete()
+
+
+
+    return redirect(url_for('items.index'))
