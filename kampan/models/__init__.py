@@ -3,7 +3,7 @@ from .users import User
 from . import oauth2
 from .oauth2 import OAuth2Token
 from .items import ItemSize, Item 
-from .orders import Itemregisteration ,Checkout 
+from .orders import ItemRegisteration ,Checkout 
 from .stocks import Supplier ,Inventory ,ItemStatus 
 __all__ = ["User"]
 
