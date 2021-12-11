@@ -2,22 +2,20 @@ import mongoengine as me
 
 
 class Supplier(me.Document):
-    meta = {"collection": "supplier"}
+    meta = {"collection": "suppliers"}
 
-    order_from = me.StringField(required=True)
+    name = me.StringField(required=True)
+    address = me.StringField()
     description = me.StringField()
+    tax_id = me.IntField()
+    contact = me.StringField()
+    email = me.StringField()
 
 
 class Inventory(me.Document):
-    meta = {"collection": "inventory"}
+    meta = {"collection": "inventories"}
 
+    name = me.StringField(required=True)
     # itemdate = me.ReferenceField("Item", dbref=True)
     # itemregisteration = me.ReferenceField("Itemregisteration", dbref=True)
     # checkout = me.ReferenceField("checkout", dbref=True)
-
-
-class ItemStatus(me.Document):
-    meta = {"collection": "status"}
-
-    status = me.StringField(required=True)
-    description = me.StringField()

@@ -1,10 +1,13 @@
 from flask_wtf import FlaskForm
-from wtforms import fields,validators
+from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
+
 class SupplierForm(FlaskForm):
-    
-    order_from = fields.StringField(
-        validators=[validators.InputRequired()]
-    )
-    description = fields.StringField()
+
+    name = fields.StringField(validators=[validators.InputRequired()])
+    address = fields.StringField()
+    remark = fields.StringField()
+    tax_id = fields.StringField()
+    contact = fields.StringField()
+    email = fields.StringField()
