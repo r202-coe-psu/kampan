@@ -4,7 +4,7 @@ from . import oauth2
 from .oauth2 import OAuth2Token
 from .items import ItemSize, Item
 from .orders import ItemRegisteration, Checkout
-from .stocks import Supplier, Inventory, ItemStatus
+from .stocks import Supplier, Inventory
 
 __all__ = ["User"]
 
