@@ -1,0 +1,28 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Supplier{% endblock %}
+{% block dashboard_title %}Supplier{% endblock %}
+
+
+{% block content %}
+<div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <th>OrderFrom</th>
+      <th>Description</th>
+  </tr></thead>
+  <tbody>
+  <tr>
+    {% for supply in suppliers %}
+      <td data-label="OrderFrom">{{ supply.order_from }}</td>
+      <td data-label="Description">{{ supply.description }}</td>
+  </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+<a class="ui primary button" href="{{ url_for('suppliers.add') }}"> 
+  Add
+</a>
+  
+{% endblock %}
