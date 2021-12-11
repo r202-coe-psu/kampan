@@ -1,6 +1,8 @@
 import datetime
 import pathlib
 import importlib
+import logging
+logger = logging.getLogger(__name__)
 
 def add_date_url(url):
     now = datetime.datetime.now()
@@ -20,7 +22,7 @@ def get_subblueprints(directory):
             parent_module = pymod.module
             blueprints.append(parent_module)
     except Exception as e:
-        print(e)
+        logger.exception(e)
         return blueprints
 
     subblueprints = []
@@ -30,11 +32,14 @@ def get_subblueprints(directory):
             continue
 
         if module.match('*.py'):
-            pymod_file = f"{'.'.join(package)}.{module.stem}"
-            pymod = importlib.import_module(pymod_file)
+            try:
+                pymod_file = f"{'.'.join(package)}.{module.stem}"
+                pymod = importlib.import_module(pymod_file)
 
-            if 'module' in dir(pymod):
-                subblueprints.append(pymod.module)
+                if 'module' in dir(pymod):
+                    subblueprints.append(pymod.module)
+            except Exception as e:
+                logger.exception(e)
 
         elif module.is_dir():
             subblueprints.extend(get_subblueprints(module))
