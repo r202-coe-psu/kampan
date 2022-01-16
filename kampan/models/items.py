@@ -19,3 +19,9 @@ class Item(me.Document):
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now())
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+
+
+class Location(me.Document):
+    rack = me.StringField()
+    row = me.StringField()
+    loacker = me.StringField()

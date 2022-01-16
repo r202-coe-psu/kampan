@@ -1,0 +1,30 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Item_register{% endblock %}
+{% block dashboard_title %}Supplier{% endblock %}
+
+
+{% block content %}
+<div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <th>Description</th>
+      <th>Quantity</th>
+      <th>Price</th>
+  </tr></thead>
+  <tbody>
+  <tr>
+    {% for item in item_registers %}
+      <td data-label="Description">{{ item.description }}</td>
+      <td data-label="Quantity">{{ item.quantity }}</td>
+      <td data-label="Price">{{ item.price }}</td>
+  </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+<a class="ui primary button" href="{{ url_for('item_registers.register') }}"> 
+  Add
+</a>
+  
+{% endblock %}

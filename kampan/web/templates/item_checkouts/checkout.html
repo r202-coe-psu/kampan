@@ -1,0 +1,35 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Supplier{% endblock %}
+{% block dashboard_title %}Supplier{% endblock %}
+
+
+{% block content %}
+    <div>
+    <form class="ui form" method="POST">
+      
+      {{ form.hidden_tag() }}
+      <div class="field">
+        <label>{{ form.item.label }}</label>
+         {{ form.item }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.description.label }}</label>
+         {{ form.description }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.quantity.label }}</label>
+         {{ form.quantity }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.price.label }}</label>
+         {{ form.price }}
+      </div>
+
+      <button class="ui button" type="submit">Submit</button>
+    </form>
+    </div>
+{% endblock content %}

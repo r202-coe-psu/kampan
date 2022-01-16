@@ -1,0 +1,36 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Supplier{% endblock %}
+{% block dashboard_title %}Supplier{% endblock %}
+
+
+{% block content %}
+<div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Description</th>
+        <th>Operation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for checkout in checkouts %}
+  <tr>
+      <td data-label="Item">{{ checkout.user.first_name }}</td>
+      <td data-label="Description">{{ checkout.description }}</td>
+      <td></td>
+      {#
+      <td data-label="Quantity">{{ checkout.quantity }}</td>
+      <td data-label="Price">{{ checkout.price }}</td>
+      #}
+  </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+<a class="ui primary button" href="{{ url_for('item_checkouts.checkout') }}"> 
+  Checkout
+</a>
+  
+{% endblock %}
