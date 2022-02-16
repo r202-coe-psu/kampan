@@ -10,6 +10,11 @@
       
       {{ form.hidden_tag() }}
       <div class="field">
+        <label>{{ form.item.label }}</label>
+         {{ form.item }}
+      </div>
+      
+      <div class="field">
         <label>{{ form.description.label }}</label>
          {{ form.description }}
       </div>

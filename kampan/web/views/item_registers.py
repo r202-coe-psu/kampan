@@ -21,14 +21,17 @@ def index():
 @module.route('/register', methods=["GET", "POST"])
 @login_required
 def register():
+    items = models.Item.objects()
     form = forms.item_registers.ItemRegisterationForm()
+    form.item.choices = [(str(item.id), item.name) for item in items]
     if not form.validate_on_submit():
         return render_template(
             '/item_registers/register.html',
             form=form,           
-             )
+            )
 
     item_register = models.ItemRegisteration(
+        item=models.Item.objects.get(id=form.item.data),
         description=form.description.data,
         quantity=form.quantity.data,
         price=form.price.data,
