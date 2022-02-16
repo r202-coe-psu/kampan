@@ -8,14 +8,22 @@
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
-      <th>OrderFrom</th>
+      <th>Name</th>
+      <th>Address</th>
       <th>Description</th>
+      <th>Tax_id</th>
+      <th>Contact</th>
+      <th>Email</th>
   </tr></thead>
   <tbody>
   <tr>
     {% for supply in suppliers %}
-      <td data-label="OrderFrom">{{ supply.order_from }}</td>
+      <td data-label="Name">{{ supply.name }}</td>
+      <td data-label="address">{{ supply.address }}</td>
       <td data-label="Description">{{ supply.description }}</td>
+      <td data-label="Tax_id">{{ supply.tax_id }}</td>
+      <td data-label="Contact">{{ supply.contact }}</td>
+      <td data-label="Email">{{ supply.email }}</td>
   </tr>
     {% endfor %}
   </tbody>

@@ -7,7 +7,7 @@ class SupplierForm(FlaskForm):
 
     name = fields.StringField(validators=[validators.InputRequired()])
     address = fields.StringField()
-    remark = fields.StringField()
+    description = fields.StringField()
     tax_id = fields.StringField()
     contact = fields.StringField()
     email = fields.StringField()

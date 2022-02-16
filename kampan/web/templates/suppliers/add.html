@@ -10,13 +10,33 @@
       
       {{ form.hidden_tag() }}
       <div class="field">
-        <label>{{ form.order_from.label }}</label>
-         {{ form.order_from }}
+        <label>{{ form.name.label }}</label>
+         {{ form.name }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.address.label }}</label>
+         {{ form.address }}
       </div>
 
       <div class="field">
         <label>{{ form.description.label }}</label>
          {{ form.description }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.tax_id.label }}</label>
+         {{ form.tax_id }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.contact.label }}</label>
+         {{ form.contact }}
+      </div>
+
+      <div class="field">
+        <label>{{ form.email.label }}</label>
+         {{ form.email }}
       </div>
 
       <button class="ui button" type="submit">Submit</button>
