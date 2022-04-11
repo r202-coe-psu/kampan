@@ -2,11 +2,10 @@ from flask_mongoengine import MongoEngine
 from .users import User
 from . import oauth2
 from .oauth2 import OAuth2Token
-from .items import ItemSize, Item, Location
-from .orders import ItemRegisteration, ItemCheckout, Checkout
-from .stocks import Supplier, Inventory
+from .items import ItemSize, Item, ItemPosition
+from .inventories import Inventory, ItemCheckout, Checkout
+from .warehouses import Warehouse
 
-__all__ = ["User"]
 
 db = MongoEngine()
 

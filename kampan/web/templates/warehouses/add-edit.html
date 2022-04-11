@@ -1,0 +1,36 @@
+{% extends '/warehouses/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+  {% if 'edit' in request.path %}
+    Edit {{ form.name.data }}
+  {% else %}
+    Add
+  {% endif %}
+{% endblock %}
+{% block dashboard_title %}
+  {{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+  {{ super() }}
+  <div class="active section">Add</div>
+{% endblock %}
+
+{% block content %}
+  <div>
+    <form class="ui form" method="POST">
+      
+      {{ form.hidden_tag() }}
+
+      {{ renderer.render_field(form.name) }}
+      {{ renderer.render_field(form.description) }}
+
+      {% if 'edit' == request.path %}
+        <button class="ui primary button" type="submit">Edit</button>
+      {% else %}
+        <button class="ui primary button" type="submit">Submit</button>
+      {% endif %}
+    </form>
+    </div>
+{% endblock %}

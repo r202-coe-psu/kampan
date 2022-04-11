@@ -10,38 +10,10 @@
 </div>
 
 <a class="item" href="{{ url_for('dashboard.index') }}"><i class="icon dashboard"></i>Dashboard</a>
-{% if current_user.has_roles(['lecturer', 'admin']) %}
-  {#
-  <a class="item" href="{{ url_for('administration.courses.index') }}"><i class="icon book"></i>Course</a>
-  <a class="item" href="{{ url_for('administration.activities.index') }}"><i class="icon laptop code"></i>Activity</a>
-  <a class="item" href="{{ url_for('administration.assignments.index') }}"><i class="icon laptop code"></i>Assignment</a>
-  <a class="item" href="{{ url_for('administration.challenges.index') }}"><i class="icon code"></i>Challenge</a>
-  #}
-  <a class="item" href="{{ url_for('administration.classes.index') }}"><i class="icon users"></i>Class</a>
-  {#
-  <a class="item" href="{{ url_for('administration.solutions.index') }}"><i class="icon file code"></i>Solution</a>
-  
-  <a class="item" href="{{ url_for('administration.users.index') }}"><i class="users cog icon"></i>User</a>
-{% else %}
-  
-  <a class="item" href="{{ url_for('assignments.index') }}"><i class="icon laptop code"></i>Assignment</a>
-  <a class="item" href="{{ url_for('solutions.index') }}"><i class="icon file code"></i>Solution</a>
-  #}
-  {% else %}
-  {#
-  <a class="item" href="{{ url_for('classes.index') }}"><i class="icon users"></i>Class</a>
-  <a class="item" href="{{ url_for('courses.index') }}"><i class="icon book"></i>Course</a>
-  #}
-{% endif %}
-{#
-{% set assistant_classes = current_user.get_teaching_assistant_class() %}
-{% if assistant_classes | count %}
-  <a class="item" href="{{ url_for('teaching_assistants.index') }}"><i class="icon user secret"></i>TA</a>
-{% endif %}
-#}
 {% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
 {% endif %}
+<a class="item" href="{{ url_for('warehouses.index') }}">Warehouses</a>
 <a class="item" href="{{ url_for('items.index') }}">Items</a>
 <a class="item" href="{{ url_for('suppliers.index') }}">Suppliers</a>
 <a class="item" href="{{ url_for('item_registers.index') }}">Item Registers</a>

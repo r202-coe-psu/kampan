@@ -11,17 +11,22 @@ class ItemSize(me.EmbeddedDocument):
 class Item(me.Document):
     meta = {"collection": "items"}
 
-    name = me.StringField(required=True)
+    name = me.StringField(required=True, max_length=255)
     description = me.StringField()
     size = me.EmbeddedDocumentField(ItemSize)
     weight = me.FloatField()
     categories = me.ListField(me.StringField(required=True))
+
     user = me.ReferenceField("User", dbref=True)
-    created_date = me.DateTimeField(required=True, default=datetime.datetime.now())
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
-class Location(me.Document):
-    rack = me.StringField()
-    row = me.StringField()
-    loacker = me.StringField()
+class ItemPosition(me.Document):
+    meta = {"collection": "item_positions"}
+
+    rack = me.StringField(required=True, max_length=255)
+    row = me.StringField(max_length=255)
+    locker = me.StringField(max_length=255)
+
+    warehouse = me.ReferenceField("Warehouse", dbref=True)

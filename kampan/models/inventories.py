@@ -2,29 +2,34 @@ import mongoengine as me
 import datetime
 
 
-class ItemRegisteration(me.Document):
-    meta = {"collection": "item_registerations"}
+class Inventory(me.Document):
+    meta = {"collection": "inventories"}
 
     item = me.ReferenceField("Item", dbref=True)
     description = me.StringField()
 
     supplier = me.ReferenceField("Supplier", dbref=True)
+
     user = me.ReferenceField("User", dbref=True)
+
     quantity = me.IntField(required=True, default=0)
     price = me.FloatField(required=True, default=0)
-    status = me.ReferenceField("Status", dbref=True)
-    registeration_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+
+    registeration_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now()
+    )
     expiration_date = me.DateTimeField(required=True, default=datetime.datetime.now())
-    location = me.ReferenceField("Location", dbref=True)
+    position = me.ReferenceField("ItemPosition", dbref=True)
 
 
 class ItemCheckout(me.Document):
     meta = {"collection": "item_checkouts"}
 
     checkout = me.ReferenceField("Checkout", dbref=True)
-    item = me.ReferenceField("Item", dbref=True)
+    inventory = me.ReferenceField("Inventory", dbref=True)
+
     quantity = me.FloatField(required=True)
-    price = me.FloatField(required=True)
+    price = me.FloatField()
 
 
 class Checkout(me.Document):
@@ -32,5 +37,4 @@ class Checkout(me.Document):
 
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
-    # status = me.ReferenceField("Status", dbref=True)
-    checkouted_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    checkouted_date = me.DateTimeField(required=True, default=datetime.datetime.now)
