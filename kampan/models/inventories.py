@@ -2,8 +2,8 @@ import mongoengine as me
 import datetime
 
 
-class Inventory(me.Document):
-    meta = {"collection": "inventories"}
+class CheckinItem(me.Document):
+    meta = {"collection": "checkin_items"}
 
     item = me.ReferenceField("Item", dbref=True)
     description = me.StringField()
@@ -22,8 +22,8 @@ class Inventory(me.Document):
     position = me.ReferenceField("ItemPosition", dbref=True)
 
 
-class ItemCheckout(me.Document):
-    meta = {"collection": "item_checkouts"}
+class CheckoutItem(me.Document):
+    meta = {"collection": "checkout_items"}
 
     checkout = me.ReferenceField("Checkout", dbref=True)
     inventory = me.ReferenceField("Inventory", dbref=True)
