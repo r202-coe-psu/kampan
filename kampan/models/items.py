@@ -30,3 +30,7 @@ class ItemPosition(me.Document):
     locker = me.StringField(max_length=255)
 
     warehouse = me.ReferenceField("Warehouse", dbref=True)
+
+    user = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
