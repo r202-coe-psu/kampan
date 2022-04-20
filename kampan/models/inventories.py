@@ -2,15 +2,21 @@ import mongoengine as me
 import datetime
 
 
+class ItemRegistation(me.Document):
+    meta = {"collection": "item_registrations"}
+
+    description = me.StringField()
+    supplier = me.ReferenceField("Supplier", dbref=True)
+    user = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
 class CheckinItem(me.Document):
     meta = {"collection": "checkin_items"}
 
+    checkin = me.ReferenceField("Checkin", dbref=True)
+    warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
-    description = me.StringField()
-
-    supplier = me.ReferenceField("Supplier", dbref=True)
-
-    user = me.ReferenceField("User", dbref=True)
 
     quantity = me.IntField(required=True, default=0)
     price = me.FloatField(required=True, default=0)
@@ -26,15 +32,19 @@ class CheckoutItem(me.Document):
     meta = {"collection": "checkout_items"}
 
     checkout = me.ReferenceField("Checkout", dbref=True)
-    inventory = me.ReferenceField("Inventory", dbref=True)
+    checkout_from = me.ReferenceField("Checkin", dbref=True)
+    warehouse = me.ReferenceField("Warehouse", dbref=True)
+    item = me.ReferenceField("Item", dbref=True)
 
     quantity = me.FloatField(required=True)
     price = me.FloatField()
 
+    checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
-class Checkout(me.Document):
-    meta = {"collection": "checkouts"}
+
+class CheckoutItem(me.Document):
+    meta = {"collection": "checkout_items"}
 
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
-    checkouted_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
