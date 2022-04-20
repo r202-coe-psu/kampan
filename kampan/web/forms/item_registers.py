@@ -2,9 +2,22 @@ from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
-class ItemRegisterationForm(FlaskForm):
-    item = fields.SelectField("Item")
-    description = fields.StringField("Description")
+from flask_mongoengine.wtf import model_form
+from kampan import models
 
-    quantity = fields.IntegerField("Quantity", default=0)
-    price = fields.FloatField("Price", default=0)
+BaseItemRegisterationForm = model_form(
+    models.CheckinItem,
+    FlaskForm,
+    exclude=[
+        "created_date",
+        "user",
+    ],
+    field_args={
+        "item": {"label": "Item", "label_modifier": lambda i: i.name},
+        "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
+        "quantity": {"label": "Quantity"},
+        "price": {"label": "Price"},
+    },
+)
+class ItemRegisterationForm(BaseItemRegisterationForm):
+    pass
