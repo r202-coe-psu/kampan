@@ -3,6 +3,7 @@ from .users import User
 from . import oauth2
 from .oauth2 import OAuth2Token
 from .items import Item, ItemPosition
+from .suppliers import Supplier
 from .inventories import CheckinItem, CheckoutItem, RegistrationItem, OrderItem
 from .warehouses import Warehouse
 
