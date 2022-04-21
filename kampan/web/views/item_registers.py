@@ -13,7 +13,7 @@ module = Blueprint('item_registers', __name__, url_prefix='/item_registers')
 @module.route('/')
 @login_required
 def index():
-    item_registers = models.RegistrationItem.objects()
+    item_registers = models.CheckinItem.objects()
     return render_template(
         "/item_registers/index.html",
         item_registers=item_registers

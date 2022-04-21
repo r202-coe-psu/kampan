@@ -16,15 +16,15 @@
   <table class="ui celled table">
     <thead>
       <th>Item Name</th>
-      <th>Description</th>
+      <th>Warehouse</th>
       <th>Quantity</th>
       <th>Price</th>
   </tr></thead>
   <tbody>
   <tr>
     {% for item in item_registers %}
-    <td data-label="Description">{{ item.item.name }}</td>
-      <td data-label="Description">{{ item.description }}</td>
+      <td data-label="Item Name">{{ item.item.name }}</td>
+      <td data-label="Warehouse">{{ item.warehouse.name }}</td>
       <td data-label="Quantity">{{ item.quantity }}</td>
       <td data-label="Price">{{ item.price }}</td>
   </tr>

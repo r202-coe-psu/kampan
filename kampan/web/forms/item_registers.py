@@ -9,11 +9,13 @@ BaseItemRegisterationForm = model_form(
     models.CheckinItem,
     FlaskForm,
     exclude=[
-        "created_date",
+        "registeration_date",
+        "expiration_date",
         "user",
     ],
     field_args={
         "item": {"label": "Item", "label_modifier": lambda i: i.name},
+        "position": {"label": "Position", "label_modifier": lambda p: p.warehouse.name},
         "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
         "quantity": {"label": "Quantity"},
         "price": {"label": "Price"},
