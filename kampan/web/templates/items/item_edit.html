@@ -5,33 +5,24 @@
 {% block dashboard_title %}Edit{% endblock %}
 
 {% block breadcrumbs %}
-  <div class="ui breadcrumb">
-    <div class="active section">Edit</div>
-  </div>
+<div class="ui breadcrumb">
+  <div class="active section">Edit</div>
+</div>
 {% endblock %}
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      <div class="field">
-         {{ renderer.render_field(form.name) }}
-      </div>
+<div>
+  <form class="ui form" method="POST">
 
-      <div class="field">
-         {{ renderer.render_field(form.description) }}
-      </div>
+    {{ form.hidden_tag() }}
+    
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_field(form.size) }}
+    {{ renderer.render_field(form.weight) }}
+    {{ renderer.render_field(form.categories) }}
 
-      <div class="field">
-         {{ renderer.render_field(form.weight) }}
-      </div>
-
-      <div class="field">
-        {{ renderer.render_field(form.categories) }}
-      </div>
-
-      <button class="ui button" type="submit">Submit</button>
-    </form>
-    </div>
+    <button class="ui button" type="submit">Submit</button>
+  </form>
+</div>
 {% endblock %}

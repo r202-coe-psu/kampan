@@ -1,40 +1,33 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}Add{% endblock %}
 {% block dashboard_title %}Add{% endblock %}
 
 {% block breadcrumbs %}
-  <div class="ui breadcrumb">
-    <div class="active section">Add</div>
-  </div>
+<div class="ui breadcrumb">
+  <div class="active section">Add</div>
+</div>
 {% endblock %}
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      <div class="field">
-        <label>{{ form.name.label }}</label>
-         {{ form.name }}
-      </div>
+<div>
+  <form class="ui form" method="POST">
 
-      <div class="field">
-        <label>{{ form.description.label }}</label>
-         {{ form.description }}
-      </div>
+    {{ form.hidden_tag() }}
+    {{ form.size.hidden_tag() }}
 
-      <div class="field">
-        <label>{{ form.weight.label }}</label>
-         {{ form.weight }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.categories.label }}</label>
-        {{ form.categories }}
-      </div>
-
-      <button class="ui button" type="submit">Submit</button>
-    </form>
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    <div class="three fields">
+      {{ renderer.render_field(form.size.width) }}
+      {{ renderer.render_field(form.size.height) }}
+      {{ renderer.render_field(form.size.deep) }}
     </div>
+    {{ renderer.render_field(form.weight) }}
+    {{ renderer.render_field(form.categories) }}
+
+    <button class="ui button" type="submit">Submit</button>
+  </form>
+</div>
 {% endblock %}

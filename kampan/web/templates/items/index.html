@@ -3,48 +3,50 @@
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}Items{% endblock %}
 {% block breadcrumbs %}
-  <div class="ui breadcrumb">
-    <div class="active section">Items</div>
-  </div>
+<div class="ui breadcrumb">
+  <div class="active section">Items</div>
+</div>
 {% endblock %}
 
 {% block content %}
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
-      <tr><th>Name</th>
-      <th>Description</th>
-      <th>Weight</th>
-      <th>Categories</th>
-      <th>Username</th>
-      <th>Edit/Delete</th>
-  </tr></thead>
-  <tbody>
-    {% for item in items %}
       <tr>
-      <td data-label="Name">{{ item.name }}</td>
-      <td data-label="Description">{{ item.description }}</td>
-      <td data-label="Weight">{{ item.weight }}</td>
-      <td data-label="Categories">{{ item.categories|join(', ') }}</td>
-      <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-      <td>
-        <a class="ui icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
-          <i class="trash icon"></i>
-        </a>
-        <a class="ui icon button" href="{{ url_for('items.edit', item_id=item.id) }}">
-          <i class="edit icon"></i>
-        </a>
-      </td>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Weight</th>
+        <th>Size ( width x height x deep )</th>
+        <th>Categories</th>
+        <th>Username</th>
+        <th>Edit/Delete</th>
       </tr>
-    {% endfor %}
-    
-  </tbody>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td data-label="Name">{{ item.name }}</td>
+        <td data-label="Description">{{ item.description }}</td>
+        <td data-label="Weight">{{ item.weight }}</td>
+        <td data-label="Size"> {{ item.size.width }} x {{ item.size.height }} x {{ item.size.deep }} </td>
+        <td data-label="Categories">{{ item.categories|join(', ') }}</td>
+        <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
+            <i class="trash icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('items.edit', item_id=item.id) }}">
+            <i class="edit icon"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+
+    </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('items.add') }}"> 
+<a class="ui primary button" href="{{ url_for('items.add') }}">
   Add
 </a>
-  
+
 {% endblock %}
-
-

@@ -6,65 +6,66 @@ import mongoengine as me
 
 import datetime
 
-module = Blueprint('items', __name__, url_prefix='/items')
+module = Blueprint("items", __name__, url_prefix="/items")
 
-@module.route('/')
+
+@module.route("/")
 @login_required
 def index():
     items = models.Item.objects()
     return render_template(
         "/items/index.html",
         items=items,
-        )
+    )
 
 
-
-@module.route('/add', methods=['GET', 'POST'])
+@module.route("/add", methods=["GET", "POST"])
 @login_required
 def add():
     form = forms.items.ItemForm()
     if not form.validate_on_submit():
+        print(form.errors)
+        form.size.width.label.text = "Width"
+        form.size.height.label.text = "Height"
+        form.size.deep.label.text = "Deep"
         return render_template(
-            '/items/add.html',
-            form=form,           
-             )
+            "/items/add.html",
+            form=form,
+        )
 
     item = models.Item(
-        name=form.name.data,
-        description=form.description.data,
-        weight=form.weight.data,
-        categories=form.categories.data,
         user=current_user._get_current_object(),
     )
 
+    form.populate_obj(item)
+
     item.save()
 
-    return redirect(url_for('items.index'))
+    return redirect(url_for("items.index"))
 
-@module.route('/<item_id>/edit', methods=['GET', 'POST'])
+
+@module.route("/<item_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(item_id):
     item = models.Item.objects().get(id=item_id)
     form = forms.items.ItemForm(obj=item)
-    
+
     if not form.validate_on_submit():
         return render_template(
-            '/items/item_edit.html',
+            "/items/item_edit.html",
             form=form,
-            )
-    
+        )
+
     form.populate_obj(item)
     item.save()
 
-    return redirect(url_for('items.index'))
+    return redirect(url_for("items.index"))
 
 
-@module.route('/<item_id>/delete')
+@module.route("/<item_id>/delete")
 @login_required
 def delete(item_id):
     item = models.Item.objects().get(id=item_id)
     item.delete()
 
-
-
-    return redirect(url_for('items.index'))
+    return redirect(url_for("items.index"))
