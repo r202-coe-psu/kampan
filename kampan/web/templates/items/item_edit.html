@@ -15,33 +15,12 @@
   <form class="ui form" method="POST">
 
     {{ form.hidden_tag() }}
-    <div class="field">
-      {{ renderer.render_field(form.name) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.description) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.weight) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.width) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.height) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.deep) }}
-    </div>
-
-    <div class="field">
-      {{ renderer.render_field(form.categories) }}
-    </div>
+    
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_field(form.size) }}
+    {{ renderer.render_field(form.weight) }}
+    {{ renderer.render_field(form.categories) }}
 
     <button class="ui button" type="submit">Submit</button>
   </form>

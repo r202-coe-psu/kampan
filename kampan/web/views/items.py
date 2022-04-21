@@ -24,24 +24,20 @@ def index():
 def add():
     form = forms.items.ItemForm()
     if not form.validate_on_submit():
+        print(form.errors)
+        form.size.width.label.text = "Width"
+        form.size.height.label.text = "Height"
+        form.size.deep.label.text = "Deep"
         return render_template(
             "/items/add.html",
             form=form,
         )
 
     item = models.Item(
-        name=form.name.data,
-        description=form.description.data,
-        weight=form.weight.data,
-        width=form.width.data,
-        height=form.height.data,
-        deep=form.deep.data,
-        categories=form.categories.data,
         user=current_user._get_current_object(),
     )
 
     form.populate_obj(item)
-    item.user = current_user._get_current_object()
 
     item.save()
 

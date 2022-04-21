@@ -17,10 +17,8 @@ BaseItemForm = model_form(
     field_args={
         "name": {"label": "Name"},
         "description": {"label": "Desctiption"},
-        "width": {"label": "Width"},
-        "height": {"label": "Height"},
-        "deep": {"label": "Deep"},
         "weight": {"label": "Weight"},
+        "size": {"label": "Size"},
         "categories": {"label": "Categories"},
     },
 )
