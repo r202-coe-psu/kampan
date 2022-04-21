@@ -4,37 +4,53 @@
 {% block dashboard_title %}Add{% endblock %}
 
 {% block breadcrumbs %}
-  <div class="ui breadcrumb">
-    <div class="active section">Add</div>
-  </div>
+<div class="ui breadcrumb">
+  <div class="active section">Add</div>
+</div>
 {% endblock %}
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      <div class="field">
-        <label>{{ form.name.label }}</label>
-         {{ form.name }}
-      </div>
+<div>
+  <form class="ui form" method="POST">
 
-      <div class="field">
-        <label>{{ form.description.label }}</label>
-         {{ form.description }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.weight.label }}</label>
-         {{ form.weight }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.categories.label }}</label>
-        {{ form.categories }}
-      </div>
-
-      <button class="ui button" type="submit">Submit</button>
-    </form>
+    {{ form.hidden_tag() }}
+    <div class="field">
+      <label>{{ form.name.label }}</label>
+      {{ form.name }}
     </div>
+
+    <div class="field">
+      <label>{{ form.description.label }}</label>
+      {{ form.description }}
+    </div>
+
+
+    <div class="field">
+      <label>{{ form.weight.label }}</label>
+      {{ form.weight }}
+    </div>
+
+    <div class="field">
+      <label>{{ form.width.label }}</label>
+      {{ form.width }}
+    </div>
+
+    <div class="field">
+      <label>{{ form.height.label }}</label>
+      {{ form.height }}
+    </div>
+
+    <div class="field">
+      <label>{{ form.deep.label }}</label>
+      {{ form.deep }}
+    </div>
+
+    <div class="field">
+      <label>{{ form.categories.label }}</label>
+      {{ form.categories }}
+    </div>
+
+    <button class="ui button" type="submit">Submit</button>
+  </form>
+</div>
 {% endblock %}

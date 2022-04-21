@@ -2,19 +2,15 @@ import mongoengine as me
 import datetime
 
 
-class ItemSize(me.EmbeddedDocument):
-    width = me.FloatField()
-    height = me.FloatField()
-    deep = me.FloatField()
-
-
 class Item(me.Document):
     meta = {"collection": "items"}
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
-    size = me.EmbeddedDocumentField(ItemSize)
     weight = me.FloatField()
+    width = me.FloatField()
+    height = me.FloatField()
+    deep = me.FloatField()
     categories = me.ListField(me.StringField(required=True))
 
     user = me.ReferenceField("User", dbref=True)
