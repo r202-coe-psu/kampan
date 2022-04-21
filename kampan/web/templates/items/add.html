@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}Add{% endblock %}
 {% block dashboard_title %}Add{% endblock %}
@@ -14,41 +15,14 @@
   <form class="ui form" method="POST">
 
     {{ form.hidden_tag() }}
-    <div class="field">
-      <label>{{ form.name.label }}</label>
-      {{ form.name }}
-    </div>
 
-    <div class="field">
-      <label>{{ form.description.label }}</label>
-      {{ form.description }}
-    </div>
-
-
-    <div class="field">
-      <label>{{ form.weight.label }}</label>
-      {{ form.weight }}
-    </div>
-
-    <div class="field">
-      <label>{{ form.width.label }}</label>
-      {{ form.width }}
-    </div>
-
-    <div class="field">
-      <label>{{ form.height.label }}</label>
-      {{ form.height }}
-    </div>
-
-    <div class="field">
-      <label>{{ form.deep.label }}</label>
-      {{ form.deep }}
-    </div>
-
-    <div class="field">
-      <label>{{ form.categories.label }}</label>
-      {{ form.categories }}
-    </div>
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_field(form.width) }}
+    {{ renderer.render_field(form.height) }}
+    {{ renderer.render_field(form.deep) }}
+    {{ renderer.render_field(form.weight) }}
+    {{ renderer.render_field(form.categories) }}
 
     <button class="ui button" type="submit">Submit</button>
   </form>

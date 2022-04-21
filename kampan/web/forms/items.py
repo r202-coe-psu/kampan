@@ -1,3 +1,4 @@
+from wsgiref.validate import validator
 from flask_wtf import FlaskForm
 from flask_mongoengine.wtf import model_form
 from wtforms import fields, validators
@@ -26,7 +27,7 @@ BaseItemForm = model_form(
 
 
 class ItemForm(BaseItemForm):
-    pass
+    categories = TagListField("Categories", validators=[validators.Length(min=1)])
 
 
 # class ItemForm(FlaskForm):
