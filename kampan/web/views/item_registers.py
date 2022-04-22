@@ -4,16 +4,12 @@ from kampan.web import forms
 from kampan import models
 import mongoengine as me
 
-import datetime
-
-from kampan.web.forms import item_registers
-
 module = Blueprint('item_registers', __name__, url_prefix='/item_registers')
 
 @module.route('/')
 @login_required
 def index():
-    item_registers = models.CheckinItem.objects()
+    item_registers = models.RegistrationItem.objects()
     return render_template(
         "/item_registers/index.html",
         item_registers=item_registers
@@ -28,7 +24,7 @@ def register(item_register_id):
     
     item_register = None
     if item_register_id:
-        item_register = models.CheckinItem.objects().get(id=item_register_id)
+        item_register = models.RegistrationItem.objects().get(id=item_register_id)
         form = forms.item_registers.ItemRegisterationForm(obj=item_register)
 
     if not form.validate_on_submit():
@@ -38,7 +34,7 @@ def register(item_register_id):
             )
     
     if not item_register:
-        item_register = models.CheckinItem()
+        item_register = models.RegistrationItem()
 
     form.populate_obj(item_register)
     item_register.user = current_user._get_current_object()
