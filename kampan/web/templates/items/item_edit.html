@@ -15,10 +15,16 @@
   <form class="ui form" method="POST">
 
     {{ form.hidden_tag() }}
-    
+    {{ form.size.hidden_tag() }}
+
+
     {{ renderer.render_field(form.name) }}
     {{ renderer.render_field(form.description) }}
-    {{ renderer.render_field(form.size) }}
+    <div class="three fields">
+      {{ renderer.render_field(form.size.width) }}
+      {{ renderer.render_field(form.size.height) }}
+      {{ renderer.render_field(form.size.deep) }}
+    </div>
     {{ renderer.render_field(form.weight) }}
     {{ renderer.render_field(form.categories) }}
 
