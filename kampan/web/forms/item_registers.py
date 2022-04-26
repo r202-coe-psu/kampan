@@ -6,19 +6,16 @@ from flask_mongoengine.wtf import model_form
 from kampan import models
 
 BaseItemRegisterationForm = model_form(
-    models.CheckinItem,
+    models.RegistrationItem,
     FlaskForm,
     exclude=[
-        "registeration_date",
-        "expiration_date",
+        "created_date",
         "user",
     ],
     field_args={
-        "item": {"label": "Item", "label_modifier": lambda i: i.name},
-        "position": {"label": "Position", "label_modifier": lambda p: p.warehouse.name},
-        "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
-        "quantity": {"label": "Quantity"},
-        "price": {"label": "Price"},
+        "supplier": {"label": "Supplier", "label_modifier": lambda s: s.name},
+        "description": {"label": "Description"},
+        "receipt_id": {"label": "Receipt_id"},
     },
 )
 class ItemRegisterationForm(BaseItemRegisterationForm):

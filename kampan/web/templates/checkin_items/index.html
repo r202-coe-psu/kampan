@@ -1,0 +1,39 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Checkin Item{% endblock %}
+{% block dashboard_title %}Checkin Item{% endblock %}
+{% block breadcrumbs %}
+  {% if request.endpoint == 'checkin_items.index' %}
+    <div class="active section">Checkin</div>
+  {% else %}
+    <a class="section" href="{{ url_for('checkin_items.index') }}">Register</a>
+    <div class="divider"> / </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <th>Item Name</th>
+      <th>Warehouse</th>
+      <th>Quantity</th>
+      <th>Price</th>
+  </tr></thead>
+  <tbody>
+  <tr>
+    {% for item in checkin_items %}
+      <td data-label="Item Name">{{ item.item.name }}</td>
+      <td data-label="Warehouse">{{ item.warehouse.name }}</td>
+      <td data-label="Quantity">{{ item.quantity }}</td>
+      <td data-label="Price">{{ item.price }}</td>
+  </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+<a class="ui primary button" href="{{ url_for('checkin_items.register') }}"> 
+  Add
+</a>
+  
+{% endblock %}

@@ -51,12 +51,17 @@ def edit(item_id):
     form = forms.items.ItemForm(obj=item)
 
     if not form.validate_on_submit():
+        print(form.errors)
+        form.size.width.label.text = "Width"
+        form.size.height.label.text = "Height"
+        form.size.deep.label.text = "Deep"
         return render_template(
             "/items/item_edit.html",
             form=form,
         )
 
     form.populate_obj(item)
+
     item.save()
 
     return redirect(url_for("items.index"))
