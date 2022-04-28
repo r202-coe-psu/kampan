@@ -11,12 +11,14 @@ Profile = model_form(
     exclude=[
         "created_date",
         "updated_date",
+        "email",
+        "password",
+        "status",
     ],
     field_args={
-        "first_name": {"label": "first_name"},
-        "last_name": {"label": "last_name"},
-        "student_id": {"label": "student_id"},
-        "organization": {"label": "organization"},
+        "first_name": {"label": "Firstname"},
+        "last_name": {"label": "Lastname"},
+        "organization": {"label": "Organization"},
     },
 )
 
