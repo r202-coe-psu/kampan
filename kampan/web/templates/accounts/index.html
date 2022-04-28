@@ -12,7 +12,8 @@ Profile
 {% block content %}
 <div class="ui container">
   <div class="ui segment">
-    <h2 class="ui header">Profile <a class="btn-floating btn-large waves-effect waves-light" href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
+    <h2 class="ui header">Profile <a class="btn-floating btn-large waves-effect waves-light"
+        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
     </h2>
     <div class="ui grid two column">
       <div class="column">
@@ -26,9 +27,6 @@ Profile
       </div>
       <div class="column">
         {{ current_user.metadata['thai_last_name'] }}
-      </div>
-      <div class="column">
-        <b>Student ID:</b> {{ current_user.metadata['student_id'] }}
       </div>
       <div class="column">
         <b>Organization:</b> {{ current_user.metadata['organization'] }}
