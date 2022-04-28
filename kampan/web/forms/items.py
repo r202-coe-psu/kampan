@@ -1,5 +1,6 @@
 from wsgiref.validate import validator
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed
 from flask_mongoengine.wtf import model_form
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
@@ -9,11 +10,7 @@ from kampan import models
 BaseItemForm = model_form(
     models.Item,
     FlaskForm,
-    exclude=[
-        "user",
-        "created_date",
-        "updated_date",
-    ],
+    exclude=["user", "created_date", "updated_date", "images"],
     field_args={
         "name": {"label": "Name"},
         "description": {"label": "Desctiption"},
@@ -26,6 +23,9 @@ BaseItemForm = model_form(
 
 class ItemForm(BaseItemForm):
     categories = TagListField("Categories", validators=[validators.Length(min=1)])
+    img = fields.FileField(
+        "Images", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
+    )
 
 
 # class ItemForm(FlaskForm):
