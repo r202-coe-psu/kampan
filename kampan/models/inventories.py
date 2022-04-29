@@ -27,6 +27,13 @@ class CheckinItem(me.Document):
     expiration_date = me.DateTimeField(required=True, default=datetime.datetime.now())
     position = me.ReferenceField("ItemPosition", dbref=True)
 
+class OrderItem(me.Document):
+    meta = {"collection": "order_items"}
+
+    ordernumber = me.IntField()
+    description = me.StringField()
+    user = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 class CheckoutItem(me.Document):
     meta = {"collection": "checkout_items"}
@@ -38,13 +45,9 @@ class CheckoutItem(me.Document):
 
     quantity = me.FloatField(required=True)
     price = me.FloatField()
+    message = me.StringField()
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
 
-class OrderItem(me.Document):
-    meta = {"collection": "order_items"}
 
-    description = me.StringField()
-    user = me.ReferenceField("User", dbref=True)
-    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
