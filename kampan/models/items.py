@@ -1,3 +1,5 @@
+from flask import url_for
+from email.policy import default
 import mongoengine as me
 import datetime
 
@@ -13,9 +15,10 @@ class Item(me.Document):
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
-    size = me.EmbeddedDocumentField(ItemSize)
     weight = me.FloatField()
+    size = me.EmbeddedDocumentField(ItemSize)
     categories = me.ListField(me.StringField(required=True))
+    images = me.ImageField(thumbnail_size=(800, 600, False))
 
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)

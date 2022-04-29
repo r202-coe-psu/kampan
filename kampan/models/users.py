@@ -12,6 +12,8 @@ class User(me.Document, UserMixin):
     last_name = me.StringField(required=True, max_length=256)
     status = me.StringField(required=True, default="disactive")
     roles = me.ListField(me.StringField(), default=["user"])
+    student_id = me.StringField(min_length=5, max_length=64)
+    organization = me.StringField(min_length=3, max_length=64)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(
@@ -21,7 +23,7 @@ class User(me.Document, UserMixin):
     resources = me.DictField()
 
     meta = {"collection": "users"}
-    
+
     def has_roles(self, roles):
         for role in roles:
             if role in self.roles:
@@ -30,4 +32,4 @@ class User(me.Document, UserMixin):
         return False
 
     def get_image(self):
-        return ''
+        return ""

@@ -3,46 +3,48 @@
 {% block title %}Warehouses{% endblock %}
 {% block dashboard_title %}Warehouses{% endblock %}
 {% block breadcrumbs %}
-  {% if request.endpoint == 'warehouses.index' %}
-    <div class="active section">Warehouses</div>
-  {% else %}
-    <a class="section" href="{{ url_for('warehouses.index') }}">Warehouses</a>
-    <div class="divider"> / </div>
-  {% endif %}
+{% if request.endpoint == 'warehouses.index' %}
+<div class="active section">Warehouses</div>
+{% else %}
+<a class="section" href="{{ url_for('warehouses.index') }}">Warehouses</a>
+<div class="divider"> / </div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
-      <tr><th>Name</th>
-      <th>Description</th>
-      <th>User</th>
-      <th>Edit/Delete</th>
-  </tr></thead>
-  <tbody>
-    {% for warehouse in warehouses %}
       <tr>
-      <td data-label="Name">{{ warehouse.name }}</td>
-      <td data-label="Description">{{ warehouse.description }}</td>
-      <td>
-        <a class="ui icon button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
-          <i class="trash icon"></i>
-        </a>
-        <a class="ui icon button" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
-          <i class="edit icon"></i>
-        </a>
-      </td>
+        <th>Name</th>
+        <th>Description</th>
+        <th>User</th>
+        <th>Edit/Delete</th>
       </tr>
-    {% endfor %}
-    
-  </tbody>
+    </thead>
+    <tbody>
+      {% for warehouse in warehouses %}
+      <tr>
+        <td data-label="Name">{{ warehouse.name }}</td>
+        <td data-label="Description">{{ warehouse.description }}</td>
+
+        <td data-label="User">{{ warehouse.user.first_name }} {{ warehouse.user.last_name }}</td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
+            <i class="trash icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
+            <i class="edit icon"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+
+    </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}"> 
+<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
   Add
 </a>
-  
+
 {% endblock %}
-
-

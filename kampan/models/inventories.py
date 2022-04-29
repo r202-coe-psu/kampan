@@ -4,7 +4,7 @@ import datetime
 
 class RegistrationItem(me.Document):
     meta = {"collection": "registration_items"}
-
+    receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
     supplier = me.ReferenceField("Supplier", dbref=True)
     user = me.ReferenceField("User", dbref=True)

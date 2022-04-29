@@ -1,4 +1,4 @@
-{% extends '/item_registers/index.html' %}
+{% extends '/checkin_items/index.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
@@ -22,9 +22,15 @@
     <form class="ui form" method="POST">
       
       {{ form.hidden_tag() }}
-      {{ renderer.render_field(form.receipt_id) }}
-      {{ renderer.render_field(form.description) }}
-      {{ renderer.render_select(form.supplier) }}
+      <div class="three fields">
+        {{ renderer.render_select(form.item) }}
+        {{ renderer.render_field(form.quantity) }}
+        {{ renderer.render_field(form.price) }}
+      </div>
+      <div class="two fields">
+        {{ renderer.render_select(form.warehouse) }}
+        {{ renderer.render_select(form.position) }}
+      </div>
 
       <button class="ui primary button" type="submit">Submit</button>
     </form>

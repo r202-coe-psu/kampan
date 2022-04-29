@@ -1,25 +1,40 @@
 {% extends '/base/default-dashboard.html' %}
 
 {% block title %}Item_register{% endblock %}
-{% block dashboard_title %}Supplier{% endblock %}
-
+{% block dashboard_title %}Register{% endblock %}
+{% block breadcrumbs %}
+  {% if request.endpoint == 'item_registers.index' %}
+    <div class="active section">Register</div>
+  {% else %}
+    <a class="section" href="{{ url_for('item_registers.index') }}">Register</a>
+    <div class="divider"> / </div>
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
-      <th>Item Name</th>
+      <th>Receipt id</th>
       <th>Description</th>
-      <th>Quantity</th>
-      <th>Price</th>
+      <th>Supplier</th>
+      <th>User</th>
+      <th>Registeration Date</th>
+      <th>Checkin Item</th>
   </tr></thead>
   <tbody>
   <tr>
     {% for item in item_registers %}
-    <td data-label="Description">{{ item.item.name }}</td>
-      <td data-label="Description">{{ item.description }}</td>
-      <td data-label="Quantity">{{ item.quantity }}</td>
-      <td data-label="Price">{{ item.price }}</td>
+      <td data-label="Item Name">{{ item.receipt_id }}</td>
+      <td data-label="Warehouse">{{ item.description }}</td>
+      <td data-label="Quantity">{{ item.supplier.name }}</td>
+      <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+      <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+      <td data-label="Checkin">
+        <a class="ui primary button" href="{{ url_for('checkin_items.index', item_register_id=item.id) }}">
+        Checkin
+        </a>
+      </td>
   </tr>
     {% endfor %}
   </tbody>
