@@ -33,8 +33,10 @@
         <td data-label="Size">{{ item.size.width }} x {{item.size.height }} x {{ item.size.deep }} </td>
         <td data-label="Image">
           <div style="max-width: 42px">
-            {% if not item.images %}
+            {% if not item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+            {% else %}
+            <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" width="100">
             {% endif %}
           </div>
         </td>

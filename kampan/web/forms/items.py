@@ -10,7 +10,7 @@ from kampan import models
 BaseItemForm = model_form(
     models.Item,
     FlaskForm,
-    exclude=["user", "created_date", "updated_date", "images"],
+    exclude=["user", "created_date", "updated_date", "image"],
     field_args={
         "name": {"label": "Name"},
         "description": {"label": "Desctiption"},
@@ -24,7 +24,7 @@ BaseItemForm = model_form(
 class ItemForm(BaseItemForm):
     categories = TagListField("Categories", validators=[validators.Length(min=1)])
     img = fields.FileField(
-        "Images", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
+        "Image", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
     )
 
 
