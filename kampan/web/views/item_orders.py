@@ -17,36 +17,36 @@ import mongoengine as me
 
 import datetime
 
-module = Blueprint('item_checkouts', __name__, url_prefix='/item_checkouts')
+module = Blueprint('item_orders', __name__, url_prefix='/item_orders')
 
 @module.route('/')
 @login_required
 def index():
-    checkouts = models.CheckoutItem.objects()
+    orders = models.OrderItem.objects()
     return render_template(
-        "/item_checkouts/index.html",
-        checkouts=checkouts,
+        "/item_orders/index.html",
+        orders=orders,
         )
 
 
-@module.route('/checkout', methods=["GET", "POST"])
+@module.route('/order', methods=["GET", "POST"])
 @login_required
-def checkout():
+def order():
     items = models.Item.objects()
-    form = forms.item_checkouts.BaseCheckoutItemForm()
+    form = forms.item_orders.BaseOrderItemForm()
     if not form.validate_on_submit():
         return render_template(
-            '/item_checkouts/checkout.html',
+            '/item_orders/order.html',
             form=form,           
              )
 
-    checkout = models.CheckoutItem()
+    order = models.OrderItem()
         
-    form.populate_obj(checkout)
-    checkout.user = current_user._get_current_object()
+    form.populate_obj(order)
+    order.user = current_user._get_current_object()
     
-    checkout.save()
+    order.save()
     
 
-    return redirect(url_for('item_checkouts.index'))
+    return redirect(url_for('item_orders.index'))
 

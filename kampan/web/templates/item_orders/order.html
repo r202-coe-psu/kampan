@@ -1,0 +1,20 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}Order{% endblock %}
+{% block dashboard_title %}Order{% endblock %}
+
+
+{% block content %}
+    <div>
+    <form class="ui form" method="POST">
+      
+      {{ form.hidden_tag() }}
+      
+      
+      {{ renderer.render_field(form.description) }}
+
+      <button class="ui primary button" type="submit">Submit</button>
+    </form>
+    </div>
+{% endblock content %}

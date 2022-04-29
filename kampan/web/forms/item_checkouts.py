@@ -2,9 +2,26 @@ from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
-class ItemCheckoutForm(FlaskForm):
-    item = fields.SelectField("Item")
-    description = fields.StringField("Description")
+from flask_mongoengine.wtf import model_form
+from kampan import models
 
-    quantity = fields.IntegerField("Quantity", default=0)
-    price = fields.FloatField("Price", default=0)
+BaseCheckoutItemForm = model_form(
+    models.CheckoutItem,
+    FlaskForm,
+    exclude=[
+        "checkout_date",
+        "checkout_from",
+        "price",
+        "warehouse",
+        
+    ],
+    field_args={
+        "order": {"label": "order"},
+        "item": {"label": "Item", "label_modifier": lambda obj: obj.name},
+        "quantity": {"label": "Quantity" },
+        "message": {"label": "Message"},
+    },
+)
+
+class BaseCheckoutItemForm(BaseCheckoutItemForm):
+    pass

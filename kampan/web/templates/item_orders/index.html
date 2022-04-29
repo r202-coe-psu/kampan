@@ -1,0 +1,43 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %}Order{% endblock %}
+{% block dashboard_title %}Order{% endblock %}
+
+
+{% block content %}
+<div style="padding: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        
+        <th>Order</th>
+        <th>Description</th>
+        <th>User</th>
+        <th>Checkout</th>
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+  <tr>
+
+    <td data-label="Order">{{ order.id }}</td>
+      <td data-label="Description">{{ order.description }}</td>
+      <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+      
+      <td>
+
+        <a  class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+          Checkout
+        </a>
+      </td>
+  </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+<a class="ui primary button" href="{{ url_for('item_orders.order') }}"> 
+  Create Order
+</a>
+{% endblock  %}
+  

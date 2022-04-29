@@ -1,7 +1,7 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Supplier{% endblock %}
-{% block dashboard_title %}Supplier{% endblock %}
+{% block title %}Checkout{% endblock %}
+{% block dashboard_title %}Checkout{% endblock %}
 
 
 {% block content %}
@@ -9,21 +9,21 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>User</th>
-        <th>Description</th>
-        <th>Operation</th>
+        
+        <th>Order</th>
+        <th>Item</th>
+        <th>Quantity</th>
+        
     </tr>
   </thead>
   <tbody>
     {% for checkout in checkouts %}
   <tr>
-      <td data-label="Item">{{ checkout.user.first_name }}</td>
-      <td data-label="Description">{{ checkout.description }}</td>
-      <td></td>
-      {#
+      
+      <td data-label="Order">{{ checkout.order.description }}</td>
+      <td data-label="Item">{{ checkout.item.name }}</td>
       <td data-label="Quantity">{{ checkout.quantity }}</td>
-      <td data-label="Price">{{ checkout.price }}</td>
-      #}
+      
   </tr>
     {% endfor %}
   </tbody>

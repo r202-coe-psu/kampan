@@ -12,7 +12,7 @@ def index():
     item_registers = models.RegistrationItem.objects()
     return render_template(
         "/item_registers/index.html",
-        item_registers=item_registers
+        item_registers=item_registers,
         )
 
 

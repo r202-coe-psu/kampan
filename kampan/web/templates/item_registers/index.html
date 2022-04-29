@@ -19,6 +19,7 @@
       <th>Description</th>
       <th>Supplier</th>
       <th>User</th>
+      <th>Registeration Date</th>
       <th>Checkin Item</th>
   </tr></thead>
   <tbody>
@@ -28,8 +29,9 @@
       <td data-label="Warehouse">{{ item.description }}</td>
       <td data-label="Quantity">{{ item.supplier.name }}</td>
       <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+      <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
       <td data-label="Checkin">
-        <a class="ui primary button" href="{{ url_for('checkin_items.register') }}">
+        <a class="ui primary button" href="{{ url_for('checkin_items.index', item_register_id=item.id) }}">
         Checkin
         </a>
       </td>
