@@ -39,6 +39,20 @@ def add():
 
     form.populate_obj(item)
 
+    if form.img.data:
+        if item.images:
+            item.images.replace(
+                form.img.data,
+                filename=form.img.data.filename,
+                content_type=form.img.data.content_type,
+            )
+        else:
+            item.images.put(
+                form.img.data,
+                filename=form.img.data.filename,
+                content_type=form.img.data.content_type,
+            )
+
     item.save()
 
     return redirect(url_for("items.index"))
