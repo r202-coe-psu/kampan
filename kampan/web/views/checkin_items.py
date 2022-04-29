@@ -1,18 +1,23 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
+
+from kampan.web.forms import checkin_items, item_registers
 
 module = Blueprint('checkin_items', __name__, url_prefix='/checkin_items')
 
 @module.route('/')
 @login_required
 def index():
-    checkin_items = models.CheckinItem.objects()
+    item_register_id = request.args.get("item_register_id")
+    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    checkin_items = models.CheckinItem.objects(registration=item_register)
     return render_template(
         "/checkin_items/index.html",
-        checkin_items=checkin_items
+        checkin_items=checkin_items,
+        item_register=item_register,
         )
 
 
@@ -21,16 +26,20 @@ def index():
 @login_required
 def register(checkin_item_id):
     form = forms.checkin_items.CheckinItemForm()
-    
-    checkin_item = None
+    item_register_id = request.args.get("item_register_id")
+    print(item_register_id)
+    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    checkin_item = models.CheckinItem.objects(registration=item_register)
+
+    # checkin_item = None
     if checkin_item_id:
-        checkin_item = models.CheckinItem.objects().get(id=checkin_item_id)
+        checkin_item = models.CheckinItem.objects(registration=item_register).get(id=checkin_item_id)
         form = forms.checkin_items.CheckinItemForm(obj=checkin_item)
 
     if not form.validate_on_submit():
         return render_template(
             '/checkin_items/checkin.html',
-            form=form,           
+            form=form,
             )
     
     if not checkin_item:
@@ -38,6 +47,7 @@ def register(checkin_item_id):
 
     form.populate_obj(checkin_item)
     checkin_item.user = current_user._get_current_object()
+    checkin_item.registration = item_register
     checkin_item.save()
 
-    return redirect(url_for('checkin_items.index'))
+    return redirect(url_for('checkin_items.index', item_register_id=item_register.id))

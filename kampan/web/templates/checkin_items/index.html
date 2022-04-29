@@ -15,6 +15,7 @@
 <div style="padding: 1em ;">
   <table class="ui celled table">
     <thead>
+      <th>Item ID</th>
       <th>Item Name</th>
       <th>Warehouse</th>
       <th>Quantity</th>
@@ -23,6 +24,7 @@
   <tbody>
   <tr>
     {% for item in checkin_items %}
+    <td data-label="Item Name">{{ item.item.id }}</td>
       <td data-label="Item Name">{{ item.item.name }}</td>
       <td data-label="Warehouse">{{ item.warehouse.name }}</td>
       <td data-label="Quantity">{{ item.quantity }}</td>
@@ -32,7 +34,7 @@
   </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('checkin_items.register') }}"> 
+<a class="ui primary button" href="{{ url_for('checkin_items.register', item_register_id=item_register.id) }}"> 
   Add
 </a>
   
