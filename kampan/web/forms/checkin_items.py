@@ -12,6 +12,7 @@ BaseCheckinItemForm = model_form(
         "registeration_date",
         "expiration_date",
         "user",
+        "remain",
     ],
     field_args={
         "item": {"label": "Item", "label_modifier": lambda i: i.name},

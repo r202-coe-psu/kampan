@@ -13,7 +13,7 @@ BaseCheckoutItemForm = model_form(
         "checkout_from",
         "price",
         "warehouse",
-        "remain",
+
         
     ],
     field_args={

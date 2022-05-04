@@ -19,6 +19,7 @@ class CheckinItem(me.Document):
     item = me.ReferenceField("Item", dbref=True)
 
     quantity = me.IntField(required=True, default=0)
+    remain = me.IntField(required=True, default=0)
     price = me.FloatField(required=True, default=0)
 
     registeration_date = me.DateTimeField(
