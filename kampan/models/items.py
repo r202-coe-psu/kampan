@@ -19,6 +19,7 @@ class Item(me.Document):
     size = me.EmbeddedDocumentField(ItemSize)
     categories = me.ListField(me.StringField(required=True))
     image = me.ImageField(thumbnail_size=(800, 600, False))
+    unit = me.IntField(required=True, drfault=0)
 
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)

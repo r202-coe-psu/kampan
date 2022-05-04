@@ -25,7 +25,10 @@
       {{ renderer.render_field(form.size.height) }}
       {{ renderer.render_field(form.size.deep) }}
     </div>
-    {{ renderer.render_field(form.weight) }}
+    <div class="two fields">
+      {{ renderer.render_field(form.weight) }}
+      {{ renderer.render_field(form.unit) }}
+    </div>
     {{ renderer.render_field(form.categories) }}
 
     <button class="ui button" type="submit">Submit</button>

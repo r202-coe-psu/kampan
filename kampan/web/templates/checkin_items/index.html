@@ -17,6 +17,7 @@
     <thead>
       <th>Item ID</th>
       <th>Item Name</th>
+      <th>Image</th>
       <th>Warehouse</th>
       <th>Quantity</th>
       <th>Price</th>
@@ -24,8 +25,17 @@
   <tbody>
   <tr>
     {% for item in checkin_items %}
-    <td data-label="Item Name">{{ item.item.id }}</td>
+    <td data-label="Item ID">{{ item.item.id }}</td>
       <td data-label="Item Name">{{ item.item.name }}</td>
+      <td data-label="Image">
+        <div style="max-width: 42px">
+          {% if not item.item.image %}
+          <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+          {% else %}
+          <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}" width="100">
+          {% endif %}
+        </div>
+      </td>
       <td data-label="Warehouse">{{ item.warehouse.name }}</td>
       <td data-label="Quantity">{{ item.quantity }}</td>
       <td data-label="Price">{{ item.price }}</td>

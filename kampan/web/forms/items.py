@@ -17,6 +17,7 @@ BaseItemForm = model_form(
         "weight": {"label": "Weight"},
         "size": {"label": "Size"},
         "categories": {"label": "Categories"},
+        "unit": {"label": "Unit"},
     },
 )
 
