@@ -56,6 +56,7 @@ def register(checkin_item_id):
         return render_template(
             '/checkin_items/checkin.html',
             form=form,
+            item_register=item_register,
             )
     
     if not checkin_item_id:
