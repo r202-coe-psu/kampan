@@ -1,10 +1,68 @@
 {% extends '/base/default-dashboard.html' %}
 
 {% block content %}
+
 <div class="row">
   <div class="column">
-    <h3>Hello {{ current_user.first_name }} {{ current_user.last_name }}</h3>
+    <h3>Hello! {{ current_user.first_name }} {{ current_user.last_name }}</h3>
   </div>
 </div>
+
+<p class="center">
+<div class="ui statistics">
+  <div class="statistic">
+    <div class="value">
+      150
+    </div>
+    <div class="label">
+      Stocks
+    </div>
+  </div>
+  <div class="statistic">
+    <div class="value">
+      50
+    </div>
+    <div class="label">
+      Sales
+    </div>
+  </div>
+  <div class="statistic">
+    <div class="value">
+      -20 ฿
+    </div>
+    <div class="label">
+      Profit
+    </div>
+  </div>
+</div>
+</p>
+
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+
+<body>
+  <h1>Test APEX Chart</h1>
+  <div id="chart"></div>
+  <script>
+    var options = {
+      chart: {
+        type: 'bar'
+      },
+      series: [{
+        name: 'stocks',
+        data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
+      }],
+      xaxis: {
+        categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999]
+      }
+    }
+    var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+    chart.render();
+  </script>
+</body>
+
+
 
 {% endblock %}

@@ -6,7 +6,7 @@
   {% if request.endpoint == 'checkin_items.index' %}
     <div class="active section">Checkin</div>
   {% else %}
-    <a class="section" href="{{ url_for('checkin_items.index') }}">Register</a>
+    <a class="section" href="{{ url_for('checkin_items.index', item_register_id=item_register.id) }}">Checkin</a>
     <div class="divider"> / </div>
   {% endif %}
 {% endblock %}
