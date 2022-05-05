@@ -31,7 +31,6 @@ class CheckinItem(me.Document):
 class OrderItem(me.Document):
     meta = {"collection": "order_items"}
 
-    ordernumber = me.IntField()
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
