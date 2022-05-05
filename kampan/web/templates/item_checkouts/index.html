@@ -12,6 +12,7 @@
         
         <th>Order</th>
         <th>Item</th>
+        <th>Warehouse</th>
         <th>Quantity</th>
         
     </tr>
@@ -20,8 +21,9 @@
     {% for checkout in checkouts %}
   <tr>
       
-      <td data-label="Order">{{ checkout.order.description }}</td>
+      <td data-label="Order">{{ checkout.order.id }}</td>
       <td data-label="Item">{{ checkout.item.name }}</td>
+      <td data-label="Item">{{ checkout.warehouse.name }}</td>
       <td data-label="Quantity">{{ checkout.quantity }}</td>
       
   </tr>
@@ -29,8 +31,6 @@
   </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('item_checkouts.checkout') }}"> 
-  Checkout
-</a>
+
   
 {% endblock %}
