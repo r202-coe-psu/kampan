@@ -39,7 +39,7 @@ def checkout():
     # This code area have to rewrite for supporting multiple checkin_item, in case of remain less than request
     checkin_item = models.CheckinItem.objects(item=form.item.data,remain__gt=0).first()
     if checkin_item :
-        
+             
         checkin_item.remain -= form.quantity.data
         checkin_item.save()
         checkout.checkout_from = checkin_item
