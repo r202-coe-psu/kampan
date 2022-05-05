@@ -1,11 +1,11 @@
-{% extends '/checkin_items/index.html' %}
+{% extends '/inventories/index.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
   {% if 'edit' in request.path %}
     Edit {{ form.name.data }}
   {% else %}
-    Add Register
+    Checkin
   {% endif %}
 {% endblock %}
 {% block dashboard_title %}

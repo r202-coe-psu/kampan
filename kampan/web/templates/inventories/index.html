@@ -3,10 +3,10 @@
 {% block title %}Checkin Item{% endblock %}
 {% block dashboard_title %}Checkin Item{% endblock %}
 {% block breadcrumbs %}
-  {% if request.endpoint == 'checkin_items.index' %}
+  {% if request.endpoint == 'inventories.index' %}
     <div class="active section">Checkin</div>
   {% else %}
-    <a class="section" href="{{ url_for('checkin_items.index') }}">Register</a>
+    <a class="section" href="{{ url_for('inventories.index', item_register_id=item_register.id) }}">Checkin</a>
     <div class="divider"> / </div>
   {% endif %}
 {% endblock %}
@@ -20,11 +20,12 @@
       <th>Image</th>
       <th>Warehouse</th>
       <th>Quantity</th>
+      <th>Remain</th>
       <th>Price</th>
   </tr></thead>
   <tbody>
   <tr>
-    {% for item in checkin_items %}
+    {% for item in inventories %}
     <td data-label="Item ID">{{ item.item.id }}</td>
       <td data-label="Item Name">{{ item.item.name }}</td>
       <td data-label="Image">
@@ -38,13 +39,14 @@
       </td>
       <td data-label="Warehouse">{{ item.warehouse.name }}</td>
       <td data-label="Quantity">{{ item.quantity }}</td>
+      <td data-label="Remain">{{ item.remain }}</td>
       <td data-label="Price">{{ item.price }}</td>
   </tr>
     {% endfor %}
   </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('checkin_items.register', item_register_id=item_register.id) }}"> 
+<a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item_register.id) }}"> 
   Add
 </a>
   

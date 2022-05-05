@@ -11,8 +11,8 @@ class RegistrationItem(me.Document):
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
-class CheckinItem(me.Document):
-    meta = {"collection": "checkin_items"}
+class Inventory(me.Document):
+    meta = {"collection": "inventories"}
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
@@ -25,8 +25,12 @@ class CheckinItem(me.Document):
     registeration_date = me.DateTimeField(
         required=True, default=datetime.datetime.now()
     )
-    expiration_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    expiration_date = me.DateTimeField()
     position = me.ReferenceField("ItemPosition", dbref=True)
+
+    def get_checkout_items(self):
+        return CheckoutItem.objects(checkout_from=self)
+
 
 class OrderItem(me.Document):
     meta = {"collection": "order_items"}
@@ -35,11 +39,12 @@ class OrderItem(me.Document):
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
+
 class CheckoutItem(me.Document):
     meta = {"collection": "checkout_items"}
 
     order = me.ReferenceField("OrderItem", dbref=True)
-    checkout_from = me.ReferenceField("CheckinItem", dbref=True)
+    checkout_from = me.ReferenceField("Inventory", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
 
@@ -48,6 +53,3 @@ class CheckoutItem(me.Document):
     message = me.StringField()
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
-
-
-
