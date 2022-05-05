@@ -17,8 +17,8 @@
         <th>Name</th>
         <th>Description</th>
         <th>Weight</th>
-        <th style="max-width: 0;">Size ( width x height x deep )</th>
         <th>Unit</th>
+        <th style="max-width: 0;">Size ( width x height x deep )</th>
         <th>Image</th>
         <th>Categories</th>
         <th>Username</th>
@@ -45,11 +45,13 @@
         <td data-label="Categories">{{ item.categories|join(', ') }}</td>
         <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
         <td>
-          <a class="ui icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
-            <i class="trash icon"></i>
-          </a>
-          <a class="ui icon button" href="{{ url_for('items.edit', item_id=item.id) }}">
+          <a class="ui icon button" href="{{ url_for('items.edit', item_id=item.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('items.delete', item_id=item.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
           </a>
         </td>
       </tr>
@@ -57,7 +59,7 @@
 
     </tbody>
   </table>
-  
+
   <a class="ui primary button" href="{{ url_for('items.add') }}">
     Add
   </a>
