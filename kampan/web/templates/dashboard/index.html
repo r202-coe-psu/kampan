@@ -8,30 +8,30 @@
   </div>
 </div>
 
-<p class="center">
+<p>
 <div class="ui statistics">
   <div class="statistic">
     <div class="value">
-      150
+      300
     </div>
     <div class="label">
-      Stocks
+      Inventories
     </div>
   </div>
   <div class="statistic">
     <div class="value">
-      50
+      100
     </div>
     <div class="label">
-      Sales
+      Items Checkout
     </div>
   </div>
   <div class="statistic">
     <div class="value">
-      -20 ฿
+      200
     </div>
     <div class="label">
-      Profit
+      Remain
     </div>
   </div>
 </div>
@@ -42,25 +42,64 @@
 </head>
 
 <body>
-  <h1>Test APEX Chart</h1>
+  <h1>Dashboard Chart</h1>
   <div id="chart"></div>
   <script>
     var options = {
-      chart: {
-        type: 'bar'
-      },
       series: [{
-        name: 'stocks',
-        data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
+        name: 'Inventories',
+        data: [50, 55, 60, 65, 70]
+      }, {
+        name: 'Items Checkout',
+        data: [5, 10, 15, 20, 50]
+      }, {
+        name: 'Remain',
+        data: [45, 45, 45, 45, 20]
       }],
+      chart: {
+        type: 'bar',
+        height: 350
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '55%',
+          endingShape: 'rounded'
+        },
+      },
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        show: true,
+        width: 2,
+        colors: ['transparent']
+      },
       xaxis: {
-        categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999]
+        categories: ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+      },
+      yaxis: {
+        title: {
+          text: 'Unit'
+        }
+      },
+      fill: {
+        opacity: 1
+      },
+      tooltip: {
+        y: {
+          formatter: function (val) {
+            return "Item " + val + " Unit"
+          }
+        }
       }
-    }
-    var chart = new ApexCharts(document.querySelector("#chart"), options);
+    };
 
+    var chart = new ApexCharts(document.querySelector("#chart"), options);
     chart.render();
+
   </script>
+
 </body>
 
 
