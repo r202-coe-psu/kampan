@@ -5,8 +5,8 @@ from .fields import TagListField, TextListField
 from flask_mongoengine.wtf import model_form
 from kampan import models
 
-BaseCheckinItemForm = model_form(
-    models.CheckinItem,
+BaseInventoryForm = model_form(
+    models.Inventory,
     FlaskForm,
     exclude=[
         "registeration_date",
@@ -22,5 +22,7 @@ BaseCheckinItemForm = model_form(
         "price": {"label": "Price"},
     },
 )
-class CheckinItemForm(BaseCheckinItemForm):
+
+
+class InventoryForm(BaseInventoryForm):
     pass

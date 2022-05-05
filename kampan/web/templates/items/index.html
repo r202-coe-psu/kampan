@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="padding: 1em ;">
+<div>
   <table class="ui celled table">
     <thead>
       <tr>
@@ -57,11 +57,13 @@
 
     </tbody>
   </table>
-</div>
-<a class="ui primary button" href="{{ url_for('items.add') }}">
-  Add
-</a>
+  
+  <a class="ui primary button" href="{{ url_for('items.add') }}">
+    Add
+  </a>
 
+
+</div>
 {% endblock %}
 
 {% block additional_js %}
