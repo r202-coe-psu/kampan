@@ -13,6 +13,7 @@
         <th>Order</th>
         <th>Description</th>
         <th>User</th>
+        <th>Created Date</th>
         <th>Checkout</th>
 
     </tr>
@@ -21,9 +22,10 @@
     {% for order in orders %}
   <tr>
 
-    <td data-label="Order">{{ order.id }}</td>
+      <td data-label="Order">{{ order.id }}</td>
       <td data-label="Description">{{ order.description }}</td>
       <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+      <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y') }}</td>
       
       <td>
 
