@@ -1,7 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 
 {% block content %}
-
 <div class="row">
   <div class="column">
     <h3>Hello! {{ current_user.first_name }} {{ current_user.last_name }}</h3>
@@ -12,7 +11,7 @@
 <div class="ui statistics">
   <div class="blue statistic">
     <div class="value">
-      300
+      {{item_quantity}}
     </div>
     <div class="label">
       Inventories
