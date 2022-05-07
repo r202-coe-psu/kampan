@@ -30,12 +30,19 @@ def index():
     inventories = models.Inventory.objects()
     item_quantity = 0
     item_remain = 0
+    notifications = []
 
     for item in inventories:
-
         item_quantity += item.quantity
+
+        if (item.remain / item.quantity * 100) < 25:  # If item remain is less than 25%
+            notifications.append(item)
 
     if "admin" in user.roles:
         return index_admin()
 
-    return render_template("/dashboard/index.html", item_quantity=item_quantity)
+    return render_template(
+        "/dashboard/index.html",
+        item_quantity=item_quantity,
+        notifications=notifications,
+    )
