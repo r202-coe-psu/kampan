@@ -28,21 +28,26 @@ def index():
     user = current_user._get_current_object()
 
     inventories = models.Inventory.objects()
+    checkouts = models.CheckoutItem.objects()
+
     item_quantity = 0
     item_remain = 0
     notifications = []
+
+    checkout_dates = []
+
+    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for checkout in checkouts:
+        date = checkout.checkout_date
+        month = int(date.strftime("%m")) - 1
+        checkout_trend_month[month] += checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
 
-        date = inventory.registeration_date
-        day = date.strftime('%d')
-        month = date.strftime('%m')
-        year = date.strftime('%Y')
-
-        datetime.datetime.now()
-        if (inventory.remain / inventory.quantity * 100) < 25:  # If inventory remain is less than 25%
+        # If inventory remain is less than 25%
+        if inventory.remain / inventory.quantity * 100 < 25:
             notifications.append(inventory)
 
     if "admin" in user.roles:
@@ -53,4 +58,5 @@ def index():
         item_quantity=item_quantity,
         item_remain=item_remain,
         notifications=notifications,
+        checkout_trend_month=checkout_trend_month,
     )
