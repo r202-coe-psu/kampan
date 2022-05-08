@@ -32,11 +32,18 @@ def index():
     item_remain = 0
     notifications = []
 
-    for item in inventories:
-        item_quantity += item.quantity
+    for inventory in inventories:
+        item_quantity += inventory.quantity
+        item_remain += inventory.remain
 
-        if (item.remain / item.quantity * 100) < 25:  # If item remain is less than 25%
-            notifications.append(item)
+        date = inventory.registeration_date
+        day = date.strftime('%d')
+        month = date.strftime('%m')
+        year = date.strftime('%Y')
+
+        datetime.datetime.now()
+        if (inventory.remain / inventory.quantity * 100) < 25:  # If inventory remain is less than 25%
+            notifications.append(inventory)
 
     if "admin" in user.roles:
         return index_admin()
@@ -44,5 +51,6 @@ def index():
     return render_template(
         "/dashboard/index.html",
         item_quantity=item_quantity,
+        item_remain=item_remain,
         notifications=notifications,
     )

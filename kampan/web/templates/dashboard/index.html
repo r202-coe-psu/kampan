@@ -8,9 +8,9 @@
 </div>
 <div>
   <h1>Notification</h1>
-  {% for item in notifications %}
-  <div>{{ item.remain }}/{{ item.quantity }} {{ item.item.unit }} of {{ item.item.name }} left
-    in {{ item.warehouse.name}} Warehouse
+  {% for inventory in notifications %}
+  <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of {{ inventory.item.name }} left
+    in {{ inventory.warehouse.name}} Warehouse | {{ inventory.registeration_date }}
   </div>
   {% endfor %}
 </div>
@@ -21,7 +21,7 @@
       {{item_quantity}}
     </div>
     <div class="label">
-      Inventories
+      Quantity
     </div>
   </div>
   <div class="teal statistic">
@@ -34,7 +34,7 @@
   </div>
   <div class="yellow statistic">
     <div class="value">
-      200
+      {{ item_remain }}
     </div>
     <div class="label">
       Remain
