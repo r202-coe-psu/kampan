@@ -33,10 +33,8 @@ def index():
     item_quantity = 0
     item_remain = 0
     notifications = []
-
-    checkout_dates = []
-
     checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
     for checkout in checkouts:
         date = checkout.checkout_date
         month = int(date.strftime("%m")) - 1
@@ -59,4 +57,5 @@ def index():
         item_remain=item_remain,
         notifications=notifications,
         checkout_trend_month=checkout_trend_month,
+        checkout_quantity=item_quantity - item_remain,
     )
