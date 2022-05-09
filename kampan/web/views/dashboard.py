@@ -30,6 +30,7 @@ def index():
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
+    checkout_quantity = 0
     item_quantity = 0
     item_remain = 0
     notifications = []
@@ -43,6 +44,7 @@ def index():
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
+        checkout_quantity = item_quantity - item_remain
 
         # If inventory remain is less than 25%
         if inventory.remain / inventory.quantity * 100 < 25:
@@ -57,5 +59,5 @@ def index():
         item_remain=item_remain,
         notifications=notifications,
         checkout_trend_month=checkout_trend_month,
-        checkout_quantity=item_quantity - item_remain,
+        checkout_quantity=checkout_quantity,
     )
