@@ -33,6 +33,7 @@ def index():
     checkout_quantity = 0
     item_quantity = 0
     item_remain = 0
+    total_values = 0
     notifications = []
     checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -40,6 +41,7 @@ def index():
         date = checkout.checkout_date
         month = int(date.strftime("%m")) - 1
         checkout_trend_month[month] += checkout.quantity
+        total_values += checkout.price
 
     for inventory in inventories:
         item_quantity += inventory.quantity
@@ -56,8 +58,9 @@ def index():
     return render_template(
         "/dashboard/index.html",
         item_quantity=item_quantity,
+        total_values=total_values,
         item_remain=item_remain,
-        notifications=notifications,
-        checkout_trend_month=checkout_trend_month,
         checkout_quantity=checkout_quantity,
+        checkout_trend_month=checkout_trend_month,
+        notifications=notifications,
     )
