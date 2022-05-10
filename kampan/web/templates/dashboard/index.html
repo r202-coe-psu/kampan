@@ -6,14 +6,7 @@
     <h3>Hello! {{ current_user.first_name }} {{ current_user.last_name }}</h3>
   </div>
 </div>
-<div>
-  <h1>Notification</h1>
-  {% for inventory in notifications %}
-  <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of {{ inventory.item.name }} left
-    in {{ inventory.warehouse.name}} Warehouse | {{ inventory.registeration_date }}
-  </div>
-  {% endfor %}
-</div>
+
 <p>
 <div class="ui statistics" style="padding-left: 350px;">
   <div class="blue statistic">
@@ -48,8 +41,8 @@
 </head>
 
 <body>
-  <h1 style="padding-left: 420px;">Dashboard Chart</h1>
-  <div id="chart" style="padding-left: 200px;"></div>
+  <h1 style="padding-left: 380px; ">Items Checkout Chart</h1>
+  <div id="chart" style="padding-left: 200px; "></div>
   <script>
     var options = {
       series: [{
@@ -91,6 +84,15 @@
 
 </body>
 
-
+<p>
+<div>
+  <h1 style="color: red; ">Notification</h1>
+  {% for inventory in notifications %}
+  <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of {{ inventory.item.name }} left
+    in {{ inventory.warehouse.name}} Warehouse | {{ inventory.registeration_date }}
+  </div>
+  {% endfor %}
+</div>
+</p>
 
 {% endblock %}
