@@ -15,7 +15,7 @@
   {% endfor %}
 </div>
 <p>
-<div class="ui statistics">
+<div class="ui statistics" style="padding-left: 350px;">
   <div class="blue statistic">
     <div class="value">
       {{ item_quantity }}
@@ -48,8 +48,8 @@
 </head>
 
 <body>
-  <h1>Dashboard Chart</h1>
-  <div id="chart"></div>
+  <h1 style="padding-left: 420px;">Dashboard Chart</h1>
+  <div id="chart" style="padding-left: 200px;"></div>
   <script>
     var options = {
       series: [{
@@ -57,10 +57,10 @@
         data: {{ checkout_trend_month }},
       }],
     chart: {
-      height: 350,
+      height: 350, width: 700,
         type: 'line',
           zoom: {
-        enabled: false
+        enabled: true
       }
     },
     dataLabels: {
