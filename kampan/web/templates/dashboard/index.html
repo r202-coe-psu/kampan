@@ -8,7 +8,7 @@
 </div>
 
 <p>
-<div class="ui statistics" style="padding-left: 350px;">
+<div class="ui statistics" style="border-style: solid; max-width: fit-content; margin-left: 340px;">
   <div class="blue statistic">
     <div class="value">
       {{ item_quantity }}
@@ -41,8 +41,8 @@
 </head>
 
 <body>
-  <h1 style="padding-left: 380px; ">Items Checkout Chart</h1>
-  <div id="chart" style="padding-left: 200px; "></div>
+  <h1 style="padding-left: 400px; color: rgb(57, 145, 91); "></h1>
+  <div id="chart" style="max-width: fit-content;  margin-left: 150px; "></div>
   <script>
     var options = {
       series: [{
@@ -50,21 +50,23 @@
         data: {{ checkout_trend_month }},
       }],
     chart: {
-      height: 350, width: 700,
+      height: 350, width: 800,
         type: 'line',
           zoom: {
         enabled: true
       }
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
-    stroke: {
+    colors: ['#00b5ad'],
+      stroke: {
       curve: 'straight'
     },
     title: {
       text: 'Checkout Trend by Month',
-        align: 'left'
+        align: 'left',
+        
     },
     grid: {
       row: {
@@ -88,8 +90,8 @@
 <div>
   <h1 style="color: red; ">Notification</h1>
   {% for inventory in notifications %}
-  <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of {{ inventory.item.name }} left
-    in {{ inventory.warehouse.name}} Warehouse | {{ inventory.registeration_date }}
+  <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of [ {{ inventory.item.name }} ] left
+    in [ {{ inventory.warehouse.name}} ] Warehouse | {{ inventory.registeration_date }}
   </div>
   {% endfor %}
 </div>
