@@ -10,6 +10,7 @@
 </div>
 
 <a class="item" href="{{ url_for('dashboard.index') }}"><i class="icon dashboard"></i>Dashboard</a>
+<a class="item" href="{{ url_for('notifications.index') }}">Notifications</a>
 {% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
 {% endif %}
