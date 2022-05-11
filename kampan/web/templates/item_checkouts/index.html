@@ -14,6 +14,7 @@
         <th>Item</th>
         <th>Warehouse</th>
         <th>Quantity</th>
+        <th>Checkout Date</th>
         
     </tr>
   </thead>
@@ -25,6 +26,7 @@
       <td data-label="Item">{{ checkout.item.name }}</td>
       <td data-label="Item">{{ checkout.warehouse.name }}</td>
       <td data-label="Quantity">{{ checkout.quantity }}</td>
+      <td data-label="Checkout Date">{{ checkout.checkout_date }}</td>
       
   </tr>
     {% endfor %}

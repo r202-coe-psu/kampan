@@ -59,5 +59,5 @@ def checkout():
 
         if quantity <= 0:
             break
-
+    
     return redirect(url_for("item_checkouts.index"))
