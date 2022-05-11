@@ -39,11 +39,9 @@ def index():
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        now = datetime.datetime.now()
-        if int(now.strftime("%Y")) - int(date.strftime("%Y")) == 0:
-            month = int(date.strftime("%m")) - 1
-            checkout_trend_month[month] += checkout.quantity
-            total_values += checkout.price
+        month = int(date.strftime("%m")) - 1
+        checkout_trend_month[month] += checkout.quantity
+        total_values += checkout.price * checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity

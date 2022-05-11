@@ -4,7 +4,6 @@
 {% block title %}Checkout{% endblock %}
 {% block dashboard_title %}Checkout{% endblock %}
 
-
 {% block content %}
     <div>
     <form class="ui form" method="POST">
@@ -13,8 +12,41 @@
 
       {{ renderer.render_field(form.item) }}
       {{ renderer.render_field(form.quantity) }}
+      {{ renderer.render_calendar(form.checkout_date, calendar_id="checkout_date_calendar") }}
 
       <button class="ui primary button" type="submit">Submit</button>
     </form>
     </div>
 {% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    datetime: function (datetime, settings) {
+        if (!datetime) return '';
+        var day = datetime.getDate();
+        var month = datetime.getMonth() + 1;
+        var year = datetime.getFullYear();
+        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minute).slice(-2)  ;
+    }
+};
+var calendar_setting = {
+type: 'datetime',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+</script>
+{% endblock %}
+

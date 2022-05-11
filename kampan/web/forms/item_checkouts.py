@@ -9,7 +9,6 @@ BaseCheckoutItemForm = model_form(
     models.CheckoutItem,
     FlaskForm,
     exclude=[
-        "checkout_date",
         "checkout_from",
         "price",
         "warehouse",
@@ -21,6 +20,7 @@ BaseCheckoutItemForm = model_form(
         "item": {"label": "Item", "label_modifier": lambda obj: obj.name},
         "quantity": {"label": "Quantity" },
         "message": {"label": "Message"},
+        "checkout_date": {"label": "Date", "format":'%Y-%m-%d %H:%M'},
     },
 )
 
