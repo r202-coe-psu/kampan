@@ -19,10 +19,8 @@
     <div class="content">
       <div class="summary">
         {% for inventory in notifications %}
-        <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of <a>{{ inventory.item.name
-            }}</a>
-          left
-          in <a>{{ inventory.warehouse.name }}</a> Warehouse | {{ inventory.registeration_date }}
+        <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of
+          <a>{{ inventory.item.name }}</a> left in <a>{{ inventory.warehouse.name }}</a> Warehouse
         </div>
         {% endfor %}
       </div>
