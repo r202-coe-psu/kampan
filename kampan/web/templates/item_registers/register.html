@@ -3,7 +3,7 @@
 
 {% block title %}
   {% if 'edit' in request.path %}
-    Edit {{ form.name.data }}
+    Edit
   {% else %}
     Add Register
   {% endif %}
@@ -14,7 +14,13 @@
 
 {% block breadcrumbs %}
   {{ super() }}
-  <div class="active section">Add</div>
+  <div class="active section">
+    {% if 'edit' in request.path %}
+    Edit
+  {% else %}
+    Add
+  {% endif %}
+  </div>
 {% endblock %}
 
 {% block content %}
