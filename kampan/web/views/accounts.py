@@ -85,7 +85,7 @@ def login_engpsu():
 #             )
 #     oauth2token.save()
 
-#     return redirect(url_for('dashboard.index'))
+#     return redirect(url_for('dashboard.daily_dashboard'))
 
 
 @module.route("/authorized-engpsu")
@@ -134,7 +134,7 @@ def authorized_engpsu():
     )
     oauth2token.save()
 
-    return redirect(url_for("dashboard.index"))
+    return redirect(url_for("dashboard.daily_dashboard"))
 
 
 @module.route("/logout")
