@@ -22,6 +22,8 @@
         <th>User</th>
         <th>Registeration Date</th>
         <th>Checkin Item</th>
+        <th>Bill</th>
+        <th>Edit-Delete</th>
       </tr>
     </thead>
     <tbody>
@@ -33,8 +35,24 @@
           <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
           <td data-label="Checkin">
-            <a class="ui primary button" href="{{ url_for('inventories.index', item_register_id=item.id) }}">
+            <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
             Checkin
+            </a>
+          </td>
+          <td data-label="Bill">
+            <a class="ui primary button" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="eye icon"></i>
+            </a>
+          </td>
+          <td>
+            <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="edit icon"></i>
+            </a>
+            <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
+              style="color: white; background-color: rgb(192, 55, 55);">
+              <i class="trash icon"></i>
             </a>
           </td>
         </tr>
