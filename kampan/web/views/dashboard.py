@@ -19,12 +19,12 @@ def index_admin():
 
 
 def index_user():
-    return render_template("/dashboard/index.html")
+    return render_template("/dashboard/index.html", "/dashboard/index2.html")
 
 
 @module.route("/")
 @login_required
-def index():
+def daily_dashboard():
     user = current_user._get_current_object()
 
     inventories = models.Inventory.objects()
@@ -56,7 +56,95 @@ def index():
         return index_admin()
 
     return render_template(
-        "/dashboard/index.html",
+        "/dashboard/daily_dashboard.html",
+        item_quantity=item_quantity,
+        total_values=total_values,
+        item_remain=item_remain,
+        checkout_quantity=checkout_quantity,
+        checkout_trend_month=checkout_trend_month,
+        notifications=notifications,
+    )
+
+
+@module.route("/monthly")
+@login_required
+def monthly_dashboard():
+    user = current_user._get_current_object()
+
+    inventories = models.Inventory.objects()
+    checkouts = models.CheckoutItem.objects()
+
+    checkout_quantity = 0
+    item_quantity = 0
+    item_remain = 0
+    total_values = 0
+    notifications = []
+    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    for checkout in checkouts:
+        date = checkout.checkout_date
+        month = int(date.strftime("%m")) - 1
+        checkout_trend_month[month] += checkout.quantity
+        total_values += checkout.price * checkout.quantity
+
+    for inventory in inventories:
+        item_quantity += inventory.quantity
+        item_remain += inventory.remain
+        checkout_quantity = item_quantity - item_remain
+
+        # If inventory remain is less than 25%
+        if inventory.remain / inventory.quantity * 100 < 25:
+            notifications.append(inventory)
+
+    if "admin" in user.roles:
+        return index_admin()
+
+    return render_template(
+        "/dashboard/monthly_dashboard.html",
+        item_quantity=item_quantity,
+        total_values=total_values,
+        item_remain=item_remain,
+        checkout_quantity=checkout_quantity,
+        checkout_trend_month=checkout_trend_month,
+        notifications=notifications,
+    )
+
+
+@module.route("/yearly")
+@login_required
+def yearly_dashboard():
+    user = current_user._get_current_object()
+
+    inventories = models.Inventory.objects()
+    checkouts = models.CheckoutItem.objects()
+
+    checkout_quantity = 0
+    item_quantity = 0
+    item_remain = 0
+    total_values = 0
+    notifications = []
+    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    for checkout in checkouts:
+        date = checkout.checkout_date
+        month = int(date.strftime("%m")) - 1
+        checkout_trend_month[month] += checkout.quantity
+        total_values += checkout.price * checkout.quantity
+
+    for inventory in inventories:
+        item_quantity += inventory.quantity
+        item_remain += inventory.remain
+        checkout_quantity = item_quantity - item_remain
+
+        # If inventory remain is less than 25%
+        if inventory.remain / inventory.quantity * 100 < 25:
+            notifications.append(inventory)
+
+    if "admin" in user.roles:
+        return index_admin()
+
+    return render_template(
+        "/dashboard/yearly_dashboard.html",
         item_quantity=item_quantity,
         total_values=total_values,
         item_remain=item_remain,
