@@ -17,6 +17,7 @@
     <thead>
       <tr>
         <th>Warehouse</th>
+        <th>Description</th>
         <th>Rack</th>
         <th>Row</th>
         <th>Locker</th>
@@ -27,6 +28,7 @@
       {% for item_position in item_positions %}
       <tr>
         <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
+        <td data-label="Warehouse">{{ item_position.description }}</td>
         <td data-label="Rack">{{ item_position.rack }}</td>
         <td data-label="Row">{{ item_position.row }}</td>
         <td data-label="Locker">{{ item_position.locker }}</td>

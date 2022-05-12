@@ -20,7 +20,7 @@ class Item(me.Document):
     categories = me.ListField(me.StringField(required=True))
     image = me.ImageField(thumbnail_size=(800, 600, False))
     unit = me.StringField(required=True, default="ชุด", max_length=50)
-    minimum = me.IntField(default=1)
+    minimum = me.IntField(required=True, default=1)
 
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -30,6 +30,7 @@ class Item(me.Document):
 class ItemPosition(me.Document):
     meta = {"collection": "item_positions"}
 
+    description = me.StringField(required=True, max_length=255)
     rack = me.StringField(required=True, max_length=255)
     row = me.StringField(max_length=255)
     locker = me.StringField(max_length=255)
