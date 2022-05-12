@@ -5,6 +5,7 @@ from kampan import models
 import mongoengine as me
 
 import datetime
+from calendar import monthrange
 
 module = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 subviews = []
@@ -39,22 +40,27 @@ def daily_dashboard():
     item_remain = 0
     total_values = 0
     notifications = []
-    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    now = datetime.datetime.now()
+    year = now.strftime("%Y")
+    month = now.strftime("%m")
+    month_size = monthrange(int(year), int(month))
+    checkout_trend_day = [0] * month_size[1]
+    number_of_day = []
+    for i in range(1, month_size[1] + 1):
+        number_of_day.append(i)
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        month = int(date.strftime("%m")) - 1
-        checkout_trend_month[month] += checkout.quantity
-        total_values += checkout.price * checkout.quantity
+        if int(now.strftime("%m")) - int(date.strftime("%m")) == 0:
+            day = int(date.strftime("%d")) - 1
+            checkout_trend_day[day] += checkout.quantity
+            total_values += checkout.price * checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
-
-        # If inventory remain is less than 25%
-        if inventory.remain / inventory.quantity * 100 < 25:
-            notifications.append(inventory)
 
     if "admin" in user.roles:
         return index_admin()
@@ -65,8 +71,9 @@ def daily_dashboard():
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        checkout_trend_month=checkout_trend_month,
+        checkout_trend_day=checkout_trend_day,
         notifications=notifications,
+        number_of_day=number_of_day,
     )
 
 

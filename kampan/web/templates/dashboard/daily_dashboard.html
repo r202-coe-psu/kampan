@@ -74,38 +74,7 @@
       </div>
     </div>
   </div>
-</div> <!-- //row -->
-
-<!-- Old Status UI -->
-<!-- <div class="ui statistics" style="border-style: solid; max-width: fit-content; margin-left: 340px;">
-  <div class="blue statistic">
-    <div class="value">
-      {{ item_quantity }}
-    </div>
-    <div class="label">
-      Quantity
-    </div>
-  </div>
-  <div class="teal statistic">
-    <div class="value">
-      {{ checkout_quantity }}
-    </div>
-    <div class="label">
-      Items Checkout
-    </div>
-  </div>
-  <div class="yellow statistic">
-    <div class="value">
-      {{ item_remain }}
-    </div>
-    <div class="label">
-      Remain
-    </div>
-  </div>
-</div> -->
-
-
-
+</div>
 
 <body>
   <h1 class="shadow"
@@ -116,7 +85,7 @@
     var options = {
       series: [{
         name: "Checkout",
-        data: {{ checkout_trend_month }},
+        data: {{ checkout_trend_day }},
       }],
     chart: {
       height: 350, width: 800,
@@ -144,8 +113,8 @@
       },
     },
     xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-      }
+      categories: {{ number_of_day }},
+    }
     };
 
     var chart = new ApexCharts(document.querySelector("#chart"), options);
