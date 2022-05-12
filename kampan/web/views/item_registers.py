@@ -17,10 +17,7 @@ def index():
     )
 
 
-@module.route(
-    "/register", methods=["GET", "POST"], defaults=dict(item_register_id=None)
-)
-@module.route("/<item_register_id>/edit", methods=["GET", "POST"])
+@module.route("/register", methods=["GET", "POST"], defaults=dict(item_register_id=None))
 @login_required
 def register(item_register_id):
     form = forms.item_registers.ItemRegisterationForm()
@@ -42,5 +39,30 @@ def register(item_register_id):
     form.populate_obj(item_register)
     item_register.user = current_user._get_current_object()
     item_register.save()
+
+    return redirect(url_for("item_registers.index"))
+
+@module.route("/<item_register_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(item_register_id):
+    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    form = forms.item_registers.ItemRegisterationForm(obj=item_register)
+
+    if not form.validate_on_submit():
+        return render_template(
+            "/item_registers/register.html",
+            form=form,
+        )
+
+    form.populate_obj(item_register)
+    item_register.save()
+
+    return redirect(url_for("item_registers.index"))
+
+@module.route("/<item_register_id>/delete")
+@login_required
+def delete(item_register_id):
+    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    item_register.delete()
 
     return redirect(url_for("item_registers.index"))
