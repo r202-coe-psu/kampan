@@ -40,7 +40,7 @@ def get_user_and_remember():
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.daily_dashboard"))
 
     return render_template("/accounts/login.html")
 
@@ -85,7 +85,7 @@ def login_engpsu():
 #             )
 #     oauth2token.save()
 
-#     return redirect(url_for('dashboard.index'))
+#     return redirect(url_for('dashboard.daily_dashboard'))
 
 
 @module.route("/authorized-engpsu")
@@ -134,7 +134,7 @@ def authorized_engpsu():
     )
     oauth2token.save()
 
-    return redirect(url_for("dashboard.index"))
+    return redirect(url_for("dashboard.daily_dashboard"))
 
 
 @module.route("/logout")

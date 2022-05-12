@@ -30,11 +30,11 @@
 
         <td data-label="User">{{ warehouse.user.first_name }} {{ warehouse.user.last_name }}</td>
         <td>
-          <a class="ui icon button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
-            <i class="trash icon"></i>
-          </a>
-          <a class="ui icon button" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
+          <a class="ui primary icon button" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
             <i class="edit icon"></i>
+          </a>
+          <a class="ui red icon button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
+            <i class="trash icon"></i>
           </a>
         </td>
       </tr>

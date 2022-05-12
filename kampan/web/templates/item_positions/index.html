@@ -3,12 +3,12 @@
 {% block title %}Item Positions{% endblock %}
 {% block dashboard_title %}Item Positions{% endblock %}
 {% block breadcrumbs %}
-  {% if request.endpoint == 'item_positions.index' %}
-    <div class="active section">Item Positions</div>
-  {% else %}
-    <a class="section" href="{{ url_for('item_positions.index') }}">Item Positions</a>
-    <div class="divider"> / </div>
-  {% endif %}
+{% if request.endpoint == 'item_positions.index' %}
+<div class="active section">Item Positions</div>
+{% else %}
+<a class="section" href="{{ url_for('item_positions.index') }}">Item Positions</a>
+<div class="divider"> / </div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -24,30 +24,30 @@
       </tr>
     </thead>
     <tbody>
-    {% for item_position in item_positions %}
+      {% for item_position in item_positions %}
       <tr>
-      <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
-      <td data-label="Rack">{{ item_position.rack }}</td>
-      <td data-label="Row">{{ item_position.row }}</td>
-      <td data-label="Locker">{{ item_position.locker }}</td>
-      <td>
-        <a class="ui icon button" href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
-          <i class="trash icon"></i>
-        </a>
-        <a class="ui icon button" href="{{ url_for('item_positions.edit', item_position_id=item_position.id) }}">
-          <i class="edit icon"></i>
-        </a>
-      </td>
+        <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
+        <td data-label="Rack">{{ item_position.rack }}</td>
+        <td data-label="Row">{{ item_position.row }}</td>
+        <td data-label="Locker">{{ item_position.locker }}</td>
+        <td>
+          <a class="ui primary icon button"
+            href="{{ url_for('item_positions.edit', item_position_id=item_position.id) }}">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui red icon button"
+            href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
+            <i class="trash icon"></i>
+          </a>
+        </td>
       </tr>
-    {% endfor %}
-    
-  </tbody>
+      {% endfor %}
+
+    </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}"> 
+<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
   Add
 </a>
-  
+
 {% endblock %}
-
-

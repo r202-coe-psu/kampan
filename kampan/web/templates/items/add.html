@@ -27,11 +27,14 @@
     </div>
     <div class="two fields">
       {{ renderer.render_field(form.weight) }}
+      {{ renderer.render_field(form.categories) }}
+    </div>
+    <div class="two fields">
+      {{ renderer.render_field(form.minimum)}}
       {{ renderer.render_field(form.unit) }}
     </div>
-    {{ renderer.render_field(form.categories) }}
 
-    <button class="ui button" type="submit">Submit</button>
+    <button class="ui primary button" type="submit">Submit</button>
   </form>
 </div>
 {% endblock %}
