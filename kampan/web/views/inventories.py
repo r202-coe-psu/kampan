@@ -9,9 +9,7 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 @module.route("/")
 @login_required
 def index():
-    item_register_id = request.args.get("item_register_id")
-    item_register = models.RegistrationItem.objects.get(id=item_register_id)
-    inventories = models.Inventory.objects(registration=item_register)
+    inventories = models.Inventory.objects()
 
     total = total_quantity()
     print(total)
@@ -19,7 +17,6 @@ def index():
     return render_template(
         "/inventories/index.html",
         inventories=inventories,
-        item_register=item_register,
         total=total,
     )
 
@@ -38,20 +35,15 @@ def total_quantity():
 
 
 @module.route("/register", methods=["GET", "POST"], defaults=dict(inventory_id=None))
-@module.route("/<inventory_id>/edit", methods=["GET", "POST"])
 @login_required
 def register(inventory_id):
     form = forms.inventories.InventoryForm()
     item_register_id = request.args.get("item_register_id")
-    # print(item_register_id)
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
-    inventory = models.Inventory.objects(registration=item_register)
-
-    # inventory = None
+    
+    inventory = None
     if inventory_id:
-        inventory = models.Inventory.objects(registration=item_register).get(
-            id=inventory_id
-        )
+        inventory = models.Inventory.objects.get(id=inventory_id)
         form = forms.inventories.InventoryForm(obj=inventory)
 
     if not form.validate_on_submit():
@@ -70,4 +62,56 @@ def register(inventory_id):
     inventory.remain = inventory.quantity
     inventory.save()
 
-    return redirect(url_for("inventories.index", item_register_id=item_register.id))
+    return redirect(url_for("item_registers.index"))
+
+@module.route("/<inventory_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(inventory_id):
+    inventory = models.Inventory.objects().get(id=inventory_id)
+    form = forms.inventories.InventoryForm(obj=inventory)
+
+    if not form.validate_on_submit():
+        return render_template(
+            "/inventories/register.html",
+            form=form,
+        )
+
+    form.populate_obj(inventory)
+    inventory.save()
+
+    return redirect(
+        url_for(
+            "inventories.bill_item",
+            item_register_id=inventory.registration.id
+            )
+        )
+
+@module.route("/<inventory_id>/delete")
+@login_required
+def delete(inventory_id):
+    inventory = models.Inventory.objects().get(id=inventory_id)
+    inventory.delete()
+
+    return redirect(
+        url_for(
+            "inventories.bill_item",
+            item_register_id=inventory.registration.id 
+            )
+        )
+
+@module.route("/all-item", methods=["GET", "POST"])
+@login_required
+def bill_item():
+    item_register_id = request.args.get("item_register_id")
+    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    inventories = models.Inventory.objects(registration=item_register)
+
+    total = total_quantity()
+    print(total)
+
+    return render_template(
+        "/inventories/bill-item.html",
+        inventories=inventories,
+        item_register=item_register,
+        total=total,
+    )
