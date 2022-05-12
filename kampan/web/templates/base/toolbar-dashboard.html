@@ -9,12 +9,16 @@
   <a href="{{ url_for('accounts.index') }}"><span class="white-text email">{{ current_user.email }}</span></a>
 </div>
 
+
+
+<a class="item" href="{{ url_for('notifications.index') }}">Notifications</a>
+
+
 <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>Daily Dashboard</a>
 <a class="item" href="{{ url_for('dashboard.monthly_dashboard') }}"><i class="icon dashboard"
     style="color: rgb(224, 241, 64);"></i>Monthly Dashboard</a>
 <a class="item" href="{{ url_for('dashboard.yearly_dashboard') }}"><i class="icon dashboard"
     style="color: rgb(12, 209, 12);"></i>Yearly Dashboard</a>
-
 {% if current_user.has_roles(['admin']) %}
 <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
 {% endif %}
