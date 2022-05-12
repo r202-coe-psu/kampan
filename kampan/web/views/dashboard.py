@@ -19,7 +19,11 @@ def index_admin():
 
 
 def index_user():
-    return render_template("/dashboard/index.html", "/dashboard/index2.html")
+    return render_template(
+        "/dashboard/daily_dashboard.html",
+        "/dashboard/monthly_dashboard.html",
+        "/dashboard/yearly_dashboard.html",
+    )
 
 
 @module.route("/")
