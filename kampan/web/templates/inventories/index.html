@@ -6,27 +6,30 @@
   {% if request.endpoint == 'inventories.index' %}
     <div class="active section">Checkin</div>
   {% else %}
-    <a class="section" href="{{ url_for('inventories.index', item_register_id=item_register.id) }}">Checkin</a>
+    <a class="section" href="{{ url_for('inventories.index') }}">Checkin</a>
     <div class="divider"> / </div>
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div style="padding: 1em ;">
+<div>
   <table class="ui celled table">
     <thead>
-      <th>Item ID</th>
-      <th>Item Name</th>
-      <th>Image</th>
-      <th>Warehouse</th>
-      <th>Quantity</th>
-      <th>Remain</th>
-      <th>Price</th>
-  </tr></thead>
+      <tr>
+        <th>Registration ID</th>
+        <th>Item Name</th>
+        <th>Image</th>
+        <th>Registration Date</th>
+        <th>Warehouse</th>
+        <th>Quantity</th>
+        <th>Remain</th>
+        <th>Price</th>
+      </tr>
+    </thead>
   <tbody>
+  {% for item in inventories %}
   <tr>
-    {% for item in inventories %}
-    <td data-label="Item ID">{{ item.item.id }}</td>
+    <td data-label="Registrarion ID">{{ item.registration.receipt_id}}</td>
       <td data-label="Item Name">{{ item.item.name }}</td>
       <td data-label="Image">
         <div style="max-width: 42px">
@@ -37,17 +40,15 @@
           {% endif %}
         </div>
       </td>
+      <td data-label="Checkin Date">{{ item.registeration_date.strftime('%d/%m/%Y') }}</td>
       <td data-label="Warehouse">{{ item.warehouse.name }}</td>
       <td data-label="Quantity">{{ item.quantity }}</td>
       <td data-label="Remain">{{ item.remain }}</td>
       <td data-label="Price">{{ item.price }}</td>
-  </tr>
-    {% endfor %}
+    </tr>
+  {% endfor %}
   </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item_register.id) }}"> 
-  Add
-</a>
   
 {% endblock %}
