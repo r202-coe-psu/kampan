@@ -3,16 +3,16 @@
 {% block title %}Item_register{% endblock %}
 {% block dashboard_title %}Register{% endblock %}
 {% block breadcrumbs %}
-  {% if request.endpoint == 'item_registers.index' %}
-    <div class="active section">Register</div>
-  {% else %}
-    <a class="section" href="{{ url_for('item_registers.index') }}">Register</a>
-    <div class="divider"> / </div>
-  {% endif %}
+{% if request.endpoint == 'item_registers.index' %}
+<div class="active section">Register</div>
+{% else %}
+<a class="section" href="{{ url_for('item_registers.index') }}">Register</a>
+<div class="divider"> / </div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<div style="padding: 1em ;">
+<div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <tr>
@@ -28,41 +28,41 @@
     </thead>
     <tbody>
       {% for item in item_registers %}
-        <tr>
-          <td data-label="Item Name">{{ item.receipt_id }}</td>
-          <td data-label="Warehouse">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.supplier.name }}</td>
-          <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
-          <td data-label="Checkin">
-            <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
+      <tr>
+        <td data-label="Item Name">{{ item.receipt_id }}</td>
+        <td data-label="Warehouse">{{ item.description }}</td>
+        <td data-label="Quantity">{{ item.supplier.name }}</td>
+        <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+        <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Checkin">
+          <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
             Checkin
-            </a>
-          </td>
-          <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
+          </a>
+        </td>
+        <td data-label="Bill">
+          <a class="ui primary button" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          <td>
-            <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
-            </a>
-            <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
-              style="color: white; background-color: rgb(192, 55, 55);">
-              <i class="trash icon"></i>
-            </a>
-          </td>
-        </tr>
+            <i class="eye icon"></i>
+          </a>
+        </td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
+          </a>
+        </td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
-  <a class="ui primary button" href="{{ url_for('item_registers.register') }}"> 
+  <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
     Add
   </a>
- 
+
 </div>
- 
+
 {% endblock %}

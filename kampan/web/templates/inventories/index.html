@@ -13,7 +13,7 @@
 
 {% block content %}
 <div>
-  <table class="ui celled table">
+  <table class="ui striped padded celled table">
     <thead>
       <tr>
         <th>Image</th>
@@ -34,10 +34,9 @@
         <td data-label="Image">
           <div style="max-width: 42px">
             {% if not item.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
-            <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}"
-              width="100">
+            <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}" width="70">
             {% endif %}
           </div>
         </td>
@@ -46,9 +45,10 @@
         <td data-label="Checkin Date">{{ item.registeration_date.strftime('%d/%m/%Y') }}</td>
         <td data-label="Warehouse">{{ item.warehouse.name }}</td>
         <td data-label="Position">{{ item.position.rack }} / {{ item.position.row }} / {{ item.position.locker }} </td>
-        <td data-label="Quantity">{{ item.quantity }}</td>
+        <td data-label=" Quantity">{{ item.quantity }}</td>
         <td data-label="Remain">{{ item.remain }}</td>
         <td data-label="Price">{{ item.price }}</td>
+        <td data-label="Price">{{ item.user.first_name }} {{ item.user.last_name }}</td>
       </tr>
       {% endfor %}
     </tbody>
