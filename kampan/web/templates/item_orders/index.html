@@ -3,9 +3,13 @@
 {% block title %}Order{% endblock %}
 {% block dashboard_title %}Order{% endblock %}
 
+{% block breadcrumbs %}
+  {{ super() }}
+  <div class="active section">Order</div>
+{% endblock %}
 
 {% block content %}
-<div style="padding: 1em ;">
+<div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <tr>
