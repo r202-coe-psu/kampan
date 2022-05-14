@@ -3,17 +3,23 @@
 {% block title %}Checkout{% endblock %}
 {% block dashboard_title %}Checkout{% endblock %}
 
+{% block breadcrumbs %}
+  {{ super() }}
+  <div class="active section">Checkout</div>
+{% endblock %}
 
 {% block content %}
-<div style="padding: 1em ;">
+<div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <tr>
         
         <th>Order</th>
         <th>Item</th>
+        <th>Image</th>
         <th>Warehouse</th>
         <th>Quantity</th>
+        <th>Price</th>
         <th>Checkout Date</th>
         
     </tr>
@@ -24,8 +30,18 @@
       
       <td data-label="Order">{{ checkout.order.id }}</td>
       <td data-label="Item">{{ checkout.item.name }}</td>
-      <td data-label="Item">{{ checkout.warehouse.name }}</td>
+      <td data-label="Image">
+        <div style="max-width: 42px">
+          {% if not checkout.item.image %}
+          <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+          {% else %}
+          <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}" width="100">
+          {% endif %}
+        </div>
+      </td>
+      <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
       <td data-label="Quantity">{{ checkout.quantity }}</td>
+      <td data-label="Price">{{ checkout.price }}</td>
       <td data-label="Checkout Date">{{ checkout.checkout_date }}</td>
       
   </tr>
