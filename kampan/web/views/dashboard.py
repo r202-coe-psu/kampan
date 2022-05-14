@@ -89,7 +89,6 @@ def monthly_dashboard():
     item_quantity = 0
     item_remain = 0
     total_values = 0
-    notifications = []
     checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for checkout in checkouts:
@@ -103,10 +102,6 @@ def monthly_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-        # If inventory remain is less than 25%
-        if inventory.remain / inventory.quantity * 100 < 25:
-            notifications.append(inventory)
-
     if "admin" in user.roles:
         return index_admin()
 
@@ -117,7 +112,6 @@ def monthly_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         checkout_trend_month=checkout_trend_month,
-        notifications=notifications,
     )
 
 
@@ -133,7 +127,7 @@ def yearly_dashboard():
     item_quantity = 0
     item_remain = 0
     total_values = 0
-    notifications = []
+
     checkout_trend_year = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for checkout in checkouts:
@@ -147,10 +141,6 @@ def yearly_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-        # If inventory remain is less than 25%
-        if inventory.remain / inventory.quantity * 100 < 25:
-            notifications.append(inventory)
-
     if "admin" in user.roles:
         return index_admin()
 
@@ -161,5 +151,4 @@ def yearly_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         checkout_trend_year=checkout_trend_year,
-        notifications=notifications,
     )
