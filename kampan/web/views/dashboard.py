@@ -134,12 +134,12 @@ def yearly_dashboard():
     item_remain = 0
     total_values = 0
     notifications = []
-    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    checkout_trend_year = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        month = int(date.strftime("%m")) - 1
-        checkout_trend_month[month] += checkout.quantity
+        year = int(date.strftime("%m")) - 1
+        checkout_trend_year[year] += checkout.quantity
         total_values += checkout.price * checkout.quantity
 
     for inventory in inventories:
@@ -160,6 +160,6 @@ def yearly_dashboard():
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        checkout_trend_month=checkout_trend_month,
+        checkout_trend_year=checkout_trend_year,
         notifications=notifications,
     )
