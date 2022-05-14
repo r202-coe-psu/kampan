@@ -16,7 +16,10 @@ BaseInventoryForm = model_form(
     ],
     field_args={
         "item": {"label": "Item", "label_modifier": lambda i: i.name},
-        "position": {"label": "Position", "label_modifier": lambda p: p.warehouse.name},
+        "position": {
+            "label": "Position",
+            "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
+        },
         "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
         "quantity": {"label": "Quantity"},
         "price": {"label": "Price"},

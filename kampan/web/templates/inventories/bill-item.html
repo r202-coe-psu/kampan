@@ -1,0 +1,65 @@
+{% extends '/inventories/index.html' %}
+
+{% block title %}Bill Item{% endblock %}
+{% block dashboard_title %}Bill Item{% endblock %}
+{% block breadcrumbs %}
+  {% if request.endpoint == 'inventories.index' %}
+    <div class="active section">Bill</div>
+  {% else %}
+    <a class="section" href="{{ url_for('inventories.index') }}">Bill</a>
+    <div class="divider"> / </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Item ID</th>
+        <th>Item Name</th>
+        <th>Image</th>
+        <th>Checkin Date</th>
+        <th>Warehouse</th>
+        <th>Quantity</th>
+        <th>Remain</th>
+        <th>Price</th>
+        <th>Edit-Delete</th>
+      </tr>
+    </thead>
+  <tbody>
+  {% for inventory in inventories %}
+  <tr>
+    <td data-label="Item ID">{{ inventory.item.id }}</td>
+      <td data-label="Item Name">{{ inventory.item.name }}</td>
+      <td data-label="Image">
+        <div style="max-width: 42px">
+          {% if not inventory.item.image %}
+          <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+          {% else %}
+          <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}" width="100">
+          {% endif %}
+        </div>
+      </td>
+      <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y') }}</td>
+      <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+      <td data-label="Quantity">{{ inventory.quantity }}</td>
+      <td data-label="Remain">{{ inventory.remain }}</td>
+      <td data-label="Price">{{ inventory.price }}</td>
+      <td>
+        <a class="ui icon button" href="{{ url_for('inventories.edit', inventory_id=inventory.id) }}"
+          style=" color: white; background-color: rgb(59, 115, 199);">
+          <i class="edit icon"></i>
+        </a>
+        <a class="ui icon button" href="{{ url_for('inventories.delete', inventory_id=inventory.id) }}"
+          style="color: white; background-color: rgb(192, 55, 55);">
+          <i class="trash icon"></i>
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+</div>
+  
+{% endblock %}

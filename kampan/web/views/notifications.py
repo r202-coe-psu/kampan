@@ -30,8 +30,9 @@ def index():
 
     for inventory in inventories:
         # If inventory remain is less than 25%
-        if inventory.remain / inventory.quantity * 100 < 25:
-            notifications.append(inventory)
+        if inventory.item.minimum:
+            if inventory.remain <= inventory.item.minimum:
+                notifications.append(inventory)
 
     return render_template(
         "/notifications/index.html",

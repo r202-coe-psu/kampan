@@ -18,6 +18,7 @@ BaseItemForm = model_form(
         "size": {"label": "Size"},
         "categories": {"label": "Categories"},
         "unit": {"label": "Unit"},
+        "minimum": {"label": "Minimum"},
     },
 )
 

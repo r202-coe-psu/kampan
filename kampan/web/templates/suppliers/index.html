@@ -5,7 +5,7 @@
 
 
 {% block content %}
-<div style="padding: 1em ;">
+<div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <th>Name</th>
@@ -14,23 +14,24 @@
       <th>Tax_id</th>
       <th>Contact</th>
       <th>Email</th>
-  </tr></thead>
-  <tbody>
-  <tr>
-    {% for supply in suppliers %}
-      <td data-label="Name">{{ supply.name }}</td>
-      <td data-label="address">{{ supply.address }}</td>
-      <td data-label="Description">{{ supply.description }}</td>
-      <td data-label="Tax_id">{{ supply.tax_id }}</td>
-      <td data-label="Contact">{{ supply.contact }}</td>
-      <td data-label="Email">{{ supply.email }}</td>
-  </tr>
-    {% endfor %}
-  </tbody>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        {% for supply in suppliers %}
+        <td data-label="Name">{{ supply.name }}</td>
+        <td data-label="address">{{ supply.address }}</td>
+        <td data-label="Description">{{ supply.description }}</td>
+        <td data-label="Tax_id">{{ supply.tax_id }}</td>
+        <td data-label="Contact">{{ supply.contact }}</td>
+        <td data-label="Email">{{ supply.email }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('suppliers.add') }}"> 
+<a class="ui primary button" href="{{ url_for('suppliers.add') }}">
   Add
 </a>
-  
+
 {% endblock %}

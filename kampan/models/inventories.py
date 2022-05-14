@@ -28,6 +28,8 @@ class Inventory(me.Document):
     expiration_date = me.DateTimeField()
     position = me.ReferenceField("ItemPosition", dbref=True)
 
+    user = me.ReferenceField("User", dbref=True)
+
     def get_checkout_items(self):
         return CheckoutItem.objects(checkout_from=self)
 

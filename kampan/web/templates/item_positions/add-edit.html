@@ -2,38 +2,39 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-  {% if 'edit' in request.path %}
-    Edit {{ form.name.data }}
-  {% else %}
-    Add
-  {% endif %}
+{% if 'edit' in request.path %}
+Edit {{ form.name.data }}
+{% else %}
+Add
+{% endif %}
 {% endblock %}
 {% block dashboard_title %}
-  {{ self.title() }}
+{{ self.title() }}
 {% endblock %}
 
 {% block breadcrumbs %}
-  {{ super() }}
-  <div class="active section">Add</div>
+{{ super() }}
+<div class="active section">Add</div>
 {% endblock %}
 
 {% block content %}
-  <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      <div class="ui three fields">
-        {{ renderer.render_field(form.rack) }}
-        {{ renderer.render_field(form.row) }}
-        {{ renderer.render_field(form.locker) }}
-      </div>
-      {{ renderer.render_select(form.warehouse) }}
+<div>
+  <form class="ui form" method="POST">
 
-      {% if 'edit' == request.path %}
-        <button class="ui primary button" type="submit">Edit</button>
-      {% else %}
-        <button class="ui primary button" type="submit">Submit</button>
-      {% endif %}
-    </form>
+    {{ form.hidden_tag() }}
+    {{ renderer.render_select(form.warehouse) }}
+    {{ renderer.render_field(form.description)}}
+    <div class="ui three fields">
+      {{ renderer.render_field(form.rack) }}
+      {{ renderer.render_field(form.row) }}
+      {{ renderer.render_field(form.locker) }}
     </div>
+
+    {% if 'edit' == request.path %}
+    <button class="ui primary button" type="submit">Edit</button>
+    {% else %}
+    <button class="ui primary button" type="submit">Submit</button>
+    {% endif %}
+  </form>
+</div>
 {% endblock %}

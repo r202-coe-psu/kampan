@@ -13,37 +13,36 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        
+
         <th>Order</th>
         <th>Description</th>
         <th>User</th>
         <th>Created Date</th>
         <th>Checkout</th>
 
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-  <tr>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
 
-      <td data-label="Order">{{ order.id }}</td>
-      <td data-label="Description">{{ order.description }}</td>
-      <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-      <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y') }}</td>
-      
-      <td>
+        <td data-label="Order">{{ order.id }}</td>
+        <td data-label="Description">{{ order.description }}</td>
+        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y') }}</td>
 
-        <a  class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-          Checkout
-        </a>
-      </td>
-  </tr>
-    {% endfor %}
-  </tbody>
+        <td>
+
+          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+            Checkout
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('item_orders.order') }}"> 
+<a class="ui primary button" href="{{ url_for('item_orders.order') }}">
   Create Order
 </a>
-{% endblock  %}
-  
+{% endblock %}
