@@ -32,7 +32,7 @@
       {% for item in inventories %}
       <tr>
         <td data-label="Image">
-          <div style="max-width: 42px">
+          <div>
             {% if not item.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
