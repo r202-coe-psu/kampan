@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Checkin Item{% endblock %}
-{% block dashboard_title %}Checkin Item{% endblock %}
+{% block title %}Inventory{% endblock %}
+{% block dashboard_title %}Inventory{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'inventories.index' %}
-<div class="active section">Checkin</div>
+<div class="active section">Inventory</div>
 {% else %}
-<a class="section" href="{{ url_for('inventories.index') }}">Checkin</a>
+<a class="section" href="{{ url_for('inventories.index') }}">Inventory</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}

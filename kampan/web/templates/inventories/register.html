@@ -14,16 +14,12 @@ Checkin
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">Add</div>
+<div class="active section">{{ item_register.description }}</div>
 {% endblock %}
 
 {% block content %}
 <div>
   <form class="ui form" method="POST">
-
-    <h3>
-      {{ item_register.description }}
-    </h3>
     {{ form.hidden_tag() }}
     <div class="three fields">
       {{ renderer.render_select(form.item) }}
