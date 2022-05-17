@@ -44,7 +44,7 @@
         <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         <td data-label="Price">{{ checkout.price }}</td>
-        <td data-label="Checkout Date">{{ checkout.checkout_date }}</td>
+        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Bill">
           <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', checkout_id=checkout.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">

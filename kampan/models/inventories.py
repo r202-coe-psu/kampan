@@ -45,6 +45,8 @@ class OrderItem(me.Document):
 class CheckoutItem(me.Document):
     meta = {"collection": "checkout_items"}
 
+    user = me.ReferenceField("User", dbref=True)
+
     order = me.ReferenceField("OrderItem", dbref=True)
     checkout_from = me.ReferenceField("Inventory", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)

@@ -21,6 +21,7 @@
         <th>Quantity</th>
         <th>Price</th>
         <th>Checkout Date</th>
+        <th>User</th>
 
       </tr>
     </thead>
@@ -43,7 +44,8 @@
         <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         <td data-label="Price">{{ checkout.price }}</td>
-        <td data-label="Checkout Date">{{ checkout.checkout_date }}</td>
+        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="User">{{ checkout.user.first_name}}{{ checkout.user.last_name}}</td>
       </tr>
       {% endfor %}
     </tbody>
