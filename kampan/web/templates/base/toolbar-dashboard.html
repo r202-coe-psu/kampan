@@ -10,25 +10,55 @@
 </div>
 
 
+<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar" style="padding-left: 10px;">
 
-<a class="item" href="{{ url_for('notifications.index') }}">Notifications</a>
+  {% if current_user.has_roles(['admin']) %}
+  <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
+  {% endif %}
 
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    Dashboard
+  </div>
 
-<a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>Daily Dashboard</a>
-<a class="item" href="{{ url_for('dashboard.monthly_dashboard') }}"><i class="icon dashboard"
-    style="color: rgb(224, 241, 64);"></i>Monthly Dashboard</a>
-<a class="item" href="{{ url_for('dashboard.yearly_dashboard') }}"><i class="icon dashboard"
-    style="color: rgb(12, 209, 12);"></i>Yearly Dashboard</a>
-{% if current_user.has_roles(['admin']) %}
-<a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
-{% endif %}
-<a class="item" href="{{ url_for('items.index') }}">Items</a>
-<a class="item" href="{{ url_for('suppliers.index') }}">Suppliers</a>
-<a class="item" href="{{ url_for('warehouses.index') }}">Warehouses</a>
-<a class="item" href="{{ url_for('item_positions.index') }}">Positions</a>
-<a class="item" href="{{ url_for('item_registers.index') }}">Registers</a>
-<a class="item" href="{{ url_for('inventories.index') }}">Inventory</a>
-<a class="item" href="{{ url_for('item_orders.index') }}">Order</a>
-<a class="item" href="{{ url_for('item_checkouts.index') }}"> Checkout</a>
-<a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>Account</a>
-<a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>Logout</a>
+  <a class="item" href="{{ url_for('notifications.index') }}">Notifications</a>
+  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>Daily</a>
+  <a class="item" href="{{ url_for('dashboard.monthly_dashboard') }}"><i class="icon dashboard"
+      style="color: rgb(224, 241, 64);"></i>Monthly</a>
+  <a class="item" href="{{ url_for('dashboard.yearly_dashboard') }}"><i class="icon dashboard"
+      style="color: rgb(12, 209, 12);"></i>Yearly</a>
+  
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    Management
+  </div>
+
+  <a class="item" href="{{ url_for('items.index') }}">Items</a>
+  <a class="item" href="{{ url_for('suppliers.index') }}">Suppliers</a>
+  <a class="item" href="{{ url_for('warehouses.index') }}">Warehouses</a>
+  <a class="item" href="{{ url_for('item_positions.index') }}">Positions</a>
+
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    Deposite
+  </div>
+
+  <a class="item" href="{{ url_for('item_registers.index') }}">Registers</a>
+  <a class="item" href="{{ url_for('inventories.index') }}">Inventory</a>
+
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    Withdraw
+  </div>
+
+  <a class="item" href="{{ url_for('item_orders.index') }}">Order</a>
+  <a class="item" href="{{ url_for('item_checkouts.index') }}">Checkout</a>
+
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    User
+  </div>
+  
+  <a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>Account</a>
+  <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>Logout</a>
+</ul>
