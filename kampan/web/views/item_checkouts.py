@@ -41,6 +41,7 @@ def checkout():
         checkout.user = current_user._get_current_object()
         checkout.order = order
         checkout.item = form.item.data
+        checkout.checkout_date = form.checkout_date.data
         checkout.checkout_from = inventory
         checkout.warehouse = inventory.warehouse
         checkout.price = inventory.price
@@ -66,12 +67,13 @@ def checkout():
 @module.route("/all-checkout", methods=["GET", "POST"])
 @login_required
 def bill_checkout():
-    checkout_id = request.args.get("checkout_id")
-    checkout = models.CheckoutItem.objects.get(id=checkout_id)
+    order_id = request.args.get("order_id")
+    order = models.OrderItem.objects.get(id=order_id)
+    checkouts = models.CheckoutItem.objects(order=order)
 
     print(checkout)
 
     return render_template(
         "/item_checkouts/bill-checkout.html",
-        
+        checkouts = checkouts
     )

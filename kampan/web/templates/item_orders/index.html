@@ -19,6 +19,7 @@
         <th>User</th>
         <th>Created Date</th>
         <th>Checkout</th>
+        <th>Bill</th>
 
       </tr>
     </thead>
@@ -35,6 +36,12 @@
 
           <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
             Checkout
+          </a>
+        </td>
+        <td data-label="Bill">
+          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="eye icon"></i>
           </a>
         </td>
       </tr>
