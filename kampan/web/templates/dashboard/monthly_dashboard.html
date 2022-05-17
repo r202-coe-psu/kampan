@@ -108,43 +108,44 @@
 
 
 <body>
-  <h1 class="shadow"
-    style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content;background-color: #93e2f1; font-size: 25px; border-width: 1px;">
+  <h1
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); max-width: fit-content; font-size: 25px; border-width: 1px;">
     Checkout Trend by Month</h1>
   <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; "></div>
   <script>
+    var checkout_trend_month = {{ checkout_trend_month }}
     var options = {
       series: [{
         name: "Checkout",
-        data: {{ checkout_trend_month }},
+        data: checkout_trend_month,
       }],
-    chart: {
-      height: 350, width: 800,
+      chart: {
+        height: 350, width: 800,
         type: 'line',
-          zoom: {
-        enabled: true
-      }
-    },
-    dataLabels: {
-      enabled: true,
-    },
-    colors: ['#0dcaf0'],
-      stroke: {
-      curve: 'straight'
-    },
-    title: {
-      text: '',
-        align: 'left',
-        
-    },
-    grid: {
-      row: {
-        colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-          opacity: 0.5
+        zoom: {
+          enabled: true
+        }
       },
-    },
-    xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      dataLabels: {
+        enabled: true,
+      },
+      colors: ['#0dcaf0'],
+      stroke: {
+        curve: 'straight'
+      },
+      title: {
+        text: '',
+        align: 'left',
+
+      },
+      grid: {
+        row: {
+          colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
+          opacity: 0.5
+        },
+      },
+      xaxis: {
+        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       }
     };
 

@@ -44,7 +44,8 @@ def checkout():
         checkout.checkout_from = inventory
         checkout.warehouse = inventory.warehouse
         checkout.price = inventory.price
-
+        checkout.checkout_date = form.checkout_date.data
+        
         if inventory.remain >= quantity:
             inventory.remain -= quantity
             checkout.quantity = quantity

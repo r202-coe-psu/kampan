@@ -43,19 +43,29 @@ def daily_dashboard():
 
     now = datetime.datetime.now()
     year = now.strftime("%Y")
-    month = now.strftime("%m")
-    month_size = monthrange(int(year), int(month))
-    checkout_trend_day = [0] * month_size[1]
-    number_of_day = []
-    for i in range(1, month_size[1] + 1):
-        number_of_day.append(i)
+    entire_year_checkout = []
+    entire_year_number_of_day = [] * 12
+    for month in range(1, 13):
+        month_size = monthrange(int(year), month)
+        number_of_day = [0] * month_size[1]
+        entire_year_checkout.append(number_of_day)
+
+        for i in range(1, month_size[1] + 1):
+            number_of_day[i - 1] = i
+        entire_year_number_of_day.append(number_of_day)
+
+    for i in entire_year_checkout:
+        print("Hey", i)
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        if int(now.strftime("%m")) - int(date.strftime("%m")) == 0:
-            day = int(date.strftime("%d")) - 1
-            checkout_trend_day[day] += checkout.quantity
-            total_values += checkout.price * checkout.quantity
+        day_co = int(date.strftime("%d")) - 1
+        month_co = int(date.strftime("%m")) - 1
+        year_co = int(date.strftime("%Y")) - 1
+
+        entire_year_checkout[month_co][day_co] += checkout.quantity
+        total_values += checkout.price * checkout.quantity
+
 
     for inventory in inventories:
         item_quantity += inventory.quantity
