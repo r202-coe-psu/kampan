@@ -61,7 +61,7 @@ def checkout():
         if quantity <= 0:
             break
     
-    return redirect(url_for("item_checkouts.index"))
+    return redirect(url_for("item_orders.index"))
 
 @module.route("/all-checkout", methods=["GET", "POST"])
 @login_required

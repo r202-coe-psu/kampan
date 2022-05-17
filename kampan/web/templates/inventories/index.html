@@ -42,7 +42,7 @@
         </td>
         <td data-label="Item Name">{{ item.item.name }}</td>
         <td data-label="Registrarion ID">{{ item.registration.receipt_id}}</td>
-        <td data-label="Checkin Date">{{ item.registeration_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Checkin Date">{{ item.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Warehouse">{{ item.warehouse.name }}</td>
         <td data-label="Position">{{ item.position.rack }} / {{ item.position.row }} / {{ item.position.locker }} </td>
         <td data-label=" Quantity">{{ item.quantity }}</td>
