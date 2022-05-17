@@ -21,13 +21,16 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-  datetime_formatter = {
-    datetime: function (datetime, settings) {
-        if (!datetime) return '';
-        var day = datetime.getDate();
-        var month = datetime.getMonth() + 1;
-        var year = datetime.getFullYear();
-        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minute).slice(-2)  ;
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minutes).slice(-2)  ;
     }
 };
 var calendar_setting = {
