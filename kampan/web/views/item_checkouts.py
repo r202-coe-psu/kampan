@@ -61,3 +61,16 @@ def checkout():
             break
     
     return redirect(url_for("item_checkouts.index"))
+
+@module.route("/all-checkout", methods=["GET", "POST"])
+@login_required
+def bill_checkout():
+    checkout_id = request.args.get("checkout_id")
+    checkout = models.CheckoutItem.objects.get(id=checkout_id)
+
+    print(checkout)
+
+    return render_template(
+        "/item_checkouts/bill-checkout.html",
+        
+    )
