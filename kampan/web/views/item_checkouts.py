@@ -25,7 +25,7 @@ def index():
 @login_required
 def checkout():
     items = models.Item.objects()
-    form = forms.item_checkouts.BaseCheckoutItemForm()
+    form = forms.item_checkouts.CheckoutItemForm()
     if not form.validate_on_submit():
         return render_template(
             "/item_checkouts/checkout.html",

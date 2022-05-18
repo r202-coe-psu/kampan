@@ -2,12 +2,26 @@ from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
+from flask_mongoengine.wtf import model_form
+from kampan import models
 
-class SupplierForm(FlaskForm):
+BaseSupplierForm = model_form(
+    models.Supplier,
+    FlaskForm,
+    exclude=[
+    "phone",
+    ],
 
-    name = fields.StringField(validators=[validators.InputRequired()])
-    address = fields.StringField()
-    description = fields.StringField()
-    tax_id = fields.StringField()
-    contact = fields.StringField()
-    email = fields.StringField()
+field_args={
+    "name" :{"label":"Name"},
+    "address" : {"label": "Address"},
+    "description": {"label": "Description"},
+    "tex_id": {"label": "Tax ID"},
+    "contact": {"label": "Contact"},
+    "email": {"label": "Email"},
+    }
+    )
+
+class SupplierForm(BaseSupplierForm):
+    pass
+

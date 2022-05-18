@@ -25,5 +25,5 @@ BaseCheckoutItemForm = model_form(
     },
 )
 
-class BaseCheckoutItemForm(BaseCheckoutItemForm):
+class CheckoutItemForm(BaseCheckoutItemForm):
     pass
