@@ -33,7 +33,7 @@ def index():
 @login_required
 def order():
     items = models.Item.objects()
-    form = forms.item_orders.BaseOrderItemForm()
+    form = forms.item_orders.OrderItemForm()
     if not form.validate_on_submit():
         return render_template(
             '/item_orders/order.html',
@@ -50,3 +50,27 @@ def order():
 
     return redirect(url_for('item_orders.index'))
 
+@module.route("/<order_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(order_id):
+    order = models.OrderItem.objects().get(id=order_id)
+    form = forms.item_orders.OrderItemForm(obj=order)
+
+    if not form.validate_on_submit():
+        return render_template(
+            "/item_orders/order.html",
+            form=form,
+        )
+
+    form.populate_obj(order)
+    order.save()
+
+    return redirect(url_for("item_orders.index"))
+
+@module.route("/<order_id>/delete")
+@login_required
+def delete(order_id):
+    order = models.OrderItem.objects().get(id=order_id)
+    order.delete()
+
+    return redirect(url_for("item_orders.index"))

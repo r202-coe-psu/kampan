@@ -68,7 +68,7 @@ def edit(item_position_id):
 @module.route("/<item_position_id>/delete")
 @login_required
 def delete(item_position_id):
-    item_position = models.Warehouse.objects().get(id=item_position_id)
+    item_position = models.ItemPosition.objects().get(id=item_position_id)
     item_position.delete()
 
     return redirect(url_for("item_positions.index"))
