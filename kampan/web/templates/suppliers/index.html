@@ -3,6 +3,14 @@
 {% block title %}Supplier{% endblock %}
 {% block dashboard_title %}Supplier{% endblock %}
 
+{% block breadcrumbs %}
+{% if request.endpoint == 'suppliers.index' %}
+<div class="active section">Supplier</div>
+{% else %}
+<a class="section" href="{{ url_for('suppliers.index') }}">Supplier</a>
+<div class="divider"> / </div>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <div style="padding-bottom: 1em ;">

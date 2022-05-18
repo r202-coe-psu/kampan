@@ -4,8 +4,12 @@
 {% block dashboard_title %}Order{% endblock %}
 
 {% block breadcrumbs %}
-  {{ super() }}
-  <div class="active section">Order</div>
+{% if request.endpoint == 'item_orders.index' %}
+<div class="active section">Order</div>
+{% else %}
+<a class="section" href="{{ url_for('item_orders.index') }}">Order</a>
+<div class="divider"> / </div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
