@@ -6,8 +6,8 @@ class Supplier(me.Document):
 
     name = me.StringField(required=True, max_length=256)
     description = me.StringField()
-    address = me.StringField()
-    tax_id = me.IntField()
-    contact = me.StringField()
-    email = me.StringField()
+    address = me.StringField(required=True, max_length=256)
+    tax_id = me.IntField(required=True, max_length=256)
+    contact = me.StringField(max_length=256)
+    email = me.StringField(required=True, max_length=256)
     phone = me.ListField(me.StringField())
