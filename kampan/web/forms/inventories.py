@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
@@ -28,4 +29,6 @@ BaseInventoryForm = model_form(
 
 
 class InventoryForm(BaseInventoryForm):
-    pass
+    bill = fields.FileField(
+        "Bill", validators=[FileAllowed(["pdf"], "allow pdf")]
+    )

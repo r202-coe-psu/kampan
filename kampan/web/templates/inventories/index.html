@@ -25,6 +25,7 @@
         <th>Quantity</th>
         <th>Remain</th>
         <th>Price</th>
+        <th>Bill</th>
         <th>User</th>
       </tr>
     </thead>
@@ -48,6 +49,7 @@
         <td data-label=" Quantity">{{ item.quantity }}</td>
         <td data-label="Remain">{{ item.remain }}</td>
         <td data-label="Price">{{ item.price }}</td>
+        <td data-label="Bill">{{ item.bill }}</td>
         <td data-label="Price">{{ item.user.first_name }} {{ item.user.last_name }}</td>
       </tr>
       {% endfor %}

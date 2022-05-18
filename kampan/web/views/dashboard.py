@@ -123,6 +123,18 @@ def monthly_dashboard():
 
     now = datetime.datetime.now()
     date_now = now.strftime("%d %B, %Y")
+    month_now = int(now.strftime("%m"))
+    year_now = int(now.strftime("%Y"))
+    entire_checkout = []
+    number_of_day = []
+    for month in range(1, 13):
+        month_size = monthrange(year_now, month)
+        entire_checkout.append([0] * month_size[1])
+
+        day_in_month = [0] * month_size[1]
+        for d in range(1, month_size[1] + 1):
+            day_in_month[d - 1] = d
+        number_of_day.append(day_in_month)
 
     for checkout in checkouts:
         date = checkout.checkout_date
@@ -169,9 +181,12 @@ def yearly_dashboard():
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        year = int(date.strftime("%m")) - 1
-        checkout_trend_year[year] += checkout.quantity
+        year = int(date.strftime("%Y"))
         total_values += checkout.price * checkout.quantity
+        
+        for i in range(0,11):
+            if year - 2022 == i:
+                checkout_trend_year[i] += checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
