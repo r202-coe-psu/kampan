@@ -17,5 +17,5 @@ BaseOrderItemForm = model_form(
     },
 )
 
-class BaseOrderItemForm(BaseOrderItemForm):
+class OrderItemForm(BaseOrderItemForm):
     pass

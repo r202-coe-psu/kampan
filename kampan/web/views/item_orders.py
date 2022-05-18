@@ -33,7 +33,7 @@ def index():
 @login_required
 def order():
     items = models.Item.objects()
-    form = forms.item_orders.BaseOrderItemForm()
+    form = forms.item_orders.OrderItemForm()
     if not form.validate_on_submit():
         return render_template(
             '/item_orders/order.html',
@@ -54,7 +54,7 @@ def order():
 @login_required
 def edit(order_id):
     order = models.OrderItem.objects().get(id=order_id)
-    form = forms.item_orders.BaseOrderItemForm(obj=order)
+    form = forms.item_orders.OrderItemForm(obj=order)
 
     if not form.validate_on_submit():
         return render_template(
