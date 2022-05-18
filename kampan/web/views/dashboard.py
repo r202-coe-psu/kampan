@@ -177,10 +177,12 @@ def yearly_dashboard():
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        year = int(date.strftime("%m")) - 5
-        
-        checkout_trend_year[0] += checkout.quantity
+        year = int(date.strftime("%Y"))
         total_values += checkout.price * checkout.quantity
+        
+        for i in range(0,11):
+            if year - 2022 == i:
+                checkout_trend_year[i] += checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
