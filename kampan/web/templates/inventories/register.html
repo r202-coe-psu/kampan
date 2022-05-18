@@ -18,13 +18,14 @@ Checkin
 
 {% block content %}
 <div>
-  <form class="ui form" method="POST">
+  <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="three fields">
       {{ renderer.render_select(form.item) }}
       {{ renderer.render_field(form.quantity) }}
       {{ renderer.render_field(form.price) }}
     </div>
+    {{ renderer.render_field(form.bill)}}
     <div class="two fields">
       {{ renderer.render_select(form.warehouse) }}
       {{ renderer.render_select(form.position) }}

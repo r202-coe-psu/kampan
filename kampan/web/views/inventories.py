@@ -57,6 +57,21 @@ def register(inventory_id):
         inventory = models.Inventory()
 
     form.populate_obj(inventory)
+
+    if form.bill.data:
+        if inventory.bill:
+            inventory.bill.replace(
+                form.bill.data,
+                filename=form.bill.data.filename,
+                content_type=form.bill.data.content_type,
+            )
+        else:
+            inventory.bill.put(
+                form.bill.data,
+                filename=form.bill.data.filename,
+                content_type=form.bill.data.content_type,
+            )
+
     inventory.user = current_user._get_current_object()
     inventory.registration = item_register
     inventory.remain = inventory.quantity
