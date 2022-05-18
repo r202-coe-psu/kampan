@@ -14,17 +14,28 @@
       <th>Tax_id</th>
       <th>Contact</th>
       <th>Email</th>
+      <th>Edit-Delete</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        {% for supply in suppliers %}
-        <td data-label="Name">{{ supply.name }}</td>
-        <td data-label="address">{{ supply.address }}</td>
-        <td data-label="Description">{{ supply.description }}</td>
-        <td data-label="Tax_id">{{ supply.tax_id }}</td>
-        <td data-label="Contact">{{ supply.contact }}</td>
-        <td data-label="Email">{{ supply.email }}</td>
+        {% for supplier in suppliers %}
+        <td data-label="Name">{{ supplier.name }}</td>
+        <td data-label="address">{{ supplier.address }}</td>
+        <td data-label="Description">{{ supplier.description }}</td>
+        <td data-label="Tax_id">{{ supplier.tax_id }}</td>
+        <td data-label="Contact">{{ supplier.contact }}</td>
+        <td data-label="Email">{{ supplier.email }}</td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('suppliers.delete', supplier_id=supplier.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
+          </a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

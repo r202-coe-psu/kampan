@@ -20,6 +20,7 @@
         <th>Created Date</th>
         <th>Checkout</th>
         <th>Bill</th>
+        <th>Edit-Delete</th>
 
       </tr>
     </thead>
@@ -42,6 +43,16 @@
           <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="eye icon"></i>
+          </a>
+        </td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
           </a>
         </td>
       </tr>

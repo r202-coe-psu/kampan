@@ -19,6 +19,7 @@ def index():
 @module.route("/add", methods=["GET", "POST"])
 @login_required
 def add():
+    supplier = models.Supplier()
     form = forms.suppliers.SupplierForm()
     if not form.validate_on_submit():
         return render_template(
@@ -26,15 +27,32 @@ def add():
             form=form,
         )
 
-    supply = models.Supplier(
-        name=form.name.data,
-        address=form.address.data,
-        description=form.description.data,
-        tax_id=form.tax_id.data,
-        contact=form.contact.data,
-        email=form.contact.data,
-    )
+    form.populate_obj(supplier)
+    supplier.save()
 
-    supply.save()
+    return redirect(url_for("suppliers.index"))
+
+@module.route("/<supplier_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(supplier_id):
+    supplier = models.Supplier.objects().get(id=supplier_id)
+    form = forms.suppliers.SupplierForm(obj=supplier)
+
+    if not form.validate_on_submit():
+        return render_template(
+            "/suppliers/add.html",
+            form=form,
+        )
+
+    form.populate_obj(supplier)
+    supplier.save()
+
+    return redirect(url_for("suppliers.index"))
+
+@module.route("/<supplier_id>/delete")
+@login_required
+def delete(supplier_id):
+    supplier = models.Supplier.objects().get(id=supplier_id)
+    supplier.delete()
 
     return redirect(url_for("suppliers.index"))
