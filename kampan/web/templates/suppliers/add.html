@@ -1,43 +1,34 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/suppliers/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}Supplier{% endblock %}
-{% block dashboard_title %}Supplier{% endblock %}
+{% block title %}
+{% if 'edit' in request.path %}
+Edit 
+{% else %}
+Add
+{% endif %}
+{% endblock %}
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
 
+{% block breadcrumbs %}
+{{ super() }}
+<div class="active section">Add</div>
+{% endblock %}
 
 {% block content %}
     <div>
     <form class="ui form" method="POST">
       
       {{ form.hidden_tag() }}
-      <div class="field">
-        <label>{{ form.name.label }}</label>
-         {{ form.name }}
-      </div>
 
-      <div class="field">
-        <label>{{ form.address.label }}</label>
-         {{ form.address }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.description.label }}</label>
-         {{ form.description }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.tax_id.label }}</label>
-         {{ form.tax_id }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.contact.label }}</label>
-         {{ form.contact }}
-      </div>
-
-      <div class="field">
-        <label>{{ form.email.label }}</label>
-         {{ form.email }}
-      </div>
+      {{ renderer.render_field(form.name) }}
+      {{ renderer.render_field(form.address) }}
+      {{ renderer.render_field(form.description) }}
+      {{ renderer.render_field(form.tax_id) }}
+      {{ renderer.render_field(form.contact) }}
+      {{ renderer.render_field(form.email) }}
 
       <button class="ui primary button" type="submit">Submit</button>
     </form>
