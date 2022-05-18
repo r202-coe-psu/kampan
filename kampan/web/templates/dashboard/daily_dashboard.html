@@ -12,7 +12,6 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-
 <div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto;">
   <div class="col-6 col-sm-3">
     <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
@@ -33,7 +32,7 @@
     <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8;">
       <div class="card-header">
         <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
-        Iems Checkout
+        Items Checkout
       </div>
       <div class="card-body">
         <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} items</h5>
@@ -76,56 +75,41 @@
   </div>
 </div>
 
-<h1
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); max-width: fit-content; font-size: 25px; border-width: 1px;">
-  Checkout Trend by Day
-</h1>
+{% set month = select_month %}
+{% set select_eng_month = eng_month[month] %}
+<div class="ui icon message"
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  <i class="chart line icon"></i>
+  <div class="content">
+    <div class="header">
+      <div class="ui primary header">{{ select_eng_month }}</div>Trend Day
+    </div>
+    <p />
+  </div>
+</div>
 
-<div class="ui pointing secondary menu">
-  <a class="item" data-tab="first">2020</a>
-  <a class="item" data-tab="second">2021</a>
-  <a class="item active" data-tab="third">2022</a>
+<div class="ui tabular menu" style="justify-content:center">
+  {% for month in range(12) %}
+  {% set tab_month = eng_month[month] %}
+  <form id={{tab_month}} method="post">
+    <a class="item" data-tab={{tab_month}} href="javascript:;"
+      onclick="document.getElementById('{{tab_month}}').submit();">
+      {{tab_month}}
+    </a>
+    <input type="hidden" name="month" value={{month}} />
+  </form>
+  {% endfor %}
 </div>
-<div class="ui tab segment" data-tab="first">
-  <div class="ui top attached tabular menu">
-    <a class="active item" data-tab="first/a">1A</a>
-    <a class="item" data-tab="first/b">1B</a>
-    <a class="item" data-tab="first/c">1C</a>
-  </div>
-  <div class="ui bottom attached active tab segment" data-tab="first/a">1A</div>
-  <div class="ui bottom attached tab segment" data-tab="first/b">1B</div>
-  <div class="ui bottom attached tab segment" data-tab="first/c">1C</div>
-</div>
-<div class="ui tab segment" data-tab="second">
-  <div class="ui top attached tabular menu">
-    <a class="item active" data-tab="second/a">2A</a>
-    <a class="item" data-tab="second/b">2B</a>
-    <a class="item" data-tab="second/c">2C</a>
-  </div>
-  <div class="ui bottom attached tab segment active" data-tab="second/a">2A</div>
-  <div class="ui bottom attached tab segment" data-tab="second/b">2B</div>
-  <div class="ui bottom attached tab segment" data-tab="second/c">2C</div>
-</div>
-<div class="ui tab segment active" data-tab="third">
-  <div class="ui top attached tabular menu">
-    <a class="item active" data-tab="third/a">3A</a>
-    <a class="item" data-tab="third/b">3B</a>
-    <a class="item" data-tab="third/c">3C</a>
-  </div>
-  <div class="ui bottom attached tab segment active" data-tab="third/a">3A</div>
-  <div class="ui bottom attached tab segment" data-tab="third/b">3B</div>
-  <div class="ui bottom attached tab segment" data-tab="third/c">3C</div>
-</div>
+
+
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-
-
 <script>
-  var checkout_trend_day = {{ checkout_trend_day }}
-  var number_of_day = {{ number_of_day }}
+  var entire_checkout = {{ entire_checkout[month] }}
+  var number_of_day = {{ number_of_day[month] }}
   var options = {
     series: [{
       name: "Checkout",
-      data: checkout_trend_day,
+      data: entire_checkout,
     }],
     chart: {
       height: 350, width: 800,
@@ -143,7 +127,7 @@
     },
     title: {
       text: '',
-      align: 'left',
+      align: 'center',
 
     },
     grid: {
@@ -158,8 +142,7 @@
   };
 
   var chart = new ApexCharts(document.querySelector("#chart"), options);
-  chart.render();
-
+  chart.render(); 
 </script>
 
 <script>
@@ -167,26 +150,5 @@
     .tab()
     ;
 </script>
-<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
-  <div class="ui hidden divider"></div>
-<div class="ui vertical animated button">
-<div class="visible content">Daily</div>
-<a class="hidden content" href="/dashboard/">
-Got it!
-</a>
-</div>
-<div class="ui vertical animated button">
-  <div class="visible content">Monthly</div>
-  <a class="hidden content" href="/dashboard/monthly">
-  Got it!
-  </a>
-  </div>
-  <div class="ui vertical animated button">
-    <div class="visible content" >Yearly</div>
-    <a class="hidden content" href="/dashboard/yearly">
-    Got it!
-    </a>
-    </div>
-</div>
 
 {% endblock %}

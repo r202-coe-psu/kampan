@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Flask, Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
+
+import numpy as np
 
 import datetime
 from calendar import monthrange
@@ -27,7 +29,7 @@ def index_user():
     )
 
 
-@module.route("/")
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
     user = current_user._get_current_object()
@@ -42,20 +44,20 @@ def daily_dashboard():
     notifications = []
 
     now = datetime.datetime.now()
-    year = now.strftime("%Y")
-    entire_year_checkout = []
-    entire_year_number_of_day = [] * 12
+    date_now = now.strftime("%d %B, %Y")
+    month_now = int(now.strftime("%m"))
+    year_now = int(now.strftime("%Y"))
+    entire_checkout = []
+    number_of_day = []
+
     for month in range(1, 13):
-        month_size = monthrange(int(year), month)
-        number_of_day = [0] * month_size[1]
-        entire_year_checkout.append(number_of_day)
+        month_size = monthrange(year_now, month)
+        entire_checkout.append([0] * month_size[1])
 
-        for i in range(1, month_size[1] + 1):
-            number_of_day[i - 1] = i
-        entire_year_number_of_day.append(number_of_day)
-
-    for i in entire_year_checkout:
-        print("Hey", i)
+        day_in_month = [0] * month_size[1]
+        for d in range(1, month_size[1] + 1):
+            day_in_month[d - 1] = d
+        number_of_day.append(day_in_month)
 
     for checkout in checkouts:
         date = checkout.checkout_date
@@ -63,14 +65,29 @@ def daily_dashboard():
         month_co = int(date.strftime("%m")) - 1
         year_co = int(date.strftime("%Y")) - 1
 
-        entire_year_checkout[month_co][day_co] += checkout.quantity
+        entire_checkout[month_co][day_co] += checkout.quantity
         total_values += checkout.price * checkout.quantity
-
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
+
+    select_month = int(request.form.get("month", month_now - 1))
+    eng_month = [
+        "January",
+        "Febuary",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ]
 
     if "admin" in user.roles:
         return index_admin()
@@ -81,9 +98,12 @@ def daily_dashboard():
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        checkout_trend_day=checkout_trend_day,
         notifications=notifications,
         number_of_day=number_of_day,
+        entire_checkout=entire_checkout,
+        select_month=select_month,
+        eng_month=eng_month,
+        date_now=date_now,
     )
 
 
