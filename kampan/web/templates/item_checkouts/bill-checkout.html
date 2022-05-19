@@ -14,44 +14,34 @@
     <thead>
       <tr>
 
+        <th>Image</th>
         <th>Order</th>
         <th>Item</th>
-        <th>Image</th>
         <th>Warehouse</th>
         <th>Quantity</th>
         <th>Price</th>
         <th>Checkout Date</th>
-        <th>Bill</th>
-
       </tr>
     </thead>
     <tbody>
       {% for checkout in checkouts %}
       <tr>
-
-        <td data-label="Order">{{ checkout.order.id }}</td>
-        <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Image">
           <div>
             {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
             <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
-              width="100">
+              width="70">
             {% endif %}
           </div>
         </td>
+        <td data-label="Order">{{ checkout.order.id }}</td>
+        <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         <td data-label="Price">{{ checkout.price }}</td>
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Bill">
-          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', checkout_id=checkout.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="eye icon"></i>
-          </a>
-        </td>
-
       </tr>
       {% endfor %}
     </tbody>

@@ -34,10 +34,10 @@
         <td data-label="Image">
           <div>
             {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
             <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
-              width="100">
+              width="70">
             {% endif %}
           </div>
         </td>

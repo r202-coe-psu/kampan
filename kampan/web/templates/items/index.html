@@ -14,12 +14,12 @@
   <table class="ui celled table">
     <thead>
       <tr>
+        <th>Image</th>
         <th>Name</th>
         <th>Description</th>
         <th>Weight</th>
         <th>Unit</th>
         <th style="max-width: 0;">Size ( width x height x deep )</th>
-        <th>Image</th>
         <th>Categories</th>
         <th>Username</th>
         <th>Edit/Delete</th>
@@ -28,20 +28,20 @@
     <tbody>
       {% for item in items %}
       <tr>
+        <td data-label="Image">
+          <div>
+            {% if not item.image %}
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+            {% else %}
+            <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" width="70">
+            {% endif %}
+          </div>
+        </td>
         <td data-label="Name">{{ item.name }}</td>
         <td data-label="Description">{{ item.description }}</td>
         <td data-label="Weight">{{ item.weight }}</td>
         <td data-label="Unit">{{ item.unit }}</td>
         <td data-label="Size">{{ item.size.width }} x {{item.size.height }} x {{ item.size.deep }} </td>
-        <td data-label="Image">
-          <div>
-            {% if not item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="100">
-            {% else %}
-            <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" width="100">
-            {% endif %}
-          </div>
-        </td>
         <td data-label="Categories">{{ item.categories|join(', ') }}</td>
         <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
         <td>
