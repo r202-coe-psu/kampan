@@ -11,28 +11,10 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 def index():
     inventories = models.Inventory.objects()
 
-    total = total_quantity()
-    print(total)
-
     return render_template(
         "/inventories/index.html",
         inventories=inventories,
-        total=total,
     )
-
-
-def total_quantity():
-    register = models.RegistrationItem.objects()
-    quantities = 0
-
-    for item in register:
-        item_register = item.id
-        inventories = models.Inventory.objects(registration=item_register)
-
-        for item in inventories:
-            quantities += item.quantity
-    return quantities
-
 
 @module.route("/register", methods=["GET", "POST"], defaults=dict(inventory_id=None))
 @login_required
@@ -121,12 +103,8 @@ def bill_item():
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
 
-    total = total_quantity()
-    print(total)
-
     return render_template(
         "/inventories/bill-item.html",
         inventories=inventories,
         item_register=item_register,
-        total=total,
     )
