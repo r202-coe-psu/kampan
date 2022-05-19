@@ -14,11 +14,11 @@ BaseItemForm = model_form(
     field_args={
         "name": {"label": "Name"},
         "description": {"label": "Desctiption"},
-        "weight": {"label": "Weight"},
+        "weight": {"label": "Weight (kg)"},
         "size": {"label": "Size"},
         "categories": {"label": "Categories"},
         "unit": {"label": "Unit"},
-        "minimum": {"label": "Minimum"},
+        "minimum": {"label": "Minimum -- (Displayed when remaining equal to the entered value)"},
     },
 )
 
