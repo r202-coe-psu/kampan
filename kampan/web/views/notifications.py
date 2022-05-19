@@ -34,6 +34,7 @@ def index():
             if inventory.remain <= inventory.item.minimum:
                 notifications.append(inventory)
 
+    print(notifications)
     return render_template(
         "/notifications/index.html",
         notifications=notifications,

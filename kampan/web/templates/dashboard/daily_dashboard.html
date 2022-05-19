@@ -1,5 +1,11 @@
 {% extends '/base/default-dashboard.html' %}
 
+{% block title %}Daily Dashboard{% endblock %}
+{% block dashboard_title %}
+<div class="ui small left header" style="display:inline-block;">Daily Dashboard</div>
+<div class="ui small right floated header">{{date_now}}</div>
+{% endblock %}
+
 {% block content %}
 
 <head>
@@ -154,24 +160,24 @@
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
-<div class="ui vertical animated button">
-<div class="visible content">Daily</div>
-<a class="hidden content" href="/dashboard/">
-Got it!
-</a>
-</div>
-<div class="ui vertical animated button">
-  <div class="visible content">Monthly</div>
-  <a class="hidden content" href="/dashboard/monthly">
-  Got it!
-  </a>
+  <div class="ui vertical animated button">
+    <div class="visible content">Daily</div>
+    <a class="hidden content" href="/dashboard/">
+      Got it!
+    </a>
   </div>
   <div class="ui vertical animated button">
-    <div class="visible content" >Yearly</div>
-    <a class="hidden content" href="/dashboard/yearly">
-    Got it!
+    <div class="visible content">Monthly</div>
+    <a class="hidden content" href="/dashboard/monthly">
+      Got it!
     </a>
-    </div>
+  </div>
+  <div class="ui vertical animated button">
+    <div class="visible content">Yearly</div>
+    <a class="hidden content" href="/dashboard/yearly">
+      Got it!
+    </a>
+  </div>
 </div>
 
 

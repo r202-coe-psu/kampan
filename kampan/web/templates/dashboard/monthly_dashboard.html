@@ -1,5 +1,11 @@
 {% extends '/base/default-dashboard.html' %}
 
+{% block title %}Monthly Dashboard{% endblock %}
+{% block dashboard_title %}
+<div class="ui small left header" style="display:inline-block;">Monthly Dashboard</div>
+<div class="ui small right floated header">{{date_now}}</div>
+{% endblock %}
+
 {% block content %}
 
 <head>

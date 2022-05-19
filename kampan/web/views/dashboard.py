@@ -157,6 +157,7 @@ def monthly_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         checkout_trend_month=checkout_trend_month,
+        date_now=date_now,
     )
 
 
@@ -167,6 +168,9 @@ def yearly_dashboard():
 
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
+
+    now = datetime.datetime.now()
+    date_now = now.strftime("%d %B, %Y")
 
     checkout_quantity = 0
     item_quantity = 0
@@ -199,4 +203,5 @@ def yearly_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         checkout_trend_year=checkout_trend_year,
+        date_now=date_now,
     )
