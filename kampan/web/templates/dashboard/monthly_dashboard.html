@@ -80,85 +80,103 @@
       </div>
     </div>
   </div>
-</div> 
+</div>
 
-<div class="ui icon message" style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; font-size: 13px; border-width: 1px;">
+{% set year = select_year %}
+<div class="ui icon message"
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
     <div class="header">
-      Checkout Trend by Month
+      <div class="ui primary header">{{ checkout_years[year] }}</div>Trend Month
     </div>
-    <p></p>
+    <p />
   </div>
 </div>
 
-<body>
-  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; "></div>
-  <script>
-    var checkout_trend_month = {{ checkout_trend_month }}
-    var options = {
-      series: [{
-        name: "Checkout",
-        data: checkout_trend_month,
-      }],
-      chart: {
-        height: 350, width: 800,
-        type: 'bar',
-        zoom: {
-          enabled: true
-        }
-      },
-      dataLabels: {
-        enabled: true,
-      },
-      colors: ['#0dcaf0'],
-      stroke: {
-        curve: 'straight'
-      },
-      title: {
-        text: '',
-        align: 'left',
+<div class="ui tabular menu" style="justify-content:center">
+  {% for year in range(size_checkout_years) %}
+  {% set tab_year = checkout_years[year] %}
+  <form id={{tab_year}} method="post">
+    <a class="item" data-tab={{tab_year}} href="javascript:;"
+      onclick="document.getElementById('{{tab_year}}').submit();">
+      {{tab_year}}
+    </a>
+    <input type="hidden" name="year" value={{year}} />
+  </form>
+  {% endfor %}
+</div>
 
-      },
-      grid: {
-        row: {
-          colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-          opacity: 0.5
-        },
-      },
-      xaxis: {
-        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+{% set year = select_year %}
+<div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
+<script>
+  var checkout_trend_month = {{ checkout_trend_month[year] }}
+  var checkout_years = {{ checkout_years[year] }}
+  var options = {
+    series: [{
+      name: "Checkout",
+      data: checkout_trend_month,
+    }],
+    chart: {
+      height: 350, width: 800,
+      type: 'bar',
+      zoom: {
+        enabled: true
       }
-    };
+    },
+    dataLabels: {
+      enabled: true,
+    },
+    colors: ['#0dcaf0'],
+    stroke: {
+      curve: 'straight'
+    },
+    title: {
+      text: '',
+      align: 'center',
 
-    var chart = new ApexCharts(document.querySelector("#chart"), options);
-    chart.render();
+    },
+    grid: {
+      row: {
+        colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
+        opacity: 0.5
+      },
+    },
+    xaxis: {
+      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    }
+  };
 
-  </script>
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+  chart.render(); 
+</script>
 
-</body>
-
+<script>
+  $('.menu .item')
+    .tab()
+    ;
+</script>
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
-<div class="ui vertical animated button">
-<div class="visible content">Daily</div>
-<a class="hidden content" href="/dashboard/">
-Got it!
-</a>
-</div>
-<div class="ui vertical animated button">
-  <div class="visible content">Monthly</div>
-  <a class="hidden content" href="/dashboard/monthly">
-  Got it!
-  </a>
+  <div class="ui vertical animated button">
+    <div class="visible content">Daily</div>
+    <a class="hidden content" href="/dashboard/">
+      Got it!
+    </a>
   </div>
   <div class="ui vertical animated button">
-    <div class="visible content" >Yearly</div>
-    <a class="hidden content" href="/dashboard/yearly">
-    Got it!
+    <div class="visible content">Monthly</div>
+    <a class="hidden content" href="/dashboard/monthly">
+      Got it!
     </a>
-    </div>
+  </div>
+  <div class="ui vertical animated button">
+    <div class="visible content">Yearly</div>
+    <a class="hidden content" href="/dashboard/yearly">
+      Got it!
+    </a>
+  </div>
 </div>
 
 {% endblock %}

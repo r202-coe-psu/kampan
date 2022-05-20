@@ -107,7 +107,7 @@ def daily_dashboard():
     )
 
 
-@module.route("/monthly")
+@module.route("/monthly", methods=["GET", "POST"])
 @login_required
 def monthly_dashboard():
     user = current_user._get_current_object()
@@ -119,28 +119,31 @@ def monthly_dashboard():
     item_quantity = 0
     item_remain = 0
     total_values = 0
-    checkout_trend_month = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    now = datetime.datetime.now()
-    date_now = now.strftime("%d %B, %Y")
-    month_now = int(now.strftime("%m"))
-    year_now = int(now.strftime("%Y"))
-    entire_checkout = []
-    number_of_day = []
-    for month in range(1, 13):
-        month_size = monthrange(year_now, month)
-        entire_checkout.append([0] * month_size[1])
+    checkout_years = []
+    checkout_trend_month = []
 
-        day_in_month = [0] * month_size[1]
-        for d in range(1, month_size[1] + 1):
-            day_in_month[d - 1] = d
-        number_of_day.append(day_in_month)
 
     for checkout in checkouts:
         date = checkout.checkout_date
         month = int(date.strftime("%m")) - 1
-        checkout_trend_month[month] += checkout.quantity
+        year = int(date.strftime("%Y"))
         total_values += checkout.price * checkout.quantity
+        
+        if year not in checkout_years:
+            checkout_years.append(year)
+            checkout_trend_month.append([0] * 12)
+            index = checkout_years.index(year)
+            checkout_trend_month[index][month] += int(checkout.quantity)
+        else:
+            index = checkout_years.index(year)
+            checkout_trend_month[index][month] += int(checkout.quantity)
+
+    now = datetime.datetime.now()
+    date_now = now.strftime("%d %B, %Y")
+    year_now = int(now.strftime("%Y"))
+    index_year_now = checkout_years.index(year_now)
+    select_year = int(request.form.get("year", index_year_now ))
 
     for inventory in inventories:
         item_quantity += inventory.quantity
@@ -158,6 +161,9 @@ def monthly_dashboard():
         checkout_quantity=checkout_quantity,
         checkout_trend_month=checkout_trend_month,
         date_now=date_now,
+        checkout_years=checkout_years,
+        size_checkout_years=len(checkout_years),
+        select_year=select_year,
     )
 
 
