@@ -80,6 +80,24 @@
     </div>
   </div>
 </div>
+
+{% if checkout_quantity == 0 %}
+
+<div class="ui icon message"
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  <i class="chart line icon"></i>
+  <div class="content">
+    <div class="header">
+      <div class="ui primary header">Checkout</div>Trend Day
+    </div>
+    <p />
+  </div>
+</div>
+
+<div class="ui info message">There is no data at this time.</div>
+
+{% else %}
+
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
@@ -156,6 +174,7 @@
     ;
 </script>
 
+{% endif %}
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>

@@ -91,7 +91,7 @@ def daily_dashboard():
 
     if "admin" in user.roles:
         return index_admin()
-
+        
     return render_template(
         "/dashboard/daily_dashboard.html",
         item_quantity=item_quantity,
@@ -142,14 +142,18 @@ def monthly_dashboard():
     now = datetime.datetime.now()
     date_now = now.strftime("%d %B, %Y")
     year_now = int(now.strftime("%Y"))
-    index_year_now = checkout_years.index(year_now)
-    select_year = int(request.form.get("year", index_year_now ))
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
+
+    select_year = None
+    if checkout_years:
+        index_year_now = checkout_years.index(year_now)
+        select_year = int(request.form.get("year", index_year_now ))
+    
     if "admin" in user.roles:
         return index_admin()
 

@@ -94,6 +94,10 @@
   </div>
 </div>
 
+{% if year == none %}
+<div class="ui info message">There is no data at this time.</div>
+{% endif %}
+
 <div class="ui tabular menu" style="justify-content:center">
   {% for year in range(size_checkout_years) %}
   {% set tab_year = checkout_years[year] %}
