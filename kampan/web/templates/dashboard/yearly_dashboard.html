@@ -93,43 +93,43 @@
 </div>
 
 <body>
-  <h1
-    style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); max-width: fit-content; font-size: 25px; border-width: 1px;">
-    Checkout Trend by Year</h1>
-  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; "></div>
+  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; ">
+  </div>
   <script>
+    var checkout_trend_year = {{ checkout_trend_year }}
+    var checkout_years = {{ checkout_years }}
     var options = {
       series: [{
         name: "Checkout",
-        data: {{ checkout_trend_year }},
+        data: checkout_trend_year,
       }],
-    chart: {
-      height: 350, width: 800,
+      chart: {
+        height: 350, width: 800,
         type: 'bar',
-          zoom: {
-        enabled: true
-      }
-    },
-    dataLabels: {
-      enabled: true,
-    },
-    colors: ['#0dcaf0'],
-      stroke: {
-      curve: 'straight'
-    },
-    title: {
-      text: '',
-        align: 'left',
-        
-    },
-    grid: {
-      row: {
-        colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-          opacity: 0.5
+        zoom: {
+          enabled: true
+        }
       },
-    },
-    xaxis: {
-      categories: ['2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033'],
+      dataLabels: {
+        enabled: true,
+      },
+      colors: ['#0dcaf0'],
+      stroke: {
+        curve: 'straight'
+      },
+      title: {
+        text: '',
+        align: 'left',
+
+      },
+      grid: {
+        row: {
+          colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
+          opacity: 0.5
+        },
+      },
+      xaxis: {
+        categories: checkout_years,
       }
     };
 

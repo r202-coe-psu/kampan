@@ -177,17 +177,28 @@ def yearly_dashboard():
     item_remain = 0
     total_values = 0
 
-    checkout_trend_year = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    checkout_years = []
+    checkout_trend_year = []
+    
 
     for checkout in checkouts:
         date = checkout.checkout_date
         year = int(date.strftime("%Y"))
         total_values += checkout.price * checkout.quantity
         
-        for i in range(0,11):
-            if year - 2022 == i:
-                checkout_trend_year[i] += checkout.quantity
+        if year not in checkout_years:
+            checkout_years.append(year)
+            checkout_trend_year.append(0)
+            index = checkout_years.index(year)
+            checkout_trend_year[index] += int(checkout.quantity)
+        
+        else:
+            index = checkout_years.index(year)
+            checkout_trend_year[index] += int(checkout.quantity)
 
+
+    print(checkout_years)
+    print(checkout_trend_year)
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
@@ -203,5 +214,6 @@ def yearly_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         checkout_trend_year=checkout_trend_year,
+        checkout_years=checkout_years,
         date_now=date_now,
     )
