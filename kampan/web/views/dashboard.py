@@ -49,29 +49,63 @@ def daily_dashboard():
     year_now = int(now.strftime("%Y"))
     entire_checkout = []
     number_of_day = []
+    checkout_trend_day = []
+    years = []
+    years_day = []
 
-    for month in range(1, 13):
-        month_size = monthrange(year_now, month)
-        entire_checkout.append([0] * month_size[1])
+        
 
-        day_in_month = [0] * month_size[1]
-        for d in range(1, month_size[1] + 1):
-            day_in_month[d - 1] = d
-        number_of_day.append(day_in_month)
+    # for month in range(1, 13):
+    #     month_size = monthrange(year_now, month)
+    #     entire_checkout.append([0] * month_size[1])
+
+        # day_in_month = [0] * month_size[1]
+        # for d in range(1, month_size[1] + 1):
+        #     day_in_month[d - 1] = d
+        # number_of_day.append(day_in_month)
 
     for checkout in checkouts:
         date = checkout.checkout_date
         day_co = int(date.strftime("%d")) - 1
         month_co = int(date.strftime("%m")) - 1
         year_co = int(date.strftime("%Y"))
-        if year_co == year_now:
-            entire_checkout[month_co][day_co] += checkout.quantity
-            total_values += checkout.price * checkout.quantity
 
+        
+
+        if year_co not in years:
+            years.append(year_co)
+
+            numday = []
+            for month in range(1, 13):
+                month_size = monthrange(year_co, month)
+                day = [0] * month_size[1]
+                numday.append(day)
+
+                day_in_month = [0] * month_size[1]
+                for d in range(1, month_size[1] + 1):
+                    day_in_month[d - 1] = d
+                number_of_day.append(day_in_month)
+
+
+            years_day.append(number_of_day)
+            checkout_trend_day.append(numday)
+
+        index_year_co = years.index(year_co)
+        checkout_trend_day[index_year_co][month_co][day_co] += checkout.quantity
+        total_values += checkout.price * checkout.quantity
+
+    print(years)
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
+
+    
+    select_year = None
+    if years:
+        index_year_now = years.index(year_now)
+        select_year = int(request.form.get("year", index_year_now ))
+
 
     select_month = int(request.form.get("month", month_now - 1))
     eng_month = [
@@ -89,6 +123,7 @@ def daily_dashboard():
         "December",
     ]
 
+    
     if "admin" in user.roles:
         return index_admin()
         
@@ -100,10 +135,14 @@ def daily_dashboard():
         checkout_quantity=checkout_quantity,
         notifications=notifications,
         number_of_day=number_of_day,
-        entire_checkout=entire_checkout,
+        checkout_trend_day=checkout_trend_day,
         select_month=select_month,
         eng_month=eng_month,
         date_now=date_now,
+        select_year=select_year,
+        years_day=years_day,
+        years=years,
+        size_years=len(years),
     )
 
 

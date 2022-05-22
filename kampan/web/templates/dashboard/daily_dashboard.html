@@ -98,6 +98,7 @@
 
 {% else %}
 
+
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
@@ -110,6 +111,21 @@
     <p />
   </div>
 </div>
+
+<div class="ui tabular menu" style="justify-content:center">
+  {% for year in range(size_years) %}
+  {% set tab_year = years[year] %}
+  <form id={{tab_year}} method="post">
+    <a class="item" data-tab={{tab_year}} href="javascript:;"
+      onclick="document.getElementById('{{tab_year}}').submit();">
+      {{tab_year}}
+    </a>
+    <input type="hidden" name="year" value={{year}} />
+  </form>
+  {% endfor %}
+</div>
+
+{% set years = select_year %}
 
 <div class="ui tabular menu" style="justify-content:center">
   {% for month in range(12) %}
@@ -127,12 +143,12 @@
 
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
 <script>
-  var entire_checkout = {{ entire_checkout[month] }}
-  var number_of_day = {{ number_of_day[month] }}
+  var checkout_trend_day = {{ checkout_trend_day[select_year][select_month] }}
+  var years_day  = {{ years_day[select_year][select_month] }}
   var options = {
     series: [{
       name: "Checkout",
-      data: entire_checkout,
+      data: checkout_trend_day,
     }],
     chart: {
       height: 350, width: 800,
@@ -160,7 +176,7 @@
       },
     },
     xaxis: {
-      categories: number_of_day,
+      categories: years_day,
     }
   };
 
