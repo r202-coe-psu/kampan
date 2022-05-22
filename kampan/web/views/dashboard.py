@@ -63,10 +63,10 @@ def daily_dashboard():
         date = checkout.checkout_date
         day_co = int(date.strftime("%d")) - 1
         month_co = int(date.strftime("%m")) - 1
-        year_co = int(date.strftime("%Y")) - 1
-
-        entire_checkout[month_co][day_co] += checkout.quantity
-        total_values += checkout.price * checkout.quantity
+        year_co = int(date.strftime("%Y"))
+        if year_co == year_now:
+            entire_checkout[month_co][day_co] += checkout.quantity
+            total_values += checkout.price * checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
