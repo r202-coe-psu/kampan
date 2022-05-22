@@ -94,7 +94,6 @@ def daily_dashboard():
         checkout_trend_day[index_year_co][month_co][day_co] += checkout.quantity
         total_values += checkout.price * checkout.quantity
 
-    print(years)
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
@@ -246,8 +245,6 @@ def yearly_dashboard():
             checkout_trend_year[index] += int(checkout.quantity)
 
 
-    print(checkout_years)
-    print(checkout_trend_year)
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
