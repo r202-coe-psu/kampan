@@ -14,7 +14,9 @@
                 {% if notifications is defined and notifications %}
                 {% for inventory in notifications %}
                 <div>{{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }} of
-                    <a>{{ inventory.item.name }}</a> left in <a>{{ inventory.warehouse.name }}</a> Warehouse
+                    <a href="/item_registers/">{{ inventory.item.name }}</a> left in <a>{{ inventory.warehouse.name
+                        }}</a>
+                    Warehouse
                 </div>
                 {% endfor %}
                 {% else %}
