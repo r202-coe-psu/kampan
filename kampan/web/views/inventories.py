@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
@@ -108,3 +108,17 @@ def bill_item():
         inventories=inventories,
         item_register=item_register,
     )
+
+@module.route("/<inventory_id>/file/<filename>")
+def bill(inventory_id, filename):
+    inventory = models.Inventory.objects.get(id=inventory_id)
+
+    if not inventory or not inventory.bill or inventory.bill.filename != filename:
+        return abort(403)
+
+    response = send_file(
+        inventory.bill,
+        attachment_filename=inventory.bill.filename,
+        mimetype=inventory.bill.content_type,
+    )
+    return response
