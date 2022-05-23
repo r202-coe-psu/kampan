@@ -53,16 +53,6 @@ def daily_dashboard():
     years = []
     years_day = []
 
-        
-
-    # for month in range(1, 13):
-    #     month_size = monthrange(year_now, month)
-    #     entire_checkout.append([0] * month_size[1])
-
-        # day_in_month = [0] * month_size[1]
-        # for d in range(1, month_size[1] + 1):
-        #     day_in_month[d - 1] = d
-        # number_of_day.append(day_in_month)
 
     for checkout in checkouts:
         date = checkout.checkout_date
