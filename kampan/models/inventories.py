@@ -1,3 +1,4 @@
+from email.policy import default
 import mongoengine as me
 import datetime
 
@@ -53,8 +54,20 @@ class CheckoutItem(me.Document):
     warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
 
-    quantity = me.FloatField(required=True)
+    quantity = me.IntField(required=True)
     price = me.FloatField()
     message = me.StringField()
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+
+class LostBreakItem(me.Document):
+    mete = {"collection": "lost_break_items"}
+
+    user = me.ReferenceField("User", dbref=True)
+    item = me.ReferenceField("Item", dbref=True)
+
+    lost_from = me.ReferenceField("Inventory", dbref=True)
+    warehouse = me.ReferenceField("Warehouse", dbref=True)
+    description = me.StringField(max_length=255)
+    quantity = me.IntField(required=True, default=0)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)

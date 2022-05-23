@@ -6,4 +6,5 @@ from . import item_orders
 from . import item_registers
 from . import item_checkouts
 from . import inventories
+from . import lost_break
 from . import accounts
