@@ -89,14 +89,13 @@ def daily_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-    
-    select_year = None
+
     if years:
         index_year_now = years.index(year_now)
-        select_year = int(request.form.get("year", index_year_now ))
+        select_year = int(request.form.get("years", index_year_now ))
 
 
-    select_month = int(request.form.get("month", month_now - 1))
+    select_month = int(request.form.get("months", month_now - 1))
     eng_month = [
         "January",
         "Febuary",

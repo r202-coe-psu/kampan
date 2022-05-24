@@ -90,7 +90,7 @@
     <div class="header">
       <div class="ui primary header">Checkout</div>Trend Day
     </div>
-    <p />
+    <p>
   </div>
 </div>
 
@@ -108,42 +108,100 @@
     <div class="header">
       <div class="ui primary header">{{ years[select_year] }} {{ eng_month[month] }}</div>Trend Day
     </div>
-    <p />
+  </p>
   </div>
 </div>
 
 <div class="ui tabular menu" style="justify-content:center">
   {% for year in range(size_years) %}
+  <form method="post" style="max-width: fit-content;">
   {% set tab_year = years[year] %}
   {% set years = select_year %}
-  <form id={{tab_year}} method="post">
-    <a class="item" data-tab={{tab_year}} href="javascript:;"
-      onclick="document.getElementById('{{tab_year}}').submit();">
-      {{tab_year}}
-    </a>
-    <input type="hidden" name="year" value={{year}} />
+    <input type="radio" name="years" id={{year}} value={{year}} />
+    <label for={{year}} >{{tab_year}}</label>
+    {% endfor %}
+    <p></p>
+    <p>
+      <input type="radio" name="months" id="0" value="0">
+      
+      <label for="0">January</label>
+      
+      
+      
+      <input type="radio" name="months" id="1" value="1">
+      
+      <label for="1">Febuary</label>
+      
+      
+      
+      <input type="radio" name="months" id="2" value="2">
+      
+      <label for="2">March</label>
+      
+      
+      
+      <input type="radio" name="months" id="3" value="3">
+      
+      <label for="3">April</label>
+      
+      
+      
+      <input type="radio" name="months" id="4" value="4">
+      
+      <label for="4">May</label>
+      
+      
+      
+      <input type="radio" name="months" id="5" value="5">
+      
+      <label for="5">June</label>
+      
+      
+      
+      <input type="radio" name="months" id="6" value="6">
+      
+      <label for="6">July</label>
+      
+      
+      
+      <input type="radio" name="months" id="7" value="7">
+      
+      <label for="7">August</label>
+      
+      
+      
+      <input type="radio" name="months" id="8" value="8">
+      
+      <label for="8">September</label>
+      
+      
+      
+      <input type="radio" name="months" id="9" value="9">
+      
+      <label for="9">October</label>
+      
+      
+      
+      <input type="radio" name="months" id="10" value="10">
+      
+      <label for="10">November</label>
+      
+      
+      
+      <input type="radio" name="months" id="11" value="11">
+      
+      <label for="11">December</label>
+      
+    </p>  
+    <p>
+      <button type="submit" style="justify-content:center">SUBMIT</button>
+    </p>
   </form>
-  {% endfor %}
 </div>
 
 
-
-<div class="ui tabular menu" style="justify-content:center">
-  {% for month in range(12) %}
-  {% set tab_month = eng_month[month] %}
-  <form id={{tab_month}} method="post">
-    <a class="item" data-tab={{tab_month}} href="javascript:;"
-      onclick="document.getElementById('{{tab_month}}').submit();">
-      {{tab_month}}
-    </a>
-    <input type="hidden" name="month" value={{month}} />
-  </form>
-  {% endfor %}
-</div>
 
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-
-
 {% endif %}
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
