@@ -30,47 +30,62 @@
       </tr>
     </thead>
     <tbody>
-      {% for item in inventories %}
+      {% for inventory in inventories %}
       <tr>
         <td data-label="Image">
           <div>
-            {% if not item.item.image %}
+            {% if not inventory.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
-            <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}" width="70">
+            <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}" width="70">
             {% endif %}
           </div>
         </td>
-        <td data-label="Item Name">{{ item.item.name }}</td>
-        <td data-label="Registrarion ID">{{ item.registration.receipt_id}}</td>
-        <td data-label="Checkin Date">{{ item.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Warehouse">{{ item.warehouse.name }}</td>
-        <td data-label="Position">{{ item.position.rack }} / {{ item.position.row }} / {{ item.position.locker }} </td>
-        <td data-label="Quantity">{{ item.quantity }}</td>
-        <td data-label="Remain">{{ item.remain }}</td>
-        <td data-label="Price">{{ item.price }}</td>
+        <td data-label="Item Name">{{ inventory.item.name }}</td>
+        <td data-label="Registrarion ID">{{ inventory.registration.receipt_id}}</td>
+        <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+        <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{ inventory.position.locker }} </td>
+        <td data-label="Quantity">{{ inventory.quantity }}</td>
+        <td data-label="Remain">{{ inventory.remain }}</td>
+        <td data-label="Price">{{ inventory.price }}</td>
         <td data-label="Bill">
-          {% if not item.bill %}
+          {% if not inventory.bill %}
           -
           {% else %}
           <a class="ui icon button">Show</a>
           {% endif %}
         </td>
-        <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+        <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
       </tr>
+      <div class="bill modal" id="{{loop.index}}">
+        <img src=" {{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename)}} " width="70%">
+      </div>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
-{#<div class="bill modal">
-  <iframe src="{{ url_for('inventories.bill', inventory_id=item.id, filename=item.bill.filename)}}"></iframe>
-</div>
 
 <script>
   $('.bill.modal')
   .modal('attach events', '.ui.icon.button', 'show')
 ;
-</script>#}
+</script>
 
 {% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-bill").click(function () {
+    $(this).parent().find("#bill").click();
+  });
+
+  $('#bill')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-bill', $(e.target).parent()).val(name);
+    });
+</script>
+
+{% endblock additional_js %}
