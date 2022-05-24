@@ -95,7 +95,7 @@ def daily_dashboard():
         select_year = int(request.form.get("years", index_year_now ))
 
 
-    select_month = int(request.form.get("months", month_now - 1))
+    select_month = int(request.form.get("month", month_now - 1))
     eng_month = [
         "January",
         "Febuary",
