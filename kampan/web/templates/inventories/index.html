@@ -53,11 +53,8 @@
           {% if not item.bill %}
           -
           {% else %}
-          <a class="test button">Show</a>
+          <a class="ui icon button">Show</a>
           {% endif %}
-          <div class="test modal">
-            <iframe src="{{ url_for('inventories.bill', inventory_id=item.id, filename=item.bill.filename)}}"></iframe>
-          </div>
         </td>
         <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
       </tr>
@@ -66,10 +63,14 @@
   </table>
 </div>
 
+{#<div class="bill modal">
+  <iframe src="{{ url_for('inventories.bill', inventory_id=item.id, filename=item.bill.filename)}}"></iframe>
+</div>
+
 <script>
-  $('.test.modal')
-  .modal('attach events', '.test.button', 'show')
+  $('.bill.modal')
+  .modal('attach events', '.ui.icon.button', 'show')
 ;
-</script>
+</script>#}
 
 {% endblock %}
