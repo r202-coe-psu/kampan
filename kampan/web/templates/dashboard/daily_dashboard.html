@@ -111,94 +111,27 @@
   </p>
   </div>
 </div>
-
-<div class="ui tabular menu" style="justify-content:center">
+<div class="ui tabular menu" style="text-align:center ; justify-content:center;">
   {% for year in range(size_years) %}
   <form method="post" style="max-width: fit-content;">
   {% set tab_year = years[year] %}
   {% set years = select_year %}
+  <div style="display: inline">
     <input type="radio" name="years" id={{year}} value={{year}} />
     <label for={{year}} >{{tab_year}}</label>
+  </div>
     {% endfor %}
-    <p></p>
-    <p>
-      <input type="radio" name="months" id="0" value="0">
-      
-      <label for="0">January</label>
-      
-      
-      
-      <input type="radio" name="months" id="1" value="1">
-      
-      <label for="1">Febuary</label>
-      
-      
-      
-      <input type="radio" name="months" id="2" value="2">
-      
-      <label for="2">March</label>
-      
-      
-      
-      <input type="radio" name="months" id="3" value="3">
-      
-      <label for="3">April</label>
-      
-      
-      
-      <input type="radio" name="months" id="4" value="4">
-      
-      <label for="4">May</label>
-      
-      
-      
-      <input type="radio" name="months" id="5" value="5">
-      
-      <label for="5">June</label>
-      
-      
-      
-      <input type="radio" name="months" id="6" value="6">
-      
-      <label for="6">July</label>
-      
-      
-      
-      <input type="radio" name="months" id="7" value="7">
-      
-      <label for="7">August</label>
-      
-      
-      
-      <input type="radio" name="months" id="8" value="8">
-      
-      <label for="8">September</label>
-      
-      
-      
-      <input type="radio" name="months" id="9" value="9">
-      
-      <label for="9">October</label>
-      
-      
-      
-      <input type="radio" name="months" id="10" value="10">
-      
-      <label for="10">November</label>
-      
-      
-      
-      <input type="radio" name="months" id="11" value="11">
-      
-      <label for="11">December</label>
-      
-    </p>  
-    <p>
-      <button class="ui primary button" type="submit" style="justify-content:center">SUBMIT</button>
+    <p />
+    {% for month in range(12) %}  
+    {% set tab_month = eng_month[month] %}
+        <input type="radio" name="month" id={{month}} value={{month}} />
+        <label>{{tab_month}}</label>
+    {% endfor %}
+      <p />
+      <button class="ui primary button" type="submit" style="justify-content:center; margin-bottom: 1em;">SUBMIT</button>
     </p>
   </form>
 </div>
-
 
 
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
