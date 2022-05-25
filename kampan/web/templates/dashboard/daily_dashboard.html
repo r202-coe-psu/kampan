@@ -116,19 +116,23 @@
   <form method="post" style="max-width: fit-content;">
   {% set tab_year = years[year] %}
   {% set years = select_year %}
-  <div style="display: inline;">
-    <input type="radio" name="years" id={{year}} value={{year}} style=" margin-bottom:15px;"/>
+  <div style="display: inline; margin-left:5px;">
+    <input type="radio" name="years" id={{year}} value={{year}} style=" margin-bottom:lem;"/>
     <label for={{year}} >{{tab_year}}</label>
   </div>
     {% endfor %}
     <p />
     {% for month in range(12) %}  
     {% set tab_month = eng_month[month] %}
+        <div style="display: inline; margin-left:5px; ">
         <input type="radio" name="month" id={{month}} value={{month}} />
         <label>{{tab_month}}</label>
+        </div>
     {% endfor %}
       <p />
+      <div style="margin-top: lem;">
       <button class="ui primary button" type="submit" style="justify-content:center; margin-bottom: 1em;">SUBMIT</button>
+      </div>
     </p>
   </form>
 </div>
