@@ -102,7 +102,7 @@
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  style="margin-top: 15px; margin-bottom: 25px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
     <div class="header">
@@ -116,8 +116,8 @@
   <form method="post" style="max-width: fit-content;">
   {% set tab_year = years[year] %}
   {% set years = select_year %}
-  <div style="display: inline">
-    <input type="radio" name="years" id={{year}} value={{year}} />
+  <div style="display: inline;">
+    <input type="radio" name="years" id={{year}} value={{year}} style=" margin-bottom:15px;"/>
     <label for={{year}} >{{tab_year}}</label>
   </div>
     {% endfor %}
