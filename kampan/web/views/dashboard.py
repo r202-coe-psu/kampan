@@ -60,8 +60,6 @@ def daily_dashboard():
         month_co = int(date.strftime("%m")) - 1
         year_co = int(date.strftime("%Y"))
 
-        
-
         if year_co not in years:
             years.append(year_co)
 
@@ -70,12 +68,10 @@ def daily_dashboard():
                 month_size = monthrange(year_co, month)
                 day = [0] * month_size[1]
                 numday.append(day)
-
                 day_in_month = [0] * month_size[1]
                 for d in range(1, month_size[1] + 1):
                     day_in_month[d - 1] = d
                 number_of_day.append(day_in_month)
-
 
             years_day.append(number_of_day)
             checkout_trend_day.append(numday)
@@ -89,14 +85,14 @@ def daily_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-    
     select_year = None
     select_month = None
     if years:
         index_year_now = years.index(year_now)
         select_year = int(request.form.get("year", index_year_now ))
         select_month = int(request.form.get("month", month_now - 1))
-    
+
+        
     eng_month = [
         "January",
         "Febuary",
@@ -116,7 +112,12 @@ def daily_dashboard():
     if "admin" in user.roles:
         return index_admin()
     
-    print(select_month)
+    print(f'Year = {select_year}\nMonth = {select_month}')
+
+    # sort checkout_trend_day pair with sorted(years)
+    sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
+    print(f'Checkout = {sorted_checkout_trend_day}')
+
     return render_template(
         "/dashboard/daily_dashboard.html",
         item_quantity=item_quantity,
@@ -124,14 +125,14 @@ def daily_dashboard():
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
         notifications=notifications,
+        years_day=years_day,
         number_of_day=number_of_day,
-        checkout_trend_day=checkout_trend_day,
-        select_month=select_month,
         eng_month=eng_month,
         date_now=date_now,
         select_year=select_year,
-        years_day=years_day,
-        years=years,
+        select_month=select_month,
+        checkout_trend_day=sorted_checkout_trend_day,
+        years=sorted(years),
         size_years=len(years),
     )
 
@@ -185,6 +186,7 @@ def monthly_dashboard():
     
     if "admin" in user.roles:
         return index_admin()
+
 
     return render_template(
         "/dashboard/monthly_dashboard.html",

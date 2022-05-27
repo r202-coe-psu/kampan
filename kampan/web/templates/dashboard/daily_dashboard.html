@@ -116,8 +116,8 @@
     {% set tab_year = years[year] %}
     {% set years = select_year %}
     <div style="display: inline; margin-left:5px;">
-      <input type="radio" name="years" id={{year}} value={{year}} style=" margin-bottom:lem;" />
-      <label for={{year}}>{{tab_year}}</label>
+      <input type="radio" name="year" id={{year}} value={{year}} style=" margin-bottom:lem;" />
+      <label>{{tab_year}}</label>
     </div>
     {% endfor %}
     <p />
@@ -169,8 +169,10 @@
 
 {% block additional_js %}
 <script>
-  var select_year, select_month = select_year, select_month
+  var select_year = {{ select_year }}
+  var select_month = {{ select_month }}
   var checkout_trend_day = {{ checkout_trend_day }}
+  var years_day = {{ years_day }}
 
   var checkout_trend_day = checkout_trend_day[select_year][select_month]
   var years_day = years_day[select_year][select_month]
