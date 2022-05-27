@@ -30,5 +30,5 @@ BaseInventoryForm = model_form(
 
 class InventoryForm(BaseInventoryForm):
     bill = fields.FileField(
-        "Bill", validators=[FileAllowed(["pdf"], "allow pdf")]
+        "Bill", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
     )

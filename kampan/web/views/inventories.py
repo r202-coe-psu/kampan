@@ -66,14 +66,32 @@ def register(inventory_id):
 def edit(inventory_id):
     inventory = models.Inventory.objects().get(id=inventory_id)
     form = forms.inventories.InventoryForm(obj=inventory)
+    item_register = inventory.registration
 
     if not form.validate_on_submit():
         return render_template(
             "/inventories/register.html",
+            item_register=item_register,
             form=form,
         )
 
     form.populate_obj(inventory)
+    if form.bill.data:
+        if inventory.bill:
+            inventory.bill.replace(
+                form.bill.data,
+                filename=form.bill.data.filename,
+                content_type=form.bill.data.content_type,
+            )
+        else:
+            inventory.bill.put(
+                form.bill.data,
+                filename=form.bill.data.filename,
+                content_type=form.bill.data.content_type,
+            )
+    inventory.user = current_user._get_current_object()
+    inventory.registration = item_register
+    inventory.remain = inventory.quantity
     inventory.save()
 
     return redirect(

@@ -90,7 +90,7 @@
     <div class="header">
       <div class="ui primary header">Checkout</div>Trend Day
     </div>
-    <p />
+    <p>
   </div>
 </div>
 
@@ -101,68 +101,62 @@
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  style="margin-top: 15px; margin-bottom: 25px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
     <div class="header">
       <div class="ui primary header">{{ years[select_year] }} {{ eng_month[month] }}</div>Trend Day
     </div>
-    <p />
+    </p>
   </div>
 </div>
-
-<div class="ui tabular menu" style="justify-content:center">
+<div class="ui tabular menu" style="text-align:center ; justify-content:center;">
   {% for year in range(size_years) %}
-  {% set tab_year = years[year] %}
-  {% set years = select_year %}
-  <form id={{tab_year}} method="post">
-    <a class="item" data-tab={{tab_year}} href="javascript:;"
-      onclick="document.getElementById('{{tab_year}}').submit();">
-      {{tab_year}}
-    </a>
-    <input type="hidden" name="year" value={{year}} />
+  <form method="post" style="max-width: fit-content;">
+    {% set tab_year = years[year] %}
+    {% set years = select_year %}
+    <div style="display: inline; margin-left:5px;">
+      <input type="radio" name="years" id={{year}} value={{year}} style=" margin-bottom:lem;" />
+      <label for={{year}}>{{tab_year}}</label>
+    </div>
+    {% endfor %}
+    <p />
+    {% for month in range(12) %}
+    {% set tab_month = eng_month[month] %}
+    <div style="display: inline; margin-left:5px; ">
+      <input type="radio" name="month" id={{month}} value={{month}} />
+      <label>{{tab_month}}</label>
+    </div>
+    {% endfor %}
+    <p />
+    <div style="margin-top: lem;">
+      <button class="ui primary button" type="submit"
+        style="justify-content:center; margin-bottom: 1em;">SUBMIT</button>
+    </div>
+    </p>
   </form>
-  {% endfor %}
 </div>
 
 
-
-<div class="ui tabular menu" style="justify-content:center">
-  {% for month in range(12) %}
-  {% set tab_month = eng_month[month] %}
-  <form id={{tab_month}} method="post">
-    <a class="item" data-tab={{tab_month}} href="javascript:;"
-      onclick="document.getElementById('{{tab_month}}').submit();">
-      {{tab_month}}
-    </a>
-    <input type="hidden" name="month" value={{month}} />
-  </form>
-  {% endfor %}
-</div>
-
-{% if select_month is defined %}
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-{% else %}
-{% endif %}
-
 
 {% endif %}
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
-  <div class="ui vertical animated button">
+  <div class="ui green vertical animated button">
     <div class="visible content">Daily</div>
     <a class="hidden content" href="/dashboard/">
       Got it!
     </a>
   </div>
-  <div class="ui vertical animated button">
+  <div class="ui green vertical animated button">
     <div class="visible content">Monthly</div>
     <a class="hidden content" href="/dashboard/monthly">
       Got it!
     </a>
   </div>
-  <div class="ui vertical animated button">
+  <div class="ui green vertical animated button">
     <div class="visible content">Yearly</div>
     <a class="hidden content" href="/dashboard/yearly">
       Got it!
