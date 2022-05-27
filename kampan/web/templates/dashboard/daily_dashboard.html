@@ -98,7 +98,6 @@
 
 {% else %}
 
-
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
@@ -141,7 +140,10 @@
   {% endfor %}
 </div>
 
+{% if select_month is defined %}
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
+{% else %}
+{% endif %}
 
 
 {% endif %}
@@ -173,8 +175,11 @@
 
 {% block additional_js %}
 <script>
-  var checkout_trend_day = {{ checkout_trend_day[select_year][select_month] }}
-  var years_day  = {{ years_day[select_year][select_month] }}
+  var select_year, select_month = select_year, select_month
+  var checkout_trend_day = {{ checkout_trend_day }}
+
+  var checkout_trend_day = checkout_trend_day[select_year][select_month]
+  var years_day = years_day[select_year][select_month]
   var options = {
     series: [{
       name: "Checkout",
@@ -219,4 +224,5 @@
     .tab()
     ;
 </script>
+
 {% endblock %}

@@ -91,12 +91,12 @@ def daily_dashboard():
 
     
     select_year = None
+    select_month = None
     if years:
         index_year_now = years.index(year_now)
         select_year = int(request.form.get("year", index_year_now ))
-
-
-    select_month = int(request.form.get("month", month_now - 1))
+        select_month = int(request.form.get("month", month_now - 1))
+    
     eng_month = [
         "January",
         "Febuary",
@@ -115,7 +115,8 @@ def daily_dashboard():
     
     if "admin" in user.roles:
         return index_admin()
-        
+    
+    print(select_month)
     return render_template(
         "/dashboard/daily_dashboard.html",
         item_quantity=item_quantity,
