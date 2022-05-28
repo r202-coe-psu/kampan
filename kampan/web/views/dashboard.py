@@ -41,13 +41,11 @@ def daily_dashboard():
     item_quantity = 0
     item_remain = 0
     total_values = 0
-    notifications = []
 
     now = datetime.datetime.now()
     date_now = now.strftime("%d %B, %Y")
     month_now = int(now.strftime("%m"))
     year_now = int(now.strftime("%Y"))
-    entire_checkout = []
     number_of_day = []
     checkout_trend_day = []
     years = []
@@ -124,7 +122,6 @@ def daily_dashboard():
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        notifications=notifications,
         years_day=years_day,
         number_of_day=number_of_day,
         eng_month=eng_month,
