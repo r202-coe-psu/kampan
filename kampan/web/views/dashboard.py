@@ -110,11 +110,7 @@ def daily_dashboard():
     if "admin" in user.roles:
         return index_admin()
     
-    print(f'Year = {select_year}\nMonth = {select_month}')
-
-    # sort checkout_trend_day pair with sorted(years)
     sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
-    print(f'Checkout = {sorted_checkout_trend_day}')
 
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -184,11 +180,8 @@ def monthly_dashboard():
     if "admin" in user.roles:
         return index_admin()
 
-        
-    print(f'YearMonth = {select_year}')
-
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
-    print(f'Checkout = {sorted_checkout_trend_month}')
+    
     return render_template(
 
         "/dashboard/monthly_dashboard.html",
@@ -248,9 +241,7 @@ def yearly_dashboard():
     if "admin" in user.roles:
         return index_admin()
     
-    print(f'check date = {checkout_years}')
     sorted_checkout_trend_year = [i for _, i in sorted(zip(checkout_years,checkout_trend_year, ))]
-    print(f'Checkout years = {sorted_checkout_trend_year}')
 
     return render_template(
         "/dashboard/yearly_dashboard.html",
