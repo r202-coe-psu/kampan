@@ -184,16 +184,21 @@ def monthly_dashboard():
     if "admin" in user.roles:
         return index_admin()
 
+        
+    print(f'YearMonth = {select_year}')
 
+    sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
+    print(f'Checkout = {sorted_checkout_trend_month}')
     return render_template(
+
         "/dashboard/monthly_dashboard.html",
         item_quantity=item_quantity,
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        checkout_trend_month=checkout_trend_month,
+        checkout_trend_month=sorted_checkout_trend_month,
         date_now=date_now,
-        checkout_years=checkout_years,
+        checkout_years=sorted(checkout_years),
         size_checkout_years=len(checkout_years),
         select_year=select_year,
     )
@@ -242,6 +247,10 @@ def yearly_dashboard():
 
     if "admin" in user.roles:
         return index_admin()
+    
+    print(f'check date = {checkout_years}')
+    sorted_checkout_trend_year = [i for _, i in sorted(zip(checkout_years,checkout_trend_year, ))]
+    print(f'Checkout years = {sorted_checkout_trend_year}')
 
     return render_template(
         "/dashboard/yearly_dashboard.html",
@@ -249,7 +258,7 @@ def yearly_dashboard():
         total_values=total_values,
         item_remain=item_remain,
         checkout_quantity=checkout_quantity,
-        checkout_trend_year=checkout_trend_year,
-        checkout_years=checkout_years,
+        checkout_trend_year=sorted_checkout_trend_year,
+        checkout_years=sorted(checkout_years),
         date_now=date_now,
     )
