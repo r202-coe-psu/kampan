@@ -3,8 +3,8 @@
 {% block title %}Notifications{% endblock %}
 {% block dashboard_title %}Notifications{% endblock %}
 {% block breadcrumbs %}
-<a class="ui primary button" style="font-size: 100%; " >
-    Inventory notification page
+<a style="font-size: 100%; color:black;" >
+    Notifications
 </a>
 {% endblock %}
 
@@ -20,8 +20,9 @@
                     <th>Total</th>
                     <th>Unit</th>
                     <th>Item Name</th>
+                    <th>Item Price</th>
                     <th>Warehouse</th>
-                    <th>Add Item</th>
+                    <th>Fill Item</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -30,10 +31,11 @@
                   <tr>
                     <td data-label="Total" style="color: red;">{{ inventory.remain }}/{{ inventory.quantity }}</td>
                     <td data-label="Unit">{{ inventory.item.unit }}</td>
-                    <td data-label="Item">{{ inventory.item.name }}</td>
+                    <td data-label="Item Name">{{ inventory.item.name }}</td>
+                    <td data-label="Item Price">{{ inventory.price}}</td>
                     <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
                     <td data-label="Add Item">
-                        <a class="ui icon button" href="/item_registers/" style=" color: white; background-color: rgb(59, 115, 199);">
+                        <a class="ui icon button" href="{{ url_for('inventories.edit', inventory_id=inventory.id) }}" style=" color: white; background-color: rgb(59, 115, 199);" >
                             <i class="edit icon"></i>  
                         </a>
                     </td>
