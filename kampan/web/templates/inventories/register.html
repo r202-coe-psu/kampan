@@ -25,7 +25,8 @@ Checkin
       {{ renderer.render_field(form.quantity) }}
       {{ renderer.render_field(form.price) }}
     </div>
-    {{ renderer.render_fileinput(form.bill)}}
+    {{ form.csrf_token }}
+    {{ renderer.render_fileinput(form.bill_file)}}
     <div class="two fields">
       {{ renderer.render_select(form.warehouse) }}
       {{ renderer.render_select(form.position) }}
@@ -36,18 +37,16 @@ Checkin
 </div>
 {% endblock content %}
 
-
 {% block additional_js %}
 <script type="text/javascript">
-  $(".attach-file-bill").click(function () {
-    $(this).parent().find("#bill").click();
-  });
-
-  $('#bill')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-bill', $(e.target).parent()).val(name);
+    $(".attach-file-{{ form.bill_file.name }}").click(function () {
+        $("#{{ form.bill_file.name }}").click();
     });
-</script>
 
+    $('#{{ form.bill_file.name }}')
+        .on('change', function (e) {
+            var name = e.target.files[0].name;
+            $('.attach-file-{{ form.bill_file.name }}', $(e.target).parent()).val(name);
+        });
+</script>
 {% endblock additional_js %}

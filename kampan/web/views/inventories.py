@@ -39,19 +39,18 @@ def register(inventory_id):
         inventory = models.Inventory()
 
     form.populate_obj(inventory)
-
-    if form.bill.data:
+    if form.bill_file.data:
         if inventory.bill:
             inventory.bill.replace(
-                form.bill.data,
-                filename=form.bill.data.filename,
-                content_type=form.bill.data.content_type,
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type
             )
         else:
             inventory.bill.put(
-                form.bill.data,
-                filename=form.bill.data.filename,
-                content_type=form.bill.data.content_type,
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type
             )
 
     inventory.user = current_user._get_current_object()
@@ -76,19 +75,20 @@ def edit(inventory_id):
         )
 
     form.populate_obj(inventory)
-    if form.bill.data:
+    if form.bill_file.data:
         if inventory.bill:
             inventory.bill.replace(
-                form.bill.data,
-                filename=form.bill.data.filename,
-                content_type=form.bill.data.content_type,
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type
             )
         else:
             inventory.bill.put(
-                form.bill.data,
-                filename=form.bill.data.filename,
-                content_type=form.bill.data.content_type,
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type
             )
+
     inventory.user = current_user._get_current_object()
     inventory.registration = item_register
     inventory.remain = inventory.quantity
@@ -120,7 +120,7 @@ def bill_item():
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
-
+    
     return render_template(
         "/inventories/bill-item.html",
         inventories=inventories,

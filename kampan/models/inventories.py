@@ -18,7 +18,7 @@ class Inventory(me.Document):
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
-    bill = me.ImageField(thumbnail_size=(800, 600, False))
+    bill = me.FileField(required=True)
 
     quantity = me.IntField(required=True, default=0)
     remain = me.IntField(required=True, default=0)
