@@ -18,54 +18,54 @@
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    Dashboard
+    แดชบอร์ด
   </div>
 
-  <a class="item" href="{{ url_for('notifications.index') }}">Notifications</a>
-  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>Daily</a>
+  <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
+  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ดรายวัน</a>
   <a class="item" href="{{ url_for('dashboard.monthly_dashboard') }}"><i class="icon dashboard"
-      style="color: rgb(224, 241, 64);"></i>Monthly</a>
+      style="color: rgb(224, 241, 64);"></i>แดชบอร์ดรายเดือน</a>
   <a class="item" href="{{ url_for('dashboard.yearly_dashboard') }}"><i class="icon dashboard"
-      style="color: rgb(12, 209, 12);"></i>Yearly</a>
+      style="color: rgb(12, 209, 12);"></i>แดชบอร์ดรายปี</a>
   
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    Management
+    การจัดการ
   </div>
 
-  <a class="item" href="{{ url_for('items.index') }}">Items</a>
-  <a class="item" href="{{ url_for('suppliers.index') }}">Suppliers</a>
-  <a class="item" href="{{ url_for('warehouses.index') }}">Warehouses</a>
-  <a class="item" href="{{ url_for('item_positions.index') }}">Positions</a>
+  <a class="item" href="{{ url_for('items.index') }}">สินค้าทั้งหมด</a>
+  <a class="item" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
+  <a class="item" href="{{ url_for('warehouses.index') }}">คลังสินค้า</a>
+  <a class="item" href="{{ url_for('item_positions.index') }}">ตำแหน่งสินค้า</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    Deposite
+    จัดการสินค้า
   </div>
 
-  <a class="item" href="{{ url_for('item_registers.index') }}">Registers</a>
-  <a class="item" href="{{ url_for('inventories.index') }}">Inventory</a>
+  <a class="item" href="{{ url_for('item_registers.index') }}">ลงสินค้า</a>
+  <a class="item" href="{{ url_for('inventories.index') }}">รายการสินค้า</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    Withdraw
+    การจำหน่าย
   </div>
 
-  <a class="item" href="{{ url_for('item_orders.index') }}">Order</a>
-  <a class="item" href="{{ url_for('item_checkouts.index') }}">Checkout</a>
+  <a class="item" href="{{ url_for('item_orders.index') }}">คำสั่งซื้อ</a>
+  <a class="item" href="{{ url_for('item_checkouts.index') }}">รายการคำสั่งซื้อ</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    Report lost
+    แจ้งสินค้าเสียหาย
   </div>
 
-  <a class="item" href="{{ url_for('lost_breaks.index')}}">Lost Break</a>
+  <a class="item" href="{{ url_for('lost_breaks.index')}}">สินค้าที่เสียหาย</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     User
   </div>
   
-  <a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>Account</a>
-  <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>Logout</a>
+  <a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>บัญชีผู้ใช้</a>
+  <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
 </ul>
