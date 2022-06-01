@@ -1,8 +1,8 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Monthly Dashboard{% endblock %}
+{% block title %}แดชบอร์ดรายเดือน{% endblock %}
 {% block dashboard_title %}
-<div class="ui small left header" style="display:inline-block;">Monthly Dashboard</div>
+<div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายเดือน</div>
 <div class="ui small right floated header">{{date_now}}</div>
 {% endblock %}
 
@@ -10,26 +10,25 @@
 
 <head>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-  <!-- Bootstrap CSS -->
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-  <!-- ionicon -->
+ 
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
-
 
 <div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto;">
   <div class="col-6 col-sm-3">
     <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
       <div class="card-header">
         <ion-icon name="bag-add-outline" style="margin-right: 10px;"></ion-icon>
-        Quantity
+        จำนวนสินค้าทั้งหมด
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_quantity }} items</h5>
+        <h5 class="card-title" style="text-align: center;">{{ item_quantity }} รายการ</h5>
         <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ more detail ]</a>
+          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -39,12 +38,12 @@
     <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8;">
       <div class="card-header">
         <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
-        Items Checkout
+        สินค้าที่ขาย
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} items</h5>
+        <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} รายการ</h5>
         <p class=" card-text">
-          <a href="/item_orders/" class="text-white" style="text-decoration: none;"> [ more detail ]</a>
+          <a href="/item_orders/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -55,12 +54,12 @@
     <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
       <div class="card-header">
         <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
-        Remain
+        สินค้าคงเหลือ
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_remain }} items</h5>
+        <h5 class="card-title" style="text-align: center;">{{ item_remain }} รายการ</h5>
         <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ more detail ]</a>
+          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -70,12 +69,12 @@
     <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .8">
       <div class="card-header">
         <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
-        Total values
+        รายได้รวม
       </div>
       <div class="card-body">
         <h5 class="card-title" style="text-align: center;"> {{total_values}} ฿</h5>
         <p class="card-text">
-          <a href="/item_checkouts/" class="text-white" style="text-decoration: none;"> [ more detail ]</a>
+          <a href="/item_checkouts/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -88,14 +87,14 @@
   <i class="chart line icon"></i>
   <div class="content">
     <div class="header">
-      <div class="ui primary header">{{ checkout_years[year] }}</div>Trend Month
+      <div class="ui primary header">{{ checkout_years[year] }}</div>แผนภูมิรายเดือน
     </div>
     <p />
   </div>
 </div>
 
 {% if year == none %}
-<div class="ui info message">There is no data at this time.</div>
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 <div class="ui tabular menu" style="justify-content:center; text-align:center;">
@@ -110,7 +109,7 @@
     <p />
   
   <p>
-  <button class="ui primary button" type="submit" style="justify-content:center; margin-bottom: 1em;">SUBMIT</button>
+  <button class="ui primary button" type="submit" style="justify-content:center; margin-bottom: 1em;">ยืนยันการเลือกเวลา</button>
   </p>
 </form>
 </div>
@@ -168,23 +167,22 @@
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
   <div class="ui green vertical animated button">
-    <div class="visible content">Daily</div>
+    <div class="visible content">แสดงแผนภูมิรายวัน</div>
     <a class="hidden content" href="/dashboard/">
-      Got it!
+      ไปกันเลย !
     </a>
   </div>
   <div class="ui green vertical animated button">
-    <div class="visible content">Monthly</div>
+    <div class="visible content">แสดงแผนภูมิรายเดือน</div>
     <a class="hidden content" href="/dashboard/monthly">
-      Got it!
+      ไปกันเลย !
     </a>
   </div>
   <div class="ui green vertical animated button">
-    <div class="visible content">Yearly</div>
+    <div class="visible content">แสดงแผนภูมิรายปี</div>
     <a class="hidden content" href="/dashboard/yearly">
-      Got it!
+      ไปกันเลย !
     </a>
   </div>
 </div>
-
 {% endblock %}
