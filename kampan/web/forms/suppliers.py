@@ -13,12 +13,12 @@ BaseSupplierForm = model_form(
     ],
 
 field_args={
-    "name" :{"label":"Name"},
-    "address" : {"label": "Address"},
-    "description": {"label": "Description"},
-    "tex_id": {"label": "Tax ID"},
-    "contact": {"label": "Contact"},
-    "email": {"label": "Email"},
+    "name" :{"label":"ชื่อร้าน"},
+    "address" : {"label": "ที่อยู่"},
+    "description": {"label": "คำอธิบาย"},
+    "tax_id": {"label": "เลขกำกับภาษี"},
+    "contact": {"label": "ช่องทางการติดต่อ"},
+    "email": {"label": "อีเมลล์"},
     }
     )
 

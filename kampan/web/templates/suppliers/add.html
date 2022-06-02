@@ -2,7 +2,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-Add
+เพิ่ม
 {% endblock %}
 
 {% block dashboard_title %}
@@ -11,7 +11,7 @@ Add
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">Add</div>
+<div class="active section">เพิ่ม</div>
 {% endblock %}
 
 {% block content %}
@@ -29,7 +29,7 @@ Add
         {{ renderer.render_field(form.contact) }}
         {{ renderer.render_field(form.email) }}
       </div>
-      <button class="ui primary button" type="submit">Submit</button>
+      <button class="ui primary button" type="submit">ส่งข้อมูล</button>
     </form>
     </div>
 {% endblock content %}

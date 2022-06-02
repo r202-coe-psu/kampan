@@ -1,13 +1,13 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Supplier{% endblock %}
-{% block dashboard_title %}Supplier{% endblock %}
+{% block title %}ร้านค้า{% endblock %}
+{% block dashboard_title %}ร้านค้า{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'suppliers.index' %}
-<div class="active section">Supplier</div>
+<div class="active section">ร้านค้า</div>
 {% else %}
-<a class="section" href="{{ url_for('suppliers.index') }}">Supplier</a>
+<a class="section" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -16,13 +16,13 @@
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
-      <th>Name</th>
-      <th>Address</th>
-      <th>Description</th>
-      <th>Tax_id</th>
-      <th>Contact</th>
-      <th>Email</th>
-      <th>Edit-Delete</th>
+      <th>ชื่อร้าน</th>
+      <th>ที่อยู่</th>
+      <th>คำอธิบาย</th>
+      <th>เลขกำกับภาษี</th>
+      <th>ช่องทางการติดต่อ</th>
+      <th>อีเมลล์</th>
+      <th>แก้ไข-ลบข้อมูล</th>
       </tr>
     </thead>
     <tbody>
@@ -50,7 +50,7 @@
   </table>
 </div>
 <a class="ui primary button" href="{{ url_for('suppliers.add') }}">
-  Add
+  เพิ่ม
 </a>
 
 {% endblock %}
