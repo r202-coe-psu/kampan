@@ -25,9 +25,9 @@ def add():
     form = forms.items.ItemForm()
     if not form.validate_on_submit():
         print(form.errors)
-        form.size.width.label.text = "Width (cm)"
-        form.size.height.label.text = "Height (cm)"
-        form.size.deep.label.text = "Deep (cm)"
+        form.size.width.label.text = "ยาว (ซม.)"
+        form.size.height.label.text = "สูง (ซม.)"
+        form.size.deep.label.text = "กว้าง (ซม.)"
         return render_template(
             "/items/add.html",
             form=form,
@@ -66,9 +66,9 @@ def edit(item_id):
 
     if not form.validate_on_submit():
         print(form.errors)
-        form.size.width.label.text = "Width (cm)"
-        form.size.height.label.text = "Height (cm)"
-        form.size.deep.label.text = "Deep (cm)"
+        form.size.width.label.text = "ยาว (ซม.)"
+        form.size.height.label.text = "สูง (ซม.)"
+        form.size.deep.label.text = "กว้าง (ซม.)"
         return render_template(
             "/items/item_edit.html",
             form=form,

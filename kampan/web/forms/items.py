@@ -10,23 +10,23 @@ from kampan import models
 BaseItemForm = model_form(
     models.Item,
     FlaskForm,
-    exclude=["user", "created_date", "updated_date", "image"],
+    exclude=["user", "created_date", "updated_date", "รูปสินค้า"],
     field_args={
-        "name": {"label": "Name"},
-        "description": {"label": "Desctiption"},
-        "weight": {"label": "Weight (kg)"},
-        "size": {"label": "Size"},
-        "categories": {"label": "Categories"},
-        "unit": {"label": "Unit"},
-        "minimum": {"label": "Minimum -- (Displayed when remaining equal to the entered value)"},
+        "name": {"label": "ชื่อสินค้า"},
+        "description": {"label": "คำอธิบาย"},
+        "weight": {"label": "น้ำหนัก (กิโลกรัม)"},
+        "size": {"label": "ขนาด"},
+        "categories": {"label": "หมวดหมุ่"},
+        "unit": {"label": "หน่วย"},
+        "minimum": {"label": "จำนวนสินค้าขั้นต่ำ -- (แจ้งเตือนเมื่อสินค้าใกล้หมดตามจำนวนสินค้าที่น้อยกว่าหรือเท่ากับขั้นต่ำ)"},
     },
 )
 
 
 class ItemForm(BaseItemForm):
-    categories = TagListField("Categories", validators=[validators.Length(min=1)])
+    categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
     img = fields.FileField(
-        "Image", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
+        "รูปภาพสินค้า", validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")]
     )
 
 
