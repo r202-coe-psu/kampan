@@ -16,19 +16,19 @@ BaseInventoryForm = model_form(
         "remain",
     ],
     field_args={
-        "item": {"label": "Item", "label_modifier": lambda i: i.name},
+        "item": {"label": "สินค้า", "label_modifier": lambda i: i.name},
         "position": {
-            "label": "Position",
+            "label": "ตำแหน่ง",
             "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
         },
-        "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
-        "quantity": {"label": "Quantity"},
-        "price": {"label": "Price"},
+        "warehouse": {"label": "คลังสินค้า", "label_modifier": lambda w: w.name},
+        "quantity": {"label": "จำนวนทั้งหมด"},
+        "price": {"label": "ราคา"},
     },
 )
 
 
 class InventoryForm(BaseInventoryForm):
     bill_file = fields.FileField(
-        "Upload File: PDF only", validators=[FileAllowed(["pdf"], "PDF only")]
+        "*** อัปโหลดเฉพาะบิลที่เป็นไฟล์ PDF เท่านั้น ***", validators=[FileAllowed(["pdf"], "PDF only")]
     )

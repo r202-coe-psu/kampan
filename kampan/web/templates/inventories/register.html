@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-Edit
+แก้ไข
 {% else %}
-Checkin
+นำเข้าสินค้า
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -32,7 +32,7 @@ Checkin
       {{ renderer.render_select(form.position) }}
     </div>
 
-    <button class="ui primary button" type="submit">Submit</button>
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}
