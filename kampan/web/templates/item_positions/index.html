@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Item Positions{% endblock %}
-{% block dashboard_title %}Item Positions{% endblock %}
+{% block title %}ตำแหน่งสินค้า{% endblock %}
+{% block dashboard_title %}ตำแหน่งสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
-<div class="active section">Item Positions</div>
+<div class="active section">ตำแหน่งสินค้า</div>
 {% else %}
-<a class="section" href="{{ url_for('item_positions.index') }}">Item Positions</a>
+<a class="section" href="{{ url_for('item_positions.index') }}">ตำแหน่งสินค้า</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -16,12 +16,12 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>Warehouse</th>
-        <th>Description</th>
-        <th>Rack</th>
-        <th>Row</th>
-        <th>Locker</th>
-        <th>Tool</th>
+        <th>คลังสินค้า</th>
+        <th>คำอธิบาย</th>
+        <th>ชั้นวาง</th>
+        <th>แถว</th>
+        <th>ตู้เก็บของ</th>
+        <th>เครื่องมือ</th>
       </tr>
     </thead>
     <tbody>
@@ -49,7 +49,7 @@
   </table>
 </div>
 <a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
-  Add
+  เพิ่มตำแหน่งสินค้า
 </a>
 
 {% endblock %}
