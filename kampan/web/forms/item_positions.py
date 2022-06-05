@@ -14,11 +14,11 @@ BaseItemPositionForm = model_form(
         "user",
     ],
     field_args={
-        "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
-        "description": {"label": "Description"},
-        "rack": {"label": "Rack"},
-        "row": {"label": "Row"},
-        "locker": {"label": "Locker"},
+        "warehouse": {"label": "คลังสินค้า", "label_modifier": lambda w: w.name},
+        "description": {"label": "คำอธิบาย"},
+        "rack": {"label": "ชั้นวาง"},
+        "row": {"label": "แถว"},
+        "locker": {"label": "ตู้เก็บของ"},
     },
 )
 
