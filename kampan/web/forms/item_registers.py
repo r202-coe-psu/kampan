@@ -13,9 +13,9 @@ BaseItemRegisterationForm = model_form(
         "user",
     ],
     field_args={
-        "supplier": {"label": "Supplier", "label_modifier": lambda s: s.name},
-        "description": {"label": "Description"},
-        "receipt_id": {"label": "Receipt_id"},
+        "supplier": {"label": "ร้านค้า", "label_modifier": lambda s: s.name},
+        "description": {"label": "คำอธิบาย"},
+        "receipt_id": {"label": "เลขกำกับใบเสร็จ"},
     },
 )
 class ItemRegisterationForm(BaseItemRegisterationForm):

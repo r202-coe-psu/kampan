@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-Edit
+แก้ไขสินค้า
 {% else %}
-Add Register
+เพิ่มการลงทะเบียนสินค้า
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -16,9 +16,9 @@ Add Register
 {{ super() }}
 <div class="active section">
   {% if 'edit' in request.path %}
-  Edit
+  แก้ไขข้อมูลสินค้า
   {% else %}
-  Add
+  เพิ่มข้อมูลสินค้า
   {% endif %}
 </div>
 {% endblock %}
@@ -31,7 +31,7 @@ Add Register
     {{ renderer.render_field(form.description) }}
     {{ renderer.render_select(form.supplier) }}
 
-    <button class="ui primary button" type="submit">Submit</button>
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

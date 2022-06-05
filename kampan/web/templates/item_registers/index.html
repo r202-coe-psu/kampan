@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Item_register{% endblock %}
-{% block dashboard_title %}Register{% endblock %}
+{% block title %}นำเข้าสินค้า{% endblock %}
+{% block dashboard_title %}นำเข้าสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_registers.index' %}
-<div class="active section">Register</div>
+<div class="active section">ลงทะเบียนสินค้า</div>
 {% else %}
-<a class="section" href="{{ url_for('item_registers.index') }}">Register</a>
+<a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -16,14 +16,14 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>Receipt id</th>
-        <th>Description</th>
-        <th>Supplier</th>
-        <th>User</th>
-        <th>Registeration Date</th>
-        <th>Checkin Item</th>
-        <th>Checkin Items</th>
-        <th>Edit-Delete</th>
+        <th>เลขกำกับใบเสร็จ</th>
+        <th>คำอธิบาย</th>
+        <th>ร้านค้า</th>
+        <th>ชื่อผู้ใช้งาน</th>
+        <th>วันลงทะเบียนสินค้า</th>
+        <th>นำเข้าสินค้า</th>
+        <th>รายการนำเข้าสินค้า</th>
+        <th>แก้ไข/ลบข้อมูลสินค้า</th>
       </tr>
     </thead>
     <tbody>
@@ -36,7 +36,7 @@
         <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
         <td data-label="Checkin">
           <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
-            Checkin
+            นำเข้าสินค้า
           </a>
         </td>
         <td data-label="Checkin Items">
@@ -60,7 +60,7 @@
     </tbody>
   </table>
   <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-    Add
+    เพิ่มสินค้า
   </a>
 
 </div>
