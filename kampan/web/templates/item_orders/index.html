@@ -5,7 +5,9 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_orders.index' %}
-<div class="active section">คำสั่งเบิกสินค้า</div>
+<a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
+  เพิ่มคำสั่งเบิก
+</a>
 {% else %}
 <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
 <div class="divider"> / </div>
@@ -64,7 +66,4 @@
     </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('item_orders.order') }}">
-  เพิ่มคำสั่งเบิก
-</a>
 {% endblock %}

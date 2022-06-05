@@ -5,7 +5,9 @@
 {% block dashboard_title %}สินค้า{% endblock %}
 {% block breadcrumbs %}
 <div class="ui breadcrumb">
-  <div class="active section">สินค้า</div>
+  <a class="ui primary button" href="{{ url_for('items.add') }}">
+    เพิ่มสินค้า
+  </a>
 </div>
 {% endblock %}
 
@@ -57,12 +59,6 @@
 
     </tbody>
   </table>
-
-  <a class="ui primary button" href="{{ url_for('items.add') }}">
-    เพิ่มสินค้า
-  </a>
-
-
 </div>
 {% endblock %}
 

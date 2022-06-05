@@ -4,7 +4,9 @@
 {% block dashboard_title %}นำเข้าสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_registers.index' %}
-<div class="active section">ลงทะเบียนสินค้า</div>
+<a class="ui primary button" href="{{ url_for('item_registers.register') }}">
+  เพิ่มสินค้า
+</a>
 {% else %}
 <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
 <div class="divider"> / </div>
@@ -59,10 +61,6 @@
       {% endfor %}
     </tbody>
   </table>
-  <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-    เพิ่มสินค้า
-  </a>
-
 </div>
 
 {% endblock %}

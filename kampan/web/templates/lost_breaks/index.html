@@ -3,9 +3,14 @@
 {% block title %}สินค้าชำรุด หรือ สูญหาย{% endblock %}
 {% block dashboard_title %}สินค้าชำรุด หรือ สูญหาย{% endblock %}
 {% block breadcrumbs %}
+{% if request.endpoint == 'lost_breaks.index' %}
 <a class="ui primary button" href="{{ url_for('lost_breaks.add') }}">
   เพิ่มสินค้าชำรุด/สูญหาย
 </a>
+{% else %}
+<a class="section" href="{{ url_for('lost_breaks.index') }}">เพิ่มสินค้าชำรุด/สูญหาย</a>
+<div class="divider"> / </div>
+{% endif %}
 {% endblock %}
 
 {% block content %}

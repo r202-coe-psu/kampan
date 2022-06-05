@@ -4,7 +4,9 @@
 {% block dashboard_title %}คลังสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'warehouses.index' %}
-<div class="active section">คลังสินค้า</div>
+<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
+  เพิ่มคลังสินค้า
+</a>
 {% else %}
 <a class="section" href="{{ url_for('warehouses.index') }}">คลังสินค้า</a>
 <div class="divider"> / </div>
@@ -43,8 +45,5 @@
     </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
-  เพิ่มคลังสินค้า
-</a>
 
 {% endblock %}

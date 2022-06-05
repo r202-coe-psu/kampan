@@ -4,7 +4,9 @@
 {% block dashboard_title %}ตำแหน่งสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
-<div class="active section">ตำแหน่งสินค้า</div>
+<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
+  เพิ่มตำแหน่งสินค้า
+</a>
 {% else %}
 <a class="section" href="{{ url_for('item_positions.index') }}">ตำแหน่งสินค้า</a>
 <div class="divider"> / </div>
@@ -48,8 +50,5 @@
     </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
-  เพิ่มตำแหน่งสินค้า
-</a>
 
 {% endblock %}

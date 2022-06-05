@@ -5,7 +5,9 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'suppliers.index' %}
-<div class="active section">ร้านค้า</div>
+<a class="ui primary button" href="{{ url_for('suppliers.add') }}">
+  เพิ่มร้านค้า
+</a>
 {% else %}
 <a class="section" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
 <div class="divider"> / </div>
@@ -49,8 +51,5 @@
     </tbody>
   </table>
 </div>
-<a class="ui primary button" href="{{ url_for('suppliers.add') }}">
-  เพิ่มร้านค้า
-</a>
 
 {% endblock %}
