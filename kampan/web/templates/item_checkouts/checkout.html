@@ -1,7 +1,7 @@
 {% extends '/item_checkouts/index.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}Checkout{% endblock %}
+{% block title %}นำสินค้าออก{% endblock %}
 
 
 {% block content %}
@@ -14,7 +14,7 @@
       {{ renderer.render_field(form.quantity) }}
       {{ renderer.render_calendar(form.checkout_date, calendar_id="checkout_date_calendar") }}
 
-      <button class="ui primary button" type="submit">Submit</button>
+      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
     </form>
     </div>
 {% endblock content %}

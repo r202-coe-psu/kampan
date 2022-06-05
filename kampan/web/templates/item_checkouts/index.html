@@ -1,11 +1,11 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Checkout{% endblock %}
-{% block dashboard_title %}Checkout{% endblock %}
+{% block title %}รายการนำสินค้าออก{% endblock %}
+{% block dashboard_title %}รายการนำสินค้าออก{% endblock %}
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">Checkout</div>
+<div class="active section">รายการนำสินค้าออก</div>
 {% endblock %}
 
 {% block content %}
@@ -13,14 +13,14 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>Image</th>
-        <th>Item</th>
-        <th>Order</th>
-        <th>Warehouse</th>
-        <th>Quantity</th>
-        <th>Price</th>
-        <th>Checkout Date</th>
-        <th>User</th>
+        <th>รูปสินค้า</th>
+        <th>ชื่อสินค้า</th>
+        <th>คำสั่งเบิก</th>
+        <th>คลังสินค้า</th>
+        <th>จำนวนทั้งหมด</th>
+        <th>ราคา</th>
+        <th>วันที่นำสินค้าออก</th>
+        <th>ชื่อผู้ใช้งาน</th>
       </tr>
     </thead>
     <tbody>

@@ -1,11 +1,11 @@
 {% extends '/item_checkouts/index.html' %}
 
-{% block title %}Checkout Bill{% endblock %}
-{% block dashboard_title %}Checkout Bill{% endblock %}
+{% block title %}รายการนำสินค้าออก{% endblock %}
+{% block dashboard_title %}รายการนำสินค้าออก{% endblock %}
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">Bill</div>
+<div class="active section"></div>
 {% endblock %}
 
 {% block content %}
@@ -14,13 +14,13 @@
     <thead>
       <tr>
 
-        <th>Image</th>
-        <th>Order</th>
-        <th>Item</th>
-        <th>Warehouse</th>
-        <th>Quantity</th>
-        <th>Price</th>
-        <th>Checkout Date</th>
+        <th>รูปสินค้า</th>
+        <th>คำสั่งเบิก</th>
+        <th>ชื่อสินค้า</th>
+        <th>คลังสินค้า</th>
+        <th>จำนวนทั้งหมด</th>
+        <th>ราคา</th>
+        <th>วันที่นำสินค้าออก</th>
       </tr>
     </thead>
     <tbody>
