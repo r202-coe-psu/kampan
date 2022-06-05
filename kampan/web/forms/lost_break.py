@@ -14,10 +14,10 @@ BaseItemLostBreakForm = model_form(
         "lost_from",
     ],
     field_args={
-        "item": {"label": "Item", "label_modifier": lambda i: i.name},
-        "warehouse": {"label": "Warehouse", "label_modifier": lambda w: w.name},
-        "description": {"label": "Description"},
-        "quantity": {"label": "Quantity"},
+        "item": {"label": "ชื่อสินค้า", "label_modifier": lambda i: i.name},
+        "warehouse": {"label": "คลังสินค้า", "label_modifier": lambda w: w.name},
+        "description": {"label": "คำอธิบาย"},
+        "quantity": {"label": "จำนวนทั้งหมด"},
     },
 )
 class ItemLostBreakForm(BaseItemLostBreakForm):
