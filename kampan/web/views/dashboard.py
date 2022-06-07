@@ -43,6 +43,7 @@ def daily_dashboard():
     total_values = 0
 
     now = datetime.datetime.now()
+    today_date = now.strftime("%d/%m/%Y")
     date_now = now.strftime("%d %B, %Y")
     month_now = int(now.strftime("%m"))
     year_now = int(now.strftime("%Y"))
@@ -50,7 +51,7 @@ def daily_dashboard():
     checkout_trend_day = []
     years = []
     years_day = []
-
+    
 
     for checkout in checkouts:
         date = checkout.checkout_date
@@ -127,6 +128,7 @@ def daily_dashboard():
         checkout_trend_day=sorted_checkout_trend_day,
         years=sorted(years),
         size_years=len(years),
+        today_date=today_date,
     )
 
 
@@ -163,6 +165,7 @@ def monthly_dashboard():
             checkout_trend_month[index][month] += int(checkout.quantity)
 
     now = datetime.datetime.now()
+    today_date = now.strftime("%d/%m/%Y")
     date_now = now.strftime("%d %B, %Y")
     year_now = int(now.strftime("%Y"))
 
@@ -194,6 +197,7 @@ def monthly_dashboard():
         checkout_years=sorted(checkout_years),
         size_checkout_years=len(checkout_years),
         select_year=select_year,
+        today_date= today_date,
     )
 
 
@@ -206,6 +210,7 @@ def yearly_dashboard():
     checkouts = models.CheckoutItem.objects()
 
     now = datetime.datetime.now()
+    today_date = now.strftime("%d/%m/%Y")
     date_now = now.strftime("%d %B, %Y")
 
     checkout_quantity = 0
@@ -252,4 +257,5 @@ def yearly_dashboard():
         checkout_trend_year=sorted_checkout_trend_year,
         checkout_years=sorted(checkout_years),
         date_now=date_now,
+        today_date =today_date,
     )
