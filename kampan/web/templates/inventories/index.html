@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}Inventory{% endblock %}
-{% block dashboard_title %}Inventory{% endblock %}
+{% block title %}รายการสินค้า{% endblock %}
+{% block dashboard_title %}รายการสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'inventories.index' %}
-<div class="active section">Inventory</div>
+<div class="active section">รายการสินค้า</div>
 {% else %}
-<a class="section" href="{{ url_for('inventories.index') }}">Inventory</a>
+<a class="section" href="{{ url_for('inventories.index') }}">รายการสินค้า</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -16,17 +16,17 @@
   <table class="ui striped padded celled table">
     <thead>
       <tr>
-        <th>Image</th>
-        <th>Item Name</th>
-        <th>Registration ID</th>
-        <th>Registration Date</th>
-        <th>Warehouse</th>
-        <th>Position ( Rack / Row / Locker )</th>
-        <th>Quantity</th>
-        <th>Remain</th>
-        <th>Price</th>
-        <th>Bill</th>
-        <th>User</th>
+        <th>รูปสินค้า</th>
+        <th>ชื่อสินค้า</th>
+        <th>เลขลงทะเบียนสินค้า</th>
+        <th>วันที่ลงทะเบียนสินค้า</th>
+        <th>คลังสินค้า</th>
+        <th>ตำแหน่ง ( ชั้นวาง / แถว / ตู้เก็บของ )</th>
+        <th>จำนวนทั้งหมด</th>
+        <th>จำนวนคงเหลือ</th>
+        <th>ราคา</th>
+        <th>บิลสินค้า</th>
+        <th>ผู้ใช้งาน</th>
       </tr>
     </thead>
     <tbody>

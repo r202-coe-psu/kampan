@@ -1,18 +1,18 @@
 {% extends '/base/default-dashboard.html' %}
 
 {% block dashboard_title %}
-Profile
+ข้อมูลผู้ใช้งาน
 {% endblock %}
 
 {% block breadcrumbs %}
-<a href="{{ url_for('accounts.index') }}" class="section">Accounts</a>
+<a href="{{ url_for('accounts.index') }}" class="section">บัญชีผู้ใช้งาน</a>
 {% endblock %}
 
 
 {% block content %}
 <div class="ui container">
   <div class="ui segment">
-    <h2 class="ui header">Profile <a class="btn-floating btn-large waves-effect waves-light"
+    <h2 class="ui header">ข้อมูลผู้ใช้งาน <a class="btn-floating btn-large waves-effect waves-light"
         href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
     </h2>
     <div class="ui grid two column">
@@ -29,7 +29,7 @@ Profile
         {{ current_user.metadata['thai_last_name'] }}
       </div>
       <div class="column">
-        <b>Organization:</b> {{ current_user.metadata['organization'] }}
+        <b>องค์กร:</b> {{ current_user.metadata['organization'] }}
       </div>
     </div>
   </div>
