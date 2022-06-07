@@ -92,18 +92,18 @@ def daily_dashboard():
 
         
     eng_month = [
-        "January",
-        "Febuary",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
+        "มกรา",
+        "กุมภา",
+        "มีนา",
+        "เมษา",
+        "พฤษภา",
+        "มิถุนา",
+        "กรกฏา",
+        "สิงหา",
+        "กันยา",
+        "ตุลา",
+        "พฤศจิกา",
+        "ธันวา",
     ]
 
     
