@@ -16,9 +16,9 @@ Profile = model_form(
         "status",
     ],
     field_args={
-        "first_name": {"label": "Firstname"},
-        "last_name": {"label": "Lastname"},
-        "organization": {"label": "Organization"},
+        "first_name": {"label": "ชื่อ"},
+        "last_name": {"label": "นามสกุล"},
+        "organization": {"label": "องค์กร"},
     },
 )
 
