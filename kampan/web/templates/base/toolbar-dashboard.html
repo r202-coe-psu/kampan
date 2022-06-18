@@ -22,11 +22,8 @@
   </div>
 
   <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
-  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ดรายวัน</a>
-  <a class="item" href="{{ url_for('dashboard.monthly_dashboard') }}"><i class="icon dashboard"
-      style="color: rgb(224, 241, 64);"></i>แดชบอร์ดรายเดือน</a>
-  <a class="item" href="{{ url_for('dashboard.yearly_dashboard') }}"><i class="icon dashboard"
-      style="color: rgb(12, 209, 12);"></i>แดชบอร์ดรายปี</a>
+  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ด</a>
+
   
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
@@ -48,7 +45,7 @@
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    การจำหน่าย
+    การนำสินค้าออก
   </div>
 
   <a class="item" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
