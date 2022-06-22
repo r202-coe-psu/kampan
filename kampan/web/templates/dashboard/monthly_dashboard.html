@@ -3,7 +3,7 @@
 {% block title %}แดชบอร์ดรายเดือน{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายเดือน</div>
-<div class="ui small right floated header">{{date_now}}</div>
+<div class="ui small right floated header">{{today_date}}</div>
 {% endblock %}
 
 {% block content %}
@@ -150,7 +150,20 @@
       },
     },
     xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      categories: [
+      "มกรา",
+      "กุมภา",
+      "มีนา",
+      "เมษา",
+      "พฤษภา",
+      "มิถุนา",
+      "กรกฏา",
+      "สิงหา",
+      "กันยา",
+      "ตุลา",
+      "พฤศจิกา",
+      "ธันวา",
+  ],
     }
   };
 

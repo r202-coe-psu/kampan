@@ -5,13 +5,13 @@
 {% block breadcrumbs %}
 {{ super() }}
 <i class="right angle icon divider"></i>
-<div class="active section">Edit Profile</div>
+<div class="active section">แก้ไขบัญชีผู้ใช้งาน</div>
 {% endblock %}
 
 {% block content %}
 <div class="ui content">
   <div class="ui segment">
-    <h2>Profile</h2>
+    <h2>ข้อมูลผู้ใช้งาน</h2>
     <form method="POST" class="ui form">
       {{ form.csrf_token }}
       <div class="two fields">
@@ -22,7 +22,7 @@
         {{ renderer.render_field(form.organization) }}
       </div>
 
-      <button name="create" type="submit" class="ui primary button">Change</button>
+      <button name="create" type="submit" class="ui primary button">เปลี่ยนข้อมูล</button>
     </form>
   </div>
 </div>
