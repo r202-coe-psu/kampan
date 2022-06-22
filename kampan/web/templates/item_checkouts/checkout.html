@@ -10,7 +10,10 @@
       
       {{ form.hidden_tag() }}
 
-      {{ renderer.render_field(form.item) }}
+      <div class="field">
+        {{ form.item.label }}
+        {{ form.item(class="ui fluid search dropdown") }}
+      </div>
       {{ renderer.render_field(form.quantity) }}
       {{ renderer.render_calendar(form.checkout_date, calendar_id="checkout_date_calendar") }}
 
@@ -50,6 +53,16 @@ text: {
 },
 };
 $('#checkout_date_calendar').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+  $(document)
+  .ready(function() {
+    $('.ui.dropdown.validate.selection')
+    .dropdown({
+      allowAdditions: true
+    });
+  });
 </script>
 {% endblock %}
 

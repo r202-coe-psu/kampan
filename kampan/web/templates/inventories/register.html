@@ -21,7 +21,10 @@
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="three fields">
-      {{ renderer.render_select(form.item) }}
+      <div class="field">
+        {{ form.item.label }}
+        {{ form.item(class="ui fluid search dropdown") }}
+      </div>
       {{ renderer.render_field(form.quantity) }}
       {{ renderer.render_field(form.price) }}
     </div>
@@ -48,5 +51,15 @@
             var name = e.target.files[0].name;
             $('.attach-file-{{ form.bill_file.name }}', $(e.target).parent()).val(name);
         });
+</script>
+
+<script type="text/javascript">
+  $(document)
+  .ready(function() {
+    $('.ui.dropdown.validate.selection')
+    .dropdown({
+      allowAdditions: true
+    });
+  });
 </script>
 {% endblock additional_js %}

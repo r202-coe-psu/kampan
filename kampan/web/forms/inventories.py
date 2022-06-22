@@ -16,7 +16,8 @@ BaseInventoryForm = model_form(
         "remain",
     ],
     field_args={
-        "item": {"label": "สินค้า", "label_modifier": lambda i: i.name},
+        "item": {"label": "สินค้า", "label_modifier": lambda i: f"{i.barcode_id} ({i.name})"
+        },
         "position": {
             "label": "ตำแหน่ง",
             "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
