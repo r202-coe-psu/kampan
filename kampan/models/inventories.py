@@ -39,6 +39,7 @@ class Inventory(me.Document):
 class OrderItem(me.Document):
     meta = {"collection": "order_items"}
 
+    status = me.StringField(default="Pending")
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)

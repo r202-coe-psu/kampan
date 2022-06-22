@@ -10,6 +10,7 @@ BaseOrderItemForm = model_form(
     FlaskForm,
     exclude=[
         "created_date",
+        "status",
     ],
     field_args = {
         "user":{"label": "ชื่อผู้ใช้งาน"},

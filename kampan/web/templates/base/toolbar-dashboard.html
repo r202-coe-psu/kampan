@@ -50,6 +50,13 @@
 
   <a class="item" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
   <a class="item" href="{{ url_for('item_checkouts.index') }}">รายการคำสั่งซื้อ</a>
+  
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    การอนุมัติ
+  </div>
+
+  <a class="item" href="{{ url_for('approve_orders.index')}}">อนุมัติคำสั่งเบิก</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">

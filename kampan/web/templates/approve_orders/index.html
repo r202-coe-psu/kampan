@@ -8,17 +8,6 @@
 
 {% block content %}
 <div style="padding-bottom: 1em ;">
-  {% if request.endpoint == 'item_orders.index' %}
-    <a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
-      เพิ่มคำสั่งเบิก
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
-
-<div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <tr>
@@ -26,41 +15,31 @@
         <th>วันที่สั่งเบิกสินค้า</th>
         <th>คำอธิบาย</th>
         <th>ชื่อผู้ใช้งาน</th>
-        <th>เบิกสินค้า</th>
         <th>รายการสินค้า</th>
-        <th>สถานะ</th>
+        <th>การอนุมัติ</th>
         <th>แก้ไข/ลบข้อมูล</th>
 
       </tr>
     </thead>
     <tbody>
       {% for order in orders %}
+      {% if order.status == "Pending" %}
       <tr>
-
         <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Description">{{ order.description }}</td>
         <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-        <td>
-          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-            เบิกสินค้า
-          </a>
-        </td>
         <td data-label="Bill">
           <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="eye icon"></i>
           </a>
         </td>
-        {% if order.status == "Pending" %}
-          <td data-label="Status" class="red">
-            <span class="ui red text">รออนุมัติ</span>
-          </td>
-        {% else %}
-          <td data-label="Status" class="green">
-            <span class="ui green text">อนุมัติ</span>
-          </td>
-        {% endif %}
-        <td>
+        <td data-label="Status">
+            <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
+                อนุมัติ
+            </a>
+        </td>
+        <td data-label="Edit Delete">
           <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
@@ -71,6 +50,7 @@
           </a>
         </td>
       </tr>
+      {% endif %}
       {% endfor %}
     </tbody>
   </table>
