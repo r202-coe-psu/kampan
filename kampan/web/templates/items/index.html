@@ -4,14 +4,15 @@
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}สินค้า{% endblock %}
 {% block breadcrumbs %}
-<div class="ui breadcrumb">
+{% endblock %}
+
+{% block content %}
+<div class="ui" style="padding-bottom: 1em;">
   <a class="ui primary button" href="{{ url_for('items.add') }}">
     เพิ่มสินค้า
   </a>
 </div>
-{% endblock %}
 
-{% block content %}
 <div>
   <table class="ui celled table">
     <thead>

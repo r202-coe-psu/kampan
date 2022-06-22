@@ -14,6 +14,17 @@
 {% endblock %}
 
 {% block content %}
+<div class="ui" style="padding-bottom: 1em;">
+  {% if request.endpoint == 'item_positions.index' %}
+    <a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
+      เพิ่มตำแหน่งสินค้า
+    </a>
+  {% else %}
+    <a class="section" href="{{ url_for('item_positions.index') }}">ตำแหน่งสินค้า</a>
+    <div class="divider"> / </div>
+  {% endif %}
+</div>
+
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
