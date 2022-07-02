@@ -27,4 +27,4 @@ BaseCheckoutItemForm = model_form(
 )
 
 class CheckoutItemForm(BaseCheckoutItemForm):
-    calendar_select = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล",format='%Y-1%m-%d %H:%M')
+    calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล",format='%Y-1%m-%d %H:%M')
