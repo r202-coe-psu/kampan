@@ -1,3 +1,4 @@
+from tabnanny import check
 from flask import Blueprint, render_template, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
 from kampan.web import forms
@@ -5,15 +6,23 @@ from kampan import models
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
+def check_in_time():
+    pass
 
-@module.route("/")
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     inventories = models.Inventory.objects()
 
+    form = forms.inventories.InventoryForm()
+
+    if request.method == "POST":
+        print(form.calendar_select.data)
     return render_template(
         "/inventories/index.html",
+        check_in_time=check_in_time,
         inventories=inventories,
+        form=form,
     )
 
 @module.route("/register", methods=["GET", "POST"], defaults=dict(inventory_id=None))
