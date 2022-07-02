@@ -1,3 +1,4 @@
+from calendar import calendar
 from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
@@ -26,4 +27,4 @@ BaseCheckoutItemForm = model_form(
 )
 
 class CheckoutItemForm(BaseCheckoutItemForm):
-    pass
+    calendar_select = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล",format='%Y-1%m-%d %H:%M')
