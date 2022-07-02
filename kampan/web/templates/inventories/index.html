@@ -15,7 +15,7 @@
 {% block content %}
 <form method="post">
 <div>
-    {{renderer.render_calendar(form.calendar_select)}}
+    {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
     <button type="submit" class="ui primary button">Submit</button>
       <table class="ui striped padded celled table">
         <thead>
@@ -35,6 +35,10 @@
         </thead>
         <tbody>
           {% for inventory in inventories %}
+
+          <!-- {{inventory.registeration_date}} -->
+          {% if calendar_select %}
+          {% if check_in_time(inventory.registeration_date, calendar_select) %}
           <tr>
             <td data-label="Image">
               <div>
@@ -48,21 +52,95 @@
             <td data-label="Item Name">{{ inventory.item.name }}</td>
             <td data-label="Registrarion ID">{{ inventory.registration.receipt_id}}</td>
             <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-        <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{ inventory.position.locker }} </td>
-        <td data-label="Quantity">{{ inventory.quantity }}</td>
-        <td data-label="Remain">{{ inventory.remain }}</td>
-        <td data-label="Price">{{ inventory.price }}</td>
-        <td>
-          <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename) }}" target="_blank">
-            {{inventory.bill.filename}}
-          </a>
-        </td>
-        <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
-      </tr>
+            <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+            <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{ inventory.position.locker }} </td>
+            <td data-label="Quantity">{{ inventory.quantity }}</td>
+            <td data-label="Remain">{{ inventory.remain }}</td>
+            <td data-label="Price">{{ inventory.price }}</td>
+            <td>
+              <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename) }}" target="_blank">
+                {{inventory.bill.filename}}
+              </a>
+          </td>
+          <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
+        </tr>
+        
+          {% endif %}
+            <!-- {{"None Data"}} -->
+            {% else %}
+            <tr>
+              <td data-label="Image">
+                <div>
+                  {% if not inventory.item.image %}
+                  <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+                  {% else %}
+                  <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}" width="70">
+                  {% endif %}
+                </div>
+              </td>
+              <td data-label="Item Name">{{ inventory.item.name }}</td>
+              <td data-label="Registrarion ID">{{ inventory.registration.receipt_id}}</td>
+              <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+              <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{ inventory.position.locker }} </td>
+              <td data-label="Quantity">{{ inventory.quantity }}</td>
+              <td data-label="Remain">{{ inventory.remain }}</td>
+              <td data-label="Price">{{ inventory.price }}</td>
+              <td>
+                <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename) }}" target="_blank">
+                  {{inventory.bill.filename}}
+                </a>
+            </td>
+            <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
+          {% endif %}
+          
       {% endfor %}
     </tbody>
   </table>
 </div>
 </form>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minutes).slice(-2)  ;
+    }
+};
+var calendar_setting = {
+type: 'datetime',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+  $(document)
+  .ready(function() {
+    $('.ui.dropdown.validate.selection')
+    .dropdown({
+      allowAdditions: true
+    });
+  });
+</script>
 {% endblock %}

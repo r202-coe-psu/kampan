@@ -1,3 +1,5 @@
+from calendar import calendar
+from pyexpat import model
 from tabnanny import check
 from flask import Blueprint, render_template, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
@@ -6,8 +8,12 @@ from kampan import models
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
-def check_in_time():
-    pass
+def check_in_time(registration_date, calendar_select):
+    print(registration_date, calendar_select, registration_date <= calendar_select)
+    if registration_date <= calendar_select:
+        return True
+    else:
+        return False
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
@@ -16,10 +22,13 @@ def index():
 
     form = forms.inventories.InventoryForm()
 
+
+
     if request.method == "POST":
         print(form.calendar_select.data)
     return render_template(
         "/inventories/index.html",
+        calendar_select=form.calendar_select.data,
         check_in_time=check_in_time,
         inventories=inventories,
         form=form,
