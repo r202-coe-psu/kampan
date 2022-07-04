@@ -1,3 +1,5 @@
+from calendar import calendar
+from crypt import methods
 from pyexpat import model
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
@@ -11,13 +13,31 @@ import datetime
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 
-@module.route("/")
+def check_in_time(checkout_date,calendar_select):
+    print(checkout_date,calendar_select)
+    if checkout_date <= calendar_select:
+        return True
+
+    else:
+        return False
+
+
+@module.route("/", methods=["GET","POST"])
 @login_required
 def index():
     checkouts = models.CheckoutItem.objects()
+
+    form = forms.inventories.InventoryForm()
+
+    if request.method == "POST":
+        print("\n\n\n\n\n", form.calendar_select.data)
+
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
+        calendar_select=form.calendar_select.data,
+        check_in_time = check_in_time,
+        form=form,
     )
 
 
