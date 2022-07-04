@@ -17,13 +17,16 @@ def index():
         orders=orders,
     )
 
-@module.route("<order_id>")
-def approve(order_id):
-    order = models.OrderItem.objects.get(id=order_id)
-    form = forms.item_orders.OrderItemForm(obj=order)
+@module.route("<checkout_item_id>")
+def approve(checkout_item_id):
+    checkout_item = models.OrderItem.objects.get(id=checkout_item_id)
+    form = forms.item_orders.OrderItemForm(obj=checkout_item)
 
-    form.populate_obj(order)
-    order.status = "Approved"
-    order.save()
+    form.populate_obj(checkout_item)
 
+    checkout_item.status = "approved"
+    checkout_item.order.status = "approved"
+    
+    checkout_item.save()
+    
     return redirect(url_for("approve_orders.index"))

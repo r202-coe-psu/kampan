@@ -13,6 +13,7 @@ BaseCheckoutItemForm = model_form(
         "price",
         "warehouse",
         "user",
+        "status",
 
         
     ],

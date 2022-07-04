@@ -1,3 +1,4 @@
+from email.policy import default
 from wsgiref.validate import validator
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed
@@ -19,7 +20,8 @@ BaseItemForm = model_form(
         "categories": {"label": "หมวดหมุ่"},
         "unit": {"label": "หน่วย"},
         "minimum": {"label": "จำนวนสินค้าขั้นต่ำ -- (แจ้งเตือนเมื่อสินค้าใกล้หมดตามจำนวนสินค้าที่น้อยกว่าหรือเท่ากับจำนวนขั้นต่ำ)"},
-        "barcode_id" : {"label": "รหัสบาร์โค้ด"}
+        "barcode_id": {"label": "รหัสบาร์โค้ด"},
+        "status": {"label": "การอนุมัติ"}
     },
 )
 
@@ -29,14 +31,3 @@ class ItemForm(BaseItemForm):
     img = fields.FileField(
         "รูปภาพสินค้า", validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")]
     )
-
-
-# class ItemForm(FlaskForm):
-
-#     name = fields.StringField(validators=[validators.InputRequired()])
-#     description = fields.StringField()
-#     weight = fields.FloatField(default=0)
-#     size = fields.EmbeddedDocumentField(ItemSize)
-#     categories = TagListField(
-#         "Categories", validators=[validators.InputRequired(), validators.Length(min=1)]
-#     )

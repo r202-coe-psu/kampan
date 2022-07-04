@@ -26,9 +26,10 @@
       {{ renderer.render_field(form.size.height) }}
       {{ renderer.render_field(form.size.deep) }}
     </div>
-    <div class="two fields">
+    <div class="three fields">
       {{ renderer.render_field(form.weight) }}
       {{ renderer.render_field(form.categories) }}
+      {{ renderer.render_select(form.status)}}
     </div>
     <div class="two fields">
       {{ renderer.render_field(form.minimum) }}

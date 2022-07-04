@@ -39,7 +39,7 @@ class Inventory(me.Document):
 class OrderItem(me.Document):
     meta = {"collection": "order_items"}
 
-    status = me.StringField(default="Pending")
+    status = me.StringField(default="pending")
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -54,12 +54,18 @@ class CheckoutItem(me.Document):
     checkout_from = me.ReferenceField("Inventory", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
+    status = me.StringField(default="pending")
 
     quantity = me.IntField(required=True)
     price = me.FloatField()
     message = me.StringField()
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+
+    def is_appreove_required(self):
+        if self.item.status == "approval_required":
+            return True
+        return False
 
 class LostBreakItem(me.Document):
     mete = {"collection": "lost_break_items"}

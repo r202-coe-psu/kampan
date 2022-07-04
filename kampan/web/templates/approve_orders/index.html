@@ -1,7 +1,7 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}คำสั่งเบิกสินค้า{% endblock %}
-{% block dashboard_title %}คำสั่งเบิกสินค้า{% endblock %}
+{% block title %}อนุมัติการเบิกสินค้า{% endblock %}
+{% block dashboard_title %}อนุมัติการเบิกสินค้า{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -23,7 +23,7 @@
     </thead>
     <tbody>
       {% for order in orders %}
-      {% if order.status == "Pending" %}
+      {% if order.status == "pending" %}
       <tr>
         <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Description">{{ order.description }}</td>
@@ -34,7 +34,7 @@
             <i class="eye icon"></i>
           </a>
         </td>
-        <td data-label="Status">
+        {#<td data-label="Status">
             <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
                 อนุมัติ
             </a>
@@ -48,7 +48,7 @@
             style="color: white; background-color: rgb(192, 55, 55);">
             <i class="trash icon"></i>
           </a>
-        </td>
+        </td>#}
       </tr>
       {% endif %}
       {% endfor %}

@@ -22,6 +22,12 @@ class Item(me.Document):
     unit = me.StringField(required=True, default="ชุด", max_length=50)
     minimum = me.IntField(required=True, default=1)
     barcode_id = me.StringField(required=True, max_length=255)
+    status = me.StringField(
+        choices=[
+            ('no_approval_required', 'ไม่ต้องอนุมัติ'),
+            ('approval_required', 'ต้องอนุมัติ'),
+        ])
+
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
