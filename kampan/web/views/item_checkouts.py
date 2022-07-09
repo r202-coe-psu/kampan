@@ -1,6 +1,7 @@
 from calendar import calendar
 from crypt import methods
 from pyexpat import model
+from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
@@ -103,5 +104,6 @@ def bill_checkout():
 
     return render_template(
         "/item_checkouts/bill-checkout.html",
-        checkouts = checkouts
+        checkouts = checkouts,
+        order_id=order_id,
     )
