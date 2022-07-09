@@ -11,14 +11,10 @@
   <table class="ui celled table">
     <thead>
       <tr>
-
         <th>วันที่สั่งเบิกสินค้า</th>
         <th>คำอธิบาย</th>
         <th>ชื่อผู้ใช้งาน</th>
         <th>รายการสินค้า</th>
-        <th>การอนุมัติ</th>
-        <th>แก้ไข/ลบข้อมูล</th>
-
       </tr>
     </thead>
     <tbody>
@@ -34,21 +30,6 @@
             <i class="eye icon"></i>
           </a>
         </td>
-        {#<td data-label="Status">
-            <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
-                อนุมัติ
-            </a>
-        </td>
-        <td data-label="Edit Delete">
-          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
-            style="color: white; background-color: rgb(192, 55, 55);">
-            <i class="trash icon"></i>
-          </a>
-        </td>#}
       </tr>
       {% endif %}
       {% endfor %}
