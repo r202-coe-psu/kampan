@@ -10,10 +10,11 @@
 {% endblock %}
 
 {% block content %}
+
 <form method="POST">
-  <div style="padding-bottom: 1em ;">
+  <div style="padding-bottom: 1em ; ">
     {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
-    <button type="submit" class="ui primary button">ยืนยันข้อมูล</button>
+    <button type="submit" class="ui primary button" style="margin-top: 10px;">ยืนยันข้อมูล</button>
 
     <table class="ui celled table">
       <thead>
