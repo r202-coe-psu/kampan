@@ -112,11 +112,11 @@
             var minutes = datetime.getMinutes();
             var hour = datetime.getHours();
 
-          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minutes).slice(-2)  ;
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2)+ " " + ("00") + ":" + ("00");
     }
 };
 var calendar_setting = {
-type: 'datetime',
+type: 'date',
 monthFirst: false,
 formatter: datetime_formatter,
 today: false,
@@ -139,7 +139,8 @@ $('#checkout_date_calendar').calendar(calendar_setting);
   .ready(function() {
     $('.ui.dropdown.validate.selection')
     .dropdown({
-      allowAdditions: true
+      allowAdditions: true,
+      fullTextSearch: 'exact'
     });
   });
 </script>
