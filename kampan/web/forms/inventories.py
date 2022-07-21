@@ -34,4 +34,4 @@ class InventoryForm(BaseInventoryForm):
     bill_file = fields.FileField(
         "*** อัปโหลดเฉพาะบิลที่เป็นไฟล์ PDF เท่านั้น ***", validators=[FileAllowed(["pdf"], "PDF only")]
     )
-    calendar_select = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล", format="%Y-%m-%d %H:%M")
+    calendar_select = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล", format="%Y-%m-%d")
