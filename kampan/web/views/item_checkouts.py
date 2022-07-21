@@ -14,9 +14,9 @@ import datetime
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 
-def check_in_time(checkout_date,calendar_select):
-    print(checkout_date,calendar_select)
-    if checkout_date <= calendar_select:
+def check_in_time(checkout_date,calendar_select,calendar_end):
+    print(checkout_date,calendar_select <= checkout_date<= calendar_end)
+    if calendar_select <= checkout_date <= calendar_end:
         return True
 
     else:
@@ -31,12 +31,14 @@ def index():
     form = forms.inventories.InventoryForm()
 
     if request.method == "POST":
-        print("\n\n\n\n\n", form.calendar_select.data)
+        print(form.calendar_select.data)
+        print(form.calendar_end.data)
 
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
         calendar_select=form.calendar_select.data,
+        calendar_end = form.calendar_end.data,
         check_in_time = check_in_time,
         form=form,
     )
