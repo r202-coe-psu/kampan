@@ -8,9 +8,9 @@ from kampan import models
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
-def check_in_time(registration_date, calendar_select):
-    print(registration_date, calendar_select, registration_date <= calendar_select)
-    if registration_date <= calendar_select:
+def check_in_time(registration_date, calendar_select,calendar_end):
+    print(registration_date, calendar_select, calendar_select <= registration_date <= calendar_end)
+    if calendar_select <= registration_date <= calendar_end:
         return True
     else:
         return False
@@ -26,9 +26,11 @@ def index():
 
     if request.method == "POST":
         print(form.calendar_select.data)
+        print(form.calendar_end.data)
     return render_template(
         "/inventories/index.html",
         calendar_select=form.calendar_select.data,
+        calendar_end = form.calendar_end.data,
         check_in_time=check_in_time,
         inventories=inventories,
         form=form,
