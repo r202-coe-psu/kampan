@@ -91,7 +91,45 @@
         </td>
       </tr>
       
+      
       {% endif %}
+      {% else %}
+      <tr>
+        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Description">{{ order.description }}</td>
+        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+        <td>
+          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+            เบิกสินค้า
+          </a>
+        </td>
+        
+        <td data-label="Bill">
+          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="eye icon"></i>
+          </a>
+        </td>
+        {% if order.status == "pending" %}
+          <td data-label="Status" class="red">
+            <span class="ui red text">รออนุมัติ</span>
+          </td>
+        {% else %}
+          <td data-label="Status" class="green">
+            <span class="ui green text">อนุมัติ</span>
+          </td>
+        {% endif %}
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
+          </a>
+        </td>
+      </tr>
       {% endif %}
       {% endfor %}
     </tbody>
