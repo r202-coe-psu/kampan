@@ -36,3 +36,5 @@ class InventoryForm(BaseInventoryForm):
     )
     calendar_select = fields.DateTimeField("วันที่เริ่มต้น", format="%Y-%m-%d")
     calendar_end = fields.DateTimeField("วันที่สุดท้าย",format="%Y-%m-%d")
+    calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี",format="%Y-%m")
+    calendar_year = fields.DateTimeField("กรุณาเลือกปี",format="%Y")
