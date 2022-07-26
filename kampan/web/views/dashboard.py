@@ -1,5 +1,7 @@
+from calendar import calendar
 from flask import Flask, Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
+from tomlkit import value
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
@@ -33,6 +35,8 @@ def index_user():
 @login_required
 def daily_dashboard():
     user = current_user._get_current_object()
+
+    form = forms.inventories.InventoryForm()
 
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
@@ -84,27 +88,20 @@ def daily_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-    select_year = None
-    select_month = None
-    if years:
-        index_year_now = years.index(year_now)
-        select_year = int(request.form.get("year", index_year_now ))
-        select_month = int(request.form.get("month", month_now - 1))
-
-        
+    
     eng_month = [
-        "มกรา",
-        "กุมภา",
-        "มีนา",
-        "เมษา",
-        "พฤษภา",
-        "มิถุนา",
-        "กรกฏา",
-        "สิงหา",
-        "กันยา",
-        "ตุลา",
-        "พฤศจิกา",
-        "ธันวา",
+        "มกราคม",
+        "กุมภาพันธ์",
+        "มีนาคม",
+        "เมษายน",
+        "พฤษภาคม",
+        "มิถุนายน",
+        "กรกฏาคม",
+        "สิงหาคม",
+        "กันยายน",
+        "ตุลาคม",
+        "พฤศจิกายน",
+        "ธันวาคม",
     ]
 
     
@@ -112,6 +109,30 @@ def daily_dashboard():
         return index_admin()
     
     sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
+    
+    format_month=int(month_now)-1
+    format_year=year_now
+    index_year=0
+
+    if request.method == "POST":
+
+        format_year = int((str(form.calendar_month_year.data)[:-15]))
+        format_month = int((str(form.calendar_month_year.data)[5:-12]))-1
+
+        if format_year in years:
+            index_year = years.index(format_year)
+
+        else:
+            index_year = "none"
+
+
+
+    select_year = years.index(year_now)
+    select_month = int(month_now)-1
+    if format_year in years:
+        
+        select_year = index_year
+        select_month = format_month
 
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -129,6 +150,10 @@ def daily_dashboard():
         years=sorted(years),
         size_years=len(years),
         today_date=today_date,
+        form=form,
+        format_month=format_month,
+        format_year=format_year,
+        idex_year = index_year,
     )
 
 
@@ -137,6 +162,7 @@ def daily_dashboard():
 def monthly_dashboard():
     user = current_user._get_current_object()
 
+    form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
@@ -184,7 +210,22 @@ def monthly_dashboard():
         return index_admin()
 
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
-    
+
+    check_date_index = 0
+    #เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
+    if request.method == "POST":
+        print("Ans = ",str(form.calendar_year.data)[:-15])
+        format_year = str(form.calendar_year.data)[:-15]
+        value_year = int(format_year)
+
+        
+        if value_year in checkout_years:
+            check_date_index = checkout_years.index(value_year)
+            print("check_date_index",check_date_index)
+        else:
+            check_date_index = "none"
+
+
     return render_template(
 
         "/dashboard/monthly_dashboard.html",
@@ -198,6 +239,9 @@ def monthly_dashboard():
         size_checkout_years=len(checkout_years),
         select_year=select_year,
         today_date= today_date,
+        form = form,
+        check_date_index=check_date_index,
+        
     )
 
 
