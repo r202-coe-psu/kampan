@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for
+from calendar import calendar
+from crypt import methods
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
@@ -6,14 +8,30 @@ import mongoengine as me
 
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
+def check_in_time(created_date, calendar_select,calendar_end):
+    print(created_date, calendar_select, calendar_select <= created_date <= calendar_end)
+    if calendar_select <= created_date <= calendar_end:
+        return True
+    else:
+        return False
 
-@module.route("/")
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     item_registers = models.RegistrationItem.objects()
+    form = forms.inventories.InventoryForm()
+
+    if request.method == "POST":
+        print(form.calendar_select.data)
+        print(form.calendar_end.data)
+
     return render_template(
         "/item_registers/index.html",
         item_registers=item_registers,
+        form=form,
+        calendar_select=form.calendar_select.data,
+        calendar_end = form.calendar_end.data,
+        check_in_time=check_in_time,
     )
 
 
