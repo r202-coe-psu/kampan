@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import 'base/html-renderer.html' as renderer %}
 
 {% block title %}สินค้าชำรุด หรือ สูญหาย{% endblock %}
 {% block dashboard_title %}สินค้าชำรุด หรือ สูญหาย{% endblock %}
@@ -14,6 +15,19 @@
 {% endblock %}
 
 {% block content %}
+<form method="post">
+  <div>
+    <div class="ui secondary  menu" >
+      <p style="margin-left:5px;">
+      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      </p>
+      <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
+      </p>
+      
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+    </div>
+
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -30,6 +44,9 @@
     </thead>
     <tbody>
       {% for item in lost_break_items %}
+
+      {% if calendar_select %}
+      {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
       <tr>
         <td data-label="Image">
           <div>
@@ -57,9 +74,133 @@
           </a>
         </td>
       </tr>
+        {% endif %}
+        {% else %}
+        <tr>
+          <td data-label="Image">
+            <div>
+              {% if not item.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}" width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td data-label="Item">{{ item.item.name}}</td>
+          <td data-label="Description">{{ item.description }}</td>
+          <td data-label="Quantity">{{ item.quantity }}</td>
+          <td data-label="Warehouse">{{ item.warehouse.name }}</td>
+          <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td>
+            <a class="ui icon button" href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="edit icon"></i>
+            </a>
+            <a class="ui icon button" href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id) }}"
+              style="color: white; background-color: rgb(192, 55, 55);">
+              <i class="trash icon"></i>
+            </a>
+          </td>
+        </tr>
+        {% endif %}
       {% endfor %}
     </tbody>
   </table>
 </div>
+</form>
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+    }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+  $(document)
+  .ready(function() {
+    $('.ui.dropdown.validate.selection')
+    .dropdown({
+      allowAdditions: true,
+      fullTextSearch: 'exact'
+    });
+  });
+</script>
+
+<script type="text/javascript">
+  datetime_formatter = {
+    datetime: function (datetime, settings) {
+        if (!datetime) return '';
+          var day = datetime.getDate();
+          var month = datetime.getMonth() + 1;
+          var year = datetime.getFullYear();
+          var minutes = datetime.getMinutes();
+          var hour = datetime.getHours();
+
+        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+  }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+  days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+  months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+  monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+  today: 'วันนี้',
+  now: 'ปัจจุบัน',
+  am: 'AM',
+  pm: 'PM'
+},
+};
+$('#end_date').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
+  });
+});
+</script>
+
+
+
+
 
 {% endblock %}
