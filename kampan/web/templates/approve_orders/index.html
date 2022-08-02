@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}อนุมัติการเบิกสินค้า{% endblock %}
 {% block dashboard_title %}อนุมัติการเบิกสินค้า{% endblock %}
@@ -7,6 +8,21 @@
 {% endblock %}
 
 {% block content %}
+
+<form method="post">
+  <div>
+    <div>
+      <div class="ui secondary  menu" style="margin-bottom:1em;">
+        <p style="margin-left:5px;">
+        {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
+        </p>
+        <p style="margin-left:10px;">
+        {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
+        </p>
+        
+        <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
+      </div>
+  </div>
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -19,6 +35,9 @@
     </thead>
     <tbody>
       {% for order in orders %}
+      {% if calendar_select %}
+      {% if check_in_time(order.created_date,calendar_select,calendar_end) %}
+
       {% if order.status == "pending" %}
       <tr>
         <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
@@ -32,8 +51,114 @@
         </td>
       </tr>
       {% endif %}
+      {% endif %}
+        {% else %}
+        {% if order.status == "pending" %}
+        <tr>
+          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Description">{{ order.description }}</td>
+          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+          <td data-label="Bill">
+            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="eye icon"></i>
+            </a>
+          </td>
+        </tr>
+        {% endif %}
+        {% endif %}
       {% endfor %}
     </tbody>
   </table>
 </div>
+</form>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+    }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+  $(document)
+  .ready(function() {
+    $('.ui.dropdown.validate.selection')
+    .dropdown({
+      allowAdditions: true,
+      fullTextSearch: 'exact'
+    });
+  });
+</script>
+
+<script type="text/javascript">
+  datetime_formatter = {
+    datetime: function (datetime, settings) {
+        if (!datetime) return '';
+          var day = datetime.getDate();
+          var month = datetime.getMonth() + 1;
+          var year = datetime.getFullYear();
+          var minutes = datetime.getMinutes();
+          var hour = datetime.getHours();
+
+        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+  }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+  days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+  months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+  monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+  today: 'วันนี้',
+  now: 'ปัจจุบัน',
+  am: 'AM',
+  pm: 'PM'
+},
+};
+$('#end_date').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
+  });
+});
+</script>
+
 {% endblock %}
