@@ -19,32 +19,32 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-<div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto;">
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
-      <div class="card-header">
-        <ion-icon name="bag-add-outline" style="margin-right: 10px;"></ion-icon>
+<div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto; text-shadow: -1px -1px 0 rgb(255, 255, 255), 1px -1px 0 rgb(255, 255, 255), -1px 1px 0 rgb(255, 255, 255), 1px 1px 0 rgb(255, 255, 255); ">
+  <div class="col-6 col-sm-3" >
+    <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .6; ">
+      <div class="card-header" style="color:black;">
+        <ion-icon name="bag-add-outline" style="margin-right: 10px; "></ion-icon>
         จำนวนสินค้าทั้งหมด
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_quantity }} รายการ</h5>
+        <h5 class="card-title" style="text-align: center; color:black;">{{ item_quantity }} รายการ</h5>
         <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_registers/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8;">
-      <div class="card-header">
-        <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
+    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .5;">
+      <div class="card-header" style="color:black;">
+        <ion-icon name="cart-outline" style="margin-right: 10px; "></ion-icon>
         สินค้าที่ขาย
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} รายการ</h5>
+        <h5 class="card-title" style="text-align: center; color:black;">{{ checkout_quantity }} รายการ</h5>
         <p class=" card-text">
-          <a href="/item_orders/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_orders/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -53,29 +53,29 @@
 
   <div class="col-6 col-sm-3">
     <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
-      <div class="card-header">
+      <div class="card-header" style="color:black;">
         <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
         สินค้าคงเหลือ
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_remain }} รายการ</h5>
+        <h5 class="card-title" style="text-align: center; color:black;">{{ item_remain }} รายการ</h5>
         <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_registers/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .8">
-      <div class="card-header">
+    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .6">
+      <div class="card-header" style="color:black;">
         <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
         รายได้รวม
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;"> {{total_values}} ฿</h5>
+        <h5 class="card-title" style="text-align: center; color:black;"> {{total_values}} ฿</h5>
         <p class="card-text">
-          <a href="/item_checkouts/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_checkouts/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -114,22 +114,13 @@
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
   <div class="ui red vertical animated button">
-    <div class="visible content">คุณกำลังอยู่หน้ารายวัน</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/">
-      แสดงแผนภูมิรายวัน
-    </a>
+    <a class="visible content " style="color: #ffffff; text-decoration: none; " href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
   </div>
   <div class="ui green vertical animated button">
-    <div class="visible content">แสดงแผนภูมิรายเดือน</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">
-      แสดงแผนภูมิรายเดือน
-    </a>
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
   </div>
   <div class="ui green vertical animated button">
-    <div class="visible content">แสดงแผนภูมิรายปี</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">
-      แสดงแผนภูมิรายปี
-    </a>
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">แสดงแผนภูมิรายปี</a>
   </div>
 </div>
 
