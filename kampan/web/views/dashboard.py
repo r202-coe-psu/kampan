@@ -80,7 +80,7 @@ def daily_dashboard():
             checkout_trend_day.append(numday)
 
         index_year_co = years.index(year_co)
-        checkout_trend_day[index_year_co][month_co][day_co] += checkout.quantity
+        checkout_trend_day[index_year_co][month_co][day_co] += (checkout.quantity*checkout.price)
         total_values += checkout.price * checkout.quantity
 
     for inventory in inventories:
@@ -185,10 +185,10 @@ def monthly_dashboard():
             checkout_years.append(year)
             checkout_trend_month.append([0] * 12)
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity)
+            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
         else:
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity)
+            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
 
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
@@ -275,11 +275,11 @@ def yearly_dashboard():
             checkout_years.append(year)
             checkout_trend_year.append(0)
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity)
+            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
         
         else:
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity)
+            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
 
 
     for inventory in inventories:
