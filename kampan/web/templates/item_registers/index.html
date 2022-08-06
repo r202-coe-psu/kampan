@@ -9,7 +9,20 @@
 
 <form method="post">
   <div>
+    
     <div class="ui secondary  menu" >
+      <div style="height:fit-content; margin-top:auto; margin-left:15px;">
+        {% if request.endpoint == 'item_registers.index' %}
+          <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
+            เพิ่มบิลสินค้า
+          </a>
+        {% else %}
+          <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
+          <div class="divider"> / </div>
+        {% endif %}
+      </div>
+      
+      <p style="margin-left:auto;">
       <p style="margin-left:5px;">
       {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
       </p>
@@ -18,18 +31,11 @@
       </p>
       
       <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+      </p>
+
     </div>
 
-<div style="padding-bottom: 1em ;">
-  {% if request.endpoint == 'item_registers.index' %}
-    <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-      เพิ่มบิลสินค้า
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
+
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
@@ -92,8 +98,8 @@
     </a>
   </td>
   <td data-label="Checkin Items">
-    <a class="ui primary button" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
-      style=" color: white; background-color: rgb(59, 115, 199);">
+    <a class="ui primary button icon" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
+      style=" color: white; background-color: rgb(59, 115, 199); ">
       <i class="eye icon"></i>
     </a>
   </td>
