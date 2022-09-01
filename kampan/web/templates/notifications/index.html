@@ -22,24 +22,26 @@
                     <th>ชื่อสินค้า</th>
                     <th>ราคาสินค้า</th>
                     <th>คลังสินค้า</th>
-                    <th>เติมสินค้า</th>
+                    <th>ซ่อนข้อมูล</th>
                   </tr>
                 </thead>
                 <tbody>
                     {% if notifications is defined and notifications %}
                     {% for inventory in notifications %}
+                    
                   <tr>
                     <td data-label="Total" style="color: red;">{{ inventory.remain }}/{{ inventory.quantity }}</td>
                     <td data-label="Unit">{{ inventory.item.unit }}</td>
                     <td data-label="Item Name">{{ inventory.item.name }}</td>
                     <td data-label="Item Price">{{ inventory.price}}</td>
                     <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-                    <td data-label="Add Item">
-                        <a class="ui icon button" href="{{ url_for('inventories.edit', inventory_id=inventory.id) }}" style=" color: white; background-color: rgb(59, 115, 199);" >
-                            <i class="edit icon"></i>  
+                    <td data-label="Hide Item">
+                        <a class="ui icon button" href="{{ url_for('notifications.set_status', inventory_id=inventory.id) }}" style=" color: white; background-color: rgb(59, 115, 199);">
+                          <i class="comment slash icon"></i> 
                         </a>
                     </td>
                   </tr>
+                  
                   {% endfor %}
                   {% else %}
                   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
