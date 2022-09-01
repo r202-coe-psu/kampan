@@ -126,7 +126,7 @@ def daily_dashboard():
             index_year = "none"
 
 
-
+    years.append(year_now)
     select_year = years.index(year_now)
     select_month = int(month_now)-1
     if format_year in years:
