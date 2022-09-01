@@ -179,7 +179,7 @@ def monthly_dashboard():
         date = checkout.checkout_date
         month = int(date.strftime("%m")) - 1
         year = int(date.strftime("%Y"))
-        total_values += checkout.price * checkout.quantity
+        
         
         if year not in checkout_years:
             checkout_years.append(year)
@@ -225,7 +225,7 @@ def monthly_dashboard():
         else:
             check_date_index = "none"
 
-
+    total_values = sum(checkout_trend_month[check_date_index])
     return render_template(
 
         "/dashboard/monthly_dashboard.html",
