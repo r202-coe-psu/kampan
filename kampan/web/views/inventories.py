@@ -81,6 +81,7 @@ def register(inventory_id):
             )
 
     inventory.user = current_user._get_current_object()
+    inventory.notification_status = True
     inventory.registration = item_register
     inventory.remain = inventory.quantity
     inventory.save()
@@ -165,3 +166,4 @@ def bill(inventory_id, filename):
         mimetype=inventory.bill.content_type,
     )
     return response
+
