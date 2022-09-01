@@ -154,52 +154,8 @@ text: {
 },
 };
 $('#checkout_date_calendar').calendar(calendar_setting);
-</script>
-
-<script type="text/javascript">
-  $(document)
-  .ready(function() {
-    $('.ui.dropdown.validate.selection')
-    .dropdown({
-      allowAdditions: true,
-      fullTextSearch: 'exact'
-    });
-  });
-</script>
-
-<script type="text/javascript">
-  datetime_formatter = {
-    datetime: function (datetime, settings) {
-        if (!datetime) return '';
-          var day = datetime.getDate();
-          var month = datetime.getMonth() + 1;
-          var year = datetime.getFullYear();
-          var minutes = datetime.getMinutes();
-          var hour = datetime.getHours();
-
-        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
-  }
-};
-var calendar_setting = {
-type: 'date',
-monthFirst: false,
-formatter: datetime_formatter,
-today: false,
-ampm: false,
-text: {
-  days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-  months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-  monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-  today: 'วันนี้',
-  now: 'ปัจจุบัน',
-  am: 'AM',
-  pm: 'PM'
-},
-};
 $('#end_date').calendar(calendar_setting);
-</script>
 
-<script type="text/javascript">
 $(document)
 .ready(function() {
   $('.ui.dropdown.validate.selection')
