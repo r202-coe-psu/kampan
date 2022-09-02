@@ -1,3 +1,4 @@
+from atexit import register
 from calendar import calendar
 from crypt import methods
 from pyexpat import model
@@ -30,9 +31,11 @@ def index():
 
     form = forms.inventories.InventoryForm()
 
-    if request.method == "POST":
-        print(form.calendar_select.data)
-        print(form.calendar_end.data)
+    if form.validate_on_submit():
+        checkouts = models.CheckoutItem.objects(
+            registeration_date_gte=form.calendar_select.data,
+            registeration_date_lte=form.calendar_end.data,
+        )
 
     return render_template(
         "/item_checkouts/index.html",
