@@ -18,26 +18,11 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-<div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto; text-shadow: -1px -1px 0 rgb(255, 255, 255), 1px -1px 0 rgb(255, 255, 255), -1px 1px 0 rgb(255, 255, 255), 1px 1px 0 rgb(255, 255, 255); ">
-  <div class="col-6 col-sm-3" >
-    <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .6; ">
-      <div class="card-header" style="color:black;">
-        <ion-icon name="bag-add-outline" style="margin-right: 10px; "></ion-icon>
-        จำนวนสินค้าทั้งหมด
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center; color:black;">{{ item_quantity }} รายการ</h5>
-        <p class="card-text">
-          <a href="/item_registers/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
+<div class="row shadow-sm" style="text-align:center; justify-content:center; margin-left: 100px;">
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .5;">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04;">
       <div class="card-header" style="color:black;">
-        <ion-icon name="cart-outline" style="margin-right: 10px; "></ion-icon>
+        <ion-icon name="cart-outline" style="margin-right: 10px; color:#003ea1;"></ion-icon>
         สินค้าที่ขาย
       </div>
       <div class="card-body">
@@ -49,11 +34,10 @@
     </div>
   </div>
 
-
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
       <div class="card-header" style="color:black;">
-        <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
+        <ion-icon name="bag-check-outline" style="margin-right: 10px; color:#6d0000;"></ion-icon>
         สินค้าคงเหลือ
       </div>
       <div class="card-body">
@@ -66,15 +50,15 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .6">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
       <div class="card-header" style="color:black;">
-        <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
+        <ion-icon name="cash-outline" style="margin-right: 10px; color:#00A11B;"></ion-icon>
         รายได้รวม
       </div>
       <div class="card-body">
         <h5 class="card-title" style="text-align: center; color:black;"> {{total_values}} ฿</h5>
         <p class="card-text">
-          <a href="/item_checkouts/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
+          <a href="/item_checkouts/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -102,12 +86,19 @@
   style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; font-size: 13px; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
-    <div class="header">
+    <div class="ui primary header">
       จำนวนสินค้าที่ขายได้รายปี
     </div>
     <p></p>
   </div>
 </div>
+
+
+<body>
+  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; ">
+  </div>
+</body>
+
 
 <div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
   <div class="ui hidden divider"></div>
@@ -117,16 +108,10 @@
   <div class="ui green vertical animated button">
     <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
   </div>
-  <div class="ui red vertical animated button">
+  <div class="ui blue vertical animated button">
     <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">คุณกำลังอยู่หน้ารายปี</a>
   </div>
 </div>
-
-<body>
-  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; ">
-  </div>
-</body>
-
 {% endif %}
 
 
@@ -152,7 +137,7 @@
     dataLabels: {
       enabled: true,
     },
-    colors: ['#0dcaf0'],
+    colors: ['#00A11B'],
     stroke: {
       curve: 'straight'
     },
