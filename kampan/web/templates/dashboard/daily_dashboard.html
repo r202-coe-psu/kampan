@@ -19,26 +19,11 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-<div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto; text-shadow: -1px -1px 0 rgb(255, 255, 255), 1px -1px 0 rgb(255, 255, 255), -1px 1px 0 rgb(255, 255, 255), 1px 1px 0 rgb(255, 255, 255); ">
-  <div class="col-6 col-sm-3" >
-    <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .6; ">
-      <div class="card-header" style="color:black;">
-        <ion-icon name="bag-add-outline" style="margin-right: 10px; "></ion-icon>
-        จำนวนสินค้าทั้งหมด
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center; color:black;">{{ item_quantity }} รายการ</h5>
-        <p class="card-text">
-          <a href="/item_registers/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
+<div class="row shadow-sm" style="text-align:center; justify-content:center; margin-left: 100px;">
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .5;">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04;">
       <div class="card-header" style="color:black;">
-        <ion-icon name="cart-outline" style="margin-right: 10px; "></ion-icon>
+        <ion-icon name="cart-outline" style="margin-right: 10px; color:#003ea1;"></ion-icon>
         สินค้าที่ขาย
       </div>
       <div class="card-body">
@@ -52,9 +37,9 @@
 
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
       <div class="card-header" style="color:black;">
-        <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
+        <ion-icon name="bag-check-outline" style="margin-right: 10px; color:#6d0000;"></ion-icon>
         สินค้าคงเหลือ
       </div>
       <div class="card-body">
@@ -67,15 +52,15 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .6">
+    <div class="card text-white bg-black mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
       <div class="card-header" style="color:black;">
-        <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
+        <ion-icon name="cash-outline" style="margin-right: 10px; color:#00A11B;"></ion-icon>
         รายได้รวม
       </div>
       <div class="card-body">
         <h5 class="card-title" style="text-align: center; color:black;"> {{total_values}} ฿</h5>
         <p class="card-text">
-          <a href="/item_checkouts/" class="text-black" style="text-decoration: none; "> [ เพิ่มเติม ]</a>
+          <a href="/item_checkouts/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -102,7 +87,7 @@
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
-  style="margin-top: 15px; margin-bottom: 25px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
     <div class="header">
@@ -111,18 +96,15 @@
     </p>
   </div>
 </div>
-<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
-  <div class="ui hidden divider"></div>
-  <div class="ui red vertical animated button">
-    <a class="visible content " style="color: #ffffff; text-decoration: none; " href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
-  </div>
-  <div class="ui green vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
-  </div>
-  <div class="ui green vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">แสดงแผนภูมิรายปี</a>
-  </div>
-</div>
+
+<form method="post">
+  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
+    </p>
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </div>
+</form>
 
 {% if format_year not in years %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
@@ -152,18 +134,18 @@
   </form>
 </div>
 
-
-
-<form method="post">
-  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
-      </p>
-    </div>
-    <div style="text-align:center ; justify-content:center;">
-    <button type="submit" class="ui primary button" >ยืนยัน</button>
-    </div>
-</form>
+<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
+  <div class="ui hidden divider"></div>
+  <div class="ui blue vertical animated button">
+    <a class="visible content " style="color: #ffffff; text-decoration: none; " href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
+  </div>
+  <div class="ui green vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
+  </div>
+  <div class="ui green vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">แสดงแผนภูมิรายปี</a>
+  </div>
+</div>
 
 
 {% endblock %}
@@ -179,7 +161,7 @@
   var years_day = years_day[select_year][select_month]
   var options = {
     series: [{
-      name: "Checkout",
+      name: "Profit (Checkout * Price) ",
       data: checkout_trend_day,
     }],
     chart: {
@@ -192,7 +174,7 @@
     dataLabels: {
       enabled: true,
     },
-    colors: ['#0dcaf0'],
+    colors: ['#00A11B'],
     stroke: {
       curve: 'straight'
     },
