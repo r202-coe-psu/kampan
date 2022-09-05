@@ -86,9 +86,7 @@ def daily_dashboard():
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
-        checkout_quantity = item_quantity - item_remain
-
-    
+        
     eng_month = [
         "มกราคม",
         "กุมภาพันธ์",
@@ -137,6 +135,8 @@ def daily_dashboard():
         for checkout_header in checkouts:
             if checkout_header.checkout_date.month == format_month + 1 and checkout_header.checkout_date.year == format_year:
                 total_values += checkout_header.price * checkout_header.quantity
+                checkout_quantity += checkout_header.quantity
+                
 
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -229,7 +229,7 @@ def monthly_dashboard():
         else:
             check_date_index = 0
 
-    total_values = sum(checkout_trend_month[check_date_index])
+    total_values = float(sum(checkout_trend_month[check_date_index]))
     return render_template(
 
         "/dashboard/monthly_dashboard.html",
