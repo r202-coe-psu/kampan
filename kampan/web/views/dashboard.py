@@ -81,7 +81,7 @@ def daily_dashboard():
 
         index_year_co = years.index(year_co)
         checkout_trend_day[index_year_co][month_co][day_co] += (checkout.quantity*checkout.price)
-        total_values += checkout.price * checkout.quantity
+
 
     for inventory in inventories:
         item_quantity += inventory.quantity
@@ -130,9 +130,13 @@ def daily_dashboard():
     select_year = years.index(year_now)
     select_month = int(month_now)-1
     if format_year in years:
-        
+        print(format_year)
         select_year = index_year
         select_month = format_month
+
+        for checkout_header in checkouts:
+            if checkout_header.checkout_date.month == format_month + 1 and checkout_header.checkout_date.year == format_year:
+                total_values += checkout_header.price * checkout_header.quantity
 
     return render_template(
         "/dashboard/daily_dashboard.html",
