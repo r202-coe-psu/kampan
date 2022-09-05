@@ -220,10 +220,10 @@ def monthly_dashboard():
 
         
         if value_year in checkout_years:
-            check_date_index = checkout_years.index(value_year)
+            check_date_index = int(checkout_years.index(value_year))
             print("check_date_index",check_date_index)
         else:
-            check_date_index = "none"
+            check_date_index = 0
 
     total_values = sum(checkout_trend_month[check_date_index])
     return render_template(
