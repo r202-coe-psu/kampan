@@ -214,12 +214,17 @@ def monthly_dashboard():
 
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
 
+    value_year = year_now
     check_date_index = 0
     #เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
     if request.method == "POST":
         format_year = str(form.calendar_year.data)[:-15]
         value_year = int(format_year)
 
+    
+    for checkout_header in checkouts:
+        if checkout_header.checkout_date.year == value_year:
+            checkout_quantity += checkout_header.quantity
     
         if value_year in checkout_years:
             check_date_index = int(checkout_years.index(value_year))
@@ -228,10 +233,6 @@ def monthly_dashboard():
 
     total_values = float(sum(checkout_trend_month[check_date_index]))
 
-    value_year = value_year
-    for checkout_header in checkouts:
-            if checkout_header.checkout_date.year == value_year:
-                checkout_quantity += checkout_header.quantity
 
     return render_template(
 
