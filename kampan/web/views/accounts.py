@@ -3,9 +3,10 @@ import datetime
 from flask import Blueprint, render_template, url_for, redirect, session, request
 from flask_login import login_user, logout_user, login_required, current_user
 
-from .. import models
 from .. import oauth2
-from .. import forms
+
+from kampan.web import forms
+from kampan import models
 
 module = Blueprint("accounts", __name__)
 
@@ -170,3 +171,36 @@ def edit_profile():
     user.save()
 
     return redirect(url_for("accounts.index"))
+
+@module.route("/user-roles")
+@login_required
+def user_roles():
+    users = models.User.objects()
+    return render_template(
+        "/accounts/user_roles.html",
+        users=users,
+    )
+
+@module.route("/user-roles/edit-roles", methods=["GET", "POST"])
+@login_required
+def edit_roles():
+    user_id=request.args.get("user_id")
+    user = models.User.objects.get(id=user_id)
+    form = forms.user_roles.UserRolesForm(obj=user)
+    form.roles.choices = [
+        ("admin", "Admin"),
+        ("supervisor", "Supervisor"),
+        ("user", "User"),
+    ]
+    
+    if not form.validate_on_submit():
+        return render_template(
+            "/accounts/edit_roles.html",
+            form=form,
+        )
+
+    form.populate_obj(user)
+    user.roles = form.roles.data
+    user.save()
+
+    return redirect(url_for("accounts.user_roles"))

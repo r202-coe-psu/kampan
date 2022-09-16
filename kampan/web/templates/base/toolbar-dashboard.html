@@ -12,9 +12,9 @@
 
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar" style="padding-left: 10px;">
 
-  {% if current_user.has_roles(['admin']) %}
+  {#{% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
-  {% endif %}
+  {% endif %}#}
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">

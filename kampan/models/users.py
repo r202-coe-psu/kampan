@@ -33,3 +33,6 @@ class User(me.Document, UserMixin):
 
     def get_image(self):
         return ""
+
+    def get_name(self):
+        return self.first_name + " " + self.last_name

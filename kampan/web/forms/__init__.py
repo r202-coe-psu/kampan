@@ -8,3 +8,4 @@ from . import item_checkouts
 from . import inventories
 from . import lost_break
 from . import accounts
+from . import user_roles
