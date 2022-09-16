@@ -27,7 +27,7 @@
     </div>
   
   
-  
+    {% if inventories %}
       <table class="ui striped padded celled table">
         <thead>
           <tr>
@@ -107,7 +107,10 @@
           
       {% endfor %}
     </tbody>
-  </table>
+      </table>
+    {% else %}
+      <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
 </div>
 </form>
 {% endblock %}

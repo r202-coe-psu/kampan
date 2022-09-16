@@ -12,6 +12,7 @@
 {% endblock %}
 
 {% block content %}
+{% if inventories %}
 <div>
   <table class="ui celled table">
     <thead>
@@ -61,5 +62,7 @@
   </tbody>
   </table>
 </div>
-  
+{% else %}
+  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {% endblock %}

@@ -22,6 +22,7 @@
         <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
       </div>
   </div>
+{% if orders %}
   <div style="padding-bottom: 1em;">
     <table class="ui celled table">
       <thead>
@@ -81,6 +82,9 @@
       </tbody>
     </table>
   </div>
+{% else %}
+  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 </form>
 {% endblock %}
 

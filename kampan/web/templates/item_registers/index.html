@@ -36,7 +36,7 @@
     </div>
 
 
-
+{% if item_registers %}
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -120,6 +120,9 @@
     </tbody>
   </table>
 </div>
+{% else %}
+  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 </form>
 {% endblock %}
 

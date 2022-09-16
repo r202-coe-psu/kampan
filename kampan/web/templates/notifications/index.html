@@ -11,6 +11,7 @@
 
 {% block content %}
 <p>
+{% if notifications %}
 <div class="ui large feed">
     <div class="event">
         <div class="content">
@@ -53,5 +54,8 @@
         </div>
     </div>
 </div>
+{% else %}
+  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 </p>
 {% endblock %} 

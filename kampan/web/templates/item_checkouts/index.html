@@ -23,7 +23,8 @@
       
       <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
     </div>
-
+  
+    {% if checkouts %}
     <table class="ui celled table">
       <thead>
         <tr>
@@ -111,6 +112,9 @@
         {% endfor %}
       </tbody>
     </table>
+    {% else %}
+      <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
   </div>
 </form>
 {% endblock %}

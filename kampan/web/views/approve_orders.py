@@ -22,7 +22,7 @@ def check_in_time(created_date, calendar_select,calendar_end):
 @module.route("/",methods=["GET","POST"])
 @login_required
 def index():
-    orders = models.OrderItem.objects()
+    orders = models.OrderItem.objects(status="pending")
 
     form = forms.inventories.InventoryForm()
     
@@ -37,14 +37,11 @@ def index():
 
 @module.route("<order_id>", methods=["GET", "POST"])
 def approve(order_id):
-    # checkout_item = models.CheckoutItem.objects.get(id=checkout_item_id)
     form = forms.item_orders.OrderItemForm()
-    # order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order)
     
     order.status = "approved"
-    form.populate_obj(order)
     order.save()
 
 
@@ -53,9 +50,5 @@ def approve(order_id):
             checkout.status = "approved"
             form.populate_obj(checkout)
             checkout.save()
-    
-    # return redirect(url_for("item_checkouts.bill_checkout"))
-
-
     
     return redirect(url_for("approve_orders.index"))
