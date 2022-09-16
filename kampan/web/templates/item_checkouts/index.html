@@ -32,6 +32,7 @@
         <th>ชื่อสินค้า</th>
         <th>คลังสินค้า</th>
         <th>จำนวนทั้งหมด</th>
+        <th>สถานะ</th>
         <th>ราคา</th>
         <th>ชื่อผู้ใช้งาน</th>
       </tr>
@@ -60,6 +61,15 @@
                 </td>
                 <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
                 <td data-label="Quantity">{{ checkout.quantity }}</td>
+                {% if checkout.status == "pending" %}
+                <td data-label="Status" class="red">
+                  <span class="ui red text">รออนุมัติ</span>
+                </td>
+              {% else %}
+                <td data-label="Status" class="green">
+                  <span class="ui green text">อนุมัติ</span>
+                </td>
+              {% endif %}
                 <td data-label="Price">{{ checkout.price }}</td>
                 <td data-label="User">{{ checkout.user.first_name}}{{ checkout.user.last_name}}</td>
             </tr>
@@ -85,6 +95,15 @@
               </td>
               <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
               <td data-label="Quantity">{{ checkout.quantity }}</td>
+              {% if checkout.status == "pending" %}
+                <td data-label="Status" class="red">
+                  <span class="ui red text">รออนุมัติ</span>
+                </td>
+              {% else %}
+                <td data-label="Status" class="green">
+                  <span class="ui green text">อนุมัติ</span>
+                </td>
+              {% endif %}
               <td data-label="Price">{{ checkout.price }}</td>
               <td data-label="User">{{ checkout.user.first_name}}{{ checkout.user.last_name}}</td>
         </tr>
@@ -139,6 +158,4 @@ $('#end_date').calendar(calendar_setting);
     });
   });
 </script>
-
-
 {% endblock %}

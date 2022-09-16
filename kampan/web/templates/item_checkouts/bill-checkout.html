@@ -19,7 +19,6 @@
         <th>คลังสินค้า</th>
         <th>จำนวนทั้งหมด</th>
         <th>ราคา</th>
-        <th>การอนุมัติ</th>
       </tr>
     </thead>
     <tbody>
@@ -40,15 +39,6 @@
         <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         <td data-label="Price">{{ checkout.price }}</td>
-        <td data-label="Status">
-          {% if checkout.status == "pending" %}
-          <a class="positive ui button" href="{{ url_for('approve_orders.approve', checkout_item_id=checkout.id, order_id=checkout.order.id)}}">
-            อนุมัติ
-          </a>
-          {% else %}
-          -
-          {% endif %}
-        </td>
       </tr>
       {% endfor %}
     </tbody>

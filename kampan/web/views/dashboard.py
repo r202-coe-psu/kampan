@@ -103,8 +103,8 @@ def daily_dashboard():
     ]
 
     
-    if "admin" in user.roles:
-        return index_admin()
+    # if "admin" in user.roles:
+    #     return index_admin()
     
     sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
     
@@ -209,8 +209,8 @@ def monthly_dashboard():
         index_year_now = checkout_years.index(year_now)
         select_year = int(request.form.get("year", index_year_now ))
     
-    if "admin" in user.roles:
-        return index_admin()
+    # if "admin" in user.roles:
+    #     return index_admin()
 
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
 
@@ -295,8 +295,8 @@ def yearly_dashboard():
         item_remain += inventory.remain
         checkout_quantity = item_quantity - item_remain
 
-    if "admin" in user.roles:
-        return index_admin()
+    # if "admin" in user.roles:
+    #     return index_admin()
     
     sorted_checkout_trend_year = [i for _, i in sorted(zip(checkout_years,checkout_trend_year, ))]
 
