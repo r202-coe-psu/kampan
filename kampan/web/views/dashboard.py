@@ -1,5 +1,7 @@
+from calendar import calendar
 from flask import Flask, Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
+from tomlkit import value
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
@@ -33,6 +35,8 @@ def index_user():
 @login_required
 def daily_dashboard():
     user = current_user._get_current_object()
+
+    form = forms.inventories.InventoryForm()
 
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
@@ -76,35 +80,26 @@ def daily_dashboard():
             checkout_trend_day.append(numday)
 
         index_year_co = years.index(year_co)
-        checkout_trend_day[index_year_co][month_co][day_co] += checkout.quantity
-        total_values += checkout.price * checkout.quantity
+        checkout_trend_day[index_year_co][month_co][day_co] += (checkout.quantity*checkout.price)
+
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
-        checkout_quantity = item_quantity - item_remain
-
-    select_year = None
-    select_month = None
-    if years:
-        index_year_now = years.index(year_now)
-        select_year = int(request.form.get("year", index_year_now ))
-        select_month = int(request.form.get("month", month_now - 1))
-
         
     eng_month = [
-        "มกรา",
-        "กุมภา",
-        "มีนา",
-        "เมษา",
-        "พฤษภา",
-        "มิถุนา",
-        "กรกฏา",
-        "สิงหา",
-        "กันยา",
-        "ตุลา",
-        "พฤศจิกา",
-        "ธันวา",
+        "มกราคม",
+        "กุมภาพันธ์",
+        "มีนาคม",
+        "เมษายน",
+        "พฤษภาคม",
+        "มิถุนายน",
+        "กรกฏาคม",
+        "สิงหาคม",
+        "กันยายน",
+        "ตุลาคม",
+        "พฤศจิกายน",
+        "ธันวาคม",
     ]
 
     
@@ -112,6 +107,36 @@ def daily_dashboard():
         return index_admin()
     
     sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
+    
+    format_month=int(month_now)-1
+    format_year=year_now
+    index_year=0
+
+    if request.method == "POST":
+
+        format_year = int((str(form.calendar_month_year.data)[:-15]))
+        format_month = int((str(form.calendar_month_year.data)[5:-12]))-1
+
+        if format_year in years:
+            index_year = years.index(format_year)
+
+        else:
+            index_year = "none"
+
+
+    years.append(year_now)
+    select_year = years.index(year_now)
+    select_month = int(month_now)-1
+    if format_year in years:
+        print(format_year)
+        select_year = index_year
+        select_month = format_month
+
+        for checkout_header in checkouts:
+            if checkout_header.checkout_date.month == format_month + 1 and checkout_header.checkout_date.year == format_year:
+                total_values += checkout_header.price * checkout_header.quantity
+                checkout_quantity += checkout_header.quantity
+                
 
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -129,6 +154,10 @@ def daily_dashboard():
         years=sorted(years),
         size_years=len(years),
         today_date=today_date,
+        form=form,
+        format_month=format_month,
+        format_year=format_year,
+        idex_year = index_year,
     )
 
 
@@ -137,6 +166,7 @@ def daily_dashboard():
 def monthly_dashboard():
     user = current_user._get_current_object()
 
+    form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
@@ -153,16 +183,16 @@ def monthly_dashboard():
         date = checkout.checkout_date
         month = int(date.strftime("%m")) - 1
         year = int(date.strftime("%Y"))
-        total_values += checkout.price * checkout.quantity
+        
         
         if year not in checkout_years:
             checkout_years.append(year)
             checkout_trend_month.append([0] * 12)
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity)
+            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
         else:
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity)
+            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
 
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
@@ -172,7 +202,6 @@ def monthly_dashboard():
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
-        checkout_quantity = item_quantity - item_remain
 
 
     select_year = None
@@ -184,7 +213,27 @@ def monthly_dashboard():
         return index_admin()
 
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
+
+    value_year = year_now
+    check_date_index = 0
+    #เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
+    if request.method == "POST":
+        format_year = str(form.calendar_year.data)[:-15]
+        value_year = int(format_year)
+
     
+    for checkout_header in checkouts:
+        if checkout_header.checkout_date.year == value_year:
+            checkout_quantity += checkout_header.quantity
+    
+        if value_year in checkout_years:
+            check_date_index = int(checkout_years.index(value_year))
+        else:
+            check_date_index = 0
+
+    total_values = float(sum(checkout_trend_month[check_date_index]))
+
+
     return render_template(
 
         "/dashboard/monthly_dashboard.html",
@@ -198,6 +247,9 @@ def monthly_dashboard():
         size_checkout_years=len(checkout_years),
         select_year=select_year,
         today_date= today_date,
+        form = form,
+        check_date_index=check_date_index,
+        
     )
 
 
@@ -231,11 +283,11 @@ def yearly_dashboard():
             checkout_years.append(year)
             checkout_trend_year.append(0)
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity)
+            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
         
         else:
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity)
+            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
 
 
     for inventory in inventories:

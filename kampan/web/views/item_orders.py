@@ -1,5 +1,6 @@
+from calendar import calendar
 from pyexpat import model
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for,request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
@@ -19,13 +20,26 @@ import datetime
 
 module = Blueprint('item_orders', __name__, url_prefix='/item_orders')
 
-@module.route('/')
+def check_in_time(created_date, calendar_select,calendar_end):
+    print(created_date, calendar_select, calendar_select <= created_date <= calendar_end)
+    if calendar_select <= created_date <= calendar_end:
+        return True
+    else:
+        return False
+
+@module.route('/',methods=["GET","POST"])
 @login_required
 def index():
     orders = models.OrderItem.objects()
+
+    form = forms.inventories.InventoryForm()
     return render_template(
         "/item_orders/index.html",
         orders=orders,
+        form=form,
+        calendar_select=form.calendar_select.data,
+        calendar_end = form.calendar_end.data,
+        check_in_time=check_in_time,
         )
 
 

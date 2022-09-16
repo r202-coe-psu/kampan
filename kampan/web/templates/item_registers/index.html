@@ -1,21 +1,41 @@
 {% extends '/base/default-dashboard.html' %}
-
+{% import 'base/html-renderer.html' as renderer %}
 {% block title %}นำเข้าสินค้า{% endblock %}
 {% block dashboard_title %}นำเข้าสินค้า{% endblock %}
 {% block breadcrumbs %}
 {% endblock %}
 
 {% block content %}
-<div style="padding-bottom: 1em ;">
-  {% if request.endpoint == 'item_registers.index' %}
-    <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-      เพิ่มบิลสินค้า
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
+
+<form method="post">
+  <div>
+    
+    <div class="ui secondary  menu" >
+      <div style="height:fit-content; margin-top:auto; margin-left:15px;">
+        {% if request.endpoint == 'item_registers.index' %}
+          <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
+            เพิ่มบิลสินค้า
+          </a>
+        {% else %}
+          <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
+          <div class="divider"> / </div>
+        {% endif %}
+      </div>
+      
+      <p style="margin-left:auto;">
+      <p style="margin-left:5px;">
+      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      </p>
+      <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
+      </p>
+      
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+      </p>
+
+    </div>
+
+
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
@@ -33,6 +53,9 @@
     </thead>
     <tbody>
       {% for item in item_registers %}
+
+      {% if calendar_select %}
+      {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
       <tr>
         <td data-label="Item Name">{{ item.receipt_id }}</td>
         <td data-label="Warehouse">{{ item.description }}</td>
@@ -61,9 +84,90 @@
           </a>
         </td>
       </tr>
+        {% endif %}
+        {% else %}
+        <tr>
+  <td data-label="Item Name">{{ item.receipt_id }}</td>
+  <td data-label="Warehouse">{{ item.description }}</td>
+  <td data-label="Quantity">{{ item.supplier.name }}</td>
+  <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+  <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+  <td data-label="Checkin">
+    <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
+      นำเข้าสินค้า
+    </a>
+  </td>
+  <td data-label="Checkin Items">
+    <a class="ui primary button icon" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
+      style=" color: white; background-color: rgb(59, 115, 199); ">
+      <i class="eye icon"></i>
+    </a>
+  </td>
+  <td>
+    <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
+      style=" color: white; background-color: rgb(59, 115, 199);">
+      <i class="edit icon"></i>
+    </a>
+    <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
+      style="color: white; background-color: rgb(192, 55, 55);">
+      <i class="trash icon"></i>
+    </a>
+  </td>
+</tr>
+
+        {% endif %}
       {% endfor %}
     </tbody>
   </table>
 </div>
+</form>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+    }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+$('#end_date').calendar(calendar_setting);
+
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
+  });
+});
+</script>
+
+
+
+
 
 {% endblock %}

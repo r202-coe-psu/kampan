@@ -32,10 +32,23 @@ def index():
         # If inventory remain is less than 25%
         if inventory.item.minimum:
             if inventory.remain <= inventory.item.minimum:
-                notifications.append(inventory)
+                if inventory.notification_status == True:
+                    notifications.append(inventory)
+                
 
     print(notifications)
     return render_template(
         "/notifications/index.html",
         notifications=notifications,
+    )
+
+
+@module.route("/<inventory_id>/set_status")
+def set_status(inventory_id):
+    inventory = models.Inventory.objects().get(id=inventory_id)
+    inventory.notification_status = False
+    inventory.save()
+
+    return redirect(
+        url_for("notifications.index")
     )

@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}แดชบอร์ดรายวัน{% endblock %}
 {% block dashboard_title %}
@@ -18,32 +19,17 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-<div class="row shadow-sm" style="margin-top: 30px; margin-left: auto; margin-right: auto;">
+<div class="row shadow-sm" style="text-align:center; justify-content:center; margin-left: 100px;">
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-success mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
-      <div class="card-header">
-        <ion-icon name="bag-add-outline" style="margin-right: 10px;"></ion-icon>
-        จำนวนสินค้าทั้งหมด
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_quantity }} รายการ</h5>
-        <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8;">
-      <div class="card-header">
-        <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
+    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04;">
+      <div class="card-header" style="color:black;">
+        <ion-icon name="cart-outline" style="margin-right: 10px; color:#003ea1;"></ion-icon>
         สินค้าที่ขาย
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} รายการ</h5>
+        <h5 class="card-title" style="text-align: center; color:black;">{{ checkout_quantity }} รายการ</h5>
         <p class=" card-text">
-          <a href="/item_orders/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_orders/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -51,30 +37,30 @@
 
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7">
-      <div class="card-header">
-        <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
+    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
+      <div class="card-header" style="color:black;">
+        <ion-icon name="bag-check-outline" style="margin-right: 10px; color:#6d0000;"></ion-icon>
         สินค้าคงเหลือ
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_remain }} รายการ</h5>
+        <h5 class="card-title" style="text-align: center; color:black;">{{ item_remain }} รายการ</h5>
         <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_registers/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .8">
-      <div class="card-header">
-        <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
+    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
+      <div class="card-header" style="color:black;">
+        <ion-icon name="cash-outline" style="margin-right: 10px; color:#00A11B;"></ion-icon>
         รายได้รวม
       </div>
       <div class="card-body">
-        <h5 class="card-title" style="text-align: center;"> {{total_values}} ฿</h5>
+        <h5 class="card-title" style="text-align: center; color:black;"> {{total_values}} ฿</h5>
         <p class="card-text">
-          <a href="/item_checkouts/" class="text-white" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
+          <a href="/item_checkouts/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
         </p>
       </div>
     </div>
@@ -94,77 +80,82 @@
   </div>
 </div>
 
+
+<form method="post">
+  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
+    </p>
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </div>
+</form>
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+
 
 {% else %}
 
 {% set month = select_month %}
 {% set select_eng_month = eng_month[month] %}
 <div class="ui icon message"
-  style="margin-top: 15px; margin-bottom: 25px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
+  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
   <i class="chart line icon"></i>
   <div class="content">
-    <div class="header">
-      <div class="ui primary header">{{ years[select_year] }} {{ eng_month[month] }}</div>แผนภูมิรายวัน
+    <div class="header" style="color: rgb(73, 72, 72);">
+      <div class="ui medium header">{{ eng_month[month] }} {{ years[select_year] }} </div>แผนภูมิรายวัน
     </div>
     </p>
   </div>
 </div>
-<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
-  <div class="ui hidden divider"></div>
-  <div class="ui teal vertical animated button">
-    <div class="visible content">คุณกำลังอยู่หน้านี้</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/">
-      แสดงแผนภูมิรายวัน
-    </a>
-  </div>
-  <div class="ui green vertical animated button">
-    <div class="visible content">แสดงแผนภูมิรายเดือน</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">
-      แสดงแผนภูมิรายเดือน
-    </a>
-  </div>
-  <div class="ui green vertical animated button">
-    <div class="visible content">แสดงแผนภูมิรายปี</div>
-    <a class="hidden content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">
-      แสดงแผนภูมิรายปี
-    </a>
-  </div>
-</div>
 
+<form method="post">
+  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
+    </p>
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </div>
+</form>
 
-
+{% if format_year not in years %}
+  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% elif select_year >= 0 %}
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-
 {% endif %}
 
-<div class="ui tabular menu" style="text-align:center ; justify-content:center;">
+{% if format_year in years %}
+<div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
+{% endif %}
+{% endif %}
+
+<div >
   {% for year in range(size_years) %}
   <form method="post" style="max-width: fit-content;">
-    {% set tab_year = years[year] %}
+    {% set tab_year = years[index_year] %}
     {% set years = select_year %}
-    <div style="display: inline; margin-left:5px;">
-      <input type="radio" name="year" id={{year}} value={{year}} style=" margin-bottom:lem;" />
-      <label>{{tab_year}}</label>
-    </div>
+    
     {% endfor %}
     <p />
     {% for month in range(12) %}
-    {% set tab_month = eng_month[month] %}
-    <div style="display: inline; margin-left:5px; ">
-      <input type="radio" name="month" id={{month}} value={{month}} />
-      <label>{{tab_month}}</label>
-    </div>
+    {% set tab_month = eng_month[format_month] %}
+
     {% endfor %}
     <p />
-    <div style="margin-top: lem;">
-      <button class="ui primary button" type="submit"
-        style="justify-content:center; margin-bottom: 1em;">ยืนยันการเลือกเวลา</button>
-    </div>
-    </p>
+
   </form>
 </div>
 
+<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
+  <div class="ui hidden divider"></div>
+  <div class="ui blue vertical animated button">
+    <a class="visible content " style="color: #ffffff; text-decoration: none; " href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
+  </div>
+  <div class="ui green vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
+  </div>
+  <div class="ui green vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">แสดงแผนภูมิรายปี</a>
+  </div>
+</div>
 
 
 {% endblock %}
@@ -180,7 +171,7 @@
   var years_day = years_day[select_year][select_month]
   var options = {
     series: [{
-      name: "Checkout",
+      name: "Profit of (Checkout * Price)",
       data: checkout_trend_day,
     }],
     chart: {
@@ -193,7 +184,7 @@
     dataLabels: {
       enabled: true,
     },
-    colors: ['#0dcaf0'],
+    colors: ['#00A11B'],
     stroke: {
       curve: 'straight'
     },
@@ -222,5 +213,44 @@
     .tab()
     ;
 </script>
+
+<script type="text/javascript">
+  datetime_formatter = {
+    datetime: function (datetime, settings) {
+        if (!datetime) return '';
+          var day = datetime.getDate();
+          var month = datetime.getMonth() + 1;
+          var year = datetime.getFullYear();
+          var minutes = datetime.getMinutes();
+          var hour = datetime.getHours();
+
+        return year + '-' + ("0" + month).slice(-2);
+  }
+};
+var calendar_setting = {
+type: 'month',
+formatter: datetime_formatter,
+text: {
+
+  months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+  monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+
+},
+};
+$('#month_year_calendar').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
+  });
+});
+</script>
+
+
 
 {% endblock %}

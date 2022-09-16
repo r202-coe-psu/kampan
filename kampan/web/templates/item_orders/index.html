@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}คำสั่งเบิกสินค้า{% endblock %}
 {% block dashboard_title %}คำสั่งเบิกสินค้า{% endblock %}
@@ -7,16 +8,32 @@
 {% endblock %}
 
 {% block content %}
-<div style="padding-bottom: 1em ;">
-  {% if request.endpoint == 'item_orders.index' %}
-    <a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
-      เพิ่มคำสั่งเบิก
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
-    <div class="divider"> / </div>
-  {% endif %}
+<form method="post">
+<div>
+  <div>
+    <div class="ui secondary  menu" style="margin-bottom: 1em;">
+      <div style="height:fit-content; margin-top:auto; margin-left:15px;">
+        {% if request.endpoint == 'item_orders.index' %}
+          <a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
+            เพิ่มคำสั่งเบิก
+          </a>
+        {% else %}
+          <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
+          <div class="divider"> / </div>
+        {% endif %}
+      </div>
+
+      <p style="margin-left:auto;">
+      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      </p>
+      <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
+      </p>
+      
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
+    </div>
 </div>
+
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
@@ -35,44 +52,134 @@
     </thead>
     <tbody>
       {% for order in orders %}
-      <tr>
-
-        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Description">{{ order.description }}</td>
-        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-        <td>
-          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-            เบิกสินค้า
-          </a>
-        </td>
-        <td data-label="Bill">
-          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="eye icon"></i>
-          </a>
-        </td>
-        {% if order.status == "pending" %}
-          <td data-label="Status" class="red">
-            <span class="ui red text">รออนุมัติ</span>
-          </td>
+        {% if calendar_select %}
+          {% if check_in_time(order.created_date, calendar_select,calendar_end) %}
+            <tr>
+              <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td data-label="Description">{{ order.description }}</td>
+              <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+              <td>
+                <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+                  เบิกสินค้า
+                </a>
+              </td>
+              
+              <td data-label="Bill">
+                <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+                  style=" color: white; background-color: rgb(59, 115, 199);">
+                  <i class="eye icon"></i>
+                </a>
+              </td>
+              {% if order.status == "pending" %}
+                <td data-label="Status" class="red">
+                  <span class="ui red text">รออนุมัติ</span>
+                </td>
+              {% else %}
+                <td data-label="Status" class="green">
+                  <span class="ui green text">อนุมัติ</span>
+                </td>
+              {% endif %}
+              <td>
+                <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+                  style=" color: white; background-color: rgb(59, 115, 199);">
+                  <i class="edit icon"></i>
+                </a>
+                <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
+                  style="color: white; background-color: rgb(192, 55, 55);">
+                  <i class="trash icon"></i>
+                </a>
+              </td>
+            </tr>
+          {% endif %}
         {% else %}
-          <td data-label="Status" class="green">
-            <span class="ui green text">อนุมัติ</span>
+        <tr>
+          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Description">{{ order.description }}</td>
+          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+          <td>
+            <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+              เบิกสินค้า
+            </a>
           </td>
+          
+          <td data-label="Bill">
+            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="eye icon"></i>
+            </a>
+          </td>
+          {% if order.status == "pending" %}
+            <td data-label="Status" class="red">
+              <span class="ui red text">รออนุมัติ</span>
+            </td>
+          {% else %}
+            <td data-label="Status" class="green">
+              <span class="ui green text">อนุมัติ</span>
+            </td>
+          {% endif %}
+          <td>
+            <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="edit icon"></i>
+            </a>
+            <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
+              style="color: white; background-color: rgb(192, 55, 55);">
+              <i class="trash icon"></i>
+            </a>
+          </td>
+        </tr>
         {% endif %}
-        <td>
-          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
-            style="color: white; background-color: rgb(192, 55, 55);">
-            <i class="trash icon"></i>
-          </a>
-        </td>
-      </tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table>      
 </div>
+</form>
+{% endblock %}
+
+
+
+
+{% block additional_js %}
+<script type="text/javascript">
+    datetime_formatter = {
+      datetime: function (datetime, settings) {
+          if (!datetime) return '';
+            var day = datetime.getDate();
+            var month = datetime.getMonth() + 1;
+            var year = datetime.getFullYear();
+            var minutes = datetime.getMinutes();
+            var hour = datetime.getHours();
+
+          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
+    }
+};
+var calendar_setting = {
+type: 'date',
+monthFirst: false,
+formatter: datetime_formatter,
+today: false,
+ampm: false,
+text: {
+    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+    today: 'วันนี้',
+    now: 'ปัจจุบัน',
+    am: 'AM',
+    pm: 'PM'
+},
+};
+$('#checkout_date_calendar').calendar(calendar_setting);
+$('#end_date').calendar(calendar_setting);
+
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
+  });
+});
+</script>
+
 {% endblock %}

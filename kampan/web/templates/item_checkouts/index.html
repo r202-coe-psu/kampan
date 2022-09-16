@@ -13,16 +13,15 @@
 
 <form method="POST">
   <div>
-    <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
-      <p style="margin-left:5px;">
+    <div class="ui secondary  menu" >
+      <p style="margin-left:auto;">
       {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
       </p>
       <p style="margin-left:10px;">
       {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
       </p>
-    </div>
-    <div style="text-align:center ; justify-content:center;">
-    <button type="submit" class="ui primary button" >ยืนยัน</button>
+      
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
     </div>
 
     <table class="ui celled table">
@@ -126,61 +125,20 @@
       now: 'ปัจจุบัน',
     am: 'AM',
     pm: 'PM'
-},
-};
+    },
+  };
 $('#checkout_date_calendar').calendar(calendar_setting);
-</script>
+$('#end_date').calendar(calendar_setting);
 
-<script type="text/javascript">
   $(document)
   .ready(function() {
     $('.ui.dropdown.validate.selection')
     .dropdown({
-      allowAdditions: true
+      allowAdditions: true,
+      fullTextSearch: 'exact'
     });
   });
 </script>
 
-<script type="text/javascript">
-  datetime_formatter = {
-    datetime: function (datetime, settings) {
-        if (!datetime) return '';
-          var day = datetime.getDate();
-          var month = datetime.getMonth() + 1;
-          var year = datetime.getFullYear();
-          var minutes = datetime.getMinutes();
-          var hour = datetime.getHours();
 
-        return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
-  }
-};
-var calendar_setting = {
-type: 'date',
-monthFirst: false,
-formatter: datetime_formatter,
-today: false,
-ampm: false,
-text: {
-  days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-  months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-  monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-  today: 'วันนี้',
-  now: 'ปัจจุบัน',
-  am: 'AM',
-  pm: 'PM'
-},
-};
-$('#end_date').calendar(calendar_setting);
-</script>
-
-<script type="text/javascript">
-$(document)
-.ready(function() {
-  $('.ui.dropdown.validate.selection')
-  .dropdown({
-    allowAdditions: true,
-    fullTextSearch: 'exact'
-  });
-});
-</script>
 {% endblock %}
