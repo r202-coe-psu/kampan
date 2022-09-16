@@ -15,7 +15,7 @@
   {#{% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
   {% endif %}#}
-
+  {% if current_user.has_roles(['admin']) or current_user.has_roles(['supervisor']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     แดชบอร์ด
@@ -37,7 +37,23 @@
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    จัดการสินค้า
+    การอนุมัติ
+  </div>
+  <a class="item" href="{{ url_for('approve_orders.index')}}">อนุมัติคำสั่งเบิก</a>
+  {% endif %}
+  
+  {% if current_user.has_roles(['admin']) %}
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    จัดการผู้ใช้
+  </div>
+  <a class="item" href="{{ url_for('accounts.user_roles')}}">เปลี่ยนระดับของผู้ใช้</a>
+  {% endif %}
+
+  {% if current_user.has_roles(['user']) %}
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    นำเข้า
   </div>
 
   <a class="item" href="{{ url_for('item_registers.index') }}">ลงสินค้า</a>
@@ -53,17 +69,10 @@
   
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    การอนุมัติ
-  </div>
-
-  <a class="item" href="{{ url_for('approve_orders.index')}}">อนุมัติคำสั่งเบิก</a>
-
-  <!-- Heading -->
-  <div class="sidebar-heading" style="color: grey;">
     แจ้งสินค้าเสียหาย
   </div>
-
   <a class="item" href="{{ url_for('lost_breaks.index')}}">สินค้าที่เสียหาย</a>
+  {% endif %}
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
