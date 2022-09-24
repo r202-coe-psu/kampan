@@ -44,7 +44,7 @@
           {% if check_in_time(checkout.checkout_date,calendar_select,calendar_end) %}
               <tr>
                 <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-                <td data-label="Image">
+                <td data-label="Image" class="center aligned">
                   <div>
                     {% if not checkout.item.image %}
                     <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -78,7 +78,7 @@
             {% else %}
             <tr>
               <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-              <td data-label="Image">
+              <td data-label="Image" class="center aligned">
                 <div>
                   {% if not checkout.item.image %}
                   <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">

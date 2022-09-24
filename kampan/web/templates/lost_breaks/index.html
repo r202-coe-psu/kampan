@@ -52,7 +52,7 @@
         {% if calendar_select %}
         {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
         <tr>
-          <td data-label="Image">
+          <td data-label="Image" class="center aligned">
             <div>
               {% if not item.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -81,7 +81,7 @@
           {% endif %}
           {% else %}
           <tr>
-            <td data-label="Image">
+            <td data-label="Image" class="center aligned">
               <div>
                 {% if not item.item.image %}
                 <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">

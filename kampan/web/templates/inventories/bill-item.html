@@ -31,7 +31,7 @@
   <tbody>
   {% for inventory in inventories %}
   <tr>
-    <td data-label="Image">
+    <td data-label="Image" class="center aligned">
       <div>
         {% if not inventory.item.image %}
         <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">

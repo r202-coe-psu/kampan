@@ -46,12 +46,10 @@
         </thead>
         <tbody>
           {% for inventory in inventories %}
-
-          <!-- {{inventory.registeration_date}} -->
           {% if calendar_select %}
           {% if check_in_time(inventory.registeration_date, calendar_select,calendar_end) %}
           <tr>
-            <td data-label="Image">
+            <td data-label="Image" class="center aligned">
               <div>
                 {% if not inventory.item.image %}
                 <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -77,10 +75,9 @@
         </tr>
         
           {% endif %}
-            <!-- {{"None Data"}} -->
             {% else %}
             <tr>
-              <td data-label="Image">
+              <td data-label="Image" class="center aligned">
                 <div>
                   {% if not inventory.item.image %}
                   <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">

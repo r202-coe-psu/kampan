@@ -33,7 +33,7 @@
     <tbody>
       {% for item in items %}
       <tr>
-        <td data-label="Image">
+        <td data-label="Image" class="center aligned">
           <div>
             {% if not item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
