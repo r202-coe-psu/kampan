@@ -63,10 +63,6 @@ class CheckoutItem(me.Document):
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
-    def is_appreove_required(self):
-        if self.item.status == "approval_required":
-            return True
-        return False
 
 class LostBreakItem(me.Document):
     mete = {"collection": "lost_break_items"}

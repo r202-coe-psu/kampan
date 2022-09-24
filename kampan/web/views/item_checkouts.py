@@ -82,13 +82,6 @@ def checkout():
             checkout.quantity = inventory.remain
             inventory.remain = 0
 
-        if checkout.item.status == "no_approval_required":
-            checkout.status = "approved"
-            checkout.order.status = "approved"
-        else:
-            checkout.status = "pending"
-            checkout.order.status = "pending"
-
         order.save()
         inventory.save()
         checkout.save()

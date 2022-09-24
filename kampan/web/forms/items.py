@@ -21,7 +21,6 @@ BaseItemForm = model_form(
         "unit": {"label": "หน่วย"},
         "minimum": {"label": "จำนวนสินค้าขั้นต่ำ -- (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
-        "status": {"label": "อนุมัติการเบิก"}
     },
 )
 

@@ -21,7 +21,6 @@
         <th>รูปสินค้า</th>
         <th>ชื่อสินค้า</th>
         <th>คำอธิบาย</th>
-        <th>สถานะ</th>
         <th>น้ำหนัก</th>
         <th>หน่วย</th>
         <th>ขนาด ( กว้าง x สูง x ลึก )</th>
@@ -45,7 +44,6 @@
         <td data-label="Name">{{ item.name }}</td>
         <td data-label="Description">{{ item.description }}</td>
         <td data-label="Weight">{{ item.weight }}</td>
-        <td data-label="Status">{{ item.get_status_display()}}</td>
         <td data-label="Unit">{{ item.unit }}</td>
         <td data-label="Size">{{ item.size.width }} x {{item.size.height }} x {{ item.size.deep }} </td>
         <td data-label="Categories">{{ item.categories|join(', ') }}</td>
