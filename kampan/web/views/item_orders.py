@@ -85,6 +85,8 @@ def edit(order_id):
 @login_required
 def delete(order_id):
     order = models.OrderItem.objects().get(id=order_id)
+    checkouts = models.CheckoutItem.objects(order=order)
+    checkouts.delete()
     order.delete()
 
     return redirect(url_for("item_orders.index"))
