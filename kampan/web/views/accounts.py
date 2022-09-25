@@ -8,6 +8,8 @@ from .. import oauth2
 from kampan.web import forms
 from kampan import models
 
+from .. import acl
+
 module = Blueprint("accounts", __name__)
 
 
@@ -173,7 +175,7 @@ def edit_profile():
     return redirect(url_for("accounts.index"))
 
 @module.route("/user-roles")
-@login_required
+@acl.roles_required("admin")
 def user_roles():
     users = models.User.objects()
     return render_template(
@@ -182,7 +184,7 @@ def user_roles():
     )
 
 @module.route("/user-roles/edit-roles", methods=["GET", "POST"])
-@login_required
+@acl.roles_required("admin")
 def edit_roles():
     user_id=request.args.get("user_id")
     user = models.User.objects.get(id=user_id)
