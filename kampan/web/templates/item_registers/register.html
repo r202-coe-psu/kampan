@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-แก้ไขสินค้า
+แก้ไขอุปกรณ์
 {% else %}
-เพิ่มการลงทะเบียนสินค้า
+เพิ่มการลงทะเบียนอุปกรณ์
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -16,9 +16,9 @@
 {{ super() }}
 <div class="active section">
   {% if 'edit' in request.path %}
-  แก้ไขข้อมูลสินค้า
+  แก้ไขข้อมูลอุปกรณ์
   {% else %}
-  เพิ่มข้อมูลสินค้า
+  เพิ่มข้อมูลอุปกรณ์
   {% endif %}
 </div>
 {% endblock %}

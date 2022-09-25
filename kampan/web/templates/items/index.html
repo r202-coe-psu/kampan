@@ -2,14 +2,14 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}Items{% endblock %}
-{% block dashboard_title %}สินค้า{% endblock %}
+{% block dashboard_title %}อุปกรณ์{% endblock %}
 {% block breadcrumbs %}
 {% endblock %}
 
 {% block content %}
 <div class="ui" style="padding-bottom: 1em;">
   <a class="ui primary button" href="{{ url_for('items.add') }}">
-    เพิ่มสินค้า
+    เพิ่มอุปกรณ์
   </a>
 </div>
 
@@ -18,8 +18,8 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปสินค้า</th>
-        <th>ชื่อสินค้า</th>
+        <th>รูปอุปกรณ์</th>
+        <th>ชื่ออุปกรณ์</th>
         <th>คำอธิบาย</th>
         <th>น้ำหนัก</th>
         <th>หน่วย</th>

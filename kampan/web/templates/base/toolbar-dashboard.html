@@ -30,10 +30,10 @@
     การจัดการ
   </div>
 
-  <a class="item" href="{{ url_for('items.index') }}">สินค้าทั้งหมด</a>
+  <a class="item" href="{{ url_for('items.index') }}">อุปกรณ์ทั้งหมด</a>
   <a class="item" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
-  <a class="item" href="{{ url_for('warehouses.index') }}">คลังสินค้า</a>
-  <a class="item" href="{{ url_for('item_positions.index') }}">ตำแหน่งสินค้า</a>
+  <a class="item" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
+  <a class="item" href="{{ url_for('item_positions.index') }}">ตำแหน่งอุปกรณ์</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
@@ -56,22 +56,22 @@
     นำเข้า
   </div>
 
-  <a class="item" href="{{ url_for('item_registers.index') }}">ลงสินค้า</a>
-  <a class="item" href="{{ url_for('inventories.index') }}">รายการสินค้า</a>
+  <a class="item" href="{{ url_for('item_registers.index') }}">ลงอุปกรณ์</a>
+  <a class="item" href="{{ url_for('inventories.index') }}">รายการอุปกรณ์</a>
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    การนำสินค้าออก
+    การนำอุปกรณ์ออก
   </div>
 
-  <a class="item" href="{{ url_for('item_orders.index') }}">เบิกสินค้า</a>
-  <a class="item" href="{{ url_for('item_checkouts.index') }}">รายการเบิกสินค้า</a>
+  <a class="item" href="{{ url_for('item_orders.index') }}">เบิกอุปกรณ์</a>
+  <a class="item" href="{{ url_for('item_checkouts.index') }}">รายการเบิกอุปกรณ์</a>
   
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    แจ้งสินค้าเสียหาย
+    แจ้งอุปกรณ์เสียหาย
   </div>
-  <a class="item" href="{{ url_for('lost_breaks.index')}}">สินค้าที่เสียหาย</a>
+  <a class="item" href="{{ url_for('lost_breaks.index')}}">อุปกรณ์ที่เสียหาย</a>
   {% endif %}
 
   <!-- Heading -->

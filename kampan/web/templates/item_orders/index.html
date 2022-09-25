@@ -1,8 +1,8 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}คำสั่งเบิกสินค้า{% endblock %}
-{% block dashboard_title %}คำสั่งเบิกสินค้า{% endblock %}
+{% block title %}คำสั่งเบิกอุปกรณ์{% endblock %}
+{% block dashboard_title %}คำสั่งเบิกอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -18,7 +18,7 @@
             เพิ่มคำสั่งเบิก
           </a>
         {% else %}
-          <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกสินค้า</a>
+          <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a>
           <div class="divider"> / </div>
         {% endif %}
       </div>
@@ -40,11 +40,11 @@
     <thead>
       <tr>
 
-        <th>วันที่สั่งเบิกสินค้า</th>
+        <th>วันที่สั่งเบิกอุปกรณ์</th>
         <th>คำอธิบาย</th>
         <th>ชื่อผู้ใช้งาน</th>
-        <th>เบิกสินค้า</th>
-        <th>รายการสินค้า</th>
+        <th>เบิกอุปกรณ์</th>
+        <th>รายการอุปกรณ์</th>
         <th>สถานะ</th>
         <th>แก้ไข/ลบข้อมูล</th>
 
@@ -60,7 +60,7 @@
               <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
               <td>
                 <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-                  เบิกสินค้า
+                  เบิกอุปกรณ์
                 </a>
               </td>
               
@@ -98,7 +98,7 @@
           <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
           <td>
             <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-              เบิกสินค้า
+              เบิกอุปกรณ์
             </a>
           </td>
           

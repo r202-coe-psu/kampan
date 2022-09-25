@@ -1,14 +1,14 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% block title %}คลังสินค้า{% endblock %}
-{% block dashboard_title %}คลังสินค้า{% endblock %}
+{% block title %}คลังอุปกรณ์{% endblock %}
+{% block dashboard_title %}คลังอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'warehouses.index' %}
 <a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
-  เพิ่มคลังสินค้า
+  เพิ่มคลังอุปกรณ์
 </a>
 {% else %}
-<a class="section" href="{{ url_for('warehouses.index') }}">คลังสินค้า</a>
+<a class="section" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -17,10 +17,10 @@
 <div class="ui" style="padding-bottom: 1em;">
   {% if request.endpoint == 'warehouses.index' %}
     <a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
-      เพิ่มคลังสินค้า
+      เพิ่มคลังอุปกรณ์
     </a>
   {% else %}
-    <a class="section" href="{{ url_for('warehouses.index') }}">คลังสินค้า</a>
+    <a class="section" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
     <div class="divider"> / </div>
   {% endif %}
 </div>
@@ -30,10 +30,10 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>ชื่อคลังสินค้า</th>
+        <th>ชื่อคลังอุปกรณ์</th>
         <th>คำอธิบาย</th>
         <th>ชื่อผู้ใช้งาน</th>
-        <th>แก้ไข/ลบคลังสินค้า</th>
+        <th>แก้ไข/ลบคลังอุปกรณ์</th>
       </tr>
     </thead>
     <tbody>

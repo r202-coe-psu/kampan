@@ -17,13 +17,13 @@ BaseInventoryForm = model_form(
         "remain",
     ],
     field_args={
-        "item": {"label": "สินค้า", "label_modifier": lambda i: f"{i.barcode_id} ({i.name})"
+        "item": {"label": "อุปกรณ์", "label_modifier": lambda i: f"{i.barcode_id} ({i.name})"
         },
         "position": {
             "label": "ตำแหน่ง",
             "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
         },
-        "warehouse": {"label": "คลังสินค้า", "label_modifier": lambda w: w.name},
+        "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
         "quantity": {"label": "จำนวนทั้งหมด"},
         "price": {"label": "ราคา"},
     },

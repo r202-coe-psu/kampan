@@ -1,7 +1,7 @@
 {% extends '/base/default-dashboard.html' %}
 {% import 'base/html-renderer.html' as renderer %}
-{% block title %}นำเข้าสินค้า{% endblock %}
-{% block dashboard_title %}นำเข้าสินค้า{% endblock %}
+{% block title %}นำเข้าอุปกรณ์{% endblock %}
+{% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
 {% endblock %}
 
@@ -14,10 +14,10 @@
       <div style="height:fit-content; margin-top:auto; margin-left:15px;">
         {% if request.endpoint == 'item_registers.index' %}
           <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-            เพิ่มบิลสินค้า
+            เพิ่มบิลอุปกรณ์
           </a>
         {% else %}
-          <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนสินค้า</a>
+          <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนอุปกรณ์</a>
           <div class="divider"> / </div>
         {% endif %}
       </div>
@@ -45,10 +45,10 @@
         <th>คำอธิบาย</th>
         <th>ร้านค้า</th>
         <th>ชื่อผู้ใช้งาน</th>
-        <th>วันลงทะเบียนสินค้า</th>
-        <th>นำเข้าสินค้า</th>
-        <th>รายการนำเข้าสินค้า</th>
-        <th>แก้ไข/ลบข้อมูลสินค้า</th>
+        <th>วันลงทะเบียนอุปกรณ์</th>
+        <th>นำเข้าอุปกรณ์</th>
+        <th>รายการนำเข้าอุปกรณ์</th>
+        <th>แก้ไข/ลบข้อมูลอุปกรณ์</th>
       </tr>
     </thead>
     <tbody>
@@ -64,7 +64,7 @@
         <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
         <td data-label="Checkin">
           <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
-            นำเข้าสินค้า
+            นำเข้าอุปกรณ์
           </a>
         </td>
         <td data-label="Checkin Items">
@@ -94,7 +94,7 @@
   <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
   <td data-label="Checkin">
     <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
-      นำเข้าสินค้า
+      นำเข้าอุปกรณ์
     </a>
   </td>
   <td data-label="Checkin Items">

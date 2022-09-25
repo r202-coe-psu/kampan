@@ -13,7 +13,7 @@ BaseWarehouseForm = model_form(
         "user",
     ],
     field_args={
-        "name": {"label": "ชื่อคลังสินค้า"},
+        "name": {"label": "ชื่อคลังอุปกรณ์"},
         "description": {
             "label": "คำอธิบาย",
         },

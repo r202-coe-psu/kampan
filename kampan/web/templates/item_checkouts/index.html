@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer%}
 
-{% block title %}รายการนำสินค้าออก{% endblock %}
-{% block dashboard_title %}รายการนำสินค้าออก{% endblock %}
+{% block title %}รายการนำอุปกรณ์ออก{% endblock %}
+{% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">รายการนำสินค้าออก</div>
+<div class="active section">รายการนำอุปกรณ์ออก</div>
 {% endblock %}
 
 {% block content %}
@@ -28,10 +28,10 @@
     <table class="ui celled table">
       <thead>
         <tr>
-        <th>วันที่สั่งเบิกสินค้า</th>
-        <th>รูปสินค้า</th>
-        <th>ชื่อสินค้า</th>
-        <th>คลังสินค้า</th>
+        <th>วันที่สั่งเบิกอุปกรณ์</th>
+        <th>รูปอุปกรณ์</th>
+        <th>ชื่ออุปกรณ์</th>
+        <th>คลังอุปกรณ์</th>
         <th>จำนวนทั้งหมด</th>
         <th>สถานะ</th>
         <th>ราคา</th>
