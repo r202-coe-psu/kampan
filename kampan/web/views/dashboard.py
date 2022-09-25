@@ -80,7 +80,9 @@ def daily_dashboard():
             checkout_trend_day.append(numday)
 
         index_year_co = years.index(year_co)
-        checkout_trend_day[index_year_co][month_co][day_co] += (checkout.quantity*checkout.price)
+
+        if checkout.status == "approved":
+            checkout_trend_day[index_year_co][month_co][day_co] += (checkout.quantity*checkout.price)
 
 
     for inventory in inventories:
@@ -134,8 +136,9 @@ def daily_dashboard():
 
         for checkout_header in checkouts:
             if checkout_header.checkout_date.month == format_month + 1 and checkout_header.checkout_date.year == format_year:
-                total_values += checkout_header.price * checkout_header.quantity
-                checkout_quantity += checkout_header.quantity
+                if checkout_header.status == "approved":
+                    total_values += checkout_header.price * checkout_header.quantity
+                    checkout_quantity += checkout_header.quantity
                 
 
     return render_template(
@@ -189,10 +192,12 @@ def monthly_dashboard():
             checkout_years.append(year)
             checkout_trend_month.append([0] * 12)
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
+            if checkout.status == "approved":
+                checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
         else:
             index = checkout_years.index(year)
-            checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
+            if checkout.status == "approved":
+                checkout_trend_month[index][month] += int(checkout.quantity*checkout.price)
 
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
@@ -215,7 +220,7 @@ def monthly_dashboard():
     sorted_checkout_trend_month = [i for _, i in sorted(zip(checkout_years, checkout_trend_month))]
 
     value_year = year_now
-    check_date_index = 0
+    check_date_index = None
     #เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
     if request.method == "POST":
         format_year = str(form.calendar_year.data)[:-15]
@@ -224,15 +229,16 @@ def monthly_dashboard():
     
     for checkout_header in checkouts:
         if checkout_header.checkout_date.year == value_year:
-            checkout_quantity += checkout_header.quantity
+            if checkout_header.status == "approved":
+                checkout_quantity += checkout_header.quantity
     
         if value_year in checkout_years:
             check_date_index = int(checkout_years.index(value_year))
         else:
             check_date_index = 0
-
-    total_values = float(sum(checkout_trend_month[check_date_index]))
-
+    
+    if checkout_trend_month != []:
+        total_values = float(sum(checkout_trend_month[check_date_index]))
 
     return render_template(
 
@@ -277,23 +283,27 @@ def yearly_dashboard():
     for checkout in checkouts:
         date = checkout.checkout_date
         year = int(date.strftime("%Y"))
-        total_values += checkout.price * checkout.quantity
+        if checkout.status == "approved":
+            total_values += checkout.price * checkout.quantity
         
         if year not in checkout_years:
             checkout_years.append(year)
             checkout_trend_year.append(0)
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
+            if checkout.status == "approved":
+                checkout_trend_year[index] += int(checkout.quantity*checkout.price)
         
         else:
             index = checkout_years.index(year)
-            checkout_trend_year[index] += int(checkout.quantity*checkout.price)
+            if checkout.status == "approved":
+                checkout_trend_year[index] += int(checkout.quantity*checkout.price)
 
+        if checkout.status == "approved":
+            checkout_quantity += checkout.quantity
 
     for inventory in inventories:
         item_quantity += inventory.quantity
         item_remain += inventory.remain
-        checkout_quantity = item_quantity - item_remain
 
     # if "admin" in user.roles:
     #     return index_admin()
