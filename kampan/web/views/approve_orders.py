@@ -35,20 +35,17 @@ def index():
         check_in_time=check_in_time,
     )
 
-@module.route("<order_id>", methods=["GET", "POST"])
+@module.route("<order_id>", methods=["GET"])
 def approve(order_id):
-    form = forms.item_orders.OrderItemForm()
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order)
     
     order.status = "approved"
     order.save()
 
-
     for checkout in checkout_items:
         if checkout.order.status == "approved":
             checkout.status = "approved"
-            form.populate_obj(checkout)
             checkout.save()
     
     return redirect(url_for("approve_orders.index"))
