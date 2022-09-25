@@ -15,16 +15,16 @@
   {#{% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
   {% endif %}#}
-  {% if current_user.has_roles(['admin']) or current_user.has_roles(['supervisor']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     แดชบอร์ด
   </div>
-
-  <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
-  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ด</a>
-
   
+  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ด</a>
+  <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
+  
+  
+  {% if current_user.has_roles(['admin']) or current_user.has_roles(['supervisor']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การจัดการ
