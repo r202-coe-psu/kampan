@@ -21,6 +21,7 @@ COPY kampan/web/static/package.json kampan/web/static/package-lock.json kampan/w
 RUN npm install --prefix kampan/web/static
 
 
+COPY . /app
 ENV KAMPAN_SETTINGS=/app/kampan-production.cfg
 
 # For brython
