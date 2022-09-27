@@ -18,7 +18,7 @@ services:
             - ../deployment:/deployment
             - /etc/localtime:/etc/localtime:ro
         ports:
-            - 9000:9000
+            - 9800:9000
         links:
             - mongodb
         networks:
@@ -28,7 +28,7 @@ services:
             KAMPAN_SETTINGS: /app/kampan-production.cfg
         command:
             # uwsgi --lazy-apps --ini scripts/kampan-uwsgi.ini
-            /venv/bin/gunicorn -w 2 --bind 0.0.0.0:9800 "kampan.web:create_app()"
+            /venv/bin/gunicorn -w 2 --bind 0.0.0.0:9000 "kampan.web:create_app()"
         logging:
             options:
                 max-size: "10m"
