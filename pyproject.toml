@@ -16,6 +16,7 @@ loginpass = "^0.5"
 Authlib = "0.15.5"
 Pillow = "^9.1.0"
 numpy = "^1.22.3"
+brython = "^3.10.7"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.2"

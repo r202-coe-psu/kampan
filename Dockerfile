@@ -7,24 +7,28 @@ RUN sed -i '/th_TH.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 ENV LANG th_TH.UTF-8 
 ENV LANGUAGE th_TH:en 
 ENV LC_ALL th_TH.UTF-8
-COPY . /app
-WORKDIR /app
 
+
+RUN python3 -m venv /venv
+ENV PYTHON=/venv/bin/python3
+RUN $PYTHON -m pip install wheel poetry gunicorn
+
+WORKDIR /app
+COPY poetry.lock pyproject.toml /app/
+RUN $PYTHON -m poetry config virtualenvs.create false && $PYTHON -m poetry install --no-interaction --no-dev
+
+COPY kampan/web/static/package.json kampan/web/static/package-lock.json kampan/web/static/
 RUN npm install --prefix kampan/web/static
+
 
 ENV KAMPAN_SETTINGS=/app/kampan-production.cfg
 
-RUN ln -s $(command -v python3) /usr/bin/python
-RUN pip3 install poetry
-RUN poetry config virtualenvs.create false && poetry install --no-interaction
-ENV PYTHONPATH $(pwd):/usr/lib/python3.9/site-packages:$PYTHONPATH
-
 # For brython
-# RUN cd /app/kampan/web/static/brython; \
-#     for i in $(ls -d */); \
-#     do \
-#     cd $i; \
-#     python3 -m brython --make_package ${i%%/}; \
-#     mv *.brython.js ..; \
-#     cd ..; \
-#     done
+RUN cd /app/kampan/web/static/brython; \
+    for i in $(ls -d */); \
+    do \
+    cd $i; \
+    python3 -m brython --make_package ${i%%/}; \
+    mv *.brython.js ..; \
+    cd ..; \
+    done
