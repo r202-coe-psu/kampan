@@ -22,18 +22,20 @@ def check_in_time(created_date, calendar_select,calendar_end):
 @module.route("/",methods=["GET","POST"])
 @login_required
 def index():
-    orders = models.OrderItem.objects(status="pending")
+    if "admin" in current_user.roles or "supervisor" in current_user.roles:
+        orders = models.OrderItem.objects(status="pending")
 
-    form = forms.inventories.InventoryForm()
-    
-    return render_template(
-        "/approve_orders/index.html",
-        orders=orders,
-        form=form,
-        calendar_select=form.calendar_select.data,
-        calendar_end = form.calendar_end.data,
-        check_in_time=check_in_time,
-    )
+        form = forms.inventories.InventoryForm()
+        
+        return render_template(
+            "/approve_orders/index.html",
+            orders=orders,
+            form=form,
+            calendar_select=form.calendar_select.data,
+            calendar_end = form.calendar_end.data,
+            check_in_time=check_in_time,
+        )
+    return redirect(url_for("dashboard.daily_dashboard"))
 
 @module.route("<order_id>", methods=["GET"])
 def approve(order_id):
