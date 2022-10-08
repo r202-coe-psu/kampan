@@ -154,7 +154,10 @@ def authorized_engpsu():
 @module.route("/login/<name>")
 def login_oauth(name):
     client = oauth2.oauth2_client
-    redirect_uri = url_for("accounts.authorized_oauth", name=name, _external=True)
+    scheme = request.environ.get("HTTP_X_FORWARDED_PROTO", "http")
+    redirect_uri = url_for(
+        "accounts.authorized_oauth", name=name, _external=True, _scheme=scheme
+    )
     response = None
     if name == "google":
         response = client.google.authorize_redirect(redirect_uri)
