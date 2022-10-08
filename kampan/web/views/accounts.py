@@ -17,6 +17,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 from .. import models
 from .. import oauth2
+from .. import acl
 from .. import forms
 
 module = Blueprint("accounts", __name__)
@@ -174,7 +175,6 @@ def authorized_oauth(name):
     client = oauth2.oauth2_client
     remote = None
     try:
-
         if name == "google":
             remote = client.google
         elif name == "facebook":
@@ -265,3 +265,41 @@ def picture(user_id, filename):
         mimetype=user.picture.content_type,
     )
     return response
+
+
+@module.route("/user-roles")
+@acl.roles_required('admin')
+def user_roles():
+    users = models.User.objects()
+    if "admin" in current_user.roles:
+        return render_template(
+            "/accounts/user_roles.html",
+            users=users,
+        )
+    return redirect(url_for("dashboard.daily_dashboard"))
+
+@module.route("/user-roles/edit-roles", methods=["GET", "POST"])
+@login_required
+def edit_roles():
+    if "admin" in current_user.roles:
+        user_id=request.args.get("user_id")
+        user = models.User.objects.get(id=user_id)
+        form = forms.user_roles.UserRolesForm(obj=user)
+        form.roles.choices = [
+            ("admin", "Admin"),
+            ("supervisor", "Supervisor"),
+            ("user", "User"),
+        ]
+        
+        if not form.validate_on_submit():
+            return render_template(
+                "/accounts/edit_roles.html",
+                form=form,
+            )
+
+        form.populate_obj(user)
+        user.roles = form.roles.data
+        user.save()
+
+        return redirect(url_for("accounts.user_roles"))
+    return redirect(url_for("dashboard.daily_dashboard"))

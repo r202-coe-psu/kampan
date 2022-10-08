@@ -16,7 +16,7 @@ def init_acl(app):
         return unauthorized_callback()
 
 
-def roles_required(roles):
+def roles_required(*roles):
     def wrapper(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
