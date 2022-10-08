@@ -64,7 +64,8 @@ def login():
 @module.route("/login-engpsu")
 def login_engpsu():
     client = oauth2.oauth2_client
-    redirect_uri = url_for("accounts.authorized_engpsu", _external=True)
+    scheme = request.environ.get("HTTP_X_FORWARDED_PROTO", "http")
+    redirect_uri = url_for("accounts.authorized_engpsu", _external=True, _scheme=scheme)
     response = client.engpsu.authorize_redirect(redirect_uri)
     return response
 
