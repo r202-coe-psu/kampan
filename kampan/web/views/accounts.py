@@ -61,7 +61,8 @@ def login():
 @module.route("/login-engpsu")
 def login_engpsu():
     client = oauth2.oauth2_client
-    redirect_uri = url_for("accounts.authorized_engpsu", _external=True)
+    scheme = request.engiron.get("HTTP_X_FORWARDED_PROTO", "http")
+    redirect_uri = url_for("accounts.authorized_engpsu", _external=True, _scheme=scheme)
     response = client.engpsu.authorize_redirect(redirect_uri)
     return response
 
@@ -174,6 +175,7 @@ def edit_profile():
 
     return redirect(url_for("accounts.index"))
 
+
 @module.route("/user-roles")
 @login_required
 def user_roles():
@@ -185,11 +187,12 @@ def user_roles():
         )
     return redirect(url_for("dashboard.daily_dashboard"))
 
+
 @module.route("/user-roles/edit-roles", methods=["GET", "POST"])
 @login_required
 def edit_roles():
     if "admin" in current_user.roles:
-        user_id=request.args.get("user_id")
+        user_id = request.args.get("user_id")
         user = models.User.objects.get(id=user_id)
         form = forms.user_roles.UserRolesForm(obj=user)
         form.roles.choices = [
@@ -197,7 +200,7 @@ def edit_roles():
             ("supervisor", "Supervisor"),
             ("user", "User"),
         ]
-        
+
         if not form.validate_on_submit():
             return render_template(
                 "/accounts/edit_roles.html",
