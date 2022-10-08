@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-FLASK_ENV=development KAMPAN_SETTINGS=$(pwd)/kampan-development.cfg DEBUG=1 kampan-web -H 0.0.0.0 -d 
+FLASK_DEBUG=true KAMPAN_SETTINGS=$(pwd)/kampan-development.cfg kampan-web -H 0.0.0.0 -d 

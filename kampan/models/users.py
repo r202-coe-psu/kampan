@@ -14,6 +14,7 @@ class User(me.Document, UserMixin):
     roles = me.ListField(me.StringField(), default=["user"])
     student_id = me.StringField(min_length=5, max_length=64)
     organization = me.StringField(min_length=3, max_length=64)
+    picture_url = me.StringField(max_length=500)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(
