@@ -149,12 +149,11 @@ def handle_authorized_oauth2(remote, token):
             expires=datetime.datetime.utcfromtimestamp(token.get("expires_in")),
         )
         oauth2token.save()
-
     next_uri = session.get("next", None)
     if next_uri:
         session.pop("next")
         return redirect(next_uri)
-    return redirect(url_for("site.index"))
+    return redirect(url_for("dashboard.index"))
 
 
 def handle_authorize(remote, token, user_info):
@@ -192,6 +191,7 @@ def handle_authorize(remote, token, user_info):
         )
         oauth2token.save()
     next_uri = session.get("next", None)
+
     if next_uri:
         session.pop("next")
         return redirect(next_uri)
