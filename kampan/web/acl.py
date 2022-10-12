@@ -20,6 +20,10 @@ def roles_required(*roles):
     def wrapper(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
+
+            if not current_user.is_authenticated:
+                raise Forbidden()
+
             for role in roles:
                 if role in current_user.roles:
                     return func(*args, **kwargs)
