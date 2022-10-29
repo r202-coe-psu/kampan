@@ -113,7 +113,7 @@ def image(item_id, filename):
 
     response = send_file(
         item.image,
-        attachment_filename=item.image.filename,
+        download_name=item.image.filename,
         mimetype=item.image.content_type,
     )
     return response

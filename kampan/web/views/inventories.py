@@ -162,7 +162,7 @@ def bill(inventory_id, filename):
 
     response = send_file(
         inventory.bill,
-        attachment_filename=inventory.bill.filename,
+        download_name=inventory.bill.filename,
         mimetype=inventory.bill.content_type,
     )
     return response

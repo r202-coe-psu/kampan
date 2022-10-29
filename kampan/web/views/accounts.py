@@ -261,7 +261,7 @@ def picture(user_id, filename):
 
     response = send_file(
         user.picture,
-        attachment_filename=user.picture.filename,
+        download_name=user.picture.filename,
         mimetype=user.picture.content_type,
     )
     return response
