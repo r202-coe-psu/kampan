@@ -51,6 +51,17 @@ def get_user_and_remember():
         login_user(user, remember=True)
 
 
+@module.route("/login", methods=("GET", "POST"))
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard.index"))
+
+    if "next" in request.args:
+        session["next"] = request.args.get("next", None)
+
+    return render_template("/accounts/login.html")
+
+
 @module.route("/login/<name>")
 def login_oauth(name):
     client = oauth2.oauth2_client
