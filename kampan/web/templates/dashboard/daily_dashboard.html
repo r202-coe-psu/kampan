@@ -81,13 +81,13 @@
 </div>
 
 
-<form method="post">
-  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+<form method="post" onsubmit="return validateForm()">
+  <div class="ui secondary menu" style="text-align:center; justify-content:center;">
     <p style="margin-left:10px;">
       {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
     </p>
     <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
-    </div>
+  </div>
 </form>
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 
@@ -107,13 +107,13 @@
   </div>
 </div>
 
-<form method="post">
-  <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+<form method="post" onsubmit="return validateForm()">
+  <div class="ui secondary menu" style="text-align:center; justify-content:center;">
     <p style="margin-left:10px;">
       {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
     </p>
     <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
-    </div>
+  </div>
 </form>
 
 {% if format_year not in years %}
@@ -160,7 +160,19 @@
 
 {% endblock %}
 
-{% block additional_js %}
+{% block additional_js %} 
+<script>
+  function validateForm() {
+    var dateInput = document.querySelector("#month_year_calendar input").value;
+    dateInput = dateInput.trim();
+    if (dateInput === "") {
+      alert("Please enter year and month before submitting.");
+      return false;
+    }
+    return true;
+  }
+</script>
+
 <script>
   var select_year = {{ select_year }}
   var select_month = {{ select_month }}
