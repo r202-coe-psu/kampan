@@ -75,3 +75,7 @@ class LostBreakItem(me.Document):
     description = me.StringField(max_length=255)
     quantity = me.IntField(required=True, default=0)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+class Approve_orders(me.Document):
+    meta = {"collection": "approve_orders"}
+    reated_date = me.DateTimeField(required=True, default=datetime.datetime.now)

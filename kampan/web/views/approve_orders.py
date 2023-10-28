@@ -12,7 +12,11 @@ from kampan.web.views.lost_breaks import check_in_time
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
 def check_in_time(created_date, calendar_select,calendar_end):
-    print(created_date, calendar_select, calendar_select <= created_date <= calendar_end)
+    print(
+        created_date, 
+        calendar_select, 
+        calendar_select <= created_date <= calendar_end
+    )
     if calendar_select <= created_date <= calendar_end:
         return True
     else:
