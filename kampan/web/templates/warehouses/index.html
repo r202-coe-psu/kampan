@@ -14,17 +14,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui" style="padding-bottom: 1em;">
-  {% if request.endpoint == 'warehouses.index' %}
-    <a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
-      เพิ่มคลังอุปกรณ์
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
-
 {% if warehouses %}
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
