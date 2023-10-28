@@ -1,6 +1,8 @@
 {% extends "/base/base-layout.html" %}
 
-{% block title %}{{ config.get('APP_TITLE') }} Dashboard {% endblock %}
+{% block title %}
+  {{ config.get('APP_TITLE') }} Dashboard
+{% endblock %}
 
 {% block default_head %}
 <style type="text/css">
@@ -13,7 +15,7 @@
     flex-direction: row;
   }
 
-  .full.height>.toc .ui.menu {
+  .full.height > .toc .ui.menu {
     border-radius: 0;
     border-width: 0 1px 0 0;
     margin: 0;
@@ -38,6 +40,7 @@
   }
 
   .footer {
+    position: relative;
     border-top: 1px solid #DDDDDD !important;
     box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.08) inset !important;
     background-color: #FAFAFA !important;
@@ -73,90 +76,48 @@
       display: none !important;
     }
 
-    .fixed.menu>.container {
-      width: 100%;
-       !important;
+    .fixed.menu > .container {
+      width: 100% !important;
     }
+  }
 </style>
 
 <script type="text/javascript">
-  $(document)
-    .ready(function () {
-
-      $('.left.sidebar.menu')
-        .sidebar('attach events', '.launch.icon.item', 'show')
-        ;
-      $('.launch.icon.item')
-        .removeClass('disabled')
-        ;
-
-      $('.ui.dropdown')
-        .dropdown()
-        ;
-    })
-    ;
+  $(document).ready(function () {
+    $('.left.sidebar.menu').sidebar('attach events', '.launch.icon.item', 'show');
+    $('.launch.icon.item').removeClass('disabled');
+    $('.ui.dropdown').dropdown();
+  });
 </script>
-
 {% endblock default_head %}
 
-
 {% block body %}
-{# begin slide menu #}
 <div class="ui vertical inverted sidebar large menu left">
   {% include "/base/toolbar-dashboard.html" with context %}
 </div>
-{# end slide menu #}
 
-{# begin top bar mobile #}
-<div class="ui fixed inverted main menu">
+<div class="ui fixed inverted main menu" >
   <div class="ui container">
     <a class="launch icon item">
       <i class="content icon"></i>
     </a>
-
     <div class="item">
       {% block dashboard_title %}Dashboard{% endblock %}
     </div>
-
-    {#
-    <div class="right menu">
-
-      <div class="vertically fitted borderless item">
-        <iframe class="github" src="./Layouts _ Fomantic UI_files/github-btn.html" allowtransparency="true"
-          frameborder="0" scrolling="0" width="100" height="20"></iframe>
-      </div>
-
-      <div class="item">
-        <div class="ui hidden right aligned search input" id="search">
-          <div class="ui transparent icon input">
-            <input class="prompt" type="text" placeholder="Search...">
-            <i class="inverted search link icon" data-content="Search UI"></i>
-          </div>
-          <div class="results"></div>
-        </div>
-      </div>
-
-    </div>
-    #}
   </div>
 </div>
-{# end top bar mobile #}
 
 <div class="pusher">
   <div class="full height">
-
-    {# begin default left side toc #}
     <div class="toc">
-      <div class="ui vertical inverted large menu">
+      <div class="ui vertical inverted large menu" >
         {% include "/base/toolbar-dashboard.html" with context %}
       </div>
     </div>
-    {# end default left side toc #}
 
-    {# begin main article #}
-    <div class="article">
-      <header>
-        <div class="ui vertical dividing segment">
+    <div class="article" >
+      <header >
+        <div class="ui vertical dividing segment"  >
           <div class="introduction">
             <h1 class="ui header">
               {{ self.dashboard_title() }}
@@ -167,30 +128,19 @@
 
       <main class="main-content">
         {%- if self.dashboard_title().lower() != 'dashboard' %}
-         {# 
-          <div class="ui segment">
-          <div class="ui big breadcrumb">
-            {% block breadcrumbs %}{% endblock %}
+          <div class="ui segment" style="width: 100%;">
+            <div class="ui big breadcrumb" style="width: 100%;">
+              {% block breadcrumbs %}{% endblock %}
+            </div>
           </div>
-        </div> 
-        #}
         {% endif -%}
         {% block content %}{% endblock %}
       </main>
 
-      <footer class="ui vertical footer segment">
+      <footer class="ui vertical footer segment" >
         {% include "/base/footer.html" %}
-      </footer>
-
+      </footer>      
     </div>
-    {# end main article #}
-
   </div>
-  {#
-  <footer class="ui vertical footer segment">
-    {% include "/base/footer.html" %}
-  </footer>
-  #}
 </div>
-
 {% endblock body %}
