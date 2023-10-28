@@ -9,7 +9,7 @@
 {% block breadcrumbs %}
 <div class="row d-flex justify-content-center align-items-center">
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
         <h5 class="card-title mt-3 ">อุปกรณ์ที่ขาย <span style="color: #003ea1;"><b><h3>{{ checkout_quantity }}</h3></b></span> รายการ</h5>
@@ -19,7 +19,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
         <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b><h3>{{ item_remain }}</h3></b></span> รายการ</h5>
@@ -29,7 +29,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
         <h5 class="card-title mt-3 ">รายได้รวม <span style="color: #00A11B;"><b><h3>{{total_values}}</h3></b></span> ฿ </h5>
@@ -38,12 +38,9 @@
     </div>
   </div>
 </div>
-
-
-
-
 {% endblock %}
 {% block content %}
+
 <head>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   
@@ -57,14 +54,15 @@
 
 {% if checkout_quantity == 0 %}
 
-<div class="ui icon message" tyle="text-align:center; justify-content:center;"
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(92, 92, 92); border-style: solid ;max-width: fit-content; border-width: 1px;">
+<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content">
-    <div class="header">
-      <div class="ui primary header">จำนวนอุปกรณ์ที่ขายได้</div>รายวัน
+    <div class="header" style="color: #292d33;">
+      <div class="ui medium header">{{ eng_month[month] }} {{ years[select_year] }} แผนภูมิรายวัน </div>
     </div>
-    <p>
+    <p style="color: #292d33;">
+      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละวัน
+    </p>
   </div>
 </div>
 

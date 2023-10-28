@@ -6,14 +6,9 @@
 <div class="ui small right floated header">{{today_date}}</div>
 {% endblock %}
 {% block breadcrumbs %}
-<style>
-  .card {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-</style>
 <div class="row d-flex justify-content-center align-items-center">
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
         <h5 class="card-title mt-3 ">อุปกรณ์ที่ขาย <span style="color: #003ea1;"><b><h3>{{ checkout_quantity }}</h3></b></span> รายการ</h5>
@@ -23,7 +18,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
         <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b><h3>{{ item_remain }}</h3></b></span> รายการ</h5>
@@ -33,7 +28,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
         <h5 class="card-title mt-3 ">รายได้รวม <span style="color: #00A11B;"><b><h3>{{total_values}}</h3></b></span> ฿ </h5>
@@ -42,6 +37,7 @@
     </div>
   </div>
 </div>
+
 
 
 
