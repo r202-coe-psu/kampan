@@ -15,55 +15,39 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui" style="padding-bottom: 1em;">
-  {% if request.endpoint == 'suppliers.index' %}
-    <a class="ui primary button" href="{{ url_for('suppliers.add') }}">
-      เพิ่มร้านค้า
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
 
 {% if suppliers %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <th>ชื่อร้าน</th>
-      <th>ที่อยู่</th>
-      <th>คำอธิบาย</th>
-      <th>เลขกำกับภาษี</th>
-      <th>ช่องทางการติดต่อ</th>
-      <th>อีเมลล์</th>
-      <th>แก้ไข-ลบข้อมูล</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        {% for supplier in suppliers %}
-        <td data-label="Name">{{ supplier.name }}</td>
-        <td data-label="address">{{ supplier.address }}</td>
-        <td data-label="Description">{{ supplier.description }}</td>
-        <td data-label="Tax_id">{{ supplier.tax_id }}</td>
-        <td data-label="Contact">{{ supplier.contact }}</td>
-        <td data-label="Email">{{ supplier.email }}</td>
-        <td>
-          <a class="ui icon button" href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button" href="{{ url_for('suppliers.delete', supplier_id=supplier.id) }}"
-            style="color: white; background-color: rgb(192, 55, 55);">
-            <i class="trash icon"></i>
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="ui four cards">
+  {% for supplier in suppliers %}
+  <div class="card" style="width: 100%;">
+    <div class="content" style="padding: 20px;">
+      <div class="header" style="font-size: 2em; font-weight: bold;">{{ supplier.name }}</div>
+      <div class="meta" style="font-size: 1.2em; margin-top: 10px;">
+        <span class="meta" style="margin-right: 3%;"><strong>ที่อยู่: </strong> {{ supplier.address }} </span>
+        <span class="meta" style="margin-right: 3%;"><strong>เลขกำกับภาษี: </strong> {{ supplier.tax_id }} </span>
+        <span class="meta" style="margin-right: 3%;"><strong>ช่องทางการติดต่อ: </strong> {{ supplier.contact }} </span>
+        <span class="meta" style="margin-right: 3%;"><strong>อีเมล: </strong> {{ supplier.email }} </span>
+      </div>
+      <div class="description" style="font-size: 1.5em; margin-top: 10px;">
+        <p>{{ supplier.description }}</p>
+      </div>
+      <div class="actions" style="margin-top: 10px;">
+        <a class="ui yellow icon button" href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}">
+          <i class="edit icon"></i> แก้ไข
+        </a>
+        <a class="ui red icon button" href="{{ url_for('suppliers.delete', supplier_id=supplier.id) }}">
+          <i class="trash icon"></i> ลบ
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
+
+
+
 {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
+
 {% endblock %}
