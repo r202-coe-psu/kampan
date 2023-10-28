@@ -5,7 +5,48 @@
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายปี</div>
 <div class="ui small right floated header">{{today_date}}</div>
 {% endblock %}
+{% block breadcrumbs %}
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+</style>
+<div class="row d-flex justify-content-center align-items-center">
+  <div class="col-6 col-sm-3">
+    <div class="card bg-white" style="border-radius: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
+        <h5 class="card-title mt-3 ">อุปกรณ์ที่ขาย <span style="color: #003ea1;"><b><h3>{{ checkout_quantity }}</h3></b></span> รายการ</h5>
+        <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
 
+  <div class="col-6 col-sm-3">
+    <div class="card bg-white" style="border-radius: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
+        <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b><h3>{{ item_remain }}</h3></b></span> รายการ</h5>
+        <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-sm-3">
+    <div class="card bg-white" style="border-radius: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
+        <h5 class="card-title mt-3 ">รายได้รวม <span style="color: #00A11B;"><b><h3>{{total_values}}</h3></b></span> ฿ </h5>
+        <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% endblock %}
 {% block content %}
 
 <head>
@@ -18,94 +59,23 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-<div class="row shadow-sm" style="text-align:center; justify-content:center; margin-left: 100px;">
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04;">
-      <div class="card-header" style="color:black;">
-        <ion-icon name="cart-outline" style="margin-right: 10px; color:#003ea1;"></ion-icon>
-        อุปกรณ์ที่ขาย
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center; color:black;">{{ checkout_quantity }} รายการ</h5>
-        <p class=" card-text">
-          <a href="/item_orders/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
-      <div class="card-header" style="color:black;">
-        <ion-icon name="bag-check-outline" style="margin-right: 10px; color:#6d0000;"></ion-icon>
-        อุปกรณ์คงเหลือ
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center; color:black;">{{ item_remain }} รายการ</h5>
-        <p class="card-text">
-          <a href="/item_registers/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .04">
-      <div class="card-header" style="color:black;">
-        <ion-icon name="cash-outline" style="margin-right: 10px; color:#00A11B;"></ion-icon>
-        รายได้รวม
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center; color:black;"> {{total_values}} ฿</h5>
-        <p class="card-text">
-          <a href="/item_checkouts/" class="text-black" style="text-decoration: none;"> [ เพิ่มเติม ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
-
 {% if checkout_quantity == 0 %}
 
-<div class="ui icon message"
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; border-width: 1px;">
-  <i class="chart line icon"></i>
-  <div class="content">
-    <div class="header">
-      <div class="ui primary header">แผนภูมิรายปี</div>รายปี
-    </div>
-    <p />
-  </div>
-</div>
 
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-
-<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
-  <div class="ui hidden divider"></div>
-  <div class="ui green vertical animated button">
-    <a class="visible content " style="color: #ffffff; text-decoration: none;" href="/dashboard/">แสดงแผนภูมิรายวัน</a>
-  </div>
-  <div class="ui blue vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">คุณกำลังอยู่หน้ารายเดือน</a>
-  </div>
-  <div class="ui green vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">แสดงแผนภูมิรายปี</a>
-  </div>
-</div>
 
 {% else %}
 
-<div class="ui icon message"
-  style="margin-top: 15px; margin-left: auto; margin-right: auto; color: rgb(18, 19, 18); border-style: solid ;max-width: fit-content; font-size: 13px; border-width: 1px;">
+<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content">
-    <div class="ui medium header">
-      แผนภูมิรายปี
+    <div class="header" style="color: #292d33;">
+      <div class="ui medium header">แผนภูมิรายปี </div>
     </div>
-    <p></p>
+    <p style="color: #292d33;">
+      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละปี
+    </p>
   </div>
 </div>
-
 
 <body>
   <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; ">
