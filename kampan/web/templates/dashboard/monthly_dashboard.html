@@ -9,7 +9,7 @@
 {% block breadcrumbs %}
 <div class="row d-flex justify-content-center align-items-center">
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
         <h5 class="card-title mt-3 ">อุปกรณ์ที่ขาย <span style="color: #003ea1;"><b><h3>{{ checkout_quantity }}</h3></b></span> รายการ</h5>
@@ -19,7 +19,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
         <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b><h3>{{ item_remain }}</h3></b></span> รายการ</h5>
@@ -29,7 +29,7 @@
   </div>
 
   <div class="col-6 col-sm-3">
-    <div class="card bg-white" style="border-radius: 10px;">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
         <h5 class="card-title mt-3 ">รายได้รวม <span style="color: #00A11B;"><b><h3>{{total_values}}</h3></b></span> ฿ </h5>
@@ -51,6 +51,31 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
+{% if checkout_quantity == 0 %}
+<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
+  <i class="chart line icon"></i>
+  <div class="content">
+    <div class="header" style="color: #292d33;">
+      <div class="ui medium header">{{ checkout_years[year] }} แผนภูมิรายเดือน </div>
+    </div>
+    <p style="color: #292d33;">
+      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละเดือน
+    </p>
+  </div>
+</div>
+
+  <form method="post" onsubmit="return validateForm()">
+    <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
+      <p style="margin-left:10px;">
+        {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
+      </p>
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+    </div>
+  </form>
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+
+
+{% else %}
 
 {% set year = check_date_index %}
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
@@ -65,24 +90,20 @@
   </div>
 </div>
 
-<p>
-  <form method="post">
-    <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
-      <p style="margin-left:10px;">
-        {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
-      </p>
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
-    </div>
-  </form>
-</p>
+<form method="post" onsubmit="return validateForm()">
+  <div class="ui secondary menu" style="text-align:center; justify-content:center;">
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
+    </p>
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+  </div>
+</form>
 
-{% if check_date_index == none %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 
 
-{% set year = check_date_index %}
+
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
 <script>
   var checkout_trend_month = {{ checkout_trend_month[year] }}
