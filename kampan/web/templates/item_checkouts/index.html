@@ -5,25 +5,21 @@
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<div class="active section">รายการนำอุปกรณ์ออก</div>
-{% endblock %}
-
-{% block content %}
-
-<form method="POST">
-  <div>
-    <div class="ui secondary  menu" >
+<form method="post">
+    <div class="ui secondary menu">
       <p style="margin-left:auto;">
-      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
       </p>
       <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
+      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
       </p>
       
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
     </div>
-  
+{% endblock %}
+
+{% block content %} 
+<div> 
     {% if checkouts %}
     <table class="ui celled table">
       <thead>

@@ -1,15 +1,11 @@
 {% extends '/base/default-dashboard.html' %}
 {% import 'base/html-renderer.html' as renderer %}
+
 {% block title %}นำเข้าอุปกรณ์{% endblock %}
 {% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
+
 {% block breadcrumbs %}
-{% endblock %}
-
-{% block content %}
-
-<form method="post">
-  <div>
-    
+<form method="post">  
     <div class="ui secondary  menu" >
       <div style="height:fit-content; margin-top:auto; margin-left:15px;">
         {% if request.endpoint == 'item_registers.index' %}
@@ -23,19 +19,19 @@
       </div>
       
       <p style="margin-left:auto;">
-      <p style="margin-left:5px;">
-      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
-      </p>
-      <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
-      </p>
-      
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
+        <p style="margin-left:5px;">
+          {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+        </p>
+        <p style="margin-left:10px;">
+          {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+        </p>
+        <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
       </p>
 
     </div>
+{% endblock %}
 
-
+{% block content %}
 {% if item_registers %}
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
@@ -53,7 +49,6 @@
     </thead>
     <tbody>
       {% for item in item_registers %}
-
       {% if calendar_select %}
       {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
       <tr>
@@ -84,38 +79,38 @@
           </a>
         </td>
       </tr>
-        {% endif %}
-        {% else %}
-        <tr>
-  <td data-label="Item Name">{{ item.receipt_id }}</td>
-  <td data-label="Warehouse">{{ item.description }}</td>
-  <td data-label="Quantity">{{ item.supplier.name }}</td>
-  <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-  <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
-  <td data-label="Checkin">
-    <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
-      นำเข้าอุปกรณ์
-    </a>
-  </td>
-  <td data-label="Checkin Items">
-    <a class="ui primary button icon" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
-      style=" color: white; background-color: rgb(59, 115, 199); ">
-      <i class="eye icon"></i>
-    </a>
-  </td>
-  <td>
-    <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
-      style=" color: white; background-color: rgb(59, 115, 199);">
-      <i class="edit icon"></i>
-    </a>
-    <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
-      style="color: white; background-color: rgb(192, 55, 55);">
-      <i class="trash icon"></i>
-    </a>
-  </td>
-</tr>
+      {% endif %}
+      {% else %}
+      <tr>
+        <td data-label="Item Name">{{ item.receipt_id }}</td>
+        <td data-label="Warehouse">{{ item.description }}</td>
+        <td data-label="Quantity">{{ item.supplier.name }}</td>
+        <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+        <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Checkin">
+          <a class="ui primary button" href="{{ url_for('inventories.register', item_register_id=item.id) }}">
+            นำเข้าอุปกรณ์
+          </a>
+        </td>
+        <td data-label="Checkin Items">
+          <a class="ui primary button icon" href="{{ url_for('inventories.bill_item', item_register_id=item.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199); ">
+            <i class="eye icon"></i>
+          </a>
+        </td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_registers.edit', item_register_id=item.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" href="{{ url_for('item_registers.delete', item_register_id=item.id) }}"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
+          </a>
+        </td>
+      </tr>
 
-        {% endif %}
+      {% endif %}
       {% endfor %}
     </tbody>
   </table>
@@ -168,9 +163,4 @@ $(document)
   });
 });
 </script>
-
-
-
-
-
 {% endblock %}
