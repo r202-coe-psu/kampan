@@ -15,36 +15,45 @@
 
 {% block content %}
 {% if warehouses %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>ชื่อคลังอุปกรณ์</th>
-        <th>คำอธิบาย</th>
-        <th>ชื่อผู้ใช้งาน</th>
-        <th>แก้ไข/ลบคลังอุปกรณ์</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for warehouse in warehouses %}
-      <tr>
-        <td data-label="Name">{{ warehouse.name }}</td>
-        <td data-label="Description">{{ warehouse.description }}</td>
-
-        <td data-label="User">{{ warehouse.user.first_name }} {{ warehouse.user.last_name }}</td>
-        <td>
-          <a class="ui primary icon button" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
-            <i class="edit icon"></i>
+<div class="ui four cards">
+  {% for warehouse in warehouses %}
+  <div class="card" style="width: 100%;">
+    <div class="content" style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
+      <div class="left" style="flex: 1;">
+        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ warehouse.name }}
+          <a style="margin-right: 10px;" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
+            <i class="edit icon" style="color: Orange;"></i>
           </a>
-          <a class="ui red icon button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
-            <i class="trash icon"></i>
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
+        </div>
+        <div class="meta" style="font-size: 1.2em; margin-top: 10px">
+          <table>
+            <tbody>
+              <tr>
+                <td style="font-weight: bold;">ชื่อผู้ใช้งาน:</td>
+              </tr>
+              <tr>
+                <td style="color: rgb(80, 87, 122);"><b>{{ warehouse.user.first_name }} {{ warehouse.user.last_name }}</b></td>
+              </tr>                
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    </tbody>
-  </table>
+      <div class="right" style="flex: 4; background-color: #f5f5f5; padding: 20px;">
+        <div class="description" style="font-size: 1.7em; margin-bottom: 10px; color: rgb(80, 87, 122);"><b>คำอธิบาย</b></div>
+        <div class="description" style="font-size: 1.2em;">
+          <p>{{ warehouse.description }}</p>
+        </div>
+        <div class="actions" style="margin-top: 50px; text-align: right;">
+          <a class="ui red button" href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
+            <div style="font-size: 1.2em;"><i class="trash icon"></i> ลบ </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {% endfor %}
 </div>
 {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
