@@ -56,9 +56,9 @@
         <div class="description" style="font-size: 1.2em;">
           <p>{{ supplier.description }}</p>
         </div>
-        <div class="actions" style="margin-top: 50px; text-align: right">
+        <div class="actions" style="margin-top: 50px; text-align: right;">
           <a class="ui red button" href="{{ url_for('suppliers.delete', supplier_id=supplier.id) }}">
-            <i class="trash icon"></i> ลบ
+            <div style="font-size: 1.2em;"><i class="trash icon"></i> ลบ </div>
           </a>
         </div>
       </div>
