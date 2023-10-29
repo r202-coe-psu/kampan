@@ -51,12 +51,16 @@
 
 {% macro render_calendar(field, calendar_id='calendar') -%}
 <div class="field">
-  {{ field.label }}
   <div class="ui calendar" id="{{ calendar_id }}">
+    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
     <div class="ui input left icon">
       <i class="calendar icon"></i>
       {{ field(autocomplete='off') }}
     </div>
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
   </div>
 </div>
 {%- endmacro %}
+
+
+
