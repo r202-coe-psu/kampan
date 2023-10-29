@@ -1,6 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-
 {% block title %}แดชบอร์ดรายเดือน{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายเดือน</div>
@@ -51,59 +50,34 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
-{% if checkout_quantity == 0 %}
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
-  <div class="content">
+  <div class="content" style="display: flex; justify-content: space-between;">
     <div class="header" style="color: #292d33;">
       <div class="ui medium header">{{ checkout_years[year] }} แผนภูมิรายเดือน </div>
+      <p style="color: #292d33;">
+        ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละเดือน
+      </p>
     </div>
-    <p style="color: #292d33;">
-      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละเดือน
-    </p>
+    <form method="post" onsubmit="return validateForm()" style="text-align: right;">
+      <div class="ui secondary menu" style="text-align:center; justify-content:center;">
+        <p style="margin-left:10px;">
+          {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
+        </p>
+      </div>
+    </form>
   </div>
 </div>
 
-  <form method="post" onsubmit="return validateForm()">
-    <div class="ui secondary  menu" style="text-align:center ; justify-content:center; ">
-      <p style="margin-left:10px;">
-        {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
-      </p>
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
-    </div>
-  </form>
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 
+
+{% if checkout_quantity == 0 %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 
 {% else %}
 
 {% set year = check_date_index %}
-<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
-  <i class="chart line icon"></i>
-  <div class="content">
-    <div class="header" style="color: #292d33;">
-      <div class="ui medium header">{{ checkout_years[year] }} แผนภูมิรายเดือน </div>
-    </div>
-    <p style="color: #292d33;">
-      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละเดือน
-    </p>
-  </div>
-</div>
-
-<form method="post" onsubmit="return validateForm()">
-  <div class="ui secondary menu" style="text-align:center; justify-content:center;">
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_year, calendar_id="year_calendar")}}
-    </p>
-    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
-  </div>
-</form>
-
 {% endif %}
-
-
-
-
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
 <script>
   var checkout_trend_month = {{ checkout_trend_month[year] }}
@@ -139,20 +113,7 @@
       },
     },
     xaxis: {
-      categories: [
-      "มกรา",
-      "กุมภา",
-      "มีนา",
-      "เมษา",
-      "พฤษภา",
-      "มิถุนา",
-      "กรกฏา",
-      "สิงหา",
-      "กันยา",
-      "ตุลา",
-      "พฤศจิกา",
-      "ธันวา",
-  ],
+      categories: ["มกรา","กุมภา","มีนา","เมษา","พฤษภา","มิถุนา","กรกฏา","สิงหา","กันยา","ตุลา","พฤศจิกา","ธันวา"],
     }
   };
 

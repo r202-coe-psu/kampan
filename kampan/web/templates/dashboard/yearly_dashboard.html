@@ -1,5 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
-
+{% import '/base/html-renderer.html' as renderer %}
 {% block title %}แดชบอร์ดรายปี{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายปี</div>
@@ -37,11 +37,6 @@
     </div>
   </div>
 </div>
-
-
-
-
-
 {% endblock %}
 {% block content %}
 
@@ -55,49 +50,27 @@
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
 </head>
 
+<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
+  <i class="chart line icon"></i>
+  <div class="content" style="display: flex; justify-content: space-between;">
+    <div class="header" style="color: #292d33;">
+      <div class="ui medium header">{{ checkout_years[year] }} แผนภูมิรายเดือน </div>
+      <p style="color: #292d33;">
+        ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละเดือน
+      </p>
+    </div>
+  </div>
+</div>
+
+
 {% if checkout_quantity == 0 %}
-
-
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 
 {% else %}
 
-<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
-  <i class="chart line icon"></i>
-  <div class="content">
-    <div class="header" style="color: #292d33;">
-      <div class="ui medium header">แผนภูมิรายปี </div>
-    </div>
-    <p style="color: #292d33;">
-      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละปี
-    </p>
-  </div>
-</div>
-
-<body>
-  <div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; ">
-  </div>
-</body>
-
-
-<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
-  <div class="ui hidden divider"></div>
-  <div class="ui green vertical animated button">
-    <a class="visible content " style="color: #ffffff; text-decoration: none;" href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
-  </div>
-  <div class="ui green vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
-  </div>
-  <div class="ui blue vertical animated button">
-    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">คุณกำลังอยู่หน้ารายปี</a>
-  </div>
-</div>
+{% set year = check_date_index %}
 {% endif %}
-
-
-{% endblock %}
-
-{% block additional_js %}
-
+<div class="shadow" id="chart" style="max-width: fit-content; margin-left: auto; margin-right: auto; "></div>
 <script>
   var checkout_trend_year = {{ checkout_trend_year }}
   var checkout_years = {{ checkout_years }}
@@ -138,7 +111,40 @@
 
   var chart = new ApexCharts(document.querySelector("#chart"), options);
   chart.render();
-
 </script>
 
+<script>
+  $('.menu .item')
+    .tab()
+    ;
+</script>
+
+<div class="button demo" style="margin-left: auto; margin-right: auto; max-width: fit-content;">
+  <div class="ui hidden divider"></div>
+  <div class="ui green vertical animated button">
+    <a class="visible content " style="color: #ffffff; text-decoration: none;" href="/dashboard/">คุณกำลังอยู่หน้ารายวัน</a>
+  </div>
+  <div class="ui green vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/monthly">แสดงแผนภูมิรายเดือน</a>
+  </div>
+  <div class="ui blue vertical animated button">
+    <a class="visible content" style="color: #ffffff; text-decoration: none;" href="/dashboard/yearly">คุณกำลังอยู่หน้ารายปี</a>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  
+  $('#year_calendar')
+  .calendar({
+    type: 'year'
+  })
+  ;
+  
+  
+  
+</script>
 {% endblock %}
