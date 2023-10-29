@@ -31,7 +31,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
-        <h5 class="card-title mt-3 ">รายได้รวม <span style="color: #00A11B;"><b><h3>{{total_values}}</h3></b></span> ฿ </h5>
+        <h5 class="card-title mt-3">รายได้รวม <span style="color: #00A11B;"><b><h3>{{ total_values }}</h3></b></span> ฿ </h5>
         <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
@@ -94,8 +94,8 @@
       curve: 'straight'
     },
     title: {
-      text: '',
-      align: 'left',
+      text: 'แผนภูมิแท่งแสดงข้อมูลรายรับในแต่ละปี',
+      align: 'center',
 
     },
     grid: {
@@ -106,7 +106,15 @@
     },
     xaxis: {
       categories: checkout_years,
-    }
+      title: {
+        text: 'ปี',
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'รายได้ (บาท)',
+      },
+    },
   };
 
   var chart = new ApexCharts(document.querySelector("#chart"), options);

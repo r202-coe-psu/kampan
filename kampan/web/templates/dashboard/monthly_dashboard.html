@@ -102,7 +102,7 @@
       curve: 'straight'
     },
     title: {
-      text: '',
+      text: 'แผนถูมิอแท่งแสดงรายรับในแต่ละเดือน',
       align: 'center',
 
     },
@@ -114,7 +114,15 @@
     },
     xaxis: {
       categories: ["มกรา","กุมภา","มีนา","เมษา","พฤษภา","มิถุนา","กรกฏา","สิงหา","กันยา","ตุลา","พฤศจิกา","ธันวา"],
-    }
+      title: {
+        text: 'เดือน',
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'รายได้ (บาท)',
+      },
+    },
   };
 
   var chart = new ApexCharts(document.querySelector("#chart"), options);
