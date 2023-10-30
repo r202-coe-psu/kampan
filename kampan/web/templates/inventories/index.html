@@ -17,12 +17,6 @@
       <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
     </p>  
   </div>
-
-{% if request.endpoint == 'inventories.index' %}
-  <div class="active section">รายการอุปกรณ์</div>
-{% else %}
-  <a class="section" href="{{ url_for('inventories.index') }}">รายการอุปกรณ์</a><div class="divider"> / </div>
-{% endif %}
 {% endblock %}
 
 {% block content %}
