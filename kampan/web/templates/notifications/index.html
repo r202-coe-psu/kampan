@@ -3,59 +3,57 @@
 {% block title %}แจ้งเตือนอุปกรณ์คงเหลือ{% endblock %}
 {% block dashboard_title %}แจ้งเตือน{% endblock %}
 {% block breadcrumbs %}
-<a style="font-size: 100%; color:black;" >
-  แจ้งเตือนอุปกรณ์คงเหลือ
-</a>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+  <a style="font-size: 100%; color: black;">
+    แจ้งเตือนอุปกรณ์คงเหลือ
+  </a>
+  <span>
+    <p>จำนวนข้อความแจ้งเตือน: <span style="color: rgb(69, 197, 236); padding-left: 5px;"><b>{{ notifications|length }}</b></span></p>
+  </span>
+</div>
 {% endblock %}
 
 
 {% block content %}
 <p>
-{% if notifications %}
-<div class="ui large feed">
-    <div class="event">
-        <div class="content">
-            <table class="ui celled table">
-                <thead>
-                  <tr>
-                    <th>จำนวนคงเหลือ</th>
-                    <th>หน่วย</th>
-                    <th>ชื่ออุปกรณ์</th>
-                    <th>ราคาอุปกรณ์</th>
-                    <th>คลังอุปกรณ์</th>
-                    <th>ซ่อนข้อมูล</th>
-                  </tr>
-                </thead>
-                <tbody>
-                    {% if notifications is defined and notifications %}
-                    {% for inventory in notifications %}
-                    
-                  <tr>
-                    <td data-label="Total" style="color: red;">{{ inventory.remain }}/{{ inventory.quantity }}</td>
-                    <td data-label="Unit">{{ inventory.item.unit }}</td>
-                    <td data-label="Item Name">{{ inventory.item.name }}</td>
-                    <td data-label="Item Price">{{ inventory.price}}</td>
-                    <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-                    <td data-label="Hide Item">
-                        <a class="ui icon button" href="{{ url_for('notifications.set_status', inventory_id=inventory.id) }}" style=" color: white; background-color: rgb(59, 115, 199);">
-                          <i class="comment slash icon"></i> 
-                        </a>
-                    </td>
-                  </tr>
-                  
-                  {% endfor %}
-                  {% else %}
-                  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-                    
-                {% endif %}
-                </tbody>
-
-              </table>
+  {% if notifications %}
+  <div class="ui four cards">
+    {% for inventory in notifications %}
+    <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
+      <div class="content" style="flex: 2; background-color: rgb(255, 192, 192);">
+        <div class="header" style="font-size: 1.5rem;">
+          <snap style="padding-right: 5px;">{{ inventory.item.name }}</snap>      
         </div>
+        <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="details">
+            <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ inventory.remain }}/{{ inventory.quantity }} {{ inventory.item.unit }}</span><br>
+            <span>ราคาอุปกรณ์: {{ inventory.price }}</span><br>
+            <span>คลังอุปกรณ์: {{ inventory.warehouse.name }}</span>
+          </div>
+          <span>
+            <a class="ui icon button" href="{{ url_for('notifications.set_status', inventory_id=inventory.id) }}" style="color: white; background-color: red;">
+              <i class="trash slash icon small" style="font-size: 10px;"></i>
+            </a>
+          </span>   
+        </div>
+      </div>
     </div>
-</div>
-{% else %}
+    {% endfor %}
+  </div>
+  {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-{% endif %}
+  {% endif %}
 </p>
-{% endblock %} 
+<style>
+  .card {
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s;
+  }
+
+  .card:hover {
+    background-color: #f7f7f7;
+  }
+</style>
+{% endblock %}
