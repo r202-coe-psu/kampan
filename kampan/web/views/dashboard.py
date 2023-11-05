@@ -1,25 +1,18 @@
-from calendar import calendar
-from flask import Flask, Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from tomlkit import value
 from kampan.web import forms
 from kampan import models
-import mongoengine as me
-
-import numpy as np
-
-import datetime
 from calendar import monthrange
+import datetime
 
 module = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 subviews = []
 
 
 def index_admin():
-
     now = datetime.datetime.now()
     return render_template(
-        "/dashboard/index-admin.html", now=datetime.datetime.now(), available_classes=[]
+        "/dashboard/index-admin.html", now=now, available_classes=[]
     )
 
 
@@ -39,18 +32,12 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
-    user = current_user._get_current_object()
-
     form = forms.inventories.InventoryForm()
-
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
-    checkout_quantity = 0
-    item_quantity = 0
-    item_remain = 0
-    total_values = 0
-
+    checkout_quantity, item_quantity, item_remain, total_values = 0,0,0,0
+    
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
     date_now = now.strftime("%d %B, %Y")
@@ -264,17 +251,19 @@ def monthly_dashboard():
     )
 
 
-@module.route("/yearly")
+@module.route("/yearly", methods=["GET","POST"])
 @login_required
 def yearly_dashboard():
     user = current_user._get_current_object()
 
+    form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
     date_now = now.strftime("%d %B, %Y")
+    year_now = int(now.strftime("%Y"))
 
     checkout_quantity = 0
     item_quantity = 0
@@ -322,6 +311,8 @@ def yearly_dashboard():
         )
     ]
 
+
+
     return render_template(
         "/dashboard/yearly_dashboard.html",
         item_quantity=item_quantity,
@@ -332,4 +323,5 @@ def yearly_dashboard():
         checkout_years=sorted(checkout_years),
         date_now=date_now,
         today_date=today_date,
+        form=form,
     )
