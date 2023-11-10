@@ -20,19 +20,14 @@
             <h3></h3>
           </div>
         </div>
-        {#
+
         <div class="row" style="padding-top: 5px;">
-          <a class="ui labeled icon button primary huge" href="{{ url_for('accounts.login_engpsu') }}">
+          <a class="ui labeled icon button primary huge" href="{{ url_for('accounts.login_oauth', name='psu') }}">
             <i class="user icon"></i>
-            PSU Passport by Eng
+            PSU Passport
           </a>
         </div>
-        <div class="row" style="padding-top: 20px;">
-          <div class="column header" style="text-align: left;">
-            <h3>Other</h3>
-          </div>
-        </div>
-        #} 
+
         <div class="row" style="padding-top: 5px;">
           <a class="ui labeled icon red button huge" href="{{ url_for('accounts.login_oauth', name='google') }}">
             <i class="google icon"></i>

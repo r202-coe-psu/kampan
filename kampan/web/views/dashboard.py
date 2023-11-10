@@ -26,8 +26,6 @@ def index_admin():
 def index_user():
     return render_template(
         "/dashboard/daily_dashboard.html",
-        "/dashboard/monthly_dashboard.html",
-        "/dashboard/yearly_dashboard.html",
     )
 
 
@@ -46,6 +44,7 @@ def daily_dashboard():
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
+
     checkout_quantity = 0
     item_quantity = 0
     item_remain = 0
@@ -63,9 +62,9 @@ def daily_dashboard():
 
     for checkout in checkouts:
         date = checkout.checkout_date
-        day_co = int(date.strftime("%d")) - 1
-        month_co = int(date.strftime("%m")) - 1
-        year_co = int(date.strftime("%Y"))
+        day_co = date.day - 1
+        month_co = date.month - 1
+        year_co = date.year
 
         if year_co not in years:
             years.append(year_co)
@@ -120,8 +119,8 @@ def daily_dashboard():
 
     if request.method == "POST":
 
-        format_year = int((str(form.calendar_month_year.data)[:-15]))
-        format_month = int((str(form.calendar_month_year.data)[5:-12])) - 1
+        format_year = form.calendar_month_year.data.year
+        format_month = form.calendar_month_year.data.month
 
         if format_year in years:
             index_year = years.index(format_year)
