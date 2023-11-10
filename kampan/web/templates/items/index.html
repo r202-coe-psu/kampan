@@ -4,80 +4,47 @@
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}อุปกรณ์{% endblock %}
 {% block breadcrumbs %}
-{% endblock %}
-
-{% block content %}
-<div class="ui" style="padding-bottom: 1em;">
   <a class="ui primary button" href="{{ url_for('items.add') }}">
     เพิ่มอุปกรณ์
   </a>
-</div>
+{% endblock %}
+
+{% block content %}
 
 {% if items %}
-<div>
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>ชื่ออุปกรณ์</th>
-        <th>คำอธิบาย</th>
-        <th>น้ำหนัก</th>
-        <th>หน่วย</th>
-        <th>ขนาด ( กว้าง x สูง x ลึก )</th>
-        <th>หมวดหมู่</th>
-        <th>ผู้ใช้</th>
-        <th>แก้ไข / ลบข้อมูล</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Name">{{ item.name }}</td>
-        <td data-label="Description">{{ item.description }}</td>
-        <td data-label="Weight">{{ item.weight }}</td>
-        <td data-label="Unit">{{ item.unit }}</td>
-        <td data-label="Size">{{ item.size.width }} x {{item.size.height }} x {{ item.size.deep }} </td>
-        <td data-label="Categories">{{ item.categories|join(', ') }}</td>
-        <td data-label="Weight">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-        <td>
-          <a class="ui primary icon button" href="{{ url_for('items.edit', item_id=item.id) }}">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui red icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
-            <i class="trash icon"></i>
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-
-    </tbody>
-  </table>
+<div class="ui four cards">
+  {% for item in items %}
+  <div class="card">
+    <div class="image">
+      {% if not item.image %}
+      <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
+      {% else %}
+      <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" alt="{{ item.name }}">
+      {% endif %}
+    </div>
+    <div class="content">
+      <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
+      <div class="meta">คำอธิบาย : {{ item.description }}</div>
+      <div class="meta">นํ้าหนัก : {{ item.weight }} kg</div>
+      <div class="meta">จำนวนทั้งหมด : {{ item.minimum }} {{ item.unit }}</div>
+      <div class="meta">ขนาด (กว้าง x สูง x ลึก) : {{ item.size.width }} x {{ item.size.height }} x {{ item.size.deep }}</div>
+      <div class="meta">หมวดหมู่: {{ item.categories|join(', ') }}</div>
+      <div class="description">ผู้ใช้งาน : {{ item.user.first_name }} {{ item.user.last_name }}</div>
+    </div>
+    <div class="extra content">
+      <div class="ui two buttons">
+        <a class="ui primary button" href="{{ url_for('items.edit', item_id=item.id) }}">
+          แก้ไข
+        </a>
+        <a class="ui red button" href="{{ url_for('items.delete', item_id=item.id) }}">
+          ลบข้อมูล
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock %}
-
-{% block additional_js %}
-<script type="text/javascript">
-  $(".attach-file-pic").click(function () {
-    $(this).parent().find("#pic").click();
-  });
-
-  $('#pic')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-pic', $(e.target).parent()).val(name);
-    });
-</script>
-
-{% endblock additional_js %}

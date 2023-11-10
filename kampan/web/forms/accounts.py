@@ -23,5 +23,10 @@ Profile = model_form(
 )
 
 
-class UserForm(Profile):
-    pass
+class ProfileForm(FlaskForm):
+    first_name = fields.StringField("First Name", validators=[validators.InputRequired()])
+    last_name = fields.StringField("Last Name", validators=[validators.InputRequired()])
+    
+    thai_first_name = fields.StringField("First Name")
+    thai_last_name = fields.StringField("Last Name")
+    organization = fields.StringField("Organization")

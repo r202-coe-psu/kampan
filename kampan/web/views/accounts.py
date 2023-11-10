@@ -114,29 +114,7 @@ def authorized_oauth(name):
 @module.route("/logout")
 @login_required
 def logout():
-    name = session.get("oauth_provider")
     logout_user()
-    session.clear()
-
-    client = oauth2.oauth2_client
-    remote = None
-    logout_url = None
-    if name == "google":
-        remote = client.google
-        logout_url = f"{ remote.server_metadata.get('end_session_endpoint') }?redirect={ request.scheme }://{ request.host }"
-    elif name == "facebook":
-        remote = client.facebook
-    elif name == "line":
-        remote = client.line
-    elif name == "psu":
-        remote = client.psu
-        logout_url = f"{ remote.server_metadata.get('end_session_endpoint') }"
-    elif name == "engpsu":
-        remote = client.engpsu
-
-    if logout_url:
-        return redirect(logout_url)
-
     return redirect(url_for("site.index"))
 
 
@@ -173,19 +151,23 @@ def edit_profile():
     user = current_user._get_current_object()
     form.populate_obj(user)
 
-    if form.pic.data:
-        if user.picture:
-            user.picture.replace(
-                form.pic.data,
-                filename=form.pic.data.filename,
-                content_type=form.pic.data.content_type,
-            )
-        else:
-            user.picture.put(
-                form.pic.data,
-                filename=form.pic.data.filename,
-                content_type=form.pic.data.content_type,
-            )
+    # if form.pic.data:
+    #     if user.picture:
+    #         user.picture.replace(
+    #             form.pic.data,
+    #             filename=form.pic.data.filename,
+    #             content_type=form.pic.data.content_type,
+    #         )
+    #     else:
+    #         user.picture.put(
+    #             form.pic.data,
+    #             filename=form.pic.data.filename,
+    #             content_type=form.pic.data.content_type,
+    #         )
+
+    user.metadata["thai_first_name"] = form.thai_first_name.data
+    user.metadata["thai_last_name"] = form.thai_last_name.data
+    user.metadata["organization"] = form.organization.data
 
     user.updated_date = datetime.datetime.now()
     user.save()

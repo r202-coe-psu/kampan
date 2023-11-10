@@ -3,30 +3,24 @@
 
 {% block title %}รายการอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการอุปกรณ์{% endblock %}
+
 {% block breadcrumbs %}
-{% if request.endpoint == 'inventories.index' %}
-<div class="active section">รายการอุปกรณ์</div>
-{% else %}
-<a class="section" href="{{ url_for('inventories.index') }}">รายการอุปกรณ์</a>
-<div class="divider"> / </div>
-{% endif %}
+<form method="post">
+  <div class="ui secondary menu" >
+    <p style="margin-left:auto;">
+      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </p>  
+  </div>
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  <div>
-    <div class="ui secondary  menu" >
-      <p style="margin-left:auto;">
-      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
-      </p>
-      <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
-      </p>
-      
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>  
-    </div>
-  
-  
+  <div>  
     {% if inventories %}
       <table class="ui striped padded celled table">
         <thead>

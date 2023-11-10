@@ -4,62 +4,30 @@
 {% block title %}อนุมัติการเบิกอุปกรณ์{% endblock %}
 {% block dashboard_title %}อนุมัติการเบิกอุปกรณ์{% endblock %}
 
-{% block breadcrumbs %}
+{% block breadcrumbs %} 
+<a style="font-size: 100%; color:black;" >
+  รายการอนุมัติการเบิกอุปกรณ์
+</a>
 {% endblock %}
 
-{% block content %}
-
+{% block content %} 
 <form method="post">
   <div>
-      <div class="ui secondary  menu" style="margin-bottom:1em;">
-        <p style="margin-left: auto;">
-        {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
-        </p>
-        <p style="margin-left:10px;">
-        {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
-        </p>
-        
-        <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
-      </div>
-  </div>
-{% if orders %}
-  <div style="padding-bottom: 1em;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>วันที่สั่งเบิกอุปกรณ์</th>
-          <th>คำอธิบาย</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>รายการอุปกรณ์</th>
-          <th>การอนุมัติ</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for order in orders %}
-        {% if calendar_select %}
-        {% if check_in_time(order.created_date,calendar_select,calendar_end) %}
-  
-        {% if order.status == "pending" %}
-        <tr>
-          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-          <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          <td data-label="Status">
-            <a class="positive ui button" href="{{ url_for('approve_orders.approve', checkout_item_id=checkout.id, order_id=order.id)}}">
-              อนุมัติ
-            </a>
-          </td>
-        </tr>
-        {% endif %}
-        {% endif %}
-          {% else %}
-          {% if order.status == "pending" %}
+    {% if orders %}
+      <table class="ui celled table">
+        <thead>
+          <tr>
+            <th>วันที่สั่งเบิกอุปกรณ์</th>
+            <th>คำอธิบาย</th>
+            <th>ชื่อผู้ใช้งาน</th>
+            <th>รายการอุปกรณ์</th>
+            <th>การอนุมัติ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          {% if calendar_select %}
+          {% if check_in_time(order.created_date,calendar_select,calendar_end) %}
           <tr>
             <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
             <td data-label="Description">{{ order.description }}</td>
@@ -71,20 +39,38 @@
               </a>
             </td>
             <td data-label="Status">
-              <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
+              <a class="positive ui button" href="{{ url_for('approve_orders.approve', checkout_item_id=checkout.id, order_id=order.id)}}">
                 อนุมัติ
               </a>
             </td>
           </tr>
           {% endif %}
-          {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-{% else %}
-  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-{% endif %}
+            {% else %}
+            <tr>
+              <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td data-label="Description">{{ order.description }}</td>
+              <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+              <td data-label="Bill">
+                <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+                  style=" color: white; background-color: rgb(59, 115, 199);">
+                  <i class="eye icon"></i>
+                </a>
+              </td>
+              <td data-label="Status">
+                <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
+                  อนุมัติ
+                </a>
+              </td>
+            </tr>
+
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+    <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
+</div>
 </form>
 {% endblock %}
 
@@ -119,16 +105,15 @@ text: {
 },
 };
 $('#checkout_date_calendar').calendar(calendar_setting);
-</script>
+$('#end_date').calendar(calendar_setting);
 
-<script type="text/javascript">
-  $(document)
-  .ready(function() {
-    $('.ui.dropdown.validate.selection')
-    .dropdown({
-      allowAdditions: true,
-      fullTextSearch: 'exact'
-    });
+$(document)
+.ready(function() {
+  $('.ui.dropdown.validate.selection')
+  .dropdown({
+    allowAdditions: true,
+    fullTextSearch: 'exact'
   });
+});
 </script>
 {% endblock %}

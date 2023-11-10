@@ -11,7 +11,14 @@
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">เพิ่มคำสั่งเบิก</div>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  {% if 'edit' in request.path %}
+  แก้ไขข้อมูลคำสั่งเบิก
+  {% else %}
+  เพิ่มคำสั่งเบิก
+  {% endif %}
+</div>
 {% endblock %}
 
 

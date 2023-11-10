@@ -14,55 +14,63 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui" style="padding-bottom: 1em;">
-  {% if request.endpoint == 'item_positions.index' %}
-    <a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
-      เพิ่มตำแหน่งอุปกรณ์
-    </a>
-  {% else %}
-    <a class="section" href="{{ url_for('item_positions.index') }}">ตำแหน่งอุปกรณ์</a>
-    <div class="divider"> / </div>
-  {% endif %}
-</div>
-
 {% if item_positions %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
+<div style="padding-bottom: 2em;">
+  <table class="table table-hover ">
     <thead>
       <tr>
-        <th>คลังอุปกรณ์</th>
-        <th>คำอธิบาย</th>
-        <th>ชั้นวาง</th>
-        <th>แถว</th>
-        <th>ตู้เก็บของ</th>
-        <th>เครื่องมือ</th>
+        <th class="table-header">คลังอุปกรณ์</th>
+        <th class="table-header">คำอธิบาย</th>
+        <th class="table-header">ชั้นวาง</th>
+        <th class="table-header">แถว</th>
+        <th class="table-header">ตู้เก็บของ</th>
+        <th class="table-header">เครื่องมือ</th>
       </tr>
-    </thead>
+    </thead>    
     <tbody>
       {% for item_position in item_positions %}
       <tr>
         <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
-        <td data-label="Warehouse">{{ item_position.description }}</td>
+        <td data-label="Description">{{ item_position.description }}</td>
         <td data-label="Rack">{{ item_position.rack }}</td>
         <td data-label="Row">{{ item_position.row }}</td>
         <td data-label="Locker">{{ item_position.locker }}</td>
-        <td>
+        <td data-label="Actions">
           <a class="ui primary icon button"
             href="{{ url_for('item_positions.edit', item_position_id=item_position.id) }}">
-            <i class="edit icon"></i>
+            <i class="edit icon"></i> แก้ไข
           </a>
           <a class="ui red icon button"
             href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
-            <i class="trash icon"></i>
+            <i class="trash icon"></i> ลบ
           </a>
         </td>
       </tr>
       {% endfor %}
-
     </tbody>
   </table>
 </div>
 {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
+<style>
+  table.table.table-hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+  table.table.table-hover  th ,
+  table.table.table-hover  td {
+    text-align: center;
+  }
+  table.table.table-hover  td {
+    vertical-align: middle;
+  }
+  .table-header {
+    background-color: #363636; 
+    color: #fff; 
+    text-align: center; 
+    padding: 10px; 
+  }
+</style>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
 {% endblock %}

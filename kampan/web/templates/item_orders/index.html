@@ -5,36 +5,32 @@
 {% block dashboard_title %}คำสั่งเบิกอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
+
+{% if request.endpoint == 'item_orders.index' %}
+  <a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
+    เพิ่มคำสั่งเบิก
+  </a>
+{% else %}
+  <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a>
+{% endif %}
+
 {% endblock %}
 
 {% block content %}
-<form method="post">
-<div>
-  <div>
-    <div class="ui secondary  menu" style="margin-bottom: 1em;">
-      <div style="height:fit-content; margin-top:auto; margin-left:15px;">
-        {% if request.endpoint == 'item_orders.index' %}
-          <a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
-            เพิ่มคำสั่งเบิก
-          </a>
-        {% else %}
-          <a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a>
-          <div class="divider"> / </div>
-        {% endif %}
-      </div>
 
-      <p style="margin-left:auto;">
-      {{renderer.render_calendar(form.calendar_select, calendar_id="checkout_date_calendar")}}
-      </p>
-      <p style="margin-left:10px;">
-      {{renderer.render_calendar(form.calendar_end, calendar_id="end_date")}}
-      </p>
-      
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
-    </div>
-</div>
 
 {% if orders %}
+<form method="post">
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+    {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+    </p>
+    <p style="margin-left:10px;">
+    {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+    </p>
+    
+    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>  
+  </div>
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>

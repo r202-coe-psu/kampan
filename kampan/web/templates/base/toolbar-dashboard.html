@@ -42,14 +42,6 @@
   <a class="item" href="{{ url_for('approve_orders.index')}}">อนุมัติคำสั่งเบิก</a>
   {% endif %}
   
-  {% if current_user.has_roles(['admin']) %}
-  <!-- Heading -->
-  <div class="sidebar-heading" style="color: grey;">
-    จัดการผู้ใช้
-  </div>
-  <a class="item" href="{{ url_for('accounts.user_roles')}}">เปลี่ยนระดับของผู้ใช้</a>
-  {% endif %}
-
   {% if current_user.has_roles(['user']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
@@ -72,6 +64,14 @@
     แจ้งอุปกรณ์เสียหาย
   </div>
   <a class="item" href="{{ url_for('lost_breaks.index')}}">อุปกรณ์ที่เสียหาย</a>
+  {% endif %}
+  
+  {% if current_user.has_roles(['admin']) %}
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    จัดการผู้ใช้
+  </div>
+  <a class="item" href="{{ url_for('accounts.user_roles')}}">เปลี่ยนระดับของผู้ใช้</a>
   {% endif %}
 
   <!-- Heading -->
