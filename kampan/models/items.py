@@ -20,7 +20,7 @@ class Item(me.Document):
     categories = me.ListField(me.StringField(required=True))
     image = me.ImageField(thumbnail_size=(800, 600, False))
     unit = me.StringField(required=True, default="ชุด", max_length=50)
-    minimum = me.IntField(required=True, default=1)
+    minimum = me.IntField(required=True, min_value=1, default=1)
     barcode_id = me.StringField(required=True, max_length=255)
 
     user = me.ReferenceField("User", dbref=True)
