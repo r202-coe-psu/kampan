@@ -28,11 +28,17 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
+    item_registers = len(models.RegistrationItem.objects())
+    items_order = len(models.OrderItem.objects())
     form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
     checkouts = models.CheckoutItem.objects()
 
-    checkout_quantity, item_quantity, item_remain, total_values = 0, 0, 0, 0
+
+    checkout_quantity = 0
+    item_quantity = 0 
+    item_remain = 0 
+    total_values = 0
 
     now = datetime.datetime.now()
     today_date = now.strftime("%d/%m/%Y")
@@ -148,13 +154,17 @@ def daily_dashboard():
         format_month=format_month,
         format_year=format_year,
         idex_year=index_year,
-    )
+        item_order = items_order,
+        item_regis = item_registers
+    )   
 
 
 @module.route("/monthly", methods=["GET", "POST"])
 @login_required
 def monthly_dashboard():
     user = current_user._get_current_object()
+    item_registers = len(models.RegistrationItem.objects())
+    items_order = len(models.OrderItem.objects())
 
     form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
@@ -164,7 +174,6 @@ def monthly_dashboard():
     item_quantity = 0
     item_remain = 0
     total_values = 0
-
     checkout_years = []
     checkout_trend_month = []
 
@@ -243,6 +252,8 @@ def monthly_dashboard():
         today_date=today_date,
         form=form,
         check_date_index=check_date_index,
+        item_order = items_order,
+        item_regis = item_registers
     )
 
 
@@ -250,6 +261,8 @@ def monthly_dashboard():
 @login_required
 def yearly_dashboard():
     user = current_user._get_current_object()
+    item_registers = len(models.RegistrationItem.objects())
+    items_order = len(models.OrderItem.objects())
 
     form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
@@ -317,4 +330,6 @@ def yearly_dashboard():
         date_now=date_now,
         today_date=today_date,
         form=form,
+        item_order = items_order,
+        item_regis = item_registers
     )
