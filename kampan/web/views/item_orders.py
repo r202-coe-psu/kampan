@@ -77,6 +77,7 @@ def edit(order_id):
         )
 
     form.populate_obj(order)
+    order.user = current_user._get_current_object()
     order.save()
 
     return redirect(url_for("item_orders.index"))
