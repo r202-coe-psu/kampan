@@ -38,17 +38,12 @@ def index():
     )
 
 
-@module.route("/register", methods=["GET", "POST"], defaults=dict(inventory_id=None))
+@module.route("/register", methods=["GET", "POST"])
 @login_required
-def register(inventory_id):
+def register():
     form = forms.inventories.InventoryForm()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
-
-    inventory = None
-    if inventory_id:
-        inventory = models.Inventory.objects.get(id=inventory_id)
-        form = forms.inventories.InventoryForm(obj=inventory)
 
     if not form.validate_on_submit():
         return render_template(
@@ -57,10 +52,9 @@ def register(inventory_id):
             item_register=item_register,
         )
 
-    if not inventory_id:
-        inventory = models.Inventory()
-
+    inventory = models.Inventory()
     form.populate_obj(inventory)
+
     if form.bill_file.data:
         if inventory.bill:
             inventory.bill.replace(
