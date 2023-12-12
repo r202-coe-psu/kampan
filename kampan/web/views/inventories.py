@@ -46,6 +46,7 @@ def register():
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/inventories/register.html",
             form=form,
@@ -55,19 +56,19 @@ def register():
     inventory = models.Inventory()
     form.populate_obj(inventory)
 
-    if form.bill_file.data:
-        if inventory.bill:
-            inventory.bill.replace(
-                form.bill_file.data,
-                filename=form.bill_file.data.filename,
-                content_type=form.bill_file.data.content_type,
-            )
-        else:
-            inventory.bill.put(
-                form.bill_file.data,
-                filename=form.bill_file.data.filename,
-                content_type=form.bill_file.data.content_type,
-            )
+    # if form.bill_file.data:
+    #     if inventory.bill:
+    #         inventory.bill.replace(
+    #             form.bill_file.data,
+    #             filename=form.bill_file.data.filename,
+    #             content_type=form.bill_file.data.content_type,
+    #         )
+    #     else:
+    #         inventory.bill.put(
+    #             form.bill_file.data,
+    #             filename=form.bill_file.data.filename,
+    #             content_type=form.bill_file.data.content_type,
+    #         )
 
     inventory.user = current_user._get_current_object()
     inventory.notification_status = True
