@@ -19,8 +19,8 @@ class Inventory(me.Document):
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
-    item = me.ReferenceField("Item", dbref=True)    
-    bill = me.FileField(required=True)
+    item = me.ReferenceField("Item", dbref=True)
+    # bill = me.FileField()
 
     quantity = me.IntField(required=True, min_value=1, default=1)
     remain = me.IntField(required=True, default=0)
@@ -77,6 +77,7 @@ class LostBreakItem(me.Document):
     description = me.StringField(max_length=255)
     quantity = me.IntField(required=True, min_value=1, default=1)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
 
 class Approve_orders(me.Document):
     meta = {"collection": "approve_orders"}
