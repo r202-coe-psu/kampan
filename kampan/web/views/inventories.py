@@ -10,11 +10,6 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
 
 def check_in_time(registration_date, calendar_select, calendar_end):
-    print(
-        registration_date,
-        calendar_select,
-        calendar_select <= registration_date <= calendar_end,
-    )
     if calendar_select <= registration_date <= calendar_end:
         return True
     else:
@@ -24,11 +19,11 @@ def check_in_time(registration_date, calendar_select, calendar_end):
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-
     form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects()
+
     if form.validate_on_submit():
-        inventories = models.Inventory.objects(
+        inventories = inventories.filter(
             registeration_date__gte=form.calendar_select.data,
             registeration_date__lte=form.calendar_end.data,
         )
@@ -166,4 +161,3 @@ def bill(inventory_id, filename):
         mimetype=inventory.bill.content_type,
     )
     return response
-
