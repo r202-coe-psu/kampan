@@ -1,7 +1,15 @@
 from calendar import calendar
 from pyexpat import model
 from tabnanny import check
-from flask import Blueprint, render_template, redirect, url_for, request, send_file
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    request,
+    send_file,
+    abort,
+)
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
@@ -94,19 +102,19 @@ def edit(inventory_id):
         )
 
     form.populate_obj(inventory)
-    if form.bill_file.data:
-        if inventory.bill:
-            inventory.bill.replace(
-                form.bill_file.data,
-                filename=form.bill_file.data.filename,
-                content_type=form.bill_file.data.content_type,
-            )
-        else:
-            inventory.bill.put(
-                form.bill_file.data,
-                filename=form.bill_file.data.filename,
-                content_type=form.bill_file.data.content_type,
-            )
+    # if form.bill_file.data:
+    #     if inventory.bill:
+    #         inventory.bill.replace(
+    #             form.bill_file.data,
+    #             filename=form.bill_file.data.filename,
+    #             content_type=form.bill_file.data.content_type,
+    #         )
+    #     else:
+    #         inventory.bill.put(
+    #             form.bill_file.data,
+    #             filename=form.bill_file.data.filename,
+    #             content_type=form.bill_file.data.content_type,
+    #         )
 
     inventory.user = current_user._get_current_object()
     inventory.registration = item_register
@@ -131,8 +139,7 @@ def delete(inventory_id):
 
 @module.route("/all-item", methods=["GET", "POST"])
 @login_required
-def bill_item():
-    item_register_id = request.args.get("item_register_id")
+def bill_item(item_register_id):
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
 
@@ -148,7 +155,7 @@ def bill(inventory_id, filename):
     inventory = models.Inventory.objects.get(id=inventory_id)
 
     if not inventory or not inventory.bill or inventory.bill.filename != filename:
-        return abort(403)
+        return abort(404)
 
     response = send_file(
         inventory.bill,
