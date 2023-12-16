@@ -43,6 +43,12 @@ class Inventory(me.Document):
     def get_checkout_items(self):
         return CheckoutItem.objects(checkout_from=self)
 
+    def get_bill_file_name(self):
+        if self.registration.bill:
+            return self.registration.bill.filename
+        else:
+            return "ไม่พบบิล"
+
 
 class OrderItem(me.Document):
     # เบิกอุปกรณ์
