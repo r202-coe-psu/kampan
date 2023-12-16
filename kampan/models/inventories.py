@@ -8,6 +8,7 @@ import datetime
 class RegistrationItem(me.Document):
     # อุปกรณ์ที่ลงทะเบียน
     meta = {"collection": "registration_items"}
+    status = me.StringField(default="active")
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
     supplier = me.ReferenceField("Supplier", dbref=True)
@@ -17,8 +18,9 @@ class RegistrationItem(me.Document):
 
 
 class Inventory(me.Document):
-    # คลังอุปกรณ์
+    # อุปกรณ์
     meta = {"collection": "inventories"}
+    status = me.StringField(default="active")
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
@@ -27,7 +29,7 @@ class Inventory(me.Document):
 
     quantity = me.IntField(required=True, min_value=1, default=1)
     remain = me.IntField(required=True, default=0)
-    price = me.FloatField(required=True, default=0)
+    price = me.DecimalField(required=True, default=0)
 
     registeration_date = me.DateTimeField(
         required=True, default=datetime.datetime.now()
@@ -45,8 +47,9 @@ class Inventory(me.Document):
 class OrderItem(me.Document):
     # เบิกอุปกรณ์
     meta = {"collection": "order_items"}
+    status = me.StringField(default="active")
 
-    status = me.StringField(default="pending")
+    approval_status = me.StringField(default="pending")
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -57,15 +60,16 @@ class CheckoutItem(me.Document):
     meta = {"collection": "checkout_items"}
 
     user = me.ReferenceField("User", dbref=True)
+    status = me.StringField(default="active")
 
     order = me.ReferenceField("OrderItem", dbref=True)
     checkout_from = me.ReferenceField("Inventory", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
-    status = me.StringField(default="pending")
+    approval_status = me.StringField(default="pending")
 
     quantity = me.IntField(required=True, min_value=1, default=1)
-    price = me.FloatField()
+    price = me.DecimalField(default=0.0)
     message = me.StringField()
 
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
@@ -74,6 +78,7 @@ class CheckoutItem(me.Document):
 class LostBreakItem(me.Document):
     # ไอเทมที่ชำรุด หรือ เสียหาย
     mete = {"collection": "lost_break_items"}
+    status = me.StringField(default="active")
 
     user = me.ReferenceField("User", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
@@ -88,4 +93,6 @@ class LostBreakItem(me.Document):
 class Approve_orders(me.Document):
     # อนุมัติเบิก
     meta = {"collection": "approve_orders"}
+    status = me.StringField(default="active")
+
     reated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
