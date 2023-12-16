@@ -46,6 +46,7 @@ def index():
 def register(item_register_id):
     form = forms.item_registers.ItemRegisterationForm()
 
+    item_register = None
     if item_register_id:
         item_register = models.RegistrationItem.objects().get(id=item_register_id)
         form = forms.item_registers.ItemRegisterationForm(obj=item_register)
