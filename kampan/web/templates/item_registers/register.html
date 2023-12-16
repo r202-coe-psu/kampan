@@ -26,15 +26,28 @@
 
 {% block content %}
 <div>
-  <form class="ui form" method="POST">
+  <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     {{ renderer.render_field(form.receipt_id) }}
     {{ renderer.render_fileinput(form.bill_file)}}
     {{ renderer.render_field(form.description) }}
-    {{ renderer.render_select(form.supplier) }}
     {{ renderer.render_select(form.supplier) }}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-{{ form.bill_file.name }}").click(function () {
+    $("#{{ form.bill_file.name }}").click();
+  });
+
+  $('#{{ form.bill_file.name }}')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-{{ form.bill_file.name }}', $(e.target).parent()).val(name);
+    });
+</script>
+{% endblock additional_js %}
