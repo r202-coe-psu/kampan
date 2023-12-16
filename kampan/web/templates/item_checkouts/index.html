@@ -5,24 +5,24 @@
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
-<div class="ui secondary menu">
-  <p style="margin-left:auto;">
-    {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-  </p>
-</div>
+
 {% endblock %}
 
 {% block content %}
 <form method="post">
   <div>
-
+    <div class="ui secondary menu">
+      <p style="margin-left:auto;">
+        {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      </p>
+      <p style="margin-left:10px;">
+        {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+      </p>
+      <p>
+        <button type="submit" class="ui primary button"
+          style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+      </p>
+    </div>
 
     {% if checkouts %}
     <table class="ui celled table">
@@ -63,7 +63,7 @@
           </td>
           <td data-label="Warehouse">{{ checkout.warehouse.name }}</td>
           <td data-label="Quantity">{{ checkout.quantity }}</td>
-          {% if checkout.status == "pending" %}
+          {% if checkout.approval_status == "pending" %}
           <td data-label="Status" class="red">
             <span class="ui red text">รออนุมัติ</span>
           </td>

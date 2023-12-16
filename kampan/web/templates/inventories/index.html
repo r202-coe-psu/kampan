@@ -5,6 +5,9 @@
 {% block dashboard_title %}รายการนำเข้าอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
 <form method="post">
   <div class="ui secondary menu">
     <p style="margin-left:auto;">
@@ -18,9 +21,6 @@
         style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
     </p>
   </div>
-  {% endblock %}
-
-  {% block content %}
   <div>
     {% if inventories %}
     <table class="ui striped padded celled table">

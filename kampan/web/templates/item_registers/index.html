@@ -6,23 +6,12 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_registers.index' %}
-<div class="ui secondary menu">
 
-  <a class="ui primary button" href="{{ url_for('item_registers.register') }}">
-    เพิ่มบิลอุปกรณ์
-  </a>
+<a class="ui primary button" href="{{ url_for('item_registers.register') }}">
+  เพิ่มบิลอุปกรณ์
+</a>
 
-  <p style="margin-left:auto;">
-    {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
-  </p>
-</div>
+
 {% else %}
 <a class="section" href="{{ url_for('item_registers.index') }}">ลงทะเบียนอุปกรณ์</a>
 {% endif %}
@@ -31,6 +20,18 @@
 
 {% block content %}
 <form method="post">
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </p>
+  </div>
   {% if item_registers %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">

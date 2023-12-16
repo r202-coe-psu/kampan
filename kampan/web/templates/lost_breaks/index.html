@@ -6,23 +6,11 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'lost_breaks.index' %}
-<div class="ui secondary menu">
 
-  <a class="ui primary button" href="{{ url_for('lost_breaks.add') }}">
-    เพิ่มอุปกรณ์ชำรุด/สูญหาย
-  </a>
+<a class="ui primary button" href="{{ url_for('lost_breaks.add') }}">
+  เพิ่มอุปกรณ์ชำรุด/สูญหาย
+</a>
 
-  <p style="margin-left:auto;">
-    {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
-  </p>
-</div>
 {% else %}
 <a class="section" href="{{ url_for('lost_breaks.index') }}">เพิ่มอุปกรณ์ชำรุด/สูญหาย</a>
 {% endif %}
@@ -30,6 +18,18 @@
 
 {% block content %}
 <form method="post">
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+    </p>
+  </div>
   {% if lost_break_items %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
