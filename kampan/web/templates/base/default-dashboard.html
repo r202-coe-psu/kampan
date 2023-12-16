@@ -1,7 +1,7 @@
 {% extends "/base/base-layout.html" %}
 
 {% block title %}
-  {{ config.get('APP_TITLE') }} Dashboard
+{{ config.get('APP_TITLE') }} Dashboard
 {% endblock %}
 
 {% block default_head %}
@@ -15,7 +15,7 @@
     flex-direction: row;
   }
 
-  .full.height > .toc .ui.menu {
+  .full.height>.toc .ui.menu {
     border-radius: 0;
     border-width: 0 1px 0 0;
     margin: 0;
@@ -76,7 +76,7 @@
       display: none !important;
     }
 
-    .fixed.menu > .container {
+    .fixed.menu>.container {
       width: 100% !important;
     }
   }
@@ -96,7 +96,7 @@
   {% include "/base/toolbar-dashboard.html" with context %}
 </div>
 
-<div class="ui fixed inverted main menu" >
+<div class="ui fixed inverted main menu">
   <div class="ui container">
     <a class="launch icon item">
       <i class="content icon"></i>
@@ -110,14 +110,14 @@
 <div class="pusher">
   <div class="full height">
     <div class="toc">
-      <div class="ui vertical inverted large menu" >
+      <div class="ui vertical inverted large menu">
         {% include "/base/toolbar-dashboard.html" with context %}
       </div>
     </div>
 
-    <div class="article" >
-      <header >
-        <div class="ui vertical dividing segment"  >
+    <div class="article">
+      <header>
+        <div class="ui vertical dividing segment">
           <div class="introduction">
             <h1 class="ui header">
               {{ self.dashboard_title() }}
@@ -128,18 +128,18 @@
 
       <main class="main-content">
         {%- if self.dashboard_title().lower() != 'dashboard' %}
-          <div class="ui segment" style="width: 100%;">
-            <div class="ui big breadcrumb" style="width: 100%;">
-              {% block breadcrumbs %}{% endblock %}
-            </div>
+        <div class="ui segment" style="width: 100%;">
+          <div class="ui big breadcrumb" style="width: 100%;">
+            {% block breadcrumbs %}{% endblock %}
           </div>
+        </div>
         {% endif -%}
         {% block content %}{% endblock %}
       </main>
 
-      <footer class="ui vertical footer segment" >
+      <footer class="ui vertical footer segment">
         {% include "/base/footer.html" %}
-      </footer>      
+      </footer>
     </div>
   </div>
 </div>
