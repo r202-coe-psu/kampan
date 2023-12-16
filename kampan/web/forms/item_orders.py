@@ -10,13 +10,15 @@ BaseOrderItemForm = model_form(
     FlaskForm,
     exclude=[
         "created_date",
+        "approval_status",
         "status",
     ],
-    field_args = {
-        "user":{"label": "ชื่อผู้ใช้งาน"},
+    field_args={
+        "user": {"label": "ชื่อผู้ใช้งาน"},
         "description": {"label": "คำอธิบาย"},
     },
 )
+
 
 class OrderItemForm(BaseOrderItemForm):
     pass
