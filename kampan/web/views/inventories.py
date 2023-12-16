@@ -137,7 +137,7 @@ def delete(inventory_id):
     )
 
 
-@module.route("/all-item", methods=["GET", "POST"])
+@module.route("item_register/<item_register_id>/all-item", methods=["GET", "POST"])
 @login_required
 def bill_item(item_register_id):
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
@@ -150,12 +150,12 @@ def bill_item(item_register_id):
     )
 
 
-@module.route("/<inventory_id>/file/<filename>")
-def bill(inventory_id, filename):
+@module.route("/<inventory_id>/file")
+def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
 
-    if not inventory or not inventory.bill or inventory.bill.filename != filename:
-        return abort(404)
+    # if not inventory or not inventory.bill or inventory.bill.filename != filename:
+    #     return abort(404)
 
     response = send_file(
         inventory.bill,
