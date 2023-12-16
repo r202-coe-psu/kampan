@@ -1,33 +1,33 @@
 {% extends '/accounts/index.html' %}
-{% block title %}ตำแหน่งผู้ใช้งาน{% endblock %}
-{% block dashboard_title %}ตำเเหน่งผู้ใช้งาน{% endblock %}
+{% block title %}ระดับผู้ใช้งาน{% endblock %}
+{% block dashboard_title %}ระดับผู้ใช้งาน{% endblock %}
 {% block breadcrumbs %}ตำเเหน่งผู้ใช้งาน{% endblock %}
 
 {% block content %}
 <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>อีเมลล์</th>
-          <th>ตำเเหน่ง</th>
-          <th>เเก้ไขตำแหน่ง</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for user in users %}
-        <tr>
-          <td data-label="Name">{{ user.get_name() }}</td>
-          <td data-label="Email">{{ user.email }}</td>
-          <td data-label="Roles">{{ user.roles|join(', ') }}</td>
-          <td data-label="Edit Roles">
-            <a class="ui green icon button" href="{{ url_for('accounts.edit_roles', user_id=user.id) }}">
-              <i class="edit icon"></i>
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>ชื่อผู้ใช้งาน</th>
+        <th>อีเมลล์</th>
+        <th>ตำเเหน่ง</th>
+        <th>เเก้ไขตำแหน่ง</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td data-label="Name">{{ user.get_name() }}</td>
+        <td data-label="Email">{{ user.email }}</td>
+        <td data-label="Roles">{{ user.roles|join(', ') }}</td>
+        <td data-label="Edit Roles">
+          <a class="ui green icon button" href="{{ url_for('accounts.edit_roles', user_id=user.id) }}">
+            <i class="edit icon"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}
