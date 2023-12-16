@@ -2,67 +2,73 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}นำอุปกรณ์ออก{% endblock %}
+{% block dashboard_title %}นำอุปกรณ์ออก{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a> /
+<div class="active section">เพิ่มตำแหน่งอุปกรณ์</div>
+{% endblock %}
+
 
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
+<div>
+  <form class="ui form" method="POST">
 
-      <div class="field">
-        {{ form.item.label }}
-        {{ form.item(class="ui fluid search dropdown") }}
-      </div>
-      {{ renderer.render_field(form.quantity) }}
-      {{ renderer.render_calendar_default(form.checkout_date, calendar_id="checkout_date_calendar") }}
+    {{ form.hidden_tag() }}
 
-      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-    </form>
+    <div class="field">
+      {{ form.item.label }}
+      {{ form.item(class="ui fluid search dropdown") }}
     </div>
+    {{ renderer.render_field(form.quantity) }}
+    {{ renderer.render_calendar_default(form.checkout_date, calendar_id="checkout_date_calendar") }}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
 {% endblock content %}
 
 {% block additional_js %}
 <script type="text/javascript">
-    datetime_formatter = {
-      datetime: function (datetime, settings) {
-          if (!datetime) return '';
-            var day = datetime.getDate();
-            var month = datetime.getMonth() + 1;
-            var year = datetime.getFullYear();
-            var minutes = datetime.getMinutes();
-            var hour = datetime.getHours();
+  datetime_formatter = {
+    datetime: function (datetime, settings) {
+      if (!datetime) return '';
+      var day = datetime.getDate();
+      var month = datetime.getMonth() + 1;
+      var year = datetime.getFullYear();
+      var minutes = datetime.getMinutes();
+      var hour = datetime.getHours();
 
-          return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minutes).slice(-2)  ;
+      return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2) + " " + ("0" + hour).slice(-2) + ":" + ("0" + minutes).slice(-2);
     }
-};
-var calendar_setting = {
-type: 'datetime',
-monthFirst: false,
-formatter: datetime_formatter,
-today: false,
-ampm: false,
-text: {
-    days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-    months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-    monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-    today: 'วันนี้',
-    now: 'ปัจจุบัน',
-    am: 'AM',
-    pm: 'PM'
-},
-};
-$('#checkout_date_calendar').calendar(calendar_setting);
+  };
+  var calendar_setting = {
+    type: 'datetime',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#checkout_date_calendar').calendar(calendar_setting);
 </script>
 
 <script type="text/javascript">
   $(document)
-  .ready(function() {
-    $('.ui.dropdown.validate.selection')
-    .dropdown({
-      allowAdditions: true
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true
+        });
     });
-  });
 </script>
 {% endblock %}
-
