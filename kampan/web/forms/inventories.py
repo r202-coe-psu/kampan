@@ -17,7 +17,9 @@ BaseInventoryForm = model_form(
         "remain",
     ],
     field_args={
-        "item": {"label": "อุปกรณ์", "label_modifier": lambda i: f"{i.barcode_id} ({i.name})"
+        "item": {
+            "label": "อุปกรณ์",
+            "label_modifier": lambda i: f"{i.barcode_id} ({i.name})",
         },
         "position": {
             "label": "ตำแหน่ง",
@@ -31,10 +33,7 @@ BaseInventoryForm = model_form(
 
 
 class InventoryForm(BaseInventoryForm):
-    bill_file = fields.FileField(
-        "*** อัปโหลดเฉพาะบิลที่เป็นไฟล์ PDF เท่านั้น ***", validators=[FileAllowed(["pdf"], "PDF only")]
-    )
     calendar_select = fields.DateTimeField("วันที่เริ่มต้น", format="%Y-%m-%d")
-    calendar_end = fields.DateTimeField("วันที่สุดท้าย",format="%Y-%m-%d")
-    calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี",format="%Y-%m")
-    calendar_year = fields.DateTimeField("กรุณาเลือกปี",format="%Y")
+    calendar_end = fields.DateTimeField("วันที่สุดท้าย", format="%Y-%m-%d")
+    calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี", format="%Y-%m")
+    calendar_year = fields.DateTimeField("กรุณาเลือกปี", format="%Y")
