@@ -64,9 +64,8 @@
           <td data-label="Remain">{{ inventory.remain }}</td>
           <td data-label="Price">{{ inventory.price }}</td>
           <td>
-            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename) }}"
-              target="_blank">
-              {{inventory.bill.filename}}
+            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id) }}" target="_blank">
+              {{inventory.get_bill_file_name() }}
             </a>
           </td>
           <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
@@ -95,9 +94,8 @@
           <td data-label="Remain">{{ inventory.remain }}</td>
           <td data-label="Price">{{ inventory.price }}</td>
           <td>
-            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, filename=inventory.bill.filename) }}"
-              target="_blank">
-              {{inventory.bill.filename}}
+            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id) }}" target="_blank">
+              {{inventory.get_bill_file_name() }}
             </a>
           </td>
           <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
