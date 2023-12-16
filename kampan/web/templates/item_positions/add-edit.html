@@ -25,9 +25,9 @@
     {{ renderer.render_select(form.warehouse) }}
     {{ renderer.render_field(form.description)}}
     <div class="ui three fields">
+      {{ renderer.render_field(form.rack) }}
       {{ renderer.render_field(form.row) }}
       {{ renderer.render_field(form.locker) }}
-      {{ renderer.render_field(form.rack) }}
     </div>
 
     {% if 'edit' == request.path %}
