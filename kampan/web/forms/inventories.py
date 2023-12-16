@@ -27,7 +27,7 @@ BaseInventoryForm = model_form(
         },
         "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
         "quantity": {"label": "จำนวนทั้งหมด"},
-        "price": {"label": "ราคา"},
+        "price": {"label": "ราคา (ชิ้นละ)"},
     },
 )
 
