@@ -2,11 +2,11 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}Items{% endblock %}
-{% block dashboard_title %}อุปกรณ์{% endblock %}
+{% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
 {% block breadcrumbs %}
-  <a class="ui primary button" href="{{ url_for('items.add') }}">
-    เพิ่มอุปกรณ์
-  </a>
+<a class="ui primary button" href="{{ url_for('items.add') }}">
+  เพิ่มอุปกรณ์
+</a>
 {% endblock %}
 
 {% block content %}
@@ -27,7 +27,8 @@
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">นํ้าหนัก : {{ item.weight }} kg</div>
       <div class="meta">จำนวนทั้งหมด : {{ item.minimum }} {{ item.unit }}</div>
-      <div class="meta">ขนาด (กว้าง x สูง x ลึก) : {{ item.size.width }} x {{ item.size.height }} x {{ item.size.deep }}</div>
+      <div class="meta">ขนาด (กว้าง x สูง x ลึก) : {{ item.size.width }} x {{ item.size.height }} x {{ item.size.deep }}
+      </div>
       <div class="meta">หมวดหมู่: {{ item.categories|join(', ') }}</div>
       <div class="description">ผู้ใช้งาน : {{ item.user.first_name }} {{ item.user.last_name }}</div>
     </div>
@@ -45,6 +46,6 @@
   {% endfor %}
 </div>
 {% else %}
-  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock %}
