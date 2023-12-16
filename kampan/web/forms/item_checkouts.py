@@ -15,17 +15,21 @@ BaseCheckoutItemForm = model_form(
         "warehouse",
         "user",
         "status",
-
-        
     ],
     field_args={
         "order": {"label": "คำสั่งเบิก"},
-        "item": {"label": "ชื่ออุปกรณ์", "label_modifier": lambda obj: f"{obj.barcode_id} ({obj.name})"},
-        "quantity": {"label": "จำนวนทั้งหมด" },
+        "item": {
+            "label": "ชื่ออุปกรณ์",
+            "label_modifier": lambda obj: f"{obj.barcode_id} ({obj.name})",
+        },
+        "quantity": {"label": "จำนวนทั้งหมด"},
         "message": {"label": "ข้อความ"},
-        "checkout_date": {"label": "ลงวันที่คำสั่งเบิก", "format":'%Y-%m-%d %H:%M'},
+        "checkout_date": {"label": "ลงวันที่คำสั่งเบิก", "format": "%Y-%m-%d %H:%M"},
     },
 )
 
+
 class CheckoutItemForm(BaseCheckoutItemForm):
-    calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล",format='%Y-1%m-%d %H:%M')
+    calendar_select_checkout = fields.DateTimeField(
+        "เลือกวันที่เพื่อแสดงข้อมูล", format="%Y-1%m-%d %H:%M"
+    )
