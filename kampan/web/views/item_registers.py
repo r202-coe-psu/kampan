@@ -8,12 +8,16 @@ import mongoengine as me
 
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
-def check_in_time(created_date, calendar_select,calendar_end):
-    print(created_date, calendar_select, calendar_select <= created_date <= calendar_end)
+
+def check_in_time(created_date, calendar_select, calendar_end):
+    print(
+        created_date, calendar_select, calendar_select <= created_date <= calendar_end
+    )
     if calendar_select <= created_date <= calendar_end:
         return True
     else:
         return False
+
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
@@ -30,17 +34,18 @@ def index():
         item_registers=item_registers,
         form=form,
         calendar_select=form.calendar_select.data,
-        calendar_end = form.calendar_end.data,
+        calendar_end=form.calendar_end.data,
         check_in_time=check_in_time,
     )
 
 
-@module.route("/register", methods=["GET", "POST"], defaults=dict(item_register_id=None))
+@module.route(
+    "/register", methods=["GET", "POST"], defaults=dict(item_register_id=None)
+)
 @login_required
 def register(item_register_id):
     form = forms.item_registers.ItemRegisterationForm()
 
-    item_register = None
     if item_register_id:
         item_register = models.RegistrationItem.objects().get(id=item_register_id)
         form = forms.item_registers.ItemRegisterationForm(obj=item_register)
@@ -54,11 +59,19 @@ def register(item_register_id):
     if not item_register:
         item_register = models.RegistrationItem()
 
+    if form.bill_file.data:
+        item_register.bill.put(
+            form.bill_file.data,
+            filename=form.bill_file.data.filename,
+            content_type=form.bill_file.data.content_type,
+        )
+
     form.populate_obj(item_register)
     item_register.user = current_user._get_current_object()
     item_register.save()
 
     return redirect(url_for("item_registers.index"))
+
 
 @module.route("/<item_register_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -71,11 +84,24 @@ def edit(item_register_id):
             "/item_registers/register.html",
             form=form,
         )
-
+    if form.bill_file.data:
+        if item_register.bill:
+            item_register.bill.replace(
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type,
+            )
+        else:
+            item_register.bill.put(
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type,
+            )
     form.populate_obj(item_register)
     item_register.save()
 
     return redirect(url_for("item_registers.index"))
+
 
 @module.route("/<item_register_id>/delete")
 @login_required
