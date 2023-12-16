@@ -31,6 +31,8 @@
     {{ renderer.render_field(form.receipt_id) }}
     {{ renderer.render_field(form.description) }}
     {{ renderer.render_select(form.supplier) }}
+    {{ renderer.render_select(form.supplier) }}
+    {{ renderer.render_fileinput(form.bill_file)}}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
