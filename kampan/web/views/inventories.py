@@ -154,8 +154,8 @@ def bill_item(item_register_id):
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
 
-    # if not inventory or not inventory.bill or inventory.bill.filename != filename:
-    #     return abort(404)
+    if not inventory:
+        return abort(404)
 
     response = send_file(
         inventory.bill,
