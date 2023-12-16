@@ -6,15 +6,18 @@ import datetime
 
 
 class RegistrationItem(me.Document):
+    # อุปกรณ์ที่ลงทะเบียน
     meta = {"collection": "registration_items"}
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
     supplier = me.ReferenceField("Supplier", dbref=True)
+    bill = me.FileField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
 class Inventory(me.Document):
+    # คลังอุปกรณ์
     meta = {"collection": "inventories"}
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
@@ -40,6 +43,7 @@ class Inventory(me.Document):
 
 
 class OrderItem(me.Document):
+    # เบิกอุปกรณ์
     meta = {"collection": "order_items"}
 
     status = me.StringField(default="pending")
@@ -49,6 +53,7 @@ class OrderItem(me.Document):
 
 
 class CheckoutItem(me.Document):
+    # รายการนำเข้าอุปกรณ์ออก
     meta = {"collection": "checkout_items"}
 
     user = me.ReferenceField("User", dbref=True)
@@ -67,6 +72,7 @@ class CheckoutItem(me.Document):
 
 
 class LostBreakItem(me.Document):
+    # ไอเทมที่ชำรุด หรือ เสียหาย
     mete = {"collection": "lost_break_items"}
 
     user = me.ReferenceField("User", dbref=True)
@@ -80,5 +86,6 @@ class LostBreakItem(me.Document):
 
 
 class Approve_orders(me.Document):
+    # อนุมัติเบิก
     meta = {"collection": "approve_orders"}
     reated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
