@@ -41,18 +41,6 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-  $(".attach-file-{{ form.bill_file.name }}").click(function () {
-    $("#{{ form.bill_file.name }}").click();
-  });
-
-  $('#{{ form.bill_file.name }}')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-{{ form.bill_file.name }}', $(e.target).parent()).val(name);
-    });
-</script>
-
-<script type="text/javascript">
   $(document)
     .ready(function () {
       $('.ui.dropdown.validate.selection')
