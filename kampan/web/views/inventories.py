@@ -17,30 +17,30 @@ from kampan import models
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
 
-def check_in_time(registration_date, calendar_select, calendar_end):
-    if calendar_select <= registration_date <= calendar_end:
-        return True
-    else:
-        return False
-
-
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    form = forms.inventories.InventoryForm()
+    form = forms.inventories.SearchStartEndDateForm()
     inventories = models.Inventory.objects(status="active")
 
-    if form.validate_on_submit():
+    if form.start_date.data == None and form.end_date.data != None:
         inventories = inventories.filter(
-            registeration_date__gte=form.calendar_select.data,
-            registeration_date__lte=form.calendar_end.data,
+            registeration_date__lte=form.end_date.data,
         )
 
+    elif form.start_date.data and form.end_date.data == None:
+        inventories = inventories.filter(
+            registeration_date__gte=form.start_date.data,
+        )
+
+    elif form.start_date.data != None and form.end_date.data != None:
+        inventories = inventories.filter(
+            registeration_date__gte=form.start_date.data,
+            registeration_date__lte=form.end_date.data,
+        )
+    # print(form.errors)
     return render_template(
         "/inventories/index.html",
-        calendar_select=form.calendar_select.data,
-        calendar_end=form.calendar_end.data,
-        check_in_time=check_in_time,
         inventories=inventories,
         form=form,
     )
