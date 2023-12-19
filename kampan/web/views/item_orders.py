@@ -104,7 +104,9 @@ def edit(order_id):
 def delete(order_id):
     order = models.OrderItem.objects().get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order)
-    checkouts.delete()
-    order.delete()
+    checkouts.status = "disactive"
+    order.status = "disactive"
+    checkouts.save()
+    order.save()
 
     return redirect(url_for("item_orders.index"))

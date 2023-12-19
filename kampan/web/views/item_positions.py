@@ -69,6 +69,7 @@ def edit(item_position_id):
 @login_required
 def delete(item_position_id):
     item_position = models.ItemPosition.objects().get(id=item_position_id)
-    item_position.delete()
+    item_position.status = "disactive"
+    item_position.save()
 
     return redirect(url_for("item_positions.index"))

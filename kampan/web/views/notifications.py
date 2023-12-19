@@ -13,8 +13,8 @@ subviews = []
 @module.route("/")
 @login_required
 def index():
-    inventories = models.Inventory.objects()
-    checkouts = models.CheckoutItem.objects()
+    inventories = models.Inventory.objects(status="active")
+    checkouts = models.CheckoutItem.objects(status="active")
 
     total_values = 0
     notifications = []
@@ -34,7 +34,6 @@ def index():
             if inventory.remain <= inventory.item.minimum:
                 if inventory.notification_status == True:
                     notifications.append(inventory)
-                
 
     print(notifications)
     return render_template(
@@ -49,6 +48,4 @@ def set_status(inventory_id):
     inventory.notification_status = False
     inventory.save()
 
-    return redirect(
-        url_for("notifications.index")
-    )
+    return redirect(url_for("notifications.index"))

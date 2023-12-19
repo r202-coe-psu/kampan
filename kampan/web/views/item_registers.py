@@ -15,13 +15,21 @@ def index():
     item_registers = models.RegistrationItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
 
-    if form.validate_on_submit():
-        if form.start_date.data != None and form.end_date.data != None:
-            print(form.errors)
-            item_registers = item_registers.filter(
-                created_date__gte=form.start_date.data,
-                created_date__lte=form.end_date.data,
-            )
+    if form.start_date.data == None and form.end_date.data != None:
+        item_registers = item_registers.filter(
+            created_date__lte=form.end_date.data,
+        )
+
+    elif form.start_date.data and form.end_date.data == None:
+        item_registers = item_registers.filter(
+            created_date__gte=form.start_date.data,
+        )
+
+    elif form.start_date.data != None and form.end_date.data != None:
+        item_registers = item_registers.filter(
+            created_date__gte=form.start_date.data,
+            created_date__lte=form.end_date.data,
+        )
 
     return render_template(
         "/item_registers/index.html",
@@ -99,6 +107,7 @@ def edit(item_register_id):
 @login_required
 def delete(item_register_id):
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
-    item_register.delete()
+    item_register.status = "disactive"
+    item_register.save()
 
     return redirect(url_for("item_registers.index"))

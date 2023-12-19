@@ -9,25 +9,29 @@ import mongoengine as me
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
 
-def check_in_time(created_date, calendar_select,calendar_end):
-    print(created_date, calendar_select, calendar_select <= created_date <= calendar_end)
-    if calendar_select <= created_date <= calendar_end:
-        return True
-    else:
-        return False
-
-@module.route("/",methods=["GET","POST"])
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     lost_break_items = models.LostBreakItem.objects()
-    form = forms.inventories.InventoryForm()
+    form = forms.inventories.SearchStartEndDateForm()
+    if form.start_date.data == None and form.end_date.data != None:
+        lost_break_items = lost_break_items.filter(
+            created_date__lte=form.end_date.data,
+        )
 
+    elif form.start_date.data and form.end_date.data == None:
+        lost_break_items = lost_break_items.filter(
+            created_date__gte=form.start_date.data,
+        )
+
+    elif form.start_date.data != None and form.end_date.data != None:
+        lost_break_items = lost_break_items.filter(
+            created_date__gte=form.start_date.data,
+            created_date__lte=form.end_date.data,
+        )
     return render_template(
         "/lost_breaks/index.html",
         lost_break_items=lost_break_items,
-        calendar_select=form.calendar_select.data,
-        calendar_end = form.calendar_end.data,
-        check_in_time=check_in_time,
         form=form,
     )
 
@@ -52,7 +56,7 @@ def add(lost_break_item_id):
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
-        
+
         if inventory.remain >= quantity:
             inventory.remain -= quantity
             lost_break_item.quantity = quantity
@@ -69,6 +73,7 @@ def add(lost_break_item_id):
             break
 
     return redirect(url_for("lost_breaks.index"))
+
 
 @module.route("/<lost_break_item_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -90,7 +95,7 @@ def edit(lost_break_item_id):
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
-        
+
         if inventory.remain >= quantity:
             inventory.remain -= quantity
             lost_break_item.quantity = quantity
@@ -108,10 +113,12 @@ def edit(lost_break_item_id):
 
     return redirect(url_for("lost_breaks.index"))
 
+
 @module.route("/<lost_break_item_id>/delete")
 @login_required
 def delete(lost_break_item_id):
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
-    lost_break_item.delete()
+    lost_break_item.status = "disactive"
+    lost_break_item.save()
 
     return redirect(url_for("lost_breaks.index"))

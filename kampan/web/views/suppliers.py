@@ -12,7 +12,7 @@ module = Blueprint("suppliers", __name__, url_prefix="/suppliers")
 @module.route("/")
 @login_required
 def index():
-    suppliers = models.Supplier.objects()
+    suppliers = models.Supplier.objects(status="active")
     return render_template("/suppliers/index.html", suppliers=suppliers)
 
 
@@ -32,6 +32,7 @@ def add():
 
     return redirect(url_for("suppliers.index"))
 
+
 @module.route("/<supplier_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(supplier_id):
@@ -49,10 +50,12 @@ def edit(supplier_id):
 
     return redirect(url_for("suppliers.index"))
 
+
 @module.route("/<supplier_id>/delete")
 @login_required
 def delete(supplier_id):
     supplier = models.Supplier.objects().get(id=supplier_id)
-    supplier.delete()
+    supplier.status = "disactive"
+    supplier.save()
 
     return redirect(url_for("suppliers.index"))

@@ -12,7 +12,7 @@ module = Blueprint("warehouses", __name__, url_prefix="/warehouses")
 @module.route("/")
 @login_required
 def index():
-    warehouses = models.Warehouse.objects()
+    warehouses = models.Warehouse.objects(status="active")
     return render_template(
         "/warehouses/index.html",
         warehouses=warehouses,
@@ -69,6 +69,7 @@ def edit(warehouse_id):
 @login_required
 def delete(warehouse_id):
     warehouse = models.Warehouse.objects().get(id=warehouse_id)
-    warehouse.delete()
+    warehouse.status = "disactive"
+    warehouse.save()
 
     return redirect(url_for("warehouses.index"))

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, send_file
+from flask import Blueprint, render_template, redirect, url_for, send_file, abort
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
@@ -12,7 +12,7 @@ module = Blueprint("items", __name__, url_prefix="/items")
 @module.route("/")
 @login_required
 def index():
-    items = models.Item.objects()
+    items = models.Item.objects(status="active")
     return render_template(
         "/items/index.html",
         items=items,
@@ -99,7 +99,8 @@ def edit(item_id):
 @login_required
 def delete(item_id):
     item = models.Item.objects().get(id=item_id)
-    item.delete()
+    item.status = "disactive"
+    item.save()
 
     return redirect(url_for("items.index"))
 
