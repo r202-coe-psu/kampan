@@ -20,14 +20,15 @@
 <form method="post">
   <div class="ui secondary menu">
     <p style="margin-left:auto;">
-      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
     </p>
     <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
       <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px;">ยืนยัน</button>
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
   {% if lost_break_items %}
@@ -120,7 +121,7 @@
 {% endblock %}
 
 
-
+{#
 {% block additional_js %}
 <script type="text/javascript">
   datetime_formatter = {
@@ -165,3 +166,4 @@
 </script>
 
 {% endblock %}
+#}

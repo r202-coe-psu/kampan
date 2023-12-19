@@ -12,6 +12,19 @@
 
 {% block content %}
 <form method="post">
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
+  </div>
   <div>
     {% if orders %}
     <table class="ui celled table">
@@ -26,27 +39,6 @@
       </thead>
       <tbody>
         {% for order in orders %}
-        {% if calendar_select %}
-        {% if check_in_time(order.created_date,calendar_select,calendar_end) %}
-        <tr>
-          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-          <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          <td data-label="Status">
-            <a class="positive ui button"
-              href="{{ url_for('approve_orders.approve', checkout_item_id=checkout.id, order_id=order.id)}}">
-              อนุมัติ
-            </a>
-          </td>
-        </tr>
-        {% endif %}
-        {% else %}
         <tr>
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
@@ -64,7 +56,6 @@
           </td>
         </tr>
 
-        {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -75,6 +66,7 @@
 </form>
 {% endblock %}
 
+{#
 {% block additional_js %}
 <script type="text/javascript">
   datetime_formatter = {
@@ -118,3 +110,4 @@
     });
 </script>
 {% endblock %}
+#}
