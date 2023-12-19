@@ -10,7 +10,7 @@ class User(me.Document, UserMixin):
     password = me.StringField(required=True, default="")
     first_name = me.StringField(required=True, max_length=256)
     last_name = me.StringField(required=True, max_length=256)
-    status = me.StringField(required=True, default="disactive")
+    status = me.StringField(required=True, default="active")
     roles = me.ListField(me.StringField(), default=["user"])
     student_id = me.StringField(min_length=5, max_length=64)
     organization = me.StringField(min_length=3, max_length=64)

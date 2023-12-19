@@ -4,6 +4,7 @@ import datetime
 
 class Warehouse(me.Document):
     meta = {"collection": "warehouses"}
+    status = me.StringField(default="active")
     name = me.StringField(required=True, max_length=256)
     description = me.StringField()
 

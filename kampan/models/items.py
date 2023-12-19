@@ -12,6 +12,7 @@ class ItemSize(me.EmbeddedDocument):
 
 class Item(me.Document):
     meta = {"collection": "items"}
+    status = me.StringField(default="active")
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
@@ -30,6 +31,7 @@ class Item(me.Document):
 
 class ItemPosition(me.Document):
     meta = {"collection": "item_positions"}
+    status = me.StringField(default="active")
 
     description = me.StringField(required=True, max_length=255)
     rack = me.StringField(required=True, max_length=255)
