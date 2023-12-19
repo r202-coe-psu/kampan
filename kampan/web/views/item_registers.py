@@ -9,33 +9,24 @@ import mongoengine as me
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
 
-def check_in_time(created_date, calendar_select, calendar_end):
-    print(
-        created_date, calendar_select, calendar_select <= created_date <= calendar_end
-    )
-    if calendar_select <= created_date <= calendar_end:
-        return True
-    else:
-        return False
-
-
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    item_registers = models.RegistrationItem.objects()
-    form = forms.inventories.InventoryForm()
+    item_registers = models.RegistrationItem.objects(status="active")
+    form = forms.inventories.SearchStartEndDateForm()
 
-    if request.method == "POST":
-        print(form.calendar_select.data)
-        print(form.calendar_end.data)
+    if form.validate_on_submit():
+        if form.start_date.data != None and form.end_date.data != None:
+            print(form.errors)
+            item_registers = item_registers.filter(
+                created_date__gte=form.start_date.data,
+                created_date__lte=form.end_date.data,
+            )
 
     return render_template(
         "/item_registers/index.html",
         item_registers=item_registers,
         form=form,
-        calendar_select=form.calendar_select.data,
-        calendar_end=form.calendar_end.data,
-        check_in_time=check_in_time,
     )
 
 
