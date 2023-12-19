@@ -28,7 +28,7 @@ def check_in_time(registration_date, calendar_select, calendar_end):
 @login_required
 def index():
     form = forms.inventories.InventoryForm()
-    inventories = models.Inventory.objects()
+    inventories = models.Inventory.objects(status="active")
 
     if form.validate_on_submit():
         inventories = inventories.filter(
@@ -130,7 +130,8 @@ def edit(inventory_id):
 @login_required
 def delete(inventory_id):
     inventory = models.Inventory.objects().get(id=inventory_id)
-    inventory.delete()
+    inventory.status = "disactive"
+    inventory.save()
 
     return redirect(
         url_for("inventories.bill_item", item_register_id=inventory.registration.id)
