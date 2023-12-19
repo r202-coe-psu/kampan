@@ -28,11 +28,11 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
-    item_registers = len(models.RegistrationItem.objects())
-    items_order = len(models.OrderItem.objects())
+    item_registers = len(models.RegistrationItem.objects(status="active"))
+    items_order = len(models.OrderItem.objects(status="active"))
     form = forms.inventories.InventoryForm()
-    inventories = models.Inventory.objects()
-    checkouts = models.CheckoutItem.objects()
+    inventories = models.Inventory.objects(status="active")
+    checkouts = models.CheckoutItem.objects(status="active")
 
     checkout_quantity = 0
     item_quantity = 0
