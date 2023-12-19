@@ -6,8 +6,8 @@
 {%- set style = '%s %s' | format(class_, eh.get_validate_class(field.errors)) -%}
 {%- endif -%}
 <div class="field">
-{{ field.label }}
-{{ field(class_=style) }}
+  {{ field.label }}
+  {{ field(class_=style) }}
 </div>
 {{ eh.get_error_messages(field.errors) }}
 {%- endmacro %}
@@ -57,7 +57,8 @@
       <i class="calendar icon"></i>
       {{ field(autocomplete='off') }}
     </div>
-    <button type="submit" class="ui primary button" style="height:fit-content; margin-top:auto; margin-left:15px; margin:5px;">ยืนยัน</button>
+    <button type="submit" class="ui primary button"
+      style="height:fit-content; margin-top:auto; margin-left:15px; margin:5px;">ยืนยัน</button>
   </div>
 </div>
 {%- endmacro %}
@@ -68,10 +69,8 @@
     <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
     <div class="ui input left icon">
       <i class="calendar icon"></i>
-      {{ field(autocomplete='off') }}
+      {{ field(autocomplete='off',) }}
     </div>
   </div>
 </div>
 {%- endmacro %}
-
-
