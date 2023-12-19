@@ -7,36 +7,36 @@ from flask_login import login_required, current_user
 from kampan.models import inventories
 from kampan.web import forms
 from kampan import models
-from kampan.web.views.lost_breaks import check_in_time
 
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
-
-
-def check_in_time(created_date, calendar_select, calendar_end):
-    print(
-        created_date, calendar_select, calendar_select <= created_date <= calendar_end
-    )
-    if calendar_select <= created_date <= calendar_end:
-        return True
-    else:
-        return False
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     if "admin" in current_user.roles or "supervisor" in current_user.roles:
-        orders = models.OrderItem.objects(approval_status="pending")
+        orders = models.OrderItem.objects(approval_status="pending", status="active")
 
-        form = forms.inventories.InventoryForm()
+        form = forms.inventories.SearchStartEndDateForm()
+        if form.start_date.data == None and form.end_date.data != None:
+            orders = orders.filter(
+                created_date__lte=form.end_date.data,
+            )
 
+        elif form.start_date.data and form.end_date.data == None:
+            orders = orders.filter(
+                created_date__gte=form.start_date.data,
+            )
+
+        elif form.start_date.data != None and form.end_date.data != None:
+            orders = orders.filter(
+                created_date__gte=form.start_date.data,
+                created_date__lte=form.end_date.data,
+            )
         return render_template(
             "/approve_orders/index.html",
             orders=orders,
             form=form,
-            calendar_select=form.calendar_select.data,
-            calendar_end=form.calendar_end.data,
-            check_in_time=check_in_time,
         )
     return redirect(url_for("dashboard.daily_dashboard"))
 

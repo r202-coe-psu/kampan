@@ -20,14 +20,21 @@ module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 def index():
     checkouts = models.CheckoutItem.objects()
     form = forms.inventories.SearchStartEndDateForm()
+    if form.start_date.data == None and form.end_date.data != None:
+        orders = orders.filter(
+            checkout_date__lte=form.end_date.data,
+        )
 
-    if form.validate_on_submit():
-        if form.start_date.data != None and form.end_date.data != None:
-            print(form.errors)
-            checkouts = checkouts.filter(
-                checkout_date__gte=form.start_date.data,
-                checkout_date__lte=form.end_date.data,
-            )
+    elif form.start_date.data and form.end_date.data == None:
+        orders = orders.filter(
+            checkout_date__gte=form.start_date.data,
+        )
+
+    elif form.start_date.data != None and form.end_date.data != None:
+        orders = orders.filter(
+            checkout_date__gte=form.start_date.data,
+            checkout_date__lte=form.end_date.data,
+        )
 
     return render_template(
         "/item_checkouts/index.html",
