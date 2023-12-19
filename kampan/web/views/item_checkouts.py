@@ -15,34 +15,23 @@ import datetime
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 
-def check_in_time(checkout_date,calendar_select,calendar_end):
-    print(checkout_date,calendar_select <= checkout_date<= calendar_end)
-    if calendar_select <= checkout_date <= calendar_end:
-        return True
-
-    else:
-        return False
-
-
-@module.route("/", methods=["GET","POST"])
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     checkouts = models.CheckoutItem.objects()
-
-    form = forms.inventories.InventoryForm()
+    form = forms.inventories.SearchStartEndDateForm()
 
     if form.validate_on_submit():
-        checkouts = models.CheckoutItem.objects(
-            registeration_date_gte=form.calendar_select.data,
-            registeration_date_lte=form.calendar_end.data,
-        )
+        if form.start_date.data != None and form.end_date.data != None:
+            print(form.errors)
+            checkouts = checkouts.filter(
+                checkout_date__gte=form.start_date.data,
+                checkout_date__lte=form.end_date.data,
+            )
 
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
-        calendar_select=form.calendar_select.data,
-        calendar_end = form.calendar_end.data,
-        check_in_time = check_in_time,
         form=form,
     )
 
@@ -72,7 +61,7 @@ def checkout():
         checkout.warehouse = inventory.warehouse
         checkout.price = inventory.price
         checkout.checkout_date = form.checkout_date.data
-        
+
         if inventory.remain >= quantity:
             inventory.remain -= quantity
             checkout.quantity = quantity
@@ -88,8 +77,9 @@ def checkout():
 
         if quantity <= 0:
             break
-    
+
     return redirect(url_for("item_orders.index"))
+
 
 @module.route("/all-checkout", methods=["GET", "POST"])
 @login_required
@@ -102,6 +92,6 @@ def bill_checkout():
 
     return render_template(
         "/item_checkouts/bill-checkout.html",
-        checkouts = checkouts,
+        checkouts=checkouts,
         order_id=order_id,
     )
