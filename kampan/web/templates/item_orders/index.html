@@ -19,19 +19,22 @@
 {% block content %}
 
 
-{% if orders %}
+
 <form method="post">
   <div class="ui secondary menu">
     <p style="margin-left:auto;">
-      {{renderer.render_calendar_default(form.calendar_select, calendar_id="checkout_date_calendar")}}
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
     </p>
     <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.calendar_end, calendar_id="end_date")}}
+      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
     </p>
-
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
   </div>
+  {% if orders %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
       <thead>
@@ -49,8 +52,6 @@
       </thead>
       <tbody>
         {% for order in orders %}
-        {% if calendar_select %}
-        {% if check_in_time(order.created_date, calendar_select,calendar_end) %}
         <tr>
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
@@ -87,45 +88,6 @@
             </a>
           </td>
         </tr>
-        {% endif %}
-        {% else %}
-        <tr>
-          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-          <td>
-            <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
-              เบิกอุปกรณ์
-            </a>
-          </td>
-
-          <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          {% if order.approval_status == "pending" %}
-          <td data-label="Status" class="red">
-            <span class="ui red text">รออนุมัติ</span>
-          </td>
-          {% else %}
-          <td data-label="Status" class="green">
-            <span class="ui green text">อนุมัติ</span>
-          </td>
-          {% endif %}
-          <td>
-            <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
-            </a>
-            <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
-              style="color: white; background-color: rgb(192, 55, 55);">
-              <i class="trash icon"></i>
-            </a>
-          </td>
-        </tr>
-        {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -140,7 +102,7 @@
 
 
 {% block additional_js %}
-<script type="text/javascript">
+<!-- <script type="text/javascript">
   datetime_formatter = {
     datetime: function (datetime, settings) {
       if (!datetime) return '';
@@ -180,6 +142,6 @@
           fullTextSearch: 'exact'
         });
     });
-</script>
+</script> -->
 
 {% endblock %}
