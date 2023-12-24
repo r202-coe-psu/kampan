@@ -39,16 +39,13 @@ def index():
 
 
 @module.route(
-    "/register", methods=["GET", "POST"], defaults=dict(item_register_id=None)
+    "/register",
+    methods=["GET", "POST"],
 )
 @login_required
-def register(item_register_id):
+def register():
     form = forms.item_registers.ItemRegisterationForm()
-
-    item_register = None
-    if item_register_id:
-        item_register = models.RegistrationItem.objects().get(id=item_register_id)
-        form = forms.item_registers.ItemRegisterationForm(obj=item_register)
+    item_register = models.RegistrationItem()
 
     if not form.validate_on_submit():
         return render_template(
@@ -56,18 +53,22 @@ def register(item_register_id):
             form=form,
         )
 
-    if not item_register:
-        item_register = models.RegistrationItem()
-
     if form.bill_file.data:
-        item_register.bill.put(
-            form.bill_file.data,
-            filename=form.bill_file.data.filename,
-            content_type=form.bill_file.data.content_type,
-        )
+        if item_register.bill:
+            item_register.bill.replace(
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type,
+            )
+        else:
+            item_register.bill.put(
+                form.bill_file.data,
+                filename=form.bill_file.data.filename,
+                content_type=form.bill_file.data.content_type,
+            )
 
-    form.populate_obj(item_register)
     item_register.user = current_user._get_current_object()
+    form.populate_obj(item_register)
     item_register.save()
 
     return redirect(url_for("item_registers.index"))
@@ -97,6 +98,8 @@ def edit(item_register_id):
                 filename=form.bill_file.data.filename,
                 content_type=form.bill_file.data.content_type,
             )
+    print(item_register.bill)
+
     form.populate_obj(item_register)
     item_register.save()
 
@@ -108,6 +111,10 @@ def edit(item_register_id):
 def delete(item_register_id):
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     item_register.status = "disactive"
+    inventories = models.Inventory.objects(registration=item_register)
+    for inventory in inventories:
+        inventory.status = "disactive"
+        inventory.save()
     item_register.save()
 
     return redirect(url_for("item_registers.index"))
