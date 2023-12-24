@@ -30,9 +30,9 @@ class Item(me.Document):
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
     def get_items_quantity(self):
-        inventories = Inventory.objects(item=self)
+        inventories = Inventory.objects(item=self, status="active")
         if inventories:
-            return sum([inventory.item for inventory in inventories])
+            return sum([inventory.remain for inventory in inventories])
         return 0
 
 
