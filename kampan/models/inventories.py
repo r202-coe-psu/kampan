@@ -43,7 +43,7 @@ class Inventory(me.Document):
     expiration_date = me.DateTimeField()
     position = me.ReferenceField("ItemPosition", dbref=True)
 
-    notification_status = me.BooleanField(default=True)
+    # notification_status = me.BooleanField(default=True)
     user = me.ReferenceField("User", dbref=True)
 
     def get_checkout_items(self):
