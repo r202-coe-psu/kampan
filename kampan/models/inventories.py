@@ -7,14 +7,20 @@ import datetime
 
 class RegistrationItem(me.Document):
     # อุปกรณ์ที่ลงทะเบียน
+    bill = me.FileField()
     meta = {"collection": "registration_items"}
     status = me.StringField(default="active")
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
     supplier = me.ReferenceField("Supplier", dbref=True)
-    bill = me.FileField()
+
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+    def get_item_in_bill(self):
+        inventories = Inventory.objects(registration=self, status="active")
+        if inventories:
+            return [inventory.item.id for inventory in inventories]
 
 
 class Inventory(me.Document):
@@ -41,7 +47,7 @@ class Inventory(me.Document):
     user = me.ReferenceField("User", dbref=True)
 
     def get_checkout_items(self):
-        return CheckoutItem.objects(checkout_from=self)
+        return CheckoutItem.objects(checkout_from=self, status="active")
 
     def get_bill_file_name(self):
         if self.registration.bill:
