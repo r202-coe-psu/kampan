@@ -24,6 +24,7 @@ class Item(me.Document):
     unit = me.StringField(required=True, default="ชุด", max_length=50)
     minimum = me.IntField(required=True, min_value=1, default=1)
     barcode_id = me.StringField(required=True, max_length=255)
+    notification_status = me.BooleanField(default=True)
 
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -34,6 +35,11 @@ class Item(me.Document):
         if inventories:
             return sum([inventory.remain for inventory in inventories])
         return 0
+
+    def get_last_price(self):
+        inventories = Inventory.objects(item=self, status="active")
+        if inventories:
+            return (inventories.order_by("registeration_date")).first().price
 
 
 class ItemPosition(me.Document):
