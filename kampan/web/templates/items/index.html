@@ -24,6 +24,7 @@
     </div>
     <div class="content">
       <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
+      <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">นํ้าหนัก : {{ item.weight }} kg</div>
       <div class="meta">จำนวนทั้งหมด : {{ item.minimum }} {{ item.unit }}</div>
