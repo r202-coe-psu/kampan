@@ -2,6 +2,7 @@ from flask import url_for
 from email.policy import default
 import mongoengine as me
 import datetime
+from ..models.inventories import Inventory
 
 
 class ItemSize(me.EmbeddedDocument):
@@ -27,6 +28,12 @@ class Item(me.Document):
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+    def get_items_quantity(self):
+        inventories = Inventory.objects(item=self)
+        if inventories:
+            return sum([inventory.item for inventory in inventories])
+        return 0
 
 
 class ItemPosition(me.Document):
