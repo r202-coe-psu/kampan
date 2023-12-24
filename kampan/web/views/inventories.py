@@ -53,6 +53,15 @@ def register():
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
+    items = models.Item.objects()
+    if item_register.get_item_in_bill():
+        items = items.filter(id__nin=item_register.get_item_in_bill())
+        # print(item_register.get_item_in_bill())
+
+    if items:
+        form.item.choices = [
+            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+        ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -63,21 +72,7 @@ def register():
 
     inventory = models.Inventory()
     form.populate_obj(inventory)
-
-    # if form.bill_file.data:
-    #     if inventory.bill:
-    #         inventory.bill.replace(
-    #             form.bill_file.data,
-    #             filename=form.bill_file.data.filename,
-    #             content_type=form.bill_file.data.content_type,
-    #         )
-    #     else:
-    #         inventory.bill.put(
-    #             form.bill_file.data,
-    #             filename=form.bill_file.data.filename,
-    #             content_type=form.bill_file.data.content_type,
-    #         )
-
+    inventory.item = models.Item.objects(id=form.item.data).first()
     inventory.user = current_user._get_current_object()
     inventory.notification_status = True
     inventory.registration = item_register
@@ -94,6 +89,12 @@ def edit(inventory_id):
     form = forms.inventories.InventoryForm(obj=inventory)
     item_register = inventory.registration
 
+    items = models.Item.objects()
+    if items:
+        form.item.choices = [
+            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+        ]
+
     if not form.validate_on_submit():
         return render_template(
             "/inventories/register.html",
@@ -115,7 +116,7 @@ def edit(inventory_id):
     #             filename=form.bill_file.data.filename,
     #             content_type=form.bill_file.data.content_type,
     #         )
-
+    inventory.item = models.Item.objects(id=form.item.data).first()
     inventory.user = current_user._get_current_object()
     inventory.registration = item_register
     inventory.remain = inventory.quantity
@@ -154,13 +155,15 @@ def bill_item(item_register_id):
 @module.route("/<inventory_id>/file")
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
-
-    if not inventory:
+    registration_item = models.RegistrationItem.objects(
+        id=inventory.registration.id
+    ).first()
+    if not registration_item.bill:
         return abort(404)
 
     response = send_file(
-        inventory.bill,
-        download_name=inventory.bill.filename,
-        mimetype=inventory.bill.content_type,
+        registration_item.bill,
+        download_name=registration_item.bill.filename,
+        mimetype=registration_item.bill.content_type,
     )
     return response
