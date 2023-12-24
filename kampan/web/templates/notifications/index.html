@@ -19,21 +19,21 @@
 <p>
   {% if notifications %}
 <div class="ui four cards">
-  {% for inventory in notifications %}
+  {% for item in notifications %}
   <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
     <div class="content" style="flex: 2; background-color: rgb(255, 192, 192);">
       <div class="header" style="font-size: 1.5rem;">
-        <snap style="padding-right: 5px;">{{ inventory.item.name }}</snap>
+        <snap style="padding-right: 5px;">{{ item.name }}</snap>
       </div>
       <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="details">
-          <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ inventory.remain }}/{{ inventory.quantity }} {{
-            inventory.item.unit }}</span><br>
-          <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ inventory.price }}</span><br>
-          <span>คลังอุปกรณ์: {{ inventory.warehouse.name }}</span>
+          <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_items_quantity() }}/{{ item.minimum }}
+            {{
+            item.unit }}</span><br>
+          <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ item.get_last_price() }}</span><br>
         </div>
         <span>
-          <a class="ui icon button" href="{{ url_for('notifications.set_status', inventory_id=inventory.id) }}"
+          <a class="ui icon button" href="{{ url_for('notifications.set_status', item_id=item.id) }}"
             style="color: white; background-color: red;">
             <i class="trash slash icon small" style="font-size: 10px;"></i>
           </a>
