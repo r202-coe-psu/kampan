@@ -28,133 +28,145 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
-    item_registers = len(models.RegistrationItem.objects(status="active"))
-    items_order = len(models.OrderItem.objects(status="active"))
-    form = forms.inventories.InventoryForm()
+    amount_item_registers = len(
+        models.RegistrationItem.objects(
+            status="active",
+            created_date__gte=datetime.date.today() - datetime.timedelta(days=1),
+        )
+    )
+    items_order = (
+        models.OrderItem.objects(
+            status="active",
+            created_date__gte=datetime.date.today() - datetime.timedelta(days=1),
+        ),
+    )
+
+    all_price = 0
+    # form = forms.inventories.InventoryForm()
     inventories = models.Inventory.objects(status="active")
     checkouts = models.CheckoutItem.objects(status="active")
 
-    checkout_quantity = 0
-    item_quantity = 0
-    item_remain = 0
-    total_values = 0
+    # checkout_quantity = 0
+    # item_quantity = 0
+    # item_remain = 0
+    # total_values = 0
 
-    now = datetime.datetime.now()
-    today_date = now.strftime("%d/%m/%Y")
-    date_now = now.strftime("%d %B, %Y")
-    month_now = int(now.strftime("%m"))
-    year_now = int(now.strftime("%Y"))
-    number_of_day = []
-    checkout_trend_day = []
-    years = []
-    years_day = []
+    # now = datetime.datetime.now()
+    # today_date = now.strftime("%d/%m/%Y")
+    # date_now = now.strftime("%d %B, %Y")
+    # month_now = int(now.strftime("%m"))
+    # year_now = int(now.strftime("%Y"))
+    # number_of_day = []
+    # checkout_trend_day = []
+    # years = []
+    # years_day = []
 
-    for checkout in checkouts:
-        date = checkout.checkout_date
-        day_co = date.day - 1
-        month_co = date.month - 1
-        year_co = date.year
+    # for checkout in checkouts:
+    #     date = checkout.checkout_date
+    #     day_co = date.day - 1
+    #     month_co = date.month - 1
+    #     year_co = date.year
 
-        if year_co not in years:
-            years.append(year_co)
+    #     if year_co not in years:
+    #         years.append(year_co)
 
-            numday = []
-            for month in range(1, 13):
-                month_size = monthrange(year_co, month)
-                day = [0] * month_size[1]
-                numday.append(day)
-                day_in_month = [0] * month_size[1]
-                for d in range(1, month_size[1] + 1):
-                    day_in_month[d - 1] = d
-                number_of_day.append(day_in_month)
+    #         numday = []
+    #         for month in range(1, 13):
+    #             month_size = monthrange(year_co, month)
+    #             day = [0] * month_size[1]
+    #             numday.append(day)
+    #             day_in_month = [0] * month_size[1]
+    #             for d in range(1, month_size[1] + 1):
+    #                 day_in_month[d - 1] = d
+    #             number_of_day.append(day_in_month)
 
-            years_day.append(number_of_day)
-            checkout_trend_day.append(numday)
+    #         years_day.append(number_of_day)
+    #         checkout_trend_day.append(numday)
 
-        index_year_co = years.index(year_co)
+    #     index_year_co = years.index(year_co)
 
-        if checkout.approval_status == "approved":
-            checkout_trend_day[index_year_co][month_co][day_co] += (
-                checkout.quantity * checkout.price
-            )
+    #     if checkout.approval_status == "approved":
+    #         checkout_trend_day[index_year_co][month_co][day_co] += (
+    #             checkout.quantity * checkout.price
+    #         )
 
-    for inventory in inventories:
-        item_quantity += inventory.quantity
-        item_remain += inventory.remain
+    # for inventory in inventories:
+    #     item_quantity += inventory.quantity
+    #     item_remain += inventory.remain
 
-    eng_month = [
-        "มกราคม",
-        "กุมภาพันธ์",
-        "มีนาคม",
-        "เมษายน",
-        "พฤษภาคม",
-        "มิถุนายน",
-        "กรกฏาคม",
-        "สิงหาคม",
-        "กันยายน",
-        "ตุลาคม",
-        "พฤศจิกายน",
-        "ธันวาคม",
-    ]
+    # eng_month = [
+    #     "มกราคม",
+    #     "กุมภาพันธ์",
+    #     "มีนาคม",
+    #     "เมษายน",
+    #     "พฤษภาคม",
+    #     "มิถุนายน",
+    #     "กรกฏาคม",
+    #     "สิงหาคม",
+    #     "กันยายน",
+    #     "ตุลาคม",
+    #     "พฤศจิกายน",
+    #     "ธันวาคม",
+    # ]
 
-    # if "admin" in user.roles:
-    #     return index_admin()
+    # # if "admin" in user.roles:
+    # #     return index_admin()
 
-    sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
+    # sorted_checkout_trend_day = [i for _, i in sorted(zip(years, checkout_trend_day))]
 
-    format_month = int(month_now) - 1
-    format_year = year_now
-    index_year = 0
+    # format_month = int(month_now) - 1
+    # format_year = year_now
+    # index_year = 0
 
-    if request.method == "POST":
-        format_year = form.calendar_month_year.data.year
-        format_month = form.calendar_month_year.data.month
+    # if request.method == "POST":
+    #     format_year = form.calendar_month_year.data.year
+    #     format_month = form.calendar_month_year.data.month
 
-        if format_year in years:
-            index_year = years.index(format_year)
+    #     if format_year in years:
+    #         index_year = years.index(format_year)
 
-        else:
-            index_year = "none"
+    #     else:
+    #         index_year = "none"
 
-    years.append(year_now)
-    select_year = years.index(year_now)
-    select_month = int(month_now) - 1
-    if format_year in years:
-        print(format_year)
-        select_year = index_year
-        select_month = format_month
+    # years.append(year_now)
+    # select_year = years.index(year_now)
+    # select_month = int(month_now) - 1
+    # if format_year in years:
+    #     print(format_year)
+    #     select_year = index_year
+    #     select_month = format_month
 
-        for checkout_header in checkouts:
-            if (
-                checkout_header.checkout_date.month == format_month + 1
-                and checkout_header.checkout_date.year == format_year
-            ):
-                if checkout_header.approval_status == "approved":
-                    total_values += checkout_header.price * checkout_header.quantity
-                    checkout_quantity += checkout_header.quantity
+    #     for checkout_header in checkouts:
+    #         if (
+    #             checkout_header.checkout_date.month == format_month + 1
+    #             and checkout_header.checkout_date.year == format_year
+    #         ):
+    #             if checkout_header.approval_status == "approved":
+    #                 total_values += checkout_header.price * checkout_header.quantity
+    #                 checkout_quantity += checkout_header.quantity
 
     return render_template(
         "/dashboard/daily_dashboard.html",
-        item_quantity=item_quantity,
-        total_values=total_values,
-        item_remain=item_remain,
-        checkout_quantity=checkout_quantity,
-        years_day=years_day,
-        number_of_day=number_of_day,
-        eng_month=eng_month,
-        date_now=date_now,
-        select_year=select_year,
-        select_month=select_month,
-        checkout_trend_day=sorted_checkout_trend_day,
-        years=sorted(years),
-        size_years=len(years),
-        today_date=today_date,
-        form=form,
-        format_month=format_month,
-        format_year=format_year,
-        idex_year=index_year,
-        item_order=items_order,
-        item_regis=item_registers,
+        # item_quantity=item_quantity,
+        # total_values=total_values,
+        # item_remain=item_remain,
+        # checkout_quantity=checkout_quantity,
+        # years_day=years_day,
+        # number_of_day=number_of_day,
+        # eng_month=eng_month,
+        # date_now=date_now,
+        # select_year=select_year,
+        # select_month=select_month,
+        # checkout_trend_day=sorted_checkout_trend_day,
+        # years=sorted(years),
+        # size_years=len(years),
+        # today_date=today_date,
+        # form=form,
+        # format_month=format_month,
+        # format_year=format_year,
+        # idex_year=index_year,
+        items_order=items_order,
+        amount_item_registers=amount_item_registers,
     )
 
 

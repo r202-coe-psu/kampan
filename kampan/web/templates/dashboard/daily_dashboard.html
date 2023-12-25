@@ -12,8 +12,8 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
-        <h5 class="card-title mt-3 ">อุปกรณ์ที่เบิก <span style="color: #003ea1;"><b>
-              <h3>{{ item_order }}</h3>
+        <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
+              <h3>{{ items_order | length }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
@@ -24,8 +24,8 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
-        <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b>
-              <h3>{{ item_regis }}</h3>
+        <h5 class="card-title mt-3">อุปกรณ์นำเข้าคงเหลือ <span style="color: #6d0000;"><b>
+              <h3>{{ amount_item_registers }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
@@ -60,11 +60,12 @@
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content" style="color: #292d33;">
-    <div class="ui medium header">{{ eng_month[month] }} {{ years[select_year] }} แผนภูมิรายวัน</div>
+    <div class="ui medium header"> คำสั่งเบิกอุปกรณ์รายวัน</div>
     <p>
-      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับในแต่ละวัน
+      ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายการในแต่ละวัน
     </p>
   </div>
+  {#
   <form method="post" onsubmit="return validateForm()">
     <div class="ui secondary menu" style="text-align:center;">
       <p>
@@ -72,9 +73,10 @@
       </p>
     </div>
   </form>
+  #}
 </div>
 
-
+{#
 {% if checkout_quantity == 0 %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% else %}
@@ -83,7 +85,7 @@
   <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
   {% endif %}
   {% endif %}
-
+  #}
   <style>
     .button-group {
       display: flex;
