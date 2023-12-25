@@ -57,7 +57,9 @@ def checkout():
 
     quantity = form.quantity.data
     # This code area have to rewrite for supporting multiple checkin_item, in case of remain less than request
-    inventories = models.Inventory.objects(item=form.item.data, remain__gt=0)
+    inventories = models.Inventory.objects(
+        item=form.item.data, remain__gt=0, status="active"
+    )
     for inventory in inventories:
         checkout = models.CheckoutItem()
         checkout.user = current_user._get_current_object()

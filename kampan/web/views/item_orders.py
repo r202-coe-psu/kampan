@@ -34,7 +34,7 @@ def check_in_time(created_date, calendar_select, calendar_end):
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    orders = models.OrderItem.objects()
+    orders = models.OrderItem.objects(status="active")
 
     form = forms.inventories.SearchStartEndDateForm()
     if form.start_date.data == None and form.end_date.data != None:
@@ -104,9 +104,11 @@ def edit(order_id):
 def delete(order_id):
     order = models.OrderItem.objects().get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order)
-    checkouts.status = "disactive"
+    for checkout in checkouts:
+        checkout.status = "disactive"
+        checkout.save()
     order.status = "disactive"
-    checkouts.save()
+
     order.save()
 
     return redirect(url_for("item_orders.index"))
