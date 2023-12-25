@@ -12,7 +12,7 @@ module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    lost_break_items = models.LostBreakItem.objects()
+    lost_break_items = models.LostBreakItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
     if form.start_date.data == None and form.end_date.data != None:
         lost_break_items = lost_break_items.filter(
@@ -86,6 +86,12 @@ def edit(lost_break_item_id):
             "/lost_breaks/add.html",
             form=form,
         )
+    if lost_break_item.quantity != 0:
+        return_inventory = models.Inventory.objects(
+            id=lost_break_item.lost_from.id
+        ).first()
+        return_inventory.remain += lost_break_item.quantity
+        return_inventory.save()
 
     quantity = form.quantity.data
     inventories = models.Inventory.objects(item=form.item.data, remain__gt=0)
@@ -118,6 +124,12 @@ def edit(lost_break_item_id):
 @login_required
 def delete(lost_break_item_id):
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
+    if lost_break_item.quantity != 0:
+        return_inventory = models.Inventory.objects(
+            id=lost_break_item.lost_from.id
+        ).first()
+        return_inventory.remain += lost_break_item.quantity
+        return_inventory.save()
     lost_break_item.status = "disactive"
     lost_break_item.save()
 
