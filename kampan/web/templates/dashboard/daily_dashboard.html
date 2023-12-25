@@ -13,7 +13,7 @@
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
         <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
-              <h3>{{ items_order | length }}</h3>
+              <h3>{{ daily_item_orders | length }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
@@ -61,21 +61,101 @@
   <i class="chart line icon"></i>
   <div class="content" style="color: #292d33;">
     <div class="ui medium header"> คำสั่งเบิกอุปกรณ์รายวัน</div>
-    <p>
+    <!-- <p>
       ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายการในแต่ละวัน
-    </p>
+    </p> -->
   </div>
-  {#
-  <form method="post" onsubmit="return validateForm()">
+
+  <form method="post">
     <div class="ui secondary menu" style="text-align:center;">
-      <p>
-        {{renderer.render_calendar(form.calendar_month_year, calendar_id="month_year_calendar")}}
-      </p>
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>
-  #}
-</div>
 
+</div>
+{% if daily_item_orders %}
+<div style="padding-bottom: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+
+        <th>วันที่สั่งเบิกอุปกรณ์</th>
+        <th>คำอธิบาย</th>
+        <th>ชื่อผู้ใช้งาน</th>
+        <th>เบิกอุปกรณ์</th>
+        <th>รายการอุปกรณ์</th>
+        <th>สถานะ</th>
+        <th>แก้ไข/ลบข้อมูล</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in daily_item_orders %}
+      <tr>
+        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Description">{{ order.description }}</td>
+        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+        <td>
+          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+            เบิกอุปกรณ์
+          </a>
+        </td>
+
+        <td data-label="Bill">
+          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="eye icon"></i>
+          </a>
+        </td>
+        {% if order.approval_status == "pending" %}
+        <td data-label="Status" class="red">
+          <span class="ui red text">รออนุมัติ</span>
+        </td>
+        {% else %}
+        <td data-label="Status" class="green">
+          <span class="ui green text">อนุมัติ</span>
+        </td>
+        {% endif %}
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+            onclick="showDeleteModal('{{ order.id }}')">
+            <i class="trash icon"></i>
+          </a>
+          <div class="ui modal {{order.id}}">
+            <div class="header">
+              ลบคำสั่งเบิกอุปกรณ์
+            </div>
+            <div class="content">
+              <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+                <b>{{ order.description }}</b>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ui black deny button">
+                ยกเลิก
+              </button>
+              <a class="ui negative right labeled icon button"
+                href="{{ url_for('item_orders.delete', order_id=order.id) }}">
+                ยืนยัน
+                <i class="checkmark icon"></i>
+              </a>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {#
 {% if checkout_quantity == 0 %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

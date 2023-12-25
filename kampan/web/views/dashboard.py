@@ -28,28 +28,43 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
+    form = forms.inventories.SearchStartEndDateForm()
+    form.end_date.validators = None
+
+    today = datetime.date.today()
+
+    if form.start_date.data != None:
+        today = form.start_date.data
+    print(today)
+    item_orders = models.OrderItem.objects(status="active")
+
     amount_item_registers = len(
         models.RegistrationItem.objects(
             status="active",
-            created_date__gte=datetime.date.today() - datetime.timedelta(days=1),
+            created_date__gte=today,
+            created_date__lte=today + datetime.timedelta(days=1),
         )
     )
-    items_order = (
-        models.OrderItem.objects(
-            status="active",
-            created_date__gte=datetime.date.today() - datetime.timedelta(days=1),
-        ),
+    daily_item_orders = item_orders.filter(
+        created_date__gte=today,
+        created_date__lte=today + datetime.timedelta(days=1),
+    )
+    approved_orders = item_orders.filter(
+        approved_date__gte=today,
+        approved_date__lte=today + datetime.timedelta(days=1),
+        approval_status="approved",
+    )
+    total_values = sum(
+        [approved_order.get_all_price() for approved_order in approved_orders]
     )
 
-    all_price = 0
     # form = forms.inventories.InventoryForm()
-    inventories = models.Inventory.objects(status="active")
-    checkouts = models.CheckoutItem.objects(status="active")
+    # inventories = models.Inventory.objects(status="active")
+    # checkouts = models.CheckoutItem.objects(status="active")
 
     # checkout_quantity = 0
     # item_quantity = 0
     # item_remain = 0
-    # total_values = 0
 
     # now = datetime.datetime.now()
     # today_date = now.strftime("%d/%m/%Y")
@@ -148,7 +163,6 @@ def daily_dashboard():
     return render_template(
         "/dashboard/daily_dashboard.html",
         # item_quantity=item_quantity,
-        # total_values=total_values,
         # item_remain=item_remain,
         # checkout_quantity=checkout_quantity,
         # years_day=years_day,
@@ -161,11 +175,12 @@ def daily_dashboard():
         # years=sorted(years),
         # size_years=len(years),
         # today_date=today_date,
-        # form=form,
+        form=form,
         # format_month=format_month,
         # format_year=format_year,
         # idex_year=index_year,
-        items_order=items_order,
+        total_values=total_values,
+        daily_item_orders=daily_item_orders,
         amount_item_registers=amount_item_registers,
     )
 
