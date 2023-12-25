@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from kampan.models import inventories
 from kampan.web import forms
 from kampan import models
+import datetime
 
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
@@ -47,6 +48,7 @@ def approve(order_id):
     checkout_items = models.CheckoutItem.objects(order=order)
 
     order.approval_status = "approved"
+    order.approved_date = datetime.datetime.now()
     order.save()
 
     for checkout in checkout_items:
