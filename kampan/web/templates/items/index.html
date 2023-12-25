@@ -38,9 +38,29 @@
         <a class="ui primary button" href="{{ url_for('items.edit', item_id=item.id) }}">
           แก้ไข
         </a>
-        <a class="ui red button" href="{{ url_for('items.delete', item_id=item.id) }}">
+
+        <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
           ลบข้อมูล
         </a>
+        <div class="ui modal {{item.id}}">
+          <div class="header">
+            ลบอุปกรณ์
+          </div>
+          <div class="content">
+            <p>ต้องการลบอุปกรณ์
+              <b>{{ item.name }}</b>
+            </p>
+          </div>
+          <div class="actions">
+            <button class="ui black deny button">
+              ยกเลิก
+            </button>
+            <a class="ui negative right labeled icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
+              ยืนยัน
+              <i class="checkmark icon"></i>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -49,4 +69,14 @@
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(item_id) {
+    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
 {% endblock %}

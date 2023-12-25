@@ -82,10 +82,30 @@
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
-            <a class="ui icon button" href="{{ url_for('item_orders.delete', order_id=order.id) }}"
-              style="color: white; background-color: rgb(192, 55, 55);">
+            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              onclick="showDeleteModal('{{ order.id }}')">
               <i class="trash icon"></i>
             </a>
+            <div class="ui modal {{order.id}}">
+              <div class="header">
+                ลบคำสั่งเบิกอุปกรณ์
+              </div>
+              <div class="content">
+                <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+                  <b>{{ order.description }}</b>
+                </p>
+              </div>
+              <div class="actions">
+                <button class="ui black deny button">
+                  ยกเลิก
+                </button>
+                <a class="ui negative right labeled icon button"
+                  href="{{ url_for('item_orders.delete', order_id=order.id) }}">
+                  ยืนยัน
+                  <i class="checkmark icon"></i>
+                </a>
+              </div>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -98,7 +118,15 @@
 </form>
 {% endblock %}
 
+{% block additional_js %}
+<script type="text/javascript">
 
+  function showDeleteModal(order_id) {
+    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}
 
 {#
 {% block additional_js %}

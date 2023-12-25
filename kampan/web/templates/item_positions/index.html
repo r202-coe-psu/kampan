@@ -41,10 +41,30 @@
             href="{{ url_for('item_positions.edit', item_position_id=item_position.id) }}">
             <i class="edit icon"></i> แก้ไข
           </a>
-          <a class="ui red icon button"
-            href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
+          <a class="ui red icon button" onclick="showDeleteModal('{{ item_position.id }}')">
             <i class="trash icon"></i> ลบ
           </a>
+          <div class="ui modal {{item_position.id}}">
+            <div class="header">
+              ลบตำแหน่งอุปกรณ์
+            </div>
+            <div class="content">
+              <p>ต้องการลบตำแหน่งอุปกรณ์
+                <b>{{ item_position.warehouse.name }}</b><br />
+                <b>{{ item_position.description }}</b>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ui black deny button">
+                ยกเลิก
+              </button>
+              <a class="ui negative right labeled icon button"
+                href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
+                ยืนยัน
+                <i class="checkmark icon"></i>
+              </a>
+            </div>
+          </div>
         </td>
       </tr>
       {% endfor %}
@@ -78,4 +98,14 @@
 {#
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> #}
 
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(item_position_id) {
+    item_position_id ? $('.ui.modal.' + item_position_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
 {% endblock %}

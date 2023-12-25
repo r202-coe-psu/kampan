@@ -8,8 +8,8 @@
     แจ้งเตือนอุปกรณ์คงเหลือ
   </a>
   <span>
-    <p>จำนวนข้อความแจ้งเตือน: <span style="color: rgb(69, 197, 236); padding-left: 5px;"><b>{{ notifications|length
-          }}</b></span></p>
+    <p>จำนวนข้อความแจ้งเตือน: <span style="color: rgb(69, 197, 236); padding-left: 5px;">
+        <b>{{ notifications|length}}</b></span></p>
   </span>
 </div>
 {% endblock %}
@@ -30,13 +30,33 @@
           <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_items_quantity() }}/{{ item.minimum }}
             {{
             item.unit }}</span><br>
-          <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ item.get_last_price() }}</span><br>
+          <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
         </div>
         <span>
-          <a class="ui icon button" href="{{ url_for('notifications.set_status', item_id=item.id) }}"
-            style="color: white; background-color: red;">
+          <a class="ui icon button" style="color: white; background-color: red;"
+            onclick="showDeleteModal('{{ item.id }}')">
             <i class="trash slash icon small" style="font-size: 10px;"></i>
           </a>
+          <div class="ui modal {{item.id}}">
+            <div class="header">
+              ยกเลิกการแจ้งเตือน
+            </div>
+            <div class="content">
+              <p>ต้องการยกเลิกการแจ้งเตือนของอุปกรณ์
+                <b>{{ item.name }}</b>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ui black deny button">
+                ยกเลิก
+              </button>
+              <a class="ui negative right labeled icon button"
+                href="{{ url_for('notifications.set_status', item_id=item.id) }}">
+                ยืนยัน
+                <i class="checkmark icon"></i>
+              </a>
+            </div>
+          </div>
         </span>
       </div>
     </div>
@@ -59,4 +79,14 @@
     background-color: #f7f7f7;
   }
 </style>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(item_id) {
+    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
 {% endblock %}
