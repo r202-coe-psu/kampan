@@ -35,7 +35,7 @@ def daily_dashboard():
 
     if form.start_date.data != None:
         today = form.start_date.data
-    print(today)
+    # print(today)
     item_orders = models.OrderItem.objects(status="active")
 
     amount_item_registers = len(
@@ -188,174 +188,277 @@ def daily_dashboard():
 @module.route("/monthly", methods=["GET", "POST"])
 @login_required
 def monthly_dashboard():
-    user = current_user._get_current_object()
-    item_registers = len(models.RegistrationItem.objects())
-    items_order = len(models.OrderItem.objects())
+    form = forms.inventories.SearchMonthYearForm()
 
-    form = forms.inventories.InventoryForm()
-    inventories = models.Inventory.objects()
-    checkouts = models.CheckoutItem.objects()
+    today = datetime.date.today()
 
-    checkout_quantity = 0
-    item_quantity = 0
-    item_remain = 0
-    total_values = 0
-    checkout_years = []
-    checkout_trend_month = []
+    if form.month_year.data != None:
+        today = form.month_year.data
+    days_month = lambda dt: monthrange(dt.year, dt.month)[1]
+    next_time = today + datetime.timedelta(days_month(today))
+    print(today, next_time)
+    item_orders = models.OrderItem.objects(status="active")
 
-    for checkout in checkouts:
-        date = checkout.checkout_date
-        month = int(date.strftime("%m")) - 1
-        year = int(date.strftime("%Y"))
+    amount_item_registers = len(
+        models.RegistrationItem.objects(
+            status="active",
+            created_date__gte=today,
+            created_date__lte=next_time,
+        )
+    )
+    monthly_item_orders = item_orders.filter(
+        created_date__gte=today,
+        created_date__lte=next_time,
+    )
+    approved_orders = item_orders.filter(
+        approved_date__gte=today,
+        approved_date__lte=next_time,
+        approval_status="approved",
+    )
+    total_values = sum(
+        [approved_order.get_all_price() for approved_order in approved_orders]
+    )
 
-        if year not in checkout_years:
-            checkout_years.append(year)
-            checkout_trend_month.append([0] * 12)
-            index = checkout_years.index(year)
-            if checkout.approval_status == "approved":
-                checkout_trend_month[index][month] += int(
-                    checkout.quantity * checkout.price
-                )
-        else:
-            index = checkout_years.index(year)
-            if checkout.approval_status == "approved":
-                checkout_trend_month[index][month] += int(
-                    checkout.quantity * checkout.price
-                )
+    days_month_categories = [i + 1 for i in range(days_month(today))]
 
-    now = datetime.datetime.now()
-    today_date = now.strftime("%d/%m/%Y")
-    date_now = now.strftime("%d %B, %Y")
-    year_now = int(now.strftime("%Y"))
-
-    for inventory in inventories:
-        item_quantity += inventory.quantity
-        item_remain += inventory.remain
-
-    select_year = None
-    if checkout_years:
-        index_year_now = checkout_years.index(year_now)
-        select_year = int(request.form.get("year", index_year_now))
-
-    # if "admin" in user.roles:
-    #     return index_admin()
-
-    sorted_checkout_trend_month = [
-        i for _, i in sorted(zip(checkout_years, checkout_trend_month))
+    pipeline_checkout_item = [
+        {
+            "$match": {
+                "status": "active",
+                "approval_status": "approved",
+                "approved_date": {
+                    "$gte": datetime.datetime.combine(
+                        today, datetime.datetime.min.time()
+                    )
+                },
+                "approved_date": {
+                    "$lt": datetime.datetime.combine(
+                        next_time, datetime.datetime.min.time()
+                    )
+                },
+            }
+        },
+        {
+            "$group": {
+                "_id": {"$dayOfMonth": "$approved_date"},
+                "total": {"$sum": {"$multiply": ["$price", "$quantity"]}},
+            }
+        },
     ]
+    checkout_items = models.CheckoutItem.objects().aggregate(pipeline_checkout_item)
+    trend_checkout_items = [0] * days_month(today)
+    for checkout_item in checkout_items:
+        trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
 
-    value_year = year_now
-    check_date_index = None
-    # เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
-    if request.method == "POST":
-        format_year = str(form.calendar_year.data)[:-15]
-        value_year = int(format_year)
+    print(trend_checkout_items)
+    # user = current_user._get_current_object()
+    # item_registers = len(models.RegistrationItem.objects())
+    # items_order = len(models.OrderItem.objects())
 
-    for checkout_header in checkouts:
-        if checkout_header.checkout_date.year == value_year:
-            if checkout_header.approval_status == "approved":
-                checkout_quantity += checkout_header.quantity
+    # inventories = models.Inventory.objects()
+    # checkouts = models.CheckoutItem.objects()
 
-        if value_year in checkout_years:
-            check_date_index = int(checkout_years.index(value_year))
-        else:
-            check_date_index = 0
+    # checkout_quantity = 0
+    # item_quantity = 0
+    # item_remain = 0
+    # total_values = 0
+    # checkout_years = []
+    # checkout_trend_month = []
 
-    if checkout_trend_month != []:
-        total_values = float(sum(checkout_trend_month[check_date_index]))
+    # for checkout in checkouts:
+    #     date = checkout.checkout_date
+    #     month = int(date.strftime("%m")) - 1
+    #     year = int(date.strftime("%Y"))
+
+    #     if year not in checkout_years:
+    #         checkout_years.append(year)
+    #         checkout_trend_month.append([0] * 12)
+    #         index = checkout_years.index(year)
+    #         if checkout.approval_status == "approved":
+    #             checkout_trend_month[index][month] += int(
+    #                 checkout.quantity * checkout.price
+    #             )
+    #     else:
+    #         index = checkout_years.index(year)
+    #         if checkout.approval_status == "approved":
+    #             checkout_trend_month[index][month] += int(
+    #                 checkout.quantity * checkout.price
+    #             )
+
+    # now = datetime.datetime.now()
+    # today_date = now.strftime("%d/%m/%Y")
+    # date_now = now.strftime("%d %B, %Y")
+    # year_now = int(now.strftime("%Y"))
+
+    # for inventory in inventories:
+    #     item_quantity += inventory.quantity
+    #     item_remain += inventory.remain
+
+    # select_year = None
+    # if checkout_years:
+    #     index_year_now = checkout_years.index(year_now)
+    #     select_year = int(request.form.get("year", index_year_now))
+
+    # # if "admin" in user.roles:
+    # #     return index_admin()
+
+    # sorted_checkout_trend_month = [
+    #     i for _, i in sorted(zip(checkout_years, checkout_trend_month))
+    # ]
+
+    # value_year = year_now
+    # check_date_index = None
+    # # เพิ่มการเช็คกราฟรายเดือนโดยการใช้ปฏิทิน
+    # if request.method == "POST":
+    #     format_year = str(form.calendar_year.data)[:-15]
+    #     value_year = int(format_year)
+
+    # for checkout_header in checkouts:
+    #     if checkout_header.checkout_date.year == value_year:
+    #         if checkout_header.approval_status == "approved":
+    #             checkout_quantity += checkout_header.quantity
+
+    #     if value_year in checkout_years:
+    #         check_date_index = int(checkout_years.index(value_year))
+    #     else:
+    #         check_date_index = 0
+
+    # if checkout_trend_month != []:
+    #     total_values = float(sum(checkout_trend_month[check_date_index]))
 
     return render_template(
         "/dashboard/monthly_dashboard.html",
-        item_quantity=item_quantity,
-        total_values=total_values,
-        item_remain=item_remain,
-        checkout_quantity=checkout_quantity,
-        checkout_trend_month=sorted_checkout_trend_month,
-        date_now=date_now,
-        checkout_years=sorted(checkout_years),
-        size_checkout_years=len(checkout_years),
-        select_year=select_year,
-        today_date=today_date,
+        # item_quantity=item_quantity,
+        # total_values=total_values,
+        # item_remain=item_remain,
+        # checkout_quantity=checkout_quantity,
+        # checkout_trend_month=sorted_checkout_trend_month,
+        # date_now=date_now,
+        # checkout_years=sorted(checkout_years),
+        # size_checkout_years=len(checkout_years),
+        # select_year=select_year,
+        # today_date=today_date,
+        trend_checkout_items=trend_checkout_items,
+        days_month_categories=days_month_categories,
         form=form,
-        check_date_index=check_date_index,
-        item_order=items_order,
-        item_regis=item_registers,
+        monthly_item_orders=monthly_item_orders,
+        amount_item_registers=amount_item_registers,
+        total_values=total_values
+        # check_date_index=check_date_index,
+        # item_order=items_order,
+        # item_regis=item_registers,
     )
 
 
 @module.route("/yearly", methods=["GET", "POST"])
 @login_required
 def yearly_dashboard():
-    user = current_user._get_current_object()
-    item_registers = len(models.RegistrationItem.objects())
-    items_order = len(models.OrderItem.objects())
+    form = forms.inventories.SearchMonthYearForm()
 
-    form = forms.inventories.InventoryForm()
-    inventories = models.Inventory.objects()
-    checkouts = models.CheckoutItem.objects()
+    today = datetime.date.today()
 
-    now = datetime.datetime.now()
-    today_date = now.strftime("%d/%m/%Y")
-    date_now = now.strftime("%d %B, %Y")
-    year_now = int(now.strftime("%Y"))
+    if form.month_year.data != None:
+        today = form.month_year.data
+    days_month = lambda dt: monthrange(dt.year, dt.month)[1]
+    next_time = today + datetime.timedelta(days_month(today))
+    print(today, next_time)
+    item_orders = models.OrderItem.objects(status="active")
 
-    checkout_quantity = 0
-    item_quantity = 0
-    item_remain = 0
-    total_values = 0
-
-    checkout_years = []
-    checkout_trend_year = []
-
-    for checkout in checkouts:
-        date = checkout.checkout_date
-        year = int(date.strftime("%Y"))
-        if checkout.approval_status == "approved":
-            total_values += checkout.price * checkout.quantity
-
-        if year not in checkout_years:
-            checkout_years.append(year)
-            checkout_trend_year.append(0)
-            index = checkout_years.index(year)
-            if checkout.approval_status == "approved":
-                checkout_trend_year[index] += int(checkout.quantity * checkout.price)
-
-        else:
-            index = checkout_years.index(year)
-            if checkout.approval_status == "approved":
-                checkout_trend_year[index] += int(checkout.quantity * checkout.price)
-
-        if checkout.approval_status == "approved":
-            checkout_quantity += checkout.quantity
-
-    for inventory in inventories:
-        item_quantity += inventory.quantity
-        item_remain += inventory.remain
-
-    # if "admin" in user.roles:
-    #     return index_admin()
-
-    sorted_checkout_trend_year = [
-        i
-        for _, i in sorted(
-            zip(
-                checkout_years,
-                checkout_trend_year,
-            )
+    amount_item_registers = len(
+        models.RegistrationItem.objects(
+            status="active",
+            created_date__gte=today,
+            created_date__lte=next_time,
         )
-    ]
+    )
+    yearly_item_orders = item_orders.filter(
+        created_date__gte=today,
+        created_date__lte=next_time,
+    )
+    approved_orders = item_orders.filter(
+        approved_date__gte=today,
+        approved_date__lte=next_time,
+        approval_status="approved",
+    )
+    total_values = sum(
+        [approved_order.get_all_price() for approved_order in approved_orders]
+    )
+
+    month_categories = [i + 1 for i in range(days_month(today))]
+
+    # user = current_user._get_current_object()
+    # item_registers = len(models.RegistrationItem.objects())
+    # items_order = len(models.OrderItem.objects())
+
+    # form = forms.inventories.InventoryForm()
+    # inventories = models.Inventory.objects()
+    # checkouts = models.CheckoutItem.objects()
+
+    # now = datetime.datetime.now()
+    # today_date = now.strftime("%d/%m/%Y")
+    # date_now = now.strftime("%d %B, %Y")
+    # year_now = int(now.strftime("%Y"))
+
+    # checkout_quantity = 0
+    # item_quantity = 0
+    # item_remain = 0
+    # total_values = 0
+
+    # checkout_years = []
+    # checkout_trend_year = []
+
+    # for checkout in checkouts:
+    #     date = checkout.checkout_date
+    #     year = int(date.strftime("%Y"))
+    #     if checkout.approval_status == "approved":
+    #         total_values += checkout.price * checkout.quantity
+
+    #     if year not in checkout_years:
+    #         checkout_years.append(year)
+    #         checkout_trend_year.append(0)
+    #         index = checkout_years.index(year)
+    #         if checkout.approval_status == "approved":
+    #             checkout_trend_year[index] += int(checkout.quantity * checkout.price)
+
+    #     else:
+    #         index = checkout_years.index(year)
+    #         if checkout.approval_status == "approved":
+    #             checkout_trend_year[index] += int(checkout.quantity * checkout.price)
+
+    #     if checkout.approval_status == "approved":
+    #         checkout_quantity += checkout.quantity
+
+    # for inventory in inventories:
+    #     item_quantity += inventory.quantity
+    #     item_remain += inventory.remain
+
+    # # if "admin" in user.roles:
+    # #     return index_admin()
+
+    # sorted_checkout_trend_year = [
+    #     i
+    #     for _, i in sorted(
+    #         zip(
+    #             checkout_years,
+    #             checkout_trend_year,
+    #         )
+    #     )
+    # ]
 
     return render_template(
         "/dashboard/yearly_dashboard.html",
-        item_quantity=item_quantity,
+        # item_quantity=item_quantity,
+        # item_remain=item_remain,
+        # checkout_quantity=checkout_quantity,
+        # checkout_trend_year=sorted_checkout_trend_year,
+        # checkout_years=sorted(checkout_years),
+        # date_now=date_now,
+        # today_date=today_date,
+        # form=form,
+        # item_order=items_order,
+        # item_regis=item_registers,
+        month_categories=month_categories,
+        amount_item_registers=amount_item_registers,
+        yearly_item_orders=yearly_item_orders,
         total_values=total_values,
-        item_remain=item_remain,
-        checkout_quantity=checkout_quantity,
-        checkout_trend_year=sorted_checkout_trend_year,
-        checkout_years=sorted(checkout_years),
-        date_now=date_now,
-        today_date=today_date,
-        form=form,
-        item_order=items_order,
-        item_regis=item_registers,
     )
