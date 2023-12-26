@@ -279,6 +279,4 @@ def init_oauth(app):
 
     oauth2_client.register("engpsu")
     oauth2_client.register("psu")
-    # oauth2_client.register(
-    #     "google",
-    # )
+    oauth2_client.register("google")
