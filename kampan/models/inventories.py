@@ -6,9 +6,9 @@ import datetime
 
 
 class RegistrationItem(me.Document):
-    # อุปกรณ์ที่ลงทะเบียน
-    bill = me.FileField()
     meta = {"collection": "registration_items"}
+
+    bill = me.FileField()
     status = me.StringField(default="active")
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
@@ -71,7 +71,10 @@ class OrderItem(me.Document):
         return sum(
             [
                 item_checkout.price * item_checkout.quantity
-                for item_checkout in CheckoutItem.objects(status="active", order=self)
+                for item_checkout in CheckoutItem.objects(
+                    status="active",
+                    order=self,
+                )
             ]
         )
 
@@ -92,7 +95,7 @@ class CheckoutItem(me.Document):
     quantity = me.IntField(required=True, min_value=1, default=1)
     price = me.DecimalField(default=0.0)
     message = me.StringField()
-    approved_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    approved_date = me.DateTimeField()
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
 
