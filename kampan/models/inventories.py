@@ -92,7 +92,7 @@ class CheckoutItem(me.Document):
     quantity = me.IntField(required=True, min_value=1, default=1)
     price = me.DecimalField(default=0.0)
     message = me.StringField()
-
+    approved_date = me.DateTimeField(required=True, default=datetime.datetime.now())
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
 
