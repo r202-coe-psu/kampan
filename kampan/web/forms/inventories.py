@@ -43,3 +43,11 @@ class InventoryForm(BaseInventoryForm):
 class SearchStartEndDateForm(FlaskForm):
     start_date = fields.DateField("วันที่เริ่มต้น", format="%Y-%m-%d")
     end_date = fields.DateField("วันที่สุดท้าย", format="%Y-%m-%d")
+
+
+class SearchMonthYearForm(FlaskForm):
+    month_year = fields.MonthField("เดือนที่เลือก", format="%Y-%m")
+
+
+class SearchYearForm(FlaskForm):
+    month_year = fields.MonthField("เดือนที่เลือก", format="%Y")
