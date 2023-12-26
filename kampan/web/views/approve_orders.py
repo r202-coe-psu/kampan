@@ -46,7 +46,6 @@ def index():
 def approve(order_id):
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order)
-
     order.approval_status = "approved"
     order.approved_date = datetime.datetime.now()
     order.save()
@@ -54,6 +53,7 @@ def approve(order_id):
     for checkout in checkout_items:
         if checkout.order.approval_status == "approved":
             checkout.approval_status = "approved"
+            checkout.approved_date = datetime.datetime.now()
             checkout.save()
 
     return redirect(url_for("approve_orders.index"))
