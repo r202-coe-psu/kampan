@@ -28,6 +28,18 @@ def get_approved_amount_form(items):
     class ApprovedAmountForm(FlaskForm):
         pass
 
-    for item in items:
-        setattr(ApprovedAmountForm, item, fields.IntegerField(label=item))
+    for name, quantity, max_range in items:
+        setattr(
+            ApprovedAmountForm,
+            name,
+            fields.IntegerField(
+                label=name,
+                default=quantity if quantity <= max_range else max_range,
+                validators=[
+                    validators.NumberRange(
+                        min=0, max=max_range, message="ตัวเลขไม่ตรงตามเงื่อนไข"
+                    ),
+                ],
+            ),
+        )
     return ApprovedAmountForm()
