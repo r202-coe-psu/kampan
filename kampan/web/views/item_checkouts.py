@@ -73,7 +73,7 @@ def checkout():
 
     if items:
         form.item.choices = [
-            (item, f"{item.barcode_id} ({item.name})") for item in items
+            (item.id, f"{item.barcode_id} ({item.name})") for item in items
         ]
     if not form.validate_on_submit():
         print(form.errors)
@@ -82,10 +82,11 @@ def checkout():
             "/item_checkouts/checkout.html",
             form=form,
         )
+    item = models.Item.objects(id=form.item.data).first()
     checkout_item = models.CheckoutItem()
     checkout_item.user = current_user._get_current_object()
     checkout_item.order = order
-    checkout_item.item = form.item.data
+    checkout_item.item = item
     checkout_item.checkout_date = form.checkout_date.data
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
