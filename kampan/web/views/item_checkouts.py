@@ -51,7 +51,7 @@ def index():
         )
 
     checkouts = list(checkout_items) + list(approved_checkout_items)
-    checkouts = sorted(checkouts, key=lambda k: k["checkout_date"])
+    checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
@@ -73,7 +73,16 @@ def checkout():
 
     if items:
         form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+            (
+                item.id,
+                f"{item.barcode_id} ({item.name})"
+                + (
+                    f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
+                    if item.get_booking_item() != 0
+                    else ""
+                ),
+            )
+            for item in items
         ]
     if not form.validate_on_submit():
         print(form.errors)
@@ -90,37 +99,7 @@ def checkout():
     checkout_item.checkout_date = form.checkout_date.data
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
-    # quantity = form.quantity.data
-    # # This code area have to rewrite for supporting multiple checkin_item, in case of remain less than request
-    # inventories = models.Inventory.objects(
-    #     item=form.item.data, remain__gt=0, status="active"
-    # )
-    # for inventory in inventories:
-    #     checkout = models.CheckoutItem()
-    #     checkout.user = current_user._get_current_object()
-    #     checkout.order = order
-    #     checkout.item = form.item.data
-    #     checkout.checkout_date = form.checkout_date.data
-    #     checkout.checkout_from = inventory
-    #     checkout.warehouse = inventory.warehouse
-    #     checkout.price = inventory.price
-    #     checkout.checkout_date = form.checkout_date.data
-    #     if inventory.remain >= quantity:
-    #         inventory.remain -= quantity
-    #         checkout.quantity = quantity
-    #         quantity = 0
-    #     else:
-    #         quantity -= inventory.remain
-    #         checkout.quantity = inventory.remain
-    #         inventory.remain = 0
 
-    #     order.save()
-    #     inventory.save()
-    #     checkout.save()
-
-    #     if quantity <= 0:
-    #         break
-    print(form.errors)
     return redirect(url_for("item_orders.index"))
 
 
