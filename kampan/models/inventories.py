@@ -79,24 +79,34 @@ class OrderItem(me.Document):
         )
 
 
-class CheckoutItem(me.Document):
-    # รายการนำเข้าอุปกรณ์ออก
-    meta = {"collection": "checkout_items"}
-
-    user = me.ReferenceField("User", dbref=True)
+class BaseCheckoutItem:
     status = me.StringField(default="active")
 
     order = me.ReferenceField("OrderItem", dbref=True)
-    checkout_from = me.ReferenceField("Inventory", dbref=True)
-    warehouse = me.ReferenceField("Warehouse", dbref=True)
-    item = me.ReferenceField("Item", dbref=True)
-    approval_status = me.StringField(default="pending")
 
-    quantity = me.IntField(required=True, min_value=1, default=1)
-    price = me.DecimalField(default=0.0)
     message = me.StringField()
-    approved_date = me.DateTimeField()
+    item = me.ReferenceField("Item", dbref=True)
+    user = me.ReferenceField("User", dbref=True)
+    quantity = me.IntField(required=True, min_value=1, default=1)
+
+
+class CheckoutItem(me.Document, BaseCheckoutItem):
+    # รายการนำเข้าอุปกรณ์ออก
+    meta = {"collection": "checkout_items"}
+
+    # approval_status = me.StringField(default="pending")
+
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+
+
+class ApprovedCheckoutItem(me.Document, BaseCheckoutItem):
+    meta = {"collection": "approved_checkout_items"}
+
+    warehouse = me.ReferenceField("Warehouse", dbref=True)
+    checkout_from = me.ReferenceField("Inventory", dbref=True)
+    approved_date = me.DateTimeField()
+    price = me.DecimalField(default=0.0)
+    aprroved_amount = me.IntField(default=0)
 
 
 class LostBreakItem(me.Document):
