@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from kampan.models import inventories
 from kampan.web import forms
 from kampan import models
+from flask_mongoengine import Pagination
 import datetime
 
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
@@ -34,9 +35,11 @@ def index():
                 created_date__gte=form.start_date.data,
                 created_date__lte=form.end_date.data,
             )
+        page = request.args.get("page", default=1, type=int)
+        paginated_orders = Pagination(orders, page=page, per_page=10)
         return render_template(
             "/approve_orders/index.html",
-            orders=orders,
+            paginated_orders=paginated_orders,
             form=form,
         )
     return redirect(url_for("dashboard.daily_dashboard"))
@@ -115,14 +118,16 @@ def approve(order_id):
     return redirect(url_for("approve_orders.index"))
 
 
-@module.route("/order-item/<order_id>/items", methods=["GET", "POST"])
+@module.route("/item_checkouts", methods=["GET", "POST"])
 @login_required
-def item_checkouts(order_id):
+def item_checkouts():
+    order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
-
+    page = request.args.get("page", default=1, type=int)
+    paginated_checkouts = Pagination(checkouts, page=page, per_page=10)
     return render_template(
-        "/approve_orders/approved_item_checkouts.html",
-        checkouts=checkouts,
+        "/approve_orders/item_checkouts.html",
+        paginated_checkouts=paginated_checkouts,
         order_id=order_id,
     )

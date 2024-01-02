@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
 {% block dashboard_title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
@@ -29,7 +30,7 @@
     </p>
   </div>
   <div>
-    {% if orders %}
+    {% if paginated_orders %}
     <table class="ui celled table">
       <thead>
         <tr>
@@ -41,7 +42,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for order in orders %}
+        {% for order in paginated_orders.items %}
         <tr>
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
@@ -62,6 +63,15 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if paginated_orders.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_orders,"approve_orders.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
     {% else %}
     <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}

@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}รายการนำเข้าอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการนำเข้าอุปกรณ์{% endblock %}
@@ -23,7 +24,7 @@
     </p>
   </div>
   <div>
-    {% if inventories %}
+    {% if paginated_inventories %}
     <table class="ui striped padded celled table">
       <thead>
         <tr>
@@ -41,7 +42,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for inventory in inventories %}
+        {% for inventory in paginated_inventories.items %}
         <tr>
           <td data-label="Image" class="center aligned">
             <div>
@@ -72,6 +73,15 @@
           {% endfor %}
       </tbody>
     </table>
+    {% if paginated_inventories.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_inventories,"inventories.index", params)}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
     {% else %}
     <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}

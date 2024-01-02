@@ -13,6 +13,7 @@ from flask import (
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
+from flask_mongoengine import Pagination
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
@@ -38,10 +39,11 @@ def index():
             registeration_date__gte=form.start_date.data,
             registeration_date__lte=form.end_date.data,
         )
-    # print(form.errors)
+    page = request.args.get("page", default=1, type=int)
+    paginated_inventories = Pagination(inventories, page=page, per_page=10)
     return render_template(
         "/inventories/index.html",
-        inventories=inventories,
+        paginated_inventories=paginated_inventories,
         form=form,
     )
 
@@ -148,15 +150,17 @@ def delete(inventory_id):
     )
 
 
-@module.route("item_register/<item_register_id>/all-item", methods=["GET", "POST"])
+@module.route("/all-item", methods=["GET", "POST"])
 @login_required
-def bill_item(item_register_id):
+def bill_item():
+    item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
-
+    page = request.args.get("page", default=1, type=int)
+    paginated_inventories = Pagination(inventories, page=page, per_page=10)
     return render_template(
         "/inventories/bill-item.html",
-        inventories=inventories,
+        paginated_inventories=paginated_inventories,
         item_register=item_register,
     )
 
