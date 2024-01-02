@@ -115,11 +115,12 @@ def bill_checkout():
     order = models.OrderItem.objects.get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
 
-    # print(checkout)
+    page = request.args.get("page", default=1, type=int)
+    paginated_checkouts = Pagination(checkouts, page=page, per_page=10)
 
     return render_template(
         "/item_checkouts/bill-checkout.html",
-        checkouts=checkouts,
+        paginated_checkouts=paginated_checkouts,
         order_id=order_id,
     )
 
