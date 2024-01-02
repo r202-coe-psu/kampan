@@ -42,19 +42,37 @@ def index():
     return redirect(url_for("dashboard.daily_dashboard"))
 
 
+@module.route("/<order_id>/approved_detail", methods=["GET", "POST"])
+def approved_detail(order_id):
+    order = models.OrderItem.objects(id=order_id).first()
+    checkouts = models.CheckoutItem.objects(order=order, status="active")
+    items = order.get_item_detail()
+
+    form = forms.item_orders.get_approved_amount_form(items)
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/approve_orders/approve_detail.html",
+            form=form,
+            checkouts=checkouts,
+        )
+
+    return redirect(url_for("approve_orders.approve", order_id=order_id))
+
+
 @module.route("<order_id>", methods=["GET"])
 def approve(order_id):
-    order = models.OrderItem.objects.get(id=order_id)
-    checkout_items = models.CheckoutItem.objects(order=order)
-    order.approval_status = "approved"
-    order.approved_date = datetime.datetime.now()
-    order.save()
+    # order = models.OrderItem.objects.get(id=order_id)
+    # checkout_items = models.CheckoutItem.objects(order=order)
+    # order.approval_status = "approved"
+    # order.approved_date = datetime.datetime.now()
+    # order.save()
 
-    for checkout in checkout_items:
-        if checkout.order.approval_status == "approved":
-            checkout.approval_status = "approved"
-            checkout.approved_date = datetime.datetime.now()
-            checkout.save()
+    # for checkout in checkout_items:
+    #     if checkout.order.approval_status == "approved":
+    #         checkout.approval_status = "approved"
+    #         checkout.approved_date = datetime.datetime.now()
+    #         checkout.save()
 
     return redirect(url_for("approve_orders.index"))
 
