@@ -22,3 +22,12 @@ BaseOrderItemForm = model_form(
 
 class OrderItemForm(BaseOrderItemForm):
     pass
+
+
+def get_approved_amount_form(items):
+    class ApprovedAmountForm(FlaskForm):
+        pass
+
+    for item in items:
+        setattr(ApprovedAmountForm, item, fields.IntegerField(label=item))
+    return ApprovedAmountForm()
