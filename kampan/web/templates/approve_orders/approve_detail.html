@@ -60,7 +60,7 @@
           </td>
           {% endif %}
           <td> {% for approved_quantity in form %}
-            {{ approved_quantity if approved_quantity.id == checkout.item.name }}
+            {{ approved_quantity if approved_quantity.id == checkout.item.id }}
             {% endfor %}
           </td>
 
