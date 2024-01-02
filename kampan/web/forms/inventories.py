@@ -1,7 +1,7 @@
 from dataclasses import field
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed
-from wtforms import fields, validators
+from wtforms import fields, validators, widgets
 from .fields import TagListField, TextListField
 
 from flask_mongoengine.wtf import model_form
@@ -41,13 +41,17 @@ class InventoryForm(BaseInventoryForm):
 
 
 class SearchStartEndDateForm(FlaskForm):
-    start_date = fields.DateField("วันที่เริ่มต้น", format="%Y-%m-%d")
-    end_date = fields.DateField("วันที่สุดท้าย", format="%Y-%m-%d")
+    start_date = fields.DateField(
+        "วันที่เริ่มต้น", format="%d/%m/%Y", widget=widgets.TextInput()
+    )
+    end_date = fields.DateField(
+        "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
+    )
 
 
 class SearchMonthYearForm(FlaskForm):
     month_year = fields.MonthField("เดือนที่เลือก", format="%Y-%m")
 
 
-class SearchYearForm(FlaskForm):
-    month_year = fields.MonthField("เดือนที่เลือก", format="%Y")
+# class SearchYearForm(FlaskForm):
+#     month_year = fields.MonthField("เดือนที่เลือก", format="%Y")

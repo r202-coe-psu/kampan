@@ -126,22 +126,9 @@
       ;
   }
 </script>
-{% endblock %}
-
-{#
-{% block additional_js %}
-<!-- <script type="text/javascript">
+<script type="text/javascript">
   datetime_formatter = {
-    datetime: function (datetime, settings) {
-      if (!datetime) return '';
-      var day = datetime.getDate();
-      var month = datetime.getMonth() + 1;
-      var year = datetime.getFullYear();
-      var minutes = datetime.getMinutes();
-      var hour = datetime.getHours();
-
-      return year + '-' + ("0" + month).slice(-2) + '-' + ("0" + day).slice(-2);
-    }
+    date: "DD/MM/YYYY"
   };
   var calendar_setting = {
     type: 'date',
@@ -159,7 +146,7 @@
       pm: 'PM'
     },
   };
-  $('#checkout_date_calendar').calendar(calendar_setting);
+  $('#start_date').calendar(calendar_setting);
   $('#end_date').calendar(calendar_setting);
 
   $(document)
@@ -170,7 +157,5 @@
           fullTextSearch: 'exact'
         });
     });
-</script> -->
-
+</script>
 {% endblock %}
-#}
