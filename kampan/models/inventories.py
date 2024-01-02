@@ -93,15 +93,13 @@ class BaseCheckoutItem:
     item = me.ReferenceField("Item", dbref=True)
     user = me.ReferenceField("User", dbref=True)
     quantity = me.IntField(required=True, min_value=1, default=1)
+    checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
 
 
 class CheckoutItem(me.Document, BaseCheckoutItem):
     # รายการนำเข้าอุปกรณ์ออก
     meta = {"collection": "checkout_items"}
-
-    # approval_status = me.StringField(default="pending")
-
-    checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    approval_status = me.StringField(default="pending")
 
 
 class ApprovedCheckoutItem(me.Document, BaseCheckoutItem):

@@ -18,24 +18,40 @@ module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 @module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    checkouts = models.CheckoutItem.objects(status="active")
+    checkout_items = models.CheckoutItem.objects(
+        status="active", approval_status="pending"
+    )
+    approved_checkout_items = models.inventories.ApprovedCheckoutItem.objects(
+        status="active"
+    )
     form = forms.inventories.SearchStartEndDateForm()
+    print(checkout_items)
     if form.start_date.data == None and form.end_date.data != None:
-        orders = orders.filter(
+        checkout_items = checkout_items.filter(
             checkout_date__lte=form.end_date.data,
         )
-
+        approved_checkout_items = approved_checkout_items.filter(
+            checkout_date__lte=form.end_date.data,
+        )
     elif form.start_date.data and form.end_date.data == None:
-        orders = orders.filter(
+        checkout_items = checkout_items.filter(
             checkout_date__gte=form.start_date.data,
         )
-
+        approved_checkout_items = approved_checkout_items.filter(
+            checkout_date__gte=form.start_date.data,
+        )
     elif form.start_date.data != None and form.end_date.data != None:
-        orders = orders.filter(
+        checkout_items = checkout_items.filter(
+            checkout_date__gte=form.start_date.data,
+            checkout_date__lte=form.end_date.data,
+        )
+        approved_checkout_items = approved_checkout_items.filter(
             checkout_date__gte=form.start_date.data,
             checkout_date__lte=form.end_date.data,
         )
 
+    checkouts = list(checkout_items) + list(approved_checkout_items)
+    checkouts = sorted(checkouts, key=lambda k: k["checkout_date"])
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
