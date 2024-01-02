@@ -2,7 +2,7 @@ from flask import url_for
 from email.policy import default
 import mongoengine as me
 import datetime
-from ..models.inventories import Inventory
+from ..models.inventories import Inventory, CheckoutItem
 
 
 class ItemSize(me.EmbeddedDocument):
@@ -40,6 +40,14 @@ class Item(me.Document):
         inventories = Inventory.objects(item=self, status="active")
         if inventories:
             return (inventories.order_by("registeration_date")).first().price
+
+    def get_booking_item(self):
+        checkout_items = CheckoutItem.objects(
+            item=self, status="active", approval_status="pending"
+        )
+        if checkout_items:
+            return sum([checkout_item.quantity for checkout_item in checkout_items])
+        return 0
 
 
 class ItemPosition(me.Document):
