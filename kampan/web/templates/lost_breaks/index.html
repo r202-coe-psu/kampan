@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import 'base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
 
 {% block title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
 {% block dashboard_title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
@@ -31,7 +32,7 @@
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
-  {% if lost_break_items %}
+  {% if paginated_lost_break_items %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
       <thead>
@@ -47,7 +48,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in lost_break_items %}
+        {% for item in paginated_lost_break_items.items %}
 
         {% if calendar_select %}
         {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
@@ -133,6 +134,15 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if paginated_lost_break_items.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
   {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

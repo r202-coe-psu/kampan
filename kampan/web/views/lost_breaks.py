@@ -2,6 +2,7 @@ from calendar import calendar
 from crypt import methods
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
+from flask_mongoengine import Pagination
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
@@ -29,9 +30,12 @@ def index():
             created_date__gte=form.start_date.data,
             created_date__lte=form.end_date.data,
         )
+    page = request.args.get("page", default=1, type=int)
+    paginated_lost_break_items = Pagination(lost_break_items, page=page, per_page=10)
+
     return render_template(
         "/lost_breaks/index.html",
-        lost_break_items=lost_break_items,
+        paginated_lost_break_items=paginated_lost_break_items,
         form=form,
     )
 
