@@ -1,0 +1,36 @@
+{% macro render_pagination(pagination, endpoint, kwargs={}, left_edge=2, left_current=1, right_current=1,
+right_edge=2) %}
+{% if pagination.pages > 1 %}
+<div class="ui pagination menu">
+  {% if pagination.page >= 2 %}
+  <a class="item" href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+      class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  </a>
+  {% endif %}
+  {% for page in pagination.iter_pages(left_edge=left_edge, left_current=left_current, right_current=right_current,
+  right_edge=right_edge) %}
+  {% if page %}
+  {% if page != pagination.page %}
+  <a class="item" href="{{ url_for(endpoint, page=page, **kwargs) }}">{{ page }}</a>
+  {% else %}
+  <strong class="active item">
+    {{ page }}
+  </strong>
+  {% endif %}
+  {% else %}
+  <div class="disabled item">…</div>
+  {% endif %}
+  {% endfor %}
+  {% if pagination.page < pagination.pages %} <a class="item"
+    href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}"> <svg xmlns="http://www.w3.org/2000/svg"
+      fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    </svg>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endmacro %}

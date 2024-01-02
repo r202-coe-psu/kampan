@@ -5,6 +5,7 @@ from pyexpat import model
 from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
+from flask_mongoengine import Pagination
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
@@ -24,6 +25,7 @@ def index():
     approved_checkout_items = models.inventories.ApprovedCheckoutItem.objects(
         status="active"
     )
+
     form = forms.inventories.SearchStartEndDateForm()
     print(checkout_items)
     if form.start_date.data == None and form.end_date.data != None:
@@ -49,13 +51,16 @@ def index():
             checkout_date__gte=form.start_date.data,
             checkout_date__lte=form.end_date.data,
         )
-
     checkouts = list(checkout_items) + list(approved_checkout_items)
     checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
+    page = request.args.get("page", default=1, type=int)
+    paginated_checkouts = Pagination(checkouts, page=page, per_page=10)
+
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,
         form=form,
+        paginated_checkouts=paginated_checkouts,
     )
 
 

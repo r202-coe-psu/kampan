@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer%}
+{% import '/base/pagination.html' as paginated%}
 
 {% block title %}รายการนำอุปกรณ์ออก{% endblock %}
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
@@ -41,7 +42,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for checkout in checkouts %}
+        {% for checkout in paginated_checkouts.items %}
         <tr>
           <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Image" class="center aligned">
@@ -81,6 +82,17 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if paginated_checkouts.pages == 1 %}
+
+    {% else %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
     {% else %}
     <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
