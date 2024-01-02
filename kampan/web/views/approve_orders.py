@@ -57,3 +57,16 @@ def approve(order_id):
             checkout.save()
 
     return redirect(url_for("approve_orders.index"))
+
+
+@module.route("/order-item/<order_id>/items", methods=["GET", "POST"])
+@login_required
+def item_checkouts(order_id):
+    order = models.OrderItem.objects.get(id=order_id)
+    checkouts = models.CheckoutItem.objects(order=order, status="active")
+
+    return render_template(
+        "/approve_orders/approved_item_checkouts.html",
+        checkouts=checkouts,
+        order_id=order_id,
+    )
