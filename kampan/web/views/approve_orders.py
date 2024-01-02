@@ -56,23 +56,61 @@ def approved_detail(order_id):
             form=form,
             checkouts=checkouts,
         )
+    dict_checkouts = dict()
+    for checkout in checkouts:
+        dict_checkouts[checkout.item.name] = dict()
+        dict_checkouts[checkout.item.name]["checkout_date"] = checkout.checkout_date
+        dict_checkouts[checkout.item.name]["quantity"] = checkout.quantity
+    print(dict_checkouts, "*---------------------")
+    for item in form:
+        # This code area have to rewrite for supporting multiple checkin_item, in case of remain less than request
+        if item.id == "csrf_token":
+            continue
+        inventories = models.Inventory.objects(
+            item=item.id, remain__gt=0, status="active"
+        )
+        aprroved_amount = item.data
+        for inventory in inventories:
+            approved_checkout = models.inventories.ApprovedCheckoutItem()
+            approved_checkout.user = current_user._get_current_object()
+            approved_checkout.order = order
+            approved_checkout.item = inventory.item
+            approved_checkout.checkout_date = dict_checkouts[inventory.item.name][
+                "checkout_date"
+            ]
+            approved_checkout.checkout_from = inventory
+            approved_checkout.warehouse = inventory.warehouse
+            approved_checkout.price = inventory.price
+            approved_checkout.approved_date = datetime.datetime.now()
+            approved_checkout.quantity = dict_checkouts[inventory.item.name]["quantity"]
+
+            if inventory.remain >= aprroved_amount:
+                inventory.remain -= aprroved_amount
+                approved_checkout.aprroved_amount = aprroved_amount
+                aprroved_amount = 0
+            else:
+                aprroved_amount -= inventory.remain
+                approved_checkout.aprroved_amount = inventory.remain
+                inventory.remain = 0
+            inventory.save()
+            approved_checkout.save()
+
+            if aprroved_amount <= 0:
+                break
 
     return redirect(url_for("approve_orders.approve", order_id=order_id))
 
 
 @module.route("<order_id>", methods=["GET"])
 def approve(order_id):
-    # order = models.OrderItem.objects.get(id=order_id)
-    # checkout_items = models.CheckoutItem.objects(order=order)
-    # order.approval_status = "approved"
-    # order.approved_date = datetime.datetime.now()
-    # order.save()
+    order = models.OrderItem.objects.get(id=order_id)
+    checkout_items = models.CheckoutItem.objects(order=order, status="active")
+    order.approval_status = "approved"
+    order.save()
 
-    # for checkout in checkout_items:
-    #     if checkout.order.approval_status == "approved":
-    #         checkout.approval_status = "approved"
-    #         checkout.approved_date = datetime.datetime.now()
-    #         checkout.save()
+    for checkout in checkout_items:
+        checkout.approval_status = "approved"
+        checkout.save()
 
     return redirect(url_for("approve_orders.index"))
 
