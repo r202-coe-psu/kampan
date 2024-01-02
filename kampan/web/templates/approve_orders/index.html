@@ -44,7 +44,7 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
           <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            <a class="ui primary button" href="{{ url_for('approve_orders.item_checkouts', order_id=order.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
             </a>
