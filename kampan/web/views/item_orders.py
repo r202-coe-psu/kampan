@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
+from flask_mongoengine import Pagination
 import mongoengine as me
 
 import datetime
@@ -19,16 +20,6 @@ import mongoengine as me
 import datetime
 
 module = Blueprint("item_orders", __name__, url_prefix="/item_orders")
-
-
-def check_in_time(created_date, calendar_select, calendar_end):
-    print(
-        created_date, calendar_select, calendar_select <= created_date <= calendar_end
-    )
-    if calendar_select <= created_date <= calendar_end:
-        return True
-    else:
-        return False
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -52,9 +43,11 @@ def index():
             created_date__gte=form.start_date.data,
             created_date__lte=form.end_date.data,
         )
+    page = request.args.get("page", default=1, type=int)
+    paginated_orders = Pagination(orders, page=page, per_page=8)
     return render_template(
         "/item_orders/index.html",
-        orders=orders,
+        paginated_orders=paginated_orders,
         form=form,
     )
 
