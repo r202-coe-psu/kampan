@@ -68,10 +68,18 @@ class OrderItem(me.Document):
     approved_date = me.DateTimeField()
 
     def get_all_price(self):
+        [
+            print(approved_item.price, approved_item.aprroved_amount)
+            for approved_item in ApprovedCheckoutItem.objects(
+                status="active",
+                order=self,
+            )
+        ]
+
         return sum(
             [
-                item_checkout.price * item_checkout.quantity
-                for item_checkout in CheckoutItem.objects(
+                approved_item.price * approved_item.aprroved_amount
+                for approved_item in ApprovedCheckoutItem.objects(
                     status="active",
                     order=self,
                 )
