@@ -78,6 +78,11 @@ class OrderItem(me.Document):
             ]
         )
 
+    def get_item_in_bill(self):
+        checkout_items = CheckoutItem.objects(order=self, status="active")
+        if checkout_items:
+            return [checkout_item.item.id for checkout_item in checkout_items]
+
 
 class BaseCheckoutItem:
     status = me.StringField(default="active")
