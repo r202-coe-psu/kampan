@@ -5,9 +5,12 @@
 {% block dashboard_title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
-<a style="font-size: 100%; color:black;">
-  รายการอนุมัติการเบิกอุปกรณ์
-</a>
+{% if request.endpoint == 'approve_orders.index' %}
+
+{% else %}
+<a class="section" href="{{ url_for('approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+{% endif %}
+
 {% endblock %}
 
 {% block content %}
@@ -50,7 +53,7 @@
             </a>
           </td>
           <td data-label="Status">
-            <a class="positive ui button" href="{{ url_for('approve_orders.approve', order_id=order.id)}}">
+            <a class="positive ui button" href="{{ url_for('approve_orders.approved_detail', order_id=order.id)}}">
               อนุมัติ
             </a>
           </td>
