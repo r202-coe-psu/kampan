@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}ตำแหน่งอุปกรณ์{% endblock %}
 {% block dashboard_title %}ตำแหน่งอุปกรณ์{% endblock %}
@@ -15,7 +16,7 @@
 {% endblock %}
 
 {% block content %}
-{% if item_positions %}
+{% if paginated_item_positions %}
 <div style="padding-bottom: 2em;">
   <table class="table table-hover ">
     <thead>
@@ -29,7 +30,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for item_position in item_positions %}
+      {% for item_position in paginated_item_positions.items %}
       <tr>
         <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
         <td data-label="Description">{{ item_position.description }}</td>
@@ -70,6 +71,15 @@
       {% endfor %}
     </tbody>
   </table>
+  {% if paginated_item_positions.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_item_positions,"item_positions.index")}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
