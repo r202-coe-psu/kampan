@@ -82,9 +82,7 @@
         {% endfor %}
       </tbody>
     </table>
-    {% if paginated_checkouts.pages == 1 %}
-
-    {% else %}
+    {% if paginated_checkouts.pages != 1 %}
     <div class="ui grid">
       <div class="column row">
         <div class="center aligned column">
