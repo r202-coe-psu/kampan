@@ -50,10 +50,10 @@ class SearchStartEndDateForm(FlaskForm):
 
 
 class SearchMonthYearForm(FlaskForm):
-    month_year = fields.DateField(
+    month_year = fields.MonthField(
         "เดือนที่เริ่มต้น", format="%m/%Y", widget=widgets.TextInput()
     )
 
 
-# class SearchYearForm(FlaskForm):
-#     month_year = fields.MonthField("เดือนที่เลือก", format="%Y")
+class SearchYearForm(FlaskForm):
+    year = fields.IntegerField("ปีที่เลือก")
