@@ -65,7 +65,7 @@ class OrderItem(me.Document):
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    approved_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    approved_date = me.DateTimeField()
 
     def get_all_price(self):
         return sum(
