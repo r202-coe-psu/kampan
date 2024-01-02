@@ -83,6 +83,18 @@ class OrderItem(me.Document):
         if checkout_items:
             return [checkout_item.item.id for checkout_item in checkout_items]
 
+    def get_item_detail(self):
+        checkout_items = CheckoutItem.objects(order=self, status="active")
+        if checkout_items:
+            return [
+                (
+                    checkout_item.item.name,
+                    checkout_item.quantity,
+                    checkout_item.item.get_items_quantity(),
+                )
+                for checkout_item in checkout_items
+            ]
+
 
 class BaseCheckoutItem:
     status = me.StringField(default="active")
