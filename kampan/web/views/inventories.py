@@ -90,10 +90,19 @@ def edit(inventory_id):
     item_register = inventory.registration
 
     items = models.Item.objects()
+    if item_register.get_item_in_bill():
+        items = items.filter(id__nin=item_register.get_item_in_bill())
+        items = list(items)
+        if inventory.item:
+            items.append(models.Item.objects(id=inventory.item.id).first())
     if items:
         form.item.choices = [
             (item.id, f"{item.barcode_id} ({item.name})") for item in items
         ]
+        form.item.process(
+            formdata=form.item.choices,
+            data=inventory.item.id,
+        )
 
     if not form.validate_on_submit():
         return render_template(
