@@ -88,6 +88,7 @@ class OrderItem(me.Document):
         if checkout_items:
             return [
                 (
+                    checkout_item.item.id,
                     checkout_item.item.name,
                     checkout_item.quantity,
                     checkout_item.item.get_items_quantity(),
