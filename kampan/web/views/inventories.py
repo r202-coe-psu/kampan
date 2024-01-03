@@ -26,7 +26,7 @@ def index():
 
     if form.start_date.data == None and form.end_date.data != None:
         inventories = inventories.filter(
-            registeration_date__lte=form.end_date.data,
+            registeration_date__lt=form.end_date.data,
         )
 
     elif form.start_date.data and form.end_date.data == None:
@@ -37,7 +37,7 @@ def index():
     elif form.start_date.data != None and form.end_date.data != None:
         inventories = inventories.filter(
             registeration_date__gte=form.start_date.data,
-            registeration_date__lte=form.end_date.data,
+            registeration_date__lt=form.end_date.data,
         )
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:

@@ -17,7 +17,7 @@ def index():
     form = forms.inventories.SearchStartEndDateForm()
     if form.start_date.data == None and form.end_date.data != None:
         lost_break_items = lost_break_items.filter(
-            created_date__lte=form.end_date.data,
+            created_date__lt=form.end_date.data,
         )
 
     elif form.start_date.data and form.end_date.data == None:
@@ -28,7 +28,7 @@ def index():
     elif form.start_date.data != None and form.end_date.data != None:
         lost_break_items = lost_break_items.filter(
             created_date__gte=form.start_date.data,
-            created_date__lte=form.end_date.data,
+            created_date__lt=form.end_date.data,
         )
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:

@@ -30,10 +30,10 @@ def index():
 
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
-            checkout_date__lte=form.end_date.data,
+            checkout_date__lt=form.end_date.data,
         )
         approved_checkout_items = approved_checkout_items.filter(
-            checkout_date__lte=form.end_date.data,
+            checkout_date__lt=form.end_date.data,
         )
     elif form.start_date.data and form.end_date.data == None:
         checkout_items = checkout_items.filter(
@@ -45,11 +45,11 @@ def index():
     elif form.start_date.data != None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
             checkout_date__gte=form.start_date.data,
-            checkout_date__lte=form.end_date.data,
+            checkout_date__lt=form.end_date.data,
         )
         approved_checkout_items = approved_checkout_items.filter(
             checkout_date__gte=form.start_date.data,
-            checkout_date__lte=form.end_date.data,
+            checkout_date__lt=form.end_date.data,
         )
     checkouts = list(checkout_items) + list(approved_checkout_items)
     checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
