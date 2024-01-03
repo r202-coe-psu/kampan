@@ -13,12 +13,13 @@ module = Blueprint("item_positions", __name__, url_prefix="/item-positions")
 @module.route("/")
 @login_required
 def index():
-    item_positions = models.ItemPosition.objects()
+    item_positions = models.ItemPosition.objects(status="active")
     page = request.args.get("page", default=1, type=int)
-    paginated_item_positions = Pagination(item_positions, page=page, per_page=10)
+    paginated_item_positions = Pagination(item_positions, page=page, per_page=30)
     return render_template(
         "/item_positions/index.html",
         paginated_item_positions=paginated_item_positions,
+        item_positions=item_positions,
     )
 
 

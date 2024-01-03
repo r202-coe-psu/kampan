@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}แดชบอร์ดรายวัน{% endblock %}
 {% block dashboard_title %}
@@ -89,7 +90,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for order in daily_item_orders %}
+      {% for order in paginated_daily_item_orders.items %}
       <tr>
         <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Description">{{ order.description }}</td>
@@ -149,6 +150,15 @@
       {% endfor %}
     </tbody>
   </table>
+  {% if paginated_daily_item_orders.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

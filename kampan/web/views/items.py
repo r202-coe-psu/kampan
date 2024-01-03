@@ -23,10 +23,9 @@ module = Blueprint("items", __name__, url_prefix="/items")
 def index():
     items = models.Item.objects(status="active")
     page = request.args.get("page", default=1, type=int)
-    paginated_items = Pagination(items, page=page, per_page=8)
+    paginated_items = Pagination(items, page=page, per_page=24)
     return render_template(
-        "/items/index.html",
-        paginated_items=paginated_items,
+        "/items/index.html", paginated_items=paginated_items, items=items
     )
 
 

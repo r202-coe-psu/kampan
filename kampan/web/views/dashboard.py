@@ -4,6 +4,7 @@ from kampan.web import forms
 from kampan import models
 from calendar import monthrange
 import datetime
+from flask_mongoengine import Pagination
 
 module = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 subviews = []
@@ -52,16 +53,20 @@ def daily_dashboard():
         created_date__lt=today + datetime.timedelta(days=1),
         approval_status="approved",
     )
-    print(approved_orders)
+
     total_values = sum(
         [approved_order.get_all_price() for approved_order in approved_orders]
     )
-
+    page = request.args.get("page", default=1, type=int)
+    if form.start_date.data:
+        page = 1
+    paginated_daily_item_orders = Pagination(daily_item_orders, page=page, per_page=30)
     return render_template(
         "/dashboard/daily_dashboard.html",
         form=form,
         total_values=total_values,
         daily_item_orders=daily_item_orders,
+        paginated_daily_item_orders=paginated_daily_item_orders,
         amount_item_registers=amount_item_registers,
     )
 

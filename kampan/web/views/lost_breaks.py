@@ -31,11 +31,14 @@ def index():
             created_date__lte=form.end_date.data,
         )
     page = request.args.get("page", default=1, type=int)
-    paginated_lost_break_items = Pagination(lost_break_items, page=page, per_page=10)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+    paginated_lost_break_items = Pagination(lost_break_items, page=page, per_page=30)
 
     return render_template(
         "/lost_breaks/index.html",
         paginated_lost_break_items=paginated_lost_break_items,
+        lost_break_items=lost_break_items,
         form=form,
     )
 

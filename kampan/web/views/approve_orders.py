@@ -36,11 +36,14 @@ def index():
                 created_date__lte=form.end_date.data,
             )
         page = request.args.get("page", default=1, type=int)
-        paginated_orders = Pagination(orders, page=page, per_page=10)
+        if form.start_date.data:
+            page = 1
+        paginated_orders = Pagination(orders, page=page, per_page=30)
         return render_template(
             "/approve_orders/index.html",
             paginated_orders=paginated_orders,
             form=form,
+            orders=orders,
         )
     return redirect(url_for("dashboard.daily_dashboard"))
 
@@ -64,7 +67,7 @@ def approved_detail(order_id):
         dict_checkouts[checkout.item.name] = dict()
         dict_checkouts[checkout.item.name]["checkout_date"] = checkout.checkout_date
         dict_checkouts[checkout.item.name]["quantity"] = checkout.quantity
-    print(dict_checkouts, "*---------------------")
+
     for item in form:
         # This code area have to rewrite for supporting multiple checkin_item, in case of remain less than request
         if item.id == "csrf_token":
@@ -125,9 +128,10 @@ def item_checkouts():
     order = models.OrderItem.objects.get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     page = request.args.get("page", default=1, type=int)
-    paginated_checkouts = Pagination(checkouts, page=page, per_page=10)
+    paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
     return render_template(
         "/approve_orders/item_checkouts.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
+        checkouts=checkouts,
     )

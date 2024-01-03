@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
+from flask_mongoengine import Pagination
 
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
@@ -30,10 +31,16 @@ def index():
             created_date__gte=form.start_date.data,
             created_date__lte=form.end_date.data,
         )
+    page = request.args.get("page", default=1, type=int)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+
+    paginated_item_registers = Pagination(item_registers, page=page, per_page=30)
 
     return render_template(
         "/item_registers/index.html",
         item_registers=item_registers,
+        paginated_item_registers=paginated_item_registers,
         form=form,
     )
 
@@ -98,7 +105,6 @@ def edit(item_register_id):
                 filename=form.bill_file.data.filename,
                 content_type=form.bill_file.data.content_type,
             )
-    print(item_register.bill)
 
     form.populate_obj(item_register)
     item_register.save()

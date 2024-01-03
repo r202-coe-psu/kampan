@@ -40,9 +40,12 @@ def index():
             registeration_date__lte=form.end_date.data,
         )
     page = request.args.get("page", default=1, type=int)
-    paginated_inventories = Pagination(inventories, page=page, per_page=10)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+    paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
         "/inventories/index.html",
+        inventories=inventories,
         paginated_inventories=paginated_inventories,
         form=form,
     )
@@ -157,7 +160,7 @@ def bill_item():
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
     page = request.args.get("page", default=1, type=int)
-    paginated_inventories = Pagination(inventories, page=page, per_page=10)
+    paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
         "/inventories/bill-item.html",
         paginated_inventories=paginated_inventories,

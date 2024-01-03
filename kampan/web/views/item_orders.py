@@ -44,11 +44,15 @@ def index():
             created_date__lte=form.end_date.data,
         )
     page = request.args.get("page", default=1, type=int)
-    paginated_orders = Pagination(orders, page=page, per_page=8)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+    paginated_orders = Pagination(orders, page=page, per_page=24)
+
     return render_template(
         "/item_orders/index.html",
         paginated_orders=paginated_orders,
         form=form,
+        orders=orders,
     )
 
 

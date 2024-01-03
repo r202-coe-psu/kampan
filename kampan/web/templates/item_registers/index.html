@@ -1,5 +1,6 @@
 {% extends '/base/default-dashboard.html' %}
 {% import 'base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
 
 {% block title %}นำเข้าอุปกรณ์{% endblock %}
 {% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
@@ -49,7 +50,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in item_registers %}
+        {% for item in paginated_item_registers.items %}
         <tr>
           <td data-label="Item Name">{{ item.receipt_id }}</td>
           <td data-label="Warehouse">{{ item.description }}</td>
@@ -102,6 +103,15 @@
         {% endfor %}
       </tbody>
     </table>
+    {% if paginated_item_registers.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_item_registers,"item_registers.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
   {% else %}
   <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
