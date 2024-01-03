@@ -72,12 +72,14 @@ def monthly_dashboard():
     form = forms.inventories.SearchMonthYearForm()
 
     today = datetime.date.today()
-
-    if form.month_year.data != None:
-        today = form.month_year.data
+    if form.validate_on_submit():
+        print(form.errors)
+        if form.month_year.data != None:
+            today = form.month_year.data
 
     days_month = lambda dt: monthrange(dt.year, dt.month)[1]
     next_time = today + datetime.timedelta(days_month(today))
+
     # print(today, next_time)
     monthly_item_orders = models.OrderItem.objects(
         status="active",
@@ -92,20 +94,21 @@ def monthly_dashboard():
     ).count()
 
     days_month_categories = list(range(1, days_month(today) + 1))
-
-    pipeline_checkout_item = [
+    print(
+        datetime.datetime.combine(today, datetime.datetime.min.time()),
+        datetime.datetime.combine(next_time, datetime.datetime.min.time()),
+    )
+    pipeline_approved_checkout_items = [
         {
             "$match": {
                 "status": "active",
                 "approved_date": {
                     "$gte": datetime.datetime.combine(
                         today, datetime.datetime.min.time()
-                    )
-                },
-                "approved_date": {
+                    ),
                     "$lt": datetime.datetime.combine(
                         next_time, datetime.datetime.min.time()
-                    )
+                    ),
                 },
             }
         },
@@ -123,14 +126,16 @@ def monthly_dashboard():
             }
         },
     ]
-    checkout_items = models.inventories.ApprovedCheckoutItem.objects().aggregate(
-        pipeline_checkout_item
+
+    approved_checkout_items = (
+        models.inventories.ApprovedCheckoutItem.objects().aggregate(
+            pipeline_approved_checkout_items
+        )
     )
     trend_checkout_items = [0] * days_month(today)
-    for checkout_item in checkout_items:
+    for checkout_item in approved_checkout_items:
         trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
     total_values = sum(trend_checkout_items)
-    print(trend_checkout_items)
 
     return render_template(
         "/dashboard/monthly_dashboard.html",
@@ -146,16 +151,16 @@ def monthly_dashboard():
 @module.route("/yearly", methods=["GET", "POST"])
 @login_required
 def yearly_dashboard():
-    form = forms.inventories.SearchMonthYearForm()
+    form = forms.inventories.SearchYearForm()
 
-    today = datetime.date.today()
+    today = datetime.datetime.today().date().replace(month=1, day=1)
+    if form.validate_on_submit():
+        print(form.errors)
+        if form.year.data != None:
+            year = form.year.data
+            today = today.replace(year=year)
 
-    if form.month_year.data != None:
-        today = form.month_year.data
-    days_month = lambda dt: monthrange(dt.year, dt.month)[1]
-    next_time = today + datetime.timedelta(days_month(today))
-    print(today, next_time)
-
+    next_time = today.replace(year=today.year + 1)
     amount_item_registers = models.RegistrationItem.objects(
         status="active",
         created_date__gte=today,
@@ -175,12 +180,10 @@ def yearly_dashboard():
                 "approved_date": {
                     "$gte": datetime.datetime.combine(
                         today, datetime.datetime.min.time()
-                    )
-                },
-                "approved_date": {
+                    ),
                     "$lt": datetime.datetime.combine(
                         next_time, datetime.datetime.min.time()
-                    )
+                    ),
                 },
             }
         },
@@ -211,4 +214,5 @@ def yearly_dashboard():
         yearly_item_orders=yearly_item_orders,
         total_values=total_values,
         trend_checkout_items=trend_checkout_items,
+        form=form,
     )

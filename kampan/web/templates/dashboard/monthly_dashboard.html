@@ -64,10 +64,10 @@
       ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับตลอดทั้งเดือน
     </p>
   </div>
-  <form method="post" onsubmit="return validateForm()">
-    {{ form.hidden_tag() }}
+  <form method="POST">
     <div class="ui secondary menu" style="text-align:center;">
-      {{ form.month_year() }}
+      {{ form.hidden_tag() }}
+      {{ renderer.render_calendar_default(form.month_year, calendar_id="month_year_calendar") }}
       <button type="submit" class="ui primary button" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>
@@ -181,25 +181,26 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-
-  $('#year_calendar')
-    .calendar({
-      type: 'year'
-    })
-    ;
-
-
+  datetime_formatter = {
+    month: "MM/YYYY"
+  };
   var calendar_setting = {
     type: 'month',
     formatter: datetime_formatter,
-    text: {
-
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-
-    },
+    today: false,
+    ampm: false,
   };
   $('#month_year_calendar').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+
 </script>
 {% endblock %}
 {# ["มกรา", "กุมภา", "มีนา", "เมษา", "พฤษภา", "มิถุนา", "กรกฏา", "สิงหา", "กันยา", "ตุลา", "พฤศจิกา", "ธันวา"] #}
