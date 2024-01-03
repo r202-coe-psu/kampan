@@ -74,7 +74,7 @@ def checkout():
     form = forms.item_checkouts.CheckoutItemForm()
     order = models.OrderItem.objects(id=request.args.get("order_id")).first()
 
-    items = models.Item.objects()
+    items = models.Item.objects(status="active")
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
         # print(item_register.get_item_in_bill())
@@ -136,7 +136,7 @@ def edit(checkout_item_id):
     order = models.OrderItem.objects(id=checkout_item.order.id).first()
 
     form = forms.item_checkouts.CheckoutItemForm(obj=checkout_item)
-    items = models.Item.objects()
+    items = models.Item.objects(status="active")
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
         items = list(items)

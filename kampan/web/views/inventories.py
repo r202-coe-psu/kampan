@@ -58,7 +58,7 @@ def register():
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
-    items = models.Item.objects()
+    items = models.Item.objects(status="active")
     if item_register.get_item_in_bill():
         items = items.filter(id__nin=item_register.get_item_in_bill())
         # print(item_register.get_item_in_bill())
@@ -94,7 +94,7 @@ def edit(inventory_id):
     form = forms.inventories.InventoryForm(obj=inventory)
     item_register = inventory.registration
 
-    items = models.Item.objects()
+    items = models.Item.objects(status="active")
     if item_register.get_item_in_bill():
         items = items.filter(id__nin=item_register.get_item_in_bill())
         items = list(items)
