@@ -68,6 +68,7 @@ def daily_dashboard():
         daily_item_orders=daily_item_orders,
         paginated_daily_item_orders=paginated_daily_item_orders,
         amount_item_registers=amount_item_registers,
+        today=today,
     )
 
 
@@ -141,7 +142,22 @@ def monthly_dashboard():
     for checkout_item in approved_checkout_items:
         trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
     total_values = sum(trend_checkout_items)
-
+    months = [
+        "มกราคม",
+        "กุมภาพันธ์",
+        "มีนาคม",
+        "เมษายน",
+        "พฤษภาคม",
+        "มิถุนายน",
+        "กรกฎาคม",
+        "สิงหาคม",
+        "กันยายน",
+        "ตุลาคม",
+        "พฤษจิกายน",
+        "ธันวาคม",
+    ]
+    this_month = months[today.month - 1] + " " + str(today.year)
+    print(this_month)
     return render_template(
         "/dashboard/monthly_dashboard.html",
         trend_checkout_items=trend_checkout_items,
@@ -150,6 +166,7 @@ def monthly_dashboard():
         monthly_item_orders=monthly_item_orders,
         amount_item_registers=amount_item_registers,
         total_values=total_values,
+        this_month=this_month,
     )
 
 
@@ -213,11 +230,13 @@ def yearly_dashboard():
     for checkout_item in checkout_items:
         trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
     total_values = sum(trend_checkout_items)
+    this_year = today.year
     return render_template(
         "/dashboard/yearly_dashboard.html",
         amount_item_registers=amount_item_registers,
         yearly_item_orders=yearly_item_orders,
         total_values=total_values,
         trend_checkout_items=trend_checkout_items,
+        this_year=this_year,
         form=form,
     )

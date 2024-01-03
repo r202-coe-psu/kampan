@@ -11,7 +11,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
-        <h5 class="card-title mt-3 ">อุปกรณ์ที่เบิก <span style="color: #003ea1;"><b>
+        <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
               <h3>{{ monthly_item_orders | length }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
@@ -23,7 +23,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
-        <h5 class="card-title mt-3">อุปกรณ์คงเหลือ <span style="color: #6d0000;"><b>
+        <h5 class="card-title mt-3">อุปกรณ์นำเข้าคงเหลือ <span style="color: #6d0000;"><b>
               <h3>{{ amount_item_registers }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
@@ -36,7 +36,7 @@
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
         <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
-              <h3>{{total_values}}</h3>
+              <h3>{{ total_values }}</h3>
             </b></span> ฿ </h5>
         <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
@@ -59,7 +59,7 @@
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content" style="color: #292d33;">
-    <div class="ui medium header"> แผนภูมิรายเดือน </div>
+    <div class="ui medium header"> แผนภูมิรายเดือนประจำเดือน {{ this_month }}</div>
     <p>
       ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับตลอดทั้งเดือน
     </p>
@@ -84,9 +84,8 @@
 {% endif %}
 #}
 <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-<script>
+<script type="text/javascript">
   var checkout_trend_month = {{ trend_checkout_items }}
-  var checkout_years = {{ 0 }}
   var options = {
     series: [{
       name: "Profit of (Checkout * Price)",
@@ -107,7 +106,7 @@
       curve: 'straight'
     },
     title: {
-      text: 'แผนภูมิแท่งแสดงจำนวนเงินของอุปกรณ์ที่เบิกในแต่ละเดือน',
+      text: 'แผนภูมิแท่งแสดงจำนวนเงินของอุปกรณ์ที่เบิกประจำเดือน ' + " {{this_month}}",
       align: 'center',
 
     },
