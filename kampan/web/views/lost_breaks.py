@@ -47,6 +47,11 @@ def index():
 @login_required
 def add(lost_break_item_id):
     form = forms.lost_break.ItemLostBreakForm()
+    items = models.Item.objects(status="active")
+    if items:
+        form.item.choices = [
+            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+        ]
 
     if not form.validate_on_submit():
         return render_template(
