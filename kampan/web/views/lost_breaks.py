@@ -49,9 +49,12 @@ def add(lost_break_item_id):
     form = forms.lost_break.ItemLostBreakForm()
     items = models.Item.objects(status="active")
     if items:
-        form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+        item_choices = [
+            (item.id, f"{item.barcode_id} ({item.name})")
+            for item in items
+            if item.get_items_quantity() != 0
         ]
+        form.item.choices = item_choices
 
     if not form.validate_on_submit():
         return render_template(
@@ -60,11 +63,12 @@ def add(lost_break_item_id):
         )
 
     quantity = form.quantity.data
-    inventories = models.Inventory.objects(item=form.item.data, remain__gt=0)
+    item = models.Item.objects(id=form.item.data).first()
+    inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
         lost_break_item = models.LostBreakItem()
         lost_break_item.user = current_user._get_current_object()
-        lost_break_item.item = form.item.data
+        lost_break_item.item = item
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
@@ -92,7 +96,24 @@ def add(lost_break_item_id):
 def edit(lost_break_item_id):
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
     form = forms.lost_break.ItemLostBreakForm(obj=lost_break_item)
-
+    items = models.Item.objects(status="active")
+    if items:
+        item_choices = [
+            (item.id, f"{item.barcode_id} ({item.name})")
+            for item in items
+            if item.get_items_quantity() != 0
+        ]
+        item_choices.append(
+            (
+                lost_break_item.item.id,
+                f"{lost_break_item.item.barcode_id} ({lost_break_item.item.name})",
+            )
+        )
+        form.item.choices = item_choices
+        form.item.process(
+            formdata=form.item.choices,
+            data=lost_break_item.item.id,
+        )
     if not form.validate_on_submit():
         return render_template(
             "/lost_breaks/add.html",
@@ -106,10 +127,11 @@ def edit(lost_break_item_id):
         return_inventory.save()
 
     quantity = form.quantity.data
-    inventories = models.Inventory.objects(item=form.item.data, remain__gt=0)
+    item = models.Item.objects(id=form.item.data).first()
+    inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
         lost_break_item.user = current_user._get_current_object()
-        lost_break_item.item = form.item.data
+        lost_break_item.item = item
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
