@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}ร้านค้า{% endblock %}
 {% block dashboard_title %}ร้านค้า{% endblock %}
@@ -18,7 +19,7 @@
 
 {% if suppliers %}
 <div class="ui four cards">
-  {% for supplier in suppliers %}
+  {% for supplier in paginated_suppliers.items %}
   <div class="card" style="width: 100%;">
     <div class="content"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
@@ -88,6 +89,15 @@
   </div>
 
   {% endfor %}
+  {% if paginated_suppliers.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_suppliers,"suppliers.index")}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 

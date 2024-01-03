@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms
 from kampan import models
 import mongoengine as me
+from flask_mongoengine import Pagination
 
 import datetime
 
@@ -13,7 +14,13 @@ module = Blueprint("suppliers", __name__, url_prefix="/suppliers")
 @login_required
 def index():
     suppliers = models.Supplier.objects(status="active")
-    return render_template("/suppliers/index.html", suppliers=suppliers)
+    page = request.args.get("page", default=1, type=int)
+    paginated_suppliers = Pagination(suppliers, page=page, per_page=30)
+    return render_template(
+        "/suppliers/index.html",
+        suppliers=suppliers,
+        paginated_suppliers=paginated_suppliers,
+    )
 
 
 @module.route("/add", methods=["GET", "POST"])

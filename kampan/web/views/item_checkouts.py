@@ -27,7 +27,7 @@ def index():
     )
 
     form = forms.inventories.SearchStartEndDateForm()
-    print(checkout_items)
+
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
             checkout_date__lte=form.end_date.data,
@@ -53,9 +53,12 @@ def index():
         )
     checkouts = list(checkout_items) + list(approved_checkout_items)
     checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
-    page = request.args.get("page", default=1, type=int)
-    paginated_checkouts = Pagination(checkouts, page=page, per_page=10)
 
+    page = request.args.get("page", default=1, type=int)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+
+    paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
     return render_template(
         "/item_checkouts/index.html",
         checkouts=checkouts,

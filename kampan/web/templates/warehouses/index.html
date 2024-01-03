@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/pagination.html' as paginated %}
 
 {% block title %}คลังอุปกรณ์{% endblock %}
 {% block dashboard_title %}คลังอุปกรณ์{% endblock %}
@@ -16,7 +17,7 @@
 {% block content %}
 {% if warehouses %}
 <div class="ui four cards">
-  {% for warehouse in warehouses %}
+  {% for warehouse in paginated_warehouses.items %}
   <div class="card" style="width: 100%;">
     <div class="content"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
@@ -78,6 +79,15 @@
   </div>
 
   {% endfor %}
+  {% if paginated_warehouses.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
