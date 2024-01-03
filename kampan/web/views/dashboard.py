@@ -77,7 +77,7 @@ def daily_dashboard():
 def monthly_dashboard():
     form = forms.inventories.SearchMonthYearForm()
 
-    today = datetime.date.today()
+    today = datetime.datetime.today().date().replace(day=1)
     if form.validate_on_submit():
         print(form.errors)
         if form.month_year.data != None:
