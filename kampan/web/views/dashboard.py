@@ -31,6 +31,7 @@ def index():
 def daily_dashboard():
     form = forms.inventories.SearchStartEndDateForm()
     form.end_date.validators = None
+    form.item.validators = None
 
     today = datetime.date.today()
 
