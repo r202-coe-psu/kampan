@@ -28,5 +28,10 @@ BaseItemForm = model_form(
 class ItemForm(BaseItemForm):
     categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
     img = fields.FileField(
-        "รูปภาพอุปกรณ์", validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")]
+        "รูปภาพอุปกรณ์",
+        validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")],
     )
+
+
+class SearchItemForm(FlaskForm):
+    item = fields.SelectField("อุปกรณ์")

@@ -74,3 +74,10 @@
   </div>
 </div>
 {%- endmacro %}
+
+{% macro render_select_default(field) -%}
+<div class="field">
+  <label style="font-weight: bold; padding-left: 5px;">{{ field.label }}</label>
+  {{ field(class="ui fluid search dropdown clearable selection") }}
+</div>
+{%- endmacro %}

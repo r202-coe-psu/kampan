@@ -18,14 +18,23 @@ import datetime
 module = Blueprint("items", __name__, url_prefix="/items")
 
 
-@module.route("/")
+@module.route("/", methods=["GET", "POST"])
 @login_required
 def index():
+    form = forms.items.SearchItemForm()
     items = models.Item.objects(status="active")
+    form.item.choices = [
+        (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    ]
+
+    if not form.validate_on_submit():
+        print(form.errors)
+    if form.item.data != None:
+        items = items.filter(id=form.item.data)
     page = request.args.get("page", default=1, type=int)
     paginated_items = Pagination(items, page=page, per_page=24)
     return render_template(
-        "/items/index.html", paginated_items=paginated_items, items=items
+        "/items/index.html", paginated_items=paginated_items, items=items, form=form
     )
 
 
