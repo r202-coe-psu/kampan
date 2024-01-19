@@ -12,14 +12,19 @@
 <div class="ui content">
   <div class="ui segment">
     <h2>ข้อมูลผู้ใช้งาน</h2>
-    <form method="POST" class="ui form">
+    <form method="POST" class="ui form" enctype="multipart/form-data">
       {{ form.csrf_token }}
       <div class="two fields">
         {{ renderer.render_field(form.first_name) }}
         {{ renderer.render_field(form.last_name) }}
       </div>
       <div class="two fields">
-        {{ renderer.render_field(form.organization) }}
+        {{ renderer.render_field(form.thai_first_name) }}
+        {{ renderer.render_field(form.thai_last_name) }}
+      </div>
+      <div class="two fields">
+        {{ renderer.render_field(form.citizen_id) }}
+        {{ renderer.render_fileinput(form.pic) }}
       </div>
 
       <button name="create" type="submit" class="ui primary button">เปลี่ยนข้อมูล</button>
@@ -33,3 +38,18 @@
 </div>
 
 {% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-{{ form.pic.name }}").click(function () {
+    $("#{{ form.pic.name }}").click();
+  });
+
+  $('#{{ form.pic.name }}')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-{{ form.pic.name }}', $(e.target).parent()).val(name);
+    });
+</script>
+
+{% endblock additional_js %}

@@ -151,23 +151,22 @@ def edit_profile():
     user = current_user._get_current_object()
     form.populate_obj(user)
 
-    # if form.pic.data:
-    #     if user.picture:
-    #         user.picture.replace(
-    #             form.pic.data,
-    #             filename=form.pic.data.filename,
-    #             content_type=form.pic.data.content_type,
-    #         )
-    #     else:
-    #         user.picture.put(
-    #             form.pic.data,
-    #             filename=form.pic.data.filename,
-    #             content_type=form.pic.data.content_type,
-    #         )
+    if form.pic.data:
+        if user.picture:
+            user.picture.replace(
+                form.pic.data,
+                filename=form.pic.data.filename,
+                content_type=form.pic.data.content_type,
+            )
+        else:
+            user.picture.put(
+                form.pic.data,
+                filename=form.pic.data.filename,
+                content_type=form.pic.data.content_type,
+            )
 
     user.metadata["thai_first_name"] = form.thai_first_name.data
     user.metadata["thai_last_name"] = form.thai_last_name.data
-    user.metadata["organization"] = form.organization.data
 
     user.updated_date = datetime.datetime.now()
     user.save()
