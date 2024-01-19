@@ -17,8 +17,9 @@ class Item(me.Document):
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
-    weight = me.FloatField()
-    size = me.EmbeddedDocumentField(ItemSize)
+    # weight = me.FloatField()
+    # size = me.EmbeddedDocumentField(ItemSize)
+    piece_per_set = me.IntField(required=True, min_value=1, default=1)
     categories = me.ListField(me.StringField(required=True))
     image = me.ImageField(thumbnail_size=(800, 600, False))
     unit = me.StringField(required=True, default="ชุด", max_length=50)

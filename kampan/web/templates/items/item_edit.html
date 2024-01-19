@@ -15,20 +15,14 @@
   <form class="ui form" method="POST" enctype="multipart/form-data">
 
     {{ form.hidden_tag() }}
-    {{ form.size.hidden_tag() }}
 
 
     {{ renderer.render_field(form.name) }}
     {{ renderer.render_field(form.description) }}
     {{ renderer.render_fileinput(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
-    <div class="three fields">
-      {{ renderer.render_field(form.size.width) }}
-      {{ renderer.render_field(form.size.height) }}
-      {{ renderer.render_field(form.size.deep) }}
-    </div>
     <div class="two fields">
-      {{ renderer.render_field(form.weight) }}
+      {{ renderer.render_field(form.piece_per_set) }}
       {{ renderer.render_field(form.categories) }}
     </div>
     <div class="two fields">
