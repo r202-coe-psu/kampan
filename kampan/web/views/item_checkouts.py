@@ -25,9 +25,11 @@ def index():
     approved_checkout_items = models.inventories.ApprovedCheckoutItem.objects(
         status="active"
     )
-
+    items = models.Item.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
-
+    form.item.choices = [
+        (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    ]
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
             checkout_date__lt=form.end_date.data,
@@ -51,6 +53,9 @@ def index():
             checkout_date__gte=form.start_date.data,
             checkout_date__lt=form.end_date.data,
         )
+    if form.item.data != None:
+        approved_checkout_items = approved_checkout_items.filter(item=form.item.data)
+        checkout_items = checkout_items.filter(item=form.item.data)
     checkouts = list(checkout_items) + list(approved_checkout_items)
     checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
 
