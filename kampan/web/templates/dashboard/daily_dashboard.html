@@ -5,7 +5,20 @@
 {% block title %}แดชบอร์ดรายวัน{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายวัน</div>
-<div class="ui small right floated header">{{today_date}}</div>
+<a href="{{ url_for('notifications.index') }}">
+  {% if notifications == 0 %}
+  <i class="icons ui small right floated header green">
+    <i class="bell outline icon"></i>
+  </i>
+  {% else %}
+  <i class="icons ui small right floated header red">
+    <i class="bell outline icon"></i>
+    <div class="floating ui red label" style="padding:2px 3px;top: 2px;left: 4px;">
+      <span> {{ notifications }} </span>
+    </div>
+  </i>
+  {% endif %}
+</a>
 {% endblock %}
 {% block breadcrumbs %}
 <div class="row justify-content-center align-items-center">
@@ -20,19 +33,19 @@
       </div>
     </div>
   </div>
-
+  {#
   <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
         <h5 class="card-title mt-3">อุปกรณ์นำเข้าคงเหลือ <span style="color: #6d0000;"><b>
-              <h3>{{ amount_item_registers }}</h3>
+              <h3>{{ }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
   </div>
-
+  #}
   <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892; margin: 10px;">
       <div class="card-body text-center">
@@ -163,164 +176,155 @@
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
-{#
-{% if checkout_quantity == 0 %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-{% else %}
-{% if select_year < 0 %} <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% else %}
-  <div class="shadow" id="chart" style="margin: auto; width: fit-content"></div>
-  {% endif %}
-  {% endif %}
-  #}
-  <style>
-    .button-group {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+
+<style>
+  .button-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .button {
+    background-color: #0074cc;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin: 5px;
+    transition: background-color 0.3s;
+  }
+
+  .button:hover {
+    background-color: #0074cc70;
+  }
+
+  .button.green {
+    background-color: #00A11B;
+  }
+
+  .button.green:hover {
+    background-color: #00a11b70;
+  }
+</style>
+
+<div class="button-group">
+  <a href="/dashboard/" class="button green" style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายวัน</a>
+  <a href="/dashboard/monthly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
+  <a href="/dashboard/yearly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายปี</a>
+</div>
+
+
+
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  function validateForm() {
+    var dateInput = document.querySelector("#month_year_calendar input").value;
+    dateInput = dateInput.trim();
+    if (dateInput === "") {
+      alert("Please enter year and month before submitting.");
+      return false;
     }
+    return true;
+  }
+</script>
 
-    .button {
-      background-color: #0074cc;
-      text-decoration: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      margin: 5px;
-      transition: background-color 0.3s;
-    }
+<script>
+  var select_year = {{ select_year }}
+  var select_month = {{ select_month }}
+  var checkout_trend_day = {{ checkout_trend_day }}
+  var years_day = {{ years_day }}
 
-    .button:hover {
-      background-color: #0074cc70;
-    }
-
-    .button.green {
-      background-color: #00A11B;
-    }
-
-    .button.green:hover {
-      background-color: #00a11b70;
-    }
-  </style>
-
-  <div class="button-group">
-    <a href="/dashboard/" class="button green" style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายวัน</a>
-    <a href="/dashboard/monthly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
-    <a href="/dashboard/yearly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายปี</a>
-  </div>
-
-
-
-  {% endblock %}
-
-  {% block additional_js %}
-  <script>
-    function validateForm() {
-      var dateInput = document.querySelector("#month_year_calendar input").value;
-      dateInput = dateInput.trim();
-      if (dateInput === "") {
-        alert("Please enter year and month before submitting.");
-        return false;
+  var checkout_trend_day = checkout_trend_day[select_year][select_month]
+  var years_day = years_day[select_year][select_month]
+  var options = {
+    series: [{
+      name: "Profit of (Checkout * Price)",
+      data: checkout_trend_day,
+    }],
+    chart: {
+      height: 350, width: 800,
+      type: 'bar',
+      zoom: {
+        enabled: true
       }
-      return true;
-    }
-  </script>
+    },
+    dataLabels: {
+      enabled: true,
+    },
+    colors: ['#00A11B'],
+    stroke: {
+      curve: 'straight'
+    },
+    title: {
+      text: 'แผนภูมิแท่งแสดงข้อมูลรายรับรายจ่ายประจำเดือน',
+      align: 'center',
 
-  <script>
-    var select_year = {{ select_year }}
-    var select_month = {{ select_month }}
-    var checkout_trend_day = {{ checkout_trend_day }}
-    var years_day = {{ years_day }}
-
-    var checkout_trend_day = checkout_trend_day[select_year][select_month]
-    var years_day = years_day[select_year][select_month]
-    var options = {
-      series: [{
-        name: "Profit of (Checkout * Price)",
-        data: checkout_trend_day,
-      }],
-      chart: {
-        height: 350, width: 800,
-        type: 'bar',
-        zoom: {
-          enabled: true
-        }
+    },
+    grid: {
+      row: {
+        colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
+        opacity: 0.5
       },
-      dataLabels: {
-        enabled: true,
-      },
-      colors: ['#00A11B'],
-      stroke: {
-        curve: 'straight'
-      },
+    },
+    xaxis: {
+      categories: years_day,
       title: {
-        text: 'แผนภูมิแท่งแสดงข้อมูลรายรับรายจ่ายประจำเดือน',
-        align: 'center',
-
+        text: 'วันที่',
       },
-      grid: {
-        row: {
-          colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
-          opacity: 0.5
-        },
+    },
+    yaxis: {
+      title: {
+        text: 'รายได้ (บาท)',
       },
-      xaxis: {
-        categories: years_day,
-        title: {
-          text: 'วันที่',
-        },
-      },
-      yaxis: {
-        title: {
-          text: 'รายได้ (บาท)',
-        },
-      }
-    };
+    }
+  };
 
-    var chart = new ApexCharts(document.querySelector("#chart"), options);
-    chart.render(); 
-  </script>
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+  chart.render(); 
+</script>
 
-  <script>
-    $('.menu .item')
-      .tab()
-      ;
-  </script>
+<script>
+  $('.menu .item')
+    .tab()
+    ;
+</script>
 
-  <script type="text/javascript">
-    datetime_formatter = {
-      date: "DD/MM/YYYY"
-    };
-    var calendar_setting = {
-      type: 'date',
-      monthFirst: false,
-      formatter: datetime_formatter,
-      today: false,
-      ampm: false,
-      text: {
-        days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-        months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-        monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-        today: 'วันนี้',
-        now: 'ปัจจุบัน',
-        am: 'AM',
-        pm: 'PM'
-      },
-    };
-    $('#start_date').calendar(calendar_setting);
-    $('#end_date').calendar(calendar_setting);
-  </script>
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+</script>
 
-  <script type="text/javascript">
-    $(document)
-      .ready(function () {
-        $('.ui.dropdown.validate.selection')
-          .dropdown({
-            allowAdditions: true,
-            fullTextSearch: 'exact'
-          });
-      });
-  </script>
+<script type="text/javascript">
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
 
 
 
-  {% endblock %}
+{% endblock %}
