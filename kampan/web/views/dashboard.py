@@ -40,11 +40,6 @@ def daily_dashboard():
     # print(today)
     item_orders = models.OrderItem.objects(status="active")
 
-    amount_item_registers = models.RegistrationItem.objects(
-        status="active",
-        created_date__gte=today,
-        created_date__lt=today + datetime.timedelta(days=1),
-    ).count()
     daily_item_orders = item_orders.filter(
         created_date__gte=today,
         created_date__lt=today + datetime.timedelta(days=1),
@@ -62,14 +57,21 @@ def daily_dashboard():
     if form.start_date.data:
         page = 1
     paginated_daily_item_orders = Pagination(daily_item_orders, page=page, per_page=30)
+
+    notifications = 0
+
+    items = models.Item.objects(status="active")
+    for item in items:
+        if item.minimum > item.get_items_quantity():
+            notifications += 1
     return render_template(
         "/dashboard/daily_dashboard.html",
         form=form,
         total_values=total_values,
         daily_item_orders=daily_item_orders,
         paginated_daily_item_orders=paginated_daily_item_orders,
-        amount_item_registers=amount_item_registers,
         today=today,
+        notifications=notifications,
     )
 
 
@@ -93,12 +95,6 @@ def monthly_dashboard():
         created_date__gte=today,
         created_date__lt=next_time,
     )
-
-    amount_item_registers = models.RegistrationItem.objects(
-        status="active",
-        created_date__gte=today,
-        created_date__lt=next_time,
-    ).count()
 
     days_month_categories = list(range(1, days_month(today) + 1))
     print(
@@ -165,7 +161,6 @@ def monthly_dashboard():
         days_month_categories=days_month_categories,
         form=form,
         monthly_item_orders=monthly_item_orders,
-        amount_item_registers=amount_item_registers,
         total_values=total_values,
         this_month=this_month,
     )
@@ -184,11 +179,7 @@ def yearly_dashboard():
             today = today.replace(year=year)
 
     next_time = today.replace(year=today.year + 1)
-    amount_item_registers = models.RegistrationItem.objects(
-        status="active",
-        created_date__gte=today,
-        created_date__lt=next_time,
-    ).count()
+
     yearly_item_orders = models.OrderItem.objects(
         status="active",
         created_date__gte=today,
@@ -234,7 +225,6 @@ def yearly_dashboard():
     this_year = today.year
     return render_template(
         "/dashboard/yearly_dashboard.html",
-        amount_item_registers=amount_item_registers,
         yearly_item_orders=yearly_item_orders,
         total_values=total_values,
         trend_checkout_items=trend_checkout_items,
