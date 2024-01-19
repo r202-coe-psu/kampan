@@ -47,6 +47,7 @@ class SearchStartEndDateForm(FlaskForm):
     end_date = fields.DateField(
         "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
     )
+    item = fields.SelectField("อุปกรณ์")
 
 
 class SearchMonthYearForm(FlaskForm):
