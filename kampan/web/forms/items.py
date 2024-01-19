@@ -33,5 +33,5 @@ class ItemForm(BaseItemForm):
 
 
 class SearchItemForm(FlaskForm):
-    item = fields.SelectField("อุปกรณ์")
-    categories = fields.SelectField("หมวดหมู่")
+    item = fields.SelectField("อุปกรณ์", validate_choice=False)
+    categories = fields.SelectField("หมวดหมู่", validate_choice=False)
