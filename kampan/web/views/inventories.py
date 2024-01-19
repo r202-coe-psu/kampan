@@ -23,7 +23,10 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 def index():
     form = forms.inventories.SearchStartEndDateForm()
     inventories = models.Inventory.objects(status="active")
-
+    items = models.Item.objects(status="active")
+    form.item.choices = [
+        (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    ]
     if form.start_date.data == None and form.end_date.data != None:
         inventories = inventories.filter(
             registeration_date__lt=form.end_date.data,
@@ -39,6 +42,8 @@ def index():
             registeration_date__gte=form.start_date.data,
             registeration_date__lt=form.end_date.data,
         )
+    if form.item.data != None:
+        inventories = inventories.filter(item=form.item.data)
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:
         page = 1

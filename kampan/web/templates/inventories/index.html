@@ -10,19 +10,7 @@
 
 {% block content %}
 <form method="post">
-  <div class="ui secondary menu">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
-  </div>
+  {{ renderer.render_default_search_bar(form) }}
   <div>
     {% if inventories %}
     <table class="ui striped padded celled table">
