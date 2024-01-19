@@ -77,7 +77,28 @@
 
 {% macro render_select_default(field) -%}
 <div class="field">
-  <label style="font-weight: bold; padding-left: 5px;">{{ field.label }}</label>
-  {{ field(class="ui fluid search dropdown clearable selection") }}
+  <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
+  <div class="ui input">
+    {{ field(class="ui fluid search dropdown clearable selection") }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro render_default_search_bar(form) -%}
+<div class="ui secondary menu">
+  {{form.hidden_tag()}}
+  <p style="margin-left:auto;">
+    {{ render_select_default(form.item) }}
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
+  </p>
+  <p>
+    <button type="submit" class="ui primary button"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+  </p>
 </div>
 {%- endmacro %}
