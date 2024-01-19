@@ -11,16 +11,15 @@ from kampan import models
 BaseItemForm = model_form(
     models.Item,
     FlaskForm,
-    exclude=["user", "created_date", "updated_date", "รูปอุปกรณ์"],
+    exclude=["user", "created_date", "updated_date", "รูปภาพ"],
     field_args={
-        "name": {"label": "ชื่ออุปกรณ์"},
+        "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
-        "weight": {"label": "น้ำหนัก (กิโลกรัม)"},
-        "size": {"label": "ขนาด"},
         "categories": {"label": "หมวดหมุ่"},
         "unit": {"label": "หน่วย"},
-        "minimum": {"label": "จำนวนอุปกรณ์ขั้นต่ำ -- (แจ้งเตือน)"},
+        "minimum": {"label": "จำนวนขั้นต่ำ -- (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
+        "piece_per_set": {"label": "จำนวน (ชิ้น/ชุด)"},
     },
 )
 
@@ -28,10 +27,11 @@ BaseItemForm = model_form(
 class ItemForm(BaseItemForm):
     categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
     img = fields.FileField(
-        "รูปภาพอุปกรณ์",
+        "รูปภาพ",
         validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")],
     )
 
 
 class SearchItemForm(FlaskForm):
     item = fields.SelectField("อุปกรณ์")
+    categories = fields.SelectField("หมวดหมู่")

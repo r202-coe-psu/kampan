@@ -14,9 +14,12 @@
 <form method="post">
   <div class="ui form">
     <div class="four fields">
+      {{form.hidden_tag()}}
       <p style="margin-left:auto;">
-        {{form.hidden_tag()}}
         {{ renderer.render_select_default(form.item) }}
+      </p>
+      <p style="margin-left:10px;">
+        {{ renderer.render_select_default(form.categories) }}
       </p>
       <button type="submit" class="ui primary button"
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
@@ -38,10 +41,7 @@
       <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
       <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
-      <div class="meta">นํ้าหนัก : {{ item.weight }} kg</div>
-      <div class="meta">จำนวนทั้งหมด : {{ item.minimum }} {{ item.unit }}</div>
-      <div class="meta">ขนาด (กว้าง x สูง x ลึก) : {{ item.size.width }} x {{ item.size.height }} x {{ item.size.deep }}
-      </div>
+      <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
       <div class="meta">หมวดหมู่: {{ item.categories|join(', ') }}</div>
       <div class="description">ผู้ใช้งาน : {{ item.user.first_name }} {{ item.user.last_name }}</div>
     </div>
