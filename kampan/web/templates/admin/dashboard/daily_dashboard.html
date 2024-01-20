@@ -1,0 +1,330 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}แดชบอร์ดรายวัน{% endblock %}
+{% block dashboard_title %}
+<div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายวัน</div>
+<a href="{{ url_for('notifications.index') }}">
+  {% if notifications == 0 %}
+  <i class="icons ui small right floated header green">
+    <i class="bell outline icon"></i>
+  </i>
+  {% else %}
+  <i class="icons ui small right floated header red">
+    <i class="bell outline icon"></i>
+    <div class="floating ui red label" style="padding:2px 3px;top: 2px;left: 4px;">
+      <span> {{ notifications }} </span>
+    </div>
+  </i>
+  {% endif %}
+</a>
+{% endblock %}
+{% block breadcrumbs %}
+<div class="row justify-content-center align-items-center">
+  <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0; margin: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
+        <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
+              <h3>{{ daily_item_orders | length }}</h3>
+            </b></span> รายการ</h5>
+        <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
+  {#
+  <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e; margin: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
+        <h5 class="card-title mt-3">อุปกรณ์นำเข้าคงเหลือ <span style="color: #6d0000;"><b>
+              <h3>{{ }}</h3>
+            </b></span> รายการ</h5>
+        <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
+  #}
+  <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892; margin: 10px;">
+      <div class="card-body text-center">
+        <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
+        <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
+              <h3>{{total_values}}</h3>
+            </b></span> ฿ </h5>
+        <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</head>
+
+<div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
+  <i class="chart line icon"></i>
+  <div class="content" style="color: #292d33;">
+    <div class="ui medium header"> คำสั่งเบิกอุปกรณ์รายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
+  </div>
+
+  <form method="post">
+    <div class="ui secondary menu" style="text-align:center;">
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      <button type="submit" class="ui primary button" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
+    </div>
+  </form>
+
+</div>
+{% if daily_item_orders %}
+<div style="padding-bottom: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+
+        <th>วันที่สั่งเบิกอุปกรณ์</th>
+        <th>คำอธิบาย</th>
+        <th>ชื่อผู้ใช้งาน</th>
+        <th>เบิกอุปกรณ์</th>
+        <th>รายการอุปกรณ์</th>
+        <th>สถานะ</th>
+        <th>แก้ไข/ลบข้อมูล</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in paginated_daily_item_orders.items %}
+      <tr>
+        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Description">{{ order.description }}</td>
+        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+        <td>
+          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+            เบิกอุปกรณ์
+          </a>
+        </td>
+
+        <td data-label="Bill">
+          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="eye icon"></i>
+          </a>
+        </td>
+        {% if order.approval_status == "pending" %}
+        <td data-label="Status" class="red">
+          <span class="ui red text">รออนุมัติ</span>
+        </td>
+        {% else %}
+        <td data-label="Status" class="green">
+          <span class="ui green text">อนุมัติ</span>
+        </td>
+        {% endif %}
+        <td>
+          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+            onclick="showDeleteModal('{{ order.id }}')">
+            <i class="trash icon"></i>
+          </a>
+          <div class="ui modal {{order.id}}">
+            <div class="header">
+              ลบคำสั่งเบิกอุปกรณ์
+            </div>
+            <div class="content">
+              <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+                <b>{{ order.description }}</b>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ui black deny button">
+                ยกเลิก
+              </button>
+              <a class="ui negative right labeled icon button"
+                href="{{ url_for('item_orders.delete', order_id=order.id) }}">
+                ยืนยัน
+                <i class="checkmark icon"></i>
+              </a>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if paginated_daily_item_orders.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
+
+<style>
+  .button-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .button {
+    background-color: #0074cc;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin: 5px;
+    transition: background-color 0.3s;
+  }
+
+  .button:hover {
+    background-color: #0074cc70;
+  }
+
+  .button.green {
+    background-color: #00A11B;
+  }
+
+  .button.green:hover {
+    background-color: #00a11b70;
+  }
+</style>
+
+<div class="button-group">
+  <a href="/dashboard/" class="button green" style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายวัน</a>
+  <a href="/dashboard/monthly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
+  <a href="/dashboard/yearly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายปี</a>
+</div>
+
+
+
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  function validateForm() {
+    var dateInput = document.querySelector("#month_year_calendar input").value;
+    dateInput = dateInput.trim();
+    if (dateInput === "") {
+      alert("Please enter year and month before submitting.");
+      return false;
+    }
+    return true;
+  }
+</script>
+
+<script>
+  var select_year = {{ select_year }}
+  var select_month = {{ select_month }}
+  var checkout_trend_day = {{ checkout_trend_day }}
+  var years_day = {{ years_day }}
+
+  var checkout_trend_day = checkout_trend_day[select_year][select_month]
+  var years_day = years_day[select_year][select_month]
+  var options = {
+    series: [{
+      name: "Profit of (Checkout * Price)",
+      data: checkout_trend_day,
+    }],
+    chart: {
+      height: 350, width: 800,
+      type: 'bar',
+      zoom: {
+        enabled: true
+      }
+    },
+    dataLabels: {
+      enabled: true,
+    },
+    colors: ['#00A11B'],
+    stroke: {
+      curve: 'straight'
+    },
+    title: {
+      text: 'แผนภูมิแท่งแสดงข้อมูลรายรับรายจ่ายประจำเดือน',
+      align: 'center',
+
+    },
+    grid: {
+      row: {
+        colors: ['#f3f3f3', 'transparent'], // takes an array which will be repeated on columns
+        opacity: 0.5
+      },
+    },
+    xaxis: {
+      categories: years_day,
+      title: {
+        text: 'วันที่',
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'รายได้ (บาท)',
+      },
+    }
+  };
+
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+  chart.render(); 
+</script>
+
+<script>
+  $('.menu .item')
+    .tab()
+    ;
+</script>
+
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+</script>
+
+<script type="text/javascript">
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+
+
+
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends '/item_checkouts/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}นำอุปกรณ์ออก{% endblock %}
+{% block dashboard_title %}นำอุปกรณ์ออก{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a> /
+<div class="active section">เพิ่มตำแหน่งอุปกรณ์</div>
+{% endblock %}
+
+
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+      {{ form.item.label }}
+      {{ form.item(class="ui fluid search dropdown") }}
+    </div>
+    {{ renderer.render_field(form.quantity) }}
+    {{ renderer.render_calendar_default(form.checkout_date, calendar_id="checkout_date_calendar") }}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+</script>
+
+<script type="text/javascript">
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends '/approve_orders/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+เพิ่มคำสั่งเบิก
+{% endblock %}
+
+{% block dashboard_title %}
+อนุมัติคำสั่งเบิกอุปกรณ์
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<i class="right angle icon divider"></i>
+<div class="active section">
+  อนุมัติคำสั่งเบิกอุปกรณ์
+</div>
+{% endblock %}
+
+
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+    {{ form.hidden_tag() }}
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>รูปอุปกรณ์</th>
+          <th>วันที่นำอุปกรณ์ออก</th>
+          <th>ชื่ออุปกรณ์</th>
+          <th>จำนวนที่เบิกอุปกรณ์</th>
+          <th>จำนวนที่มีในคลัง</th>
+          <th>จำนวนที่อนุมัติ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in checkouts %}
+        <tr>
+          <td data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Item">{{ checkout.item.name }}</td>
+          <td data-label="Quantity">{{ checkout.quantity }}</td>
+          {% if checkout.quantity > checkout.item.get_items_quantity() %}
+          <td data-label="Status" class="red">
+            <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="green">
+            <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% endif %}
+          <td> {% for approved_quantity in form %}
+            {{ approved_quantity if approved_quantity.id == checkout.item.id }}
+            {% endfor %}
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}

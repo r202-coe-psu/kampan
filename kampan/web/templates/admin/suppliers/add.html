@@ -1,0 +1,35 @@
+{% extends '/suppliers/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+เพิ่มร้านค้า
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<div class="active section">เพิ่ม</div>
+{% endblock %}
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+
+    {{ form.hidden_tag() }}
+    <div class="two fields">
+      {{ renderer.render_field(form.name) }}
+      {{ renderer.render_field(form.tax_id) }}
+    </div>
+    {{ renderer.render_field(form.address) }}
+    {{ renderer.render_field(form.description) }}
+    <div class="two fields">
+      {{ renderer.render_field(form.contact) }}
+      {{ renderer.render_field(form.email) }}
+    </div>
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}

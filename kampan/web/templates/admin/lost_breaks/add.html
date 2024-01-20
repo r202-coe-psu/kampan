@@ -1,0 +1,42 @@
+{% extends '/lost_breaks/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+{% if 'edit' in request.path %}
+แก้ไขข้อมูล
+{% else %}
+เพิ่มข้อมูล
+{% endif %}
+{% endblock %}
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{super()}}
+<i class="right angle icon divider"></i>
+<div class="active section">
+  {% if 'edit' in request.path %}
+  แก้ไขข้อมูล
+  {% else %}
+  เพิ่มข้อมูล
+  {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="two fields">
+      {{ renderer.render_select(form.item) }}
+      {{ renderer.render_field(form.quantity) }}
+    </div>
+    {{ renderer.render_field(form.description) }}
+
+    <button class="ui primary button" type="submit">Submit</button>
+  </form>
+</div>
+{% endblock content %}

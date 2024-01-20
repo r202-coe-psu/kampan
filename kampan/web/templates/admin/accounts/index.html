@@ -1,0 +1,54 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block dashboard_title %}
+ข้อมูลผู้ใช้งาน
+{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{{ url_for('accounts.index') }}" class="section">บัญชีผู้ใช้งาน</a>
+{% endblock %}
+
+{% macro row_detail(text) -%}
+<div class="column">
+  <h3> {{ text }}</h3>
+</div>
+{%- endmacro %}
+
+{% block content %}
+<div class="ui container" style="width: 100%;">
+  <div class="ui segment">
+    <h2 class="ui header">ข้อมูลผู้ใช้งาน <a class="btn-floating btn-large waves-effect waves-light"
+        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
+    </h2>
+    {% if current_user.get_picture() %}
+    <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">
+    {% endif %}
+    <div class="ui grid two column">
+      {{ row_detail("Name :") }}
+      {{ row_detail(current_user.first_name) }}
+      {{ row_detail("Last Name :") }}
+      {{ row_detail(current_user.last_name) }}
+
+      {% if current_user.metadata['thai_first_name'] %}
+      {{ row_detail("ชื่อ :") }}
+      {{ row_detail(current_user.metadata['thai_first_name']) }}
+      {% endif %}
+
+      {% if current_user.metadata['thai_last_name'] %}
+      {{ row_detail("นามสกุล :") }}
+      {{ row_detail(current_user.metadata['thai_last_name']) }}
+      {% endif %}
+
+      {% if current_user.citizen_id %}
+      {{ row_detail("เลขประจำตัวประชาชน :") }}
+      {{ row_detail(current_user.citizen_id) }}
+      {% endif %}
+
+      {% if current_user.citizen_id %}
+      {{ row_detail("องกรณ์ :") }}
+      {{ row_detail(current_user.citizen_id) }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

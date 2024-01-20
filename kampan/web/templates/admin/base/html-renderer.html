@@ -1,0 +1,109 @@
+{% import '/base/error-handler.html' as eh %}
+
+{% macro render_field(field, class_='') -%}
+{%- set style = '%s' | format(eh.get_validate_class(field.errors)) -%}
+{%- if class_ != '' -%}
+{%- set style = '%s %s' | format(class_, eh.get_validate_class(field.errors)) -%}
+{%- endif -%}
+<div class="field">
+  {{ field.label }}
+  {{ field(class_=style) }}
+</div>
+{{ eh.get_error_messages(field.errors) }}
+{%- endmacro %}
+
+{% macro render_checkbox(field) -%}
+<div class="field">
+  <div class="ui checkbox">
+    {{ field }}
+    {{ field.label }}
+  </div>
+</div>
+{%- endmacro %}
+
+
+{% macro render_fileinput(field) -%}
+<div class="field">
+  {{ field.label }}
+  <div class="ui action input">
+    <input type="text" placeholder="{{ field.label.text }}" readonly class="attach-file-{{field.name}}">
+    {{ field(style="display: none;") }}
+    <div class="ui icon button attach-file-{{field.name}}">
+      <i class="attach icon"></i>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+
+{% macro render_select(field) -%}
+{{ render_field(field, class_='ui dropdown') }}
+{%- endmacro %}
+
+
+{% macro render_multiple_select(field) -%}
+{{ render_field(field, class_='ui fluid dropdown') }}
+{%- endmacro %}
+
+{% macro render_search_multiple_select(field) -%}
+{{ render_field(field, class_='ui fluid search dropdown') }}
+{%- endmacro %}
+
+{% macro render_calendar(field, calendar_id='calendar') -%}
+<div class="field">
+  <div class="ui calendar" id="{{ calendar_id }}">
+    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
+    <div class="ui input left icon">
+      <i class="calendar icon"></i>
+      {{ field(autocomplete='off') }}
+    </div>
+    <button type="submit" class="ui primary button"
+      style="height:fit-content; margin-top:auto; margin-left:15px; margin:5px;">ยืนยัน</button>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro render_calendar_default(field, calendar_id='calendar') -%}
+<div class="field">
+  <div class="ui calendar" id="{{ calendar_id }}">
+    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
+    <div class="ui input left icon">
+      <i class="calendar icon"></i>
+      {{ field(autocomplete='off',) }}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro render_select_default(field) -%}
+<div class="field">
+  <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
+  <div class="ui">
+    {{ field(class="ui fluid search dropdown clearable selection") }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro render_default_search_bar(form) -%}
+<div class="ui secondary menu">
+  {{form.hidden_tag()}}
+  <p style="margin-left:auto;">
+  <div class="field">
+    <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
+    <div class="ui input">
+      {{ form.item(class="ui fluid search dropdown clearable selection") }}
+    </div>
+  </div>
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
+  </p>
+  <p>
+    <button type="submit" class="ui primary button"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+  </p>
+</div>
+{%- endmacro %}

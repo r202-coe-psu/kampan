@@ -1,0 +1,32 @@
+{% extends '/accounts/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<i class="right angle icon divider"></i>
+<div class="active section">แก้ไขตำเเหน่งผู้ใช้งาน</div>
+{% endblock %}
+
+{% block content %}
+<div>
+    <form method="POST" class="ui big form">
+      
+      {{ form.hidden_tag() }}
+      {{ renderer.render_multiple_select(form.roles) }}
+      {#{{ renderer.render_field(form.organization)}}
+      {{ renderer.render_field(form.first_name) }}
+      {{ renderer.render_field(form.last_name) }}#}
+
+      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    </form>
+  </div>
+{% endblock content %}
+{% block additional_js %}
+
+<script>
+  $('#roles')
+    .dropdown()
+  ;
+</script>
+  
+{% endblock %}

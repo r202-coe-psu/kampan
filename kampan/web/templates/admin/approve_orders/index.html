@@ -1,0 +1,116 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
+{% block dashboard_title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
+
+{% block breadcrumbs %}
+{% if request.endpoint == 'approve_orders.index' %}
+
+{% else %}
+<a class="section" href="{{ url_for('approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+{% endif %}
+
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
+  </div>
+  <div>
+    {% if orders %}
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>วันที่สั่งเบิกอุปกรณ์</th>
+          <th>คำอธิบาย</th>
+          <th>ชื่อผู้ใช้งาน</th>
+          <th>รายการอุปกรณ์</th>
+          <th>การอนุมัติ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in paginated_orders.items %}
+        <tr>
+          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Description">{{ order.description }}</td>
+          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+          <td data-label="Bill">
+            <a class="ui primary button" href="{{ url_for('approve_orders.item_checkouts', order_id=order.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="eye icon"></i>
+            </a>
+          </td>
+          <td data-label="Status">
+            <a class="positive ui button" href="{{ url_for('approve_orders.approved_detail', order_id=order.id)}}">
+              อนุมัติ
+            </a>
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_orders.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_orders,"approve_orders.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}

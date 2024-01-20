@@ -1,0 +1,51 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block content %}
+<div class="ui section">
+    <h3>Hello {{ current_user.first_name }} {{ current_user.last_name }}</h3>
+    <p><i class="clock icon"></i> {{ now.ctime() }} </p>
+</div>
+
+
+<div class="ui segment">
+  <h2 class="header">
+    Available Class
+  </h2>
+  {% if available_classes | count == 0 %}
+    <h3>No Class for You</h3>
+  {% else %}
+    <div class="ui large divided list">
+      {% for class_ in available_classes %}
+        <div class="item">
+          {% if class_.is_enrolled(current_user.id) %}
+          <i class="large play middle aligned icon green"></i>
+          {% else %}
+          <i class="large folder middle aligned icon"></i>
+          {% endif %}
+          <div class="content">
+            <a class="header" href="{{ url_for('administration.classes.view', class_id=class_.id) }}">{{ class_.name }}</a>
+            <div class="description">
+              <p>{{ class_.description }}</p>
+              <p>Start {{ class_.started_date.date() }} <br>
+                 End {{ class_.ended_date.date() }} <br>
+              </p>
+            </div>
+            {#
+            {% if not class_.is_enrolled(current_user.id) %}
+            <div class="extra">
+              <div class="ui right floated">
+                <a href="{{ url_for('classes.enroll', class_id=class_.id) }}" class="ui primary button"><i class="users icon"></i>Enroll</a>
+              </div>
+              </div>
+            {% endif %}
+            #}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif%}
+</div>
+
+
+
+{% endblock %}

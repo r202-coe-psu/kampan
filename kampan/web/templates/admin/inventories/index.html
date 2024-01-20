@@ -1,0 +1,114 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}รายการนำเข้าอุปกรณ์{% endblock %}
+{% block dashboard_title %}รายการนำเข้าอุปกรณ์{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  {{ renderer.render_default_search_bar(form) }}
+  <div>
+    {% if inventories %}
+    <table class="ui striped padded celled table">
+      <thead>
+        <tr>
+          <th>รูปอุปกรณ์</th>
+          <th>ชื่ออุปกรณ์</th>
+          <th>เลขลงทะเบียนอุปกรณ์</th>
+          <th>วันที่ลงทะเบียนอุปกรณ์</th>
+          <th>คลังอุปกรณ์</th>
+          <th>ตำแหน่ง ( ชั้นวาง / แถว / ตู้เก็บของ )</th>
+          <th>จำนวนทั้งหมด</th>
+          <th>จำนวนคงเหลือ</th>
+          <th>ราคา (ชิ้นละ)</th>
+          <th>บิลอุปกรณ์</th>
+          <th>ผู้ใช้งาน</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inventory in paginated_inventories.items %}
+        <tr>
+          <td data-label="Image" class="center aligned">
+            <div>
+              {% if not inventory.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td data-label="Item Name">{{ inventory.item.name }}</td>
+          <td data-label="Registrarion ID">{{ inventory.registration.receipt_id}}</td>
+          <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+          <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{
+            inventory.position.locker }} </td>
+          <td data-label="Quantity">{{ inventory.quantity }}</td>
+          <td data-label="Remain">{{ inventory.remain }}</td>
+          <td data-label="Price">{{ inventory.price }}</td>
+          <td>
+            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id) }}" target="_blank">
+              {{inventory.get_bill_file_name() }}
+            </a>
+          </td>
+          <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
+
+          {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_inventories.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_inventories,"inventories.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}

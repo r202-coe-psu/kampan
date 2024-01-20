@@ -1,0 +1,36 @@
+{% extends '/item_orders/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+เพิ่มคำสั่งเบิก
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<i class="right angle icon divider"></i>
+<div class="active section">
+  {% if 'edit' in request.path %}
+  แก้ไขข้อมูลคำสั่งเบิก
+  {% else %}
+  เพิ่มคำสั่งเบิก
+  {% endif %}
+</div>
+{% endblock %}
+
+
+
+{% block content %}
+    <div>
+    <form class="ui form" method="POST">
+      
+      {{ form.hidden_tag() }}
+      {{ renderer.render_field(form.description) }}
+
+      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    </form>
+    </div>
+{% endblock content %}

@@ -1,0 +1,123 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer%}
+{% import '/base/pagination.html' as paginated%}
+
+{% block title %}รายการนำอุปกรณ์ออก{% endblock %}
+{% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
+
+{% block breadcrumbs %}
+
+{% endblock %}
+
+{% block content %}
+<form method="POST">
+  <div>
+    {{ renderer.render_default_search_bar(form) }}
+
+    {% if checkouts %}
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>วันที่สั่งเบิกอุปกรณ์</th>
+          <th>รูปอุปกรณ์</th>
+          <th>ชื่ออุปกรณ์</th>
+          <th>จำนวนที่เบิกทั้งหมด</th>
+          <th>สถานะ</th>
+          <th>ชื่อผู้ใช้งาน</th>
+          <th>เบิกจากคลังอุปกรณ์</th>
+          <th>จำนวนที่ได้รับ</th>
+          <th>ราคา (ชิ้นละ)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td data-label="Item">{{ checkout.item.name }}
+            <a class="ui primary button"
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id) }}"
+              style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
+              <i class="eye icon"></i>
+            </a>
+          </td>
+
+          <td data-label="Quantity">{{ checkout.quantity }}</td>
+          {% if checkout.approval_status == "pending" %}
+          <td data-label="Status" class="red">
+            <span class="ui red text">รออนุมัติ</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="green">
+            <span class="ui green text">อนุมัติ</span>
+          </td>
+          {% endif %}
+
+          <td data-label="User">{{ checkout.user.first_name}} {{ checkout.user.last_name}}</td>
+          <td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
+          <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>
+          <td data-label="Price">{{ checkout.price if checkout.price else "-"}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_checkouts.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}

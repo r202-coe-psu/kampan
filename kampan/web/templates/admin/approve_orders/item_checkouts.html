@@ -1,0 +1,116 @@
+{% extends '/item_checkouts/index.html' %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}รายการนำอุปกรณ์ออก{% endblock %}
+{% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
+
+{% block breadcrumbs %}
+{{ super() }}
+<div class="active section"></div>
+{% endblock %}
+
+{% block content %}
+{% if checkouts %}
+<div style="padding-bottom: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>รูปอุปกรณ์</th>
+        <th>วันที่นำอุปกรณ์ออก</th>
+        <th>ชื่ออุปกรณ์</th>
+        <th>จำนวนที่เบิกอุปกรณ์</th>
+        <th>จำนวนที่มีในคลัง</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for checkout in paginated_checkouts.items %}
+      <tr>
+        <td data-label="Image" class="center aligned">
+          <div>
+            {% if not checkout.item.image %}
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+            {% else %}
+            <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+              width="70">
+            {% endif %}
+          </div>
+        </td>
+        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Item">{{ checkout.item.name }}</td>
+        <td data-label="Quantity">{{ checkout.quantity }}</td>
+        {% if checkout.quantity > checkout.item.get_items_quantity() %}
+        <td data-label="Status" class="red">
+          <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
+        </td>
+        {% else %}
+        <td data-label="Status" class="green">
+          <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
+        </td>
+        {% endif %}
+
+        {#
+        <a class="ui icon button" href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id) }}"
+          style=" color: white; background-color: rgb(59, 115, 199);">
+          <i class="edit icon"></i>
+        </a>
+
+        <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+          onclick="showDeleteModal('{{ checkout.id }}')">
+          <i class="trash icon"></i>
+        </a>
+
+        <div class="ui modal {{checkout.id}}">
+          <div class="header">
+            ลบคำสั่งเบิกอุปกรณ์
+          </div>
+          <div class="content">
+            <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+              <b>{{ checkout.item.name }}</b>
+            </p>
+          </div>
+          <div class="actions">
+            <button class="ui black deny button">
+              ยกเลิก
+            </button>
+            <a class="ui negative right labeled icon button"
+              href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id) }}">
+              ยืนยัน
+              <i class="checkmark icon"></i>
+            </a>
+          </div>
+        </div>
+        #}
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% set params=dict(request.args) %}
+  {% if 'page' in params %}
+  {% set _dummy=params.pop('page') %}
+  {% endif %}
+  {% if paginated_checkouts.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
+
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(checkout_item_id) {
+    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}

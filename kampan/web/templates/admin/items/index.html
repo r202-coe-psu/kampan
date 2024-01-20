@@ -1,0 +1,103 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
+
+{% block title %}Items{% endblock %}
+{% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
+{% block breadcrumbs %}
+<a class="ui primary button" href="{{ url_for('items.add') }}">
+  เพิ่มอุปกรณ์
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  <div class="ui form">
+    <div class="four fields">
+      {{form.hidden_tag()}}
+      <p style="margin-left:auto;">
+        {{ renderer.render_select_default(form.item) }}
+      </p>
+      <p style="margin-left:10px;">
+        {{ renderer.render_select_default(form.categories) }}
+      </p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </div>
+  </div>
+</form>
+{% if items %}
+<div class="ui four cards">
+  {% for item in paginated_items.items %}
+  <div class="card">
+    <div class="image">
+      {% if not item.image %}
+      <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
+      {% else %}
+      <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" alt="{{ item.name }}">
+      {% endif %}
+    </div>
+    <div class="content">
+      <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
+      <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
+      <div class="meta">คำอธิบาย : {{ item.description }}</div>
+      <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
+      <div class="meta">หมวดหมู่: {{ item.categories }}</div>
+      <div class="description">ผู้ใช้งาน : {{ item.user.first_name }} {{ item.user.last_name }}</div>
+    </div>
+    <div class="extra content">
+      <div class="ui two buttons">
+        <a class="ui primary button" href="{{ url_for('items.edit', item_id=item.id) }}">
+          แก้ไข
+        </a>
+
+        <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
+          ลบข้อมูล
+        </a>
+        <div class="ui modal {{item.id}}">
+          <div class="header">
+            ลบอุปกรณ์
+          </div>
+          <div class="content">
+            <p>ต้องการลบอุปกรณ์
+              <b>{{ item.name }}</b>
+            </p>
+          </div>
+          <div class="actions">
+            <button class="ui black deny button">
+              ยกเลิก
+            </button>
+            <a class="ui negative right labeled icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
+              ยืนยัน
+              <i class="checkmark icon"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% if paginated_items.pages != 1 %}
+<div class="ui grid">
+  <div class="column row">
+    <div class="center aligned column">
+      {{paginated.render_pagination(paginated_items,"items.index")}}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(item_id) {
+    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends '/inventories/index.html' %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}รายการบิลอุปกรณ์{% endblock %}
+{% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
+{% block breadcrumbs %}
+{% if request.endpoint == 'inventories.index' %}
+<div class="active section">รายการบิล</div>
+{% else %}
+<a class="section" href="{{ url_for('inventories.index') }}">รายการบิล</a>
+<div class="divider"> / </div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if paginated_inventories %}
+<div>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>รูปอุปกรณ์</th>
+        <th>รหัสอุปกรณ์</th>
+        <th>ชื่ออุปกรณ์</th>
+        <th>วันที่ลงทะเบียนอุปกรณ์</th>
+        <th>คลังอุปกรณ์</th>
+        <th>จำนวนทั้งหมด</th>
+        <th>จำนวนคงเหลือ</th>
+        <th>ราคา (ชิ้นละ)</th>
+        <th>แก้ไข/ลบข้อมูล</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inventory in paginated_inventories.items %}
+      <tr>
+        <td data-label="Image" class="center aligned">
+          <div>
+            {% if not inventory.item.image %}
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+            {% else %}
+            <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
+              width="70">
+            {% endif %}
+          </div>
+        </td>
+        <td data-label="Item ID">{{ inventory.item.id }}</td>
+        <td data-label="Item Name">{{ inventory.item.name }}</td>
+        <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+        <td data-label="Quantity">{{ inventory.quantity }}</td>
+        <td data-label="Remain">{{ inventory.remain }}</td>
+        <td data-label="Price">{{ inventory.price }}</td>
+        <td>
+          <a class="ui icon button" href="{{ url_for('inventories.edit', inventory_id=inventory.id) }}"
+            style=" color: white; background-color: rgb(59, 115, 199);">
+            <i class="edit icon"></i>
+          </a>
+          <a class="ui icon button" onclick="showDeleteModal('{{ inventory.id }}')"
+            style="color: white; background-color: rgb(192, 55, 55);">
+            <i class="trash icon"></i>
+          </a>
+          <div class="ui modal {{inventory.id}}">
+            <div class="header">
+              ลบข้อมูลอุปกรณ์ในบิล
+            </div>
+            <div class="content">
+              <p>ต้องการลบข้อมูลอุปกรณ์
+                <b>{{ inventory.item.name }}</b>
+              </p>
+            </div>
+            <div class="actions">
+              <button class="ui black deny button">
+                ยกเลิก
+              </button>
+              <a class="ui negative right labeled icon button"
+                href="{{ url_for('inventories.delete', inventory_id=inventory.id) }}">
+                ยืนยัน
+                <i class="checkmark icon"></i>
+              </a>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% set params=dict(request.args) %}
+  {% if 'page' in params %}
+  {% set _dummy=params.pop('page') %}
+  {% endif %}
+  {% if paginated_inventories.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_inventories,"inventories.bill_item", params)}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(inventory_id) {
+    inventory_id ? $('.ui.modal.' + inventory_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}
