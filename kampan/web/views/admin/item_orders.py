@@ -2,28 +2,18 @@ from calendar import calendar
 from pyexpat import model
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 from flask_mongoengine import Pagination
 import mongoengine as me
 
-import datetime
-
-
-from pyexpat import model
-from flask import Blueprint, render_template, redirect, url_for
-from flask_login import login_required, current_user
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
-import mongoengine as me
-
-import datetime
 
 module = Blueprint("item_orders", __name__, url_prefix="/item_orders")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     orders = models.OrderItem.objects(status="active")
 
@@ -58,6 +48,7 @@ def index():
 
 @module.route("/order", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def order():
     items = models.Item.objects()
     form = forms.item_orders.OrderItemForm()
@@ -80,6 +71,7 @@ def order():
 
 @module.route("/<order_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(order_id):
     order = models.OrderItem.objects().get(id=order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
@@ -99,6 +91,7 @@ def edit(order_id):
 
 @module.route("/<order_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(order_id):
     order = models.OrderItem.objects().get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order)

@@ -1,6 +1,3 @@
-from calendar import calendar
-from pyexpat import model
-from tabnanny import check
 from flask import (
     Blueprint,
     render_template,
@@ -10,16 +7,19 @@ from flask import (
     send_file,
     abort,
 )
-from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 from flask_mongoengine import Pagination
+from flask_login import login_required, current_user
+
+from kampan.web import forms, acl
+from kampan import models
+
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     form = forms.inventories.SearchStartEndDateForm()
     inventories = models.Inventory.objects(status="active")
@@ -58,6 +58,7 @@ def index():
 
 @module.route("/register", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def register():
     form = forms.inventories.InventoryForm()
     item_register_id = request.args.get("item_register_id")
@@ -94,6 +95,7 @@ def register():
 
 @module.route("/<inventory_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(inventory_id):
     inventory = models.Inventory.objects().get(id=inventory_id)
     form = forms.inventories.InventoryForm(obj=inventory)
@@ -148,6 +150,7 @@ def edit(inventory_id):
 
 @module.route("/<inventory_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(inventory_id):
     inventory = models.Inventory.objects().get(id=inventory_id)
     inventory.status = "disactive"
@@ -160,6 +163,7 @@ def delete(inventory_id):
 
 @module.route("/all-item", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def bill_item():
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
@@ -174,6 +178,8 @@ def bill_item():
 
 
 @module.route("/<inventory_id>/file")
+@login_required
+@acl.roles_required("admin")
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
     registration_item = models.RegistrationItem.objects(

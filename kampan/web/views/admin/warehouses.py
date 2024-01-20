@@ -1,17 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 import mongoengine as me
 from flask_mongoengine import Pagination
 
-import datetime
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("warehouses", __name__, url_prefix="/warehouses")
 
 
 @module.route("/")
 @login_required
+@acl.roles_required("admin")
 def index():
     warehouses = models.Warehouse.objects(status="active")
     page = request.args.get("page", default=1, type=int)
@@ -26,6 +26,7 @@ def index():
 @module.route("/add", methods=["GET", "POST"], defaults=dict(warehouse_id=None))
 @module.route("/<warehouse_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def add_or_edit(warehouse_id):
     form = forms.warehouses.WarehouseForm()
 
@@ -53,6 +54,7 @@ def add_or_edit(warehouse_id):
 
 @module.route("/<warehouse_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(warehouse_id):
     warehouse = models.Warehouse.objects().get(id=warehouse_id)
     form = forms.warehouses.WarehouseForm(obj=warehouse)
@@ -71,6 +73,7 @@ def edit(warehouse_id):
 
 @module.route("/<warehouse_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(warehouse_id):
     warehouse = models.Warehouse.objects().get(id=warehouse_id)
     warehouse.status = "disactive"

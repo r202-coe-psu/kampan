@@ -52,6 +52,7 @@ def get_user_and_remember():
 
 
 @module.route("/login", methods=("GET", "POST"))
+@acl.roles_required("admin")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
@@ -63,6 +64,7 @@ def login():
 
 
 @module.route("/login/<name>")
+@acl.roles_required("admin")
 def login_oauth(name):
     client = oauth2.oauth2_client
 
@@ -86,6 +88,7 @@ def login_oauth(name):
 
 
 @module.route("/auth/<name>")
+@acl.roles_required("admin")
 def authorized_oauth(name):
     client = oauth2.oauth2_client
     remote = None
@@ -113,12 +116,14 @@ def authorized_oauth(name):
 
 @module.route("/logout")
 @login_required
+@acl.roles_required("admin")
 def logout():
     logout_user()
     return redirect(url_for("site.index"))
 
 
 @module.route("/accounts/<user_id>")
+@acl.roles_required("admin")
 def profile(user_id):
     user = models.User.objects.get(id=user_id)
 
@@ -130,6 +135,7 @@ def profile(user_id):
 
 @module.route("/accounts")
 @login_required
+@acl.roles_required("admin")
 def index():
     biography = ""
     if current_user.biography:
@@ -141,6 +147,7 @@ def index():
 
 @module.route("/accounts/edit-profile", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit_profile():
     form = forms.accounts.ProfileForm(
         obj=current_user,
@@ -175,6 +182,7 @@ def edit_profile():
 
 
 @module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
+@acl.roles_required("admin")
 def picture(user_id, filename):
     user = models.User.objects.get(id=user_id)
 
@@ -203,6 +211,7 @@ def user_roles():
 
 @module.route("/user-roles/edit-roles", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit_roles():
     if "admin" in current_user.roles:
         user_id = request.args.get("user_id")

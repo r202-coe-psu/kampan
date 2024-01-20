@@ -1,16 +1,16 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 import mongoengine as me
 from flask_mongoengine import Pagination
 
-import datetime
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("suppliers", __name__, url_prefix="/suppliers")
 
 
 @module.route("/")
+@acl.roles_required("admin")
 @login_required
 def index():
     suppliers = models.Supplier.objects(status="active")
@@ -25,6 +25,7 @@ def index():
 
 @module.route("/add", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def add():
     supplier = models.Supplier()
     form = forms.suppliers.SupplierForm()
@@ -42,6 +43,7 @@ def add():
 
 @module.route("/<supplier_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(supplier_id):
     supplier = models.Supplier.objects().get(id=supplier_id)
     form = forms.suppliers.SupplierForm(obj=supplier)
@@ -60,6 +62,7 @@ def edit(supplier_id):
 
 @module.route("/<supplier_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(supplier_id):
     supplier = models.Supplier.objects().get(id=supplier_id)
     supplier.status = "disactive"

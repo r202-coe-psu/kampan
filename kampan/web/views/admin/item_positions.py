@@ -1,17 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 from flask_mongoengine import Pagination
 import mongoengine as me
 
-import datetime
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("item_positions", __name__, url_prefix="/item-positions")
 
 
 @module.route("/")
 @login_required
+@acl.roles_required("admin")
 def index():
     item_positions = models.ItemPosition.objects(status="active")
     page = request.args.get("page", default=1, type=int)
@@ -26,6 +26,7 @@ def index():
 @module.route("/add", methods=["GET", "POST"], defaults=dict(item_position_id=None))
 @module.route("/<item_position_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def add_or_edit(item_position_id):
     form = forms.item_positions.ItemPositionForm()
 
@@ -53,6 +54,7 @@ def add_or_edit(item_position_id):
 
 @module.route("/<item_position_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(item_position_id):
     item_position = models.Warehouse.objects().get(id=item_position_id)
     form = forms.item_positions.WarehouseForm(obj=item_position)
@@ -71,6 +73,7 @@ def edit(item_position_id):
 
 @module.route("/<item_position_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(item_position_id):
     item_position = models.ItemPosition.objects().get(id=item_position_id)
     item_position.status = "disactive"

@@ -8,18 +8,18 @@ from flask import (
     request,
 )
 from flask_login import login_required, current_user
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 from flask_mongoengine import Pagination
 import mongoengine as me
 
-import datetime
 
 module = Blueprint("items", __name__, url_prefix="/items")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     form = forms.items.SearchItemForm()
     items = models.Item.objects(status="active")
@@ -48,6 +48,7 @@ def index():
 
 @module.route("/add", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def add():
     form = forms.items.ItemForm()
     if not form.validate_on_submit():
@@ -84,6 +85,7 @@ def add():
 
 @module.route("/<item_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(item_id):
     item = models.Item.objects().get(id=item_id)
     form = forms.items.ItemForm(obj=item)
@@ -118,6 +120,7 @@ def edit(item_id):
 
 @module.route("/<item_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(item_id):
     item = models.Item.objects().get(id=item_id)
     item.status = "disactive"
@@ -127,6 +130,7 @@ def delete(item_id):
 
 
 @module.route("/<item_id>/picture/<filename>")
+@acl.roles_required("admin")
 def image(item_id, filename):
     item = models.Item.objects.get(id=item_id)
 

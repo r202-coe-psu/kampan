@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 from calendar import monthrange
 import datetime
 from flask_mongoengine import Pagination
+
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 subviews = []
@@ -22,12 +23,14 @@ def index_user():
 
 
 @module.route("/")
+@acl.roles_required("admin")
 def index():
     return redirect(url_for("dashboard.daily_dashboard"))
 
 
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def daily_dashboard():
     form = forms.inventories.SearchStartEndDateForm()
     form.end_date.validators = None
@@ -77,6 +80,7 @@ def daily_dashboard():
 
 @module.route("/monthly", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def monthly_dashboard():
     form = forms.inventories.SearchMonthYearForm()
 
@@ -168,6 +172,7 @@ def monthly_dashboard():
 
 @module.route("/yearly", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def yearly_dashboard():
     form = forms.inventories.SearchYearForm()
 

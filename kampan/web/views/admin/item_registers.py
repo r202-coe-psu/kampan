@@ -1,17 +1,17 @@
-from calendar import calendar
-from crypt import methods
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 import mongoengine as me
 from flask_mongoengine import Pagination
+
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     item_registers = models.RegistrationItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
@@ -50,6 +50,7 @@ def index():
     methods=["GET", "POST"],
 )
 @login_required
+@acl.roles_required("admin")
 def register():
     form = forms.item_registers.ItemRegisterationForm()
     item_register = models.RegistrationItem()
@@ -83,6 +84,7 @@ def register():
 
 @module.route("/<item_register_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(item_register_id):
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     form = forms.item_registers.ItemRegisterationForm(obj=item_register)
@@ -114,6 +116,7 @@ def edit(item_register_id):
 
 @module.route("/<item_register_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(item_register_id):
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     item_register.status = "disactive"

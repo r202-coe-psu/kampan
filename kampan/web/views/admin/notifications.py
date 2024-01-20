@@ -1,18 +1,17 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
-from kampan import models
 import mongoengine as me
 from flask_mongoengine import Pagination
 
-import datetime
+from kampan.web import forms, acl
+from kampan import models
 
 module = Blueprint("notifications", __name__, url_prefix="/notifications")
-subviews = []
 
 
 @module.route("/")
 @login_required
+@acl.roles_required("admin")
 def index():
     notifications = []
 
@@ -30,6 +29,8 @@ def index():
 
 
 @module.route("/<item_id>/set_status")
+@login_required
+@acl.roles_required("admin")
 def set_status(item_id):
     item = models.Item.objects(id=item_id).first()
     item.notification_status = False

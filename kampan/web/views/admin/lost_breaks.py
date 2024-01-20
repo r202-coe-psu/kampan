@@ -3,15 +3,15 @@ from crypt import methods
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
-import mongoengine as me
 
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     lost_break_items = models.LostBreakItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
@@ -45,6 +45,7 @@ def index():
 
 @module.route("/add", methods=["GET", "POST"], defaults=dict(lost_break_item_id=None))
 @login_required
+@acl.roles_required("admin")
 def add(lost_break_item_id):
     form = forms.lost_break.ItemLostBreakForm()
     items = models.Item.objects(status="active")
@@ -93,6 +94,7 @@ def add(lost_break_item_id):
 
 @module.route("/<lost_break_item_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(lost_break_item_id):
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
     form = forms.lost_break.ItemLostBreakForm(obj=lost_break_item)
@@ -156,6 +158,7 @@ def edit(lost_break_item_id):
 
 @module.route("/<lost_break_item_id>/delete")
 @login_required
+@acl.roles_required("admin")
 def delete(lost_break_item_id):
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
     if lost_break_item.quantity != 0:

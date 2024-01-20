@@ -1,16 +1,10 @@
-from atexit import register
-from calendar import calendar
-from crypt import methods
-from pyexpat import model
-from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms
-from kampan import models
 import mongoengine as me
 
-import datetime
+from kampan.web import forms, acl
+from kampan import models
 
 
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
@@ -18,6 +12,7 @@ module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     checkout_items = models.CheckoutItem.objects(
         status="active", approval_status="pending"
@@ -74,6 +69,7 @@ def index():
 
 @module.route("/checkout", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def checkout():
     # items = models.Item.objects()
     form = forms.item_checkouts.CheckoutItemForm()
@@ -118,6 +114,7 @@ def checkout():
 
 @module.route("/all-checkout", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def bill_checkout():
     order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
@@ -136,6 +133,7 @@ def bill_checkout():
 
 @module.route("/checkout/<checkout_item_id>/edit", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def edit(checkout_item_id):
     checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
     order = models.OrderItem.objects(id=checkout_item.order.id).first()
@@ -171,6 +169,7 @@ def edit(checkout_item_id):
 
 @module.route("/checkout/<checkout_item_id>/delete", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def delete(checkout_item_id):
     checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
     checkout_item.status = "disactive"

@@ -1,20 +1,19 @@
-from calendar import calendar
-from crypt import methods
-from pyexpat import model
-from tabnanny import check
+import datetime
 from flask import Blueprint, render_template, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
-from kampan.models import inventories
-from kampan.web import forms
-from kampan import models
 from flask_mongoengine import Pagination
-import datetime
+
+from kampan.models import inventories
+from kampan.web import forms, acl
+from kampan import models
+
 
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
 
 @module.route("/", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def index():
     if "admin" in current_user.roles or "supervisor" in current_user.roles:
         orders = models.OrderItem.objects(approval_status="pending", status="active")
@@ -49,6 +48,7 @@ def index():
 
 
 @module.route("/<order_id>/approved_detail", methods=["GET", "POST"])
+@acl.roles_required("admin")
 def approved_detail(order_id):
     order = models.OrderItem.objects(id=order_id).first()
     checkouts = models.CheckoutItem.objects(order=order, status="active")
@@ -108,6 +108,7 @@ def approved_detail(order_id):
 
 
 @module.route("<order_id>", methods=["GET"])
+@acl.roles_required("admin")
 def approve(order_id):
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
@@ -123,6 +124,7 @@ def approve(order_id):
 
 @module.route("/item_checkouts", methods=["GET", "POST"])
 @login_required
+@acl.roles_required("admin")
 def item_checkouts():
     order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
