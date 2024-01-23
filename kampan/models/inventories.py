@@ -8,7 +8,7 @@ import datetime
 class RegistrationItem(me.Document):
     meta = {"collection": "registration_items"}
 
-    bill = me.FileField()
+    bill = me.FileField(collection_name="bill_registration")
     status = me.StringField(default="active")
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
@@ -30,6 +30,8 @@ class Inventory(me.Document):
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
+    organization = me.ReferenceField("Organization", dbref=True)
+
     item = me.ReferenceField("Item", dbref=True)
     # bill = me.FileField()
 
