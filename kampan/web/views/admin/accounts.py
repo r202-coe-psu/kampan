@@ -203,7 +203,7 @@ def user_roles():
     users = models.User.objects()
     if "admin" in current_user.roles:
         return render_template(
-            "/accounts/user_roles.html",
+            "/admin/accounts/user_roles.html",
             users=users,
         )
     return redirect(url_for("admin.dashboard.daily_dashboard"))
