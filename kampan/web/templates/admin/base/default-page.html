@@ -1,14 +1,14 @@
-{% extends "/base/base-layout.html" %}
+{% extends "/admin/base/base-layout.html" %}
 {% block body %}
 <header>
-{% block header %}
-  {% include "/base/toolbar.html" %}
+  {% block header %}
+  {% include "/admin/base/toolbar.html" %}
   {% if request.path == '/' %}
-    {% include "/base/banner.html" %}
+  {% include "/admin/base/banner.html" %}
   {% else %}
-    <div style="padding-top:50px;"></div>
+  <div style="padding-top:50px;"></div>
   {% endif %}
-{% endblock %}
+  {% endblock %}
 </header>
 
 <main>
@@ -18,6 +18,6 @@
 </main>
 
 <footer class="ui vertical footer segment" style="padding-top: 2em;">
-{% include "/base/footer.html" %}
+  {% include "/admin/base/footer.html" %}
 </footer>
 {% endblock %}

@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
-{% import 'base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated%}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
+{% import '/admin/base/pagination.html' as paginated%}
 
 {% block title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
 {% block dashboard_title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
@@ -8,12 +8,12 @@
 {% block breadcrumbs %}
 {% if request.endpoint == 'lost_breaks.index' %}
 
-<a class="ui primary button" href="{{ url_for('lost_breaks.add') }}">
+<a class="ui primary button" href="{{ url_for('admin.lost_breaks.add') }}">
   เพิ่มอุปกรณ์ชำรุด/สูญหาย
 </a>
 
 {% else %}
-<a class="section" href="{{ url_for('lost_breaks.index') }}">เพิ่มอุปกรณ์ชำรุด/สูญหาย</a>
+<a class="section" href="{{ url_for('admin.lost_breaks.index') }}">เพิ่มอุปกรณ์ชำรุด/สูญหาย</a>
 {% endif %}
 {% endblock %}
 
@@ -58,7 +58,7 @@
               {% if not item.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}"
+              <img src="{{ url_for('admin.items.image', item_id=item.item.id, filename=item.item.image.filename) }}"
                 width="70">
               {% endif %}
             </div>
@@ -70,11 +70,11 @@
           <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td>
-            <a class="ui icon button" href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id) }}"
+            <a class="ui icon button" href="{{ url_for('admin.lost_breaks.edit', lost_break_item_id=item.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
-            <a class="ui icon button" href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id) }}"
+            <a class="ui icon button" href="{{ url_for('admin.lost_breaks.delete', lost_break_item_id=item.id) }}"
               style="color: white; background-color: rgb(192, 55, 55);">
               <i class="trash icon"></i>
             </a>
@@ -88,7 +88,7 @@
               {% if not item.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename) }}"
+              <img src="{{ url_for('admin.items.image', item_id=item.item.id, filename=item.item.image.filename) }}"
                 width="70">
               {% endif %}
             </div>
@@ -100,7 +100,7 @@
           <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td>
-            <a class="ui icon button" href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id) }}"
+            <a class="ui icon button" href="{{ url_for('admin.lost_breaks.edit', lost_break_item_id=item.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
@@ -122,7 +122,7 @@
                   ยกเลิก
                 </button>
                 <a class="ui negative right labeled icon button"
-                  href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id) }}">
+                  href="{{ url_for('admin.lost_breaks.delete', lost_break_item_id=item.id) }}">
                   ยืนยัน
                   <i class="checkmark icon"></i>
                 </a>

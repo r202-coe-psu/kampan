@@ -1,4 +1,4 @@
-{% import '/base/error-handler.html' as eh %}
+{% import '/admin/base/error-handler.html' as eh %}
 
 {% macro render_field(field, class_='') -%}
 {%- set style = '%s' | format(eh.get_validate_class(field.errors)) -%}

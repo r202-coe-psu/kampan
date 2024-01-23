@@ -17,7 +17,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     paginated_suppliers = Pagination(suppliers, page=page, per_page=30)
     return render_template(
-        "/suppliers/index.html",
+        "/admin/suppliers/index.html",
         suppliers=suppliers,
         paginated_suppliers=paginated_suppliers,
     )
@@ -31,14 +31,14 @@ def add():
     form = forms.suppliers.SupplierForm()
     if not form.validate_on_submit():
         return render_template(
-            "/suppliers/add.html",
+            "/admin/suppliers/add.html",
             form=form,
         )
 
     form.populate_obj(supplier)
     supplier.save()
 
-    return redirect(url_for("suppliers.index"))
+    return redirect(url_for("admin.suppliers.index"))
 
 
 @module.route("/<supplier_id>/edit", methods=["GET", "POST"])
@@ -50,14 +50,14 @@ def edit(supplier_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/suppliers/add.html",
+            "/admin/suppliers/add.html",
             form=form,
         )
 
     form.populate_obj(supplier)
     supplier.save()
 
-    return redirect(url_for("suppliers.index"))
+    return redirect(url_for("admin.suppliers.index"))
 
 
 @module.route("/<supplier_id>/delete")
@@ -68,4 +68,4 @@ def delete(supplier_id):
     supplier.status = "disactive"
     supplier.save()
 
-    return redirect(url_for("suppliers.index"))
+    return redirect(url_for("admin.suppliers.index"))

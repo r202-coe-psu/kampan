@@ -1,5 +1,5 @@
-{% extends '/accounts/index.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% extends '/admin/accounts/index.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block breadcrumbs %}
 {{ super() }}
@@ -9,24 +9,24 @@
 
 {% block content %}
 <div>
-    <form method="POST" class="ui big form">
-      
-      {{ form.hidden_tag() }}
-      {{ renderer.render_multiple_select(form.roles) }}
-      {#{{ renderer.render_field(form.organization)}}
-      {{ renderer.render_field(form.first_name) }}
-      {{ renderer.render_field(form.last_name) }}#}
+  <form method="POST" class="ui big form">
 
-      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-    </form>
-  </div>
+    {{ form.hidden_tag() }}
+    {{ renderer.render_multiple_select(form.roles) }}
+    {#{{ renderer.render_field(form.organization)}}
+    {{ renderer.render_field(form.first_name) }}
+    {{ renderer.render_field(form.last_name) }}#}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
 {% endblock content %}
 {% block additional_js %}
 
 <script>
   $('#roles')
     .dropdown()
-  ;
+    ;
 </script>
-  
+
 {% endblock %}

@@ -1,6 +1,6 @@
 <div class="ui fixed inverted menu">
   <div class="ui container">
-    <a href="{{ url_for('site.index') }}" class="header item">
+    <a href="{{ url_for('admin.site.index') }}" class="header item">
       {# <img class="logo" src="{{ url_for('static', filename='images/sadhu.png') }}"> #}
       <i class="ui icon sun"></i>
       <span style="padding-left:10px;">
@@ -38,10 +38,10 @@
       </div>
       #}
       {% if current_user.is_authenticated %}
-      <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}">Dashboard</a>
-      <a class="item" href="{{ url_for('accounts.logout') }}">Logout</a>
+      <a class="item" href="{{ url_for('admin.dashboard.daily_dashboard') }}">Dashboard</a>
+      <a class="item" href="{{ url_for('admin.accounts.logout') }}">Logout</a>
       {% else %}
-      <a class="item" href="{{ url_for('accounts.login') }}">Login</a>
+      <a class="item" href="{{ url_for('admin.accounts.login') }}">Login</a>
       {% endif %}
 
     </div>

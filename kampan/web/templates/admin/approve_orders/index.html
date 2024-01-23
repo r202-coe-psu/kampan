@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
 {% block dashboard_title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
@@ -9,7 +9,7 @@
 {% if request.endpoint == 'approve_orders.index' %}
 
 {% else %}
-<a class="section" href="{{ url_for('approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
 {% endif %}
 
 {% endblock %}
@@ -48,13 +48,14 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
           <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('approve_orders.item_checkouts', order_id=order.id) }}"
+            <a class="ui primary button" href="{{ url_for('admin.approve_orders.item_checkouts', order_id=order.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
             </a>
           </td>
           <td data-label="Status">
-            <a class="positive ui button" href="{{ url_for('approve_orders.approved_detail', order_id=order.id)}}">
+            <a class="positive ui button"
+              href="{{ url_for('admin.approve_orders.approved_detail', order_id=order.id)}}">
               อนุมัติ
             </a>
           </td>

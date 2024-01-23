@@ -1,5 +1,5 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}แจ้งเตือนอุปกรณ์คงเหลือ{% endblock %}
 {% block dashboard_title %}การแจ้งเตือน{% endblock %}
@@ -52,7 +52,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('notifications.set_status', item_id=item.id) }}">
+                href="{{ url_for('admin.notifications.set_status', item_id=item.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

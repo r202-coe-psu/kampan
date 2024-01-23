@@ -60,7 +60,7 @@ def login():
     if "next" in request.args:
         session["next"] = request.args.get("next", None)
 
-    return render_template("/accounts/login.html")
+    return render_template("/admin/accounts/login.html")
 
 
 @module.route("/login/<name>")
@@ -70,7 +70,7 @@ def login_oauth(name):
 
     scheme = request.environ.get("HTTP_X_FORWARDED_PROTO", "http")
     redirect_uri = url_for(
-        "accounts.authorized_oauth", name=name, _external=True, _scheme=scheme
+        "admin.accounts.authorized_oauth", name=name, _external=True, _scheme=scheme
     )
     response = None
     if name == "google":
@@ -130,7 +130,7 @@ def profile(user_id):
     biography = ""
     if user.biography:
         biography = markdown.markdown(user.biography)
-    return render_template("/accounts/index.html", user=user, biography=biography)
+    return render_template("/admin/accounts/index.html", user=user, biography=biography)
 
 
 @module.route("/accounts")
@@ -141,7 +141,7 @@ def index():
     if current_user.biography:
         biography = markdown.markdown(current_user.biography)
     return render_template(
-        "/accounts/index.html", user=current_user, biography=biography
+        "/admin/accounts/index.html", user=current_user, biography=biography
     )
 
 
@@ -153,7 +153,7 @@ def edit_profile():
         obj=current_user,
     )
     if not form.validate_on_submit():
-        return render_template("/accounts/edit-profile.html", form=form)
+        return render_template("/admin/accounts/edit-profile.html", form=form)
 
     user = current_user._get_current_object()
     form.populate_obj(user)
@@ -178,7 +178,7 @@ def edit_profile():
     user.updated_date = datetime.datetime.now()
     user.save()
 
-    return redirect(url_for("accounts.index"))
+    return redirect(url_for("admin.accounts.index"))
 
 
 @module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
@@ -206,32 +206,30 @@ def user_roles():
             "/accounts/user_roles.html",
             users=users,
         )
-    return redirect(url_for("dashboard.daily_dashboard"))
+    return redirect(url_for("admin.dashboard.daily_dashboard"))
 
 
 @module.route("/user-roles/edit-roles", methods=["GET", "POST"])
 @login_required
 @acl.roles_required("admin")
 def edit_roles():
-    if "admin" in current_user.roles:
-        user_id = request.args.get("user_id")
-        user = models.User.objects.get(id=user_id)
-        form = forms.user_roles.UserRolesForm(obj=user)
-        form.roles.choices = [
-            ("admin", "Admin"),
-            ("supervisor", "Supervisor"),
-            ("user", "User"),
-        ]
+    user_id = request.args.get("user_id")
+    user = models.User.objects.get(id=user_id)
+    form = forms.user_roles.UserRolesForm(obj=user)
+    form.roles.choices = [
+        ("admin", "Admin"),
+        ("supervisor", "Supervisor"),
+        ("user", "User"),
+    ]
 
-        if not form.validate_on_submit():
-            return render_template(
-                "/accounts/edit_roles.html",
-                form=form,
-            )
+    if not form.validate_on_submit():
+        return render_template(
+            "/admin/accounts/edit_roles.html",
+            form=form,
+        )
 
-        form.populate_obj(user)
-        user.roles = form.roles.data
-        user.save()
+    form.populate_obj(user)
+    user.roles = form.roles.data
+    user.save()
 
-        return redirect(url_for("accounts.user_roles"))
-    return redirect(url_for("dashboard.daily_dashboard"))
+    return redirect(url_for("admin.accounts.user_roles"))

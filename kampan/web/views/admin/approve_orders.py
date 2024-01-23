@@ -39,12 +39,12 @@ def index():
             page = 1
         paginated_orders = Pagination(orders, page=page, per_page=30)
         return render_template(
-            "/approve_orders/index.html",
+            "/admin/approve_orders/index.html",
             paginated_orders=paginated_orders,
             form=form,
             orders=orders,
         )
-    return redirect(url_for("dashboard.daily_dashboard"))
+    return redirect(url_for("admin.dashboard.daily_dashboard"))
 
 
 @module.route("/<order_id>/approved_detail", methods=["GET", "POST"])
@@ -58,7 +58,7 @@ def approved_detail(order_id):
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/approve_orders/approve_detail.html",
+            "/admin/approve_orders/approve_detail.html",
             form=form,
             checkouts=checkouts,
         )
@@ -104,7 +104,7 @@ def approved_detail(order_id):
             if aprroved_amount <= 0:
                 break
 
-    return redirect(url_for("approve_orders.approve", order_id=order_id))
+    return redirect(url_for("admin.approve_orders.approve", order_id=order_id))
 
 
 @module.route("<order_id>", methods=["GET"])
@@ -119,7 +119,7 @@ def approve(order_id):
         checkout.approval_status = "approved"
         checkout.save()
 
-    return redirect(url_for("approve_orders.index"))
+    return redirect(url_for("admin.approve_orders.index"))
 
 
 @module.route("/item_checkouts", methods=["GET", "POST"])
@@ -132,7 +132,7 @@ def item_checkouts():
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
     return render_template(
-        "/approve_orders/item_checkouts.html",
+        "/admin/approve_orders/item_checkouts.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         checkouts=checkouts,

@@ -1,15 +1,15 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}คลังอุปกรณ์{% endblock %}
 {% block dashboard_title %}คลังอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'warehouses.index' %}
-<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
+<a class="ui primary button" href="{{ url_for('admin.warehouses.add_or_edit') }}">
   เพิ่มคลังอุปกรณ์
 </a>
 {% else %}
-<a class="section" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.warehouses.index') }}">คลังอุปกรณ์</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}

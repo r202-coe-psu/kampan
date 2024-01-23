@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}รายการนำเข้าอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการนำเข้าอุปกรณ์{% endblock %}
@@ -37,7 +37,8 @@
               {% if not inventory.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
+              <img
+                src="{{ url_for('admin.items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
                 width="70">
               {% endif %}
             </div>
@@ -52,7 +53,7 @@
           <td data-label="Remain">{{ inventory.remain }}</td>
           <td data-label="Price">{{ inventory.price }}</td>
           <td>
-            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id) }}" target="_blank">
+            <a href="{{ url_for('admin.inventories.bill', inventory_id=inventory.id) }}" target="_blank">
               {{inventory.get_bill_file_name() }}
             </a>
           </td>

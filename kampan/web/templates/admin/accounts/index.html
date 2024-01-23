@@ -1,11 +1,11 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/admin/base/default-dashboard.html' %}
 
 {% block dashboard_title %}
 ข้อมูลผู้ใช้งาน
 {% endblock %}
 
 {% block breadcrumbs %}
-<a href="{{ url_for('accounts.index') }}" class="section">บัญชีผู้ใช้งาน</a>
+<a href="{{ url_for('admin.accounts.index') }}" class="section">บัญชีผู้ใช้งาน</a>
 {% endblock %}
 
 {% macro row_detail(text) -%}
@@ -18,7 +18,7 @@
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
     <h2 class="ui header">ข้อมูลผู้ใช้งาน <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
+        href="{{ url_for('admin.accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
     </h2>
     {% if current_user.get_picture() %}
     <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">

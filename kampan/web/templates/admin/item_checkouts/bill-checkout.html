@@ -1,5 +1,5 @@
-{% extends '/item_checkouts/index.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/item_checkouts/index.html' %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}รายการนำอุปกรณ์ออก{% endblock %}
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
@@ -32,7 +32,8 @@
             {% if not checkout.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
-            <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+            <img
+              src="{{ url_for('admin.items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
               width="70">
             {% endif %}
           </div>
@@ -43,7 +44,7 @@
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         {#<td data-label="Price">{{ checkout.price }}</td>#}
         <td>
-          <a class="ui icon button" href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id) }}"
+          <a class="ui icon button" href="{{ url_for('admin.item_checkouts.edit', checkout_item_id=checkout.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
           </a>
@@ -65,7 +66,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id) }}">
+                href="{{ url_for('admin.item_checkouts.delete',  checkout_item_id=checkout.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

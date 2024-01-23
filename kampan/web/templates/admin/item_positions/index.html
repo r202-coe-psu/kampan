@@ -1,16 +1,16 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}ตำแหน่งอุปกรณ์{% endblock %}
 {% block dashboard_title %}ตำแหน่งอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
-<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit') }}">
+<a class="ui primary button" href="{{ url_for('admin.item_positions.add_or_edit') }}">
   เพิ่มตำแหน่งอุปกรณ์
 </a>
 {% else %}
-<a class="section" href="{{ url_for('item_positions.index') }}">ตำแหน่งอุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.item_positions.index') }}">ตำแหน่งอุปกรณ์</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -39,7 +39,7 @@
         <td data-label="Locker">{{ item_position.locker }}</td>
         <td data-label="Actions">
           <a class="ui primary icon button"
-            href="{{ url_for('item_positions.edit', item_position_id=item_position.id) }}">
+            href="{{ url_for('admin.item_positions.edit', item_position_id=item_position.id) }}">
             <i class="edit icon"></i> แก้ไข
           </a>
           <a class="ui red icon button" onclick="showDeleteModal('{{ item_position.id }}')">
@@ -60,7 +60,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_positions.delete', item_position_id=item_position.id) }}">
+                href="{{ url_for('admin.item_positions.delete', item_position_id=item_position.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

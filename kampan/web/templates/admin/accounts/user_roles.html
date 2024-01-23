@@ -1,4 +1,4 @@
-{% extends '/accounts/index.html' %}
+{% extends '/admin/accounts/index.html' %}
 {% block title %}ระดับผู้ใช้งาน{% endblock %}
 {% block dashboard_title %}ระดับผู้ใช้งาน{% endblock %}
 {% block breadcrumbs %}ตำเเหน่งผู้ใช้งาน{% endblock %}
@@ -21,7 +21,7 @@
         <td data-label="Email">{{ user.email }}</td>
         <td data-label="Roles">{{ user.roles|join(', ') }}</td>
         <td data-label="Edit Roles">
-          <a class="ui green icon button" href="{{ url_for('accounts.edit_roles', user_id=user.id) }}">
+          <a class="ui green icon button" href="{{ url_for('admin.accounts.edit_roles', user_id=user.id) }}">
             <i class="edit icon"></i>
           </a>
         </td>

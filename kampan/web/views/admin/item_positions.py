@@ -17,7 +17,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     paginated_item_positions = Pagination(item_positions, page=page, per_page=30)
     return render_template(
-        "/item_positions/index.html",
+        "/admin/item_positions/index.html",
         paginated_item_positions=paginated_item_positions,
         item_positions=item_positions,
     )
@@ -37,7 +37,7 @@ def add_or_edit(item_position_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/item_positions/add-edit.html",
+            "/admin/item_positions/add-edit.html",
             form=form,
         )
 
@@ -49,7 +49,7 @@ def add_or_edit(item_position_id):
 
     item_position.save()
 
-    return redirect(url_for("item_positions.index"))
+    return redirect(url_for("admin.item_positions.index"))
 
 
 @module.route("/<item_position_id>/edit", methods=["GET", "POST"])
@@ -61,14 +61,14 @@ def edit(item_position_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/item_positions/add-edit.html",
+            "/admin/item_positions/add-edit.html",
             form=form,
         )
 
     form.populate_obj(item_position)
     item_position.save()
 
-    return redirect(url_for("item_positions.index"))
+    return redirect(url_for("admin.item_positions.index"))
 
 
 @module.route("/<item_position_id>/delete")
@@ -79,4 +79,4 @@ def delete(item_position_id):
     item_position.status = "disactive"
     item_position.save()
 
-    return redirect(url_for("item_positions.index"))
+    return redirect(url_for("admin.item_positions.index"))

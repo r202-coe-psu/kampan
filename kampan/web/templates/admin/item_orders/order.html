@@ -1,5 +1,5 @@
-{% extends '/item_orders/index.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% extends '/admin/item_orders/index.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block title %}
 เพิ่มคำสั่งเบิก
@@ -24,13 +24,13 @@
 
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      {{ renderer.render_field(form.description) }}
+<div>
+  <form class="ui form" method="POST">
 
-      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-    </form>
-    </div>
+    {{ form.hidden_tag() }}
+    {{ renderer.render_field(form.description) }}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
 {% endblock content %}

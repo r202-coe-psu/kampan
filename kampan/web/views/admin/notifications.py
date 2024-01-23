@@ -22,7 +22,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     paginated_notifications = Pagination(notifications, page=page, per_page=30)
     return render_template(
-        "/notifications/index.html",
+        "/admin/notifications/index.html",
         paginated_notifications=paginated_notifications,
         notifications=notifications,
     )
@@ -36,4 +36,4 @@ def set_status(item_id):
     item.notification_status = False
     item.save()
 
-    return redirect(url_for("notifications.index"))
+    return redirect(url_for("admin.notifications.index"))

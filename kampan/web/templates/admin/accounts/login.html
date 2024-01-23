@@ -1,4 +1,4 @@
-{% extends "/base/default-page.html" %}
+{% extends "/admin/base/default-page.html" %}
 
 {% block title %}เข้าสู่ระบบ
 {% endblock %}
@@ -7,14 +7,14 @@
 <div class="ui middle aligned center aligned grid" style="height: 500px">
   <div class="column">
     <h2 class="ui image" style="font-size: 3em;">
-      <i class="ui icon sun big" ></i> <br/>
+      <i class="ui icon sun big"></i> <br />
       {# <img src="{{ url_for('static', filename='images/lotus-full-500px.png') }}" width="200px"> #}
       <div class="content">
         เข้าสู่ระบบ
       </div>
     </h2>
     <div>
-      <div class="ui large vertical buttons" >
+      <div class="ui large vertical buttons">
         <div class="row" style="padding-top: 10px;">
           <div class="column header" style="text-align: left;">
             <h3></h3>
@@ -22,19 +22,19 @@
         </div>
 
         <div class="row" style="padding-top: 5px;">
-          <a class="ui labeled icon button primary huge" href="{{ url_for('accounts.login_oauth', name='psu') }}">
+          <a class="ui labeled icon button primary huge" href="{{ url_for('admin.accounts.login_oauth', name='psu') }}">
             <i class="user icon"></i>
             PSU Passport
           </a>
         </div>
 
         <div class="row" style="padding-top: 5px;">
-          <a class="ui labeled icon red button huge" href="{{ url_for('accounts.login_oauth', name='google') }}">
+          <a class="ui labeled icon red button huge" href="{{ url_for('admin.accounts.login_oauth', name='google') }}">
             <i class="google icon"></i>
             Google
           </a>
         </div>
-        
+
       </div>
     </div>
   </div>

@@ -42,7 +42,10 @@ def index():
     page = request.args.get("page", default=1, type=int)
     paginated_items = Pagination(items, page=page, per_page=24)
     return render_template(
-        "/items/index.html", paginated_items=paginated_items, items=items, form=form
+        "/admin/items/index.html",
+        paginated_items=paginated_items,
+        items=items,
+        form=form,
     )
 
 
@@ -54,7 +57,7 @@ def add():
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/items/add.html",
+            "/admin/items/add.html",
             form=form,
         )
 
@@ -80,7 +83,7 @@ def add():
 
     item.save()
 
-    return redirect(url_for("items.index"))
+    return redirect(url_for("admin.items.index"))
 
 
 @module.route("/<item_id>/edit", methods=["GET", "POST"])
@@ -93,7 +96,7 @@ def edit(item_id):
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/items/item_edit.html",
+            "/admin/items/item_edit.html",
             form=form,
         )
 
@@ -115,7 +118,7 @@ def edit(item_id):
 
     item.save()
 
-    return redirect(url_for("items.index"))
+    return redirect(url_for("admin.items.index"))
 
 
 @module.route("/<item_id>/delete")
@@ -126,7 +129,7 @@ def delete(item_id):
     item.status = "disactive"
     item.save()
 
-    return redirect(url_for("items.index"))
+    return redirect(url_for("admin.items.index"))
 
 
 @module.route("/<item_id>/picture/<filename>")

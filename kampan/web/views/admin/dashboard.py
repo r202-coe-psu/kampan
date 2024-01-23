@@ -25,7 +25,7 @@ def index_user():
 @module.route("/")
 @acl.roles_required("admin")
 def index():
-    return redirect(url_for("dashboard.daily_dashboard"))
+    return redirect(url_for("admin.dashboard.daily_dashboard"))
 
 
 @module.route("/daily", methods=["GET", "POST"])
@@ -68,7 +68,7 @@ def daily_dashboard():
         if item.minimum > item.get_items_quantity():
             notifications += 1
     return render_template(
-        "/dashboard/daily_dashboard.html",
+        "/admin/dashboard/daily_dashboard.html",
         form=form,
         total_values=total_values,
         daily_item_orders=daily_item_orders,
@@ -160,7 +160,7 @@ def monthly_dashboard():
     this_month = months[today.month - 1] + " " + str(today.year)
     print(this_month)
     return render_template(
-        "/dashboard/monthly_dashboard.html",
+        "/admin/dashboard/monthly_dashboard.html",
         trend_checkout_items=trend_checkout_items,
         days_month_categories=days_month_categories,
         form=form,
@@ -229,7 +229,7 @@ def yearly_dashboard():
     total_values = sum(trend_checkout_items)
     this_year = today.year
     return render_template(
-        "/dashboard/yearly_dashboard.html",
+        "/admin/dashboard/yearly_dashboard.html",
         yearly_item_orders=yearly_item_orders,
         total_values=total_values,
         trend_checkout_items=trend_checkout_items,

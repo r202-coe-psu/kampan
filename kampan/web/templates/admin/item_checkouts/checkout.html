@@ -1,11 +1,11 @@
-{% extends '/item_checkouts/index.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% extends '/admin/item_checkouts/index.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block title %}นำอุปกรณ์ออก{% endblock %}
 {% block dashboard_title %}นำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a> /
+<a class="section" href="{{ url_for('admin.item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a> /
 <div class="active section">เพิ่มตำแหน่งอุปกรณ์</div>
 {% endblock %}
 

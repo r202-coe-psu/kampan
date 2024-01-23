@@ -7,10 +7,9 @@
 {%- endmacro %}
 
 {% macro get_error_messages(errors) -%}
-	{% if errors %}
-  <div class="ui negative message">
-    {{ ', '.join(errors) }}
-  </div>
-  {% endif %}
+{% if errors %}
+<div class="ui negative message">
+  {{ ', '.join(errors) }}
+</div>
+{% endif %}
 {%- endmacro %}
-

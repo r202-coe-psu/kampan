@@ -38,7 +38,7 @@ def index():
     paginated_item_registers = Pagination(item_registers, page=page, per_page=30)
 
     return render_template(
-        "/item_registers/index.html",
+        "/admin/item_registers/index.html",
         item_registers=item_registers,
         paginated_item_registers=paginated_item_registers,
         form=form,
@@ -57,7 +57,7 @@ def register():
 
     if not form.validate_on_submit():
         return render_template(
-            "/item_registers/register.html",
+            "/admin/item_registers/register.html",
             form=form,
         )
 
@@ -79,7 +79,7 @@ def register():
     form.populate_obj(item_register)
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(url_for("admin.item_registers.index"))
 
 
 @module.route("/<item_register_id>/edit", methods=["GET", "POST"])
@@ -91,7 +91,7 @@ def edit(item_register_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/item_registers/register.html",
+            "/admin/item_registers/register.html",
             form=form,
         )
     if form.bill_file.data:
@@ -111,7 +111,7 @@ def edit(item_register_id):
     form.populate_obj(item_register)
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(url_for("admin.item_registers.index"))
 
 
 @module.route("/<item_register_id>/delete")
@@ -126,4 +126,4 @@ def delete(item_register_id):
         inventory.save()
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(url_for("admin.item_registers.index"))

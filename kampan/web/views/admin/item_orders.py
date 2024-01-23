@@ -39,7 +39,7 @@ def index():
     paginated_orders = Pagination(orders, page=page, per_page=24)
 
     return render_template(
-        "/item_orders/index.html",
+        "/admin/item_orders/index.html",
         paginated_orders=paginated_orders,
         form=form,
         orders=orders,
@@ -55,7 +55,7 @@ def order():
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/item_orders/order.html",
+            "/admin/item_orders/order.html",
             form=form,
         )
 
@@ -66,7 +66,7 @@ def order():
 
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("admin.item_orders.index"))
 
 
 @module.route("/<order_id>/edit", methods=["GET", "POST"])
@@ -78,7 +78,7 @@ def edit(order_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/item_orders/order.html",
+            "/admin/item_orders/order.html",
             form=form,
         )
 
@@ -86,7 +86,7 @@ def edit(order_id):
     order.user = current_user._get_current_object()
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("admin.item_orders.index"))
 
 
 @module.route("/<order_id>/delete")
@@ -102,4 +102,4 @@ def delete(order_id):
 
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("admin.item_orders.index"))

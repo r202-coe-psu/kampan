@@ -17,7 +17,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     paginated_warehouses = Pagination(warehouses, page=page, per_page=30)
     return render_template(
-        "/warehouses/index.html",
+        "/admin/warehouses/index.html",
         paginated_warehouses=paginated_warehouses,
         warehouses=warehouses,
     )
@@ -37,7 +37,7 @@ def add_or_edit(warehouse_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/warehouses/add-edit.html",
+            "/admin/warehouses/add-edit.html",
             form=form,
         )
 
@@ -49,7 +49,7 @@ def add_or_edit(warehouse_id):
 
     warehouse.save()
 
-    return redirect(url_for("warehouses.index"))
+    return redirect(url_for("admin.warehouses.index"))
 
 
 @module.route("/<warehouse_id>/edit", methods=["GET", "POST"])
@@ -68,7 +68,7 @@ def edit(warehouse_id):
     form.populate_obj(warehouse)
     warehouse.save()
 
-    return redirect(url_for("warehouses.index"))
+    return redirect(url_for("admin.warehouses.index"))
 
 
 @module.route("/<warehouse_id>/delete")
@@ -79,4 +79,4 @@ def delete(warehouse_id):
     warehouse.status = "disactive"
     warehouse.save()
 
-    return redirect(url_for("warehouses.index"))
+    return redirect(url_for("admin.warehouses.index"))

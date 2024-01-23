@@ -1,5 +1,5 @@
-{% extends '/approve_orders/index.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% extends '/admin/approve_orders/index.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block title %}
 เพิ่มคำสั่งเบิก
@@ -42,7 +42,8 @@
               {% if not checkout.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+              <img
+                src="{{ url_for('admin.items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
                 width="70">
               {% endif %}
             </div>

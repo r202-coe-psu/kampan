@@ -49,7 +49,7 @@ def index():
         page = 1
     paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
-        "/inventories/index.html",
+        "/admin/inventories/index.html",
         inventories=inventories,
         paginated_inventories=paginated_inventories,
         form=form,
@@ -76,7 +76,7 @@ def register():
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/inventories/register.html",
+            "/admin/inventories/register.html",
             form=form,
             item_register=item_register,
         )
@@ -90,7 +90,7 @@ def register():
     inventory.remain = inventory.quantity
     inventory.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(url_for("admin.item_registers.index"))
 
 
 @module.route("/<inventory_id>/edit", methods=["GET", "POST"])
@@ -118,7 +118,7 @@ def edit(inventory_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/inventories/register.html",
+            "/admin/inventories/register.html",
             item_register=item_register,
             form=form,
         )
@@ -144,7 +144,9 @@ def edit(inventory_id):
     inventory.save()
 
     return redirect(
-        url_for("inventories.bill_item", item_register_id=inventory.registration.id)
+        url_for(
+            "admin.inventories.bill_item", item_register_id=inventory.registration.id
+        )
     )
 
 
@@ -157,7 +159,9 @@ def delete(inventory_id):
     inventory.save()
 
     return redirect(
-        url_for("inventories.bill_item", item_register_id=inventory.registration.id)
+        url_for(
+            "admin.inventories.bill_item", item_register_id=inventory.registration.id
+        )
     )
 
 
@@ -171,7 +175,7 @@ def bill_item():
     page = request.args.get("page", default=1, type=int)
     paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
-        "/inventories/bill-item.html",
+        "/admin/inventories/bill-item.html",
         paginated_inventories=paginated_inventories,
         item_register=item_register,
     )

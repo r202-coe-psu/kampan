@@ -1,5 +1,5 @@
-{% extends '/inventories/index.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/admin/inventories/index.html' %}
+{% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}รายการบิลอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
@@ -7,7 +7,7 @@
 {% if request.endpoint == 'inventories.index' %}
 <div class="active section">รายการบิล</div>
 {% else %}
-<a class="section" href="{{ url_for('inventories.index') }}">รายการบิล</a>
+<a class="section" href="{{ url_for('admin.inventories.index') }}">รายการบิล</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -37,7 +37,8 @@
             {% if not inventory.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
             {% else %}
-            <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
+            <img
+              src="{{ url_for('admin.items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
               width="70">
             {% endif %}
           </div>
@@ -50,7 +51,7 @@
         <td data-label="Remain">{{ inventory.remain }}</td>
         <td data-label="Price">{{ inventory.price }}</td>
         <td>
-          <a class="ui icon button" href="{{ url_for('inventories.edit', inventory_id=inventory.id) }}"
+          <a class="ui icon button" href="{{ url_for('admin.inventories.edit', inventory_id=inventory.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
           </a>
@@ -72,7 +73,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('inventories.delete', inventory_id=inventory.id) }}">
+                href="{{ url_for('admin.inventories.delete', inventory_id=inventory.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

@@ -60,7 +60,7 @@ def index():
 
     paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
     return render_template(
-        "/item_checkouts/index.html",
+        "/admin/item_checkouts/index.html",
         checkouts=checkouts,
         form=form,
         paginated_checkouts=paginated_checkouts,
@@ -97,7 +97,7 @@ def checkout():
         print(form.errors)
 
         return render_template(
-            "/item_checkouts/checkout.html",
+            "/admin/item_checkouts/checkout.html",
             form=form,
         )
     item = models.Item.objects(id=form.item.data).first()
@@ -109,7 +109,7 @@ def checkout():
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("admin.item_orders.index"))
 
 
 @module.route("/all-checkout", methods=["GET", "POST"])
@@ -124,7 +124,7 @@ def bill_checkout():
     paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
 
     return render_template(
-        "/item_checkouts/bill-checkout.html",
+        "/admin/item_checkouts/bill-checkout.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         checkouts=checkouts,
@@ -153,7 +153,7 @@ def edit(checkout_item_id):
         form.item.process(data=checkout_item.item.id, formdata=form.item.choices)
     if not form.validate_on_submit():
         return render_template(
-            "/item_checkouts/checkout.html",
+            "/admin/item_checkouts/checkout.html",
             form=form,
         )
     item = models.Item.objects(id=form.item.data).first()
@@ -163,7 +163,7 @@ def edit(checkout_item_id):
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
     return redirect(
-        url_for("item_checkouts.bill_checkout", order_id=checkout_item.order.id)
+        url_for("admin.item_checkouts.bill_checkout", order_id=checkout_item.order.id)
     )
 
 
@@ -175,5 +175,5 @@ def delete(checkout_item_id):
     checkout_item.status = "disactive"
     checkout_item.save()
     return redirect(
-        url_for("item_checkouts.bill_checkout", order_id=checkout_item.order.id)
+        url_for("admin.item_checkouts.bill_checkout", order_id=checkout_item.order.id)
     )

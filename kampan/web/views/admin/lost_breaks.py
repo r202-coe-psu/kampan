@@ -36,7 +36,7 @@ def index():
     paginated_lost_break_items = Pagination(lost_break_items, page=page, per_page=30)
 
     return render_template(
-        "/lost_breaks/index.html",
+        "/admin/lost_breaks/index.html",
         paginated_lost_break_items=paginated_lost_break_items,
         lost_break_items=lost_break_items,
         form=form,
@@ -59,7 +59,7 @@ def add(lost_break_item_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/lost_breaks/add.html",
+            "/admin/lost_breaks/add.html",
             form=form,
         )
 
@@ -89,7 +89,7 @@ def add(lost_break_item_id):
         if quantity <= 0:
             break
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(url_for("admin.lost_breaks.index"))
 
 
 @module.route("/<lost_break_item_id>/edit", methods=["GET", "POST"])
@@ -118,7 +118,7 @@ def edit(lost_break_item_id):
         )
     if not form.validate_on_submit():
         return render_template(
-            "/lost_breaks/add.html",
+            "/admin/lost_breaks/add.html",
             form=form,
         )
     if lost_break_item.quantity != 0:
@@ -153,7 +153,7 @@ def edit(lost_break_item_id):
         if quantity <= 0:
             break
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(url_for("admin.lost_breaks.index"))
 
 
 @module.route("/<lost_break_item_id>/delete")
@@ -170,4 +170,4 @@ def delete(lost_break_item_id):
     lost_break_item.status = "disactive"
     lost_break_item.save()
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(url_for("admin.lost_breaks.index"))
