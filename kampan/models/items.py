@@ -13,12 +13,13 @@ class ItemSize(me.EmbeddedDocument):
 
 class Item(me.Document):
     meta = {"collection": "items"}
+
     status = me.StringField(default="active")
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
-    # weight = me.FloatField()
-    # size = me.EmbeddedDocumentField(ItemSize)
+    organization = me.ReferenceField("Organization", dbref=True)
+
     piece_per_set = me.IntField(required=True, min_value=1, default=1)
     categories = me.StringField(required=True)
     image = me.ImageField(thumbnail_size=(800, 600, False))
