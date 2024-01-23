@@ -69,13 +69,16 @@
   </div>
   <a class="item" href="{{ url_for('admin.lost_breaks.index')}}">อุปกรณ์ชำรุด/สูญหาย</a>
 
-  {% if current_user.has_roles(['admin']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     จัดการผู้ใช้
   </div>
   <a class="item" href="{{ url_for('admin.accounts.user_roles')}}">ระดับของผู้ใช้</a>
-  {% endif %}
+  <div class="sidebar-heading" style="color: grey;">
+    จัดการองค์กร
+  </div>
+  <a class="item" href="{{ url_for('admin.organizations.index')}}">องค์กร</a>
+
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
