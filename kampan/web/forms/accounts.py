@@ -17,6 +17,7 @@ BaseProfileForm = model_form(
         "status",
         "roles",
         "user_setting",
+        "student_id",
     ],
     field_args={
         "first_name": {"label": "First Name"},
