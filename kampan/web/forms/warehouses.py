@@ -10,7 +10,7 @@ BaseWarehouseForm = model_form(
     FlaskForm,
     exclude=[
         "created_date",
-        "user",
+        "owner",
     ],
     field_args={
         "name": {"label": "ชื่อคลังอุปกรณ์"},
