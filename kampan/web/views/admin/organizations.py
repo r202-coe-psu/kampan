@@ -115,6 +115,29 @@ def add_member(organization_id):
     return redirect(url_for("admin.organizations.index"))
 
 
+@module.route("/<organization_id>/users", methods=["GET", "POST"])
+@acl.roles_required("admin")
+def users(organization_id):
+    organization = models.Organization.objects(id=organization_id).first()
+    form = forms.inventories.SearchStartEndDateForm()
+    users_in_organization = organization.get_users()
+
+    if not form.validate_on_submit():
+        print(form.errors)
+    page = request.args.get("page", default=1, type=int)
+    if form.start_date.data or form.end_date.data:
+        page = 1
+
+    paginated_users = Pagination(users_in_organization, page=page, per_page=30)
+    return render_template(
+        "/admin/organizations/users.html",
+        form=form,
+        paginated_users=paginated_users,
+        organization=organization,
+        users_in_organization=users_in_organization,
+    )
+
+
 @module.route("/<organization_id>/delete")
 @acl.roles_required("admin")
 def delete(organization_id):

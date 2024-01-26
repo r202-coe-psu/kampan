@@ -79,3 +79,33 @@ class User(me.Document, UserMixin):
             return self.organizations[0]
 
         return self.user_setting.current_organization
+
+    def get_current_organization_role(self):
+        from . import OrganizationUserRole
+
+        try:
+            return [
+                org_user.role
+                for org_user in OrganizationUserRole.objects(
+                    user=self,
+                    organization=self.get_current_organization(),
+                    status="active",
+                )
+            ]
+
+        except:
+            return []
+
+    def get_current_organization_create_date(self):
+        from . import OrganizationUserRole
+
+        try:
+            organization_user_role = OrganizationUserRole.objects(
+                user=self,
+                organization=self.get_current_organization(),
+                status="active",
+            ).first()
+            return organization_user_role.created_date
+
+        except:
+            return
