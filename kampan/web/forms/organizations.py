@@ -55,7 +55,7 @@ class OrganizationRoleSelectionForm(FlaskForm):
 
 class OrgnaizationAddMemberForm(FlaskForm):
     members = fields.SelectMultipleField("Select Members")
-    role = fields.SelectField("Role")
+    role = fields.SelectField("Role", choices=models.organizations.ORGANIZATION_ROLES)
 
 
 class AdminOrganizationEditForm(BaseOrganizationForm):
