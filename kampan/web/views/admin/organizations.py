@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
+import datetime
 
 from kampan.web import forms, acl
 from kampan import models
@@ -70,6 +71,47 @@ def craete_or_edit(organization_id):
         organization.created_by = current_user._get_current_object()
     organization.last_updated_by = current_user._get_current_object()
     organization.save()
+    return redirect(url_for("admin.organizations.index"))
+
+
+@module.route("/<organization_id>/add-member", methods=["GET", "POST"])
+@acl.roles_required("admin")
+def add_member(organization_id):
+    organization = models.Organization.objects(id=organization_id).first()
+    form = forms.organizations.OrgnaizationAddMemberForm()
+    users_in_organization = organization.get_users()
+    if users_in_organization:
+        form.members.choices = [
+            (str(u.id), u.get_name())
+            for u in models.User.objects()
+            if u not in users_in_organization
+        ]
+    else:
+        form.members.choices = [
+            (str(u.id), u.get_name()) for u in models.User.objects()
+        ]
+
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template("/admin/organizations/add_member.html", form=form)
+
+    for user_id in form.members.data:
+        user = models.User.objects(id=user_id).first()
+        if not user.get_current_organization():
+            user.user_setting.current_organization = organization
+            user.save()
+
+        org_user = models.OrganizationUserRole(
+            organization=organization,
+            user=user,
+            role=form.role.data,
+            added_by=current_user._get_current_object(),
+            last_modifier=current_user._get_current_object(),
+            last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+            created_date=datetime.datetime.now(),
+        )
+        org_user.save()
+
     return redirect(url_for("admin.organizations.index"))
 
 
