@@ -22,7 +22,9 @@ class OrganizationUserRole(me.Document):
     added_by = me.ReferenceField("User", dbref=True, required=True)
     last_modifier = me.ReferenceField("User", dbref=True, required=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now, auto_now=True
+    )
 
 
 class Organization(me.Document):
@@ -46,11 +48,12 @@ class Organization(me.Document):
         return markdown.markdown(self.description)
 
     def get_users(self):
-        return (
-            OrganizationUserRole.objects(organization=self, status="active")
-            .order_by("-first_name")
-            .distinct(field="user")
-        )
+        if OrganizationUserRole.objects().count():
+            return (
+                OrganizationUserRole.objects(organization=self, status="active")
+                .order_by("-first_name")
+                .distinct(field="user")
+            )
 
     def get_logo(self):
         return Logo.objects(organization=self, marked_as_organization_logo=True).first()
