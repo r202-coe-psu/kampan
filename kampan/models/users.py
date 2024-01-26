@@ -19,6 +19,7 @@ class User(me.Document, UserMixin):
     status = me.StringField(required=True, default="active")
     roles = me.ListField(me.StringField(), default=["user"])
     citizen_id = me.StringField(max_length=13)
+    student_id = me.StringField(max_length=10)
 
     picture_url = me.StringField(max_length=500)
     picture = me.ImageField(
@@ -36,6 +37,17 @@ class User(me.Document, UserMixin):
     resources = me.DictField()
 
     meta = {"collection": "users"}
+
+    @property
+    def organizations(self):
+        from . import OrganizationUserRole
+
+        return [
+            organization
+            for organization in OrganizationUserRole.objects(user=self, status="active")
+            .only("organization")
+            .distinct("organization")
+        ]
 
     def has_roles(self, roles):
         for role in roles:
@@ -58,3 +70,12 @@ class User(me.Document, UserMixin):
         # if "google" in self.resources:
         #     return self.resources["google"].get("picture", "")
         # return url_for("static", filename="images/user.png")
+
+    def get_current_organization(self):
+        if not self.organizations:
+            return
+
+        if not self.user_setting.current_organization and self.organizations:
+            return self.organizations[0]
+
+        return self.user_setting.current_organization
