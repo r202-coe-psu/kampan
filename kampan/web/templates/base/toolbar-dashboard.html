@@ -16,6 +16,7 @@
   {% if current_user.has_roles(['admin']) %}
   <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
   {% endif %}
+  {% if organization %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     แดชบอร์ด
@@ -73,6 +74,7 @@
     แจ้งอุปกรณ์เสียหาย
   </div>
   <a class="item" href="{{ url_for('lost_breaks.index')}}">อุปกรณ์ชำรุด/สูญหาย</a>
+  {% endif %}
 
 
   {% if current_user.has_organization_roles("admin") %}
