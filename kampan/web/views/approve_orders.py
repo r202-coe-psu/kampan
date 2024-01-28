@@ -5,7 +5,7 @@ from tabnanny import check
 from flask import Blueprint, render_template, redirect, url_for, request, send_file
 from flask_login import login_required, current_user
 from kampan.models import inventories
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 from flask_mongoengine import Pagination
 import datetime
@@ -14,38 +14,41 @@ module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser")
 def index():
-    if "admin" in current_user.roles or "supervisor" in current_user.roles:
-        orders = models.OrderItem.objects(approval_status="pending", status="active")
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    orders = models.OrderItem.objects(approval_status="pending", status="active")
 
-        form = forms.inventories.SearchStartEndDateForm()
-        if form.start_date.data == None and form.end_date.data != None:
-            orders = orders.filter(
-                created_date__lt=form.end_date.data,
-            )
-
-        elif form.start_date.data and form.end_date.data == None:
-            orders = orders.filter(
-                created_date__gte=form.start_date.data,
-            )
-
-        elif form.start_date.data != None and form.end_date.data != None:
-            orders = orders.filter(
-                created_date__gte=form.start_date.data,
-                created_date__lt=form.end_date.data,
-            )
-        page = request.args.get("page", default=1, type=int)
-        if form.start_date.data:
-            page = 1
-        paginated_orders = Pagination(orders, page=page, per_page=30)
-        return render_template(
-            "/approve_orders/index.html",
-            paginated_orders=paginated_orders,
-            form=form,
-            orders=orders,
+    form = forms.inventories.SearchStartEndDateForm()
+    if form.start_date.data == None and form.end_date.data != None:
+        orders = orders.filter(
+            created_date__lt=form.end_date.data,
         )
-    return redirect(url_for("dashboard.daily_dashboard"))
+
+    elif form.start_date.data and form.end_date.data == None:
+        orders = orders.filter(
+            created_date__gte=form.start_date.data,
+        )
+
+    elif form.start_date.data != None and form.end_date.data != None:
+        orders = orders.filter(
+            created_date__gte=form.start_date.data,
+            created_date__lt=form.end_date.data,
+        )
+    page = request.args.get("page", default=1, type=int)
+    if form.start_date.data:
+        page = 1
+    paginated_orders = Pagination(orders, page=page, per_page=30)
+    return render_template(
+        "/approve_orders/index.html",
+        paginated_orders=paginated_orders,
+        form=form,
+        orders=orders,
+        organization=organization,
+    )
 
 
 @module.route("/<order_id>/approved_detail", methods=["GET", "POST"])

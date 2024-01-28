@@ -64,7 +64,8 @@
   <div class="sidebar-heading" style="color: grey;">
     การอนุมัติ
   </div>
-  <a class="item" href="{{ url_for('approve_orders.index')}}">อนุมัติคำสั่งเบิกอุปกรณ์</a>
+  <a class="item"
+    href="{{ url_for('approve_orders.index', organization_id = organization.id )}}">อนุมัติคำสั่งเบิกอุปกรณ์</a>
   {% endif %}
 
   <!-- Heading -->

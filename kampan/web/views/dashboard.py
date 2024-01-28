@@ -29,6 +29,8 @@ def index():
 @module.route("/daily", methods=["GET", "POST"])
 @login_required
 def daily_dashboard():
+    organization = current_user.get_current_organization()
+
     form = forms.inventories.SearchStartEndDateForm()
     form.end_date.validators = None
     form.item.validators = None
@@ -72,6 +74,7 @@ def daily_dashboard():
         paginated_daily_item_orders=paginated_daily_item_orders,
         today=today,
         notifications=notifications,
+        organization=organization,
     )
 
 

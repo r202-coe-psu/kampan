@@ -47,7 +47,6 @@ def organization_roles_required(*roles):
                 organization_id = request.view_args["organization_id"]
             except:
                 organization_id = request.args.get("organization_id")
-
             try:
                 organization = models.Organization.objects.get(id=organization_id)
                 organization_roles = models.OrganizationUserRole.objects(
