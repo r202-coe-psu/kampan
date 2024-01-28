@@ -46,7 +46,9 @@
           <td data-label="Description">{{ organization.description }}</td>
           <td data-label="Registeration Date">{{ organization.created_date.strftime('%d/%m/%Y') }}</td>
           <td data-label="Checkin Items">
-            <a class="ui primary button icon" href="" style=" color: white; background-color: rgb(59, 115, 199); ">
+            <a class="ui primary button icon"
+              href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}"
+              style=" color: white; background-color: rgb(59, 115, 199); ">
               <i class="eye icon"></i>
             </a>
             <a class="ui primary button icon"

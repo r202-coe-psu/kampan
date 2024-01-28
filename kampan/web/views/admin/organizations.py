@@ -74,6 +74,18 @@ def craete_or_edit(organization_id):
     return redirect(url_for("admin.organizations.index"))
 
 
+@module.route("/<organization_id>/detail")
+@acl.roles_required("admin")
+def detail(organization_id):
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    return render_template(
+        "/admin/organizations/detail.html", organization=organization
+    )
+
+
 @module.route("/<organization_id>/add-member", methods=["GET", "POST"])
 @acl.roles_required("admin")
 def add_member(organization_id):
