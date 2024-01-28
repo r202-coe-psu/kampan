@@ -1,0 +1,147 @@
+{% extends '/admin/base/default-dashboard.html' %}
+{% import '/admin/base/html-renderer.html' as renderer %}
+{% import '/admin/base/pagination.html' as paginated %}
+
+{% block title %}องค์กร{% endblock %}
+{% block dashboard_title %}รายชื่อองค์กร{% endblock %}
+
+{% block breadcrumbs %}
+<a class="ui primary button" href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
+  เพิ่มสมาชิก
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  {#
+  <div class="ui secondary menu">
+    <p style="margin-left:auto;">
+      {{form.hidden_tag()}}
+      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+    </p>
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
+  </div>
+  #}
+  {% if org_users_in_organization %}
+  <div style="padding-bottom: 1em ;">
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>ชื่อสมาชิก</th>
+          <th>ตำแหน่ง</th>
+          <th>เพิ่มเข้ามาเมื่อวันที่</th>
+          <th>แก้ไขตำแหน่ง/ลบสมาชิก</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org_user in paginated_org_users.items %}
+        <tr>
+          <td data-label="Organization">{{ org_user.get_name() }}</td>
+          <td data-label="Roles">{{ org_user.get_current_organization_role() | join(' ')}}</td>
+          <td data-label="Create date">{{ org_user.get_current_organization_create_date().strftime('%d/%m/%Y') if
+            org_user.get_current_organization_create_date() else "-"}}
+          </td>
+          <td>
+            <a class="ui icon button"
+              href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="edit icon"></i>
+            </a>
+            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              onclick="showDeleteModal('{{ org_user.id }}')">
+              <i class="trash icon"></i>
+            </a>
+            <div class="ui modal {{ org_user.id }}">
+              <div class="header">
+                ลบสมาชิก
+              </div>
+              <div class="content">
+                <p>ต้องการลบสมาชิก<b>{{ org_user.name }}</b><br />
+                  สมาชิก : <b>{{ org_user.get_name() }}</b><br />
+
+                </p>
+              </div>
+              <div class="actions">
+                <button class="ui black deny button">
+                  ยกเลิก
+                </button>
+                <a class="ui negative right labeled icon button"
+                  href="{{ url_for('admin.organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
+                  ยืนยัน
+                  <i class="checkmark icon"></i>
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_org_users.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_org_users,"item_checkouts.bill_checkout", params)}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="ui info message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+  {% endif %}
+</form>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(org_user_id) {
+    org_user_id ? $('.ui.modal.' + org_user_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}
