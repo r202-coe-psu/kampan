@@ -60,3 +60,32 @@ class OrgnaizationAddMemberForm(FlaskForm):
 
 class AdminOrganizationEditForm(BaseOrganizationForm):
     pass
+
+
+class SearchUserForm(FlaskForm):
+    start_date = fields.DateField(
+        "เริ่มเพิ่มเมื่อวันที่",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        render_kw={"placeholder": "Date"},
+    )
+    end_date = fields.DateField(
+        "จนถึงวันที่",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        render_kw={"placeholder": "Date"},
+    )
+    role = fields.SelectField(
+        "ตำแหน่ง",
+        choices=[("", "Role")] + models.organizations.ORGANIZATION_ROLES,
+        validate_choice=False,
+        validators=None,
+        render_kw={"placeholder": "role"},
+    )
+    user = fields.SelectField(
+        "สมาชิก",
+        choices=[("", "User")],
+        validate_choice=False,
+        validators=None,
+        render_kw={"placeholder": "user"},
+    )

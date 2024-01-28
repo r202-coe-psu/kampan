@@ -13,22 +13,9 @@
 
 {% block content %}
 <form method="post">
-  {#
-  <div class="ui secondary menu">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
-  </div>
-  #}
-  {% if org_users_in_organization %}
+  {{ renderer.render_default_search_user(form) }}
+
+  {% if org_users %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
       <thead>
@@ -42,10 +29,10 @@
       <tbody>
         {% for org_user in paginated_org_users.items %}
         <tr>
-          <td data-label="Organization">{{ org_user.get_name() }}</td>
-          <td data-label="Roles">{{ org_user.get_current_organization_role() | join(' ')}}</td>
-          <td data-label="Create date">{{ org_user.get_current_organization_create_date().strftime('%d/%m/%Y') if
-            org_user.get_current_organization_create_date() else "-"}}
+          <td data-label="Organization">{{ org_user.user.get_name() }}</td>
+          <td data-label="Roles">{{ org_user.role }}</td>
+          <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
+            org_user.created_date else "-"}}
           </td>
           <td>
             <a class="ui icon button"
@@ -62,8 +49,8 @@
                 ลบสมาชิก
               </div>
               <div class="content">
-                <p>ต้องการลบสมาชิก<b>{{ org_user.name }}</b><br />
-                  สมาชิก : <b>{{ org_user.get_name() }}</b><br />
+                <p>ต้องการลบสมาชิก<b> {{ org_user.user.get_name() }}</b><br />
+
 
                 </p>
               </div>
