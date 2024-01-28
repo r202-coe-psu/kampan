@@ -55,6 +55,12 @@ class Organization(me.Document):
                 .distinct(field="user")
             )
 
+    def get_organization_users(self):
+        if OrganizationUserRole.objects().count():
+            return OrganizationUserRole.objects(
+                organization=self, status="active"
+            ).order_by("-first_name")
+
     def get_logo(self):
         return Logo.objects(organization=self, marked_as_organization_logo=True).first()
 
