@@ -199,7 +199,7 @@ def remove_org_user(organization_id, org_user_id):
 @module.route("/<organization_id>/delete")
 @acl.roles_required("admin")
 def delete(organization_id):
-    organization = models.Organization.objects().get(id=organization_id)
+    organization = models.Organization.objects(id=organization_id).first()
     organization.status = "disactive"
     organization.save()
 
