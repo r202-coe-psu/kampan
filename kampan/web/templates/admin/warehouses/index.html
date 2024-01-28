@@ -4,7 +4,7 @@
 {% block title %}คลังอุปกรณ์{% endblock %}
 {% block dashboard_title %}คลังอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
-{% if request.endpoint == 'warehouses.index' %}
+{% if request.endpoint == 'admin.warehouses.index' %}
 <a class="ui primary button" href="{{ url_for('admin.warehouses.add_or_edit') }}">
   เพิ่มคลังอุปกรณ์
 </a>

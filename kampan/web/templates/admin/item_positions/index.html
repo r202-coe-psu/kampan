@@ -5,7 +5,7 @@
 {% block dashboard_title %}ตำแหน่งอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
-{% if request.endpoint == 'item_positions.index' %}
+{% if request.endpoint == 'admin.item_positions.index' %}
 <a class="ui primary button" href="{{ url_for('admin.item_positions.add_or_edit') }}">
   เพิ่มตำแหน่งอุปกรณ์
 </a>

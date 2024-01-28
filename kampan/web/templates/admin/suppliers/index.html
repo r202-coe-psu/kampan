@@ -5,7 +5,7 @@
 {% block dashboard_title %}ร้านค้า{% endblock %}
 
 {% block breadcrumbs %}
-{% if request.endpoint == 'suppliers.index' %}
+{% if request.endpoint == 'admin.suppliers.index' %}
 <a class="ui primary button" href="{{ url_for('admin.suppliers.add') }}">
   เพิ่มร้านค้า
 </a>
