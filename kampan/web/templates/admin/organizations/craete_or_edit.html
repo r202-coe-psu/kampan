@@ -32,7 +32,7 @@
 
 {% block content %}
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="ui form" method="POST">
     {{ form.hidden_tag() }}
     {{ renderer.render_field(form.name) }}
     {{ renderer.render_field(form.description) }}
