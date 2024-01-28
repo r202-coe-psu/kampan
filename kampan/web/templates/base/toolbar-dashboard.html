@@ -23,7 +23,7 @@
   </div>
 
   <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ด</a>
-  <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
+  <a class="item" href="{{ url_for('notifications.index', organization_id = organization.id) }}">การแจ้งเตือน</a>
 
 
   {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
@@ -32,10 +32,10 @@
     การจัดการ
   </div>
 
-  <a class="item" href="{{ url_for('items.index') }}">อุปกรณ์ทั้งหมด</a>
-  <a class="item" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
-  <a class="item" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
-  <a class="item" href="{{ url_for('item_positions.index') }}">ตำแหน่งอุปกรณ์</a>
+  <a class="item" href="{{ url_for('items.index', organization_id = organization.id) }}">อุปกรณ์ทั้งหมด</a>
+  <a class="item" href="{{ url_for('suppliers.index', organization_id = organization.id) }}">ร้านค้า</a>
+  <a class="item" href="{{ url_for('warehouses.index', organization_id = organization.id) }}">คลังอุปกรณ์</a>
+  <a class="item" href="{{ url_for('item_positions.index', organization_id = organization.id) }}">ตำแหน่งอุปกรณ์</a>
   {% endif %}
 
 
@@ -45,9 +45,9 @@
   </div>
 
   {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
-  <a class="item" href="{{ url_for('item_registers.index') }}">นำเข้าอุปกรณ์</a>
+  <a class="item" href="{{ url_for('item_registers.index', organization_id = organization.id) }}">นำเข้าอุปกรณ์</a>
   {% endif %}
-  <a class="item" href="{{ url_for('inventories.index') }}">รายการนำเข้าอุปกรณ์</a>
+  <a class="item" href="{{ url_for('inventories.index', organization_id = organization.id) }}">รายการนำเข้าอุปกรณ์</a>
 
   {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
   <!-- Heading -->
@@ -56,8 +56,8 @@
   </div>
 
 
-  <a class="item" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a>
-  <a class="item" href="{{ url_for('item_checkouts.index') }}">รายการนำอุปกรณ์ออก</a>
+  <a class="item" href="{{ url_for('item_orders.index', organization_id = organization.id) }}">คำสั่งเบิกอุปกรณ์</a>
+  <a class="item" href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}">รายการนำอุปกรณ์ออก</a>
   {% endif %}
 
   {% if current_user.has_organization_roles("admin", "endorser") %}
@@ -73,7 +73,7 @@
   <div class="sidebar-heading" style="color: grey;">
     แจ้งอุปกรณ์เสียหาย
   </div>
-  <a class="item" href="{{ url_for('lost_breaks.index')}}">อุปกรณ์ชำรุด/สูญหาย</a>
+  <a class="item" href="{{ url_for('lost_breaks.index', organization_id = organization.id)}}">อุปกรณ์ชำรุด/สูญหาย</a>
   {% endif %}
 
 
