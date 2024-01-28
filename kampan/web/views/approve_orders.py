@@ -52,7 +52,12 @@ def index():
 
 
 @module.route("/<order_id>/approved_detail", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
 def approved_detail(order_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     order = models.OrderItem.objects(id=order_id).first()
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     items = order.get_item_detail()
@@ -64,6 +69,7 @@ def approved_detail(order_id):
             "/approve_orders/approve_detail.html",
             form=form,
             checkouts=checkouts,
+            organization=organization,
         )
     dict_checkouts = dict()
     for checkout in checkouts:
@@ -107,11 +113,18 @@ def approved_detail(order_id):
             if aprroved_amount <= 0:
                 break
 
-    return redirect(url_for("approve_orders.approve", order_id=order_id))
+    return redirect(
+        url_for(
+            "approve_orders.approve", order_id=order_id, organization_id=organization_id
+        )
+    )
 
 
 @module.route("<order_id>", methods=["GET"])
+@acl.organization_roles_required("admin", "endorser")
 def approve(order_id):
+    organization_id = request.args.get("organization_id")
+
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "approved"
@@ -121,12 +134,16 @@ def approve(order_id):
         checkout.approval_status = "approved"
         checkout.save()
 
-    return redirect(url_for("approve_orders.index"))
+    return redirect(url_for("approve_orders.index", organization_id=organization_id))
 
 
 @module.route("/item_checkouts", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser")
 def item_checkouts():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
@@ -137,4 +154,5 @@ def item_checkouts():
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         checkouts=checkouts,
+        organization=organization,
     )
