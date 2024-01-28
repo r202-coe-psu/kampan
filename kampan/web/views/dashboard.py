@@ -30,6 +30,8 @@ def index():
 @login_required
 def daily_dashboard():
     organization = current_user.get_current_organization()
+    if not organization:
+        return redirect(url_for("accounts.index"))
 
     form = forms.inventories.SearchStartEndDateForm()
     form.end_date.validators = None
