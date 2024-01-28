@@ -6,7 +6,7 @@
 {% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
 
 {% block breadcrumbs %}
-{% if request.endpoint == 'item_registers.index' %}
+{% if request.endpoint == 'admin.item_registers.index' %}
 
 <a class="ui primary button" href="{{ url_for('admin.item_registers.register') }}">
   เพิ่มบิลอุปกรณ์
