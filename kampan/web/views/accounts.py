@@ -131,11 +131,15 @@ def profile(user_id):
 @module.route("/accounts")
 @login_required
 def index():
+    organization = current_user.get_current_organization()
     biography = ""
     if current_user.biography:
         biography = markdown.markdown(current_user.biography)
     return render_template(
-        "/accounts/index.html", user=current_user, biography=biography
+        "/accounts/index.html",
+        user=current_user,
+        biography=biography,
+        organization=organization,
     )
 
 
