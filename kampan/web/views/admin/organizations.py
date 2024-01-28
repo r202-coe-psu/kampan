@@ -115,12 +115,12 @@ def add_member(organization_id):
     return redirect(url_for("admin.organizations.index"))
 
 
-@module.route("/<organization_id>/users", methods=["GET", "POST"])
+@module.route("/<organization_id>/organizaiton_users", methods=["GET", "POST"])
 @acl.roles_required("admin")
-def users(organization_id):
+def organizaiton_users(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.inventories.SearchStartEndDateForm()
-    users_in_organization = organization.get_users()
+    org_users_in_organization = organization.get_users()
 
     if not form.validate_on_submit():
         print(form.errors)
@@ -128,13 +128,71 @@ def users(organization_id):
     if form.start_date.data or form.end_date.data:
         page = 1
 
-    paginated_users = Pagination(users_in_organization, page=page, per_page=30)
+    paginated_org_users = Pagination(org_users_in_organization, page=page, per_page=30)
     return render_template(
-        "/admin/organizations/users.html",
+        "/admin/organizations/members.html",
         form=form,
-        paginated_users=paginated_users,
+        paginated_org_users=paginated_org_users,
         organization=organization,
-        users_in_organization=users_in_organization,
+        org_users_in_organization=org_users_in_organization,
+    )
+
+
+@module.route(
+    "/<organization_id>/organizaiton_users/<org_user_id>/edit_roles",
+    methods=["GET", "POST"],
+)
+@acl.roles_required("admin")
+def edit_roles(organization_id, org_user_id):
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    org_user = models.OrganizationUserRole.objects(
+        user=org_user_id, status="active"
+    ).first()
+    form = forms.organizations.OrganizationRoleSelectionForm(obj=org_user)
+
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/admin/organizations/edit_roles.html",
+            form=form,
+            organization=organization,
+            org_user=org_user,
+        )
+
+    org_user.role = form.role.data
+    org_user.last_modifier = current_user._get_current_object()
+    org_user.last_ip_address = request.headers.get(
+        "X-Forwarded-For", request.remote_addr
+    )
+    org_user.save()
+    return redirect(
+        url_for(
+            "admin.organizations.organizaiton_users",
+            organization_id=organization.id,
+        )
+    )
+
+
+@module.route(
+    "/<organization_id>/organizaiton_user/<org_user_id>/remove", methods=["GET", "POST"]
+)
+@acl.roles_required("admin")
+def remove_org_user(organization_id, org_user_id):
+    organization = models.Organization.objects(id=organization_id).first()
+    org_user = models.OrganizationUserRole.objects(user=org_user_id).first()
+    org_user.status = "disactive"
+    org_user.last_modifier = current_user._get_current_object()
+    org_user.last_ip_address = request.headers.get(
+        "X-Forwarded-For", request.remote_addr
+    )
+    org_user.save()
+    return redirect(
+        url_for(
+            "admin.organizations.organizaiton_users",
+            organization_id=organization.id,
+        )
     )
 
 
