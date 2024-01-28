@@ -6,7 +6,7 @@ from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 import mongoengine as me
 
@@ -17,8 +17,12 @@ module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def index():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     checkout_items = models.CheckoutItem.objects(
         status="active", approval_status="pending"
     )
@@ -69,12 +73,17 @@ def index():
         checkouts=checkouts,
         form=form,
         paginated_checkouts=paginated_checkouts,
+        organization=organization,
     )
 
 
 @module.route("/checkout", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def checkout():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     # items = models.Item.objects()
     form = forms.item_checkouts.CheckoutItemForm()
     order = models.OrderItem.objects(id=request.args.get("order_id")).first()
@@ -101,8 +110,7 @@ def checkout():
         print(form.errors)
 
         return render_template(
-            "/item_checkouts/checkout.html",
-            form=form,
+            "/item_checkouts/checkout.html", form=form, organization=organization
         )
     item = models.Item.objects(id=form.item.data).first()
     checkout_item = models.CheckoutItem()
@@ -113,12 +121,16 @@ def checkout():
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("item_orders.index", organization_id=organization_id))
 
 
 @module.route("/all-checkout", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def bill_checkout():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
@@ -131,12 +143,17 @@ def bill_checkout():
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         checkouts=checkouts,
+        organization=organization,
     )
 
 
 @module.route("/checkout/<checkout_item_id>/edit", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def edit(checkout_item_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
     order = models.OrderItem.objects(id=checkout_item.order.id).first()
 
@@ -155,8 +172,7 @@ def edit(checkout_item_id):
         form.item.process(data=checkout_item.item.id, formdata=form.item.choices)
     if not form.validate_on_submit():
         return render_template(
-            "/item_checkouts/checkout.html",
-            form=form,
+            "/item_checkouts/checkout.html", form=form, organization=organization
         )
     item = models.Item.objects(id=form.item.data).first()
     checkout_item.user = current_user._get_current_object()
@@ -165,16 +181,26 @@ def edit(checkout_item_id):
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
     return redirect(
-        url_for("item_checkouts.bill_checkout", order_id=checkout_item.order.id)
+        url_for(
+            "item_checkouts.bill_checkout",
+            order_id=checkout_item.order.id,
+            organization_id=organization_id,
+        )
     )
 
 
 @module.route("/checkout/<checkout_item_id>/delete", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def delete(checkout_item_id):
+    organization_id = request.args.get("organization_id")
+
     checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
     checkout_item.status = "disactive"
     checkout_item.save()
     return redirect(
-        url_for("item_checkouts.bill_checkout", order_id=checkout_item.order.id)
+        url_for(
+            "item_checkouts.bill_checkout",
+            order_id=checkout_item.order.id,
+            organization_id=organization_id,
+        )
     )

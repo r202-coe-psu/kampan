@@ -2,7 +2,7 @@ from calendar import calendar
 from crypt import methods
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 import mongoengine as me
 from flask_mongoengine import Pagination
@@ -11,8 +11,12 @@ module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def index():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     item_registers = models.RegistrationItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
 
@@ -42,6 +46,7 @@ def index():
         item_registers=item_registers,
         paginated_item_registers=paginated_item_registers,
         form=form,
+        organization=organization,
     )
 
 
@@ -49,8 +54,12 @@ def index():
     "/register",
     methods=["GET", "POST"],
 )
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def register():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.item_registers.ItemRegisterationForm()
     item_register = models.RegistrationItem()
 
@@ -58,6 +67,7 @@ def register():
         return render_template(
             "/item_registers/register.html",
             form=form,
+            organization=organization,
         )
 
     if form.bill_file.data:
@@ -78,12 +88,21 @@ def register():
     form.populate_obj(item_register)
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(
+        url_for(
+            "item_registers.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<item_register_id>/edit", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def edit(item_register_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     form = forms.item_registers.ItemRegisterationForm(obj=item_register)
 
@@ -91,7 +110,9 @@ def edit(item_register_id):
         return render_template(
             "/item_registers/register.html",
             form=form,
+            organization=organization,
         )
+
     if form.bill_file.data:
         if item_register.bill:
             item_register.bill.replace(
@@ -109,12 +130,19 @@ def edit(item_register_id):
     form.populate_obj(item_register)
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(
+        url_for(
+            "item_registers.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<item_register_id>/delete")
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def delete(item_register_id):
+    organization_id = request.args.get("organization_id")
+
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     item_register.status = "disactive"
     inventories = models.Inventory.objects(registration=item_register)
@@ -123,4 +151,9 @@ def delete(item_register_id):
         inventory.save()
     item_register.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(
+        url_for(
+            "item_registers.index",
+            organization_id=organization_id,
+        )
+    )

@@ -3,7 +3,7 @@ from crypt import methods
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 import mongoengine as me
 
@@ -11,8 +11,12 @@ module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def index():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     lost_break_items = models.LostBreakItem.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
     if form.start_date.data == None and form.end_date.data != None:
@@ -40,12 +44,17 @@ def index():
         paginated_lost_break_items=paginated_lost_break_items,
         lost_break_items=lost_break_items,
         form=form,
+        organization=organization,
     )
 
 
-@module.route("/add", methods=["GET", "POST"], defaults=dict(lost_break_item_id=None))
-@login_required
-def add(lost_break_item_id):
+@module.route("/add", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser", "staff")
+def add():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.lost_break.ItemLostBreakForm()
     items = models.Item.objects(status="active")
     if items:
@@ -60,6 +69,7 @@ def add(lost_break_item_id):
         return render_template(
             "/lost_breaks/add.html",
             form=form,
+            organization=organization,
         )
 
     quantity = form.quantity.data
@@ -88,12 +98,21 @@ def add(lost_break_item_id):
         if quantity <= 0:
             break
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(
+        url_for(
+            "lost_breaks.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<lost_break_item_id>/edit", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def edit(lost_break_item_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
     form = forms.lost_break.ItemLostBreakForm(obj=lost_break_item)
     items = models.Item.objects(status="active")
@@ -118,6 +137,7 @@ def edit(lost_break_item_id):
         return render_template(
             "/lost_breaks/add.html",
             form=form,
+            organization=organization,
         )
     if lost_break_item.quantity != 0:
         return_inventory = models.Inventory.objects(
@@ -151,12 +171,19 @@ def edit(lost_break_item_id):
         if quantity <= 0:
             break
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(
+        url_for(
+            "lost_breaks.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<lost_break_item_id>/delete")
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def delete(lost_break_item_id):
+    organization_id = request.args.get("organization_id")
+
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
     if lost_break_item.quantity != 0:
         return_inventory = models.Inventory.objects(
@@ -167,4 +194,9 @@ def delete(lost_break_item_id):
     lost_break_item.status = "disactive"
     lost_break_item.save()
 
-    return redirect(url_for("lost_breaks.index"))
+    return redirect(
+        url_for(
+            "lost_breaks.index",
+            organization_id=organization_id,
+        )
+    )

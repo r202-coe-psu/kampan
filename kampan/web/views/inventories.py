@@ -11,7 +11,7 @@ from flask import (
     abort,
 )
 from flask_login import login_required, current_user
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 from flask_mongoengine import Pagination
 
@@ -19,8 +19,12 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def index():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.inventories.SearchStartEndDateForm()
     inventories = models.Inventory.objects(status="active")
     items = models.Item.objects(status="active")
@@ -53,12 +57,17 @@ def index():
         inventories=inventories,
         paginated_inventories=paginated_inventories,
         form=form,
+        organization=organization,
     )
 
 
 @module.route("/register", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def register():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.inventories.InventoryForm()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
@@ -78,6 +87,7 @@ def register():
             "/inventories/register.html",
             form=form,
             item_register=item_register,
+            organization=organization,
         )
 
     inventory = models.Inventory()
@@ -89,12 +99,16 @@ def register():
     inventory.remain = inventory.quantity
     inventory.save()
 
-    return redirect(url_for("item_registers.index"))
+    return redirect(url_for("item_registers.index", organization_id=organization_id))
 
 
 @module.route("/<inventory_id>/edit", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def edit(inventory_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     inventory = models.Inventory.objects().get(id=inventory_id)
     form = forms.inventories.InventoryForm(obj=inventory)
     item_register = inventory.registration
@@ -119,22 +133,11 @@ def edit(inventory_id):
             "/inventories/register.html",
             item_register=item_register,
             form=form,
+            organization=organization,
         )
 
     form.populate_obj(inventory)
-    # if form.bill_file.data:
-    #     if inventory.bill:
-    #         inventory.bill.replace(
-    #             form.bill_file.data,
-    #             filename=form.bill_file.data.filename,
-    #             content_type=form.bill_file.data.content_type,
-    #         )
-    #     else:
-    #         inventory.bill.put(
-    #             form.bill_file.data,
-    #             filename=form.bill_file.data.filename,
-    #             content_type=form.bill_file.data.content_type,
-    #         )
+
     inventory.item = models.Item.objects(id=form.item.data).first()
     inventory.user = current_user._get_current_object()
     inventory.registration = item_register
@@ -147,20 +150,30 @@ def edit(inventory_id):
 
 
 @module.route("/<inventory_id>/delete")
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def delete(inventory_id):
+    organization_id = request.args.get("organization_id")
+
     inventory = models.Inventory.objects().get(id=inventory_id)
     inventory.status = "disactive"
     inventory.save()
 
     return redirect(
-        url_for("inventories.bill_item", item_register_id=inventory.registration.id)
+        url_for(
+            "inventories.bill_item",
+            item_register_id=inventory.registration.id,
+            organization_id=organization_id,
+        )
     )
 
 
 @module.route("/all-item", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def bill_item():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(registration=item_register)
@@ -170,10 +183,12 @@ def bill_item():
         "/inventories/bill-item.html",
         paginated_inventories=paginated_inventories,
         item_register=item_register,
+        organization=organization,
     )
 
 
 @module.route("/<inventory_id>/file")
+@acl.organization_roles_required("admin", "endorser", "staff")
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
     registration_item = models.RegistrationItem.objects(

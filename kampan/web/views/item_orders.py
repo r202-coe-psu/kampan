@@ -5,15 +5,19 @@ from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 import mongoengine as me
 
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 
 module = Blueprint("item_orders", __name__, url_prefix="/item_orders")
 
 
 @module.route("/", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def index():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     orders = models.OrderItem.objects(status="active")
 
     form = forms.inventories.SearchStartEndDateForm()
@@ -42,19 +46,22 @@ def index():
         paginated_orders=paginated_orders,
         form=form,
         orders=orders,
+        organization=organization,
     )
 
 
 @module.route("/order", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def order():
-    items = models.Item.objects()
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.item_orders.OrderItemForm()
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/item_orders/order.html",
-            form=form,
+            "/item_orders/order.html", form=form, organization=organization
         )
 
     order = models.OrderItem()
@@ -64,31 +71,37 @@ def order():
 
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("item_orders.index", organization_id=organization_id))
 
 
 @module.route("/<order_id>/edit", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def edit(order_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     order = models.OrderItem.objects().get(id=order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
 
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
-            "/item_orders/order.html",
-            form=form,
+            "/item_orders/order.html", form=form, organization=organization
         )
 
     form.populate_obj(order)
     order.user = current_user._get_current_object()
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("item_orders.index", organization_id=organization_id))
 
 
 @module.route("/<order_id>/delete")
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def delete(order_id):
+    organization_id = request.args.get("organization_id")
+
     order = models.OrderItem.objects().get(id=order_id)
     checkouts = models.CheckoutItem.objects(order=order)
     for checkout in checkouts:
@@ -98,4 +111,4 @@ def delete(order_id):
 
     order.save()
 
-    return redirect(url_for("item_orders.index"))
+    return redirect(url_for("item_orders.index", organization_id=organization_id))
