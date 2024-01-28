@@ -56,6 +56,15 @@ class User(me.Document, UserMixin):
 
         return False
 
+    def has_organization_roles(self, *roles):
+        if "admin" in self.roles:
+            return True
+
+        for role in roles:
+            if role in self.get_current_organization_role():
+                return True
+        return False
+
     def get_image(self):
         return ""
 
