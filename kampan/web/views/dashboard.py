@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from kampan.web import forms
+from kampan.web import forms, acl
 from kampan import models
 from calendar import monthrange
 import datetime
@@ -81,7 +81,7 @@ def daily_dashboard():
 
 
 @module.route("/monthly", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def monthly_dashboard():
     form = forms.inventories.SearchMonthYearForm()
 
@@ -179,7 +179,7 @@ def monthly_dashboard():
 
 
 @module.route("/yearly", methods=["GET", "POST"])
-@login_required
+@acl.organization_roles_required("admin", "endorser", "staff")
 def yearly_dashboard():
     form = forms.inventories.SearchYearForm()
 
