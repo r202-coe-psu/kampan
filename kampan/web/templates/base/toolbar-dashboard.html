@@ -25,7 +25,7 @@
   <a class="item" href="{{ url_for('notifications.index') }}">การแจ้งเตือน</a>
 
 
-  {% if current_user.has_organization_roles("admin", "staff") %}
+  {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การจัดการ
@@ -43,12 +43,12 @@
     การนำเข้าอุปกรณ์
   </div>
 
-  {% if current_user.has_organization_roles("admin", "staff") %}
+  {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
   <a class="item" href="{{ url_for('item_registers.index') }}">นำเข้าอุปกรณ์</a>
   {% endif %}
   <a class="item" href="{{ url_for('inventories.index') }}">รายการนำเข้าอุปกรณ์</a>
 
-  {% if current_user.has_organization_roles("admin", "staff") %}
+  {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การนำอุปกรณ์ออก
