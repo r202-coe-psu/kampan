@@ -154,7 +154,13 @@ def monthly_dashboard():
         "ธันวาคม",
     ]
     this_month = months[today.month - 1] + " " + str(today.year)
-    print(this_month)
+
+    notifications = 0
+
+    items = models.Item.objects(status="active")
+    for item in items:
+        if item.minimum > item.get_items_quantity():
+            notifications += 1
     return render_template(
         "/dashboard/monthly_dashboard.html",
         trend_checkout_items=trend_checkout_items,
@@ -163,6 +169,7 @@ def monthly_dashboard():
         monthly_item_orders=monthly_item_orders,
         total_values=total_values,
         this_month=this_month,
+        notifications=notifications,
     )
 
 
@@ -223,6 +230,13 @@ def yearly_dashboard():
         trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
     total_values = sum(trend_checkout_items)
     this_year = today.year
+
+    notifications = 0
+
+    items = models.Item.objects(status="active")
+    for item in items:
+        if item.minimum > item.get_items_quantity():
+            notifications += 1
     return render_template(
         "/dashboard/yearly_dashboard.html",
         yearly_item_orders=yearly_item_orders,
@@ -230,4 +244,5 @@ def yearly_dashboard():
         trend_checkout_items=trend_checkout_items,
         this_year=this_year,
         form=form,
+        notifications=notifications,
     )

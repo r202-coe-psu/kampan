@@ -1,10 +1,26 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+
 {% block title %}แดชบอร์ดรายเดือน{% endblock %}
+
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายเดือน</div>
-<div class="ui small right floated header">{{today_date}}</div>
+<a href="{{ url_for('notifications.index') }}">
+  {% if notifications == 0 %}
+  <i class="icons ui small right floated header green">
+    <i class="bell outline icon"></i>
+  </i>
+  {% else %}
+  <i class="icons ui small right floated header red">
+    <i class="bell outline icon"></i>
+    <div class="floating ui red label" style="padding:2px 3px;top: 2px;left: 4px;">
+      <span> {{ notifications }} </span>
+    </div>
+  </i>
+  {% endif %}
+</a>
 {% endblock %}
+
 {% block breadcrumbs %}
 <div class="row justify-content-center align-items-center">
   <div class="col-12 col-sm-6 col-md-4 col-lg-3">
