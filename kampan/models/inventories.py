@@ -12,9 +12,11 @@ class RegistrationItem(me.Document):
     status = me.StringField(default="active")
     receipt_id = me.StringField(required=True, max_length=255)
     description = me.StringField()
-    supplier = me.ReferenceField("Supplier", dbref=True)
 
+    supplier = me.ReferenceField("Supplier", dbref=True)
     user = me.ReferenceField("User", dbref=True)
+    organization = me.ReferenceField("Organization", dbref=True)
+
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
     def get_item_in_bill(self):
@@ -67,6 +69,8 @@ class OrderItem(me.Document):
     approval_status = me.StringField(default="pending")
     description = me.StringField()
     user = me.ReferenceField("User", dbref=True)
+    organization = me.ReferenceField("Organization", dbref=True)
+
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     approved_date = me.DateTimeField()
 
@@ -149,11 +153,3 @@ class LostBreakItem(me.Document):
     description = me.StringField(max_length=255)
     quantity = me.IntField(required=True, min_value=1, default=1)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-
-
-class Approve_orders(me.Document):
-    # อนุมัติเบิก
-    meta = {"collection": "approve_orders"}
-    status = me.StringField(default="active")
-
-    reated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
