@@ -89,7 +89,7 @@ def add():
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
-
+    item.organization = organization
     item.save()
 
     return redirect(
