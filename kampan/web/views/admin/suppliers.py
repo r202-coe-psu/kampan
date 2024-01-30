@@ -36,6 +36,8 @@ def add():
         )
 
     form.populate_obj(supplier)
+    supplier.created_by = current_user._get_current_object()
+    supplier.last_modifier = current_user._get_current_object()
     supplier.save()
 
     return redirect(url_for("admin.suppliers.index"))
@@ -55,6 +57,7 @@ def edit(supplier_id):
         )
 
     form.populate_obj(supplier)
+    supplier.last_modifier = current_user._get_current_object()
     supplier.save()
 
     return redirect(url_for("admin.suppliers.index"))
