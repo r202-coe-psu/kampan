@@ -6,7 +6,7 @@
 {% block dashboard_title %}รายชื่อองค์กร{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('admin.organizations.craete_or_edit') }}">
+<a class="ui primary button" href="{{ url_for('admin.organizations.create_or_edit') }}">
   เพิ่มองค์กร
 </a>
 
@@ -64,7 +64,7 @@
               <i class="user plus icon"></i>
             </a>
             <a class="ui icon button"
-              href="{{ url_for('admin.organizations.craete_or_edit', organization_id=organization.id) }}"
+              href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>

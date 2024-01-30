@@ -55,7 +55,7 @@ def index():
 )
 @module.route("/<organization_id>/edit", methods=["GET", "POST"])
 @acl.roles_required("admin")
-def craete_or_edit(organization_id):
+def create_or_edit(organization_id):
     organization = models.Organization()
     form = forms.organizations.OrganizationForm()
 
@@ -64,7 +64,7 @@ def craete_or_edit(organization_id):
         form = forms.organizations.OrganizationForm(obj=organization)
     if not form.validate_on_submit():
         print(form.errors)
-        return render_template("/admin/organizations/craete_or_edit.html", form=form)
+        return render_template("/admin/organizations/create_or_edit.html", form=form)
 
     form.populate_obj(organization)
     if not organization_id:
