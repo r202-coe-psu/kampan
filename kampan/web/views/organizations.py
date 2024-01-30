@@ -10,6 +10,30 @@ from kampan import models
 module = Blueprint("organizations", __name__, url_prefix="/organizations")
 
 
+@module.route("/<organization_id>/edit", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def edit(organization_id):
+    organization = models.Organization.objects(id=organization_id).first()
+    form = forms.organizations.OrganizationForm(obj=organization)
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/organizations/create_or_edit.html",
+            form=form,
+            organization=organization,
+        )
+
+    form.populate_obj(organization)
+    organization.last_updated_by = current_user._get_current_object()
+    organization.save()
+    return redirect(
+        url_for(
+            "organizations.detail",
+            organization_id=organization_id,
+        )
+    )
+
+
 @module.route("/<organization_id>/detail")
 @acl.organization_roles_required("admin")
 def detail(organization_id):
@@ -17,7 +41,10 @@ def detail(organization_id):
         id=organization_id, status="active"
     ).first()
 
-    return render_template("/organizations/detail.html", organization=organization)
+    return render_template(
+        "/organizations/detail.html",
+        organization=organization,
+    )
 
 
 @module.route("/<organization_id>/add-member", methods=["GET", "POST"])
@@ -62,7 +89,12 @@ def add_member(organization_id):
         )
         org_user.save()
 
-    return redirect(url_for("organizations.index"))
+    return redirect(
+        url_for(
+            "organizations.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<organization_id>/organizaiton_users", methods=["GET", "POST"])
@@ -146,7 +178,7 @@ def edit_roles(organization_id, org_user_id):
     return redirect(
         url_for(
             "organizations.organizaiton_users",
-            organization_id=organization.id,
+            organization_id=organization_id,
         )
     )
 
@@ -156,7 +188,6 @@ def edit_roles(organization_id, org_user_id):
 )
 @acl.organization_roles_required("admin")
 def remove_org_user(organization_id, org_user_id):
-    organization = models.Organization.objects(id=organization_id).first()
     org_user = models.OrganizationUserRole.objects(id=org_user_id).first()
     org_user.status = "disactive"
     org_user.last_modifier = current_user._get_current_object()
@@ -167,6 +198,6 @@ def remove_org_user(organization_id, org_user_id):
     return redirect(
         url_for(
             "organizations.organizaiton_users",
-            organization_id=organization.id,
+            organization_id=organization_id,
         )
     )
