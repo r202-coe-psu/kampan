@@ -6,11 +6,11 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'suppliers.index' %}
-<a class="ui primary button" href="{{ url_for('suppliers.add') }}">
+<a class="ui primary button" href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
   เพิ่มร้านค้า
 </a>
 {% else %}
-<a class="section" href="{{ url_for('suppliers.index') }}">ร้านค้า</a>
+<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้า</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -25,7 +25,8 @@
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
         <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.name }}
-          <a style="margin-right: 10px;" href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}">
+          <a style="margin-right: 10px;"
+            href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
             <i class="edit icon" style="color: Orange;"></i>
           </a>
         </div>
@@ -77,7 +78,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('suppliers.delete', supplier_id=supplier.id) }}">
+                href="{{ url_for('suppliers.delete', supplier_id=supplier.id, organization_id=organization.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>
