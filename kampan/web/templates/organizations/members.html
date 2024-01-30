@@ -2,8 +2,8 @@
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}องค์กร{% endblock %}
-{% block dashboard_title %}รายชื่อองค์กร{% endblock %}
+{% block title %}สมาชิกขององค์กร{% endblock %}
+{% block dashboard_title %}รายชื่อสมาชิก{% endblock %}
 
 {% block breadcrumbs %}
 <a class="ui primary button" href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
