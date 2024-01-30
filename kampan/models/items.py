@@ -39,7 +39,7 @@ class Item(me.Document):
     barcode_id = me.StringField(required=True, max_length=255)
     notification_status = me.BooleanField(default=True)
 
-    user = me.ReferenceField("User", dbref=True)
+    created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
