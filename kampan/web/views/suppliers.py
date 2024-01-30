@@ -18,7 +18,10 @@ def index():
         id=organization_id, status="active"
     ).first()
 
-    suppliers = models.Supplier.objects(status="active")
+    suppliers = models.Supplier.objects(
+        status="active",
+        organization=organization_id,
+    )
     page = request.args.get("page", default=1, type=int)
     paginated_suppliers = Pagination(suppliers, page=page, per_page=30)
     return render_template(
@@ -39,6 +42,7 @@ def add():
     supplier = models.Supplier()
     form = forms.suppliers.SupplierForm()
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/suppliers/add.html",
             form=form,
@@ -46,6 +50,9 @@ def add():
         )
 
     form.populate_obj(supplier)
+    supplier.organization = organization
+    supplier.created_by = current_user._get_current_object()
+    supplier.last_modifier = current_user._get_current_object()
     supplier.save()
 
     return redirect(
@@ -64,7 +71,9 @@ def edit(supplier_id):
         id=organization_id, status="active"
     ).first()
 
-    supplier = models.Supplier.objects().get(id=supplier_id)
+    supplier = models.Supplier.objects().get(
+        id=supplier_id, organization=organization_id
+    )
     form = forms.suppliers.SupplierForm(obj=supplier)
 
     if not form.validate_on_submit():
@@ -75,6 +84,7 @@ def edit(supplier_id):
         )
 
     form.populate_obj(supplier)
+    supplier.last_modifier = current_user._get_current_object()
     supplier.save()
 
     return redirect(
@@ -90,8 +100,16 @@ def edit(supplier_id):
 def delete(supplier_id):
     organization_id = request.args.get("organization_id")
 
-    supplier = models.Supplier.objects().get(id=supplier_id)
+    supplier = models.Supplier.objects().get(
+        id=supplier_id,
+        organization=organization_id,
+    )
     supplier.status = "disactive"
     supplier.save()
 
-    return redirect(url_for("suppliers.index", organization_id=organization_id))
+    return redirect(
+        url_for(
+            "suppliers.index",
+            organization_id=organization_id,
+        )
+    )
