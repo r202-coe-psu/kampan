@@ -5,7 +5,7 @@
 {% block title %}แดชบอร์ดรายวัน{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายวัน</div>
-<a href="{{ url_for('notifications.index') }}">
+<a href="{{ url_for('notifications.index', organization_id = organization.id) }}">
   {% if notifications == 0 %}
   <i class="icons ui small right floated header green">
     <i class="bell outline icon"></i>
@@ -29,7 +29,8 @@
         <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
               <h3>{{ daily_item_orders | length }}</h3>
             </b></span> รายการ</h5>
-        <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
+        <p class="card-text "><a href="{{ url_for('item_orders.index', organization_id = organization.id) }}"
+            class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
   </div>
@@ -53,7 +54,8 @@
         <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
               <h3>{{total_values}}</h3>
             </b></span> ฿ </h5>
-        <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
+        <p class="card-text "><a href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}"
+            class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
   </div>
@@ -109,13 +111,15 @@
         <td data-label="Description">{{ order.description }}</td>
         <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
         <td>
-          <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+          <a class="ui primary button"
+            href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id = organization.id) }}">
             เบิกอุปกรณ์
           </a>
         </td>
 
         <td data-label="Bill">
-          <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+          <a class="ui primary button"
+            href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id = organization.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="eye icon"></i>
           </a>
@@ -130,7 +134,8 @@
         </td>
         {% endif %}
         <td>
-          <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+          <a class="ui icon button"
+            href="{{ url_for('item_orders.edit', order_id=order.id, organization_id = organization.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
           </a>
@@ -152,7 +157,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_orders.delete', order_id=order.id) }}">
+                href="{{ url_for('item_orders.delete', order_id=order.id, organization_id = organization.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>
@@ -207,9 +212,12 @@
 </style>
 
 <div class="button-group">
-  <a href="/dashboard/" class="button green" style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายวัน</a>
-  <a href="/dashboard/monthly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
-  <a href="/dashboard/yearly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายปี</a>
+  <a href="{{ url_for('dashboard.daily_dashboard', organization_id = organization.id) }}" class="button green"
+    style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายวัน</a>
+  <a href="{{ url_for('dashboard.monthly_dashboard', organization_id = organization.id) }}" class="button"
+    style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
+  <a href="{{ url_for('dashboard.yearly_dashboard', organization_id = organization.id) }}" class="button"
+    style="color: white; text-align: center;">แสดงแผนภูมิรายปี</a>
 </div>
 
 

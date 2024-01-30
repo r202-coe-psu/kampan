@@ -3,7 +3,7 @@
 {% block title %}แดชบอร์ดรายปี{% endblock %}
 {% block dashboard_title %}
 <div class="ui small left header" style="display:inline-block;">แดชบอร์ดรายปี</div>
-<a href="{{ url_for('notifications.index') }}">
+<a href="{{ url_for('notifications.index', organization_id = organization.id) }}">
   {% if notifications == 0 %}
   <i class="icons ui small right floated header green">
     <i class="bell outline icon"></i>
@@ -27,7 +27,8 @@
         <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
               <h3>{{ yearly_item_orders | length }}</h3>
             </b></span> รายการ</h5>
-        <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
+        <p class="card-text "><a href="{{ url_for('item_orders.index', organization_id = organization.id) }}"
+            class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
   </div>
@@ -51,7 +52,8 @@
         <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
               <h3>{{total_values}}</h3>
             </b></span> ฿ </h5>
-        <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
+        <p class="card-text "><a href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}"
+            class="text-black">[ เพิ่มเติม ]</a></p>
       </div>
     </div>
   </div>
@@ -182,9 +184,12 @@
 </style>
 
 <div class="button-group">
-  <a href="/dashboard/daily" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายวัน</a>
-  <a href="/dashboard/monthly" class="button" style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
-  <a href="/dashboard/yearly" class="button green" style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายปี</a>
+  <a href="{{ url_for('dashboard.daily_dashboard', organization_id = organization.id) }}" class="button"
+    style="color: white; text-align: center;">แสดงแผนภูมิรายวัน</a>
+  <a href="{{ url_for('dashboard.monthly_dashboard', organization_id = organization.id) }}" class="button"
+    style="color: white; text-align: center;">แสดงแผนภูมิรายเดือน</a>
+  <a href="{{ url_for('dashboard.yearly_dashboard', organization_id = organization.id) }}" class="button green"
+    style="color: white; text-align: center;">คุณกำลังอยู่หน้ารายปี</a>
 </div>
 
 {% endblock %}

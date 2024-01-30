@@ -83,6 +83,10 @@ def daily_dashboard():
 @module.route("/monthly", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
 def monthly_dashboard():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.inventories.SearchMonthYearForm()
 
     today = datetime.datetime.today().date().replace(day=1)
@@ -175,12 +179,17 @@ def monthly_dashboard():
         total_values=total_values,
         this_month=this_month,
         notifications=notifications,
+        organization=organization,
     )
 
 
 @module.route("/yearly", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
 def yearly_dashboard():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.inventories.SearchYearForm()
 
     today = datetime.datetime.today().date().replace(month=1, day=1)
@@ -250,4 +259,5 @@ def yearly_dashboard():
         this_year=this_year,
         form=form,
         notifications=notifications,
+        organization=organization,
     )
