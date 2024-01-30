@@ -19,7 +19,8 @@
 
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('organizations.index') }}">องค์กร</a>
+<a class="section"
+  href="{{ url_for('organizations.organizaiton_users', organization_id=organization.id) }}">สมาชิกขององค์กร</a>
 <i class="right angle icon divider"></i>
 <div class="active section">
   เพิ่มสมาชิก
