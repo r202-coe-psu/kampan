@@ -62,7 +62,7 @@ def add():
         )
 
     item = models.Item(
-        user=current_user._get_current_object(),
+        created_by=current_user._get_current_object(),
     )
 
     form.populate_obj(item)

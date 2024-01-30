@@ -4,6 +4,11 @@ import mongoengine as me
 import datetime
 from ..models.inventories import Inventory, CheckoutItem
 
+ITEM_FORMAT = [
+    ("one to many", "หนึ่งต่อหลายๆ"),
+    ("one to one", "หนึ่งต่อหนึ่ง"),
+]
+
 
 class ItemSize(me.EmbeddedDocument):
     width = me.FloatField()
@@ -20,10 +25,16 @@ class Item(me.Document):
     description = me.StringField()
     organization = me.ReferenceField("Organization", dbref=True)
 
+    item_format = me.StringField(
+        required=True, choices=ITEM_FORMAT, default=ITEM_FORMAT[0]
+    )
+    set_ = me.IntField(required=True, min_value=1, default=1)
+    set_unit = me.StringField(required=True, default="ชุด", max_length=50)
     piece_per_set = me.IntField(required=True, min_value=1, default=1)
+    piece_unit = me.StringField(required=True, default="ชิ้น", max_length=50)
+
     categories = me.StringField(required=True)
     image = me.ImageField(thumbnail_size=(800, 600, False))
-    unit = me.StringField(required=True, default="ชุด", max_length=50)
     minimum = me.IntField(required=True, min_value=1, default=1)
     barcode_id = me.StringField(required=True, max_length=255)
     notification_status = me.BooleanField(default=True)

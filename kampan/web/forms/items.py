@@ -11,7 +11,7 @@ from kampan import models
 BaseItemForm = model_form(
     models.Item,
     FlaskForm,
-    exclude=["user", "created_date", "updated_date", "รูปภาพ"],
+    exclude=["created_by", "created_date", "updated_date", "รูปภาพ"],
     field_args={
         "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
