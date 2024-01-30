@@ -16,10 +16,12 @@ BaseItemForm = model_form(
         "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
         "categories": {"label": "หมวดหมุ่"},
-        "unit": {"label": "หน่วย"},
         "minimum": {"label": "จำนวนขั้นต่ำ -- (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
-        "piece_per_set": {"label": "จำนวน (ชิ้น/ชุด)"},
+        "set_": {"label": "จำนวน (ชุด)"},
+        "set_unit": {"label": "หน่วยใหญ่"},
+        "piece_per_set": {"label": "จำนวน (ชิ้นต่อชุด)"},
+        "piece_unit": {"label": "หน่วยเล็ก"},
     },
 )
 
