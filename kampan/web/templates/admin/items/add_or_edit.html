@@ -1,12 +1,21 @@
 {% extends '/admin/base/default-dashboard.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
 
-{% block title %}Add{% endblock %}
-{% block dashboard_title %}เพิ่มอุปกรณ์{% endblock %}
+<div class="active section">
+  {% if 'edit' in request.path %}
+  {% set head = "แก้ไขอุปกรณ์"%}
+  {% else %}
+  {% set head = "เพิ่มอุปกรณ์"%}
+  {% endif %}
+</div>
+{% block title %}{{ head }}{% endblock %}
+{% block dashboard_title %}{{ head }}{% endblock %}
 
 {% block breadcrumbs %}
+<a class="section" href="{{ url_for('admin.items.index', organization_id=organization.id) }}">อุปกรณ์</a>
+<i class="right angle icon divider"></i>
 <div class="ui breadcrumb">
-  <div class="active section">เพิ่มอุปกรณ์</div>
+  <div class="active section">{{ head }}</div>
 </div>
 {% endblock %}
 
@@ -15,18 +24,22 @@
   <form class="ui form" method="POST" enctype="multipart/form-data">
 
     {{ form.hidden_tag() }}
-
     {{ renderer.render_field(form.name) }}
     {{ renderer.render_field(form.description) }}
     {{ renderer.render_fileinput(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
     <div class="two fields">
-      {{ renderer.render_field(form.piece_per_set) }}
+      {{ renderer.render_select(form.item_format) }}
       {{ renderer.render_field(form.categories) }}
+      {{ renderer.render_field(form.minimum)}}
     </div>
     <div class="two fields">
-      {{ renderer.render_field(form.minimum)}}
-      {{ renderer.render_field(form.unit) }}
+      {{ renderer.render_field(form.set_) }}
+      {{ renderer.render_field(form.set_unit) }}
+    </div>
+    <div class="two fields">
+      {{ renderer.render_field(form.piece_per_set) }}
+      {{ renderer.render_field(form.piece_unit) }}
     </div>
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
