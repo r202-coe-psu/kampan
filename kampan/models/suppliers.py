@@ -1,4 +1,5 @@
 import mongoengine as me
+import datetime
 
 
 class Supplier(me.Document):
@@ -9,9 +10,17 @@ class Supplier(me.Document):
     address = me.StringField(required=True, max_length=256)
 
     status = me.StringField(default="active")
-
-    # tax_id = me.IntField(required=True, max_length=256,  min_value = 1, default = 1)
     tax_id = me.StringField(required=True, max_length=256, default="")
     contact = me.StringField(max_length=256)
     email = me.StringField(required=True, max_length=256)
     phone = me.ListField(me.StringField())
+
+    organization = me.ReferenceField("Organization", dbref=True)
+
+    created_by = me.ReferenceField("User", dbref=True)
+    last_modifier = me.ReferenceField("User", dbref=True, required=True)
+
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now, auto_now=True
+    )
