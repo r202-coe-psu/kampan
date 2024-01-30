@@ -4,13 +4,6 @@
 {% block dashboard_title %} รายละเอียดองค์กร {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="right angle icon divider"></i>
-
-
-<div class="active section">
-  รายละเอียด
-</div>
 {% endblock %}
 
 {% macro row_detail(text) -%}
@@ -23,8 +16,8 @@
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
     <h2 class="ui header">ข้อมูลองค์กร <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('admin.organizations.craete_or_edit', organization_id=organization.id) }}"
-        title='Edit Organization.'><i class="edit icon"></i></a>
+        href="{{ url_for('organizations.edit', organization_id=organization.id) }}" title='Edit Organization.'><i
+          class="edit icon"></i></a>
     </h2>
     {#
     {% if %}
