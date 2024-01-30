@@ -3,7 +3,7 @@
 {% import '/admin/base/pagination.html' as paginated %}
 
 {% block title %}สมาชิกขององค์กร{% endblock %}
-{% block dashboard_title %}รายชื่อสมาชิก{% endblock %}
+{% block dashboard_title %}สมาชิกขององค์กร{% endblock %}
 
 {% block breadcrumbs %}
 <a class="ui primary button" href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
