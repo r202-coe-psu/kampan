@@ -9,19 +9,21 @@ BaseSupplierForm = model_form(
     models.Supplier,
     FlaskForm,
     exclude=[
-    "phone",
+        "phone",
+        "last_modifier",
+        "created_date",
+        "updated_date",
     ],
+    field_args={
+        "name": {"label": "ชื่อร้าน"},
+        "address": {"label": "ที่อยู่"},
+        "description": {"label": "คำอธิบาย"},
+        "tax_id": {"label": "เลขกำกับภาษี"},
+        "contact": {"label": "ช่องทางการติดต่อ"},
+        "email": {"label": "อีเมลล์"},
+    },
+)
 
-field_args={
-    "name" :{"label":"ชื่อร้าน"},
-    "address" : {"label": "ที่อยู่"},
-    "description": {"label": "คำอธิบาย"},
-    "tax_id": {"label": "เลขกำกับภาษี"},
-    "contact": {"label": "ช่องทางการติดต่อ"},
-    "email": {"label": "อีเมลล์"},
-    }
-    )
 
 class SupplierForm(BaseSupplierForm):
     pass
-
