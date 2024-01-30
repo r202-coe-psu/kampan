@@ -80,9 +80,10 @@
   {% if current_user.has_organization_roles("admin") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
-    จัดการผู้ใช้
+    จัดการสมาชิก
   </div>
-  <a class="item" href="{{ url_for('accounts.user_roles')}}">ระดับของผู้ใช้</a>
+  <a class="item"
+    href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">ระดับของสมาชิก</a>
   {% endif %}
 
 
