@@ -9,7 +9,8 @@
 {% if request.endpoint == 'approve_orders.index' %}
 
 {% else %}
-<a class="section" href="{{ url_for('approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+<a class="section"
+  href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกอุปกรณ์</a>
 {% endif %}
 
 {% endblock %}
@@ -48,13 +49,15 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
           <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('approve_orders.item_checkouts', order_id=order.id) }}"
+            <a class="ui primary button"
+              href="{{ url_for('approve_orders.item_checkouts', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
             </a>
           </td>
           <td data-label="Status">
-            <a class="positive ui button" href="{{ url_for('approve_orders.approved_detail', order_id=order.id)}}">
+            <a class="positive ui button"
+              href="{{ url_for('approve_orders.approved_detail', order_id=order.id, organization_id=organization.id)}}">
               อนุมัติ
             </a>
           </td>

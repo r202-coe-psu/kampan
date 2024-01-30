@@ -5,7 +5,7 @@
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('items.add') }}">
+<a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
   เพิ่มอุปกรณ์
 </a>
 {% endblock %}
@@ -34,7 +34,9 @@
       {% if not item.image %}
       <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
       {% else %}
-      <img src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename) }}" alt="{{ item.name }}">
+      <img
+        src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
+        alt="{{ item.name }}">
       {% endif %}
     </div>
     <div class="content">
@@ -47,7 +49,8 @@
     </div>
     <div class="extra content">
       <div class="ui two buttons">
-        <a class="ui primary button" href="{{ url_for('items.edit', item_id=item.id) }}">
+        <a class="ui primary button"
+          href="{{ url_for('items.edit', item_id=item.id, organization_id=organization.id) }}">
           แก้ไข
         </a>
 
@@ -67,7 +70,8 @@
             <button class="ui black deny button">
               ยกเลิก
             </button>
-            <a class="ui negative right labeled icon button" href="{{ url_for('items.delete', item_id=item.id) }}">
+            <a class="ui negative right labeled icon button"
+              href="{{ url_for('items.delete', item_id=item.id, organization_id=organization.id) }}">
               ยืนยัน
               <i class="checkmark icon"></i>
             </a>

@@ -35,9 +35,11 @@
           <td data-label="Image" class="center aligned">
             <div>
               {% if not inventory.item.image %}
-              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              <img src=" {{ url_for('static', filename='/images/image.png', organization_id=organization.id) }}"
+                width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename) }}"
+              <img
+                src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename, organization_id=organization.id) }}"
                 width="70">
               {% endif %}
             </div>
@@ -52,7 +54,8 @@
           <td data-label="Remain">{{ inventory.remain }}</td>
           <td data-label="Price">{{ inventory.price }}</td>
           <td>
-            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id) }}" target="_blank">
+            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, organization_id=organization.id) }}"
+              target="_blank">
               {{inventory.get_bill_file_name() }}
             </a>
           </td>

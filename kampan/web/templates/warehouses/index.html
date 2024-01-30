@@ -5,11 +5,11 @@
 {% block dashboard_title %}คลังอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'warehouses.index' %}
-<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit') }}">
+<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
   เพิ่มคลังอุปกรณ์
 </a>
 {% else %}
-<a class="section" href="{{ url_for('warehouses.index') }}">คลังอุปกรณ์</a>
+<a class="section" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">คลังอุปกรณ์</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -23,7 +23,8 @@
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
         <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ warehouse.name }}
-          <a style="margin-right: 10px;" href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id) }}">
+          <a style="margin-right: 10px;"
+            href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id, organization_id=organization.id) }}">
             <i class="edit icon" style="color: Orange;"></i>
           </a>
         </div>
@@ -67,7 +68,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id) }}">
+                href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id, organization_id=organization.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

@@ -52,7 +52,7 @@
                 ยกเลิก
               </button>
               <a class="ui negative right labeled icon button"
-                href="{{ url_for('notifications.set_status', item_id=item.id) }}">
+                href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}">
                 ยืนยัน
                 <i class="checkmark icon"></i>
               </a>

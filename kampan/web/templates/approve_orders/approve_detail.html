@@ -40,9 +40,10 @@
           <td data-label="Image" class="center aligned">
             <div>
               {% if not checkout.item.image %}
-              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              <img src=" {{ url_for('static', filename='/images/image.png') }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
                 width="70">
               {% endif %}
             </div>

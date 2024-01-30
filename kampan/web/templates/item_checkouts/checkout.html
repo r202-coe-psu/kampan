@@ -5,7 +5,7 @@
 {% block dashboard_title %}นำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a> /
+<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกอุปกรณ์</a> /
 <div class="active section">เพิ่มตำแหน่งอุปกรณ์</div>
 {% endblock %}
 

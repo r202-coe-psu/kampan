@@ -38,14 +38,15 @@
               {% if not checkout.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
               {% else %}
-              <img src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename) }}"
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
                 width="70">
               {% endif %}
             </div>
           </td>
           <td data-label="Item">{{ checkout.item.name }}
             <a class="ui primary button"
-              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id) }}"
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
               style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
               <i class="eye icon"></i>
             </a>

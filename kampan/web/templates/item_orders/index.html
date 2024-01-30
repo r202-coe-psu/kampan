@@ -8,11 +8,11 @@
 {% block breadcrumbs %}
 
 {% if request.endpoint == 'item_orders.index' %}
-<a class="ui left primary button" href="{{ url_for('item_orders.order') }}">
+<a class="ui left primary button" href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
   เพิ่มคำสั่งเบิก
 </a>
 {% else %}
-<a class="section" href="{{ url_for('item_orders.index') }}">คำสั่งเบิกอุปกรณ์</a>
+<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกอุปกรณ์</a>
 {% endif %}
 
 {% endblock %}
@@ -58,13 +58,15 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
           <td>
-            <a class="ui primary button" href="{{ url_for('item_checkouts.checkout', order_id=order.id) }}">
+            <a class="ui primary button"
+              href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
               เบิกอุปกรณ์
             </a>
           </td>
 
           <td data-label="Bill">
-            <a class="ui primary button" href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id) }}"
+            <a class="ui primary button"
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
             </a>
@@ -79,7 +81,8 @@
           </td>
           {% endif %}
           <td>
-            <a class="ui icon button" href="{{ url_for('item_orders.edit', order_id=order.id) }}"
+            <a class="ui icon button"
+              href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
@@ -101,7 +104,7 @@
                   ยกเลิก
                 </button>
                 <a class="ui negative right labeled icon button"
-                  href="{{ url_for('item_orders.delete', order_id=order.id) }}">
+                  href="{{ url_for('item_orders.delete', order_id=order.id, organization_id=organization.id) }}">
                   ยืนยัน
                   <i class="checkmark icon"></i>
                 </a>
