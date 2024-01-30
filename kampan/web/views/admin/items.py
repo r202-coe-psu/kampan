@@ -57,7 +57,7 @@ def add():
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/admin/items/add.html",
+            "/admin/items/add_or_edit.html",
             form=form,
         )
 
@@ -96,7 +96,7 @@ def edit(item_id):
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/admin/items/item_edit.html",
+            "/admin/items/add_or_edit.html",
             form=form,
         )
 
