@@ -53,6 +53,7 @@ class Organization(me.Document):
                 OrganizationUserRole.objects(organization=self, status="active")
                 .order_by("-first_name")
                 .distinct(field="user")
+                .only("user")
             )
 
     def get_organization_users(self):
