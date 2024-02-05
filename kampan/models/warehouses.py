@@ -64,18 +64,13 @@ class Endorser(me.EmbeddedDocument):
     position = me.StringField()
 
     emails = me.EmbeddedDocumentListField(EndorserEmail)
-    endorse_requirement = me.StringField(required=True, default="required")
+    # endorse_requirement = me.StringField(required=True, default="required")
     auto_send_mail_to_endorse = me.StringField(required=True, default="auto")
 
     last_updated_by = me.ReferenceField("User", dbref=True, required=True)
     updated_date = me.DateTimeField(
         required=True, auto_now=True, default=datetime.datetime.now
     )
-
-    # def get_signature(self):
-    #     from .signatures import Signature
-
-    #     return Signature.objects(owner=self.user).order_by("-id").first()
 
     def get_email_status(self):
         return [email.status for email in self.emails]
@@ -91,18 +86,18 @@ class Warehouse(me.Document):
 
     instructors = me.ListField(me.StringField())
     participants = me.MapField(field=me.EmbeddedDocumentField(Participant))
-    allow_duplicate_participant = me.StringField(required=True, default="not_allowed")
+    # allow_duplicate_participant = me.StringField(required=True, default="not_allowed")
 
     endorsers = me.MapField(field=me.EmbeddedDocumentField(Endorser))
     endorse_method = me.StringField(required=True, default="user")
 
-    auto_send_mail_participant = me.StringField(required=True, default="auto")
+    # auto_send_mail_participant = me.StringField(required=True, default="auto")
 
-    issued_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    # issued_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
     started_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    ended_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    warehouse_date_text = me.StringField(max_length=500, default="")
+    # ended_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    # warehouse_date_text = me.StringField(max_length=500, default="")
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(
@@ -113,12 +108,12 @@ class Warehouse(me.Document):
 
     status = me.StringField(default="active")
 
-    certificate_email_template = me.ReferenceField(
-        "EmailTemplate", dbref=True, require=True
-    )
-    endorser_required_endorsement_email_template = me.ReferenceField(
-        "EmailTemplate", dbref=True, require=True
-    )
-    endorser_without_endorsement_email_template = me.ReferenceField(
-        "EmailTemplate", dbref=True, require=True
-    )
+    # certificate_email_template = me.ReferenceField(
+    #     "EmailTemplate", dbref=True, require=True
+    # )
+    # endorser_required_endorsement_email_template = me.ReferenceField(
+    #     "EmailTemplate", dbref=True, require=True
+    # )
+    # endorser_without_endorsement_email_template = me.ReferenceField(
+    #     "EmailTemplate", dbref=True, require=True
+    # )
