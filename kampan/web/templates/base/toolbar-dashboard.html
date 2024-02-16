@@ -80,11 +80,18 @@
   {% if current_user.has_organization_roles("admin") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
+    จัดการแผนก
+  </div>
+  <a class="item" href="{{ url_for('divisions.index', organization_id = organization.id)}}">แผนกทั้งหมด</a>
+
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
     จัดการองค์กร
   </div>
   <a class="item" href="{{ url_for('organizations.detail', organization_id = organization.id)}}">รายละเอียดองค์กร</a>
   <a class="item"
     href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">สมาชิกขององค์กร</a>
+
   {% endif %}
 
 
