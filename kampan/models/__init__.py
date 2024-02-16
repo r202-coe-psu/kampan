@@ -14,7 +14,7 @@ from .inventories import (
 from .warehouses import Warehouse
 from .organizations import Organization, Logo, OrganizationUserRole
 from .email_templates import EmailTemplate
-
+from .divisions import Division, Endorser, EndorserEmail
 
 db = MongoEngine()
 

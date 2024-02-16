@@ -1,0 +1,37 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% block title %} รายละเอียดองค์กร {% endblock %}
+{% block dashboard_title %} รายละเอียดองค์กร {% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('divisions.index',organization_id=organization.id) }}">
+  แผนกทั้งหมด </a>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  รายละเอียด
+</div>
+{% endblock %}
+
+{% macro row_detail(text) -%}
+<div class="column">
+  <h3> {{ text }}</h3>
+</div>
+{%- endmacro %}
+
+{% block content %}
+<div class="ui container" style="width: 100%;">
+  <div class="ui segment">
+    <h2 class="ui header">รายละเอียดแผนก <a class="btn-floating btn-large waves-effect waves-light"
+        href="{{ url_for('divisions.create_or_edit',division_id=division.id, organization_id=organization.id) }}"
+        title='Edit Organization.'><i class="edit icon"></i></a>
+    </h2>
+    <div class="ui grid two column">
+      {{ row_detail("ชื่อ :") }}
+      {{ row_detail(division.name) }}
+      {{ row_detail("รายละเอียด :") }}
+      {{ row_detail(division.description) }}
+
+    </div>
+  </div>
+</div>
+{% endblock content %}

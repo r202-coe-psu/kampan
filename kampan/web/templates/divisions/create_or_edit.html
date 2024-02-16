@@ -1,0 +1,43 @@
+{% extends '/item_registers/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+
+{% if 'edit' in request.path %}
+แก้ไขรายละเอียดแผนก
+{% else %}
+เพิ่มแผนก
+{% endif %}
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+{% if 'edit' in request.path %}
+<a class="section" href="{{ url_for('divisions.detail', division_id=division_id, organization_id=organization.id) }}">
+  แผนกทั้งหมด </a>
+{% else %}
+<a class="section" href="{{ url_for('divisions.index', organization_id=organization.id) }}">รายละเอียดแผนก</a>
+{% endif %}
+<i class="right angle icon divider"></i>
+<div class="active section">
+  {% if 'edit' in request.path %}
+  แก้ไขรายละเอียดองค์กร
+  {% else %}
+  เพิ่มองค์กร
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+    {{ form.hidden_tag() }}
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}

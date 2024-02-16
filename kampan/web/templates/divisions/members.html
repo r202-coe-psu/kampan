@@ -1,0 +1,131 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}สมาชิกของแผนก{% endblock %}
+
+{% block dashboard_title %}สมาชิกของแผนก{% endblock %}
+
+{% block breadcrumbs %}
+<a class="ui primary button"
+  href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
+  เพิ่มสมาชิก
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  {{ renderer.render_default_search_user(form) }}
+
+  {% if paginated_division_users.pages >= 1 %}
+  <div style="padding-bottom: 1em ;">
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>ชื่อสมาชิก</th>
+          <th>ตำแหน่ง</th>
+          <th>เพิ่มเข้ามาเมื่อวันที่</th>
+          <th>ลบสมาชิก</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for division_user in paginated_division_users.items %}
+        <tr>
+          <td data-label="Organization">{{ division_user.user.get_name() }}</td>
+          <td data-label="Roles">{{ division_user.role }}</td>
+          <td data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
+            division_user.created_date else "-"}}
+          </td>
+          <td>
+            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              onclick="showDeleteModal('{{ division_user.id }}')">
+              <i class="trash icon"></i>
+            </a>
+            <div class="ui modal {{ division_user.id }}">
+              <div class="header">
+                ลบสมาชิก
+              </div>
+              <div class="content">
+                <p>ต้องการลบสมาชิก<b> {{ division_user.user.get_name() }}</b><br />
+
+
+                </p>
+              </div>
+              <div class="actions">
+                <button class="ui black deny button">
+                  ยกเลิก
+                </button>
+                <a class="ui negative right labeled icon button" href="{{ url_for('divisions.remove_division_user', 
+                organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)}}">
+                  ยืนยัน
+                  <i class="checkmark icon"></i>
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_division_users.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="ui info message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+  {% endif %}
+</form>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(division_user_id) {
+    division_user_id ? $('.ui.modal.' + division_user_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}
