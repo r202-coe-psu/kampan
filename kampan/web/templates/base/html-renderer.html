@@ -84,6 +84,15 @@
 </div>
 {%- endmacro %}
 
+{% macro render_select_clearable_row(field) -%}
+<div class="field">
+  <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
+  <div class="ui input">
+    {{ field(class="ui search dropdown clearable selection") }}
+  </div>
+</div>
+{%- endmacro %}
+
 {% macro render_default_search_item(form) -%}
 <div class="ui secondary menu">
   {{form.hidden_tag()}}
