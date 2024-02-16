@@ -52,7 +52,7 @@ def detail(organization_id):
 def add_member(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.organizations.OrgnaizationAddMemberForm()
-    users_in_organization = organization.get_users()
+    users_in_organization = organization.get_distinct_users()
     if users_in_organization:
         form.members.choices = [
             (str(u.id), u.get_name())
@@ -107,8 +107,10 @@ def organizaiton_users(organization_id):
         form.user.choices.append((org_user.id, f"{org_user.user.get_name()}"))
         for org_user in org_users
     ]
-    form.user.process(data="", formdata=form.user.choices)
-    form.role.process(data="", formdata=form.role.choices)
+    if form.user.data:
+        form.user.data = form.user.data
+    else:
+        form.user.process(data="", formdata=form.user.choices)
 
     if not form.validate_on_submit():
         print(form.errors)
