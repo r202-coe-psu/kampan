@@ -13,6 +13,7 @@ class OrganizationUserRole(me.Document):
     meta = {"collection": "organization_user_roles"}
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
+    division = me.ReferenceField("Division", dbref=True)
     user = me.ReferenceField("User", dbref=True, required=True)
     role = me.StringField(choices=ORGANIZATION_ROLES, default="staff", required=True)
 
@@ -47,13 +48,12 @@ class Organization(me.Document):
     def get_description(self):
         return markdown.markdown(self.description)
 
-    def get_users(self):
+    def get_distinct_users(self):
         if OrganizationUserRole.objects().count():
             return (
                 OrganizationUserRole.objects(organization=self, status="active")
                 .order_by("-first_name")
                 .distinct(field="user")
-                .only("user")
             )
 
     def get_organization_users(self):
