@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+FLASK_DEBUG=true KAMPAN_SETTINGS=$(pwd)/kampan-development.cfg kampan-worker
