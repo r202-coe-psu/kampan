@@ -55,7 +55,9 @@ def add_or_edit(item_position_id):
         item_position = models.ItemPosition()
 
     form.populate_obj(item_position)
-    item_position.user = current_user._get_current_object()
+    if not item_position_id:
+        item_position.created_by = current_user._get_current_object()
+    item_position.last_updated_by = current_user._get_current_object()
     item_position.save()
 
     return redirect(

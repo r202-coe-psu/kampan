@@ -89,6 +89,12 @@ def add():
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
+    if form.item_format.data == "one to one":
+        item.one_to_many = False
+        item.piece_per_set = 1
+        item.piece_unit = form.set_unit.data
+    item.created_by = current_user._get_current_object()
+    item.last_updated_by = current_user._get_current_object()
     item.organization = organization
     item.save()
 
@@ -133,7 +139,11 @@ def edit(item_id):
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
-
+    if form.item_format.data == "one to one":
+        item.one_to_many = False
+        item.piece_per_set = 1
+        item.piece_unit = form.set_unit.data
+    item.last_updated_by = current_user._get_current_object()
     item.save()
 
     return redirect(
