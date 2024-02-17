@@ -7,7 +7,7 @@ class Warehouse(me.Document):
     meta = {"collection": "warehouses"}
 
     name = me.StringField(required=True, max_length=256)
-    printed_name = me.StringField(required=True)
+    # printed_name = me.StringField(required=True)
     description = me.StringField()
     status = me.StringField(default="active")
 

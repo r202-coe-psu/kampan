@@ -38,23 +38,26 @@ def add_or_edit(warehouse_id):
     ).first()
     form = forms.warehouses.WarehouseForm()
 
-    warehouse = None
     if warehouse_id:
         warehouse = models.Warehouse.objects().get(id=warehouse_id)
         form = forms.warehouses.WarehouseForm(obj=warehouse)
 
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/warehouses/add-edit.html",
             form=form,
             organization=organization,
         )
 
-    if not warehouse:
+    if not warehouse_id:
         warehouse = models.Warehouse()
 
     form.populate_obj(warehouse)
-    warehouse.user = current_user._get_current_object()
+    if not warehouse_id:
+        warehouse.created_by = current_user._get_current_object()
+    warehouse.organization = organization
+    warehouse.last_updated_by = current_user._get_current_object()
 
     warehouse.save()
 

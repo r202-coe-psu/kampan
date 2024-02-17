@@ -10,6 +10,7 @@ BaseWarehouseForm = model_form(
     FlaskForm,
     exclude=[
         "created_date",
+        "updated_date",
         "owner",
     ],
     field_args={
