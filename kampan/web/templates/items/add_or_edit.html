@@ -29,8 +29,11 @@
     {{ renderer.render_fileinput(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
     <div class="two fields">
-      {{ renderer.render_select(form.item_format) }}
-      {{ renderer.render_field(form.categories) }}
+      <div class="field">
+        {{ form.item_format.label }}
+        {{ form.item_format(class='ui dropdown', onchange="check_item_format()") }}
+      </div>
+      {{ renderer.render_select(form.categories) }}
       {{ renderer.render_field(form.minimum)}}
     </div>
     <div class="two fields">
@@ -38,8 +41,14 @@
       {{ renderer.render_field(form.set_unit) }}
     </div>
     <div class="two fields">
-      {{ renderer.render_field(form.piece_per_set) }}
-      {{ renderer.render_field(form.piece_unit) }}
+      <div class="field" id="piece_per_set_field">
+        {{ form.piece_per_set.label }}
+        {{ form.piece_per_set }}
+      </div>
+      <div class="field" id="piece_unit_field">
+        {{ form.piece_unit.label }}
+        {{ form.piece_unit }}
+      </div>
     </div>
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
@@ -58,6 +67,20 @@
       var name = e.target.files[0].name;
       $('.attach-file-img', $(e.target).parent()).val(name);
     });
+
+  function check_item_format() {
+    var value = document.getElementById("item_format").value;
+    var element_set = document.getElementById("piece_per_set_field");
+    var element_unit = document.getElementById("piece_unit_field");
+    if (value == "one to one") {
+      element_set.classList.add("disabled");
+      element_unit.classList.add("disabled");
+    }
+    else {
+      element_set.classList.remove("disabled");
+      element_unit.classList.remove("disabled");
+    }
+  }
 </script>
 
 {% endblock additional_js %}
