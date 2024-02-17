@@ -19,9 +19,9 @@ BaseItemForm = model_form(
         "minimum": {"label": "จำนวนขั้นต่ำ -- (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
         "set_": {"label": "จำนวน (ชุด)"},
-        "set_unit": {"label": "หน่วยใหญ่"},
+        "set_unit": {"label": "หน่วยนับใหญ่"},
         "piece_per_set": {"label": "จำนวน (ชิ้นต่อชุด)"},
-        "piece_unit": {"label": "หน่วยเล็ก"},
+        "piece_unit": {"label": "หน่วยนับเล็ก"},
     },
 )
 
@@ -32,6 +32,7 @@ class ItemForm(BaseItemForm):
         "รูปภาพ",
         validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")],
     )
+    item_format = fields.SelectField("รูปแบบอุปกรณ์", choices=models.items.ITEM_FORMAT)
 
 
 class SearchItemForm(FlaskForm):
