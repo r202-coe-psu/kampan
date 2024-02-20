@@ -1,0 +1,127 @@
+{% extends '/base/default-dashboard.html' %}
+{% import 'base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
+
+{% block title %}
+{{ "Email Template" }}
+{% endblock %}
+
+{% block dashboard_title %}
+รูปแบบอีเมล
+{% endblock %}
+
+
+{% block breadcrumbs %}
+<a class="ui left primary button"
+  href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
+  เพิ่มรูแบบอีเมล
+</a>
+{% endblock %}
+
+
+{% block content %}
+
+{% if email_templates %}
+<table class="ui striped padded celled table">
+  <thead>
+    <tr>
+      <th>{{ ("Name") }}</th>
+      <th>{{ ("Type") }}</th>
+      <th>{{ ("Default") }}</th>
+      <th>{{ ("Owner") }}</th>
+      <th>{{ ("Actions") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for email_template in email_templates %}
+
+    <tr>
+      <td data-label="Name">{{ email_template.name }}</td>
+      <td data-label="Type">{{ email_template.get_type_display() }}</td>
+      <td data-label="Default">{{ email_template.is_default }}
+        {% if current_user.is_admin_current_organization() %}
+        <a style="cursor: pointer;" data-content="change defualt setting"
+          onclick="$('.modal.set-default.{{ email_template.id }}').modal('show')">
+          <i class="sync blue icon"></i>
+        </a>
+        {% endif %}
+      </td>
+      <td data-label="Owner">{{ email_template.created_by.first_name }} {{ email_template.created_by.last_name }} </td>
+      <td data-label="Actions">
+
+        <a class="ui link primary icon circular button"
+          href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)}}">
+          <i class="eye icon"></i>
+        </a>
+        <a class="ui link primary icon circular button"
+          href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id, email_template_id=email_template.id)}}">
+          <i class="edit icon"></i>
+        </a>
+        <a class="ui link pop negative icon circular button"
+          onclick="$('.modal.delete.{{email_template.id}}').modal('show')">
+          <i class="trash icon"></i>
+        </a>
+
+      </td>
+    </tr>
+
+    <div class="ui small modal delete {{email_template.id}}">
+      <div class="header">{{ ("Delete Email Template") }}</div>
+      <div class="content">
+        <h4 class="ui headers">
+          {{ ("Are you sure you want to delete") }} <span class="ui red text">{{ email_template.name }}</span> {{
+          ("email template?") }}
+        </h4>
+        <a class="ui right floated negative button" style="margin-bottom: 1em;"
+          href="{{ url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id) }}">
+          {{ ("Delete") }}</i>
+        </a>
+        <button class="ui right floated button" onclick="$('.modal.delete.{{email_template.id}}').modal('hide')">{{
+          ("Cancel") }}</button>
+      </div>
+    </div>
+
+    <div class="ui modal set-default {{ email_template.id }}">
+      {% if email_template.is_default == false %}
+      {% set new_is_default = true %}
+      {% else %}
+      {% set new_is_default = false %}
+      {% endif %}
+
+      <div class="header">{{ ("Change Default Setting") }} </div>
+      <div class="content">
+        {{ ("Do you want to set default setting of") }} <span class="ui blue text">{{ email_template.name }}</span> {{
+        ("template to") }} {{ new_is_default }}?
+      </div>
+      <div class="ui fitted divider"></div>
+      <div class="content">
+        <a class="ui {{ 'green' if new_is_default == true }} right floated button" style="margin-bottom: 1em;"
+          href="{{ url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default=new_is_default) }}">
+          {{ ("Change to") }} {{ new_is_default }}
+        </a>
+      </div>
+    </div>
+
+    {% endfor %}
+
+  </tbody>
+</table>
+{% endif %}
+
+{% if not email_templates %}
+<div class="ui info message">ไม่มีข้อมูลรูปแบบอีเมลในขณะนี้</div>
+{% endif %}
+
+
+
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  $('.link.pop').popup({
+    delay: {
+      show: 800,
+    }
+  })
+</script>
+{% endblock %}

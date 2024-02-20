@@ -1,0 +1,129 @@
+{% extends '/base/default-dashboard.html' %}
+{% import 'base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
+
+{% block title %}
+{{ "Email Template" }}
+{% endblock %}
+
+{% block dashboard_title %}
+รูปแบบอีเมล
+{% endblock %}
+
+
+{% block breadcrumbs %}
+<a class="ui left primary button"
+  href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
+  เพิ่มรูแบบอีเมล
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="ui segment">
+
+  {% if email_template %}
+  <a class="ui primary labeled icon button"
+    href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
+    <i class="edit icon"></i>
+    {{("Edit Template")}}
+  </a>
+
+  {% endif %}
+</div>
+
+<div class="upload-email-template form" style="display: none;">
+  <div class="ui raised segment">
+    <form class="ui form"
+      action="{{ url_for('email_templates.upload_email_template', organization_id=organization.id) }}"
+      enctype="multipart/form-data" method="POST">
+      {{ form.csrf_token() }}
+      {{ renderer.render_fileinput(form.email_template_file)}}
+      <ul>
+        <li>Accept only <b>.html</b> file</li>
+      </ul>
+      <button class="ui teal button" type="submit"><i class="save icon"></i> Submit</button>
+    </form>
+  </div>
+</div>
+
+<div class="ui horizontal equal width segments">
+  <div class="ui segment" style="width: 100vw">
+    <div class="email-template view">
+      {% if email_template %}
+      <div class="ui secondary segment">
+        <div class="ui tiny header" style="width: fit-content">Type</div>
+        <div class="ui basic vertically fitted segment">
+          {{ email_template.get_type_display() }}
+        </div>
+      </div>
+      <div class="ui secondary segment">
+        <div class="ui tiny header" style="width: fit-content">Subject</div>
+        <div class="ui basic vertically fitted segment">
+          {{ email_template.subject }}
+        </div>
+      </div>
+      <div class="ui secondary segment">
+        <div class="ui tiny header" style="width: fit-content">Body</div>
+        <div class="ui basic vertically fitted segment">
+          {{ email_template.body }}
+        </div>
+      </div>
+      {% else %}
+      You don't have <b>Email Template</b> please
+      <a href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}"
+        style="cursor: pointer">
+        Create Email Template
+      </a>.
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ui info message segment">
+    <div class="ui compact header">
+      {{("List of text formats available for email templates.")}}
+    </div>
+    <div class="ui relaxed list">
+      <div class="item">
+        <div class="header"><i class="globe icon"></i> {{("Organization")}}</div>
+        <div class="ui list">
+          <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - {{("Organization name.")}}</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="header"><i class="archive icon"></i> {{("Class")}}</div>
+        <div class="ui list">
+          <div class="item"> <b>{{ '{{ class_name }}' }}</b> - {{("Class name.")}}</div>
+          <div class="item"> <b>{{ '{{ class_printed_name }}' }}</b> - {{("Class printed name.")}}</div>
+          <div class="item"> <b>{{ '{{ class_description }}' }}</b> - {{("Class description.")}}</div>
+          <div class="item"> <b>{{ '{{ class_started_date }}' }}</b> - {{("Class start date.")}}</div>
+          <div class="item"> <b>{{ '{{ class_ended_date }}' }}</b> - {{("Class end date.")}}</div>
+          <div class="item"> <b>{{ '{{ class_issued_date }}' }}</b> - {{("Class issued date.")}}</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="header"><i class="user tie icon"></i> {{("Endorser")}}</div>
+        <div class="ui list">
+          <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - {{("Endorser name.")}}</div>
+          <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - {{("URL for endorser link to endorsement.")}}</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="header"><i class="users colored icon"></i> {{("Participant")}}</div>
+        <div class="ui list">
+          <div class="item"> <b>{{ '{{ participant_name }}' }}</b> - {{("Participant name.")}}</div>
+          <div class="item"> <b>{{ '{{ participant_group }}' }}</b> - {{("Participant group.")}}</div>
+          <div class="item"> <b>{{ '{{ participant_command_id }}'}}</b> - {{("Participant common id.")}}</div>
+          <div class="item"> <b>{{ '{{ participant_academy }}' }}</b> - {{("Participant orgnaization/academy.")}}</div>
+          <div class="item"> <b>{{ '{{ participant_certificate_url }}' }}</b> - {{("URL for participant link to
+            certificate.")}}</div>
+          <div class="item"> <b>{{ '{{ participant_certificate_class_date }}' }}</b> - {{("Certificate class date.")}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
