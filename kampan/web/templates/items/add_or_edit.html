@@ -37,8 +37,14 @@
       {{ renderer.render_field(form.minimum)}}
     </div>
     <div class="two fields">
-      {{ renderer.render_field(form.set_) }}
-      {{ renderer.render_field(form.set_unit) }}
+      <div class="field disabled" id="set_field">
+        {{ form.set_.label }}
+        {{ form.set_ }}
+      </div>
+      <div class="field disabled" id="set_unit_field">
+        {{ form.set_unit.label }}
+        {{ form.set_unit }}
+      </div>
     </div>
     <div class="two fields">
       <div class="field" id="piece_per_set_field">
@@ -68,17 +74,23 @@
       $('.attach-file-img', $(e.target).parent()).val(name);
     });
 
+  element_set.classList.add("disabled");
+  element_unit.classList.add("disabled");
   function check_item_format() {
     var value = document.getElementById("item_format").value;
-    var element_set = document.getElementById("piece_per_set_field");
-    var element_unit = document.getElementById("piece_unit_field");
+    var element_piece_per_set = document.getElementById("piece_per_set_field");
+    var element_piece_unit = document.getElementById("piece_unit_field");
+    var element_set = document.getElementById("set_field");
+    var element_set_unit = document.getElementById("set_unit_field");
+
+
     if (value == "one to one") {
-      element_set.classList.add("disabled");
-      element_unit.classList.add("disabled");
+      element_piece_per_set.classList.add("disabled");
+      element_piece_unit.classList.add("disabled");
     }
     else {
-      element_set.classList.remove("disabled");
-      element_unit.classList.remove("disabled");
+      element_piece_per_set.classList.remove("disabled");
+      element_piece_unit.classList.remove("disabled");
     }
   }
 </script>
