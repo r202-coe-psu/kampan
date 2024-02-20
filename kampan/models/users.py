@@ -105,6 +105,12 @@ class User(me.Document, UserMixin):
         except:
             return []
 
+    def is_admin_current_organization(self):
+        if "admin" in self.get_current_organization_role() or "admin" in self.roles:
+            return True
+
+        return
+
     def get_current_organization_create_date(self):
         from . import OrganizationUserRole
 
