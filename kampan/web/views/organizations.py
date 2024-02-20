@@ -203,3 +203,21 @@ def remove_org_user(organization_id, org_user_id):
             organization_id=organization_id,
         )
     )
+
+
+@module.route("/<organization_id>/email_templates", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "staff")
+def view_email_templates(organization_id):
+    organization = models.Organization.objects.get(id=organization_id)
+    form = forms.email_templates.EmailTemplateFileForm()
+
+    query_default = request.args.get("is_default")
+    email_templates = models.EmailTemplate.objects(organization=organization)
+
+    return render_template(
+        "/email_templates/index.html",
+        organization=organization,
+        email_templates=email_templates,
+        form=form,
+        default=query_default,
+    )
