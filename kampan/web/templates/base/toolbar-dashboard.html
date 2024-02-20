@@ -49,6 +49,12 @@
   {% endif %}
   <a class="item" href="{{ url_for('inventories.index', organization_id = organization.id) }}">รายการนำเข้าอุปกรณ์</a>
 
+  <!-- Heading -->
+  <div class="sidebar-heading" style="color: grey;">
+    การส่งอีเมล
+  </div>
+  <a class="item" href="{{ url_for('email_templates.index', organization_id = organization.id) }}">รูปแบบอีเมล</a>
+
   {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
