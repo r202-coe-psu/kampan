@@ -11,3 +11,4 @@ from . import accounts
 from . import user_roles
 from . import organizations
 from . import divisions
+from . import email_templates
