@@ -45,7 +45,7 @@
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
       <div class="meta">หมวดหมู่: {{ item.categories }}</div>
-      <div class="description">ผู้ใช้งาน : {{ item.user.first_name }} {{ item.user.last_name }}</div>
+      <div class="description">ผู้ลงทะเบียน : {{ item.created_by.first_name }} {{ item.created_by.last_name }}</div>
     </div>
     <div class="extra content">
       <div class="ui two buttons">

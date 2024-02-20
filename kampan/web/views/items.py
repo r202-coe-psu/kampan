@@ -73,7 +73,7 @@ def add():
     item = models.Item(
         created_by=current_user._get_current_object(),
     )
-
+    print("->", form.categories.data)
     form.populate_obj(item)
 
     if form.img.data:

@@ -21,7 +21,7 @@ BaseItemForm = model_form(
     field_args={
         "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
-        "categories": {"label": "หมวดหมุ่"},
+        "categories": {"label": "หมวดหมู่"},
         "minimum": {"label": "จำนวนขั้นต่ำ -- (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
         "set_": {"label": "จำนวน (ชุด)"},
@@ -33,7 +33,7 @@ BaseItemForm = model_form(
 
 
 class ItemForm(BaseItemForm):
-    categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
+    # categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
     img = fields.FileField(
         "รูปภาพ",
         validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")],
