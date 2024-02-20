@@ -25,11 +25,13 @@ module = Blueprint("email_templates", __name__, url_prefix="/email_templates")
 subviews = []
 
 
-@module.route("/<organization_id>/view", methods=["GET", "POST"])
+@module.route("/", methods=["GET", "POST"])
 @acl.organization_roles_required("staff", "admin")
-def index(organization_id):
+def index():
+    organization_id = request.args.get("organization_id")
     organization = models.Organization.objects.get(id=organization_id)
     email_templates = models.EmailTemplate.objects(organization=organization)
+
     form = forms.email_templates.EmailTemplateFileForm()
 
     return render_template(
@@ -48,8 +50,10 @@ def index(organization_id):
 @module.route("/<email_template_id>/edit", methods=["GET", "POST"])
 @acl.organization_roles_required("staff", "admin")
 def create_or_edit(email_template_id):
-    organization_id = request.args.get("organization_id", None)
-
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     form = forms.email_templates.EmailTemplateForm()
     upload_form = forms.email_templates.EmailTemplateFileForm()
     organization = models.Organization.objects.get(id=organization_id)
@@ -67,7 +71,7 @@ def create_or_edit(email_template_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/email_templates/create-edit.html",
+            "/email_templates/create_or_edit.html",
             form=form,
             upload_form=upload_form,
             email_template=email_template,
@@ -77,7 +81,7 @@ def create_or_edit(email_template_id):
     if not email_template_id:
         email_template = models.EmailTemplate(
             organization=organization,
-            owner=current_user._get_current_object(),
+            created_by=current_user._get_current_object(),
             last_updated_by=current_user._get_current_object(),
             created_date=datetime.datetime.now(),
             updated_date=datetime.datetime.now(),
@@ -92,7 +96,7 @@ def create_or_edit(email_template_id):
 
     return redirect(
         url_for(
-            "email_templates.view",
+            "email_templates.detail",
             email_template_id=email_template.id,
             organization_id=organization.id,
         )
@@ -137,14 +141,14 @@ def upload_email_template(email_template_id):
 
 @module.route("/<email_template_id>", methods=["GET", "POST"])
 @acl.organization_roles_required("staff", "admin")
-def view(email_template_id):
+def detail(email_template_id):
     organization_id = request.args.get("organization_id", None)
     organization = models.Organization.objects.get(id=organization_id)
     email_template = models.EmailTemplate.objects.get(id=email_template_id)
     form = forms.email_templates.EmailTemplateFileForm()
 
     return render_template(
-        "/email_templates/view.html",
+        "/email_templates/detail.html",
         email_template=email_template,
         organization=organization,
         form=form,
@@ -194,19 +198,16 @@ def set_default_email_template(organization_id, email_template_id, is_default):
     )
 
 
-@module.route("/certificates/<certificate_id>", methods=["GET", "POST"])
+@module.route("/divison/<division_id>/send_email", methods=["GET", "POST"])
 @acl.organization_roles_required("staff", "admin")
-def force_send_email(
-    certificate_id,
-):
-    certificate = models.Certificate.objects.get(id=certificate_id)
-    class_ = certificate.class_
-    organization = class_.organization
+def force_send_email(division_id):
+    division = models.Division.objects.get(id=division_id)
+    organization = division.organization
 
     job = redis_rq.redis_queue.queue.enqueue(
         email_utils.force_send_email_certificate,
-        args=(certificate, current_user._get_current_object(), current_app.config),
-        job_id=f"force_sent_email_certificate_{certificate.id}",
+        args=(division, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_certificate_{division.id}",
         timeout=600,
         job_timeout=600,
     )
