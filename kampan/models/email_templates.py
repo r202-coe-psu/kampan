@@ -40,7 +40,7 @@ class EmailTemplate(me.Document):
             "true",
         ),
     )
-    owner = me.ReferenceField("User", dbref=True, required=True)
+    created_by = me.ReferenceField("User", dbref=True, required=True)
     last_updated_by = me.ReferenceField("User", dbref=True, required=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
