@@ -91,7 +91,7 @@ def detail(organization_id):
 def add_member(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.organizations.OrgnaizationAddMemberForm()
-    users_in_organization = organization.get_users()
+    users_in_organization = organization.get_distinct_users()
     if users_in_organization:
         form.members.choices = [
             (str(u.id), u.get_name())
