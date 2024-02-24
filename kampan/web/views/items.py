@@ -115,7 +115,8 @@ def edit(item_id):
     ).first()
     item = models.Item.objects().get(id=item_id)
     form = forms.items.ItemForm(obj=item)
-
+    if not item.one_to_many:
+        form.item_format.data = "one to one"
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
