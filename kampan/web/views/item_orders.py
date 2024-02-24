@@ -67,7 +67,7 @@ def order():
     order = models.OrderItem()
 
     form.populate_obj(order)
-    order.user = current_user._get_current_object()
+    order.created_by = current_user._get_current_object()
 
     order.save()
 

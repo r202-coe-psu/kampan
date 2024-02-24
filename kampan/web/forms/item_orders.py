@@ -14,7 +14,7 @@ BaseOrderItemForm = model_form(
         "status",
     ],
     field_args={
-        "user": {"label": "ชื่อผู้ใช้งาน"},
+        "created_by": {"label": "ชื่อผู้ใช้งาน"},
         "description": {"label": "คำอธิบาย"},
     },
 )
