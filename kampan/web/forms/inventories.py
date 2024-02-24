@@ -27,7 +27,7 @@ BaseInventoryForm = model_form(
         },
         "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
         "quantity": {"label": "จำนวนทั้งหมด"},
-        "price": {"label": "ราคา (ชิ้นละ)"},
+        "price": {"label": "ราคา (ชุดละ)"},
     },
 )
 
@@ -38,6 +38,13 @@ class InventoryForm(BaseInventoryForm):
     calendar_end = fields.DateTimeField("วันที่สุดท้าย", format="%Y-%m-%d")
     calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี", format="%Y-%m")
     calendar_year = fields.DateTimeField("กรุณาเลือกปี", format="%Y")
+
+
+class UploadInventoryFileForm(FlaskForm):
+    upload_file = fields.FileField(
+        "*** อัปโหลดเฉพาะไฟล์ที่เป็นไฟล์ .xlsx เท่านั้น ***",
+        validators=[FileAllowed(["xlsx"], "xlsx only")],
+    )
 
 
 class SearchStartEndDateForm(FlaskForm):
