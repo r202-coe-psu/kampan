@@ -28,7 +28,7 @@ class RegistrationItem(me.Document):
 class Inventory(me.Document):
     # อุปกรณ์
     meta = {"collection": "inventories"}
-    status = me.StringField(default="active")
+    status = me.StringField(default="active", required=True)
 
     registration = me.ReferenceField("RegistrationItem", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
@@ -65,10 +65,15 @@ class InventoryEngagementFile(me.Document):
     meta = {"collection": "inventory_engagement_file"}
 
     file = me.FileField()
+    status = "waiting"
     created_by = me.ReferenceField("User", dbref=True)
     organization = me.ReferenceField("Organization", dbref=True)
+    registration = me.ReferenceField("RegistrationItem", dbref=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now, auto_now=True
+    )
 
 
 class OrderItem(me.Document):
