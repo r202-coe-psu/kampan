@@ -61,6 +61,16 @@ class Inventory(me.Document):
             return "ไม่พบบิล"
 
 
+class InventoryEngagementFile(me.Document):
+    meta = {"collection": "inventory_engagement_file"}
+
+    file = me.FileField()
+    created_by = me.ReferenceField("User", dbref=True)
+    organization = me.ReferenceField("Organization", dbref=True)
+
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
 class OrderItem(me.Document):
     # เบิกอุปกรณ์
     meta = {"collection": "order_items"}
@@ -68,7 +78,7 @@ class OrderItem(me.Document):
 
     approval_status = me.StringField(default="pending")
     description = me.StringField()
-    user = me.ReferenceField("User", dbref=True)
+    created_by = me.ReferenceField("User", dbref=True)
     organization = me.ReferenceField("Organization", dbref=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
