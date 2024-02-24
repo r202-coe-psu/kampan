@@ -12,7 +12,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from flask_mongoengine import Pagination
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
@@ -68,19 +68,19 @@ def register():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    form = forms.inventories.UploadInventoryFileForm()
+    form = forms.inventories.InventoryForm()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
-    # items = models.Item.objects(status="active")
-    # if item_register.get_item_in_bill():
-    #     items = items.filter(id__nin=item_register.get_item_in_bill())
-    #     # print(item_register.get_item_in_bill())
+    items = models.Item.objects(status="active")
+    if item_register.get_item_in_bill():
+        items = items.filter(id__nin=item_register.get_item_in_bill())
+        # print(item_register.get_item_in_bill())
 
-    # if items:
-    #     form.item.choices = [
-    #         (item.id, f"{item.barcode_id} ({item.name})") for item in items
-    #     ]
+    if items:
+        form.item.choices = [
+            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+        ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -89,15 +89,15 @@ def register():
             item_register=item_register,
             organization=organization,
         )
-    print("---> ", form.upload_file.data)
-    # inventory = models.Inventory()
-    # form.populate_obj(inventory)
-    # inventory.item = models.Item.objects(id=form.item.data).first()
-    # inventory.user = current_user._get_current_object()
-    # inventory.notification_status = True
-    # inventory.registration = item_register
-    # inventory.remain = inventory.quantity
-    # inventory.save()
+
+    inventory = models.Inventory()
+    form.populate_obj(inventory)
+    inventory.item = models.Item.objects(id=form.item.data).first()
+    inventory.user = current_user._get_current_object()
+
+    inventory.registration = item_register
+    inventory.remain = inventory.quantity
+    inventory.save()
 
     return redirect(url_for("item_registers.index", organization_id=organization_id))
 
@@ -205,10 +205,52 @@ def bill(inventory_id):
     return response
 
 
-@module.route("/upload_file", methods=["GET", "POST"])
+@module.route("item_register/<item_register_id>/upload_file", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
-def upload_item_register_info():
+def upload_file_inventory_info():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
+    form = forms.inventories.UploadInventoryFileForm()
+    item_register_id = request.args.get("item_register_id")
+    item_register = models.RegistrationItem.objects.get(id=item_register_id)
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/inventories/upload_file.html",
+            form=form,
+            item_register=item_register,
+            organization=organization,
+        )
+    if form.upload_file.data:
+        inventory_engagement_file = models.inventories.InventoryEngagementFile()
+        if inventory_engagement_file.file:
+            inventory_engagement_file.file.replace(
+                form.upload_file.data,
+                filename=form.upload_file.data.filename,
+                content_type=form.upload_file.data.content_type,
+            )
+        else:
+            inventory_engagement_file.file.put(
+                form.upload_file.data,
+                filename=form.upload_file.data.filename,
+                content_type=form.upload_file.data.content_type,
+            )
+        inventory_engagement_file.created_by = current_user._get_current_object()
+        inventory_engagement_file.organization = organization
+        inventory_engagement_file.registration = item_register
+        inventory_engagement_file.save()
+        print(inventory_engagement_file.file)
+    utils.inventories.process_inventory_engagement(inventory_engagement_file)
+    return redirect(
+        url_for(
+            "item_registers.index",
+            organization_id=organization_id,
+        )
+    )
