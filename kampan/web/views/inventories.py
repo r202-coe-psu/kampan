@@ -68,19 +68,19 @@ def register():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    form = forms.inventories.InventoryForm()
+    form = forms.inventories.UploadInventoryFileForm()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
-    items = models.Item.objects(status="active")
-    if item_register.get_item_in_bill():
-        items = items.filter(id__nin=item_register.get_item_in_bill())
-        # print(item_register.get_item_in_bill())
+    # items = models.Item.objects(status="active")
+    # if item_register.get_item_in_bill():
+    #     items = items.filter(id__nin=item_register.get_item_in_bill())
+    #     # print(item_register.get_item_in_bill())
 
-    if items:
-        form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
-        ]
+    # if items:
+    #     form.item.choices = [
+    #         (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    #     ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -89,15 +89,15 @@ def register():
             item_register=item_register,
             organization=organization,
         )
-
-    inventory = models.Inventory()
-    form.populate_obj(inventory)
-    inventory.item = models.Item.objects(id=form.item.data).first()
-    inventory.user = current_user._get_current_object()
-    inventory.notification_status = True
-    inventory.registration = item_register
-    inventory.remain = inventory.quantity
-    inventory.save()
+    print("---> ", form.upload_file.data)
+    # inventory = models.Inventory()
+    # form.populate_obj(inventory)
+    # inventory.item = models.Item.objects(id=form.item.data).first()
+    # inventory.user = current_user._get_current_object()
+    # inventory.notification_status = True
+    # inventory.registration = item_register
+    # inventory.remain = inventory.quantity
+    # inventory.save()
 
     return redirect(url_for("item_registers.index", organization_id=organization_id))
 
@@ -203,3 +203,12 @@ def bill(inventory_id):
         mimetype=registration_item.bill.content_type,
     )
     return response
+
+
+@module.route("/upload_file", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser", "staff")
+def upload_item_register_info():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
