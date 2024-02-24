@@ -77,8 +77,8 @@
 
 {% macro render_select_clearable(field) -%}
 <div class="field">
-  <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
   <div class="ui">
+    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
     {{ field(class="ui search dropdown clearable selection") }}
   </div>
 </div>
