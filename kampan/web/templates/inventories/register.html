@@ -13,8 +13,10 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<div class="active section">{{ item_register.description }}</div>
-{% endblock %}
+<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าอุปกรณ์</a>
+<i class="right angle icon divider"></i>
+<div class="active section">นำเข้าทีละอุปกรณ์</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
 <div>

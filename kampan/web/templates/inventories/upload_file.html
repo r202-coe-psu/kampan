@@ -13,10 +13,51 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<div class="active section">{{ item_register.description }}</div>
-{% endblock %}
+<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าอุปกรณ์</a>
+<i class="right angle icon divider"></i>
+<div class="active section">อัพโหลดไฟล์</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
+
+{% if upload_errors.errors %}
+<div class="ui modal upload_errors">
+  <div class="header">
+    ไฟล์นำเข้าอุปกรณ์มีปัญหา
+  </div>
+  <div class="content red">
+    <span class="ui error text">
+      <b>{{ upload_errors.errors }}</b>
+    </span>
+  </div>
+  <div class="actions">
+    <button class="ui negative right labeled icon button">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{% if upload_completed %}
+<div class="ui modal upload_completed">
+  <div class="header">
+    ไฟล์นำเข้าอุปกรณ์อัพโหลดเรียบร้อย
+  </div>
+  <div class="content red">
+    <span class="ui text">
+      <b>นำเข้าอุปกรณ์ทั้งหมดเรียบร้อย</b>
+    </span>
+  </div>
+  <div class="actions">
+    <a class="ui positive right labeled icon button"
+      href="{{ url_for('item_registers.index', organization_id=organization.id) }}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
@@ -37,5 +78,12 @@
       var name = e.target.files[0].name;
       $('.attach-file-{{ form.upload_file.name }}', $(e.target).parent()).val(name);
     });
+
+  $('.ui.modal.upload_errors')
+    .modal('show')
+    ;
+  $('.ui.modal.upload_completed')
+    .modal('show')
+    ;
 </script>
 {% endblock additional_js %}
