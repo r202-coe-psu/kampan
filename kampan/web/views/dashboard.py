@@ -66,7 +66,7 @@ def daily_dashboard():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_items_quantity():
+        if item.minimum > item.get_amount_items():
             notifications += 1
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -168,7 +168,7 @@ def monthly_dashboard():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_items_quantity():
+        if item.minimum > item.get_amount_items():
             notifications += 1
     return render_template(
         "/dashboard/monthly_dashboard.html",
@@ -249,7 +249,7 @@ def yearly_dashboard():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_items_quantity():
+        if item.minimum > item.get_amount_items():
             notifications += 1
     return render_template(
         "/dashboard/yearly_dashboard.html",

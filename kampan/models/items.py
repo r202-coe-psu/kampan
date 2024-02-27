@@ -54,6 +54,13 @@ class Item(me.Document):
                 return f"{sumary // self.piece_per_set} {self.set_unit}"
         return f"0 {self.set_unit}"
 
+    def get_amount_items(self):
+        inventories = Inventory.objects(item=self, status="active")
+        if inventories:
+            sumary = sum([inventory.remain for inventory in inventories])
+            return sumary // self.piece_per_set
+        return 0
+
     def get_last_price(self):
         inventories = Inventory.objects(item=self, status="active")
         if inventories:
