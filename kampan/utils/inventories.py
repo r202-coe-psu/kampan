@@ -39,17 +39,20 @@ def process_inventory_engagement(inventory_engagement_file):
             name=row["คลังอุปกรณ์"],
             organization=organization,
         ).first()
+
         position = models.ItemPosition.objects(
             status="active",
             description=row["ตำแหน่ง (คำอธิบาย)"],
             warehouse=warehouse,
         ).first()
+
         inventory = models.Inventory.objects(
             status="pending",
             registration=inventory_engagement_file.registration,
             item=item,
             organization=organization,
         ).first()
+
         if inventory:
             inventory.set_ = row["จำนวน (ชุด)"]
             inventory.quantity = row["จำนวน (ชุด)"] * item.piece_per_set
@@ -80,26 +83,58 @@ def check_columns_file(df, default_columns):
         return "จำนวน Columns ของไฟล์ไม่ถูกต้อง"
     for column in df.columns:
         if column not in default_columns:
-            return "ชื่อ Columns ของไฟล์ไม่ถูกต้อง"
+            return f"ชื่อ Columns : {column} ของไฟล์ไม่ถูกต้อง"
 
 
-def check_int_value(df):
-    for value in df:
+def check_int_values(df_column):
+    for value in df_column:
         if type(value) != int:
             print("error-------")
-            return f"มีบางประเภทข้อมูลใน Columns ชื่อ '{df.name}' ไม่เป็นจำนวนเต็มบวก"
+            return f"ข้อมูล '{value}' ใน Columns ชื่อ '{df_column.name}' ไม่เป็นจำนวนเต็มบวก"
         else:
             if value < 0:
-                return f"มีบางประเภทข้อมูลใน Columns ชื่อ '{df.name}' ไม่เป็นจำนวนเต็มบวก"
+                return (
+                    f"ข้อมูล '{value}' ใน Columns ชื่อ '{df_column.name}' ไม่เป็นจำนวนเต็มบวก"
+                )
 
 
-def check_float_value(df):
-    for value in df:
+def check_float_values(df_column):
+    for value in df_column:
         if type(value) == float or type(value) == int:
             if value < 0:
-                return f"มีบางประเภทข้อมูลใน Columns ชื่อ '{df.name}' ไม่เป็นจำนวนทศนิยมบวก"
+                return f"ข้อมูล '{value}' ใน Columns ชื่อ '{df_column.name}' ไม่เป็นจำนวนทศนิยมบวก"
         else:
-            return f"มีบางประเภทข้อมูลใน Columns ชื่อ '{df.name}' ไม่เป็นจำนวนทศนิยมบวก"
+            return f"ข้อมูล '{value}' ใน Columns ชื่อ '{df_column.name}' ไม่เป็นจำนวนทศนิยมบวก"
+
+
+def check_items(df, organization):
+    for idx, row in df.iterrows():
+        item = models.Item.objects(
+            name=row["ชื่ออุปกรณ์"],
+            barcode_id=str(row["บาร์โค้ด"]),
+            status="active",
+            organization=organization,
+        ).first()
+        if not item:
+            return f"ไม่พบอุปกรณ์ชื่อ : {row['ชื่ออุปกรณ์']} หรือบาร์โค้ดหมายเลข : {row['บาร์โค้ด']} ที่ได้ลงทะเบียนไว้ในคลังอุปกรณ์"
+
+
+def check_positions(df, organization):
+    for idx, row in df.iterrows():
+        warehouse = models.Warehouse.objects(
+            status="active",
+            name=row["คลังอุปกรณ์"],
+            organization=organization,
+        ).first()
+        if not warehouse:
+            return f"ไม่พบคลังอุปกรณ์ชื่อ : {row['คลังอุปกรณ์']} ที่ได้ลงทะเบียนไว้"
+        position = models.ItemPosition.objects(
+            status="active",
+            description=row["ตำแหน่ง (คำอธิบาย)"],
+            warehouse=warehouse,
+        ).first()
+        if not position:
+            return f"ไม่พบตำแหน่งของอุปกรณ์ : {row['ตำแหน่ง (คำอธิบาย)']} ที่ได้ลงทะเบียนไว้"
 
 
 def validate_inventory_engagement(inventory_engagement_file):
@@ -109,11 +144,18 @@ def validate_inventory_engagement(inventory_engagement_file):
     if invalide_column:
         return invalide_column
 
-    invalid_int_value = check_int_value(df["จำนวน (ชุด)"])
+    invalid_int_value = check_int_values(df["จำนวน (ชุด)"])
     if invalid_int_value:
         return invalid_int_value
 
-    invalid_float_value = check_float_value(df["ราคา (ชุดละ)"])
+    invalid_float_value = check_float_values(df["ราคา (ชุดละ)"])
     if invalid_float_value:
         return invalid_float_value
-    print(df.dtypes)
+
+    invalid_items = check_items(df, inventory_engagement_file.organization)
+    if invalid_items:
+        return invalid_items
+
+    invalid_positions = check_positions(df, inventory_engagement_file.organization)
+    if invalid_positions:
+        return invalid_positions
