@@ -20,7 +20,7 @@ class RegistrationItem(me.Document):
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
     def get_item_in_bill(self):
-        inventories = Inventory.objects(registration=self, status="active")
+        inventories = Inventory.objects(registration=self, status__ne="disactive")
         if inventories:
             return [inventory.item.id for inventory in inventories]
 
