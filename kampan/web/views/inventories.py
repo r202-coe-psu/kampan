@@ -1,3 +1,4 @@
+import datetime
 from calendar import calendar
 from pyexpat import model
 from tabnanny import check
@@ -176,7 +177,9 @@ def bill_item():
     ).first()
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
-    inventories = models.Inventory.objects(registration=item_register)
+    inventories = models.Inventory.objects(
+        registration=item_register, status__ne="disactive"
+    )
     page = request.args.get("page", default=1, type=int)
     paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
@@ -192,7 +195,7 @@ def bill_item():
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
     registration_item = models.RegistrationItem.objects(
-        id=inventory.registration.id
+        id=inventory.registration.id, status__ne="disactive"
     ).first()
     if not registration_item.bill:
         return abort(404)
@@ -207,18 +210,23 @@ def bill(inventory_id):
 
 @module.route("item_register/<item_register_id>/upload_file", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
-def upload_file_inventory_info():
+def upload_file_inventory_info(item_register_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
     form = forms.inventories.UploadInventoryFileForm()
-    item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
+
+    upload_completed = False
+    upload_errors = {
+        "headers": "อัปโหลดไฟล์นำเข้าอุปกรณ์",
+        "errors": None,
+    }
 
     if not form.validate_on_submit():
         print(form.errors)
@@ -226,7 +234,9 @@ def upload_file_inventory_info():
             "/inventories/upload_file.html",
             form=form,
             item_register=item_register,
+            upload_errors=upload_errors,
             organization=organization,
+            upload_completed=upload_completed,
         )
     if form.upload_file.data:
         inventory_engagement_file = models.inventories.InventoryEngagementFile()
@@ -247,10 +257,23 @@ def upload_file_inventory_info():
         inventory_engagement_file.registration = item_register
         inventory_engagement_file.save()
         print(inventory_engagement_file.file)
-    utils.inventories.process_inventory_engagement(inventory_engagement_file)
-    return redirect(
-        url_for(
-            "item_registers.index",
-            organization_id=organization_id,
+    if inventory_engagement_file:
+        upload_errors["errors"] = utils.inventories.validate_inventory_engagement(
+            inventory_engagement_file
         )
+        if upload_errors["errors"]:
+            inventory_engagement_file.status = "failed"
+            inventory_engagement_file.updated_date = datetime.datetime.now()
+            inventory_engagement_file.save()
+        else:
+            utils.inventories.process_inventory_engagement(inventory_engagement_file)
+            upload_completed = True
+    print("------->", upload_errors["errors"])
+    return render_template(
+        "/inventories/upload_file.html",
+        form=form,
+        item_register=item_register,
+        organization=organization,
+        upload_errors=upload_errors,
+        upload_completed=upload_completed,
     )
