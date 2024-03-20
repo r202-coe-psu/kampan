@@ -15,6 +15,9 @@
 {% block breadcrumbs %}
 <a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าอุปกรณ์</a>
 <i class="right angle icon divider"></i>
+<a class="section"
+  href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">รายการบิลอุปกรณ์</a>
+<i class="right angle icon divider"></i>
 <div class="active section">อัพโหลดไฟล์</div>
 {% endblock breadcrumbs %}
 
@@ -51,7 +54,7 @@
   </div>
   <div class="actions">
     <a class="ui positive right labeled icon button"
-      href="{{ url_for('item_registers.index', organization_id=organization.id) }}">
+      href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">
       ยืนยัน
       <i class="checkmark icon"></i>
     </a>
