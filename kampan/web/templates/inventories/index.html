@@ -59,7 +59,7 @@
               {{inventory.get_bill_file_name() }}
             </a>
           </td>
-          <td data-label="User">{{ inventory.user.first_name }} {{ inventory.user.last_name }}</td>
+          <td data-label="User">{{ inventory.created_by.get_name() }}</td>
 
           {% endfor %}
       </tbody>
