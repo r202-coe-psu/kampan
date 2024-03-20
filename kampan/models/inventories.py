@@ -14,7 +14,7 @@ class RegistrationItem(me.Document):
     description = me.StringField()
 
     supplier = me.ReferenceField("Supplier", dbref=True)
-    user = me.ReferenceField("User", dbref=True)
+    created_by = me.ReferenceField("User", dbref=True)
     organization = me.ReferenceField("Organization", dbref=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -23,6 +23,12 @@ class RegistrationItem(me.Document):
         inventories = Inventory.objects(registration=self, status__ne="disactive")
         if inventories:
             return [inventory.item.id for inventory in inventories]
+
+    def get_quantity_of_item(self):
+        quantiy_item = Inventory.objects(
+            registration=self, status__ne="disactive"
+        ).count()
+        return quantiy_item
 
 
 class Inventory(me.Document):
@@ -49,7 +55,7 @@ class Inventory(me.Document):
     position = me.ReferenceField("ItemPosition", dbref=True)
 
     # notification_status = me.BooleanField(default=True)
-    user = me.ReferenceField("User", dbref=True)
+    created_by = me.ReferenceField("User", dbref=True)
 
     def get_checkout_items(self):
         return CheckoutItem.objects(checkout_from=self, status="active")
@@ -90,14 +96,6 @@ class OrderItem(me.Document):
     approved_date = me.DateTimeField()
 
     def get_all_price(self):
-        [
-            print(approved_item.price, approved_item.aprroved_amount)
-            for approved_item in ApprovedCheckoutItem.objects(
-                status="active",
-                order=self,
-            )
-        ]
-
         return sum(
             [
                 approved_item.price * approved_item.aprroved_amount
