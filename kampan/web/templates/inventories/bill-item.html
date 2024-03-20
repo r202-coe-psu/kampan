@@ -4,12 +4,16 @@
 {% block title %}รายการบิลอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
 {% block breadcrumbs %}
-{% if request.endpoint == 'inventories.index' %}
-<div class="active section">รายการบิล</div>
-{% else %}
-<a class="section" href="{{ url_for('inventories.index', organization_id=organization.id) }}">รายการบิล</a>
-<div class="divider"> / </div>
-{% endif %}
+
+<a class="ui primary button"
+  href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
+  <i class="file upload icon"></i>อัพโหลดไฟล์
+</a>
+<a class="ui primary button"
+  href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
+  <i class="plus circle icon"></i> นำเข้าทีละอุปกรณ์
+</a>
+
 {% endblock %}
 
 {% block content %}
