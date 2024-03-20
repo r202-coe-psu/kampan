@@ -3,17 +3,74 @@
 
 {% block title %}รายการบิลอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
+
 {% block breadcrumbs %}
+{% if item_register.status == "pending" %}
+<div class="ui grid">
+  <div class="four column row">
+    <div class="left floated column">
+      <a class="ui primary button"
+        href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
+        <i class="file upload icon"></i>อัพโหลดไฟล์
+      </a>
+      <a class="ui primary button"
+        href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
+        <i class="plus circle icon"></i> นำเข้าทีละอุปกรณ์
+      </a>
+    </div>
+    <div class="right floated column right aligned">
+      <a class="ui primary button {{ '' if item_register.get_quantity_of_item() != 0 else 'disabled' }}"
+        onclick="showConfirmModal('{{ item_register.id }}')"
+        style=" color: white; background-color: rgb(59, 115, 199); ">
+        <i class="check icon"></i> ยืนยันการนำเข้าอุปกรณ์
+      </a>
+    </div>
+  </div>
+</div>
 
-<a class="ui primary button"
-  href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
-  <i class="file upload icon"></i>อัพโหลดไฟล์
-</a>
-<a class="ui primary button"
-  href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
-  <i class="plus circle icon"></i> นำเข้าทีละอุปกรณ์
-</a>
-
+<div class="ui modal {{item_register.id}}">
+  <div class="header">
+    ยืนยันการนำเข้าอุปกรณ์
+  </div>
+  <div class="content">
+    <p>ต้องการยืนยันการนำเข้าอุปกรณ์
+      <br />
+      เลขกำกับใบเสร็จ :
+      <b>{{ item_register.receipt_id }}</b>
+      <br />
+      รายละเอียด :
+      <b>{{ item_register.description }}</b>
+      <br />
+      ร้านค้า :
+      <b>{{ item_register.supplier.name }}</b>
+      <br />
+      ผู้ลงทะเบียนอุปกรณ์ :
+      <b>{{ item_register.created_by.get_name() }}</b>
+      <br />
+      วันที่ลงทะเบียนอุปกรณ์ :
+      <b>{{ item_register.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</b>
+      <br />
+      <span class="ui error text">คำเตือน : สามารถยืนยันการนำเข้าอุปกรณ์ได้ครั้งเดียวเท่านั้น
+        และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+        *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
+    </p>
+  </div>
+  <div class="actions">
+    <button class="ui negative deny button">
+      ยกเลิก
+    </button>
+    <a class="ui positive right labeled icon button"
+      href="{{ url_for('item_registers.confirm_item_register', item_register_id=item_register.id, organization_id=organization.id) }}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+{% else %}
+<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าอุปกรณ์</a>
+<i class="right angle icon divider"></i>
+<div class="active section">รายการบิลอุปกรณ์</div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -30,7 +87,9 @@
         <th>จำนวนทั้งหมด</th>
         <th>จำนวนคงเหลือ</th>
         <th>ราคา (ชิ้นละ)</th>
+        {% if item_register.status == "pending" %}
         <th>แก้ไข/ลบข้อมูล</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -54,6 +113,7 @@
         <td data-label="Quantity">{{ inventory.quantity }}</td>
         <td data-label="Remain">{{ inventory.remain }}</td>
         <td data-label="Price">{{ inventory.price }}</td>
+        {% if item_register.status == "pending" %}
         <td>
           <a class="ui icon button"
             href="{{ url_for('inventories.edit', inventory_id=inventory.id, organization_id=organization.id) }}"
@@ -85,6 +145,7 @@
             </div>
           </div>
         </td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>
@@ -113,6 +174,11 @@
 
   function showDeleteModal(inventory_id) {
     inventory_id ? $('.ui.modal.' + inventory_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+
+  function showConfirmModal(item_register_id) {
+    item_register_id ? $('.ui.modal.' + item_register_id).modal('show') : $('.ui.modal').modal('hide')
       ;
   }
 </script>
