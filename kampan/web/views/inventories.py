@@ -94,8 +94,8 @@ def register():
     inventory = models.Inventory()
     form.populate_obj(inventory)
     inventory.item = models.Item.objects(id=form.item.data).first()
-    inventory.user = current_user._get_current_object()
-
+    inventory.created_by = current_user._get_current_object()
+    inventory.status = "pending"
     inventory.registration = item_register
     inventory.remain = inventory.quantity
     inventory.save()
@@ -146,7 +146,7 @@ def edit(inventory_id):
     form.populate_obj(inventory)
 
     inventory.item = models.Item.objects(id=form.item.data).first()
-    inventory.user = current_user._get_current_object()
+    inventory.created_by = current_user._get_current_object()
     inventory.registration = item_register
     inventory.remain = inventory.quantity
     inventory.save()
@@ -278,7 +278,7 @@ def upload_file_inventory_info(item_register_id):
         else:
             utils.inventories.process_inventory_engagement(inventory_engagement_file)
             upload_completed = True
-    print("------->", upload_errors["errors"])
+    # print("------->", upload_errors["errors"])
     return render_template(
         "/inventories/upload_file.html",
         form=form,
