@@ -60,6 +60,7 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.price = row["ราคา (ชุดละ)"]
             inventory.warehouse = warehouse
             inventory.position = position
+            inventory.created_by = current_user._get_current_object()
         else:
             inventory = models.Inventory()
             inventory.status = "pending"
@@ -72,7 +73,10 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.quantity = row["จำนวน (ชุด)"] * item.piece_per_set
             inventory.remain = row["จำนวน (ชุด)"] * item.piece_per_set
             inventory.price = row["ราคา (ชุดละ)"]
+            inventory.created_by = current_user._get_current_object()
+
         inventory.save()
+
     inventory_engagement_file.status = "completed"
     inventory_engagement_file.updated_date = datetime.datetime.now()
     inventory_engagement_file.save()

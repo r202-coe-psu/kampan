@@ -13,7 +13,7 @@ BaseInventoryForm = model_form(
     exclude=[
         "registeration_date",
         "expiration_date",
-        "user",
+        "created_by",
         "remain",
     ],
     field_args={
@@ -54,7 +54,9 @@ class SearchStartEndDateForm(FlaskForm):
     end_date = fields.DateField(
         "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
     )
-    item = fields.SelectField("อุปกรณ์", validate_choice=False, validators=None)
+    item = fields.SelectField(
+        "อุปกรณ์", validate_choice=False, validators=None, choices=[("", "None")]
+    )
 
 
 class SearchMonthYearForm(FlaskForm):
