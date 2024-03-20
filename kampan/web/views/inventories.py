@@ -100,7 +100,13 @@ def register():
     inventory.remain = inventory.quantity
     inventory.save()
 
-    return redirect(url_for("item_registers.index", organization_id=organization_id))
+    return redirect(
+        url_for(
+            "inventories.bill_item",
+            item_register_id=item_register_id,
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/<inventory_id>/edit", methods=["GET", "POST"])
@@ -146,7 +152,11 @@ def edit(inventory_id):
     inventory.save()
 
     return redirect(
-        url_for("inventories.bill_item", item_register_id=inventory.registration.id)
+        url_for(
+            "inventories.bill_item",
+            item_register_id=inventory.registration.id,
+            organization_id=organization_id,
+        )
     )
 
 
