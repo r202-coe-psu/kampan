@@ -19,7 +19,6 @@ INVENTORY_HEADER = [
 def process_inventory_engagement(inventory_engagement_file):
     df = pd.read_excel(inventory_engagement_file.file)
 
-    # print(sheet_names)
     df.columns = df.columns.str.strip()
     df = df.dropna(subset=["บาร์โค้ด"])
     organization = models.Organization.objects(
@@ -93,7 +92,6 @@ def check_columns_file(df, default_columns):
 def check_int_values(df_column):
     for value in df_column:
         if type(value) != int:
-            print("error-------")
             return f"ข้อมูล '{value}' ใน Columns ชื่อ '{df_column.name}' ไม่เป็นจำนวนเต็มบวก"
         else:
             if value < 0:

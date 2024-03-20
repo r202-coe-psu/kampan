@@ -53,7 +53,6 @@ def index():
         page = 1
 
     paginated_divisions = Pagination(divisions, page=page, per_page=30)
-    print(divisions)
     return render_template(
         "/divisions/index.html",
         form=form,
@@ -80,7 +79,6 @@ def create_or_edit(division_id):
     if division_id:
         division = models.Division.objects(id=division_id, status="active").first()
         form = forms.divisions.DivisionForm(obj=division)
-        print(form.data)
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
