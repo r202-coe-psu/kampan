@@ -17,9 +17,10 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item_registers = models.RegistrationItem.objects(status="active")
+    item_registers = models.RegistrationItem.objects(status__ne="disactive")
     form = forms.inventories.SearchStartEndDateForm()
-
+    form.item.label = "สถานะ"
+    form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]
     if form.start_date.data == None and form.end_date.data != None:
         item_registers = item_registers.filter(
             created_date__lt=form.end_date.data,
@@ -35,6 +36,9 @@ def index():
             created_date__gte=form.start_date.data,
             created_date__lt=form.end_date.data,
         )
+    print("------->>>>", form.item.data)
+    if form.item.data:
+        item_registers = item_registers.filter(status=form.item.data)
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:
         page = 1
@@ -84,8 +88,9 @@ def register():
                 content_type=form.bill_file.data.content_type,
             )
 
-    item_register.user = current_user._get_current_object()
+    item_register.created_by = current_user._get_current_object()
     form.populate_obj(item_register)
+    item_register.status = "pending"
     item_register.save()
 
     return redirect(
@@ -133,6 +138,29 @@ def edit(item_register_id):
     return redirect(
         url_for(
             "item_registers.index",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/<item_register_id>/delete")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def confirm_item_register(item_register_id):
+    organization_id = request.args.get("organization_id")
+    item_register = models.RegistrationItem.objects().get(id=item_register_id)
+    inventories = models.Inventory.objects(
+        registration=item_register, status__ne="disactive"
+    )
+    if inventories:
+        for inventory in inventories:
+            inventory.status = "active"
+            inventory.save()
+        item_register.status = "active"
+        item_register.save()
+    return redirect(
+        url_for(
+            "inventories.bill_item",
+            item_register_id=item_register.id,
             organization_id=organization_id,
         )
     )
