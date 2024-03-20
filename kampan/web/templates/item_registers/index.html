@@ -7,12 +7,9 @@
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_registers.index' %}
-
 <a class="ui primary button" href="{{ url_for('item_registers.register', organization_id=organization.id) }}">
   เพิ่มบิลอุปกรณ์
 </a>
-
-
 {% else %}
 <a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">ลงทะเบียนอุปกรณ์</a>
 {% endif %}
@@ -21,19 +18,7 @@
 
 {% block content %}
 <form method="post">
-  <div class="ui secondary menu">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
-  </div>
+  {{ renderer.render_default_search_item(form) }}
   {% if item_registers %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
@@ -44,6 +29,7 @@
           <th>ร้านค้า</th>
           <th>ชื่อผู้ใช้งาน</th>
           <th>วันลงทะเบียนอุปกรณ์</th>
+          <th>สถานะ</th>
           <th>รายการนำเข้าอุปกรณ์</th>
           <th>แก้ไข/ลบข้อมูลอุปกรณ์</th>
         </tr>
@@ -54,9 +40,11 @@
           <td data-label="Item Name">{{ item.receipt_id }}</td>
           <td data-label="Warehouse">{{ item.description }}</td>
           <td data-label="Quantity">{{ item.supplier.name }}</td>
-          <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+          <td data-label="User">{{ item.created_by.get_name() }}</td>
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
-
+          <td class="{{ 'green' if item.status == 'active' else 'yellow'}}">
+            {{ 'ยืนยัน' if item.status == "active" else 'รอดำเนินการ' }}
+          </td>
           <td data-label="Checkin Items">
             <a class="ui primary button icon"
               href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}"
@@ -65,11 +53,13 @@
             </a>
           </td>
           <td>
+            {% if item.status != "active" %}
             <a class="ui icon button"
               href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
+            {% endif %}
             <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
               onclick="showDeleteModal('{{ item.id }}')">
               <i class="trash icon"></i>
