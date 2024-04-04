@@ -39,7 +39,7 @@
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.quantity > checkout.item.get_items_quantity() %}
+        {% if checkout.quantity > checkout.item.get_amount_items() %}
         <td data-label="Status" class="red">
           <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
         </td>
