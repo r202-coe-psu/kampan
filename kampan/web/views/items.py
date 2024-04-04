@@ -116,16 +116,15 @@ def edit(item_id):
     item = models.Item.objects().get(id=item_id)
     form = forms.items.ItemForm(obj=item)
     if not item.one_to_many:
-        form.item_format.data = "one to one"
+        form.item_format.choices = form.item_format.choices[::-1]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
             "/items/add_or_edit.html",
             form=form,
             organization=organization,
+            item=item,
         )
-
-    form.populate_obj(item)
 
     if form.img.data:
         if item.image:
@@ -140,11 +139,18 @@ def edit(item_id):
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
+    print("=======>", form.item_format.data)
+    form.populate_obj(item)
     if form.item_format.data == "one to one":
         item.one_to_many = False
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
+    else:
+        item.one_to_many = True
+        item.piece_per_set = form.piece_per_set.data
+        item.piece_unit = form.piece_unit.data
     item.last_updated_by = current_user._get_current_object()
+    item.organization = organization
     item.save()
 
     return redirect(
