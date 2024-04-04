@@ -22,7 +22,8 @@
           <th>วันที่ลงทะเบียนอุปกรณ์</th>
           <th>คลังอุปกรณ์</th>
           <th>ตำแหน่ง ( ชั้นวาง / แถว / ตู้เก็บของ )</th>
-          <th>จำนวนทั้งหมด</th>
+          <th>จำนวนชุด</th>
+          <th>จำนวนชิ้น</th>
           <th>จำนวนคงเหลือ</th>
           <th>ราคา (ชิ้นละ)</th>
           <th>บิลอุปกรณ์</th>
@@ -50,6 +51,7 @@
           <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
           <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{
             inventory.position.locker }} </td>
+          <td data-label="Set">{{ inventory.set_ }}</td>
           <td data-label="Quantity">{{ inventory.quantity }}</td>
           <td data-label="Remain">{{ inventory.remain }}</td>
           <td data-label="Price">{{ inventory.price }}</td>

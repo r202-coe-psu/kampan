@@ -21,6 +21,8 @@
           <th>วันที่สั่งเบิกอุปกรณ์</th>
           <th>รูปอุปกรณ์</th>
           <th>ชื่ออุปกรณ์</th>
+          <th>จำนวนชุด</th>
+          <th>จำนวนชิ้น</th>
           <th>จำนวนที่เบิกทั้งหมด</th>
           <th>สถานะ</th>
           <th>ชื่อผู้ใช้งาน</th>
@@ -51,7 +53,8 @@
               <i class="eye icon"></i>
             </a>
           </td>
-
+          <td data-label="Set">{{ checkout.set_ }}</td>
+          <td data-label="Piece">{{ checkout.quantity }}</td>
           <td data-label="Quantity">{{ checkout.quantity }}</td>
           {% if checkout.approval_status == "pending" %}
           <td data-label="Status" class="red">
@@ -63,7 +66,7 @@
           </td>
           {% endif %}
 
-          <td data-label="User">{{ checkout.user.first_name}} {{ checkout.user.last_name}}</td>
+          <td data-label="User">{{ checkout.user.get_name() }}</td>
           <td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
           <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>
           <td data-label="Price">{{ checkout.price if checkout.price else "-"}}</td>
