@@ -21,6 +21,7 @@
       {{ form.item.label }}
       {{ form.item(class="ui fluid search dropdown") }}
     </div>
+    {{ renderer.render_field(form.set_) }}
     {{ renderer.render_field(form.quantity) }}
     {{ renderer.render_calendar_default(form.checkout_date, calendar_id="checkout_date_calendar") }}
 
