@@ -4,9 +4,14 @@
 {% block title %}รายการนำอุปกรณ์ออก{% endblock %}
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
 
+
 {% block breadcrumbs %}
-{{ super() }}
-<div class="active section"></div>
+<a class="section"
+  href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  รายละเอียดคำสั่งเบิกอุปกรณ์
+</div>
 {% endblock %}
 
 {% block content %}
@@ -18,7 +23,8 @@
         <th>รูปอุปกรณ์</th>
         <th>วันที่นำอุปกรณ์ออก</th>
         <th>ชื่ออุปกรณ์</th>
-        <th>จำนวนที่เบิกอุปกรณ์</th>
+        <th>จำนวนชุด</th>
+        <th>จำนวนชิ้น</th>
         <th>จำนวนที่มีในคลัง</th>
       </tr>
     </thead>
@@ -38,8 +44,9 @@
         </td>
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
+        <td data-label="Set">{{ checkout.set_ }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.quantity > checkout.item.get_amount_items() %}
+        {% if checkout.get_amount_items() > checkout.item.get_amount_items() %}
         <td data-label="Status" class="red">
           <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
         </td>
@@ -48,39 +55,6 @@
           <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
         </td>
         {% endif %}
-
-        {#
-        <a class="ui icon button" href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id) }}"
-          style=" color: white; background-color: rgb(59, 115, 199);">
-          <i class="edit icon"></i>
-        </a>
-
-        <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-          onclick="showDeleteModal('{{ checkout.id }}')">
-          <i class="trash icon"></i>
-        </a>
-
-        <div class="ui modal {{checkout.id}}">
-          <div class="header">
-            ลบคำสั่งเบิกอุปกรณ์
-          </div>
-          <div class="content">
-            <p>ต้องการลบคำสั่งเบิกอุปกรณ์
-              <b>{{ checkout.item.name }}</b>
-            </p>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id) }}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
-            </a>
-          </div>
-        </div>
-        #}
 
       </tr>
       {% endfor %}
