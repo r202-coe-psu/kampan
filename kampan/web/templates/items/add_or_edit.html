@@ -47,11 +47,11 @@
       </div>
     </div>
     <div class="two fields">
-      <div class="field" id="piece_per_set_field">
+      <div class="field {{ 'disabled' if not item.one_to_many else ''}}" id="piece_per_set_field">
         {{ form.piece_per_set.label }}
         {{ form.piece_per_set }}
       </div>
-      <div class="field" id="piece_unit_field">
+      <div class="field {{ 'disabled' if not item.one_to_many else ''}}" id="piece_unit_field">
         {{ form.piece_unit.label }}
         {{ form.piece_unit }}
       </div>
