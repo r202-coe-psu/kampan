@@ -56,7 +56,7 @@
         <tr>
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+          <td data-label="User">{{ order.created_by.get_name() }}</td>
           <td>
             <a class="ui primary button"
               href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
