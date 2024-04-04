@@ -118,6 +118,7 @@ def checkout():
     checkout_item.order = order
     checkout_item.item = item
     checkout_item.checkout_date = form.checkout_date.data
+    checkout_item.set_ = form.set_.data
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
 
@@ -178,6 +179,7 @@ def edit(checkout_item_id):
     checkout_item.user = current_user._get_current_object()
     checkout_item.item = item
     checkout_item.checkout_date = form.checkout_date.data
+    checkout_item.set_ = form.set_.data
     checkout_item.quantity = form.quantity.data
     checkout_item.save()
     return redirect(
