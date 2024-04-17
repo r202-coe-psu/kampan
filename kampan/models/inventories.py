@@ -82,6 +82,15 @@ class InventoryEngagementFile(me.Document):
     )
 
 
+class OrderEmail(me.EmbeddedDocument):
+    receiver_email = me.StringField(required=True)
+    status = me.StringField(required=True, default="not_sent")
+    sent_date = me.DateTimeField()
+    updateded_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    sent_by = me.ReferenceField("User", dbref=True)
+    remark = me.StringField(default="")
+
+
 class OrderItem(me.Document):
     # เบิกอุปกรณ์
     meta = {"collection": "order_items"}
@@ -91,6 +100,9 @@ class OrderItem(me.Document):
     description = me.StringField()
     created_by = me.ReferenceField("User", dbref=True)
     organization = me.ReferenceField("Organization", dbref=True)
+    division = me.ReferenceField("Division", dbref=True)
+
+    emails = me.EmbeddedDocumentListField(OrderEmail)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     approved_date = me.DateTimeField()
