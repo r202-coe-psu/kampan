@@ -124,3 +124,17 @@ class User(me.Document, UserMixin):
 
         except:
             return
+
+    def get_current_division(self):
+        from . import OrganizationUserRole
+
+        try:
+            org_division = OrganizationUserRole.objects(
+                user=self,
+                organization=self.get_current_organization(),
+                status="active",
+            ).first()
+            return org_division.division
+
+        except:
+            return []
