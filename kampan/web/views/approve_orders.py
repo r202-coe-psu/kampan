@@ -78,14 +78,21 @@ def approve(order_id):
 
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
-    order.approval_status = "approved"
-    order.save()
+    # order.approval_status = "approved"
+    # order.save()
 
-    for checkout in checkout_items:
-        checkout.approval_status = "approved"
-        checkout.save()
+    # for checkout in checkout_items:
+    #     checkout.approval_status = "approved"
+    #     checkout.save()
 
-    return redirect(url_for("approve_orders.index", organization_id=organization_id))
+    return redirect(
+        url_for(
+            "email_templates.force_send_email",
+            order_id=order_id,
+            organization_id=organization_id,
+        )
+    )
+    # return redirect(url_for("approve_orders.index", organization_id=organization_id))
 
 
 @module.route("/item_checkouts", methods=["GET", "POST"])
