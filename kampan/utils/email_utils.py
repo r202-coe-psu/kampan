@@ -65,42 +65,42 @@ class PSUSMTP:
         return True
 
 
-def get_participant_text_format(class_, participant, certificate):
-    if not class_ or not participant or not certificate:
+def get_creator_text_format(division, creator, order):
+    if not division or not creator or not order:
         return
 
     text_format = {
-        "organization_name": class_.organization.name,
-        "class_name": class_.name,
-        "class_printed_name": class_.printed_name,
-        "class_description": class_.description,
-        "class_started_date": class_.started_date,
-        "class_ended_date": class_.ended_date,
-        "class_issued_date": class_.issued_date,
-        "participant_name": participant.name,
-        "participant_group": participant.get_group_display(),
-        "participant_commond_id": participant.common_id,
-        "participant_organization": participant.organization,
-        "participant_certificate_class_date": class_.class_date_text,
-        "participant_certificate_url": certificate.validated_url,
+        "organization_name": division.organization.name,
+        "division_name": division.name,
+        # "divisionprinted_name": division.printed_name,
+        "division_description": division.description,
+        # "division_started_date": division.created_date,
+        # "division_ended_date": division.ended_date,
+        # "division_issued_date": division.issued_date,
+        # "creator_name": creator.name,
+        # "creator_group": creator.get_group_display(),
+        # "creator_commond_id": creator.common_id,
+        "creator_organization": creator.get_current_organization().name,
+        # "creator_order_divisiondate": division.divisiondate_text,
+        # "creator_order_url": order.validated_url,
     }
 
     return text_format
 
 
-def get_endorser_text_format(class_, endorser, endorsement_url):
-    if not class_ or not endorser:
+def get_endorser_text_format(division, endorser, endorsement_url):
+    if not division or not endorser:
         return
 
     text_format = {
-        "organization_name": class_.organization.name,
-        "class_name": class_.name,
-        "class_printed_name": class_.printed_name,
-        "class_description": class_.description,
-        "class_started_date": class_.get_started_date_display(),
-        "class_ended_date": class_.get_ended_date_display(),
-        "class_issued_date": class_.issued_date,
-        "class_organization": class_.organization,
+        "organization_name": division.organization.name,
+        "division_name": division.name,
+        "division_printed_name": division.printed_name,
+        "division_description": division.description,
+        "division_started_date": division.get_started_date_display(),
+        "division_ended_date": division.get_ended_date_display(),
+        "division_issued_date": division.issued_date,
+        "division_organization": division.organization,
         "endorser_name": endorser.name,
         "endorsement_url": endorsement_url,
     }
@@ -108,14 +108,14 @@ def get_endorser_text_format(class_, endorser, endorsement_url):
     return text_format
 
 
-def send_email_participant_in_class(
-    class_,
+def send_email_creator_in_class(
+    division,
     setting,
 ):
-    email_template = class_.certificate_email_template
+    email_template = division.order_email_template
     if not email_template:
         logger.debug(
-            f"there are no certificate email template for {class_.organization.name}"
+            f"there are no order email template for {division.organization.name}"
         )
 
     psu_smtp = PSUSMTP(setting)
@@ -127,62 +127,64 @@ def send_email_participant_in_class(
         logger.debug("PSUSMTP login failed...")
         return False
 
-    certificates = models.Certificate.objects(
-        me.Q(**{"emails__status": "waiting", "class_": class_, "status": "completed"})
+    orders = models.order.objects(
+        me.Q(
+            **{"emails__status": "waiting", "division": division, "status": "completed"}
+        )
     )
     logger.debug(
-        f"send email to participant in class { class_.name } amount { certificates.count() }"
+        f"send email to creator in class { division.name } amount { orders.count() }"
     )
-    for certificate in certificates:
-        certificate.emails[-1].status = "sending"
-        certificate.emails[-1].updated_date = datetime.datetime.now()
-        certificate.save()
+    for order in orders:
+        order.emails[-1].status = "sending"
+        order.emails[-1].updated_date = datetime.datetime.now()
+        order.save()
 
-        participant = certificate.get_participant()
+        creator = order.get_creator()
 
         template_subject = Template(email_template.subject)
         template_body = Template(email_template.body)
 
-        text_format = get_participant_text_format(class_, participant, certificate)
+        text_format = get_creator_text_format(division, creator, order)
         email_subject = template_subject.render(text_format)
         email_body = template_body.render(text_format)
 
-        logger.debug(f"send email to participant {participant.email}")
+        logger.debug(f"send email to creator {creator.email}")
 
-        if psu_smtp.send_email(participant.email, email_subject, email_body):
-            certificate.emails[-1].status = "sent"
+        if psu_smtp.send_email(creator.email, email_subject, email_body):
+            order.emails[-1].status = "sent"
         else:
-            certificate.emails[-1].status = "failed"
+            order.emails[-1].status = "failed"
 
-        certificate.emails[-1].updated_date = datetime.datetime.now()
-        certificate.save()
+        order.emails[-1].updated_date = datetime.datetime.now()
+        order.save()
 
     psu_smtp.quit()
     return True
 
 
 def send_email_endorser_in_class(
-    class_,
+    division,
     setting,
     user,
 ):
     required_endorsement_email_template = (
-        class_.endorser_required_endorsement_email_template
+        division.endorser_required_endorsement_email_template
     )
     without_endorsement_email_template = (
-        class_.endorser_without_endorsement_email_template
+        division.endorser_without_endorsement_email_template
     )
 
     psu_smtp = PSUSMTP(setting)
     if not required_endorsement_email_template:
         logger.debug(
-            f"there are no required endorsement email template for endorser in class {class_.name}"
+            f"there are no required endorsement email template for endorser in class {division.name}"
         )
         return False
 
     if not without_endorsement_email_template:
         logger.debug(
-            f"there are no without endorsement email template for endorser in class {class_.name}"
+            f"there are no without endorsement email template for endorser in class {division.name}"
         )
         return False
 
@@ -190,10 +192,10 @@ def send_email_endorser_in_class(
         logger.debug("PSUSMTP login failed...")
         return False
 
-    logger.debug(f"send email to endorsers in class { class_.name }")
+    logger.debug(f"send email to endorsers in class { division.name }")
 
-    for endorser_id in class_.endorsers:
-        endorser = class_.get_endorser_by_id(endorser_id)
+    for endorser_id in division.endorsers:
+        endorser = division.get_endorser_by_id(endorser_id)
 
         if endorser.auto_send_mail_to_endorse == "not_auto":
             continue
@@ -205,10 +207,10 @@ def send_email_endorser_in_class(
             template_subject = Template(without_endorsement_email_template.subject)
             template_body = Template(without_endorsement_email_template.body)
 
-        host_url = setting.get("CERTIFICATE_HOST_URL")
-        endorsement_url = f"{host_url}/en/classes/{class_.id}?organization_id={class_.organization.id}"
+        host_url = setting.get("order_HOST_URL")
+        endorsement_url = f"{host_url}/en/classes/{division.id}?organization_id={division.organization.id}"
 
-        text_format = get_endorser_text_format(class_, endorser, endorsement_url)
+        text_format = get_endorser_text_format(division, endorser, endorsement_url)
         email_subject = template_subject.render(text_format)
         email_body = template_body.render(text_format)
 
@@ -225,25 +227,29 @@ def send_email_endorser_in_class(
         else:
             endorser.emails[-1].status = "failed"
         endorser.emails[-1].updated_date = datetime.datetime.now()
-    class_.save()
+    division.save()
     psu_smtp.quit()
     return True
 
 
-def force_send_email_certificate(
-    certificate,
+def force_send_email_order(
+    order,
+    user,
     setting,
 ):
-    participant = certificate.get_participant()
-    class_ = certificate.class_
-    email_template = class_.certificate_email_template
+    logger.debug(f"+++++++++> Starttttt")
+    creator = order.created_by
+    division = order.division
+    organization = division.organization
+    email_template = organization.get_default_email_template()
+    logger.debug(f"+++++++++> Starttttt2222")
 
     if not email_template:
-        logger.debug(f"There are no email template for {class_.name}")
+        logger.debug(f"There are no email template for {division.name}")
         return False
 
-    if not participant.email:
-        logger.debug(f"attendant {participant.name} email is required")
+    if not creator.email:
+        logger.debug(f"attendant {creator.name} email is required")
         return False
 
     psu_smtp = PSUSMTP(setting)
@@ -254,20 +260,23 @@ def force_send_email_certificate(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    text_format = get_participant_text_format(class_, participant, certificate)
+    text_format = get_creator_text_format(division, creator, order)
 
     email_subject = template_subject.render(text_format)
     email_body = template_body.render(text_format)
 
-    logger.debug(f"send email to {participant.email}")
+    logger.debug(f"send email to {creator.email}")
 
-    if psu_smtp.send_email(participant.email, email_subject, email_body):
-        certificate.emails[-1].status = "sent"
-        certificate.save()
+    order_email = models.OrderEmail(receiver_email=creator.email, sent_by=user)
+    order.emails.append(order_email)
+    order.save()
+    if psu_smtp.send_email(creator.email, email_subject, email_body):
+        order.emails[-1].status = "sent"
+        order.save()
         psu_smtp.quit()
         return True
 
-    certificate.emails[-1].status = "failed"
-    certificate.save()
+    order.emails[-1].status = "failed"
+    order.save()
     psu_smtp.quit()
     return False
