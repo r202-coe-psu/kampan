@@ -37,6 +37,7 @@
           <th>วันลงทะเบียน</th>
           <th>รายละเอียด</th>
           <th>เพิ่มสมาชิก/แก้ไข/ลบข้อมูล</th>
+          <th>สวมสิทธิ์องค์กร</th>
         </tr>
       </thead>
       <tbody>
@@ -93,6 +94,13 @@
                 </a>
               </div>
             </div>
+          </td>
+          <td>
+            <a class="ui primary button icon"
+              href="{{ url_for('dashboard.daily_dashboard', organization_id=organization.id)}}"
+              style=" color: white; background-color: rgb(59, 115, 199); ">
+              สวมสิทธิ์
+            </a>
           </td>
         </tr>
 
