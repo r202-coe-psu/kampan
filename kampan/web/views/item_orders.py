@@ -70,6 +70,8 @@ def order():
     order.created_by = current_user._get_current_object()
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
+
+    order.organization = organization
     order.save()
 
     return redirect(url_for("item_orders.index", organization_id=organization_id))
@@ -97,6 +99,8 @@ def edit(order_id):
     print(current_user._get_current_object().get_current_division())
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
+    order.organization = organization
+
     order.save()
 
     return redirect(url_for("item_orders.index", organization_id=organization_id))
