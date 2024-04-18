@@ -23,7 +23,8 @@
 {% if checkouts %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
-    <a class="ui primary button" href=""
+    <a class="ui primary button"
+      href="{{ url_for('approve_orders.approve',order_id=order.id, organization_id=organization.id)}}"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">อนุมัติการเบิกอุปกรณ์</a>
   </p>
 </div>
