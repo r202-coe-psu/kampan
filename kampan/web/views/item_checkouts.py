@@ -145,6 +145,7 @@ def bill_checkout():
         order_id=order_id,
         checkouts=checkouts,
         organization=organization,
+        order=order,
     )
 
 
