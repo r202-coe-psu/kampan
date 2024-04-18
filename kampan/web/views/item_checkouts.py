@@ -23,9 +23,7 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    checkout_items = models.CheckoutItem.objects(
-        status="active", approval_status="pending"
-    )
+    checkout_items = models.CheckoutItem.objects(status="active")
     approved_checkout_items = models.inventories.ApprovedCheckoutItem.objects(
         status="active"
     )
@@ -97,11 +95,16 @@ def checkout():
         form.item.choices = [
             (
                 item.id,
-                f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
-                + (
-                    f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
-                    if item.get_booking_item() != 0
+                (
+                    f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
+                    + f" (ชุดละ {item.piece_per_set})"
+                    if item.piece_per_set > 1
                     else ""
+                    + (
+                        f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
+                        if item.get_booking_item() != 0
+                        else ""
+                    )
                 ),
             )
             for item in items
