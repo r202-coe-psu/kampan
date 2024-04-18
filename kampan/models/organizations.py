@@ -119,6 +119,12 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)
 
+    def get_default_email_template(self):
+        email_template = models.EmailTemplate.objects(
+            organization=self, is_default=True
+        ).first()
+        return email_template
+
 
 class Logo(me.Document):
     meta = {"collection": "logos"}
