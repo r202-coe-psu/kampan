@@ -10,6 +10,7 @@ from .inventories import (
     RegistrationItem,
     OrderItem,
     LostBreakItem,
+    OrderEmail,
 )
 from .warehouses import Warehouse
 from .organizations import Organization, Logo, OrganizationUserRole
