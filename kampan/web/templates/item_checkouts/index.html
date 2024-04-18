@@ -57,12 +57,16 @@
           <td data-label="Piece">{{ checkout.quantity }}</td>
           <td data-label="Quantity">{{ checkout.quantity }}</td>
           {% if checkout.approval_status == "pending" %}
-          <td data-label="Status" class="red">
-            <span class="ui red text">รออนุมัติ</span>
+          <td data-label="Status" class="yellow">
+            <span class="ui yellow text">รออนุมัติ</span>
           </td>
-          {% else %}
+          {% elif checkout.approval_status == "approved" %}
           <td data-label="Status" class="green">
             <span class="ui green text">อนุมัติ</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="red">
+            <span class="ui red text">อนุมัติ</span>
           </td>
           {% endif %}
 
