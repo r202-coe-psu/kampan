@@ -42,7 +42,7 @@ def daily_dashboard():
     if form.start_date.data != None:
         today = form.start_date.data
     # print(today)
-    item_orders = models.OrderItem.objects(status="active")
+    item_orders = models.OrderItem.objects(status="active", organization=organization)
 
     daily_item_orders = item_orders.filter(
         created_date__gte=today,
@@ -103,6 +103,7 @@ def monthly_dashboard():
         status="active",
         created_date__gte=today,
         created_date__lt=next_time,
+        organization=organization,
     )
 
     days_month_categories = list(range(1, days_month(today) + 1))
@@ -205,6 +206,7 @@ def yearly_dashboard():
         status="active",
         created_date__gte=today,
         created_date__lt=next_time,
+        organization=organization,
     )
 
     # year_categories = list(range(1, days_month(today) + 1))
