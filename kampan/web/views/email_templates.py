@@ -198,23 +198,30 @@ def set_default_email_template(organization_id, email_template_id, is_default):
     )
 
 
-@module.route("/divison/<division_id>/send_email", methods=["GET", "POST"])
+@module.route("/order/<order_id>/send_email", methods=["GET", "POST"])
 @acl.organization_roles_required("staff", "admin")
-def force_send_email(division_id):
-    division = models.Division.objects.get(id=division_id)
-    organization = division.organization
+def force_send_email(order_id):
+    # division = models.Division.objects.get(id=division_id)
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    order = models.OrderItem.objects(id=order_id).first()
 
     job = redis_rq.redis_queue.queue.enqueue(
-        email_utils.force_send_email_certificate,
-        args=(division, current_user._get_current_object(), current_app.config),
-        job_id=f"force_sent_email_certificate_{division.id}",
+        email_utils.force_send_email_order,
+        args=(order, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_order_{order.id}",
         timeout=600,
         job_timeout=600,
     )
-    print("submit", job.get_id())
+    print("=====> submit", job.get_id())
     return redirect(
         url_for(
-            "organizations.view_certificates",
+            "item_orders.index",
+            order_id=order_id,
             organization_id=organization.id,
         )
     )
+
+    # return redirect(url_for("approve_orders.index", organization_id=organization.id))
