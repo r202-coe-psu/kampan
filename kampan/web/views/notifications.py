@@ -22,7 +22,7 @@ def index():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_items_quantity():
+        if item.minimum > item.get_amount_items():
             notifications.append(item)
     page = request.args.get("page", default=1, type=int)
     paginated_notifications = Pagination(notifications, page=page, per_page=30)
