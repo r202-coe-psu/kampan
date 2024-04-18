@@ -5,12 +5,20 @@
 {% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<div class="active section"></div>
+
 {% endblock %}
 
 {% block content %}
 {% if checkouts %}
+<div class="ui secondary menu">
+  <p style="margin-left:auto;">
+    <a class="ui icon button"
+      href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}"
+      style=" color: white; background-color: rgb(59, 115, 199);">
+      ส่งอีเมลแจ้งเตือน
+    </a>
+  </p>
+</div>
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
