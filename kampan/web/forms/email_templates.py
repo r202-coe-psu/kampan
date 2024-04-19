@@ -18,10 +18,11 @@ BaseEmailTemplateForm = model_form(
         "is_default",
         "created_date",
         "updated_date",
+        "type",
     ],
     field_args={
         "name": {"label": "Template Name"},
-        "type": {"label": "Type"},
+        # "type": {"label": "Type"},
         "subject": {"label": "Subject"},
         "body": {"label": "Body"},
     },
