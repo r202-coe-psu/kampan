@@ -20,7 +20,7 @@ class ItemSize(me.EmbeddedDocument):
 class Item(me.Document):
     meta = {"collection": "items"}
 
-    status = me.StringField(default="active")
+    status = me.StringField(default="pending")
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
