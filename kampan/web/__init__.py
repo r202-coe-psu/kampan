@@ -6,27 +6,26 @@ from .. import models
 from . import views
 from . import acl
 from . import oauth2
+from . import redis_rq
 
 app = Flask(__name__)
 
 
 def create_app():
     app.config.from_object("kampan.default_settings")
-    app.config.from_envvar(
-        "KAMPAN_SETTINGS", silent=True
-    )
+    app.config.from_envvar("KAMPAN_SETTINGS", silent=True)
 
     models.init_db(app)
     acl.init_acl(app)
     oauth2.init_oauth(app)
+    redis_rq.init_rq(app)
 
     views.register_blueprint(app)
 
     return app
 
 
-def get_program_options(default_host="127.0.0.1", default_port="8080"):
-
+def get_program_options(default_host="127.0.0.1", default_port="8081"):
     """
     Takes a flask.Flask instance and runs it. Parses
     command-line flags to configure the app.
