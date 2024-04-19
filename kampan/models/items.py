@@ -2,7 +2,7 @@ from flask import url_for
 from email.policy import default
 import mongoengine as me
 import datetime
-from ..models.inventories import Inventory, CheckoutItem
+from kampan import models
 
 
 ITEM_FORMAT = [
@@ -41,10 +41,12 @@ class Item(me.Document):
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now, auto_now=True
+    )
 
     def get_items_quantity(self):
-        inventories = Inventory.objects(item=self, status="active")
+        inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
             sumary = sum([inventory.remain for inventory in inventories])
 
@@ -55,19 +57,19 @@ class Item(me.Document):
         return f"0 {self.set_unit}"
 
     def get_amount_items(self):
-        inventories = Inventory.objects(item=self, status="active")
+        inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
             sumary = sum([inventory.remain for inventory in inventories])
             return sumary // self.piece_per_set
         return 0
 
     def get_last_price(self):
-        inventories = Inventory.objects(item=self, status="active")
+        inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
             return (inventories.order_by("registeration_date")).first().price
 
     def get_booking_item(self):
-        checkout_items = CheckoutItem.objects(
+        checkout_items = models.CheckoutItem.objects(
             item=self, status="active", approval_status="pending"
         )
         if checkout_items:
