@@ -139,7 +139,7 @@ def edit(item_id):
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
-    print("=======>", form.item_format.data)
+    # print("=======>", form.item_format.data)
     form.populate_obj(item)
     if form.item_format.data == "one to one":
         item.one_to_many = False
@@ -168,6 +168,23 @@ def delete(item_id):
 
     item = models.Item.objects().get(id=item_id)
     item.status = "disactive"
+    item.save()
+
+    return redirect(
+        url_for(
+            "items.index",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/<item_id>/confirm")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def confirm(item_id):
+    organization_id = request.args.get("organization_id")
+
+    item = models.Item.objects().get(id=item_id)
+    item.status = "active"
     item.save()
 
     return redirect(
