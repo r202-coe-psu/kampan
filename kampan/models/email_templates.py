@@ -22,10 +22,7 @@ class EmailTemplate(me.Document):
     subject = me.StringField(required=True, max_length=255)
     body = me.StringField(required=True)
 
-    type = me.StringField(
-        required=True,
-        choices=EMAIL_TYPE,
-    )
+    type = me.StringField(required=True, choices=EMAIL_TYPE, default=EMAIL_TYPE[0][0])
 
     organization = me.ReferenceField("Organization", required=True, dbref=True)
     is_default = me.BooleanField(
