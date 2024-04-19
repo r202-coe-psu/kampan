@@ -92,10 +92,9 @@
   </div>
   <a class="item" href="{{ url_for('lost_breaks.index', organization_id = organization.id)}}">อุปกรณ์ชำรุด/สูญหาย<i
       class="exclamation circle icon"></i></a>
-  {% endif %}
 
 
-  {% if current_user.has_organization_roles("admin") %}
+  {% if current_user.has_organization_roles("admin") and organization %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     จัดการแผนก
@@ -113,6 +112,7 @@
     href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">สมาชิกขององค์กร<i
       class="users icon"></i></a>
 
+  {% endif %}
   {% endif %}
 
 
