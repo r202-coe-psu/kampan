@@ -33,7 +33,7 @@ class Organization(me.Document):
 
     name = me.StringField(min_length=4, max_length=255, required=True)
     description = me.StringField()
-    authenticity_text = me.StringField(required=True, default="")
+    # authenticity_text = me.StringField(required=True, default="")
 
     status = me.StringField(required=True, default="active")
 

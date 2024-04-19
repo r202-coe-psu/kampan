@@ -17,7 +17,7 @@ BaseOrganizationForm = model_form(
     field_args={
         "name": {"label": "Name"},
         "description": {"label": "Desctiption"},
-        "authenticity_text": {"label": "Authenticity Text"},
+        # "authenticity_text": {"label": "Authenticity Text"},
     },
 )
 
