@@ -52,11 +52,13 @@
               style=" color: white; background-color: rgb(59, 115, 199); ">
               <i class="eye icon"></i>
             </a>
+            {% if organization.get_organization_users() %}
             <a class="ui primary button icon"
               href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}"
               style=" color: white; background-color: rgb(59, 115, 199); ">
               <i class="users icon"></i>
             </a>
+            {% endif %}
           </td>
           <td>
             <a class="ui icon button"
