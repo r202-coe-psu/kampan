@@ -195,6 +195,22 @@ def confirm(item_id):
     )
 
 
+@module.route("/<item_id>/detail")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def detail(item_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    item = models.Item.objects().get(id=item_id)
+
+    return render_template(
+        "/items/detail.html",
+        organization=organization,
+        item=item,
+    )
+
+
 @module.route("/<item_id>/picture/<filename>")
 @acl.organization_roles_required("admin", "endorser", "staff")
 def image(item_id, filename):
