@@ -65,102 +65,89 @@ class PSUSMTP:
         return True
 
 
-def get_creator_text_format(division, creator, order):
-    if not division or not creator or not order:
-        return
+# def get_creator_text_format(division, creator, order):
+#     if not division or not creator or not order:
+#         return
 
-    text_format = {
-        "organization_name": division.organization.name,
-        "division_name": division.name,
-        # "divisionprinted_name": division.printed_name,
-        "division_description": division.description,
-        # "division_started_date": division.created_date,
-        # "division_ended_date": division.ended_date,
-        # "division_issued_date": division.issued_date,
-        # "creator_name": creator.name,
-        # "creator_group": creator.get_group_display(),
-        # "creator_commond_id": creator.common_id,
-        "creator_organization": creator.get_current_organization().name,
-        # "creator_order_divisiondate": division.divisiondate_text,
-        # "creator_order_url": order.validated_url,
-    }
+#     text_format = {
+#         "organization_name": division.organization.name,
+#         "division_name": division.name,
+#         "division_description": division.description,
+#         "creator_organization": creator.get_current_organization().name,
+#     }
 
-    return text_format
+#     return text_format
 
 
-def get_endorser_text_format(division, endorser, endorsement_url):
+def get_endorser_text_format(division, creator, endorser, order, endorsement_url):
     if not division or not endorser:
         return
 
     text_format = {
         "organization_name": division.organization.name,
         "division_name": division.name,
-        "division_printed_name": division.printed_name,
         "division_description": division.description,
-        "division_started_date": division.get_started_date_display(),
-        "division_ended_date": division.get_ended_date_display(),
-        "division_issued_date": division.issued_date,
-        "division_organization": division.organization,
-        "endorser_name": endorser.name,
+        "order_date": order.updated_date,
+        "endorser_name": endorser.user.get_name(),
         "endorsement_url": endorsement_url,
     }
 
     return text_format
 
 
-def send_email_creator_in_class(
-    division,
-    setting,
-):
-    email_template = division.order_email_template
-    if not email_template:
-        logger.debug(
-            f"there are no order email template for {division.organization.name}"
-        )
+# def send_email_creator_in_class(
+#     division,
+#     setting,
+# ):
+#     email_template = division.order_email_template
+#     if not email_template:
+#         logger.debug(
+#             f"there are no order email template for {division.organization.name}"
+#         )
 
-    psu_smtp = PSUSMTP(setting)
-    if not email_template:
-        logger.debug("email template not found")
-        return False
+#     psu_smtp = PSUSMTP(setting)
+#     if not email_template:
+#         logger.debug("email template not found")
+#         return False
 
-    if not psu_smtp.login():
-        logger.debug("PSUSMTP login failed...")
-        return False
+#     if not psu_smtp.login():
+#         logger.debug("PSUSMTP login failed...")
+#         return False
 
-    orders = models.order.objects(
-        me.Q(
-            **{"emails__status": "waiting", "division": division, "status": "completed"}
-        )
-    )
-    logger.debug(
-        f"send email to creator in class { division.name } amount { orders.count() }"
-    )
-    for order in orders:
-        order.emails[-1].status = "sending"
-        order.emails[-1].updated_date = datetime.datetime.now()
-        order.save()
+#     orders = models.order.objects(
+#         me.Q(
+#             **{"emails__status": "waiting", "division": division, "status": "completed"}
+#         )
+#     )
+#     logger.debug(
+#         f"send email to creator in class { division.name } amount { orders.count() }"
+#     )
+#     for order in orders:
+#         order.emails[-1].status = "sending"
+#         order.emails[-1].updated_date = datetime.datetime.now()
+#         order.save()
 
-        creator = order.get_creator()
+#         creator = order.get_creator()
 
-        template_subject = Template(email_template.subject)
-        template_body = Template(email_template.body)
+#         template_subject = Template(email_template.subject)
+#         template_body = Template(email_template.body)
 
-        text_format = get_creator_text_format(division, creator, order)
-        email_subject = template_subject.render(text_format)
-        email_body = template_body.render(text_format)
+#         text_format = get_creator_text_format(division, creator, order)
+#         email_subject = template_subject.render(text_format)
+#         email_body = template_body.render(text_format)
 
-        logger.debug(f"send email to creator {creator.email}")
+#         logger.debug(f"send email to creator {creator.email}")
 
-        if psu_smtp.send_email(creator.email, email_subject, email_body):
-            order.emails[-1].status = "sent"
-        else:
-            order.emails[-1].status = "failed"
+#         if psu_smtp.send_email(creator.email, email_subject, email_body):
+#             order.emails[-1].status = "sent"
+#         else:
+#             order.emails[-1].status = "failed"
 
-        order.emails[-1].updated_date = datetime.datetime.now()
-        order.save()
+#         order.emails[-1].updated_date = datetime.datetime.now()
+#         order.save()
 
-    psu_smtp.quit()
-    return True
+#     psu_smtp.quit()
+#     return True
 
 
 def send_email_endorser_in_class(
@@ -207,7 +194,7 @@ def send_email_endorser_in_class(
             template_subject = Template(without_endorsement_email_template.subject)
             template_body = Template(without_endorsement_email_template.body)
 
-        host_url = setting.get("order_HOST_URL")
+        host_url = setting.get("KAMPAN_HOST_URL")
         endorsement_url = f"{host_url}/en/classes/{division.id}?organization_id={division.organization.id}"
 
         text_format = get_endorser_text_format(division, endorser, endorsement_url)
@@ -237,17 +224,19 @@ def force_send_email_order(
     user,
     setting,
 ):
-    logger.debug(f"+++++++++> Starttttt")
     creator = order.created_by
     division = order.division
+    endorsers = division.get_endorsers()
+
     organization = division.organization
     email_template = organization.get_default_email_template()
-    logger.debug(f"+++++++++> Starttttt2222")
 
     if not email_template:
         logger.debug(f"There are no email template for {division.name}")
         return False
-
+    if not endorsers:
+        logger.debug(f"attendant endorser is required")
+        return False
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
         return False
@@ -259,24 +248,25 @@ def force_send_email_order(
 
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
+    for endorser in endorsers:
+        host_url = setting.get("KAMPAN_HOST_URL")
+        endorsement_url = f"{host_url}/approve_orders/{order.id}/approved_detail?organization_id={organization.id}"
+        text_format = get_endorser_text_format(
+            division, creator, endorser, order, endorsement_url
+        )
 
-    text_format = get_creator_text_format(division, creator, order)
+        email_subject = template_subject.render(text_format)
+        email_body = template_body.render(text_format)
 
-    email_subject = template_subject.render(text_format)
-    email_body = template_body.render(text_format)
+        logger.debug(f"send email to {endorser.user.email}")
 
-    logger.debug(f"send email to {creator.email}")
-
-    order_email = models.OrderEmail(receiver_email=creator.email, sent_by=user)
-    order.emails.append(order_email)
-    order.save()
-    if psu_smtp.send_email(creator.email, email_subject, email_body):
-        order.emails[-1].status = "sent"
+        order_email = models.OrderEmail(receiver_email=creator.email, sent_by=user)
+        order.emails.append(order_email)
         order.save()
-        psu_smtp.quit()
-        return True
-
-    order.emails[-1].status = "failed"
+        if psu_smtp.send_email(endorser.user.email, email_subject, email_body):
+            order.emails[-1].status = "sent"
+        else:
+            order.emails[-1].status = "failed"
     order.save()
     psu_smtp.quit()
-    return False
+    return True
