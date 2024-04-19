@@ -26,7 +26,7 @@ def index():
         id=organization_id, status="active"
     ).first()
     form = forms.items.SearchItemForm()
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status__in=["active", "pending"])
 
     form.item.choices = [
         (item.id, f"{item.barcode_id} ({item.name})") for item in items
