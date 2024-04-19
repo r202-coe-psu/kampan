@@ -15,12 +15,14 @@
 {% endblock %}
 
 {% block content %}
-
+{#
 <div class="ui segment">
+
   <a class="ui teal labeled icon button" onclick="$('.upload-email-template.form').transition('fade down')">
     <i class="upload icon"></i>
     {{ ("Upload Email Template File") }}
   </a>
+
   <div class="upload-email-template form" style="display: none;">
     <div class="ui segment" style="margin-top: 1em">
       <form class="ui form"
@@ -36,15 +38,13 @@
     </div>
   </div>
 </div>
-
+#}
 
 <div class="ui horizontal equal width raised segments">
   <div class="ui clearing segment" style="width: 100vw">
     <div class="email-template create-edit">
       <form class="ui form" method="POST" enctype="multipart/form-data">
         {{ form.csrf_token }}
-
-        {{ renderer.render_select(form.type)}}
         {{ renderer.render_field(form.name) }}
         {{ renderer.render_field(form.subject) }}
 
@@ -66,44 +66,28 @@
 
   <div class="ui info message segment">
     <div class="ui compact header">
-      {{ ("List of text formats available for email templates.") }}
+      รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
     </div>
     <div class="ui relaxed list">
       <div class="item">
-        <div class="header"><i class="globe icon"></i> {{("Organization")}}</div>
+        <div class="header"><i class="globe icon"></i> องค์กร</div>
         <div class="ui list">
-          <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - {{("Organization name.")}}</div>
+          <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
         </div>
       </div>
       <div class="item">
-        <div class="header"><i class="archive icon"></i> {{("Class")}}</div>
+        <div class="header"><i class="archive icon"></i> แผนก</div>
         <div class="ui list">
-          <div class="item"> <b>{{ '{{ class_name }}' }}</b> - {{("Class name.")}}</div>
-          <div class="item"> <b>{{ '{{ class_printed_name }}' }}</b> - {{("Class printed name.")}}</div>
-          <div class="item"> <b>{{ '{{ class_description }}' }}</b> - {{("Class description.")}}</div>
-          <div class="item"> <b>{{ '{{ class_started_date }}' }}</b> - {{("Class start date.")}}</div>
-          <div class="item"> <b>{{ '{{ class_ended_date }}' }}</b> - {{("Class end date.")}}</div>
-          <div class="item"> <b>{{ '{{ class_issued_date }}' }}</b> - {{("Class issued date.")}}</div>
+          <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
+          <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
+          <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกอุปกรณ์</div>
         </div>
       </div>
       <div class="item">
-        <div class="header"><i class="user tie icon"></i> {{("Endorser")}}</div>
+        <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - {{("Endorser name.")}}</div>
-          <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - {{("URL for endorser link to endorsement.")}}</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="header"><i class="users colored icon"></i> {{ ("Participant")}}</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ participant_name }}' }}</b> - {{("Participant name.")}}</div>
-          <div class="item"> <b>{{ '{{ participant_group }}' }}</b> - {{("Participant group.")}}</div>
-          <div class="item"> <b>{{ '{{ participant_command_id }}'}}</b> - {{("Participant common id.")}}</div>
-          <div class="item"> <b>{{ '{{ participant_academy }}' }}</b> - {{("Participant orgnaization/academy.")}}</div>
-          <div class="item"> <b>{{ '{{ participant_certificate_url }}' }}</b> - {{("URL for participant link to
-            certificate.")}}</div>
-          <div class="item"> <b>{{ '{{ participant_certificate_class_date }}' }}</b> - {{("Certificate class date.")}}
-          </div>
+          <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
         </div>
       </div>
     </div>
