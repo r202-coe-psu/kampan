@@ -10,6 +10,7 @@ BaseOrderItemForm = model_form(
     FlaskForm,
     exclude=[
         "created_date",
+        "updated_date",
         "approval_status",
         "status",
     ],
