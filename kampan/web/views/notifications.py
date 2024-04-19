@@ -20,7 +20,7 @@ def index():
     ).first()
     notifications = []
 
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", notification_status=True)
     for item in items:
         if item.minimum > item.get_amount_items():
             notifications.append(item)
@@ -40,12 +40,13 @@ def set_status(item_id):
     organization_id = request.args.get("organization_id")
 
     item = models.Item.objects(id=item_id).first()
-    item.notification_status = False
+    if item.notification_status:
+        item.notification_status = False
+    else:
+        item.notification_status = True
+
     item.save()
 
     return redirect(
-        url_for(
-            "notifications.index",
-            organization_id=organization_id,
-        )
+        url_for("items.detail", organization_id=organization_id, item_id=item_id)
     )
