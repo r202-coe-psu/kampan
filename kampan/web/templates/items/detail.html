@@ -1,0 +1,70 @@
+{% extends '/base/default-dashboard.html' %}
+
+{% set head = "รายละเอียดอุปกรณ์"%}
+
+{% block title %}{{ head }}{% endblock %}
+{% block dashboard_title %}{{ head }}{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">อุปกรณ์</a>
+<i class="right angle icon divider"></i>
+<div class="ui breadcrumb">
+  <div class="active section">{{ head }}</div>
+</div>
+{% endblock %}
+
+{% macro row_detail(text) -%}
+<div class="column">
+  <h3> {{ text if text else "-" }}</h3>
+</div>
+{%- endmacro %}
+
+{% block content %}
+<div class="ui container" style="width: 100%;">
+  <div class="ui segment">
+    <h2 class="ui header">ข้อมูลอุปกรณ์ {{ item.name }}
+    </h2>
+    <div class="image">
+      {% if not item.image %}
+      <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
+      {% else %}
+      <img
+        src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
+        alt="{{ item.name }}">
+      {% endif %}
+    </div>
+    <div class="ui grid two column">
+      {{ row_detail("ชื่อ :") }}
+      {{ row_detail(item.name) }}
+      {{ row_detail("บาร์โค๊ด :") }}
+      {{ row_detail(item.barcode_id) }}
+      {{ row_detail("รายละเอียด :") }}
+      {{ row_detail(item.description) }}
+      {{ row_detail("รูปแบบอุปกรณ์ :") }}
+      {{ row_detail( "หนึ่งต่อหลายๆชิ้น" if one_to_many else "หนึ่งต่อหนึ่งชิ้น") }}
+      {{ row_detail("หน่วยใหญ่ :") }}
+      {{ row_detail(item.set_unit) }}
+      {{ row_detail("หน่วยเล็ก :") }}
+      {{ row_detail(item.piece_unit) }}
+      {{ row_detail("จำนวนต่อ 1 หน่วยใหญ่ :") }}
+      {{ row_detail(item.piece_per_set) }}
+      {{ row_detail("หมวดหมู่ :") }}
+      {{ row_detail(item.categories) }}
+      {{ row_detail("มีอยู่ในคลังจำนวน :") }}
+      {{ row_detail(item.get_items_quantity() ) }}
+      {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
+      {{ row_detail(item.minimum) }}
+      {{ row_detail("การแจ้งแตือน :") }}
+      <div class="column">
+        <a href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}"
+          class="ui button {{ 'positive' if item.notification_status else 'negative' }}">{{ 'เปิดการแจ้งเตือน' if
+          item.notification_status else 'ปิดการแจ้งเตือน' }}</a>
+      </div>
+      {{ row_detail("วันที่สร้าง :") }}
+      {{ row_detail(item.created_date.strftime("%d/%m/%Y")) }}
+      {{ row_detail("ลงทะเบียนโดย :") }}
+      {{ row_detail(item.created_by.get_name() ) }}
+    </div>
+  </div>
+</div>
+{% endblock %}
