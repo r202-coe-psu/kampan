@@ -4,14 +4,34 @@
 {% block title %}
 
 {% if 'edit' in request.path %}
-แก้ไขรายละเอียดแผนก
+แก้ไขรูปแบบรายอีเมล
 {% else %}
-เพิ่มแผนก
+เพิ่มรูปแบบอีเมล
 {% endif %}
 {% endblock %}
 
 {% block dashboard_title %}
 {{ self.title() }}
+{% endblock %}
+
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('email_templates.index', organization_id=organization.id)}}">
+  รูแบบอีเมลทั้งหมด </a>
+<i class="right angle icon divider"></i>
+{% if not email_template %}
+<div class="active section">
+  {{ self.title() }}
+</div>
+{% else %}
+<a class="section"
+  href="{{ url_for('email_templates.detail',email_template_id=email_template.id, organization_id=organization.id)}}">
+  {{ email_template.name }} </a>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  {{ self.title() }}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -76,17 +96,25 @@
         </div>
       </div>
       <div class="item">
+        <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
+        <div class="ui list">
+          <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
+          <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกอุปกรณ์</div>
+          <div class="item"> <b>{{ '{{ order_desscription }}' }}</b> - รายละเอียด/เหตุผลการเบิก</div>
+        </div>
+      </div>
+      <div class="item">
         <div class="header"><i class="archive icon"></i> แผนก</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
           <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
-          <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกอุปกรณ์</div>
+
         </div>
       </div>
       <div class="item">
         <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
-          <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - {{("Endorser name.")}}</div>
+          <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
           <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
         </div>
       </div>
