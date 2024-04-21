@@ -34,19 +34,6 @@
       </div>
     </div>
   </div>
-  {#
-  <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-    <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #a15e5e; margin: 10px;">
-      <div class="card-body text-center">
-        <ion-icon name="bag-check-outline" style="font-size: 3rem; color: #6d0000;"></ion-icon>
-        <h5 class="card-title mt-3">อุปกรณ์นำเข้าคงเหลือ <span style="color: #6d0000;"><b>
-              <h3>{{ }}</h3>
-            </b></span> รายการ</h5>
-        <p class="card-text "><a href="/item_registers/" class="text-black">[ เพิ่มเติม ]</a></p>
-      </div>
-    </div>
-  </div>
-  #}
   <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892; margin: 10px;">
       <div class="card-body text-center">
@@ -76,7 +63,7 @@
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content" style="color: #292d33;">
-    <div class="ui medium header"> คำสั่งเบิกอุปกรณ์รายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
+    <div class="ui medium header"> ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
   </div>
 
   <form method="post">
@@ -88,99 +75,6 @@
   </form>
 
 </div>
-{% if daily_item_orders %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-
-        <th>วันที่สั่งเบิกอุปกรณ์</th>
-        <th>คำอธิบาย</th>
-        <th>ชื่อผู้ใช้งาน</th>
-        <th>เบิกอุปกรณ์</th>
-        <th>รายการอุปกรณ์</th>
-        <th>สถานะ</th>
-        <th>แก้ไข/ลบข้อมูล</th>
-
-      </tr>
-    </thead>
-    <tbody>
-      {% for order in paginated_daily_item_orders.items %}
-      <tr>
-        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Description">{{ order.description }}</td>
-        <td data-label="User">{{ order.created_by.first_name }} {{ order.created_by.last_name }}</td>
-        <td>
-          <a class="ui primary button"
-            href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id = organization.id) }}">
-            เบิกอุปกรณ์
-          </a>
-        </td>
-
-        <td data-label="Bill">
-          <a class="ui primary button"
-            href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id = organization.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="eye icon"></i>
-          </a>
-        </td>
-        {% if order.approval_status == "pending" %}
-        <td data-label="Status" class="red">
-          <span class="ui red text">รออนุมัติ</span>
-        </td>
-        {% else %}
-        <td data-label="Status" class="green">
-          <span class="ui green text">อนุมัติ</span>
-        </td>
-        {% endif %}
-        <td>
-          <a class="ui icon button"
-            href="{{ url_for('item_orders.edit', order_id=order.id, organization_id = organization.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-            onclick="showDeleteModal('{{ order.id }}')">
-            <i class="trash icon"></i>
-          </a>
-          <div class="ui modal {{order.id}}">
-            <div class="header">
-              ลบคำสั่งเบิกอุปกรณ์
-            </div>
-            <div class="content">
-              <p>ต้องการลบคำสั่งเบิกอุปกรณ์
-                <b>{{ order.description }}</b>
-              </p>
-            </div>
-            <div class="actions">
-              <button class="ui black deny button">
-                ยกเลิก
-              </button>
-              <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_orders.delete', order_id=order.id, organization_id = organization.id) }}">
-                ยืนยัน
-                <i class="checkmark icon"></i>
-              </a>
-            </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if paginated_daily_item_orders.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-</div>
-{% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-{% endif %}
 
 <style>
   .button-group {
