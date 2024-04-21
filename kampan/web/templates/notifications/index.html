@@ -30,7 +30,7 @@
         <div class="details">
           <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_amount_items() }}/{{ item.minimum }}
             {{
-            item.unit }}</span><br>
+            item.set_unit }}</span><br>
           <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
         </div>
         <span>
