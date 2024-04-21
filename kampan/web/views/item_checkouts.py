@@ -97,9 +97,11 @@ def checkout():
                 item.id,
                 (
                     f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
-                    + f" (ชุดละ {item.piece_per_set})"
-                    if item.piece_per_set > 1
-                    else ""
+                    + (
+                        f" (ชุดละ {item.piece_per_set})"
+                        if item.piece_per_set > 1
+                        else " (ชุดละ 1)"
+                    )
                     + (
                         f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
                         if item.get_booking_item() != 0
@@ -122,7 +124,8 @@ def checkout():
     checkout_item.item = item
     checkout_item.checkout_date = form.checkout_date.data
     checkout_item.set_ = form.set_.data
-    checkout_item.quantity = form.quantity.data
+    checkout_item.piece = form.piece.data
+    checkout_item.quantity = (form.set_.data * item.piece_per_set) + form.piece.data
     checkout_item.save()
 
     return redirect(url_for("item_orders.index", organization_id=organization_id))
@@ -137,7 +140,7 @@ def bill_checkout():
     ).first()
     order_id = request.args.get("order_id")
     order = models.OrderItem.objects.get(id=order_id)
-    checkouts = models.CheckoutItem.objects(order=order, status="active")
+    checkouts = models.CheckoutItem.objects(order=order, status__ne="disactive")
 
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
