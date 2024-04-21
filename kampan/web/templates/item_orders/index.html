@@ -22,19 +22,7 @@
 
 
 <form method="post">
-  <div class="ui secondary menu">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
-  </div>
+  {{ renderer.render_default_search_item(form) }}
   {% if orders %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
@@ -58,10 +46,12 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
           <td>
-            <a class="ui primary button"
+            {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+            <a class="ui primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
               เบิกอุปกรณ์
             </a>
+            {% endif %}
           </td>
 
           <td data-label="Bill">
@@ -71,27 +61,32 @@
               <i class="eye icon"></i>
             </a>
           </td>
-          {% if order.approval_status == "pending" %}
+          {% if order.status == "pending" %}
           <td data-label="Status" class="yellow">
             <span class="ui yellow text">รออนุมัติ</span>
           </td>
-          {% elif order.approval_status == "approved" %}
+          {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
           <td data-label="Status" class="green">
             <span class="ui green text">อนุมัติ</span>
           </td>
-          {% else %}
+          {% elif order.status == "denied" or order.approval_status == "denied"%}
           <td data-label="Status" class="red">
-            <span class="ui red text">อนุมัติ</span>
+            <span class="ui red text">ปฏิเสธ</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="yellow">
+            <span class="ui yellow text">รออนุมัติ</span>
           </td>
           {% endif %}
           <td>
+            {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
             <a class="ui icon button"
               href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="edit icon"></i>
             </a>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ order.id }}')">
+            <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ order.id }}')">
               <i class="trash icon"></i>
             </a>
             <div class="ui modal {{order.id}}">
@@ -114,6 +109,7 @@
                 </a>
               </div>
             </div>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
