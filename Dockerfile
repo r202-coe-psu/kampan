@@ -14,6 +14,7 @@ ENV PYTHON=/venv/bin/python3
 RUN $PYTHON -m pip install wheel poetry gunicorn
 
 WORKDIR /app
+COPY kampan/cmd /app/kampan/cmd
 COPY poetry.lock pyproject.toml /app/
 RUN . /venv/bin/activate \
   && poetry config virtualenvs.create false \
