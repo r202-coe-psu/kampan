@@ -103,10 +103,11 @@ def organizaiton_users(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.organizations.SearchUserForm()
     org_users = organization.get_organization_users()
-    [
-        form.user.choices.append((org_user.id, f"{org_user.user.get_name()}"))
-        for org_user in org_users
-    ]
+    if org_users:
+        [
+            form.user.choices.append((org_user.id, f"{org_user.user.get_name()}"))
+            for org_user in org_users
+        ]
     if form.user.data:
         form.user.data = form.user.data
     else:
@@ -137,8 +138,9 @@ def organizaiton_users(organization_id):
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:
         page = 1
-
-    paginated_org_users = Pagination(org_users, page=page, per_page=30)
+    paginated_org_users = None
+    if org_users:
+        paginated_org_users = Pagination(org_users, page=page, per_page=30)
     return render_template(
         "/organizations/members.html",
         form=form,
