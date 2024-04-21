@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 from io import BytesIO
 from flask_login import current_user
-
+from flask import send_file
 from kampan import models
 
 
@@ -161,3 +161,29 @@ def validate_inventory_engagement(inventory_engagement_file):
     invalid_positions = check_positions(df, inventory_engagement_file.organization)
     if invalid_positions:
         return invalid_positions
+
+
+def get_template_inventory_file():
+    df = pd.DataFrame(columns=INVENTORY_HEADER)
+
+    excel_output = BytesIO()
+    with pd.ExcelWriter(excel_output) as writer:
+        workbook = writer.book
+        sheet_name = "upload_inventory"
+
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        # text_format = workbook.add_format({"num_format": "@"})
+        # worksheet = writer.sheets[sheet_name]
+        # worksheet.set_column("A:ZZ", None, text_format)
+
+        workbook.close()
+
+    excel_output.seek(0)
+    response = send_file(
+        excel_output,
+        as_attachment=True,
+        download_name="upload_inventory.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    return response
