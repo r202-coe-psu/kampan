@@ -64,7 +64,7 @@
   <a class="item" href="{{ url_for('email_templates.index', organization_id = organization.id) }}">รูปแบบอีเมล<i
       class="envelope icon"></i></a>
 
-  {% if current_user.has_organization_roles("admin", "staff", "endorser") %}
+  {% if current_user.has_organization_roles("admin", "staff", "endorser") and current_user.get_current_division() %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การนำอุปกรณ์ออก
@@ -82,9 +82,17 @@
   <div class="sidebar-heading" style="color: grey;">
     การอนุมัติ
   </div>
+  {% if current_user.has_organization_roles("admin", "endorser") %}
   <a class="item"
-    href="{{ url_for('approve_orders.index', organization_id = organization.id )}}">อนุมัติคำสั่งเบิกอุปกรณ์<i
+    href="{{ url_for('approve_orders.index', organization_id = organization.id )}}">หัวหน้าอนุมัติคำสั่งเบิก<i
       class="check circle icon"></i></a>
+  {% endif %}
+
+  {% if current_user.has_organization_roles("admin") %}
+  <a class="item"
+    href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">พัสดุอนุมัติคำสั่งเบิก<i
+      class="check circle icon"></i></a>
+  {% endif %}
   {% endif %}
 
   <!-- Heading -->
@@ -121,6 +129,13 @@
   <div class="sidebar-heading" style="color: grey;">
     บัญชีผู้ใช้
   </div>
+  {% if organization %}
+  <a class="item" href="{{ url_for('accounts.index',organization_id=organization.id) }}"><i
+      class="address book icon"></i>ข้อมูลผู้ใช้งาน</a>
+  {% else %}
   <a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>ข้อมูลผู้ใช้งาน</a>
+  {% endif %}
   <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
+
+
 </ul>
