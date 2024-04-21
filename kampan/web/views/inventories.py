@@ -288,3 +288,10 @@ def upload_file_inventory_info(item_register_id):
         upload_errors=upload_errors,
         upload_completed=upload_completed,
     )
+
+
+@module.route("/dowload_template_inventory_file")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def dowload_template_inventory_file():
+    response = utils.inventories.get_template_inventory_file()
+    return response
