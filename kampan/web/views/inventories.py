@@ -136,6 +136,7 @@ def edit(inventory_id):
         )
 
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/inventories/register.html",
             item_register=item_register,
