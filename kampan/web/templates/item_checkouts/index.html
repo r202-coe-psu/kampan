@@ -54,19 +54,23 @@
             </a>
           </td>
           <td data-label="Set">{{ checkout.set_ }}</td>
-          <td data-label="Piece">{{ checkout.quantity }}</td>
+          <td data-label="Piece">{{ checkout.piece }}</td>
           <td data-label="Quantity">{{ checkout.quantity }}</td>
-          {% if checkout.approval_status == "pending" %}
+          {% if checkout.order.status == "pending" %}
           <td data-label="Status" class="yellow">
             <span class="ui yellow text">รออนุมัติ</span>
           </td>
-          {% elif checkout.approval_status == "approved" %}
+          {% elif checkout.order.approval_status == "approved" and checkout.order.approval_status == "approved" %}
           <td data-label="Status" class="green">
             <span class="ui green text">อนุมัติ</span>
           </td>
-          {% else %}
+          {% elif checkout.order.status == "denied" or checkout.order.approval_status == "denied"%}
           <td data-label="Status" class="red">
-            <span class="ui red text">อนุมัติ</span>
+            <span class="ui red text">ปฏิเสธ</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="yellow">
+            <span class="ui yellow text">รออนุมัติ</span>
           </td>
           {% endif %}
 
