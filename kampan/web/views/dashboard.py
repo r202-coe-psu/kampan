@@ -145,10 +145,8 @@ def monthly_dashboard():
         },
     ]
 
-    approved_checkout_items = (
-        models.inventories.ApprovedCheckoutItem.objects().aggregate(
-            pipeline_approved_checkout_items
-        )
+    approved_checkout_items = models.CheckoutItem.objects().aggregate(
+        pipeline_approved_checkout_items
     )
     trend_checkout_items = [0] * days_month(today)
     for checkout_item in approved_checkout_items:
@@ -243,9 +241,7 @@ def yearly_dashboard():
             }
         },
     ]
-    checkout_items = models.inventories.ApprovedCheckoutItem.objects().aggregate(
-        pipeline_checkout_item
-    )
+    checkout_items = models.CheckoutItem.objects().aggregate(pipeline_checkout_item)
     trend_checkout_items = [0] * 12
     for checkout_item in checkout_items:
         trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
