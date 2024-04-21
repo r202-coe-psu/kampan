@@ -21,6 +21,7 @@
       <thead>
         <tr>
           <th>ชื่อสมาชิก</th>
+          <th>อีเมล</th>
           <th>ตำแหน่ง</th>
           <th>เพิ่มเข้ามาเมื่อวันที่</th>
           <th>แก้ไขตำแหน่ง/ลบสมาชิก</th>
@@ -30,6 +31,7 @@
         {% for org_user in paginated_org_users.items %}
         <tr>
           <td data-label="Organization">{{ org_user.user.get_name() }}</td>
+          <td data-label="Email">{{ org_user.user.email }}</td>
           <td data-label="Roles">{{ org_user.role }}</td>
           <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
             org_user.created_date else "-"}}
