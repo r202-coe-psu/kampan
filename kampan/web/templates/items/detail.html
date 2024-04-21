@@ -41,7 +41,7 @@
       {{ row_detail("รายละเอียด :") }}
       {{ row_detail(item.description) }}
       {{ row_detail("รูปแบบอุปกรณ์ :") }}
-      {{ row_detail( "หนึ่งต่อหลายๆชิ้น" if one_to_many else "หนึ่งต่อหนึ่งชิ้น") }}
+      {{ row_detail( "หนึ่งต่อหลายๆชิ้น" if item.item_format == 'one to many' else "หนึ่งต่อหนึ่งชิ้น") }}
       {{ row_detail("หน่วยใหญ่ :") }}
       {{ row_detail(item.set_unit) }}
       {{ row_detail("หน่วยเล็ก :") }}

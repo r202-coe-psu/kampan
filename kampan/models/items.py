@@ -26,7 +26,9 @@ class Item(me.Document):
     description = me.StringField()
     organization = me.ReferenceField("Organization", dbref=True)
 
-    one_to_many = me.BooleanField(default=True)
+    item_format = me.StringField(
+        required=True, choices=ITEM_FORMAT, default=ITEM_FORMAT[0][0]
+    )
     set_ = me.IntField(required=True, min_value=1, default=1)
     set_unit = me.StringField(required=True, default="ชุด", max_length=50)
     piece_per_set = me.IntField(min_value=1, default=1)
@@ -50,7 +52,7 @@ class Item(me.Document):
         if inventories:
             sumary = sum([inventory.remain for inventory in inventories])
 
-            if self.one_to_many:
+            if self.item_format == "one to many":
                 return f"{sumary // self.piece_per_set} {self.set_unit} {sumary % self.piece_per_set} {self.piece_unit}"
             else:
                 return f"{sumary // self.piece_per_set} {self.set_unit}"

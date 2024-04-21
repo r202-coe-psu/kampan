@@ -48,11 +48,11 @@
     </div>
     <div class="two fields">
       {% if item %}
-      <div class="field {{ 'disabled' if not item.one_to_many else ''}}" id="piece_per_set_field">
+      <div class="field {{ 'disabled' if not item.item_format == 'one to many' else ''}}" id="piece_per_set_field">
         {{ form.piece_per_set.label }}
         {{ form.piece_per_set }}
       </div>
-      <div class="field {{ 'disabled' if not item.one_to_many else ''}}" id="piece_unit_field">
+      <div class="field {{ 'disabled' if not item.item_format == 'one to many' else ''}}" id="piece_unit_field">
         {{ form.piece_unit.label }}
         {{ form.piece_unit }}
       </div>
@@ -68,12 +68,9 @@
       {% endif %}
     </div>
 
-    {% if item.status == 'pending' %}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-    {% else %}
-    <a class="ui primary button" href="{{ url_for('items.index', organization_id=organization.id) }}">ย้อนกลับ</a>
-    {% endif %}
+
 
   </form>
 </div>

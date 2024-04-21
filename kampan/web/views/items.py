@@ -90,7 +90,7 @@ def add():
                 content_type=form.img.data.content_type,
             )
     if form.item_format.data == "one to one":
-        item.one_to_many = False
+        item.item_format == "one to many"
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
     item.created_by = current_user._get_current_object()
@@ -115,7 +115,7 @@ def edit(item_id):
     ).first()
     item = models.Item.objects().get(id=item_id)
     form = forms.items.ItemForm(obj=item)
-    if not item.one_to_many:
+    if not item.item_format == "one to many":
         form.item_format.choices = form.item_format.choices[::-1]
     if not form.validate_on_submit():
         print(form.errors)
@@ -142,11 +142,11 @@ def edit(item_id):
     # print("=======>", form.item_format.data)
     form.populate_obj(item)
     if form.item_format.data == "one to one":
-        item.one_to_many = False
+        item.item.item_format == "one to one"
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
     else:
-        item.one_to_many = True
+        item.item.item_format == "one to many"
         item.piece_per_set = form.piece_per_set.data
         item.piece_unit = form.piece_unit.data
     item.last_updated_by = current_user._get_current_object()
