@@ -16,7 +16,7 @@ class OrderEmail(me.EmbeddedDocument):
 class OrderItem(me.Document):
     # เบิกอุปกรณ์
     meta = {"collection": "order_items"}
-    status = me.StringField(default="active")
+    status = me.StringField(required=True, default="pending")
 
     approval_status = me.StringField(default="pending")
     description = me.StringField()
