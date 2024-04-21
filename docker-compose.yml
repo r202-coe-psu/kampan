@@ -33,7 +33,37 @@ services:
             options:
                 max-size: "10m"
                 max-file: "3"
-    
-
+    redis:
+        image: redis
+        container_name: kampan-redis
+        restart: always
+        networks:
+            - default
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
+    worker:
+        build: .
+        image: kampan-image
+        container_name: kampan-worker
+        volumes:
+            - ../deployment:/deployment
+            - /etc/localtime:/etc/localtime:ro
+        depends_on:
+            - mongodb
+            - redis
+        links:
+            - mongodb
+            - redis
+        restart: always
+        environment:
+            KAMPAN_SETTINGS: /app/kampan-production.cfg
+        command:
+            /venv/bin/kampan-worker
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
 networks:
     default:
