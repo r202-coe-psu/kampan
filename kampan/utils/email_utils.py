@@ -85,9 +85,11 @@ def get_endorser_text_format(division, creator, endorser, order, endorsement_url
 
     text_format = {
         "organization_name": division.organization.name,
+        "user_name": creator.get_name(),
         "division_name": division.name,
         "division_description": division.description,
         "order_date": order.updated_date,
+        "order_desscription": order.description,
         "endorser_name": endorser.user.get_name(),
         "endorsement_url": endorsement_url,
     }
