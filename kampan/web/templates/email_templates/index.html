@@ -25,28 +25,23 @@
 <table class="ui striped padded celled table">
   <thead>
     <tr>
-      <th>{{ ("Name") }}</th>
-      <th>{{ ("Type") }}</th>
-      <th>{{ ("Default") }}</th>
-      <th>{{ ("Owner") }}</th>
-      <th>{{ ("Actions") }}</th>
+      <th>ชื่อ</th>
+      <th>หัวข้อ</th>
+      <th>ค่าเริ่มต้น</th>
+      <th>แก้ไข</th>
     </tr>
   </thead>
   <tbody>
     {% for email_template in email_templates %}
-
     <tr>
       <td data-label="Name">{{ email_template.name }}</td>
-      <td data-label="Type">{{ email_template.get_type_display() }}</td>
+      <td data-label="Name">{{ email_template.subject }}</td>
       <td data-label="Default">{{ email_template.is_default }}
-        {% if current_user.is_admin_current_organization() %}
         <a style="cursor: pointer;" data-content="change defualt setting"
           onclick="$('.modal.set-default.{{ email_template.id }}').modal('show')">
           <i class="sync blue icon"></i>
         </a>
-        {% endif %}
       </td>
-      <td data-label="Owner">{{ email_template.created_by.first_name }} {{ email_template.created_by.last_name }} </td>
       <td data-label="Actions">
 
         <a class="ui link primary icon circular button"
