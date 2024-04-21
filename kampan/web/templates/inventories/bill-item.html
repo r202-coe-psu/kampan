@@ -13,10 +13,12 @@
         href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
         <i class="file upload icon"></i>อัพโหลดไฟล์
       </a>
+      {#}
       <a class="ui primary button"
         href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
         <i class="plus circle icon"></i> นำเข้าทีละอุปกรณ์
       </a>
+      {#}
     </div>
     <div class="right floated column right aligned">
       <a class="ui primary button {{ '' if item_register.get_quantity_of_item() != 0 else 'disabled' }}"
