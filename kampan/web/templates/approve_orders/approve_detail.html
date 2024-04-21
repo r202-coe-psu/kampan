@@ -6,11 +6,12 @@
 {% endblock %}
 
 {% block dashboard_title %}
-อนุมัติคำสั่งเบิกอุปกรณ์
+หัวหน้าแผนกอนุมัติคำสั่งเบิกอุปกรณ์
 {% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
+<a class="section" href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">
+  คำสั่งเบิกอุปกรณ์ </a>
 <i class="right angle icon divider"></i>
 <div class="active section">
   อนุมัติคำสั่งเบิกอุปกรณ์
@@ -23,9 +24,14 @@
 {% if checkouts %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
-    <a class="ui primary button"
-      href="{{ url_for('approve_orders.approve',order_id=order.id, organization_id=organization.id)}}"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">อนุมัติการเบิกอุปกรณ์</a>
+    <a class="ui positive button"
+      href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+      <i class="check icon"></i>อนุมัติการเบิกอุปกรณ์</a>
+    <a class="ui negative button"
+      href="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+      <i class="times icon"></i>ไม่อนุมัติการเบิกอุปกรณ์</a>
   </p>
 </div>
 <div style="padding-bottom: 1em ;">
@@ -37,6 +43,7 @@
         <th>ชื่ออุปกรณ์</th>
         <th>จำนวนชุด</th>
         <th>จำนวนชิ้น</th>
+        <th>รวม</th>
         <th>จำนวนที่มีในคลัง</th>
       </tr>
     </thead>
@@ -57,8 +64,9 @@
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Set">{{ checkout.set_ }}</td>
+        <td data-label="Piece">{{ checkout.piece }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.get_amount_items() > checkout.item.get_amount_items() %}
+        {% if checkout.quantity > checkout.item.get_amount_pieces() %}
         <td data-label="Status" class="red">
           <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
         </td>
