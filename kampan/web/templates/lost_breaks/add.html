@@ -27,12 +27,20 @@
 
 
 {% block content %}
+{% if error_message %}
+<div class="ui negative message">
+  <div class="header">
+    จำนวนที่เลือกมากกว่าจำนวนอุปกรณ์ที่มี
+  </div>
+</div>
+{% endif %}
 <div>
   <form class="ui form" method="POST">
     {{ form.hidden_tag() }}
     <div class="two fields">
       {{ renderer.render_select(form.item) }}
-      {{ renderer.render_field(form.quantity) }}
+      {{ renderer.render_field(form.set_) }}
+      {{ renderer.render_field(form.piece) }}
     </div>
     {{ renderer.render_field(form.description) }}
 
