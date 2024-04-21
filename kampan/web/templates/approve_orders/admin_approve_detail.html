@@ -1,0 +1,117 @@
+{% extends '/approve_orders/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+เพิ่มคำสั่งเบิก
+{% endblock %}
+
+{% block dashboard_title %}
+เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก
+{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('approve_orders.admin_index', organization_id=organization.id) }}">
+  คำสั่งเบิกอุปกรณ์ </a>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก
+</div>
+{% endblock %}
+
+
+
+{% block content %}
+{% if checkouts %}
+{% if error_message %}
+<div class="ui negative message">
+  <div class="header">
+    จำนวนที่เลือกมากกว่าจำนวนอุปกรณ์ที่มี
+  </div>
+</div>
+{% endif %}
+<div class="ui secondary menu">
+  <p style="margin-left:auto;">
+    <a class="ui positive button"
+      href="{{ url_for('approve_orders.admin_approve',order_id=order.id, organization_id=organization.id)}}"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+      <i class="check icon"></i>อนุมัติการเบิกอุปกรณ์</a>
+    <a class="ui negative button"
+      href="{{ url_for('approve_orders.admin_denied',order_id=order.id, organization_id=organization.id)}}"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+      <i class="times icon"></i>ไม่อนุมัติการเบิกอุปกรณ์</a>
+  </p>
+</div>
+<div style="padding-bottom: 1em ;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>รูปอุปกรณ์</th>
+        <th>วันที่นำอุปกรณ์ออก</th>
+        <th>ชื่ออุปกรณ์</th>
+        <th>จำนวนชุด</th>
+        <th>จำนวนชิ้น</th>
+        <th>รวม</th>
+        <th>จำนวนที่มีในคลัง</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for checkout in paginated_checkouts.items %}
+      <tr>
+        <td data-label="Image" class="center aligned">
+          <div>
+            {% if not checkout.item.image %}
+            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+            {% else %}
+            <img
+              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+              width="70">
+            {% endif %}
+          </div>
+        </td>
+        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Item">{{ checkout.item.name }}</td>
+        <td data-label="Set">{{ checkout.set_ }}</td>
+        <td data-label="Piece">{{ checkout.piece }}</td>
+        <td data-label="Quantity">{{ checkout.quantity }}</td>
+        {% if checkout.quantity > checkout.item.get_amount_pieces() %}
+        <td data-label="Status" class="red">
+          <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
+        </td>
+        {% else %}
+        <td data-label="Status" class="green">
+          <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% set params=dict(request.args) %}
+  {% if 'page' in params %}
+  {% set _dummy=params.pop('page') %}
+  {% endif %}
+  {% if paginated_checkouts.pages != 1 %}
+  <div class="ui grid">
+    <div class="column row">
+      <div class="center aligned column">
+        {{paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
+
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(checkout_item_id) {
+    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}
