@@ -52,6 +52,7 @@ def index():
 @acl.organization_roles_required("admin", "endorser", "staff")
 def add():
     organization_id = request.args.get("organization_id")
+    error_message = request.args.get("error_message")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
@@ -70,10 +71,18 @@ def add():
             "/lost_breaks/add.html",
             form=form,
             organization=organization,
+            error_message=error_message,
         )
-
-    quantity = form.quantity.data
     item = models.Item.objects(id=form.item.data).first()
+
+    quantity = (form.set_.data * item.piece_per_set) + form.piece.data
+    # print("--->", quantity, item.get_amount_pieces())
+    if quantity > item.get_amount_pieces():
+        return redirect(
+            url_for(
+                "lost_breaks.add", organization_id=organization_id, error_message=True
+            )
+        )
     inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
         lost_break_item = models.LostBreakItem()
@@ -145,9 +154,19 @@ def edit(lost_break_item_id):
         ).first()
         return_inventory.remain += lost_break_item.quantity
         return_inventory.save()
-
-    quantity = form.quantity.data
     item = models.Item.objects(id=form.item.data).first()
+
+    quantity = (form.set_.data * item.piece_per_set) + form.piece.data
+    # print("--->", quantity, item.get_amount_pieces())
+    if quantity > item.get_amount_pieces():
+        return redirect(
+            url_for(
+                "lost_breaks.edit",
+                organization_id=organization_id,
+                lost_break_item_id=lost_break_item_id,
+                error_message=True,
+            )
+        )
     inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
         lost_break_item.user = current_user._get_current_object()
