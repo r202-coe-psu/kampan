@@ -53,7 +53,11 @@ class Item(me.Document):
             sumary = sum([inventory.remain for inventory in inventories])
 
             if self.item_format == "one to many":
-                return f"{sumary // self.piece_per_set} {self.set_unit} {sumary % self.piece_per_set} {self.piece_unit}"
+                return f"{sumary // self.piece_per_set} {self.set_unit} " + (
+                    (str(sumary % self.piece_per_set) + " " + str(self.piece_unit))
+                    if (sumary % self.piece_per_set) != 0
+                    else ""
+                )
             else:
                 return f"{sumary // self.piece_per_set} {self.set_unit}"
         return f"0 {self.set_unit}"
@@ -63,6 +67,13 @@ class Item(me.Document):
         if inventories:
             sumary = sum([inventory.remain for inventory in inventories])
             return sumary // self.piece_per_set
+        return 0
+
+    def get_amount_pieces(self):
+        inventories = models.Inventory.objects(item=self, status="active")
+        if inventories:
+            sumary = sum([inventory.remain for inventory in inventories])
+            return sumary
         return 0
 
     def get_last_price(self):
