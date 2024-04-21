@@ -131,7 +131,10 @@ def profile(user_id):
 @module.route("/accounts")
 @login_required
 def index():
-    organization = current_user.get_current_organization()
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     biography = ""
     if current_user.biography:
         biography = markdown.markdown(current_user.biography)
