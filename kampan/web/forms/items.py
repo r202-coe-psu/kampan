@@ -15,8 +15,9 @@ BaseItemForm = model_form(
         "created_by",
         "created_date",
         "updated_date",
-        "รูปภาพ",
+        "image",
         "last_updated_by",
+        "notification_status",
     ],
     field_args={
         "name": {"label": "ชื่อ"},
