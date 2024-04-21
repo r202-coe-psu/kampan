@@ -15,6 +15,8 @@ BaseInventoryForm = model_form(
         "expiration_date",
         "created_by",
         "remain",
+        "status",
+        "quantity",
     ],
     field_args={
         # "item": {
@@ -26,7 +28,7 @@ BaseInventoryForm = model_form(
             "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
         },
         "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
-        "quantity": {"label": "จำนวนทั้งหมด"},
+        "set_": {"label": "จำนวนชุด"},
         "price": {"label": "ราคา (ชุดละ)"},
     },
 )
