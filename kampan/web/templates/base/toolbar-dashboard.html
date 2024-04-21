@@ -22,7 +22,8 @@
     แดชบอร์ด
   </div>
 
-  <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}"><i class="icon dashboard"></i>แดชบอร์ด</a>
+  <a class="item" href="{{ url_for('dashboard.daily_dashboard', organization_id = organization.id) }}"><i
+      class="icon dashboard"></i>แดชบอร์ด</a>
   <a class="item" href="{{ url_for('notifications.index', organization_id = organization.id) }}">การแจ้งเตือน<i
       class="bell icon"></i></a>
 
