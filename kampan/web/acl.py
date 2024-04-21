@@ -48,20 +48,23 @@ def organization_roles_required(*roles):
             except:
                 organization_id = request.args.get("organization_id")
             try:
+                list_roles = list(roles)
                 organization = models.Organization.objects.get(id=organization_id)
-                organization_roles = models.OrganizationUserRole.objects(
-                    user=current_user._get_current_object(),
-                    organization=organization,
-                    status="active",
-                    role__in=roles,
-                )
+                for role in list_roles:
+                    organization_roles = models.OrganizationUserRole.objects(
+                        user=current_user._get_current_object(),
+                        organization=organization,
+                        status="active",
+                        role=role,
+                    ).first()
+                    if organization_roles:
+                        break
             except:
+
                 organization_roles = None
                 raise Forbidden()
-
             if organization_roles:
                 return func(*args, **kwargs)
-
             raise Forbidden()
 
         return wrapped
