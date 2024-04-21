@@ -10,6 +10,7 @@
 
 {% block content %}
 {% if checkouts %}
+{% if order.approval_status != 'approved' and order.approval_status != "denied" %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
     <a class="ui icon button"
@@ -19,6 +20,8 @@
     </a>
   </p>
 </div>
+{% endif %}
+
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -29,8 +32,11 @@
         {#<th>คลังอุปกรณ์</th>#}
         <th>จำนวนชุด</th>
         <th>จำนวนชิ้น</th>
+        <th>รวม</th>
         {#<th>ราคา (ชิ้นละ)</th>#}
+        {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
         <th>แก้ไข/ลบข้อมูล</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -51,16 +57,18 @@
         <td data-label="Item">{{ checkout.item.name }}</td>
         {#<td data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
         <td data-label="Set">{{ checkout.set_ }}</td>
+        <td data-label="Piece">{{ checkout.piece }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         {#<td data-label="Price">{{ checkout.price }}</td>#}
+        {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
         <td>
           <a class="ui icon button"
             href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
             <i class="edit icon"></i>
           </a>
-          <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-            onclick="showDeleteModal('{{ checkout.id }}')">
+          <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+            style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
             <i class="trash icon"></i>
           </a>
           <div class="ui modal {{checkout.id}}">
@@ -84,6 +92,7 @@
             </div>
           </div>
         </td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>
