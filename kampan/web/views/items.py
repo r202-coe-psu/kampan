@@ -142,11 +142,11 @@ def edit(item_id):
     # print("=======>", form.item_format.data)
     form.populate_obj(item)
     if form.item_format.data == "one to one":
-        item.item.item_format == "one to one"
+        item.item_format == "one to one"
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
     else:
-        item.item.item_format == "one to many"
+        item.item_format == "one to many"
         item.piece_per_set = form.piece_per_set.data
         item.piece_unit = form.piece_unit.data
     item.last_updated_by = current_user._get_current_object()
