@@ -22,7 +22,7 @@ BaseItemForm = model_form(
         "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
         "categories": {"label": "หมวดหมู่"},
-        "minimum": {"label": "จำนวนขั้นต่ำ -- (แจ้งเตือน)"},
+        "minimum": {"label": "จำนวนชุดขั้นต่ำ (แจ้งเตือน)"},
         "barcode_id": {"label": "บาร์โค้ด"},
         "set_": {"label": "จำนวน (ชุด)"},
         "set_unit": {"label": "หน่วยนับใหญ่"},
