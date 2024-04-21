@@ -41,7 +41,7 @@
         {{ form.set_.label }}
         {{ form.set_ }}
       </div>
-      <div class="field disabled" id="set_unit_field">
+      <div class="field" id="set_unit_field">
         {{ form.set_unit.label }}
         {{ form.set_unit }}
       </div>
@@ -52,20 +52,16 @@
         {{ form.piece_per_set.label }}
         {{ form.piece_per_set }}
       </div>
-      <div class="field {{ 'disabled' if not item.item_format == 'one to many' else ''}}" id="piece_unit_field">
-        {{ form.piece_unit.label }}
-        {{ form.piece_unit }}
-      </div>
       {% else %}
       <div class="field " id="piece_per_set_field">
         {{ form.piece_per_set.label }}
         {{ form.piece_per_set }}
       </div>
-      <div class="field " id="piece_unit_field">
+      {% endif %}
+      <div class="field" id="piece_unit_field">
         {{ form.piece_unit.label }}
         {{ form.piece_unit }}
       </div>
-      {% endif %}
     </div>
 
 
@@ -94,9 +90,6 @@
     var value = document.getElementById("item_format").value;
     var element_piece_per_set = document.getElementById("piece_per_set_field");
     var element_piece_unit = document.getElementById("piece_unit_field");
-    var element_set = document.getElementById("set_field");
-    var element_set_unit = document.getElementById("set_unit_field");
-
 
     if (value == "one to one") {
       element_piece_per_set.classList.add("disabled");
