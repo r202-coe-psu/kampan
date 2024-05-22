@@ -3,9 +3,9 @@
 
 <div class="active section">
   {% if 'edit' in request.path %}
-  {% set head = "แก้ไขอุปกรณ์"%}
+  {% set head = "แก้ไขอุปกรณ์ที่ลงทะเบียน"%}
   {% else %}
-  {% set head = "เพิ่มอุปกรณ์"%}
+  {% set head = "ลงทะเบียนอุปกรณ์"%}
   {% endif %}
 </div>
 {% block title %}{{ head }}{% endblock %}

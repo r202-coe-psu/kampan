@@ -9,7 +9,7 @@ from kampan import models
 INVENTORY_HEADER = [
     "บาร์โค้ด",
     "ชื่ออุปกรณ์",
-    "จำนวน (ชุด)",
+    "จำนวน (หน่วยนับใหญ่)",
     "ราคา (ชุดละ)",
     "คลังอุปกรณ์",
     "ตำแหน่ง (คำอธิบาย)",
@@ -53,9 +53,9 @@ def process_inventory_engagement(inventory_engagement_file):
         ).first()
 
         if inventory:
-            inventory.set_ = row["จำนวน (ชุด)"]
-            inventory.quantity = row["จำนวน (ชุด)"] * item.piece_per_set
-            inventory.remain = row["จำนวน (ชุด)"] * item.piece_per_set
+            inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
+            inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
+            inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
             inventory.price = row["ราคา (ชุดละ)"]
             inventory.warehouse = warehouse
             inventory.position = position
@@ -68,9 +68,9 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.organization = organization
             inventory.item = item
             inventory.position = position
-            inventory.set_ = row["จำนวน (ชุด)"]
-            inventory.quantity = row["จำนวน (ชุด)"] * item.piece_per_set
-            inventory.remain = row["จำนวน (ชุด)"] * item.piece_per_set
+            inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
+            inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
+            inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
             inventory.price = row["ราคา (ชุดละ)"]
             inventory.created_by = current_user._get_current_object()
 
@@ -146,7 +146,7 @@ def validate_inventory_engagement(inventory_engagement_file):
     if invalide_column:
         return invalide_column
 
-    invalid_int_value = check_int_values(df["จำนวน (ชุด)"])
+    invalid_int_value = check_int_values(df["จำนวน (หน่วยนับใหญ่)"])
     if invalid_int_value:
         return invalid_int_value
 

@@ -23,11 +23,11 @@ BaseItemForm = model_form(
         "name": {"label": "ชื่อ"},
         "description": {"label": "คำอธิบาย"},
         "categories": {"label": "หมวดหมู่"},
-        "minimum": {"label": "จำนวนชุดขั้นต่ำ (แจ้งเตือน)"},
+        "minimum": {"label": "จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"},
         "barcode_id": {"label": "บาร์โค้ด"},
-        "set_": {"label": "จำนวน (ชุด)"},
+        "set_": {"label": "จำนวน (หน่วยนับใหญ่)"},
         "set_unit": {"label": "หน่วยนับใหญ่"},
-        "piece_per_set": {"label": "จำนวน (ชิ้นต่อชุด)"},
+        "piece_per_set": {"label": "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"},
         "piece_unit": {"label": "หน่วยนับเล็ก"},
     },
 )
@@ -37,7 +37,7 @@ class ItemForm(BaseItemForm):
     # categories = TagListField("หมวดหมู่", validators=[validators.Length(min=1)])
     img = fields.FileField(
         "รูปภาพ",
-        validators=[FileAllowed(["png", "jpg"], "อณุญาตเฉพาะไฟล์ png และ jpg")],
+        validators=[FileAllowed(["png", "jpg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
     item_format = fields.SelectField("รูปแบบอุปกรณ์", choices=models.items.ITEM_FORMAT)
 
@@ -45,3 +45,10 @@ class ItemForm(BaseItemForm):
 class SearchItemForm(FlaskForm):
     item = fields.SelectField("อุปกรณ์", validate_choice=False)
     categories = fields.SelectField("หมวดหมู่", validate_choice=False)
+
+
+class UploadFileForm(FlaskForm):
+    upload_file = fields.FileField(
+        "อัปโหลดไฟล์",
+        validators=[FileAllowed(["xlsx"], "อนุญาตเฉพาะไฟล์ xlsx")],
+    )

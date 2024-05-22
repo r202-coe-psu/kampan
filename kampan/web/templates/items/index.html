@@ -6,7 +6,11 @@
 {% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
 {% block breadcrumbs %}
 <a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
-  เพิ่มอุปกรณ์
+  ลงทะเบียนอุปกรณ์
+</a>
+<a class="ui primary button" href="{{ url_for('items.upload_file', organization_id=organization.id) }}">
+  <i class="file upload icon"></i>
+  ลงทะเบียนอุปกรณ์แบบหลายรายการ
 </a>
 {% endblock %}
 

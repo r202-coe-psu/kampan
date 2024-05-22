@@ -9,7 +9,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from flask_mongoengine import Pagination
 import mongoengine as me
 
@@ -52,6 +52,36 @@ def index():
         form=form,
         organization=organization,
     )
+
+
+@module.route("/upload_file_items", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser", "staff")
+def upload_file():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    form = forms.items.UploadFileForm()
+    upload_errors = {
+        "headers": "ลงทะเบียนอุปกรณ์",
+        "errors": None,
+    }
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/items/upload_file.html",
+            organization=organization,
+            upload_errors=upload_errors,
+            form=form,
+        )
+
+
+@module.route("/downlaod_template_items_file")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def download_template_items_file():
+    organization_id = request.args.get("organization_id")
+    response = utils.items.get_template_items_file()
+    return response
 
 
 @module.route("/add", methods=["GET", "POST"])

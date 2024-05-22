@@ -290,8 +290,8 @@ def upload_file_inventory_info(item_register_id):
     )
 
 
-@module.route("/dowload_template_inventory_file")
+@module.route("/download_template_inventory_file")
 @acl.organization_roles_required("admin", "endorser", "staff")
-def dowload_template_inventory_file():
+def download_template_inventory_file():
     response = utils.inventories.get_template_inventory_file()
     return response
