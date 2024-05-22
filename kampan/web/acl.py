@@ -50,15 +50,12 @@ def organization_roles_required(*roles):
             try:
                 list_roles = list(roles)
                 organization = models.Organization.objects.get(id=organization_id)
+
                 for role in list_roles:
-                    organization_roles = models.OrganizationUserRole.objects(
-                        user=current_user._get_current_object(),
-                        organization=organization,
-                        status="active",
-                        role=role,
-                    ).first()
-                    if organization_roles:
-                        break
+                    if role in current_user.get_current_organization_roles():
+                        return func(*args, **kwargs)
+
+                raise Forbidden()
             except:
 
                 organization_roles = None

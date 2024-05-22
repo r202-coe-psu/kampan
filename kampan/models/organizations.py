@@ -15,7 +15,9 @@ class OrganizationUserRole(me.Document):
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
     user = me.ReferenceField("User", dbref=True, required=True)
-    role = me.StringField(choices=ORGANIZATION_ROLES, default="staff", required=True)
+    roles = me.ListField(
+        me.StringField(choices=ORGANIZATION_ROLES), default=["staff"], required=True
+    )
 
     last_ip_address = me.StringField()
     status = me.StringField(default="active")

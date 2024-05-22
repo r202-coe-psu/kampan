@@ -61,7 +61,7 @@ class User(me.Document, UserMixin):
             return True
 
         for role in roles:
-            if role in self.get_current_organization_role():
+            if role in self.get_current_organization_roles():
                 return True
         return False
 
@@ -89,24 +89,21 @@ class User(me.Document, UserMixin):
 
         return self.user_setting.current_organization
 
-    def get_current_organization_role(self):
+    def get_current_organization_roles(self):
         from . import OrganizationUserRole
 
         try:
-            return [
-                org_user.role
-                for org_user in OrganizationUserRole.objects(
-                    user=self,
-                    organization=self.get_current_organization(),
-                    status="active",
-                )
-            ]
-
+            org_user = OrganizationUserRole.objects(
+                user=self,
+                organization=self.get_current_organization(),
+                status="active",
+            ).first()
+            return org_user.roles
         except:
             return []
 
     def is_admin_current_organization(self):
-        if "admin" in self.get_current_organization_role() or "admin" in self.roles:
+        if "admin" in self.get_current_organization_roles() or "admin" in self.roles:
             return True
 
         return

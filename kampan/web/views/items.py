@@ -28,23 +28,26 @@ def index():
     form = forms.items.SearchItemForm()
     items = models.Item.objects(status__in=["active", "pending"])
 
-    form.item.choices = [
-        (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    form.item.choices = [("", "เลือกอุปกรณ์")] + [
+        (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
-
-    form.categories.choices = [
-        (item.categories, f"{''.join(item.categories)}") for item in items
+    set_categories = set([f"{''.join(item.categories)}" for item in items])
+    form.categories.choices = [("", "หมวดหมู่")] + [
+        (f"{category}", f"{category}") for category in set_categories
     ]
     if not form.validate_on_submit():
         print(form.errors)
-    if form.item.data != None:
+    if form.item.data:
         items = items.filter(id=form.item.data)
-    if form.categories.data != None:
+    if form.categories.data:
         items = items.filter(categories=form.categories.data)
-    print(form.data)
+    # print(form.data)
 
     page = request.args.get("page", default=1, type=int)
-    paginated_items = Pagination(items, page=page, per_page=24)
+    try:
+        paginated_items = Pagination(items, page=page, per_page=24)
+    except:
+        paginated_items = Pagination(items, page=1, per_page=24)
     return render_template(
         "/items/index.html",
         paginated_items=paginated_items,
@@ -62,9 +65,10 @@ def upload_file():
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
+    errors = request.args.get("errors")
     upload_errors = {
         "headers": "ลงทะเบียนอุปกรณ์",
-        "errors": None,
+        "errors": errors,
     }
     if not form.validate_on_submit():
         print(form.errors)
@@ -74,6 +78,25 @@ def upload_file():
             upload_errors=upload_errors,
             form=form,
         )
+
+    if form.upload_file.data:
+        errors = utils.items.validate_items_engagement(form.upload_file.data)
+        if not errors:
+            completed = utils.items.process_items_file(
+                form.upload_file.data, organization, current_user
+            )
+    print("---->", errors)
+    if errors:
+        return redirect(
+            url_for("items.upload_file", organization_id=organization_id, errors=errors)
+        )
+    print("---->", errors)
+    return redirect(
+        url_for(
+            "items.index",
+            organization_id=organization_id,
+        )
+    )
 
 
 @module.route("/downlaod_template_items_file")
@@ -103,7 +126,7 @@ def add():
     item = models.Item(
         created_by=current_user._get_current_object(),
     )
-    print("->", form.categories.data)
+    # print("->", form.categories.data)
     form.populate_obj(item)
 
     if form.img.data:
@@ -216,6 +239,26 @@ def confirm(item_id):
     item = models.Item.objects().get(id=item_id)
     item.status = "active"
     item.save()
+
+    return redirect(
+        url_for(
+            "items.index",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/confirm_all")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def confirm_all():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    items = models.Item.objects(status="pending", organization=organization)
+    for item in items:
+        item.status = "active"
+        item.save()
 
     return redirect(
         url_for(

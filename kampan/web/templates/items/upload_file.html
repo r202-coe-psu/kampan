@@ -21,7 +21,7 @@
 {% if upload_errors.errors %}
 <div class="ui modal upload_errors">
   <div class="header">
-    ไฟล์นำเข้าอุปกรณ์มีปัญหา
+    เกิดปัญหา
   </div>
   <div class="content red">
     <span class="ui error text">
@@ -46,6 +46,13 @@
 <div>
 
   <form class="ui form" method="POST" enctype="multipart/form-data">
+    {#}
+    <div style="padding-bottom: 1rem;">
+      <p> คอลัมน์ที่สำคัญในตารางที่จำเป็นต้องกรอกได้แก่
+        <span class="ui red text"> ชื่อ บาร์โค๊ด และหมวดหมู่ </span>
+      </p>
+    </div>
+    {#}
     {{ form.hidden_tag() }}
     {{ renderer.render_fileinput(form.upload_file) }}
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>

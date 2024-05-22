@@ -228,10 +228,6 @@ def upload_file_inventory_info(item_register_id):
     ).first()
     form = forms.inventories.UploadInventoryFileForm()
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
 
     upload_completed = False
     upload_errors = {

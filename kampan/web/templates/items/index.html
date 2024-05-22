@@ -5,17 +5,53 @@
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
-  ลงทะเบียนอุปกรณ์
-</a>
-<a class="ui primary button" href="{{ url_for('items.upload_file', organization_id=organization.id) }}">
-  <i class="file upload icon"></i>
-  ลงทะเบียนอุปกรณ์แบบหลายรายการ
-</a>
+<div class="ui secondary menu">
+  <div class="left item" style="gap: 0.5rem;">
+    <a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
+      <i class="plus circle icon"></i>
+      ลงทะเบียนอุปกรณ์
+    </a>
+    <a class="ui primary button" href="{{ url_for('items.upload_file', organization_id=organization.id) }}">
+      <i class="file upload icon"></i>
+      ลงทะเบียนอุปกรณ์แบบหลายรายการ
+    </a>
+  </div>
+  {#}
+  <div class="right item">
+    <a class="ui positive button" onclick="showDeleteModal('confirmAll')">
+      บันทึก
+    </a>
+    <div class="ui modal confirmAll">
+      <div class="header">
+        บันทึกอุปกรณ์
+      </div>
+      <div class="content">
+        <p>ต้องการบันทึกอุปกรณ์
+          <b>ทั้งหมด</b> หรือไม่?
+        </p>
+        <span class="ui error text">คำเตือน : สามารถยืนยันอุปกรณ์ได้ครั้งเดียวเท่านั้น
+          และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+          *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
+      </div>
+      <div class="actions">
+        <button class="ui black deny button">
+          ยกเลิก
+        </button>
+        <a class="ui negative right labeled icon button"
+          href="{{ url_for('items.confirm_all', organization_id=organization.id) }}">
+          ยืนยัน
+          <i class="checkmark icon"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  {#}
+
+</div>
 {% endblock %}
 
 {% block content %}
-<form method="post">
+<form method="post" style="padding-bottom: 0.5rem;">
   <div class="ui secondary menu">
     {{form.hidden_tag()}}
     <p style="margin-left:auto;">
@@ -29,7 +65,6 @@
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
-
 </form>
 {% if items %}
 <div class="ui four cards">
@@ -119,11 +154,15 @@
   </div>
   {% endfor %}
 </div>
+{% set params=dict(request.args) %}
+{% if 'page' in params %}
+{% set _dummy=params.pop('page') %}
+{% endif %}
 {% if paginated_items.pages != 1 %}
 <div class="ui grid">
   <div class="column row">
     <div class="center aligned column">
-      {{paginated.render_pagination(paginated_items,"items.index")}}
+      {{paginated.render_pagination(paginated_items,"items.index", params)}}
     </div>
   </div>
 </div>
