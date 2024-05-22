@@ -10,8 +10,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<div class="active section">เพิ่ม</div>
+<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้าทั้งหมด</a>
+<i class="right angle icon divider"></i>
+<div class="active section">ลงทะเบียนร้านค้า</div>
 {% endblock %}
 
 {% block content %}
@@ -20,13 +21,21 @@
 
     {{ form.hidden_tag() }}
     <div class="two fields">
-      {{ renderer.render_field(form.name) }}
+      <div class="field">
+        {{ form.supplier_type.label }}
+        {{ form.supplier_type(class='ui dropdown', onchange="check_item_format()") }}
+      </div>
       {{ renderer.render_field(form.tax_id) }}
+    </div>
+    <div class="two fields">
+      {{ renderer.render_field(form.company_name) }}
+      {{ renderer.render_field(form.person_name) }}
     </div>
     {{ renderer.render_field(form.address) }}
     {{ renderer.render_field(form.description) }}
     <div class="two fields">
-      {{ renderer.render_field(form.contact) }}
+      {{ renderer.render_field(form.person_phone) }}
+      {{ renderer.render_field(form.company_phone) }}
       {{ renderer.render_field(form.email) }}
     </div>
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>

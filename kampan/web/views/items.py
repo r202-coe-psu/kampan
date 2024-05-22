@@ -85,12 +85,18 @@ def upload_file():
             completed = utils.items.process_items_file(
                 form.upload_file.data, organization, current_user
             )
-    print("---->", errors)
-    if errors:
+        else:
+            return redirect(
+                url_for(
+                    "items.upload_file", organization_id=organization_id, errors=errors
+                )
+            )
+    else:
         return redirect(
-            url_for("items.upload_file", organization_id=organization_id, errors=errors)
+            url_for(
+                "items.upload_file", organization_id=organization_id, errors="ไม่พบไฟล์"
+            )
         )
-    print("---->", errors)
     return redirect(
         url_for(
             "items.index",

@@ -24,7 +24,7 @@
     <div class="content"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
-        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.name }}
+        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.get_supplier_name() }}
           <a style="margin-right: 10px;" href="{{ url_for('admin.suppliers.edit', supplier_id=supplier.id) }}">
             <i class="edit icon" style="color: Orange;"></i>
           </a>
@@ -37,7 +37,7 @@
                 <td>{{ supplier.address }}</td>
               </tr>
               <tr>
-                <td style="font-weight: bold;">เลขกำกับภาษี:</td>
+                <td style="font-weight: bold;">เลขผู้เสียภาษี:</td>
                 <td>{{ supplier.tax_id }}</td>
               </tr>
               <tr>
@@ -69,7 +69,7 @@
             </div>
             <div class="content">
               <p>ต้องการลบร้านค้า
-                <b>{{ supplier.name }}</b>
+                <b>{{ supplier.get_supplier_name() }}</b>
               </p>
             </div>
             <div class="actions">

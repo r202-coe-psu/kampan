@@ -9,18 +9,22 @@ BaseSupplierForm = model_form(
     models.Supplier,
     FlaskForm,
     exclude=[
-        "phone",
         "last_modifier",
         "created_date",
         "updated_date",
+        "status",
+        "organization",
     ],
     field_args={
-        "name": {"label": "ชื่อร้าน"},
+        "person_name": {"label": "ชื่อบุคคล"},
+        "company_name": {"label": "ชื่อร้าน/บริษัท"},
         "address": {"label": "ที่อยู่"},
         "description": {"label": "คำอธิบาย"},
-        "tax_id": {"label": "เลขกำกับภาษี"},
-        "contact": {"label": "ช่องทางการติดต่อ"},
+        "tax_id": {"label": "เลขผู้เสียภาษี"},
+        "person_phone": {"label": "เบอร์โทรมือถือ"},
+        "company_phone": {"label": "เบอร์โทรร้านค้า/บริษัท"},
         "email": {"label": "อีเมลล์"},
+        "supplier_type": {"label": "ประเภทผู้จัดหาสินค้า"},
     },
 )
 

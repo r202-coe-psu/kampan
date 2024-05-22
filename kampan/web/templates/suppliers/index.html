@@ -5,14 +5,14 @@
 {% block dashboard_title %}ร้านค้า{% endblock %}
 
 {% block breadcrumbs %}
-{% if request.endpoint == 'suppliers.index' %}
 <a class="ui primary button" href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
+  <i class="plus circle icon"></i>
   เพิ่มร้านค้า
 </a>
-{% else %}
-<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้า</a>
-<div class="divider"> / </div>
-{% endif %}
+<a class="ui primary button" href="{{ url_for('suppliers.upload_file', organization_id=organization.id) }}">
+  <i class="file upload icon"></i>
+  ลงทะเบียนร้านค้าแบบหลายรายการ
+</a>
 {% endblock %}
 
 {% block content %}
@@ -24,11 +24,8 @@
     <div class="content"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
-        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.name }}
-          <a style="margin-right: 10px;"
-            href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
-            <i class="edit icon" style="color: Orange;"></i>
-          </a>
+        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.get_supplier_name() }}
+
         </div>
         <div class="meta" style="font-size: 1.2em; margin-top: 10px;">
           <table>
@@ -38,7 +35,7 @@
                 <td>{{ supplier.address }}</td>
               </tr>
               <tr>
-                <td style="font-weight: bold;">เลขกำกับภาษี:</td>
+                <td style="font-weight: bold;">เลขผู้เสียภาษี:</td>
                 <td>{{ supplier.tax_id }}</td>
               </tr>
               <tr>
@@ -60,7 +57,11 @@
         <div class="description" style="font-size: 1.2em;">
           <p>{{ supplier.description }}</p>
         </div>
-        <div class="actions" style="margin-top: 50px; text-align: right;">
+        <div class="" style="margin-top: 50px; text-align: right; ">
+          <a class="ui primary button"
+            href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
+            <div style="font-size: 1.2em;"> <i class="edit icon"></i> แก้ไข </div>
+          </a>
           <a class="ui red button" onclick="showDeleteModal('{{ supplier.id }}')">
             <div style="font-size: 1.2em;"><i class="trash icon"></i> ลบ </div>
           </a>
@@ -70,7 +71,7 @@
             </div>
             <div class="content">
               <p>ต้องการลบร้านค้า
-                <b>{{ supplier.name }}</b>
+                <b>{{ supplier.get_supplier_name() }}</b>
               </p>
             </div>
             <div class="actions">

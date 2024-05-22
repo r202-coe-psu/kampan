@@ -1,0 +1,35 @@
+{% extends '/suppliers/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+เพิ่มร้านค้า
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้าทั้งหมด</a>
+<i class="right angle icon divider"></i>
+<div class="active section">ลงทะเบียนร้านค้า</div>
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary menu">
+  <div class="right item">
+    <a class="ui primary button"
+      href="{{ url_for('suppliers.download_template_suppliers_file', organization_id=organization.id) }}">
+      <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนร้านค้า</a>
+  </div>
+</div>
+
+<div>
+  <form class="ui form" method="POST">
+
+    {{ form.hidden_tag() }}
+    {{ renderer.render_fileinput(form.upload_file) }}
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}

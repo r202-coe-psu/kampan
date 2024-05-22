@@ -54,12 +54,15 @@
       {{ row_detail(item.get_items_quantity() ) }}
       {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
       {{ row_detail(item.minimum) }}
+
+      {% if current_user.has_organization_roles("admin") %}
       {{ row_detail("การแจ้งแตือน :") }}
       <div class="column">
         <a href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}"
           class="ui button {{ 'positive' if item.notification_status else 'negative' }}">{{ 'เปิดการแจ้งเตือน' if
           item.notification_status else 'ปิดการแจ้งเตือน' }}</a>
       </div>
+      {% endif %}
       {{ row_detail("วันที่สร้าง :") }}
       {{ row_detail(item.created_date.strftime("%d/%m/%Y")) }}
       {{ row_detail("ลงทะเบียนโดย :") }}

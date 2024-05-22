@@ -6,7 +6,13 @@ import json
 from flask import url_for, request
 from kampan import models
 
-ORGANIZATION_ROLES = [("staff", "Staff"), ("endorser", "Endorser"), ("admin", "Admin")]
+ORGANIZATION_ROLES = [
+    ("staff", "พนักงาน"),
+    ("endorser", "ผู้มีสิทธิ์อนุญาต"),
+    ("supervisor", "หัวหน้าแผนก"),
+    ("supervisor supplier", "หัวหน้าพัสดุ"),
+    ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
+]
 
 
 class OrganizationUserRole(me.Document):

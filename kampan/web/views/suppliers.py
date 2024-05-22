@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 import mongoengine as me
 from flask_mongoengine import Pagination
 
@@ -30,6 +30,66 @@ def index():
         paginated_suppliers=paginated_suppliers,
         organization=organization,
     )
+
+
+@module.route("/upload_file_su", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser", "staff")
+def upload_file():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    form = forms.items.UploadFileForm()
+    errors = request.args.get("errors")
+    upload_errors = {
+        "headers": "ลงทะเบียนอุปกรณ์",
+        "errors": errors,
+    }
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/suppliers/upload_file.html",
+            organization=organization,
+            upload_errors=upload_errors,
+            form=form,
+        )
+
+    if form.upload_file.data:
+        errors = utils.items.validate_items_engagement(form.upload_file.data)
+        if not errors:
+            completed = utils.items.process_items_file(
+                form.upload_file.data, organization, current_user
+            )
+        else:
+            return redirect(
+                url_for(
+                    "suppliers.upload_file",
+                    organization_id=organization_id,
+                    errors=errors,
+                )
+            )
+    else:
+        return redirect(
+            url_for(
+                "suppliers.upload_file",
+                organization_id=organization_id,
+                errors="ไม่พบไฟล์",
+            )
+        )
+    return redirect(
+        url_for(
+            "suppliers.index",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/download_template_suppliers_file")
+@acl.organization_roles_required("admin", "endorser", "staff")
+def download_template_suppliers_file():
+    organization_id = request.args.get("organization_id")
+    response = utils.suppliers.get_template_supplier_file()
+    return response
 
 
 @module.route("/add", methods=["GET", "POST"])

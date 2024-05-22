@@ -39,7 +39,7 @@
         <tr>
           <td data-label="Item Name">{{ item.receipt_id }}</td>
           <td data-label="Warehouse">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.supplier.name }}</td>
+          <td data-label="Quantity">{{ item.supplier.get_supplier_name() }}</td>
           <td data-label="User">{{ item.created_by.get_name() }}</td>
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
           <td class="{{ 'green' if item.status == 'active' else 'yellow'}}">

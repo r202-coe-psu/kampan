@@ -51,7 +51,7 @@
       <b>{{ item_register.description }}</b>
       <br />
       ร้านค้า :
-      <b>{{ item_register.supplier.name }}</b>
+      <b>{{ item_register.supplier.get_supplier_name() }}</b>
       <br />
       ผู้ลงทะเบียนอุปกรณ์ :
       <b>{{ item_register.created_by.get_name() }}</b>
