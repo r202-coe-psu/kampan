@@ -30,7 +30,7 @@
   <a class="ui primary labeled icon button"
     href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
     <i class="edit icon"></i>
-    {{("Edit Template")}}
+    แก้ไขรูปแบบอีเมล
   </a>
 
   {% endif %}
@@ -75,10 +75,10 @@
         </div>
       </div>
       {% else %}
-      You don't have <b>Email Template</b> please
+      คุณไม่มี <b>รูปแบบอีเมล</b> กรุณา
       <a href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}"
         style="cursor: pointer">
-        Create Email Template
+        สร้างรูปแบบอีเมล
       </a>.
       {% endif %}
     </div>
@@ -86,7 +86,7 @@
 
   <div class="ui info message segment">
     <div class="ui compact header">
-      {{("List of text formats available for email templates.")}}
+      รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
     </div>
     <div class="ui relaxed list">
       <div class="item">
