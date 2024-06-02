@@ -26,6 +26,7 @@
   <thead>
     <tr>
       <th>ชื่อ</th>
+      <th>ประเภท</th>
       <th>หัวข้อ</th>
       <th>ค่าเริ่มต้น</th>
       <th>แก้ไข</th>
@@ -35,7 +36,8 @@
     {% for email_template in email_templates %}
     <tr>
       <td data-label="Name">{{ email_template.name }}</td>
-      <td data-label="Name">{{ email_template.subject }}</td>
+      <td data-label="Type">{{ email_template.get_type_display() }}</td>
+      <td data-label="Subject">{{ email_template.subject }}</td>
       <td data-label="Default">{{ email_template.is_default }}
         <a style="cursor: pointer;" data-content="change defualt setting"
           onclick="$('.modal.set-default.{{ email_template.id }}').modal('show')">

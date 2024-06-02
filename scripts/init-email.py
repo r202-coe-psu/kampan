@@ -28,7 +28,7 @@ def create_user_email_template():
                 subject="ขอเบิกอุปกรณ์",
                 body="""เรียน  {{ endorser_name }} 
 ข้าพเจ้า {{ user_name }} แผนก{{ division_name }}  ขอแจ้งความประสงค์เพื่อเบิกอุปกรณ์
-เหตุผลการเบิก:  {{ order_desscription }}
+เหตุผลการเบิก:  {{ order_objective }}
 ตรวจสอบรายละเอียดที่: {{ endorsement_url }}
 
 
