@@ -10,7 +10,7 @@ BaseOrderItemForm = model_form(
     FlaskForm,
     exclude=["created_date", "updated_date", "approval_status", "status", "created_by"],
     field_args={
-        "description": {"label": "คำอธิบาย"},
+        "description": {"label": "วัตถุประสงค์"},
     },
 )
 
