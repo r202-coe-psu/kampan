@@ -58,7 +58,7 @@ def validate_supplier_engagement(file):
         if pd.isnull(row["ประเภทผู้จัดหาสินค้า"]):
             return f"ไม่พบประเภทผู้จัดหาสินค้าในบรรทัดที่ {idx+2}"
 
-        if row["ประเภทผู้จัดหาสินค้า"] not in [
+        if row["ประเภทผู้จัดหาสินค้า"].strip() not in [
             "person",
             "market",
             "incorporated",
@@ -85,21 +85,28 @@ def process_supplier_file(file, organization, user):
 
         supplier = models.Supplier()
         supplier.company_name = (
-            row["ชื่อร้าน/บริษัท"] if not pd.isnull(row["ชื่อร้าน/บริษัท"]) else ""
+            str(row["ชื่อร้าน/บริษัท"]) if not pd.isnull(row["ชื่อร้าน/บริษัท"]) else ""
         )
-        supplier.person_name = row["ชื่อบุคคล"] if not pd.isnull(row["ชื่อบุคคล"]) else ""
-        supplier.supplier_type = row["ประเภทผู้จัดหาสินค้า"]
-        supplier.description = row["คำอธิบาย"] if not pd.isnull(row["คำอธิบาย"]) else ""
-        supplier.address = row["ที่อยู่"]
-        supplier.tax_id = row["เลขผู้เสียภาษี"]
-        supplier.email = row["อีเมล"] if not pd.isnull(row["อีเมล"]) else ""
+        supplier.person_name = (
+            str(row["ชื่อบุคคล"]) if not pd.isnull(row["ชื่อบุคคล"]) else ""
+        )
+        supplier.supplier_type = row["ประเภทผู้จัดหาสินค้า"].strip()
+        supplier.description = (
+            str(row["คำอธิบาย"]) if not pd.isnull(row["คำอธิบาย"]) else ""
+        )
+        supplier.address = str(row["ที่อยู่"])
+        supplier.tax_id = str(row["เลขผู้เสียภาษี"])
+        supplier.email = str(row["อีเมล"]) if not pd.isnull(row["อีเมล"]) else ""
         supplier.person_phone = (
-            row["เบอร์โทรมือถือ"] if not pd.isnull(row["เบอร์โทรมือถือ"]) else ""
+            str(row["เบอร์โทรมือถือ"]) if not pd.isnull(row["เบอร์โทรมือถือ"]) else ""
         )
         supplier.company_phone = (
-            row["เบอร์โทรร้านค้า/บริษัท"] if not pd.isnull(row["เบอร์โทรร้านค้า/บริษัท"]) else ""
+            str(row["เบอร์โทรร้านค้า/บริษัท"])
+            if not pd.isnull(row["เบอร์โทรร้านค้า/บริษัท"])
+            else ""
         )
         supplier.organization = organization
         supplier.created_by = user
+        supplier.last_modifier = user
         supplier.save()
     return True

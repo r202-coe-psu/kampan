@@ -7,7 +7,7 @@ SUPPLIER_TYPE = [
     ("incorporated", "บริษัท / Inc."),
     ("company limited", "บริษัทจำกัด / Co., Ltd."),
     ("corporation limited", "บริษัทจำกัด (ขนาดใหญ่) / Corp., Ltd."),
-    ("public company limited", "บริษัทจำกัด (มหาชน) / Pub Co., Ltd"),
+    ("public company limited", "บริษัทจำกัด (มหาชน) / Pub Co., Ltd."),
     ("partnership limited", "ห้างหุ้นส่วนจำกัด / Part., Ltd."),
     # ("limited", "จำกัด / Ltd."),
 ]
@@ -34,7 +34,7 @@ class Supplier(me.Document):
     organization = me.ReferenceField("Organization", dbref=True)
 
     created_by = me.ReferenceField("User", dbref=True)
-    last_modifier = me.ReferenceField("User", dbref=True, required=True)
+    last_modifier = me.ReferenceField("User", dbref=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(
