@@ -16,10 +16,10 @@
       ลงทะเบียนอุปกรณ์แบบหลายรายการ
     </a>
   </div>
-  {#}
+
   <div class="right item">
     <a class="ui positive button" onclick="showDeleteModal('confirmAll')">
-      บันทึก
+      บันทึกการลงทะเบียนอุปกรณ์ทั้งหมด
     </a>
     <div class="ui modal confirmAll">
       <div class="header">
@@ -37,7 +37,7 @@
         <button class="ui black deny button">
           ยกเลิก
         </button>
-        <a class="ui negative right labeled icon button"
+        <a class="ui positive right labeled icon button"
           href="{{ url_for('items.confirm_all', organization_id=organization.id) }}">
           ยืนยัน
           <i class="checkmark icon"></i>
@@ -45,7 +45,7 @@
       </div>
     </div>
   </div>
-  {#}
+
 
 </div>
 {% endblock %}

@@ -75,11 +75,9 @@
         <div class="ui spaced buttons" style="margin-top: 10px !important">
           <button class="ui primary labeled icon button" type="submit">
             <i class="save icon"></i>
-            {{ 'Save' if 'edit' in request.path else 'Create' }}
+            {{ 'บันทึก' if 'edit' in request.path else 'สร้าง' }}
           </button>
-          <a class="ui button"
-            href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">{{ ("Cancel")
-            }}</a>
+          <a class="ui button" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ยกเลิก</a>
         </div>
       </form>
     </div>

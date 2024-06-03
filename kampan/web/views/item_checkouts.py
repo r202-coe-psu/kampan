@@ -98,9 +98,9 @@ def checkout():
                 (
                     f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
                     + (
-                        f" (ชุดละ {item.piece_per_set})"
+                        f" ({item.set_unit} {item.piece_unit}ละ {item.piece_per_set})"
                         if item.piece_per_set > 1
-                        else " (ชุดละ 1)"
+                        else f" ({item.set_unit}ละ 1)"
                     )
                     + (
                         f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
@@ -123,9 +123,9 @@ def checkout():
     checkout_item.order = order
     checkout_item.item = item
     checkout_item.checkout_date = form.checkout_date.data
-    checkout_item.set_ = form.set_.data
+    # checkout_item.set_ = form.set_.data
     checkout_item.piece = form.piece.data
-    checkout_item.quantity = (form.set_.data * item.piece_per_set) + form.piece.data
+    checkout_item.quantity = form.piece.data
     checkout_item.save()
 
     return redirect(url_for("item_orders.index", organization_id=organization_id))
@@ -175,7 +175,23 @@ def edit(checkout_item_id):
             # print(items)
     if items:
         form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+            (
+                item.id,
+                (
+                    f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
+                    + (
+                        f" ({item.set_unit} {item.piece_unit}ละ {item.piece_per_set})"
+                        if item.piece_per_set > 1
+                        else f" ({item.set_unit}ละ 1)"
+                    )
+                    + (
+                        f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
+                        if item.get_booking_item() != 0
+                        else ""
+                    )
+                ),
+            )
+            for item in items
         ]
         form.item.process(data=checkout_item.item.id, formdata=form.item.choices)
     if not form.validate_on_submit():
