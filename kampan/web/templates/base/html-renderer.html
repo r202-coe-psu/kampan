@@ -105,6 +105,14 @@
   </div>
   </p>
   <p style="margin-left:10px;">
+  <div class="field">
+    <label style="font-weight: bold; padding-right: 10px;">{{ form.categories.label }}</label>
+    <div class="ui input">
+      {{ form.categories(class="ui search dropdown clearable selection") }}
+    </div>
+  </div>
+  </p>
+  <p style="margin-left:10px;">
     {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
   </p>
   <p style="margin-left:10px;">

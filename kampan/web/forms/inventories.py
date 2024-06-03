@@ -59,6 +59,7 @@ class SearchStartEndDateForm(FlaskForm):
     item = fields.SelectField(
         "วัสดุ", validate_choice=False, validators=None, choices=[("", "None")]
     )
+    categories = fields.SelectField("หมวดหมู่", validate_choice=False)
 
 
 class SearchMonthYearForm(FlaskForm):
