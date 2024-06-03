@@ -17,6 +17,7 @@ BaseCheckoutItemForm = model_form(
         "status",
         "quantity",
         "inventories",
+        "set_",
     ],
     field_args={
         "order": {"label": "คำสั่งเบิก"},
@@ -24,8 +25,8 @@ BaseCheckoutItemForm = model_form(
         #     "label": "ชื่ออุปกรณ์",
         #     "label_modifier": lambda obj: f"{obj.barcode_id} ({obj.name})",
         # },
-        "set_": {"label": "จำนวนชุด"},
-        "piece": {"label": "จำนวนชิ้น"},
+        # "set_": {"label": "จำนวนหน่วยใหญ่"},
+        "piece": {"label": "จำนวนหน่วยเล็ก"},
         "message": {"label": "ข้อความ"},
         "checkout_date": {"label": "ลงวันที่คำสั่งเบิก", "format": "%Y-%m-%d %H:%M"},
     },

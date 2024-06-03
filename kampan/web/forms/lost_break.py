@@ -20,5 +20,5 @@ BaseItemLostBreakForm = model_form(
 
 class ItemLostBreakForm(BaseItemLostBreakForm):
     item = fields.SelectField(label="ชื่ออุปกรณ์")
-    set_ = fields.IntegerField(label="จำนวนชุด", default=0)
-    piece = fields.IntegerField(label="จำนวนชิ้น", default=0)
+    set_ = fields.IntegerField(label="จำนวนหน่วยใหญ่", default=0)
+    piece = fields.IntegerField(label="จำนวนหน่วยเล็ก", default=0)

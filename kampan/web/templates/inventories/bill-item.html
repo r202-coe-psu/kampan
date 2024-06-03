@@ -93,10 +93,12 @@
         <th>ชื่ออุปกรณ์</th>
         <th>วันที่ลงทะเบียนอุปกรณ์</th>
         <th>คลังอุปกรณ์</th>
-        <th>จำนวนชุด</th>
-        <th>จำนวนชิ้น</th>
+        <th>จำนวนหน่วยใหญ่</th>
+        <th>จำนวนหน่วยเล็ก</th>
         <th>จำนวนคงเหลือ</th>
-        <th>ราคา (ชิ้นละ)</th>
+        <th>ราคาแต่ละหน่วยใหญ่</th>
+        <th>ราคาแต่ละหน่วยเล็ก</th>
+        <th>ราคารวมทั้งหมด</th>
         {% if item_register.status == "pending" %}
         <th>แก้ไข/ลบข้อมูล</th>
         {% endif %}
@@ -124,6 +126,8 @@
         <td data-label="Quantity">{{ inventory.quantity }}</td>
         <td data-label="Remain">{{ inventory.remain }}</td>
         <td data-label="Price">{{ inventory.price }}</td>
+        <td data-label="Price Per Piece">{{ inventory.get_price_per_piece() }}</td>
+        <td data-label="All Price">{{ inventory.get_all_price() }}</td>
         {% if item_register.status == "pending" %}
         <td>
           <a class="ui icon button"

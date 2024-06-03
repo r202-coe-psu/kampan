@@ -10,7 +10,7 @@ INVENTORY_HEADER = [
     "บาร์โค้ด",
     "ชื่ออุปกรณ์",
     "จำนวน (หน่วยนับใหญ่)",
-    "ราคา (ชุดละ)",
+    "ราคา (หน่วยใหญ่ละ)",
     "คลังอุปกรณ์",
     "ตำแหน่ง (คำอธิบาย)",
 ]
@@ -27,7 +27,7 @@ def process_inventory_engagement(inventory_engagement_file):
     ).first()
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=row["ชื่ออุปกรณ์"],
+            name=row["ชื่ออุปกรณ์"].strip(),
             barcode_id=str(row["บาร์โค้ด"]),
             status="active",
             organization=organization,
@@ -56,7 +56,7 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
             inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
             inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.price = row["ราคา (ชุดละ)"]
+            inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
             inventory.warehouse = warehouse
             inventory.position = position
             inventory.created_by = current_user._get_current_object()
@@ -71,7 +71,7 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
             inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
             inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.price = row["ราคา (ชุดละ)"]
+            inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
             inventory.created_by = current_user._get_current_object()
 
         inventory.save()
@@ -112,7 +112,7 @@ def check_float_values(df_column):
 def check_items(df, organization):
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=row["ชื่ออุปกรณ์"],
+            name=row["ชื่ออุปกรณ์"].strip(),
             barcode_id=str(row["บาร์โค้ด"]),
             status="active",
             organization=organization,
@@ -150,7 +150,7 @@ def validate_inventory_engagement(inventory_engagement_file):
     if invalid_int_value:
         return invalid_int_value
 
-    invalid_float_value = check_float_values(df["ราคา (ชุดละ)"])
+    invalid_float_value = check_float_values(df["ราคา (หน่วยใหญ่ละ)"])
     if invalid_float_value:
         return invalid_float_value
 

@@ -30,9 +30,9 @@
         <th>วันที่นำอุปกรณ์ออก</th>
         <th>ชื่ออุปกรณ์</th>
         {#<th>คลังอุปกรณ์</th>#}
-        <th>จำนวนชุด</th>
-        <th>จำนวนชิ้น</th>
-        <th>รวม</th>
+        {#<th>จำนวนหน่วยใหญ่</th>{#}
+        <th>จำนวนหน่วยเล็ก</th>
+        {#} <th>รวม</th>{#}
         {#<th>ราคา (ชิ้นละ)</th>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
         <th>แก้ไข/ลบข้อมูล</th>
@@ -56,9 +56,9 @@
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
         {#<td data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
-        <td data-label="Set">{{ checkout.set_ }}</td>
+        {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
         <td data-label="Piece">{{ checkout.piece }}</td>
-        <td data-label="Quantity">{{ checkout.quantity }}</td>
+        {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
         {#<td data-label="Price">{{ checkout.price }}</td>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
         <td>
