@@ -41,6 +41,12 @@ class Inventory(me.Document):
         else:
             return "ไม่พบบิล"
 
+    def get_all_price(self):
+        return self.price * self.quantity
+
+    def get_price_per_piece(self):
+        return round(self.price / self.item.piece_per_set, 2)
+
 
 class InventoryEngagementFile(me.Document):
     meta = {"collection": "inventory_engagement_file"}
