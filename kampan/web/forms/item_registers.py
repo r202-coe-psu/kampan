@@ -11,7 +11,6 @@ BaseItemRegisterationForm = model_form(
     FlaskForm,
     exclude=["created_date", "created_by", "bill"],
     field_args={
-        "supplier": {"label": "ร้านค้า", "label_modifier": lambda s: s.name},
         "description": {"label": "คำอธิบาย"},
         "receipt_id": {"label": "เลขกำกับใบเสร็จ"},
     },
@@ -23,3 +22,4 @@ class ItemRegisterationForm(BaseItemRegisterationForm):
         "*** อัปโหลดเฉพาะบิลที่เป็นไฟล์ PDF เท่านั้น ***",
         validators=[FileAllowed(["pdf"], "PDF only")],
     )
+    supplier = fields.SelectField("ร้านค้า")
