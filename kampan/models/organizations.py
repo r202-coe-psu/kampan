@@ -8,7 +8,7 @@ from kampan import models
 
 ORGANIZATION_ROLES = [
     ("staff", "พนักงาน"),
-    ("endorser", "ผู้มีสิทธิ์อนุญาต"),
+    ("endorser", "ผู้มีสิทธิ์อนุญาตแทน"),
     ("supervisor", "หัวหน้าแผนก"),
     ("supervisor supplier", "หัวหน้าพัสดุ"),
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
