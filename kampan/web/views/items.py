@@ -27,7 +27,7 @@ def index():
     ).first()
     form = forms.items.SearchItemForm()
     items = models.Item.objects(status__in=["active", "pending"]).order_by(
-        "status", "created_date"
+        "status", "-created_date"
     )
 
     form.item.choices = [("", "เลือกวัสดุ")] + [

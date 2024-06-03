@@ -23,14 +23,18 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    checkout_items = models.CheckoutItem.objects(status="active")
-    # approved_checkout_items = models.inventories.ApprovedCheckoutItem.objects(
-    #     status="active"
-    # )
+    checkout_items = models.CheckoutItem.objects(status="active").order_by(
+        "-created_date"
+    )
+
     items = models.Item.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
-    form.item.choices = [
-        (item.id, f"{item.barcode_id} ({item.name})") for item in items
+    form.item.choices = [("", "เลือกวัสดุ")] + [
+        (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
+    ]
+    set_categories = set([f"{''.join(item.categories)}" for item in items])
+    form.categories.choices = [("", "หมวดหมู่")] + [
+        (f"{category}", f"{category}") for category in set_categories
     ]
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
@@ -51,13 +55,17 @@ def index():
             checkout_date__gte=form.start_date.data,
             checkout_date__lt=form.end_date.data,
         )
-        # approved_checkout_items = approved_checkout_items.filter(
-        #     checkout_date__gte=form.start_date.data,
-        #     checkout_date__lt=form.end_date.data,
-        # )
-    if form.item.data != None:
-        # approved_checkout_items = approved_checkout_items.filter(item=form.item.data)
+    if form.item.data:
         checkout_items = checkout_items.filter(item=form.item.data)
+
+    if form.categories.data:
+        items = models.Item.objects(categories=form.categories.data)
+        list_checkout_items = []
+        for item in items:
+            checkout_items_ = checkout_items.filter(item=item.id)
+            list_checkout_items += checkout_items_
+        checkout_items = set(list_checkout_items)
+
     checkouts = list(checkout_items)
     checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
 

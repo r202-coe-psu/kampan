@@ -19,7 +19,10 @@ class OrderItem(me.Document):
     status = me.StringField(required=True, default="pending")
 
     approval_status = me.StringField(default="pending")
-    approver = me.ReferenceField("User", dbref=True)
+
+    head_endorser = me.ReferenceField("User", dbref=True)
+    admin_approver = me.ReferenceField("User", dbref=True)
+
     description = me.StringField()
     created_by = me.ReferenceField("User", dbref=True)
     organization = me.ReferenceField("Organization", dbref=True)

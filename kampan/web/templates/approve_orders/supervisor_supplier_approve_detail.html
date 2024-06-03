@@ -1,4 +1,4 @@
-{% extends '/approve_orders/index.html' %}
+{% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
@@ -6,11 +6,11 @@
 {% endblock %}
 
 {% block dashboard_title %}
-หัวหน้าแผนกอนุมัติคำสั่งเบิกวัสดุ
+หัวหน้าเจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิกวัสดุ
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">
+<a class="section" href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id=organization.id) }}">
   คำสั่งเบิกวัสดุ </a>
 <i class="right angle icon divider"></i>
 <div class="active section">
@@ -24,16 +24,62 @@
 {% if checkouts %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
-    <a class="ui positive button"
-      href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}"
+    <a class="ui positive button" onclick="showModal('approve')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
-    <a class="ui negative button"
-      href="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
+    <a class="ui negative button" onclick="showModal('denied')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="times icon"></i>ไม่อนุมัติการเบิกวัสดุ</a>
   </p>
+
 </div>
+<div class="ui modal denied">
+  <div class="header">
+    <span class="ui text red">
+      ปฏิเสธคำสั่งเบิกวัสดุ
+    </span>
+  </div>
+  <div class="content">
+    <p>ต้องการปฏิเสธคำสั่งเบิกวัสดุ
+      <b>{{ order.description }}</b>
+    </p>
+  </div>
+  <div class="actions">
+    <button class="ui black deny button">
+      ยกเลิก
+    </button>
+    <a class="ui negative right labeled icon button"
+      href="{{ url_for('approve_orders.supervisor_supplier_denied',order_id=order.id, organization_id=organization.id)}}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+
+<div class="ui modal approve">
+  <div class="header">
+    <span class="ui text green">
+      อนุมัติการเบิกวัสดุ
+    </span>
+  </div>
+  <div class="content">
+    <p>ต้องการอนุมัติการเบิกวัสดุ
+      <b>{{ order.description }}</b>
+    </p>
+  </div>
+  <div class="actions">
+    <button class="ui black deny button">
+      ยกเลิก
+    </button>
+    <a class="ui positive right labeled icon button"
+      href="{{ url_for('approve_orders.supervisor_supplier_approve',order_id=order.id, organization_id=organization.id)}}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+
+
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -41,8 +87,9 @@
         <th>รูปวัสดุ</th>
         <th>วันที่นำวัสดุออก</th>
         <th>ชื่อวัสดุ</th>
-        <th>จำนวนหน่วยใหญ่</th>
+        {#}<th>จำนวนหน่วยใหญ่</th>{#}
         <th>จำนวนหน่วยเล็ก</th>
+        <th>ราคาแต่ละหน่วยเล็ก</th>
         <th>รวม</th>
         <th>จำนวนที่มีในคลัง</th>
       </tr>
@@ -63,8 +110,9 @@
         </td>
         <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
-        <td data-label="Set">{{ checkout.set_ }}</td>
+        {#} <td data-label="Set">{{ checkout.set_ }}</td> {#}
         <td data-label="Piece">{{ checkout.piece }}</td>
+        <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         {% if checkout.quantity > checkout.item.get_amount_pieces() %}
         <td data-label="Status" class="red">
@@ -87,7 +135,7 @@
   <div class="ui grid">
     <div class="column row">
       <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+        {{ paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
       </div>
     </div>
   </div>
@@ -102,8 +150,8 @@
 {% block additional_js %}
 <script type="text/javascript">
 
-  function showDeleteModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
+  function showModal(status) {
+    status ? $('.ui.modal.' + status).modal('show') : $('.ui.modal').modal('hide')
       ;
   }
 </script>

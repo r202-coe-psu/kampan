@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import fields, validators
+from wtforms import fields, validators, widgets
 from .fields import TagListField, TextListField
 
 from flask_mongoengine.wtf import model_form
@@ -16,7 +16,8 @@ BaseOrderItemForm = model_form(
 
 
 class OrderItemForm(BaseOrderItemForm):
-    approver = fields.SelectField("ผู้อนุญาต")
+    head_endorser = fields.SelectField("เลือกหัวหน้าฝ่ายที่ต้องการให้อนุมัติ")
+    admin_approver = fields.SelectField("เลือกเจ้าหน้าที่พัสดุที่ต้องการให้อนุมัติ")
 
 
 def get_approved_amount_form(items):
@@ -39,3 +40,15 @@ def get_approved_amount_form(items):
             ),
         )
     return ApprovedAmountForm()
+
+
+class SearchStartEndDateForm(FlaskForm):
+    start_date = fields.DateField(
+        "วันที่เริ่มต้น", format="%d/%m/%Y", widget=widgets.TextInput()
+    )
+    end_date = fields.DateField(
+        "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
+    )
+    item = fields.SelectField(
+        "วัสดุ", validate_choice=False, validators=None, choices=[("", "None")]
+    )

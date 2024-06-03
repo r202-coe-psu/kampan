@@ -21,7 +21,7 @@ def index():
     suppliers = models.Supplier.objects(
         status="active",
         organization=organization_id,
-    )
+    ).order_by("-created_date")
     page = request.args.get("page", default=1, type=int)
     paginated_suppliers = Pagination(suppliers, page=page, per_page=30)
     return render_template(

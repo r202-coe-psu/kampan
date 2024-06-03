@@ -82,16 +82,18 @@
   <div class="sidebar-heading" style="color: grey;">
     การอนุมัติ
   </div>
-  {% if current_user.has_organization_roles("admin", "endorser") %}
+  {% if current_user.has_organization_roles("endorser") %}
   <a class="item"
-    href="{{ url_for('approve_orders.index', organization_id = organization.id )}}">หัวหน้าอนุมัติคำสั่งเบิก<i
-      class="check circle icon"></i></a>
+    href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">หัวหน้าอนุมัติคำสั่งเบิก</a>
   {% endif %}
-
+  {% if current_user.has_organization_roles("supervisor supplier") %}
+  <a class="item"
+    href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id = organization.id )}}">หัวหน้าเจ้าหน้าที่พัสดุ<br>อนุมัติคำสั่งเบิก
+  </a>
+  {% endif %}
   {% if current_user.has_organization_roles("admin") %}
   <a class="item"
-    href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">พัสดุอนุมัติคำสั่งเบิก<i
-      class="check circle icon"></i></a>
+    href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">พัสดุอนุมัติคำสั่งเบิก</a>
   {% endif %}
   {% endif %}
 

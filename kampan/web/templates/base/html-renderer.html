@@ -125,6 +125,30 @@
 </div>
 {%- endmacro %}
 
+{% macro render_default_search_order(form) -%}
+<div class="ui secondary menu">
+  {{form.hidden_tag()}}
+  <p style="margin-left:auto;">
+  <div class="field">
+    <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
+    <div class="ui input">
+      {{ form.item(class="ui search dropdown clearable selection") }}
+    </div>
+  </div>
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
+  </p>
+  <p style="margin-left:10px;">
+    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
+  </p>
+  <p>
+    <button type="submit" class="ui primary button"
+      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+  </p>
+</div>
+{%- endmacro %}
+
 {% macro render_default_search_user(form) -%}
 <div class="ui secondary menu">
   {{form.hidden_tag()}}

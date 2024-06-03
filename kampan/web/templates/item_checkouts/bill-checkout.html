@@ -32,6 +32,7 @@
         {#<th>คลังวัสดุ</th>#}
         {#<th>จำนวนหน่วยใหญ่</th>{#}
         <th>จำนวนหน่วยเล็ก</th>
+        <th>ราคาแต่ละหน่วยเล็ก</th>
         {#} <th>รวม</th>{#}
         {#<th>ราคา (ชิ้นละ)</th>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
@@ -58,6 +59,7 @@
         {#<td data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
         {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
         <td data-label="Piece">{{ checkout.piece }}</td>
+        <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
         {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
         {#<td data-label="Price">{{ checkout.price }}</td>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" %}

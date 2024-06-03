@@ -17,8 +17,10 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item_registers = models.RegistrationItem.objects(status__ne="disactive")
-    form = forms.inventories.SearchStartEndDateForm()
+    item_registers = models.RegistrationItem.objects(status__ne="disactive").order_by(
+        "-created_date"
+    )
+    form = forms.item_orders.SearchStartEndDateForm()
     form.item.label = "สถานะ"
     form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]
     if form.start_date.data == None and form.end_date.data != None:
@@ -36,7 +38,6 @@ def index():
             created_date__gte=form.start_date.data,
             created_date__lt=form.end_date.data,
         )
-    print("------->>>>", form.item.data)
     if form.item.data:
         item_registers = item_registers.filter(status=form.item.data)
     page = request.args.get("page", default=1, type=int)

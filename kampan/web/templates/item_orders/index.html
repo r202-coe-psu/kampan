@@ -22,13 +22,12 @@
 
 
 <form method="post">
-  {{ renderer.render_default_search_item(form) }}
+  {{ renderer.render_default_search_order(form) }}
   {% if orders %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
       <thead>
         <tr>
-
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>

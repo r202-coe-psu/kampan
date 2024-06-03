@@ -24,13 +24,15 @@
 
 
 {% block content %}
-    <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
-      {{ renderer.render_field(form.description) }}
+<div>
+  <form class="ui form" method="POST">
 
-      <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-    </form>
-    </div>
+    {{ form.hidden_tag() }}
+    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_select(form.head_endorser) }}
+    {{ renderer.render_select(form.admin_approver) }}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
 {% endblock content %}

@@ -81,6 +81,10 @@ class Item(me.Document):
         if inventories:
             return (inventories.order_by("registeration_date")).first().price
 
+    def get_last_price_per_piece(self):
+        value = self.get_last_price()
+        return round(value / self.piece_per_set, 2)
+
     def get_booking_item(self):
         checkout_items = models.CheckoutItem.objects(
             item=self, status="active", approval_status="pending"

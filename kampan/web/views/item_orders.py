@@ -18,11 +18,14 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    orders = models.OrderItem.objects(status__ne="disactive")
-
+    orders = models.OrderItem.objects(status__ne="disactive").order_by("-created_date")
     form = forms.inventories.SearchStartEndDateForm()
     form.item.label = "สถานะ"
-    form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]
+    form.item.choices += [
+        ("pending", "รอดำเนินการ"),
+        ("approved", "อนุมัติ"),
+        ("denied", "ปฏิเสธ"),
+    ]
     if form.start_date.data == None and form.end_date.data != None:
         orders = orders.filter(
             created_date__lt=form.end_date.data,
@@ -39,7 +42,7 @@ def index():
             created_date__lt=form.end_date.data,
         )
     if form.item.data:
-        orders = orders.filter(status=form.item.data)
+        orders = orders.filter(status__icontains=form.item.data)
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:
         page = 1
@@ -62,7 +65,18 @@ def order():
         id=organization_id, status="active"
     ).first()
     form = forms.item_orders.OrderItemForm()
-    form.approver.choices = []
+    form.head_endorser.choices = [
+        (str(org_user.user.id), org_user.user.get_name())
+        for org_user in organization.get_organization_users()
+        if ("endorser" in org_user.roles or "head" in org_user.roles)
+        and org_user.division == current_user.get_current_division()
+    ]
+    form.admin_approver.choices = [
+        (str(org_user.user.id), org_user.user.get_name())
+        for org_user in organization.get_organization_users()
+        if ("admin" in org_user.roles)
+        and org_user.division == current_user.get_current_division()
+    ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -72,6 +86,8 @@ def order():
     order = models.OrderItem()
 
     form.populate_obj(order)
+    order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
+    order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
@@ -91,7 +107,16 @@ def edit(order_id):
     ).first()
     order = models.OrderItem.objects().get(id=order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
-
+    form.head_endorser.choices = [
+        (str(org_user.user.id), org_user.user.get_name())
+        for org_user in organization.get_organization_users()
+        if "endorser" in org_user.roles or "supervisor" in org_user.roles
+    ]
+    form.admin_approver.choices = [
+        (str(org_user.user.id), org_user.user.get_name())
+        for org_user in organization.get_organization_users()
+        if "endorser" in org_user.roles or "supervisor" in org_user.roles
+    ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -99,7 +124,8 @@ def edit(order_id):
         )
 
     form.populate_obj(order)
-
+    order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
+    order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
     print(current_user._get_current_object().get_current_division())
     if current_user._get_current_object().get_current_division():
