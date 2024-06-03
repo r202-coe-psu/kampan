@@ -84,7 +84,7 @@ def checkout():
         form.item.choices = [
             (
                 item.id,
-                f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()} {item.unit})"
+                f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()} {item.unit})"
                 + (
                     f" (จองอยู่ทั้งหมด {item.get_booking_item()})"
                     if item.get_booking_item() != 0

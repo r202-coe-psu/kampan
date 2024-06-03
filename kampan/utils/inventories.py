@@ -8,10 +8,10 @@ from kampan import models
 
 INVENTORY_HEADER = [
     "บาร์โค้ด",
-    "ชื่ออุปกรณ์",
+    "ชื่อวัสดุ",
     "จำนวน (หน่วยนับใหญ่)",
     "ราคา (หน่วยใหญ่ละ)",
-    "คลังอุปกรณ์",
+    "คลังวัสดุ",
     "ตำแหน่ง (คำอธิบาย)",
 ]
 
@@ -27,7 +27,7 @@ def process_inventory_engagement(inventory_engagement_file):
     ).first()
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=row["ชื่ออุปกรณ์"].strip(),
+            name=row["ชื่อวัสดุ"].strip(),
             barcode_id=str(row["บาร์โค้ด"]),
             status="active",
             organization=organization,
@@ -35,7 +35,7 @@ def process_inventory_engagement(inventory_engagement_file):
 
         warehouse = models.Warehouse.objects(
             status="active",
-            name=row["คลังอุปกรณ์"],
+            name=row["คลังวัสดุ"],
             organization=organization,
         ).first()
 
@@ -112,31 +112,31 @@ def check_float_values(df_column):
 def check_items(df, organization):
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=row["ชื่ออุปกรณ์"].strip(),
+            name=row["ชื่อวัสดุ"].strip(),
             barcode_id=str(row["บาร์โค้ด"]),
             status="active",
             organization=organization,
         ).first()
         if not item:
-            return f"ไม่พบอุปกรณ์ชื่อ : {row['ชื่ออุปกรณ์']} หรือบาร์โค้ดหมายเลข : {row['บาร์โค้ด']} ที่ได้ลงทะเบียนไว้ในคลังอุปกรณ์"
+            return f"ไม่พบวัสดุชื่อ : {row['ชื่อวัสดุ']} หรือบาร์โค้ดหมายเลข : {row['บาร์โค้ด']} ที่ได้ลงทะเบียนไว้ในคลังวัสดุ"
 
 
 def check_positions(df, organization):
     for idx, row in df.iterrows():
         warehouse = models.Warehouse.objects(
             status="active",
-            name=row["คลังอุปกรณ์"],
+            name=row["คลังวัสดุ"],
             organization=organization,
         ).first()
         if not warehouse:
-            return f"ไม่พบคลังอุปกรณ์ชื่อ : {row['คลังอุปกรณ์']} ที่ได้ลงทะเบียนไว้"
+            return f"ไม่พบคลังวัสดุชื่อ : {row['คลังวัสดุ']} ที่ได้ลงทะเบียนไว้"
         position = models.ItemPosition.objects(
             status="active",
             description=row["ตำแหน่ง (คำอธิบาย)"],
             warehouse=warehouse,
         ).first()
         if not position:
-            return f"ไม่พบตำแหน่งของอุปกรณ์ : {row['ตำแหน่ง (คำอธิบาย)']} ที่ได้ลงทะเบียนไว้"
+            return f"ไม่พบตำแหน่งของวัสดุ : {row['ตำแหน่ง (คำอธิบาย)']} ที่ได้ลงทะเบียนไว้"
 
 
 def validate_inventory_engagement(inventory_engagement_file):

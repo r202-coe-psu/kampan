@@ -42,7 +42,7 @@ def upload_file():
     form = forms.items.UploadFileForm()
     errors = request.args.get("errors")
     upload_errors = {
-        "headers": "ลงทะเบียนอุปกรณ์",
+        "headers": "ลงทะเบียนวัสดุ",
         "errors": errors,
     }
     if not form.validate_on_submit():

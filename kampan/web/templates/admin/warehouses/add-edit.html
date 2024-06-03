@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-แก้ไขคลังอุปกรณ์ : {{ form.name.data }}
+แก้ไขคลังวัสดุ : {{ form.name.data }}
 {% else %}
-เพิ่มคลังอุปกรณ์
+เพิ่มคลังวัสดุ
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -14,7 +14,7 @@
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">แก้ไขหรือเพิ่มข้อมูลคลังอุปกรณ์</div>
+<div class="active section">แก้ไขหรือเพิ่มข้อมูลคลังวัสดุ</div>
 {% endblock %}
 
 {% block content %}

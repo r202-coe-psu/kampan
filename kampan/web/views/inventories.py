@@ -231,7 +231,7 @@ def upload_file_inventory_info(item_register_id):
 
     upload_completed = False
     upload_errors = {
-        "headers": "อัปโหลดไฟล์นำเข้าอุปกรณ์",
+        "headers": "อัปโหลดไฟล์นำเข้าวัสดุ",
         "errors": None,
     }
 

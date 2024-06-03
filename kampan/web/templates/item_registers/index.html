@@ -2,16 +2,16 @@
 {% import 'base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated%}
 
-{% block title %}นำเข้าอุปกรณ์{% endblock %}
-{% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
+{% block title %}นำเข้าวัสดุ{% endblock %}
+{% block dashboard_title %}นำเข้าวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_registers.index' %}
 <a class="ui primary button" href="{{ url_for('item_registers.register', organization_id=organization.id) }}">
-  เพิ่มบิลอุปกรณ์
+  เพิ่มบิลวัสดุ
 </a>
 {% else %}
-<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">ลงทะเบียนอุปกรณ์</a>
+<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">ลงทะเบียนวัสดุ</a>
 {% endif %}
 
 {% endblock %}
@@ -28,10 +28,10 @@
           <th>คำอธิบาย</th>
           <th>ร้านค้า</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>วันลงทะเบียนอุปกรณ์</th>
+          <th>วันลงทะเบียนวัสดุ</th>
           <th>สถานะ</th>
-          <th>รายการนำเข้าอุปกรณ์</th>
-          <th>แก้ไข/ลบข้อมูลอุปกรณ์</th>
+          <th>รายการนำเข้าวัสดุ</th>
+          <th>แก้ไข/ลบข้อมูลวัสดุ</th>
         </tr>
       </thead>
       <tbody>
@@ -66,10 +66,10 @@
             </a>
             <div class="ui modal {{item.id}}">
               <div class="header">
-                ลบข้อมูลนำเข้าอุปกรณ์
+                ลบข้อมูลนำเข้าวัสดุ
               </div>
               <div class="content">
-                <p>ต้องการลบข้อมูลนำเข้าอุปกรณ์ <b>{{ item.description }}</b><br />
+                <p>ต้องการลบข้อมูลนำเข้าวัสดุ <b>{{ item.description }}</b><br />
                   เลขกำกับใบเสร็จ : <b>{{ item.receipt_id }}</b>
                 </p>
               </div>

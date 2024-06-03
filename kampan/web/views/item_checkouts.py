@@ -96,7 +96,7 @@ def checkout():
             (
                 item.id,
                 (
-                    f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
+                    f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (
                         f" ({item.set_unit} {item.piece_unit}ละ {item.piece_per_set})"
                         if item.piece_per_set > 1
@@ -178,7 +178,7 @@ def edit(checkout_item_id):
             (
                 item.id,
                 (
-                    f"{item.barcode_id} ({item.name}) (มีอุปกรณ์ทั้งหมด {item.get_items_quantity()})"
+                    f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (
                         f" ({item.set_unit} {item.piece_unit}ละ {item.piece_per_set})"
                         if item.piece_per_set > 1

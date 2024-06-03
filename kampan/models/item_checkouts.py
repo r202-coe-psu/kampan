@@ -19,7 +19,7 @@ class BaseCheckoutItem:
 
 
 class CheckoutItem(me.Document, BaseCheckoutItem):
-    # รายการนำเข้าอุปกรณ์ออก
+    # รายการนำเข้าวัสดุออก
     meta = {"collection": "checkout_items"}
     approval_status = me.StringField(default="pending")
     approved_date = me.DateTimeField()

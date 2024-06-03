@@ -3,33 +3,33 @@
 {% import '/base/pagination.html' as paginated%}
 
 {% block title %}Items{% endblock %}
-{% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
+{% block dashboard_title %}วัสดุทั้งหมด{% endblock %}
 {% block breadcrumbs %}
 <div class="ui secondary menu">
   <div class="left item" style="gap: 0.5rem;">
     <a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
       <i class="plus circle icon"></i>
-      ลงทะเบียนอุปกรณ์
+      ลงทะเบียนวัสดุ
     </a>
     <a class="ui primary button" href="{{ url_for('items.upload_file', organization_id=organization.id) }}">
       <i class="file upload icon"></i>
-      ลงทะเบียนอุปกรณ์แบบหลายรายการ
+      ลงทะเบียนวัสดุแบบหลายรายการ
     </a>
   </div>
 
   <div class="right item">
     <a class="ui positive button" onclick="showDeleteModal('confirmAll')">
-      บันทึกการลงทะเบียนอุปกรณ์ทั้งหมด
+      บันทึกการลงทะเบียนวัสดุทั้งหมด
     </a>
     <div class="ui modal confirmAll">
       <div class="header">
-        บันทึกอุปกรณ์
+        บันทึกวัสดุ
       </div>
       <div class="content">
-        <p>ต้องการบันทึกอุปกรณ์
+        <p>ต้องการบันทึกวัสดุ
           <b>ทั้งหมด</b> หรือไม่?
         </p>
-        <span class="ui error text">คำเตือน : สามารถยืนยันอุปกรณ์ได้ครั้งเดียวเท่านั้น
+        <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
           และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
           *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
       </div>
@@ -80,7 +80,7 @@
       {% endif %}
     </div>
     <div class="content">
-      <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
+      <div class="header">ชื่อวัสดุ : {{ item.name }}</div>
       <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
@@ -99,13 +99,13 @@
         </a>
         <div class="ui modal {{item.id}}_confirm">
           <div class="header">
-            บันทึกอุปกรณ์
+            บันทึกวัสดุ
           </div>
           <div class="content">
-            <p>ต้องการบันทึกอุปกรณ์
+            <p>ต้องการบันทึกวัสดุ
               <b>{{ item.name }}</b> หรือไม่?
             </p>
-            <span class="ui error text">คำเตือน : สามารถยืนยันอุปกรณ์ได้ครั้งเดียวเท่านั้น
+            <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
               และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
               *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
           </div>
@@ -131,10 +131,10 @@
         </a>
         <div class="ui modal {{item.id}}">
           <div class="header">
-            ลบอุปกรณ์
+            ลบวัสดุ
           </div>
           <div class="content">
-            <p>ต้องการลบอุปกรณ์
+            <p>ต้องการลบวัสดุ
               <b>{{ item.name }}</b>
             </p>
           </div>

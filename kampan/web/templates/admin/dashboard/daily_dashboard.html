@@ -26,7 +26,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
-        <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
+        <h5 class="card-title mt-3 ">คำสั่งเบิกวัสดุ <span style="color: #003ea1;"><b>
               <h3>{{ daily_item_orders | length }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="/item_orders/" class="text-black">[ เพิ่มเติม ]</a></p>
@@ -38,7 +38,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
-        <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
+        <h5 class="card-title mt-3 ">จำนวนเงินของวัสดุที่เบิก <span style="color: #00A11B;"><b>
               <h3>{{total_values}}</h3>
             </b></span> ฿ </h5>
         <p class="card-text "><a href="/item_checkouts/" class="text-black">[ เพิ่มเติม ]</a></p>
@@ -62,7 +62,7 @@
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
   <div class="content" style="color: #292d33;">
-    <div class="ui medium header"> คำสั่งเบิกอุปกรณ์รายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
+    <div class="ui medium header"> คำสั่งเบิกวัสดุรายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
   </div>
 
   <form method="post">
@@ -80,11 +80,11 @@
     <thead>
       <tr>
 
-        <th>วันที่สั่งเบิกอุปกรณ์</th>
+        <th>วันที่สั่งเบิกวัสดุ</th>
         <th>คำอธิบาย</th>
         <th>ชื่อผู้ใช้งาน</th>
-        <th>เบิกอุปกรณ์</th>
-        <th>รายการอุปกรณ์</th>
+        <th>เบิกวัสดุ</th>
+        <th>รายการวัสดุ</th>
         <th>สถานะ</th>
         <th>แก้ไข/ลบข้อมูล</th>
 
@@ -98,7 +98,7 @@
         <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
         <td>
           <a class="ui primary button" href="{{ url_for('admin.item_checkouts.checkout', order_id=order.id) }}">
-            เบิกอุปกรณ์
+            เบิกวัสดุ
           </a>
         </td>
 
@@ -128,10 +128,10 @@
           </a>
           <div class="ui modal {{order.id}}">
             <div class="header">
-              ลบคำสั่งเบิกอุปกรณ์
+              ลบคำสั่งเบิกวัสดุ
             </div>
             <div class="content">
-              <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+              <p>ต้องการลบคำสั่งเบิกวัสดุ
                 <b>{{ order.description }}</b>
               </p>
             </div>

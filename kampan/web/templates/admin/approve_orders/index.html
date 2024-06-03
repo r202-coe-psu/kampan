@@ -2,14 +2,14 @@
 {% import '/admin/base/html-renderer.html' as renderer %}
 {% import '/admin/base/pagination.html' as paginated %}
 
-{% block title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
-{% block dashboard_title %}อนุมัติคำสั่งเบิกอุปกรณ์{% endblock %}
+{% block title %}อนุมัติคำสั่งเบิกวัสดุ{% endblock %}
+{% block dashboard_title %}อนุมัติคำสั่งเบิกวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'approve_orders.index' %}
 
 {% else %}
-<a class="section" href="{{ url_for('admin.approve_orders.index') }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.approve_orders.index') }}">รายการอนุมัติการเบิกวัสดุ</a>
 {% endif %}
 
 {% endblock %}
@@ -34,10 +34,10 @@
     <table class="ui celled table">
       <thead>
         <tr>
-          <th>วันที่สั่งเบิกอุปกรณ์</th>
+          <th>วันที่สั่งเบิกวัสดุ</th>
           <th>คำอธิบาย</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>รายการอุปกรณ์</th>
+          <th>รายการวัสดุ</th>
           <th>การอนุมัติ</th>
         </tr>
       </thead>

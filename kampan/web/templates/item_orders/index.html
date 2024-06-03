@@ -2,8 +2,8 @@
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}คำสั่งเบิกอุปกรณ์{% endblock %}
-{% block dashboard_title %}คำสั่งเบิกอุปกรณ์{% endblock %}
+{% block title %}คำสั่งเบิกวัสดุ{% endblock %}
+{% block dashboard_title %}คำสั่งเบิกวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 
@@ -12,7 +12,7 @@
   เพิ่มคำสั่งเบิก
 </a>
 {% else %}
-<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกอุปกรณ์</a>
+<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกวัสดุ</a>
 {% endif %}
 
 {% endblock %}
@@ -29,11 +29,11 @@
       <thead>
         <tr>
 
-          <th>วันที่สั่งเบิกอุปกรณ์</th>
+          <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>เบิกอุปกรณ์</th>
-          <th>รายการอุปกรณ์</th>
+          <th>เบิกวัสดุ</th>
+          <th>รายการวัสดุ</th>
           <th>สถานะ</th>
           <th>แก้ไข/ลบข้อมูล</th>
 
@@ -49,7 +49,7 @@
             {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
             <a class="ui primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
-              เบิกอุปกรณ์
+              เบิกวัสดุ
             </a>
             {% endif %}
           </td>
@@ -91,10 +91,10 @@
             </a>
             <div class="ui modal {{order.id}}">
               <div class="header">
-                ลบคำสั่งเบิกอุปกรณ์
+                ลบคำสั่งเบิกวัสดุ
               </div>
               <div class="content">
-                <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+                <p>ต้องการลบคำสั่งเบิกวัสดุ
                   <b>{{ order.description }}</b>
                 </p>
               </div>

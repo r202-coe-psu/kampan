@@ -1,8 +1,8 @@
 {% extends '/admin/inventories/index.html' %}
 {% import '/admin/base/pagination.html' as paginated %}
 
-{% block title %}รายการบิลอุปกรณ์{% endblock %}
-{% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
+{% block title %}รายการบิลวัสดุ{% endblock %}
+{% block dashboard_title %}รายการบิลวัสดุ{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'inventories.index' %}
 <div class="active section">รายการบิล</div>
@@ -18,11 +18,11 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>รหัสอุปกรณ์</th>
-        <th>ชื่ออุปกรณ์</th>
-        <th>วันที่ลงทะเบียนอุปกรณ์</th>
-        <th>คลังอุปกรณ์</th>
+        <th>รูปวัสดุ</th>
+        <th>รหัสวัสดุ</th>
+        <th>ชื่อวัสดุ</th>
+        <th>วันที่ลงทะเบียนวัสดุ</th>
+        <th>คลังวัสดุ</th>
         <th>จำนวนทั้งหมด</th>
         <th>จำนวนคงเหลือ</th>
         <th>ราคา (ชิ้นละ)</th>
@@ -61,10 +61,10 @@
           </a>
           <div class="ui modal {{inventory.id}}">
             <div class="header">
-              ลบข้อมูลอุปกรณ์ในบิล
+              ลบข้อมูลวัสดุในบิล
             </div>
             <div class="content">
-              <p>ต้องการลบข้อมูลอุปกรณ์
+              <p>ต้องการลบข้อมูลวัสดุ
                 <b>{{ inventory.item.name }}</b>
               </p>
             </div>

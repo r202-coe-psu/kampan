@@ -2,35 +2,35 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-  {% if 'edit' in request.path %}
-    แก้ไขคลังอุปกรณ์ : {{ form.name.data }}
-  {% else %}
-    เพิ่มคลังอุปกรณ์
-  {% endif %}
+{% if 'edit' in request.path %}
+แก้ไขคลังวัสดุ : {{ form.name.data }}
+{% else %}
+เพิ่มคลังวัสดุ
+{% endif %}
 {% endblock %}
 {% block dashboard_title %}
-  {{ self.title() }}
+{{ self.title() }}
 {% endblock %}
 
 {% block breadcrumbs %}
-  {{ super() }}
-  <div class="active section">แก้ไขหรือเพิ่มข้อมูลคลังอุปกรณ์</div>
+{{ super() }}
+<div class="active section">แก้ไขหรือเพิ่มข้อมูลคลังวัสดุ</div>
 {% endblock %}
 
 {% block content %}
-  <div>
-    <form class="ui form" method="POST">
-      
-      {{ form.hidden_tag() }}
+<div>
+  <form class="ui form" method="POST">
 
-      {{ renderer.render_field(form.name) }}
-      {{ renderer.render_field(form.description) }}
+    {{ form.hidden_tag() }}
 
-      {% if 'edit' == request.path %}
-        <button class="ui primary button" type="submit">แก้ไข</button>
-      {% else %}
-        <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
-      {% endif %}
-    </form>
-    </div>
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+
+    {% if 'edit' == request.path %}
+    <button class="ui primary button" type="submit">แก้ไข</button>
+    {% else %}
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    {% endif %}
+  </form>
+</div>
 {% endblock %}

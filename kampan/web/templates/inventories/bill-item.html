@@ -1,8 +1,8 @@
 {% extends '/inventories/index.html' %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}รายการบิลอุปกรณ์{% endblock %}
-{% block dashboard_title %}รายการบิลอุปกรณ์{% endblock %}
+{% block title %}รายการบิลวัสดุ{% endblock %}
+{% block dashboard_title %}รายการบิลวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if item_register.status == "pending" %}
@@ -16,13 +16,13 @@
         </a>
         <a class="ui primary button"
           href="{{ url_for('inventories.download_template_inventory_file', organization_id=organization.id) }}">
-          <i class="file download icon"></i> ดาวน์โหลดรูปแบบนำเข้าอุปกรณ์
+          <i class="file download icon"></i> ดาวน์โหลดรูปแบบนำเข้าวัสดุ
         </a>
       </div>
       {#}
       <a class="ui primary button"
         href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
-        <i class="plus circle icon"></i> นำเข้าทีละอุปกรณ์
+        <i class="plus circle icon"></i> นำเข้าทีละวัสดุ
       </a>
       {#}
     </div>
@@ -31,7 +31,7 @@
       <a class="ui primary button {{ '' if item_register.get_quantity_of_item() != 0 else 'disabled' }}"
         onclick="showConfirmModal('{{ item_register.id }}')"
         style=" color: white; background-color: rgb(59, 115, 199); ">
-        <i class="check icon"></i> ยืนยันการนำเข้าอุปกรณ์
+        <i class="check icon"></i> ยืนยันการนำเข้าวัสดุ
       </a>
     </div>
   </div>
@@ -39,10 +39,10 @@
 
 <div class="ui modal {{item_register.id}}">
   <div class="header">
-    ยืนยันการนำเข้าอุปกรณ์
+    ยืนยันการนำเข้าวัสดุ
   </div>
   <div class="content">
-    <p>ต้องการยืนยันการนำเข้าอุปกรณ์
+    <p>ต้องการยืนยันการนำเข้าวัสดุ
       <br />
       เลขกำกับใบเสร็จ :
       <b>{{ item_register.receipt_id }}</b>
@@ -53,13 +53,13 @@
       ร้านค้า :
       <b>{{ item_register.supplier.get_supplier_name() }}</b>
       <br />
-      ผู้ลงทะเบียนอุปกรณ์ :
+      ผู้ลงทะเบียนวัสดุ :
       <b>{{ item_register.created_by.get_name() }}</b>
       <br />
-      วันที่ลงทะเบียนอุปกรณ์ :
+      วันที่ลงทะเบียนวัสดุ :
       <b>{{ item_register.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</b>
       <br />
-      <span class="ui error text">คำเตือน : สามารถยืนยันการนำเข้าอุปกรณ์ได้ครั้งเดียวเท่านั้น
+      <span class="ui error text">คำเตือน : สามารถยืนยันการนำเข้าวัสดุได้ครั้งเดียวเท่านั้น
         และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
         *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
     </p>
@@ -76,9 +76,9 @@
   </div>
 </div>
 {% else %}
-<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าอุปกรณ์</a>
+<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าวัสดุ</a>
 <i class="right angle icon divider"></i>
-<div class="active section">รายการบิลอุปกรณ์</div>
+<div class="active section">รายการบิลวัสดุ</div>
 {% endif %}
 {% endblock %}
 
@@ -88,11 +88,11 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>รหัสอุปกรณ์</th>
-        <th>ชื่ออุปกรณ์</th>
-        <th>วันที่ลงทะเบียนอุปกรณ์</th>
-        <th>คลังอุปกรณ์</th>
+        <th>รูปวัสดุ</th>
+        <th>รหัสวัสดุ</th>
+        <th>ชื่อวัสดุ</th>
+        <th>วันที่ลงทะเบียนวัสดุ</th>
+        <th>คลังวัสดุ</th>
         <th>จำนวนหน่วยใหญ่</th>
         <th>จำนวนหน่วยเล็ก</th>
         <th>จำนวนคงเหลือ</th>
@@ -141,10 +141,10 @@
           </a>
           <div class="ui modal {{inventory.id}}">
             <div class="header">
-              ลบข้อมูลอุปกรณ์ในบิล
+              ลบข้อมูลวัสดุในบิล
             </div>
             <div class="content">
-              <p>ต้องการลบข้อมูลอุปกรณ์
+              <p>ต้องการลบข้อมูลวัสดุ
                 <b>{{ inventory.item.name }}</b>
               </p>
             </div>

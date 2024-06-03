@@ -25,9 +25,9 @@ def create_user_email_template():
         if not email_template:
             email_template = models.EmailTemplate(
                 name="รูปแบบเริ่มต้น",
-                subject="ขอเบิกอุปกรณ์",
+                subject="ขอเบิกวัสดุ",
                 body="""เรียน  {{ endorser_name }} 
-ข้าพเจ้า {{ user_name }} แผนก{{ division_name }}  ขอแจ้งความประสงค์เพื่อเบิกอุปกรณ์
+ข้าพเจ้า {{ user_name }} แผนก{{ division_name }}  ขอแจ้งความประสงค์เพื่อเบิกวัสดุ
 เหตุผลการเบิก:  {{ order_objective }}
 ตรวจสอบรายละเอียดที่: {{ endorsement_url }}
 

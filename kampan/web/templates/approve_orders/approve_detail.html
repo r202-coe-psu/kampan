@@ -6,15 +6,15 @@
 {% endblock %}
 
 {% block dashboard_title %}
-หัวหน้าแผนกอนุมัติคำสั่งเบิกอุปกรณ์
+หัวหน้าแผนกอนุมัติคำสั่งเบิกวัสดุ
 {% endblock %}
 
 {% block breadcrumbs %}
 <a class="section" href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">
-  คำสั่งเบิกอุปกรณ์ </a>
+  คำสั่งเบิกวัสดุ </a>
 <i class="right angle icon divider"></i>
 <div class="active section">
-  อนุมัติคำสั่งเบิกอุปกรณ์
+  อนุมัติคำสั่งเบิกวัสดุ
 </div>
 {% endblock %}
 
@@ -27,20 +27,20 @@
     <a class="ui positive button"
       href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
-      <i class="check icon"></i>อนุมัติการเบิกอุปกรณ์</a>
+      <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
     <a class="ui negative button"
       href="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
-      <i class="times icon"></i>ไม่อนุมัติการเบิกอุปกรณ์</a>
+      <i class="times icon"></i>ไม่อนุมัติการเบิกวัสดุ</a>
   </p>
 </div>
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>วันที่นำอุปกรณ์ออก</th>
-        <th>ชื่ออุปกรณ์</th>
+        <th>รูปวัสดุ</th>
+        <th>วันที่นำวัสดุออก</th>
+        <th>ชื่อวัสดุ</th>
         <th>จำนวนหน่วยใหญ่</th>
         <th>จำนวนหน่วยเล็ก</th>
         <th>รวม</th>

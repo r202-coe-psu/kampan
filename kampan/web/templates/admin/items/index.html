@@ -3,10 +3,10 @@
 {% import '/admin/base/pagination.html' as paginated%}
 
 {% block title %}Items{% endblock %}
-{% block dashboard_title %}อุปกรณ์ทั้งหมด{% endblock %}
+{% block dashboard_title %}วัสดุทั้งหมด{% endblock %}
 {% block breadcrumbs %}
 <a class="ui primary button" href="{{ url_for('admin.items.add') }}">
-  เพิ่มอุปกรณ์
+  เพิ่มวัสดุ
 </a>
 {% endblock %}
 
@@ -39,7 +39,7 @@
       {% endif %}
     </div>
     <div class="content">
-      <div class="header">ชื่ออุปกรณ์ : {{ item.name }}</div>
+      <div class="header">ชื่อวัสดุ : {{ item.name }}</div>
       <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
@@ -57,10 +57,10 @@
         </a>
         <div class="ui modal {{item.id}}">
           <div class="header">
-            ลบอุปกรณ์
+            ลบวัสดุ
           </div>
           <div class="content">
-            <p>ต้องการลบอุปกรณ์
+            <p>ต้องการลบวัสดุ
               <b>{{ item.name }}</b>
             </p>
           </div>

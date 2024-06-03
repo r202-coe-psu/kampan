@@ -10,8 +10,8 @@ BaseItemLostBreakForm = model_form(
     FlaskForm,
     exclude=["created_date", "user", "lost_from", "quantity"],
     field_args={
-        # "item": {"label": "ชื่ออุปกรณ์", "label_modifier": lambda i: i.name },
-        "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
+        # "item": {"label": "ชื่อวัสดุ", "label_modifier": lambda i: i.name },
+        "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
         "description": {"label": "คำอธิบาย"},
         # "quantity": {"label": "จำนวนทั้งหมด"},
     },
@@ -19,6 +19,6 @@ BaseItemLostBreakForm = model_form(
 
 
 class ItemLostBreakForm(BaseItemLostBreakForm):
-    item = fields.SelectField(label="ชื่ออุปกรณ์")
+    item = fields.SelectField(label="ชื่อวัสดุ")
     set_ = fields.IntegerField(label="จำนวนหน่วยใหญ่", default=0)
     piece = fields.IntegerField(label="จำนวนหน่วยเล็ก", default=0)

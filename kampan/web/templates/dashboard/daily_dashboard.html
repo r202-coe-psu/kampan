@@ -26,7 +26,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #7994c0; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cart-outline" style="font-size: 3rem; color: #003ea1;"></ion-icon>
-        <h5 class="card-title mt-3 ">คำสั่งเบิกอุปกรณ์ <span style="color: #003ea1;"><b>
+        <h5 class="card-title mt-3 ">คำสั่งเบิกวัสดุ <span style="color: #003ea1;"><b>
               <h3>{{ daily_item_orders | length }}</h3>
             </b></span> รายการ</h5>
         <p class="card-text "><a href="{{ url_for('item_orders.index', organization_id = organization.id) }}"
@@ -38,7 +38,7 @@
     <div class="card bg-white" style="border-radius: 10px; box-shadow: 0 -10px 0 #84d892; margin: 10px;">
       <div class="card-body text-center">
         <ion-icon name="cash-outline" style="font-size: 3rem; color: #00A11B;"></ion-icon>
-        <h5 class="card-title mt-3 ">จำนวนเงินของอุปกรณ์ที่เบิก <span style="color: #00A11B;"><b>
+        <h5 class="card-title mt-3 ">จำนวนเงินของวัสดุที่เบิก <span style="color: #00A11B;"><b>
               <h3>{{total_values}}</h3>
             </b></span> ฿ </h5>
         <p class="card-text "><a href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}"

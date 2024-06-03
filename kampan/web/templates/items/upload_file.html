@@ -2,7 +2,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-ลงทะเบียนอุปกรณ์
+ลงทะเบียนวัสดุ
 {% endblock %}
 
 {% block dashboard_title %}
@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">อุปกรณ์ทั้งหมด</a>
+<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุทั้งหมด</a>
 <i class="right angle icon divider"></i>
 <div class="active section">อัพโหลดไฟล์</div>
 {% endblock breadcrumbs %}
@@ -40,7 +40,7 @@
   <div class="right item">
     <a class="ui primary button"
       href="{{ url_for('items.download_template_items_file', organization_id=organization.id) }}">
-      <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนอุปกรณ์</a>
+      <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนวัสดุ</a>
   </div>
 </div>
 <div>

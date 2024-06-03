@@ -2,19 +2,18 @@
 {% import 'base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated%}
 
-{% block title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
-{% block dashboard_title %}อุปกรณ์ชำรุด หรือ สูญหาย{% endblock %}
+{% block title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
+{% block dashboard_title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'lost_breaks.index' %}
 
 <a class="ui primary button" href="{{ url_for('lost_breaks.add', organization_id=organization.id) }}">
-  เพิ่มอุปกรณ์ชำรุด/สูญหาย
+  เพิ่มวัสดุชำรุด/สูญหาย
 </a>
 
 {% else %}
-<a class="section"
-  href="{{ url_for('lost_breaks.index', organization_id=organization.id) }}">เพิ่มอุปกรณ์ชำรุด/สูญหาย</a>
+<a class="section" href="{{ url_for('lost_breaks.index', organization_id=organization.id) }}">เพิ่มวัสดุชำรุด/สูญหาย</a>
 {% endif %}
 {% endblock %}
 
@@ -38,13 +37,13 @@
     <table class="ui celled table">
       <thead>
         <tr>
-          <th>รูปอุปกรณ์</th>
-          <th>ชื่ออุปกรณ์</th>
+          <th>รูปวัสดุ</th>
+          <th>ชื่อวัสดุ</th>
           <th>คำอธิบาย</th>
           <th>จำนวนทั้งหมด</th>
-          <th>คลังอุปกรณ์</th>
+          <th>คลังวัสดุ</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>วันที่อุปกรณ์ชำรุดหรือสูญหาย</th>
+          <th>วันที่วัสดุชำรุดหรือสูญหาย</th>
           <th>แก้ไข/ลบข้อมูล</th>
         </tr>
       </thead>
@@ -116,10 +115,10 @@
             </a>
             <div class="ui modal {{item.id}}">
               <div class="header">
-                ลบข้อมูลอุปกรณ์ชำรุด หรือ สูญหาย
+                ลบข้อมูลวัสดุชำรุด หรือ สูญหาย
               </div>
               <div class="content">
-                <p>ต้องการลบข้อมูลอุปกรณ์ชำรุด หรือ สูญหาย
+                <p>ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย
                   <b>{{ item.item.name }}</b>
                 </p>
               </div>

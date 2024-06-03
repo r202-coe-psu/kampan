@@ -20,14 +20,14 @@ BaseInventoryForm = model_form(
     ],
     field_args={
         # "item": {
-        #     "label": "อุปกรณ์",
+        #     "label": "วัสดุ",
         #     "label_modifier": lambda i: f"{i.barcode_id} ({i.name})",
         # },
         "position": {
             "label": "ตำแหน่ง",
             "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
         },
-        "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
+        "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
         "set_": {"label": "จำนวนหน่วยใหญ่"},
         "price": {"label": "ราคา (หน่วยใหญ่ละ)"},
     },
@@ -35,7 +35,7 @@ BaseInventoryForm = model_form(
 
 
 class InventoryForm(BaseInventoryForm):
-    item = fields.SelectField("อุปกรณ์", choices=[("", "Item")])
+    item = fields.SelectField("วัสดุ", choices=[("", "Item")])
     calendar_select = fields.DateTimeField("วันที่เริ่มต้น", format="%Y-%m-%d")
     calendar_end = fields.DateTimeField("วันที่สุดท้าย", format="%Y-%m-%d")
     calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี", format="%Y-%m")
@@ -57,7 +57,7 @@ class SearchStartEndDateForm(FlaskForm):
         "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
     )
     item = fields.SelectField(
-        "อุปกรณ์", validate_choice=False, validators=None, choices=[("", "None")]
+        "วัสดุ", validate_choice=False, validators=None, choices=[("", "None")]
     )
 
 

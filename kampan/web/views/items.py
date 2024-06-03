@@ -30,7 +30,7 @@ def index():
         "status", "created_date"
     )
 
-    form.item.choices = [("", "เลือกอุปกรณ์")] + [
+    form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
     set_categories = set([f"{''.join(item.categories)}" for item in items])
@@ -69,7 +69,7 @@ def upload_file():
     form = forms.items.UploadFileForm()
     errors = request.args.get("errors")
     upload_errors = {
-        "headers": "ลงทะเบียนอุปกรณ์",
+        "headers": "ลงทะเบียนวัสดุ",
         "errors": errors,
     }
     if not form.validate_on_submit():

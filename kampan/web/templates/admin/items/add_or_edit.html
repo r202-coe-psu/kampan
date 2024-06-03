@@ -3,16 +3,16 @@
 
 <div class="active section">
   {% if 'edit' in request.path %}
-  {% set head = "แก้ไขอุปกรณ์"%}
+  {% set head = "แก้ไขวัสดุ"%}
   {% else %}
-  {% set head = "เพิ่มอุปกรณ์"%}
+  {% set head = "เพิ่มวัสดุ"%}
   {% endif %}
 </div>
 {% block title %}{{ head }}{% endblock %}
 {% block dashboard_title %}{{ head }}{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('admin.items.index', organization_id=organization.id) }}">อุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.items.index', organization_id=organization.id) }}">วัสดุ</a>
 <i class="right angle icon divider"></i>
 <div class="ui breadcrumb">
   <div class="active section">{{ head }}</div>

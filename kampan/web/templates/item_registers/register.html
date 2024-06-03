@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-แก้ไขอุปกรณ์
+แก้ไขวัสดุ
 {% else %}
-เพิ่มการลงทะเบียนอุปกรณ์
+เพิ่มการลงทะเบียนวัสดุ
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -17,9 +17,9 @@
 <i class="right angle icon divider"></i>
 <div class="active section">
   {% if 'edit' in request.path %}
-  แก้ไขข้อมูลอุปกรณ์
+  แก้ไขข้อมูลวัสดุ
   {% else %}
-  เพิ่มข้อมูลอุปกรณ์
+  เพิ่มข้อมูลวัสดุ
   {% endif %}
 </div>
 {% endblock %}

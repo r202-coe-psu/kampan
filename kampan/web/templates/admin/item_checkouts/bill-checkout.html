@@ -1,8 +1,8 @@
 {% extends '/admin/item_checkouts/index.html' %}
 {% import '/admin/base/pagination.html' as paginated %}
 
-{% block title %}รายการนำอุปกรณ์ออก{% endblock %}
-{% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
+{% block title %}รายการนำวัสดุออก{% endblock %}
+{% block dashboard_title %}รายการนำวัสดุออก{% endblock %}
 
 {% block breadcrumbs %}
 {{ super() }}
@@ -15,10 +15,10 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>วันที่นำอุปกรณ์ออก</th>
-        <th>ชื่ออุปกรณ์</th>
-        {#<th>คลังอุปกรณ์</th>#}
+        <th>รูปวัสดุ</th>
+        <th>วันที่นำวัสดุออก</th>
+        <th>ชื่อวัสดุ</th>
+        {#<th>คลังวัสดุ</th>#}
         <th>จำนวนทั้งหมด</th>
         {#<th>ราคา (ชิ้นละ)</th>#}
         <th>แก้ไข/ลบข้อมูล</th>
@@ -54,10 +54,10 @@
           </a>
           <div class="ui modal {{checkout.id}}">
             <div class="header">
-              ลบคำสั่งเบิกอุปกรณ์
+              ลบคำสั่งเบิกวัสดุ
             </div>
             <div class="content">
-              <p>ต้องการลบคำสั่งเบิกอุปกรณ์
+              <p>ต้องการลบคำสั่งเบิกวัสดุ
                 <b>{{ checkout.item.name }}</b>
               </p>
             </div>

@@ -10,7 +10,7 @@ ITEMS_HEADER = [
     "ชื่อ",
     "คำอธิบาย",
     "บาร์โค๊ด",
-    "รูปแบบอุปกรณ์",
+    "รูปแบบวัสดุ",
     "หมวดหมู่",
     "จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)",
     "หน่วยนับใหญ่",
@@ -64,8 +64,8 @@ def validate_items_engagement(file):
         if pd.isnull(row["บาร์โค๊ด"]):
             return f"ไม่พบบาร์โค๊ดในบรรทัดที่ {idx+2}"
 
-        if row["รูปแบบอุปกรณ์"] not in ["หนึ่งต่อหนึ่ง", "หนึ่งต่อหลายๆ"]:
-            return f"รูปแบบอุปกรณ์  '{row['รูปแบบอุปกรณ์']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} "
+        if row["รูปแบบวัสดุ"] not in ["หนึ่งต่อหนึ่ง", "หนึ่งต่อหลายๆ"]:
+            return f"รูปแบบวัสดุ  '{row['รูปแบบวัสดุ']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} "
 
         if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"]):
             return f"ไม่พบ จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2}"
@@ -92,7 +92,7 @@ def process_items_file(file, organization, user):
         #     description=row["คำอธิบาย"] if pd.isnull(row["คำอธิบาย"]) else "-",
         #     organization=organization,
         #     item_format=(
-        #         "one to many" if row["รูปแบบอุปกรณ์"] == "หนึ่งต่อหลายๆ" else "one to one"
+        #         "one to many" if row["รูปแบบวัสดุ"] == "หนึ่งต่อหลายๆ" else "one to one"
         #     ),
         #     categories=row["หมวดหมู่"],
         #     set_=1,
@@ -117,7 +117,7 @@ def process_items_file(file, organization, user):
         item.description = row["คำอธิบาย"] if not pd.isnull(row["คำอธิบาย"]) else "-"
         item.organization = organization
         item.item_format = (
-            "one to many" if row["รูปแบบอุปกรณ์"] == "หนึ่งต่อหลายๆ" else "one to one"
+            "one to many" if row["รูปแบบวัสดุ"] == "หนึ่งต่อหลายๆ" else "one to one"
         )
         item.categories = row["หมวดหมู่"]
         item.set_unit = "ชุด" if pd.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"]

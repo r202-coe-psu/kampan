@@ -7,7 +7,7 @@ from kampan import models
 
 
 class Inventory(me.Document):
-    # อุปกรณ์
+    # วัสดุ
     meta = {"collection": "inventories"}
     status = me.StringField(default="active", required=True)
 

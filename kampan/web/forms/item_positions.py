@@ -14,7 +14,7 @@ BaseItemPositionForm = model_form(
         "user",
     ],
     field_args={
-        "warehouse": {"label": "คลังอุปกรณ์", "label_modifier": lambda w: w.name},
+        "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
         "description": {"label": "คำอธิบาย"},
         "rack": {"label": "ชั้นวาง"},
         "row": {"label": "แถว"},

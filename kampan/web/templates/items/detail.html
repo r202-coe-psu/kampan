@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 
-{% set head = "รายละเอียดอุปกรณ์"%}
+{% set head = "รายละเอียดวัสดุ"%}
 
 {% block title %}{{ head }}{% endblock %}
 {% block dashboard_title %}{{ head }}{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">อุปกรณ์</a>
+<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุ</a>
 <i class="right angle icon divider"></i>
 <div class="ui breadcrumb">
   <div class="active section">{{ head }}</div>
@@ -22,7 +22,7 @@
 {% block content %}
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
-    <h2 class="ui header">ข้อมูลอุปกรณ์ {{ item.name }}
+    <h2 class="ui header">ข้อมูลวัสดุ {{ item.name }}
     </h2>
     <div class="image">
       {% if not item.image %}
@@ -40,7 +40,7 @@
       {{ row_detail(item.barcode_id) }}
       {{ row_detail("รายละเอียด :") }}
       {{ row_detail(item.description) }}
-      {{ row_detail("รูปแบบอุปกรณ์ :") }}
+      {{ row_detail("รูปแบบวัสดุ :") }}
       {{ row_detail( "หนึ่งต่อหลายๆชิ้น" if item.item_format == 'one to many' else "หนึ่งต่อหนึ่งชิ้น") }}
       {{ row_detail("หน่วยใหญ่ :") }}
       {{ row_detail(item.set_unit) }}

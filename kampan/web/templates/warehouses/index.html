@@ -1,15 +1,15 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}คลังอุปกรณ์{% endblock %}
-{% block dashboard_title %}คลังอุปกรณ์{% endblock %}
+{% block title %}คลังวัสดุ{% endblock %}
+{% block dashboard_title %}คลังวัสดุ{% endblock %}
 {% block breadcrumbs %}
 {% if request.endpoint == 'warehouses.index' %}
 <a class="ui primary button" href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
-  เพิ่มคลังอุปกรณ์
+  เพิ่มคลังวัสดุ
 </a>
 {% else %}
-<a class="section" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">คลังอุปกรณ์</a>
+<a class="section" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">คลังวัสดุ</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -57,10 +57,10 @@
           </a>
           <div class="ui modal {{warehouse.id}}">
             <div class="header">
-              ลบคลังอุปกรณ์
+              ลบคลังวัสดุ
             </div>
             <div class="content">
-              <p>ต้องการลบคลังอุปกรณ์
+              <p>ต้องการลบคลังวัสดุ
                 <b>{{ warehouse.name }}</b>
               </p>
             </div>

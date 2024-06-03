@@ -1,12 +1,12 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}แจ้งเตือนอุปกรณ์คงเหลือ{% endblock %}
+{% block title %}แจ้งเตือนวัสดุคงเหลือ{% endblock %}
 {% block dashboard_title %}การแจ้งเตือน{% endblock %}
 {% block breadcrumbs %}
 <div style="display: flex; justify-content: space-between; align-items: center;">
   <a style="font-size: 100%; color: black;">
-    แจ้งเตือนอุปกรณ์คงเหลือ
+    แจ้งเตือนวัสดุคงเหลือ
   </a>
   <span>
     <p>จำนวนข้อความแจ้งเตือน: <span style="color: rgb(69, 197, 236); padding-left: 5px;">
@@ -31,7 +31,7 @@
           <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_amount_items() }}/{{ item.minimum }}
             {{
             item.set_unit }}</span><br>
-          <span>ราคาอุปกรณ์ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
+          <span>ราคาวัสดุ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
         </div>
         <span>
           <a class="fluid ui primary button"
@@ -49,7 +49,7 @@
               ยกเลิกการแจ้งเตือน
             </div>
             <div class="content">
-              <p>ต้องการยกเลิกการแจ้งเตือนของอุปกรณ์
+              <p>ต้องการยกเลิกการแจ้งเตือนของวัสดุ
                 <b>{{ item.name }}</b>
               </p>
             </div>

@@ -14,7 +14,7 @@ BaseWarehouseForm = model_form(
         "owner",
     ],
     field_args={
-        "name": {"label": "ชื่อคลังอุปกรณ์"},
+        "name": {"label": "ชื่อคลังวัสดุ"},
         "description": {
             "label": "คำอธิบาย",
         },

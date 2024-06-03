@@ -1,16 +1,16 @@
 {% extends '/item_checkouts/index.html' %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}รายการนำอุปกรณ์ออก{% endblock %}
-{% block dashboard_title %}รายการนำอุปกรณ์ออก{% endblock %}
+{% block title %}รายการนำวัสดุออก{% endblock %}
+{% block dashboard_title %}รายการนำวัสดุออก{% endblock %}
 
 
 {% block breadcrumbs %}
 <a class="section"
-  href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกอุปกรณ์</a>
+  href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกวัสดุ</a>
 <i class="right angle icon divider"></i>
 <div class="active section">
-  รายละเอียดคำสั่งเบิกอุปกรณ์
+  รายละเอียดคำสั่งเบิกวัสดุ
 </div>
 {% endblock %}
 
@@ -20,9 +20,9 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>รูปอุปกรณ์</th>
-        <th>วันที่นำอุปกรณ์ออก</th>
-        <th>ชื่ออุปกรณ์</th>
+        <th>รูปวัสดุ</th>
+        <th>วันที่นำวัสดุออก</th>
+        <th>ชื่อวัสดุ</th>
         <th>จำนวนหน่วยใหญ่</th>
         <th>จำนวนหน่วยเล็ก</th>
         <th>จำนวนที่มีในคลัง</th>

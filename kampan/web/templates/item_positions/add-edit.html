@@ -3,9 +3,9 @@
 
 {% block title %}
 {% if 'edit' in request.path %}
-แก้ไขตำแหน่งอุปกรณ์
+แก้ไขตำแหน่งวัสดุ
 {% else %}
-เพิ่มตำแหน่งอุปกรณ์
+เพิ่มตำแหน่งวัสดุ
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -14,7 +14,7 @@
 
 {% block breadcrumbs %}
 {{ super() }}
-<div class="active section">เพิ่มตำแหน่งอุปกรณ์</div>
+<div class="active section">เพิ่มตำแหน่งวัสดุ</div>
 {% endblock %}
 
 {% block content %}
@@ -31,7 +31,7 @@
     </div>
 
     {% if 'edit' == request.path %}
-    <button class="ui primary button" type="submit">แก้ไขตำแหน่งอุปกรณ์</button>
+    <button class="ui primary button" type="submit">แก้ไขตำแหน่งวัสดุ</button>
     {% else %}
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
     {% endif %}

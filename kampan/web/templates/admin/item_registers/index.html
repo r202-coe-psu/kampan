@@ -2,19 +2,19 @@
 {% import '/admin/base/html-renderer.html' as renderer %}
 {% import '/admin/base/pagination.html' as paginated%}
 
-{% block title %}นำเข้าอุปกรณ์{% endblock %}
-{% block dashboard_title %}นำเข้าอุปกรณ์{% endblock %}
+{% block title %}นำเข้าวัสดุ{% endblock %}
+{% block dashboard_title %}นำเข้าวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'admin.item_registers.index' %}
 
 <a class="ui primary button" href="{{ url_for('admin.item_registers.register') }}">
-  เพิ่มบิลอุปกรณ์
+  เพิ่มบิลวัสดุ
 </a>
 
 
 {% else %}
-<a class="section" href="{{ url_for('admin.item_registers.index') }}">ลงทะเบียนอุปกรณ์</a>
+<a class="section" href="{{ url_for('admin.item_registers.index') }}">ลงทะเบียนวัสดุ</a>
 {% endif %}
 
 {% endblock %}
@@ -43,10 +43,10 @@
           <th>คำอธิบาย</th>
           <th>ร้านค้า</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>วันลงทะเบียนอุปกรณ์</th>
-          <th>นำเข้าอุปกรณ์</th>
-          <th>รายการนำเข้าอุปกรณ์</th>
-          <th>แก้ไข/ลบข้อมูลอุปกรณ์</th>
+          <th>วันลงทะเบียนวัสดุ</th>
+          <th>นำเข้าวัสดุ</th>
+          <th>รายการนำเข้าวัสดุ</th>
+          <th>แก้ไข/ลบข้อมูลวัสดุ</th>
         </tr>
       </thead>
       <tbody>
@@ -59,7 +59,7 @@
           <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
           <td data-label="Checkin">
             <a class="ui primary button" href="{{ url_for('admin.inventories.register', item_register_id=item.id) }}">
-              นำเข้าอุปกรณ์
+              นำเข้าวัสดุ
             </a>
           </td>
           <td data-label="Checkin Items">
@@ -80,10 +80,10 @@
             </a>
             <div class="ui modal {{item.id}}">
               <div class="header">
-                ลบข้อมูลนำเข้าอุปกรณ์
+                ลบข้อมูลนำเข้าวัสดุ
               </div>
               <div class="content">
-                <p>ต้องการลบข้อมูลนำเข้าอุปกรณ์ <b>{{ item.description }}</b><br />
+                <p>ต้องการลบข้อมูลนำเข้าวัสดุ <b>{{ item.description }}</b><br />
                   เลขกำกับใบเสร็จ : <b>{{ item.receipt_id }}</b>
                 </p>
               </div>

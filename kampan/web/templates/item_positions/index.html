@@ -1,16 +1,16 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/pagination.html' as paginated %}
 
-{% block title %}ตำแหน่งอุปกรณ์{% endblock %}
-{% block dashboard_title %}ตำแหน่งอุปกรณ์{% endblock %}
+{% block title %}ตำแหน่งวัสดุ{% endblock %}
+{% block dashboard_title %}ตำแหน่งวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
 <a class="ui primary button" href="{{ url_for('item_positions.add_or_edit', organization_id=organization.id) }}">
-  เพิ่มตำแหน่งอุปกรณ์
+  เพิ่มตำแหน่งวัสดุ
 </a>
 {% else %}
-<a class="section" href="{{ url_for('item_positions.index', organization_id=organization.id) }}">ตำแหน่งอุปกรณ์</a>
+<a class="section" href="{{ url_for('item_positions.index', organization_id=organization.id) }}">ตำแหน่งวัสดุ</a>
 <div class="divider"> / </div>
 {% endif %}
 {% endblock %}
@@ -21,7 +21,7 @@
   <table class="ui celled table table-hover ">
     <thead>
       <tr>
-        <th class="table-header">คลังอุปกรณ์</th>
+        <th class="table-header">คลังวัสดุ</th>
         <th class="table-header">คำอธิบาย</th>
         <th class="table-header">ชั้นวาง</th>
         <th class="table-header">แถว</th>
@@ -47,10 +47,10 @@
           </a>
           <div class="ui modal {{item_position.id}}">
             <div class="header">
-              ลบตำแหน่งอุปกรณ์
+              ลบตำแหน่งวัสดุ
             </div>
             <div class="content">
-              <p>ต้องการลบตำแหน่งอุปกรณ์
+              <p>ต้องการลบตำแหน่งวัสดุ
                 <b>{{ item_position.warehouse.name }}</b><br />
                 <b>{{ item_position.description }}</b>
               </p>

@@ -39,11 +39,11 @@ class ItemForm(BaseItemForm):
         "รูปภาพ",
         validators=[FileAllowed(["png", "jpg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
-    item_format = fields.SelectField("รูปแบบอุปกรณ์", choices=models.items.ITEM_FORMAT)
+    item_format = fields.SelectField("รูปแบบวัสดุ", choices=models.items.ITEM_FORMAT)
 
 
 class SearchItemForm(FlaskForm):
-    item = fields.SelectField("อุปกรณ์", validate_choice=False)
+    item = fields.SelectField("วัสดุ", validate_choice=False)
     categories = fields.SelectField("หมวดหมู่", validate_choice=False)
 
 
