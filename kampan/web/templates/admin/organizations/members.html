@@ -32,7 +32,7 @@
         <tr>
           <td data-label="Organization">{{ org_user.user.get_name() }}</td>
           <td data-label="Email">{{ org_user.user.email }}</td>
-          <td data-label="Roles">{{ org_user.role }}</td>
+          <td data-label="Roles">{{ org_user.roles }}</td>
           <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
             org_user.created_date else "-"}}
           </td>

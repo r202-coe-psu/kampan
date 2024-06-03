@@ -4,10 +4,24 @@ import datetime
 from flask_login import UserMixin
 from flask import url_for
 
+from kampan.models.organizations import ORGANIZATION_ROLES
+
 
 class UserSetting(me.EmbeddedDocument):
     current_organization = me.ReferenceField("Organization", dbref=True)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
+class TemporaryUser(me.Document):
+    first_name = me.StringField(required=True, max_length=256)
+    last_name = me.StringField(required=True, max_length=256)
+    email = me.StringField(required=True, unique=True)
+    roles = me.ListField(
+        me.StringField(choices=ORGANIZATION_ROLES),
+        default=["staff"],
+        required=True,
+    )
+    meta = {"collection": "temporary_users"}
 
 
 class User(me.Document, UserMixin):

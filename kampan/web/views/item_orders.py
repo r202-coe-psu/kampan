@@ -62,6 +62,7 @@ def order():
         id=organization_id, status="active"
     ).first()
     form = forms.item_orders.OrderItemForm()
+    form.approver.choices = []
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(

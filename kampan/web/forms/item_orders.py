@@ -16,7 +16,7 @@ BaseOrderItemForm = model_form(
 
 
 class OrderItemForm(BaseOrderItemForm):
-    pass
+    approver = fields.SelectField("ผู้อนุญาต")
 
 
 def get_approved_amount_form(items):

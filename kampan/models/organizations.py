@@ -8,9 +8,9 @@ from kampan import models
 
 ORGANIZATION_ROLES = [
     ("staff", "พนักงาน"),
-    ("endorser", "ผู้มีสิทธิ์อนุญาตแทน"),
-    ("supervisor", "หัวหน้าแผนก"),
-    ("supervisor supplier", "หัวหน้าพัสดุ"),
+    ("endorser", "ผู้มีสิทธิ์อนุมัติ"),
+    ("supervisor", "หัวหน้า"),
+    ("supervisor supplier", "หัวหน้าเจ้าหน้าที่พัสดุ"),
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
 ]
 
@@ -34,6 +34,14 @@ class OrganizationUserRole(me.Document):
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
+
+    def display_roles(self):
+        roles = []
+        for role in self.roles:
+            for organization_role, display_role in ORGANIZATION_ROLES:
+                if role == organization_role:
+                    roles.append(display_role)
+        return " ,".join(roles)
 
 
 class Organization(me.Document):

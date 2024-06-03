@@ -26,7 +26,7 @@
   <form class="ui form" method="POST">
     {{ form.hidden_tag() }}
     {{ renderer.render_search_multiple_select(form.members) }}
-    {{ renderer.render_select(form.role) }}
+    {{ renderer.render_select(form.roles) }}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>

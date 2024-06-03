@@ -81,7 +81,7 @@ def add_member(organization_id):
         org_user = models.OrganizationUserRole(
             organization=organization,
             user=user,
-            role=form.role.data,
+            roles=form.roles.data,
             added_by=current_user._get_current_object(),
             last_modifier=current_user._get_current_object(),
             last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
@@ -91,7 +91,7 @@ def add_member(organization_id):
 
     return redirect(
         url_for(
-            "organizations.index",
+            "organizations.organizaiton_users",
             organization_id=organization_id,
         )
     )
@@ -173,7 +173,7 @@ def edit_roles(organization_id, org_user_id):
             org_user=org_user,
         )
 
-    org_user.role = form.role.data
+    org_user.roles = form.roles.data
     org_user.last_modifier = current_user._get_current_object()
     org_user.last_ip_address = request.headers.get(
         "X-Forwarded-For", request.remote_addr
