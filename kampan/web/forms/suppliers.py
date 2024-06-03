@@ -23,7 +23,7 @@ BaseSupplierForm = model_form(
         "tax_id": {"label": "เลขผู้เสียภาษี"},
         "person_phone": {"label": "เบอร์โทรมือถือ"},
         "company_phone": {"label": "เบอร์โทรร้านค้า/บริษัท"},
-        "email": {"label": "อีเมลล์"},
+        "email": {"label": "อีเมล"},
         "supplier_type": {"label": "ประเภทผู้จัดหาสินค้า"},
     },
 )

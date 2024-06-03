@@ -55,9 +55,9 @@ def upload_file():
         )
 
     if form.upload_file.data:
-        errors = utils.items.validate_items_engagement(form.upload_file.data)
+        errors = utils.suppliers.validate_supplier_engagement(form.upload_file.data)
         if not errors:
-            completed = utils.items.process_items_file(
+            completed = utils.suppliers.process_supplier_file(
                 form.upload_file.data, organization, current_user
             )
         else:

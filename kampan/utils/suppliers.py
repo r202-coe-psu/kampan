@@ -7,15 +7,15 @@ from kampan import models
 
 
 SUPPLIERS_HEADER = [
-    "ชื่อ",
+    "ประเภทผู้จัดหาสินค้า",
+    "เลขผู้เสียภาษี",
+    "ชื่อร้าน/บริษัท",
+    "ชื่อบุคคล",
+    "ที่อยู่",
     "คำอธิบาย",
-    "บาร์โค๊ด",
-    "รูปแบบอุปกรณ์",
-    "หมวดหมู่",
-    "จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)",
-    "หน่วยนับใหญ่",
-    "หน่วยนับเล็ก",
-    "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)",
+    "เบอร์โทรมือถือ",
+    "เบอร์โทรร้านค้า/บริษัท",
+    "อีเมล",
 ]
 
 
@@ -55,84 +55,51 @@ def validate_supplier_engagement(file):
             return f"ไม่พบ {column} ในหัวตาราง"
 
     for idx, row in df.iterrows():
-        if pd.isnull(row["ชื่อ"]):
-            return f"ไม่พบชื่อในบรรทัดที่ {idx+2}"
+        if pd.isnull(row["ประเภทผู้จัดหาสินค้า"]):
+            return f"ไม่พบประเภทผู้จัดหาสินค้าในบรรทัดที่ {idx+2}"
 
-        if pd.isnull(row["หมวดหมู่"]):
-            return f"ไม่พบหมวดหมู่ในบรรทัดที่ {idx+2}"
+        if row["ประเภทผู้จัดหาสินค้า"] not in [
+            "person",
+            "market",
+            "incorporated",
+            "company limited",
+            "corporation limited",
+            "public company limited",
+            "partnership limited",
+        ]:
+            return (
+                f"ประเภทผู้จัดหาสินค้า  '{row['ประเภทผู้จัดหาสินค้า']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} "
+            )
 
-        if pd.isnull(row["บาร์โค๊ด"]):
-            return f"ไม่พบบาร์โค๊ดในบรรทัดที่ {idx+2}"
+        if pd.isnull(row["เลขผู้เสียภาษี"]):
+            return f"ไม่พบเลขผู้เสียภาษีในบรรทัดที่ {idx+2}"
 
-        if row["รูปแบบอุปกรณ์"] not in ["หนึ่งต่อหนึ่ง", "หนึ่งต่อหลายๆ"]:
-            return f"รูปแบบอุปกรณ์  '{row['รูปแบบอุปกรณ์']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} "
-
-        if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"]):
-            return f"ไม่พบ จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2}"
-        try:
-            number = int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-        except:
-            return f"จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)']}'"
-
-        if pd.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"]):
-            return f"ไม่พบ จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2}"
-        try:
-            number = int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-        except:
-            return f"จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)']}'"
+        if pd.isnull(row["ที่อยู่"]):
+            return f"ไม่พบที่อยู่ในบรรทัดที่ {idx+2}"
 
 
 def process_supplier_file(file, organization, user):
     df = pd.read_excel(file)
 
     for idx, row in df.iterrows():
-        print("---->", idx)
-        # item = models.Item(
-        #     name=row["ชื่อ"],
-        #     description=row["คำอธิบาย"] if pd.isnull(row["คำอธิบาย"]) else "-",
-        #     organization=organization,
-        #     item_format=(
-        #         "one to many" if row["รูปแบบอุปกรณ์"] == "หนึ่งต่อหลายๆ" else "one to one"
-        #     ),
-        #     categories=row["หมวดหมู่"],
-        #     set_=1,
-        #     set_unit="ชุด" if pd.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"],
-        #     piece_unit="ชิ้น" if pd.isnull(row["หน่วยนับเล็ก"]) else row["หน่วยนับเล็ก"],
-        #     piece_per_set=(
-        #         1
-        #         if pd.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-        #         else int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-        #     ),
-        #     minimum=(
-        #         1
-        #         if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-        #         else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-        #     ),
-        #     barcode_id=row["บาร์โค๊ด"],
-        #     created_by=user,
-        # )
-        item = models.supplier.Item()
-        item.image = None
-        item.name = row["ชื่อ"]
-        item.description = row["คำอธิบาย"] if not pd.isnull(row["คำอธิบาย"]) else "-"
-        item.organization = organization
-        item.item_format = (
-            "one to many" if row["รูปแบบอุปกรณ์"] == "หนึ่งต่อหลายๆ" else "one to one"
+
+        supplier = models.Supplier()
+        supplier.company_name = (
+            row["ชื่อร้าน/บริษัท"] if not pd.isnull(row["ชื่อร้าน/บริษัท"]) else ""
         )
-        item.categories = row["หมวดหมู่"]
-        item.set_unit = "ชุด" if pd.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"]
-        item.piece_unit = "ชิ้น" if pd.isnull(row["หน่วยนับเล็ก"]) else row["หน่วยนับเล็ก"]
-        item.piece_per_set = (
-            1
-            if pd.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-            else int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
+        supplier.person_name = row["ชื่อบุคคล"] if not pd.isnull(row["ชื่อบุคคล"]) else ""
+        supplier.supplier_type = row["ประเภทผู้จัดหาสินค้า"]
+        supplier.description = row["คำอธิบาย"] if not pd.isnull(row["คำอธิบาย"]) else ""
+        supplier.address = row["ที่อยู่"]
+        supplier.tax_id = row["เลขผู้เสียภาษี"]
+        supplier.email = row["อีเมล"] if not pd.isnull(row["อีเมล"]) else ""
+        supplier.person_phone = (
+            row["เบอร์โทรมือถือ"] if not pd.isnull(row["เบอร์โทรมือถือ"]) else ""
         )
-        item.minimum = (
-            1
-            if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-            else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
+        supplier.company_phone = (
+            row["เบอร์โทรร้านค้า/บริษัท"] if not pd.isnull(row["เบอร์โทรร้านค้า/บริษัท"]) else ""
         )
-        item.barcode_id = row["บาร์โค๊ด"]
-        item.created_by = user
-        item.save()
+        supplier.organization = organization
+        supplier.created_by = user
+        supplier.save()
     return True
