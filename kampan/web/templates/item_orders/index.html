@@ -45,7 +45,9 @@
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
           <td>
-            {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+            {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
+            "pending"
+            %}
             <a class="ui primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
               เบิกวัสดุ

@@ -79,16 +79,18 @@ class PSUSMTP:
 #     return text_format
 
 
-def get_endorser_text_format(division, creator, endorser, order, endorsement_url):
+def get_endorser_text_format(division, sender, endorser, order, endorsement_url):
     if not division or not endorser:
         return
 
     text_format = {
         "organization_name": division.organization.name,
-        "user_name": creator.get_name(),
+        "sender_name": sender.get_name(),
+        "sender_email": sender.email,
         "division_name": division.name,
         "division_description": division.description,
-        "order_date": order.updated_date,
+        "order_date": order.updated_date.strftime("%d/%m/%Y %H:%M"),
+        "sent_item_datetime": order.sent_item_date,
         "order_objective": order.description,
         "endorser_name": endorser.get_name(),
         "endorsement_url": endorsement_url,

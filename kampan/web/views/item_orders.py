@@ -109,12 +109,13 @@ def edit(order_id):
     form.head_endorser.choices = [
         (str(org_user.user.id), org_user.user.get_name())
         for org_user in organization.get_organization_users()
-        if "endorser" in org_user.roles or "supervisor" in org_user.roles
+        if ("endorser" in org_user.roles or "head" in org_user.roles)
+        and org_user.division == current_user.get_current_division()
     ]
     form.admin_approver.choices = [
         (str(org_user.user.id), org_user.user.get_name())
         for org_user in organization.get_organization_users()
-        if "endorser" in org_user.roles or "supervisor" in org_user.roles
+        if ("admin" in org_user.roles)
     ]
     if not form.validate_on_submit():
         print(form.errors)

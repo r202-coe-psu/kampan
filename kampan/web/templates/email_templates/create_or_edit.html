@@ -97,9 +97,16 @@
       <div class="item">
         <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
-          <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
+          <div class="item"> <b>{{ '{{ sender_name }}' }}</b> - ชื่อผู้ส่ง</div>
+          <div class="item"> <b>{{ '{{ sender_email }}' }}</b> - อีเมลผู้ส่ง</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="header"><i class="file alternate icon"></i> รายละเอียดการเบิก</div>
+        <div class="ui list">
           <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
           <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
+          <div class="item"> <b>{{ '{{ sent_item_datetime }}' }}</b> - วันเวลาที่รับวัสดุ</div>
         </div>
       </div>
       <div class="item">
