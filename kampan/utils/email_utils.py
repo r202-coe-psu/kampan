@@ -90,7 +90,7 @@ def get_endorser_text_format(division, creator, endorser, order, endorsement_url
         "division_description": division.description,
         "order_date": order.updated_date,
         "order_objective": order.description,
-        "endorser_name": endorser.user.get_name(),
+        "endorser_name": endorser.get_name(),
         "endorsement_url": endorsement_url,
     }
 
@@ -228,17 +228,18 @@ def force_send_email_order(
 ):
     creator = order.created_by
     division = order.division
-    endorsers = division.get_endorsers()
-
+    endorser = order.head_endorser
     organization = division.organization
     email_template = organization.get_default_email_template()
 
     if not email_template:
         logger.debug(f"There are no email template for {division.name}")
         return False
-    if not endorsers:
+
+    if not endorser:
         logger.debug(f"attendant endorser is required")
         return False
+
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
         return False
@@ -250,25 +251,27 @@ def force_send_email_order(
 
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
-    for endorser in endorsers:
-        host_url = setting.get("KAMPAN_HOST_URL")
-        endorsement_url = f"{host_url}/approve_orders/{order.id}/approved_detail?organization_id={organization.id}"
-        text_format = get_endorser_text_format(
-            division, creator, endorser, order, endorsement_url
-        )
 
-        email_subject = template_subject.render(text_format)
-        email_body = template_body.render(text_format)
+    host_url = setting.get("KAMPAN_HOST_URL")
+    endorsement_url = f"{host_url}/approve_orders/{order.id}/endorser_approved_detail?organization_id={organization.id}"
+    text_format = get_endorser_text_format(
+        division, creator, endorser, order, endorsement_url
+    )
 
-        logger.debug(f"send email to {endorser.user.email}")
+    email_subject = template_subject.render(text_format)
+    email_body = template_body.render(text_format)
 
-        order_email = models.OrderEmail(receiver_email=creator.email, sent_by=user)
-        order.emails.append(order_email)
-        order.save()
-        if psu_smtp.send_email(endorser.user.email, email_subject, email_body):
-            order.emails[-1].status = "sent"
-        else:
-            order.emails[-1].status = "failed"
+    logger.debug(f"send email to {endorser.email}")
+
+    order_email = models.OrderEmail(
+        receiver_email=endorser.email, sent_by=user, name="แจ้งเตือนผู้อนุมัติระดับแผนก"
+    )
+    order.emails.append(order_email)
+    order.save()
+    if psu_smtp.send_email(endorser.email, email_subject, email_body):
+        order.emails[-1].status = "sent"
+    else:
+        order.emails[-1].status = "failed"
     order.save()
     psu_smtp.quit()
     return True

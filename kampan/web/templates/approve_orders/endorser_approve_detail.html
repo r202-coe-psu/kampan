@@ -22,6 +22,8 @@
 
 {% block content %}
 {% if checkouts %}
+
+{% if order.status=="pending" %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
     <a class="ui positive button" onclick="showModal('approve')"
@@ -78,7 +80,7 @@
     </a>
   </div>
 </div>
-
+{% endif %}
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">

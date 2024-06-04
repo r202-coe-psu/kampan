@@ -13,11 +13,29 @@
 {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
-    <a class="ui icon button"
-      href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}"
-      style=" color: white; background-color: rgb(59, 115, 199);">
+    <a class="ui icon button" onclick="showModal('email')" style=" color: white; background-color: rgb(59, 115, 199);">
       ส่งอีเมลแจ้งเตือน
     </a>
+  <div class="ui modal email">
+    <div class="header">
+      ส่งอีเมลแจ้งเตือน
+    </div>
+    <div class="content">
+      <p>ต้องการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
+
+      </p>
+    </div>
+    <div class="actions">
+      <button class="ui black deny button">
+        ยกเลิก
+      </button>
+      <a class="ui positive right labeled icon button"
+        href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}">
+        ยืนยัน
+        <i class="checkmark icon"></i>
+      </a>
+    </div>
+  </div>
   </p>
 </div>
 {% endif %}
@@ -122,7 +140,7 @@
 {% block additional_js %}
 <script type="text/javascript">
 
-  function showDeleteModal(checkout_item_id) {
+  function showModal(checkout_item_id) {
     checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
       ;
   }

@@ -107,7 +107,6 @@ def endorser_approve(order_id):
 @acl.organization_roles_required("head", "endorser")
 def endorser_denied(order_id):
     organization_id = request.args.get("organization_id")
-    role = request.args.get("role")
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
@@ -118,12 +117,9 @@ def endorser_denied(order_id):
         checkout.status = "denied"
         checkout.save()
 
-    if role == "admin":
-        return redirect(
-            url_for("approve_orders.endorser_index", organization_id=organization_id)
-        )
-
-    return redirect(url_for("approve_orders.index", organization_id=organization_id))
+    return redirect(
+        url_for("approve_orders.endorser_index", organization_id=organization_id)
+    )
 
 
 @module.route("/<order_id>/endorser_approved_detail", methods=["GET", "POST"])
@@ -212,7 +208,6 @@ def supervisor_supplier_approve(order_id):
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_denied(order_id):
     organization_id = request.args.get("organization_id")
-    role = request.args.get("role")
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
@@ -223,17 +218,10 @@ def supervisor_supplier_denied(order_id):
         checkout.status = "denied"
         checkout.save()
 
-    if role == "admin":
-        return redirect(
-            url_for(
-                "approve_orders.admin_index",
-                organization_id=organization_id,
-            )
-        )
-
     return redirect(
         url_for(
-            "approve_orders.supervisor_supplier_index", organization_id=organization_id
+            "approve_orders.supervisor_supplier_index",
+            organization_id=organization_id,
         )
     )
 
@@ -357,7 +345,6 @@ def admin_approve(order_id):
 @acl.organization_roles_required("admin")
 def admin_denied(order_id):
     organization_id = request.args.get("organization_id")
-    role = request.args.get("role")
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
@@ -368,15 +355,12 @@ def admin_denied(order_id):
         checkout.status = "denied"
         checkout.save()
 
-    if role == "admin":
-        return redirect(
-            url_for(
-                "admin_approve_orders.admin_index",
-                organization_id=organization_id,
-            )
+    return redirect(
+        url_for(
+            "approve_orders.admin_index",
+            organization_id=organization_id,
         )
-
-    return redirect(url_for("approve_orders.index", organization_id=organization_id))
+    )
 
 
 @module.route("/<order_id>/admin_approved_detail", methods=["GET", "POST"])
@@ -397,4 +381,31 @@ def admin_approved_detail(order_id):
         order=order,
         checkouts=checkouts,
         organization=organization,
+    )
+
+
+@module.route("/<order_id>/admin_approve_page", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def admin_approve_page(order_id):
+    form = forms.approve_orders.AdminApproveForm()
+    order = models.OrderItem.objects.get(id=order_id)
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/approve_orders/admin_approve_page.html",
+            order_id=order_id,
+            form=form,
+            order=order,
+            organization=organization,
+        )
+    return redirect(
+        url_for(
+            "approve_orders.admin_approve",
+            organization_id=organization_id,
+            order_id=order_id,
+        )
     )

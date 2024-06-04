@@ -199,7 +199,7 @@ def edit_roles(organization_id, org_user_id):
             org_user=org_user,
         )
 
-    org_user.role = form.role.data
+    org_user.roles = form.roles.data
     org_user.last_modifier = current_user._get_current_object()
     org_user.last_ip_address = request.headers.get(
         "X-Forwarded-For", request.remote_addr

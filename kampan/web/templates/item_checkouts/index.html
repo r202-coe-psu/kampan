@@ -19,22 +19,30 @@
       <thead>
         <tr>
           <th>วันที่สั่งเบิกวัสดุ</th>
+          <th>วัตถุประสงค์</th>
           <th>รูปวัสดุ</th>
           <th>ชื่อวัสดุ</th>
-          <th>จำนวนหน่วยใหญ่</th>
+          {#} <th>จำนวนหน่วยใหญ่</th>{#}
           <th>จำนวนหน่วยเล็ก</th>
-          <th>จำนวนที่เบิกทั้งหมด</th>
+          {#<th>จำนวนที่เบิกทั้งหมด</th>{#}
           <th>สถานะ</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>เบิกจากคลังวัสดุ</th>
-          <th>จำนวนที่ได้รับ</th>
-          <th>ราคา (ชิ้นละ)</th>
+          <th>ชื่อผู้ขอเบิกใช้งาน</th>
+          <th>ราคา (หน่วยเล็กละ)</th>
         </tr>
       </thead>
       <tbody>
         {% for checkout in paginated_checkouts.items %}
         <tr>
           <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Objective"> <a class="primary button"
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
+              style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
+              <i class="eye icon"></i>
+            </a><a
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
+              class="ui secondary text" style="color: black;">{{ checkout.order.description }}</a>
+
+          </td>
           <td data-label="Image" class="center aligned">
             <div>
               {% if not checkout.item.image %}
@@ -47,15 +55,10 @@
             </div>
           </td>
           <td data-label="Item">{{ checkout.item.name }}
-            <a class="ui primary button"
-              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
-              style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
-              <i class="eye icon"></i>
-            </a>
           </td>
-          <td data-label="Set">{{ checkout.set_ }}</td>
+          {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
           <td data-label="Piece">{{ checkout.piece }}</td>
-          <td data-label="Quantity">{{ checkout.quantity }}</td>
+          {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
           {% if checkout.order.status == "pending" %}
           <td data-label="Status" class="yellow">
             <span class="ui yellow text">รออนุมัติ</span>
@@ -75,9 +78,10 @@
           {% endif %}
 
           <td data-label="User">{{ checkout.user.get_name() }}</td>
-          <td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
-          <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>
-          <td data-label="Price">{{ checkout.price if checkout.price else "-"}}</td>
+          {#}<td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
+          <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>{#}
+          <td data-label="Price">{{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

@@ -5,6 +5,7 @@ from kampan import models
 
 
 class OrderEmail(me.EmbeddedDocument):
+    name = me.StringField()
     receiver_email = me.StringField(required=True)
     status = me.StringField(required=True, default="not_sent")
     sent_date = me.DateTimeField(default=datetime.datetime.now, required=True)
@@ -29,7 +30,7 @@ class OrderItem(me.Document):
     division = me.ReferenceField("Division", dbref=True)
 
     emails = me.EmbeddedDocumentListField(OrderEmail)
-
+    sent_item_date = me.DateTimeField()
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True

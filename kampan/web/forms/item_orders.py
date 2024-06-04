@@ -8,7 +8,14 @@ from kampan import models
 BaseOrderItemForm = model_form(
     models.OrderItem,
     FlaskForm,
-    exclude=["created_date", "updated_date", "approval_status", "status", "created_by"],
+    exclude=[
+        "created_date",
+        "updated_date",
+        "approval_status",
+        "status",
+        "created_by",
+        "sent_item_date",
+    ],
     field_args={
         "description": {"label": "วัตถุประสงค์"},
     },

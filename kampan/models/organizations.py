@@ -130,7 +130,7 @@ class Organization(me.Document):
 
     def get_endorsers(self):
         endorsers_in_org = models.OrganizationUserRole.objects(
-            organization=self, role__in=["endorser"], status="active"
+            organization=self, roles__in=["endorser"], status="active"
         )
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)

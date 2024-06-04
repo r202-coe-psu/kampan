@@ -32,7 +32,7 @@
         {% for division_user in paginated_division_users.items %}
         <tr>
           <td data-label="Organization">{{ division_user.user.get_name() }}</td>
-          <td data-label="Roles">{{ division_user.role }}</td>
+          <td data-label="Roles">{{ division_user.display_roles() }}</td>
           <td data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
             division_user.created_date else "-"}}
           </td>

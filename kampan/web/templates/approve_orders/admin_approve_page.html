@@ -1,0 +1,81 @@
+{% extends '/item_orders/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+การยืนยันอนุมัติคำสั่งเบิก
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('approve_orders.admin_index', organization_id=organization.id) }}">
+  คำสั่งเบิกวัสดุ </a>
+<i class="right angle icon divider"></i>
+<a class="section"
+  href="{{ url_for('approve_orders.admin_approved_detail',order_id=order.id, organization_id=organization.id) }}">
+  เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก
+</a>
+<i class="right angle icon divider"></i>
+<div class="active section">
+  อนุมัติคำสั่งเบิก
+</div>
+{% endblock %}
+
+
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST">
+    <div style="margin-top: 1rem; margin-bottom: 1rem;">
+      <span class="ui large text header">คำขอ : {{ order.description }}</span>
+    </div>
+    {{ form.hidden_tag() }}
+    {{ renderer.render_calendar_default(form.sent_item_date, calendar_id="sent_item_date") }}
+
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showModal(order_id) {
+    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+<script type="text/javascript">
+  datetime_formatter = {
+    datetime: "DD/MM/YYYY h:mm"
+  };
+  var calendar_setting = {
+    type: 'datetime',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#sent_item_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}

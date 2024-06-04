@@ -85,6 +85,6 @@ class Division(me.Document):
         return models.OrganizationUserRole.objects(
             organization=self.organization,
             status="active",
-            role__in=["endorser", "admin"],
+            roles__in=["endorser", "head"],
             division=self,
         ).order_by("-first_name")
