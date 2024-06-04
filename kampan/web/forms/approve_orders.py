@@ -6,6 +6,13 @@ from flask_mongoengine.wtf import model_form
 from kampan import models
 
 
+class SupplierApproveForm(FlaskForm):
+    admin_approver = fields.SelectField(
+        "เจ้าหน้าที่พัสดุที่จัดการวัสดุ",
+        validators=[validators.InputRequired()],
+    )
+
+
 class AdminApproveForm(FlaskForm):
     sent_item_date = fields.DateTimeField(
         "วันที่ส่งมอบพัสดุ",

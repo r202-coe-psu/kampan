@@ -26,7 +26,8 @@
 {% if order.status=="pending on supervisor supplier" %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
-    <a class="ui positive button" onclick="showModal('approve')"
+    <a class="ui positive button"
+      href="{{ url_for('approve_orders.supervisor_supplier_approve_page',order_id=order.id, organization_id=organization.id)}}"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
     <a class="ui negative button" onclick="showModal('denied')"
@@ -58,28 +59,6 @@
   </div>
 </div>
 
-<div class="ui modal approve">
-  <div class="header">
-    <span class="ui text green">
-      อนุมัติการเบิกวัสดุ
-    </span>
-  </div>
-  <div class="content">
-    <p>ต้องการอนุมัติการเบิกวัสดุ
-      <b>{{ order.description }}</b>
-    </p>
-  </div>
-  <div class="actions">
-    <button class="ui black deny button">
-      ยกเลิก
-    </button>
-    <a class="ui positive right labeled icon button"
-      href="{{ url_for('approve_orders.supervisor_supplier_approve',order_id=order.id, organization_id=organization.id)}}">
-      ยืนยัน
-      <i class="checkmark icon"></i>
-    </a>
-  </div>
-</div>
 {% endif %}
 
 <div style="padding-bottom: 1em ;">

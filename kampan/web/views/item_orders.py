@@ -75,7 +75,6 @@ def order():
         (str(org_user.user.id), org_user.user.get_name())
         for org_user in organization.get_organization_users()
         if ("admin" in org_user.roles)
-        and org_user.division == current_user.get_current_division()
     ]
     if not form.validate_on_submit():
         print(form.errors)
