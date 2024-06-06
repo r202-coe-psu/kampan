@@ -18,6 +18,7 @@ BaseCheckoutItemForm = model_form(
         "quantity",
         "inventories",
         "set_",
+        "organization",
     ],
     field_args={
         "order": {"label": "คำสั่งเบิก"},

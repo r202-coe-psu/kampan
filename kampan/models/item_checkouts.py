@@ -16,6 +16,7 @@ class BaseCheckoutItem:
     piece = me.IntField(required=True, min_value=0, default=0)
     quantity = me.IntField(required=True, min_value=1, default=1)
     checkout_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    organization = me.ReferenceField("Organization", dbref=True)
 
 
 class CheckoutItem(me.Document, BaseCheckoutItem):

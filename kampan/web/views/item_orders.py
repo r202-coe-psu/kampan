@@ -18,7 +18,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    orders = models.OrderItem.objects(status__ne="disactive").order_by("-created_date")
+    orders = models.OrderItem.objects(
+        status__ne="disactive", organization=organization
+    ).order_by("-created_date")
     form = forms.inventories.SearchStartEndDateForm()
     form.item.label = "สถานะ"
     form.item.choices += [

@@ -23,9 +23,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    checkout_items = models.CheckoutItem.objects(status="active").order_by(
-        "-created_date"
-    )
+    checkout_items = models.CheckoutItem.objects(
+        status="active", organization=organization
+    ).order_by("-created_date")
 
     items = models.Item.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
@@ -134,6 +134,7 @@ def checkout():
     # checkout_item.set_ = form.set_.data
     checkout_item.piece = form.piece.data
     checkout_item.quantity = form.piece.data
+    checkout_item.organization = organization
     checkout_item.save()
 
     return redirect(url_for("item_orders.index", organization_id=organization_id))
@@ -212,6 +213,7 @@ def edit(checkout_item_id):
     checkout_item.checkout_date = form.checkout_date.data
     checkout_item.set_ = form.set_.data
     checkout_item.quantity = form.quantity.data
+    checkout_item.organization = organization
     checkout_item.save()
     return redirect(
         url_for(

@@ -121,7 +121,11 @@ def process_items_file(file, organization, user):
         )
         item.categories = row["หมวดหมู่"]
         item.set_unit = "ชุด" if pd.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"]
-        item.piece_unit = "ชิ้น" if pd.isnull(row["หน่วยนับเล็ก"]) else row["หน่วยนับเล็ก"]
+        item.piece_unit = (
+            ("ชิ้น" if pd.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"])
+            if pd.isnull(row["หน่วยนับเล็ก"])
+            else row["หน่วยนับเล็ก"]
+        )
         item.piece_per_set = (
             1
             if pd.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
@@ -132,7 +136,7 @@ def process_items_file(file, organization, user):
             if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
             else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
         )
-        item.barcode_id = row["บาร์โค๊ด"]
+        item.barcode_id = str(row["บาร์โค๊ด"])
         item.created_by = user
         item.save()
     return True
