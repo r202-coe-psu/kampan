@@ -209,7 +209,7 @@ def force_send_email(order_id):
     order = models.OrderItem.objects(id=order_id).first()
 
     job = redis_rq.redis_queue.queue.enqueue(
-        email_utils.force_send_email_order,
+        email_utils.force_send_email_to_endorser,
         args=(order, current_user._get_current_object(), current_app.config),
         job_id=f"force_sent_email_order_{order.id}",
         timeout=600,

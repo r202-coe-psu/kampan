@@ -3,6 +3,16 @@ import mongoengine as me
 import datetime
 from kampan import models
 
+ORDER_ITEM_STATUS = [
+    ("denied", "ปฎิเสธ"),
+    ("approved", "อนุมัติ รอรับวัสดุ"),
+    ("pending on admin", "รอการจัดการจากเจ้าหน้าที่พัสดุ"),
+    ("pending on supervisor supplier", "รอการอนุมัติจากหัวหน้าฝ่ายบริหาร"),
+    ("pending", "รอการอนุมัติจากหัวหน้าฝ่าย"),
+    ("disactive", "ยกเลิก"),
+    ("active", "ดำเนินการ"),
+]
+
 
 class OrderEmail(me.EmbeddedDocument):
     name = me.StringField()
@@ -17,7 +27,7 @@ class OrderEmail(me.EmbeddedDocument):
 class OrderItem(me.Document):
     # เบิกวัสดุ
     meta = {"collection": "order_items"}
-    status = me.StringField(required=True, default="pending")
+    status = me.StringField(required=True, default="pending", choices=ORDER_ITEM_STATUS)
 
     approval_status = me.StringField(default="pending")
 

@@ -10,8 +10,8 @@ import markdown
 
 EMAIL_TYPE = [
     ("to endorser", "ส่งถึงผู้มีสิทธิ์อนุญาตในแผนก"),
-    ("to supervisor supplier", "ส่งถึงหัวหน้าพัสดุ"),
-    ("to admin", "ส่งถึงผู้ดูแล/เจ้าหน้าที่พัสดุ"),
+    ("to supervisor supplier", "ส่งถึงหัวหน้าแผนกพัสดุ"),
+    ("to admin", "ส่งถึงเจ้าหน้าที่พัสดุ"),
     ("to staff", "ส่งถึงพนักงาน"),
 ]
 

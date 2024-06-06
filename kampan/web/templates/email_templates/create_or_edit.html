@@ -17,7 +17,7 @@
 
 {% block breadcrumbs %}
 <a class="section" href="{{ url_for('email_templates.index', organization_id=organization.id)}}">
-  รูแบบอีเมลทั้งหมด </a>
+  รูปแบบอีเมลทั้งหมด </a>
 <i class="right angle icon divider"></i>
 {% if not email_template %}
 <div class="active section">
@@ -97,13 +97,14 @@
       <div class="item">
         <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
-          <div class="item"> <b>{{ '{{ sender_name }}' }}</b> - ชื่อผู้ส่ง</div>
+          <div class="item"> <b>{{ '{{ sender_name }}' }}</b> - ชื่อผู้ส่งอีเมล</div>
           <div class="item"> <b>{{ '{{ sender_email }}' }}</b> - อีเมลผู้ส่ง</div>
         </div>
       </div>
       <div class="item">
         <div class="header"><i class="file alternate icon"></i> รายละเอียดการเบิก</div>
         <div class="ui list">
+          <div class="item"> <b>{{ '{{ order_creator }}' }}</b> - ผู้ขอเบิกวัสดุ</div>
           <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
           <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
           <div class="item"> <b>{{ '{{ sent_item_datetime }}' }}</b> - วันเวลาที่รับวัสดุ</div>

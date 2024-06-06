@@ -9,8 +9,8 @@ from kampan import models
 ORGANIZATION_ROLES = [
     ("staff", "พนักงาน"),
     ("endorser", "ผู้มีสิทธิ์อนุมัติ"),
-    ("head", "หัวหน้า"),
-    ("supervisor supplier", "หัวหน้าเจ้าหน้าที่พัสดุ"),
+    ("head", "หัวหน้าฝ่าย"),
+    ("supervisor supplier", "หัวหน้าฝ่ายบริหารจัดการ"),
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
 ]
 
@@ -135,11 +135,23 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)
 
-    def get_default_email_template(self):
-        email_template = models.EmailTemplate.objects(
-            organization=self, is_default=True
-        ).first()
+    def get_default_email_template(self, email_type):
+        try:
+            email_template = models.EmailTemplate.objects(
+                organization=self, is_default=True, type=email_type
+            ).first()
+        except:
+            email_template = models.EmailTemplate.objects(
+                organization=self, is_default=True
+            ).first()
         return email_template
+
+    def get_supervisor_supplier(self):
+        endorsers_in_org = models.OrganizationUserRole.objects(
+            organization=self, roles__in=["supervisor supplier"], status="active"
+        )
+        user_ids = [endorser.user.id for endorser in endorsers_in_org]
+        return models.User.objects(id__in=user_ids)
 
 
 class Logo(me.Document):

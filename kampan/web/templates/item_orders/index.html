@@ -34,6 +34,7 @@
           <th>เบิกวัสดุ</th>
           <th>รายการวัสดุ</th>
           <th>สถานะ</th>
+          <th>นัดรับ ณ วันที่</th>
           <th>แก้ไข/ลบข้อมูล</th>
 
         </tr>
@@ -64,21 +65,26 @@
           </td>
           {% if order.status == "pending" %}
           <td data-label="Status" class="yellow">
-            <span class="ui yellow text">รออนุมัติ</span>
+            <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
           <td data-label="Status" class="green">
-            <span class="ui green text">อนุมัติ</span>
+            <span class="ui green text">{{ order.get_status_display() }}
+            </span>
           </td>
           {% elif order.status == "denied" or order.approval_status == "denied"%}
           <td data-label="Status" class="red">
-            <span class="ui red text">ปฏิเสธ</span>
+            <span class="ui red text">{{ order.get_status_display() }}</span>
           </td>
           {% else %}
           <td data-label="Status" class="yellow">
-            <span class="ui yellow text">รออนุมัติ</span>
+            <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% endif %}
+          <td>
+            {{ order.sent_item_date.strftime("%d/%m/%Y %H:%M")
+            if order.sent_item_date else "" }}
+          </td>
           <td>
             {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
             <a class="ui icon button"

@@ -1,14 +1,18 @@
-from calendar import calendar
-from crypt import methods
-from pyexpat import model
-from tabnanny import check
-from flask import Blueprint, render_template, redirect, url_for, request, send_file
-from flask_login import login_required, current_user
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    request,
+    current_app,
+)
+from flask_login import current_user
 from kampan.models import inventories
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from flask_mongoengine import Pagination
 import datetime
+from .. import redis_rq
 
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
@@ -95,9 +99,17 @@ def endorser_approve(order_id):
             checkout.piece = item.get_amount_pieces()
             checkout.quantity = item.get_amount_pieces()
         checkout.save()
+
     order.status = "pending on supervisor supplier"
     order.save()
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.force_send_email_to_supervisor_supplier,
+        args=(order, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_head_endorser_order_{order.id}",
+        timeout=600,
+        job_timeout=600,
+    )
+    print("=====> submit", job.get_id())
     return redirect(
         url_for("approve_orders.endorser_index", organization_id=organization_id)
     )
@@ -277,6 +289,14 @@ def supervisor_supplier_approve_page(order_id):
         )
     order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.save()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.force_send_email_to_admin,
+        args=(order, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_supervisor_supplier_order_{order.id}",
+        timeout=600,
+        job_timeout=600,
+    )
+    print("=====> submit", job.get_id())
     return redirect(
         url_for(
             "approve_orders.supervisor_supplier_approve",
@@ -439,6 +459,16 @@ def admin_approve_page(order_id):
             order=order,
             organization=organization,
         )
+    order.sent_item_date = form.sent_item_date.data
+    order.save()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.force_send_email_to_staff,
+        args=(order, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_staff_order_{order.id}",
+        timeout=600,
+        job_timeout=600,
+    )
+    print("=====> submit", job.get_id())
     return redirect(
         url_for(
             "approve_orders.admin_approve",

@@ -28,6 +28,7 @@
           <th>สถานะ</th>
           <th>ชื่อผู้ขอเบิกใช้งาน</th>
           <th>ราคา (หน่วยเล็กละ)</th>
+          <th>นัดรับ ณ วันที่</th>
         </tr>
       </thead>
       <tbody>
@@ -61,19 +62,19 @@
           {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
           {% if checkout.order.status == "pending" %}
           <td data-label="Status" class="yellow">
-            <span class="ui yellow text">รออนุมัติ</span>
+            <span class="ui yellow text">{{ checkout.order.get_status_display() }}</span>
           </td>
           {% elif checkout.order.approval_status == "approved" and checkout.order.approval_status == "approved" %}
           <td data-label="Status" class="green">
-            <span class="ui green text">อนุมัติ</span>
+            <span class="ui green text">{{ checkout.order.get_status_display() }} </span>
           </td>
           {% elif checkout.order.status == "denied" or checkout.order.approval_status == "denied"%}
           <td data-label="Status" class="red">
-            <span class="ui red text">ปฏิเสธ</span>
+            <span class="ui red text">{{ checkout.order.get_status_display() }}</span>
           </td>
           {% else %}
           <td data-label="Status" class="yellow">
-            <span class="ui yellow text">รออนุมัติ</span>
+            <span class="ui yellow text">{{ checkout.order.get_status_display() }}</span>
           </td>
           {% endif %}
 
@@ -82,6 +83,8 @@
           <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>{#}
           <td data-label="Price">{{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
           </td>
+          <td data-label="Checkout Date">{{ checkout.order.sent_item_date.strftime('%d/%m/%Y %H:%M:%S') if
+            checkout.order.sent_item_date else "-" }}</td>
         </tr>
         {% endfor %}
       </tbody>
