@@ -12,10 +12,6 @@
 
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"
   style="padding-left: 10px;">
-
-  {% if current_user.has_roles(['admin']) %}
-  <a class="item" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
-  {% endif %}
   {% if organization %}
   {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
 

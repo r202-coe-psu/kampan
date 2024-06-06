@@ -5,7 +5,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a href="{{ url_for('accounts.index') }}" class="section">บัญชีผู้ใช้งาน</a>
+{% if current_user.has_roles(['admin']) %}
+<a class="ui button primary" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
+{% endif %}
 {% endblock %}
 
 {% macro row_detail(text) -%}
