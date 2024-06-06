@@ -85,16 +85,16 @@
       {% set new_is_default = false %}
       {% endif %}
 
-      <div class="header">{{ ("Change Default Setting") }} </div>
+      <div class="header">เปลี่ยนเป็นค่าเริ่มต้น</div>
       <div class="content">
-        {{ ("Do you want to set default setting of") }} <span class="ui blue text">{{ email_template.name }}</span> {{
-        ("template to") }} {{ new_is_default }}?
+        คุณต้องการเปลี่ยนให้อีเมล <span class="ui blue text">{{ email_template.name }}</span>
+        {{ "ไม่" if new_is_default else "" }} เป็นค่าเริ่มต้น?
       </div>
       <div class="ui fitted divider"></div>
       <div class="content">
         <a class="ui {{ 'green' if new_is_default == true }} right floated button" style="margin-bottom: 1em;"
           href="{{ url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default=new_is_default) }}">
-          {{ ("Change to") }} {{ new_is_default }}
+          เปลี่ยน
         </a>
       </div>
     </div>
