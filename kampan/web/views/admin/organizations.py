@@ -116,7 +116,7 @@ def add_member(organization_id):
         org_user = models.OrganizationUserRole(
             organization=organization,
             user=user,
-            role=form.role.data,
+            roles=form.roles.data,
             added_by=current_user._get_current_object(),
             last_modifier=current_user._get_current_object(),
             last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
