@@ -49,7 +49,7 @@
       {{ row_detail("จำนวนต่อ 1 หน่วยใหญ่ :") }}
       {{ row_detail(item.piece_per_set) }}
       {{ row_detail("หมวดหมู่ :") }}
-      {{ row_detail(item.categories) }}
+      {{ row_detail(item.categories.name) }}
       {{ row_detail("มีอยู่ในคลังจำนวน :") }}
       {{ row_detail(item.get_items_quantity() ) }}
       {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}

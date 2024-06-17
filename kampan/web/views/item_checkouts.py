@@ -32,9 +32,12 @@ def index():
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
-    set_categories = set([f"{''.join(item.categories)}" for item in items])
+
     form.categories.choices = [("", "หมวดหมู่")] + [
-        (f"{category}", f"{category}") for category in set_categories
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
     ]
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(

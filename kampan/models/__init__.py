@@ -14,6 +14,7 @@ from .item_checkouts import CheckoutItem, BaseCheckoutItem
 from .item_orders import OrderEmail, OrderItem
 from .item_registers import RegistrationItem
 from .lost_break_items import LostBreakItem
+from .categories import Category
 
 db = MongoEngine()
 

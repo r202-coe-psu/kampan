@@ -29,13 +29,15 @@ def index():
     items = models.Item.objects(
         status__in=["active", "pending"], organization=organization
     ).order_by("status", "-created_date")
-
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
-    set_categories = set([f"{''.join(item.categories)}" for item in items])
+
     form.categories.choices = [("", "หมวดหมู่")] + [
-        (f"{category}", f"{category}") for category in set_categories
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
     ]
     if not form.validate_on_submit():
         print(form.errors)
@@ -123,6 +125,12 @@ def add():
         id=organization_id, status="active"
     ).first()
     form = forms.items.ItemForm()
+    form.categories.choices = [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
+    ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
@@ -154,6 +162,7 @@ def add():
         item.item_format == "one to many"
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
+    item.categories = models.Category.objects(id=form.categories.data).first()
     item.created_by = current_user._get_current_object()
     item.last_updated_by = current_user._get_current_object()
     item.organization = organization
@@ -175,7 +184,14 @@ def edit(item_id):
         id=organization_id, status="active"
     ).first()
     item = models.Item.objects().get(id=item_id)
+
     form = forms.items.ItemForm(obj=item)
+    form.categories.choices = [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
+    ]
     if not item.item_format == "one to many":
         form.item_format.choices = form.item_format.choices[::-1]
     if not form.validate_on_submit():
@@ -210,6 +226,7 @@ def edit(item_id):
         item.item_format == "one to many"
         item.piece_per_set = form.piece_per_set.data
         item.piece_unit = form.piece_unit.data
+    item.categories = models.Category.objects(id=form.categories.data).first()
     item.last_updated_by = current_user._get_current_object()
     item.organization = organization
     item.save()

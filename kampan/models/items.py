@@ -34,7 +34,7 @@ class Item(me.Document):
     piece_per_set = me.IntField(min_value=1, default=1)
     piece_unit = me.StringField(default="ชิ้น", max_length=50)
 
-    categories = me.StringField(required=True, max_length=255)
+    categories = me.ReferenceField("Category", dbref=True)
     image = me.ImageField(thumbnail_size=(800, 600, False))
     minimum = me.IntField(required=True, min_value=1, default=1)
     barcode_id = me.StringField(max_length=255)

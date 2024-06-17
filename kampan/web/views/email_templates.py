@@ -26,7 +26,7 @@ subviews = []
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("staff", "admin")
+@acl.organization_roles_required("admin")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects.get(id=organization_id)
@@ -48,7 +48,7 @@ def index():
     defaults={"email_template_id": None},
 )
 @module.route("/<email_template_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("staff", "admin")
+@acl.organization_roles_required("admin")
 def create_or_edit(email_template_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(

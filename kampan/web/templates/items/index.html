@@ -84,7 +84,7 @@
       <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
       <div class="meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
-      <div class="meta">หมวดหมู่: {{ item.categories }}</div>
+      <div class="meta">หมวดหมู่: {{ item.categories.name }}</div>
       <div class="description">ผู้ลงทะเบียน : {{ item.created_by.first_name }} {{ item.created_by.last_name }}</div>
     </div>
     <div class="extra content">

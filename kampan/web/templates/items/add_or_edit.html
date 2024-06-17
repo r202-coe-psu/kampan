@@ -33,7 +33,7 @@
         {{ form.item_format.label }}
         {{ form.item_format(class='ui dropdown', onchange="check_item_format()") }}
       </div>
-      {{ renderer.render_field(form.categories) }}
+      {{ renderer.render_select(form.categories) }}
       {{ renderer.render_field(form.minimum)}}
     </div>
     <div class="two fields">
