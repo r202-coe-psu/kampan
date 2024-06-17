@@ -17,7 +17,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    warehouses = models.Warehouse.objects(status="active").order_by("-created_date")
+    warehouses = models.Warehouse.objects(
+        status="active", organization=organization
+    ).order_by("-created_date")
     page = request.args.get("page", default=1, type=int)
     paginated_warehouses = Pagination(warehouses, page=page, per_page=30)
     return render_template(

@@ -61,9 +61,6 @@ def validate_items_engagement(file):
         if pd.isnull(row["หมวดหมู่"]):
             return f"ไม่พบหมวดหมู่ในบรรทัดที่ {idx+2}"
 
-        if pd.isnull(row["บาร์โค๊ด"]):
-            return f"ไม่พบบาร์โค๊ดในบรรทัดที่ {idx+2}"
-
         if row["รูปแบบวัสดุ"] not in ["หนึ่งต่อหนึ่ง", "หนึ่งต่อหลายๆ"]:
             return f"รูปแบบวัสดุ  '{row['รูปแบบวัสดุ']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} "
 
@@ -136,7 +133,7 @@ def process_items_file(file, organization, user):
             if pd.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
             else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
         )
-        item.barcode_id = str(row["บาร์โค๊ด"])
+        item.barcode_id = str(row["บาร์โค๊ด"]) if row["บาร์โค๊ด"] else ""
         item.created_by = user
         item.save()
     return True

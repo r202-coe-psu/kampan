@@ -26,9 +26,9 @@ def index():
         id=organization_id, status="active"
     ).first()
     form = forms.items.SearchItemForm()
-    items = models.Item.objects(status__in=["active", "pending"]).order_by(
-        "status", "-created_date"
-    )
+    items = models.Item.objects(
+        status__in=["active", "pending"], organization=organization
+    ).order_by("status", "-created_date")
 
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items

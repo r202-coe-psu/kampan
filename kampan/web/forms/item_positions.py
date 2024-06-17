@@ -11,6 +11,7 @@ BaseItemPositionForm = model_form(
     exclude=[
         "created_date",
         "updated_date",
+        "organization",
         "user",
     ],
     field_args={

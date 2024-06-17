@@ -20,7 +20,9 @@ def index():
     ).first()
     notifications = []
 
-    items = models.Item.objects(status="active", notification_status=True)
+    items = models.Item.objects(
+        status="active", notification_status=True, organization=organization
+    )
     for item in items:
         if item.minimum > item.get_amount_items():
             notifications.append(item)

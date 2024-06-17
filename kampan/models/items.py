@@ -37,7 +37,7 @@ class Item(me.Document):
     categories = me.StringField(required=True, max_length=255)
     image = me.ImageField(thumbnail_size=(800, 600, False))
     minimum = me.IntField(required=True, min_value=1, default=1)
-    barcode_id = me.StringField(required=True, max_length=255)
+    barcode_id = me.StringField(max_length=255)
     notification_status = me.BooleanField(default=True)
 
     last_updated_by = me.ReferenceField("User", dbref=True)
@@ -102,7 +102,7 @@ class ItemPosition(me.Document):
     rack = me.StringField(required=True, max_length=255)
     row = me.StringField(max_length=255)
     locker = me.StringField(max_length=255)
-
+    organization = me.ReferenceField("Organization", dbref=True)
     warehouse = me.ReferenceField("Warehouse", dbref=True)
 
     last_updated_by = me.ReferenceField("User", dbref=True)

@@ -27,9 +27,9 @@ def index():
         id=organization_id, status="active"
     ).first()
     form = forms.inventories.SearchStartEndDateForm()
-    inventories = models.Inventory.objects(status="active").order_by(
-        "-registeration_date"
-    )
+    inventories = models.Inventory.objects(
+        status="active", organization=organization
+    ).order_by("-registeration_date")
     items = models.Item.objects(status="active")
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items

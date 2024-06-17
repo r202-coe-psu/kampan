@@ -62,8 +62,8 @@
   <a class="item" href="{{ url_for('email_templates.index', organization_id = organization.id) }}">รูปแบบอีเมล<i
       class="envelope icon"></i></a>
 
-  {% if current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
-  current_user.get_current_division() %}
+  {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
+  current_user.get_current_division()) or current_user.has_roles(['admin']) %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การนำวัสดุออก

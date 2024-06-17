@@ -17,7 +17,7 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    divisions = models.Division.objects(status="active")
+    divisions = models.Division.objects(status="active", organization=organization)
     form = forms.divisions.SearchDivisionStartEndDateForm()
     [
         form.name.choices.append((division.id, f"{division.name}"))

@@ -18,7 +18,9 @@ def index():
         id=organization_id, status="active"
     ).first()
 
-    item_positions = models.ItemPosition.objects(status="active")
+    item_positions = models.ItemPosition.objects(
+        status="active", organization=organization
+    )
     page = request.args.get("page", default=1, type=int)
     paginated_item_positions = Pagination(item_positions, page=page, per_page=30)
     return render_template(
@@ -58,6 +60,7 @@ def add_or_edit(item_position_id):
     if not item_position_id:
         item_position.created_by = current_user._get_current_object()
     item_position.last_updated_by = current_user._get_current_object()
+    item_position.organization = organization
     item_position.save()
 
     return redirect(
@@ -86,6 +89,7 @@ def edit(item_position_id):
         )
 
     form.populate_obj(item_position)
+    item_position.organization = organization
     item_position.save()
 
     return redirect(

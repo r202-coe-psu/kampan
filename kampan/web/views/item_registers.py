@@ -17,9 +17,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item_registers = models.RegistrationItem.objects(status__ne="disactive").order_by(
-        "-created_date"
-    )
+    item_registers = models.RegistrationItem.objects(
+        status__ne="disactive", organization=organization
+    ).order_by("-created_date")
     form = forms.item_orders.SearchStartEndDateForm()
     form.item.label = "สถานะ"
     form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]

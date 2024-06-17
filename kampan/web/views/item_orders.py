@@ -12,15 +12,22 @@ module = Blueprint("item_orders", __name__, url_prefix="/item_orders")
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    orders = models.OrderItem.objects(
-        status__ne="disactive", organization=organization
-    ).order_by("-created_date")
+    if current_user.has_organization_roles("admin", "supervisor supplier"):
+        orders = models.OrderItem.objects(
+            status__ne="disactive", organization=organization
+        ).order_by("-created_date")
+    else:
+        orders = models.OrderItem.objects(
+            status__ne="disactive", organization=organization, created_by=current_user
+        ).order_by("-created_date")
     form = forms.inventories.SearchStartEndDateForm()
     form.item.label = "สถานะ"
     form.item.choices += [
@@ -60,7 +67,9 @@ def index():
 
 
 @module.route("/order", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def order():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -100,7 +109,9 @@ def order():
 
 
 @module.route("/<order_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def edit(order_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -140,7 +151,9 @@ def edit(order_id):
 
 
 @module.route("/<order_id>/delete")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def delete(order_id):
     organization_id = request.args.get("organization_id")
 
