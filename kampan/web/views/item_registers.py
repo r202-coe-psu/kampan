@@ -98,6 +98,7 @@ def register():
     form.populate_obj(item_register)
     item_register.supplier = models.Supplier.objects(id=form.supplier.data).first()
     item_register.status = "pending"
+    item_register.organization = organization
     item_register.save()
 
     return redirect(
@@ -140,6 +141,7 @@ def edit(item_register_id):
             )
 
     form.populate_obj(item_register)
+    item_register.organization = organization
     item_register.save()
 
     return redirect(

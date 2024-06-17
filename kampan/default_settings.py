@@ -1,4 +1,4 @@
-APP_TITLE = "kampan"
+APP_TITLE = "DIIS-INVENTORY"
 MONGODB_DB = "kampandb"
 
 

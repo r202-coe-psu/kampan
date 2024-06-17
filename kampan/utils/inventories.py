@@ -1,5 +1,5 @@
 import datetime
-import pandas as pd
+import pandas
 from io import BytesIO
 from flask_login import current_user
 from flask import send_file
@@ -16,22 +16,102 @@ INVENTORY_HEADER = [
 ]
 
 
+def get_template_inventory_file():
+    df = pandas.DataFrame(columns=INVENTORY_HEADER)
+    data = {
+        "ชื่อคอลัมน์": [
+            INVENTORY_HEADER[0],
+            INVENTORY_HEADER[1],
+            INVENTORY_HEADER[2],
+            INVENTORY_HEADER[3],
+            INVENTORY_HEADER[4],
+            INVENTORY_HEADER[5],
+        ],
+        "ประเภทข้อมูล": [
+            "ตัวอักษร",
+            "ตัวอักษร",
+            "ตัวเลข",
+            "ตัวเลข",
+            "ตัวอักษร",
+            "ตัวอักษร",
+        ],
+        "ความต้องการ": [
+            "",
+            "จำเป็น",
+            "จำเป็น",
+            "จำเป็น",
+            "จำเป็น",
+            "จำเป็น",
+        ],
+        "ขอบเขตตัวเลือก": [
+            "ใส่บาร์โค๊ดของวัสดุที่ต้องการ (หากมี)",
+            "ใส่ชื่อของวัสดุที่ต้องการ",
+            "",
+            "",
+            "ใส่ชื่อของคลังที่ต้องการ",
+            "ใส่ตำแหน่งที่ต้องการ",
+        ],
+        "ความหมายตัวเลือก": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ],
+        "หมายเหตุ": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ],
+    }
+    description = pandas.DataFrame(data)
+
+    excel_output = BytesIO()
+    with pandas.ExcelWriter(excel_output) as writer:
+        workbook = writer.book
+
+        df.to_excel(writer, sheet_name="ข้อมูล", index=False)
+        description.to_excel(writer, sheet_name="คำอธิบาย", index=False)
+
+        workbook.close()
+
+    excel_output.seek(0)
+    response = send_file(
+        excel_output,
+        as_attachment=True,
+        download_name="upload_inventory.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    return response
+
+
 def process_inventory_engagement(inventory_engagement_file):
-    df = pd.read_excel(inventory_engagement_file.file)
+    df = pandas.read_excel(inventory_engagement_file.file)
 
     df.columns = df.columns.str.strip()
-    df = df.dropna(subset=["บาร์โค้ด"])
     organization = models.Organization.objects(
         id=inventory_engagement_file.organization.id,
         status="active",
     ).first()
+    print(df)
     for idx, row in df.iterrows():
-        item = models.Item.objects(
-            name=row["ชื่อวัสดุ"].strip(),
-            barcode_id=str(row["บาร์โค้ด"]),
-            status="active",
-            organization=organization,
-        ).first()
+        if pandas.isnull(row["บาร์โค้ด"]):
+            item = models.Item.objects(
+                name=str(row["ชื่อวัสดุ"]).strip(),
+                status="active",
+                organization=organization,
+            ).first()
+        else:
+            item = models.Item.objects(
+                name=str(row["ชื่อวัสดุ"]).strip(),
+                barcode_id=str(row["บาร์โค้ด"]).strip(),
+                status="active",
+                organization=organization,
+            ).first()
 
         warehouse = models.Warehouse.objects(
             status="active",
@@ -73,11 +153,11 @@ def process_inventory_engagement(inventory_engagement_file):
             inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
             inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
             inventory.created_by = current_user._get_current_object()
-
+        # print(inventory)
         inventory.save()
 
     inventory_engagement_file.status = "completed"
-    inventory_engagement_file.updated_date = datetime.datetime.now()
+    inventory_engagement_file.upandasated_date = datetime.datetime.now()
     inventory_engagement_file.save()
 
 
@@ -111,14 +191,23 @@ def check_float_values(df_column):
 
 def check_items(df, organization):
     for idx, row in df.iterrows():
-        item = models.Item.objects(
-            name=row["ชื่อวัสดุ"].strip(),
-            barcode_id=str(row["บาร์โค้ด"]),
-            status="active",
-            organization=organization,
-        ).first()
-        if not item:
-            return f"ไม่พบวัสดุชื่อ : {row['ชื่อวัสดุ']} หรือบาร์โค้ดหมายเลข : {row['บาร์โค้ด']} ที่ได้ลงทะเบียนไว้ในคลังวัสดุ"
+        if pandas.isnull(row["บาร์โค้ด"]):
+            item = models.Item.objects(
+                name=str(row["ชื่อวัสดุ"]).strip(),
+                status="active",
+                organization=organization,
+            ).first()
+            if not item:
+                return f"ไม่พบวัสดุชื่อ : {row['ชื่อวัสดุ']} ที่ได้ลงทะเบียนไว้ในคลังวัสดุ"
+        else:
+            item = models.Item.objects(
+                name=str(row["ชื่อวัสดุ"]).strip(),
+                barcode_id=str(row["บาร์โค้ด"]).strip(),
+                status="active",
+                organization=organization,
+            ).first()
+            if not item:
+                return f"ไม่พบวัสดุชื่อ : {row['ชื่อวัสดุ']} หรือบาร์โค้ดหมายเลข : {row['บาร์โค้ด']} ที่ได้ลงทะเบียนไว้ในคลังวัสดุ"
 
 
 def check_positions(df, organization):
@@ -140,7 +229,7 @@ def check_positions(df, organization):
 
 
 def validate_inventory_engagement(inventory_engagement_file):
-    df = pd.read_excel(inventory_engagement_file.file)
+    df = pandas.read_excel(inventory_engagement_file.file)
     df.columns = df.columns.str.strip()
     invalide_column = check_columns_file(df, INVENTORY_HEADER)
     if invalide_column:
@@ -161,29 +250,3 @@ def validate_inventory_engagement(inventory_engagement_file):
     invalid_positions = check_positions(df, inventory_engagement_file.organization)
     if invalid_positions:
         return invalid_positions
-
-
-def get_template_inventory_file():
-    df = pd.DataFrame(columns=INVENTORY_HEADER)
-
-    excel_output = BytesIO()
-    with pd.ExcelWriter(excel_output) as writer:
-        workbook = writer.book
-        sheet_name = "upload_inventory"
-
-        df.to_excel(writer, sheet_name=sheet_name, index=False)
-
-        # text_format = workbook.add_format({"num_format": "@"})
-        # worksheet = writer.sheets[sheet_name]
-        # worksheet.set_column("A:ZZ", None, text_format)
-
-        workbook.close()
-
-    excel_output.seek(0)
-    response = send_file(
-        excel_output,
-        as_attachment=True,
-        download_name="upload_inventory.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    return response

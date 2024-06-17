@@ -209,7 +209,7 @@ def bill_item():
     item_register_id = request.args.get("item_register_id")
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
     inventories = models.Inventory.objects(
-        registration=item_register, status__ne="disactive"
+        registration=item_register, status__ne="disactive", organization=organization
     )
     page = request.args.get("page", default=1, type=int)
     paginated_inventories = Pagination(inventories, page=page, per_page=30)
@@ -265,6 +265,7 @@ def upload_file_inventory_info(item_register_id):
             organization=organization,
             upload_completed=upload_completed,
         )
+    inventory_engagement_file = None
     if form.upload_file.data:
         inventory_engagement_file = models.inventories.InventoryEngagementFile()
         if inventory_engagement_file.file:
@@ -283,7 +284,7 @@ def upload_file_inventory_info(item_register_id):
         inventory_engagement_file.organization = organization
         inventory_engagement_file.registration = item_register
         inventory_engagement_file.save()
-        print(inventory_engagement_file.file)
+        # print(inventory_engagement_file.file)
     if inventory_engagement_file:
         upload_errors["errors"] = utils.inventories.validate_inventory_engagement(
             inventory_engagement_file
