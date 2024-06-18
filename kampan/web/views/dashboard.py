@@ -31,17 +31,6 @@ def index():
 def daily_dashboard():
     organization_id = request.args.get("organization_id")
     organization = current_user.get_current_organization()
-    user = current_user._get_current_object()
-    if not organization and "admin" not in user.roles:
-        return redirect(url_for("accounts.index"))
-    if not organization:
-        organization = models.Organization.objects(
-            id=organization_id, status="active"
-        ).first()
-    if "admin" in user.roles and organization_id:
-        organization = models.Organization.objects(
-            id=organization_id, status="active"
-        ).first()
     form = forms.inventories.SearchStartEndDateForm()
     form.end_date.validators = None
     form.item.validators = None

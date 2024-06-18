@@ -55,7 +55,7 @@ def get_user_and_remember():
 @acl.roles_required("admin")
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("accounts.index"))
 
     if "next" in request.args:
         session["next"] = request.args.get("next", None)

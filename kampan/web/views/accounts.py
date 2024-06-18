@@ -54,7 +54,7 @@ def get_user_and_remember():
 @module.route("/login", methods=("GET", "POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("accounts.index"))
 
     if "next" in request.args:
         session["next"] = request.args.get("next", None)
@@ -132,16 +132,25 @@ def profile(user_id):
 @login_required
 def index():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    biography = ""
-    if current_user.biography:
-        biography = markdown.markdown(current_user.biography)
+    organization = current_user.get_current_organization()
+    user = current_user._get_current_object()
+    if not organization and "admin" not in user.roles:
+        return render_template(
+            "/accounts/index.html",
+            user=current_user,
+            organization=organization,
+        )
+    if not organization:
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
+    if "admin" in user.roles and organization_id:
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
     return render_template(
         "/accounts/index.html",
         user=current_user,
-        biography=biography,
         organization=organization,
     )
 
