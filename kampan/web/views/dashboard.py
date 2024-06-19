@@ -257,3 +257,141 @@ def yearly_dashboard():
         notifications=notifications,
         organization=organization,
     )
+
+
+@module.route("/report", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def all_report():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    form = forms.dashboard.AllItemReport()
+    form.categories.choices += [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            status="active", organization=organization
+        )
+    ]
+    if not form.validate_on_submit():
+        form.start_date.data = datetime.datetime.combine(
+            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
+        )
+        search_start_date = request.args.get("search_start_date")
+        if search_start_date:
+            form.start_date.data = datetime.datetime.strptime(
+                search_start_date,
+                "%Y-%m-%d",
+            )
+
+        form.end_date.data = datetime.datetime.combine(
+            datetime.datetime.now(), datetime.datetime.min.time()
+        )
+        search_end_date = request.args.get("search_end_date")
+        if search_end_date:
+            form.end_date.data = datetime.datetime.strptime(
+                search_end_date,
+                "%Y-%m-%d",
+            )
+
+        search_categories = request.args.get("search_categories")
+        if search_categories:
+            form.categories.data = search_categories
+        category = None
+        if form.categories.data:
+            category = models.Category.objects(id=form.categories.data).first()
+
+        items = models.Item.objects(status="active")
+
+        # pipeline = [
+        #     {
+        #         "$match": {
+        #             "$and": [
+        #                 {
+        #                     "registeration_date": {"$gte": form.start_date.data},
+        #                 },
+        #                 {
+        #                     "registeration_date": {
+        #                         "$lt": form.end_date.data + datetime.timedelta(days=1)
+        #                     }
+        #                 },
+        #             ],
+        #         },
+        #     },
+        #     {
+        #         "$lookup": {
+        #             "from": "items",
+        #             "localField": "item.$id",
+        #             "foreignField": "_id",
+        #             "as": "itemDetails",
+        #             "pipeline": [
+        #                 {
+        #                     "$lookup": {
+        #                         "from": "categories",
+        #                         "localField": "categories.$id",
+        #                         "foreignField": "_id",
+        #                         "as": "categoriesDetails",
+        #                     }
+        #                 },
+        #                 {"$unwind": "$categoriesDetails"},
+        #                 {
+        #                     "$project": {
+        #                         "name": 1,
+        #                         "set_unit": 1,
+        #                         "piece_unit": 1,
+        #                         "piece_per_set": 1,
+        #                         "categories": "$categoriesDetails.name",
+        #                     }
+        #                 },
+        #             ],
+        #         }
+        #     },
+        #     {"$unwind": "$itemDetails"},
+        #     {
+        #         "$project": {
+        #             "_id": 1,
+        #             "name": "$itemDetails.name",
+        #             "set_unit": "$itemDetails.set_unit",
+        #             "piece_unit": "$itemDetails.piece_unit",
+        #             "piece_per_set": "$itemDetails.piece_per_set",
+        #             "category_name": "$itemDetails.categories",
+        #             "remain": 1,
+        #             "price": 1,
+        #         }
+        #     },
+        #     {
+        #         "$match": {
+        #             "category_name": {
+        #                 "$regex": category.name if category else "",
+        #                 "$options": "i",
+        #             }
+        #         }
+        #     },
+        # ]
+        # inventories = models.Inventory.objects(
+        #     status="active", organization=organization
+        # ).aggregate(pipeline)
+        # for inventory in inventories:
+        #     print(inventory)
+
+        if form.categories.data:
+            items = items.filter(categories=form.categories.data)
+        print(form.errors)
+        return render_template(
+            "/dashboard/all_report.html",
+            organization=organization,
+            items=items,
+            form=form,
+        )
+    search_start_date = form.start_date.data
+    search_end_date = form.end_date.data
+    search_categories = form.categories.data
+    return redirect(
+        url_for(
+            "dashboard.all_report",
+            search_start_date=search_start_date,
+            search_end_date=search_end_date,
+            search_categories=search_categories,
+            organization_id=organization_id,
+        )
+    )

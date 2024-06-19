@@ -1,6 +1,7 @@
 from flask import url_for
 from email.policy import default
 import mongoengine as me
+from mongoengine import Q
 import datetime
 from kampan import models
 
@@ -83,7 +84,17 @@ class Item(me.Document):
 
     def get_last_price_per_piece(self):
         value = self.get_last_price()
-        return round(value / self.piece_per_set, 2)
+        if value:
+
+            return round(value / self.piece_per_set, 2)
+
+        return ""
+
+    def get_remaining_balance(self):
+        value = self.get_last_price()
+        if value:
+            return round(value / self.piece_per_set, 2) * self.get_amount_pieces()
+        return ""
 
     def get_booking_item(self):
         checkout_items = models.CheckoutItem.objects(

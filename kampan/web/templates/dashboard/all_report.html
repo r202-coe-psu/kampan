@@ -1,0 +1,95 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block dashboard_title %}
+รายงานทั้งหมด
+{% endblock %}
+
+{% block content %}
+<form method="post" style="padding-bottom: 0.5rem;">
+  <div class="ui secondary menu">
+    {{form.hidden_tag()}}
+    <p style="margin-left:auto;">
+      {{ form.categories(class="ui search dropdown clearable") }}
+    </p>
+
+    <p style="margin-left:10px;">
+      {{ renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{ renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+    </p>
+
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
+  </div>
+</form>
+<div class="ui container" style="width: 100%;">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>ลำดับ</th>
+        <th>ชื่อวัสดุ</th>
+        <th>หมวดหมู่</th>
+        <th>คงเหลือ</th>
+        <th>หน่วยนับ</th>
+        <th>ราคาหน่วย</th>
+        <th>เป็นเงิน</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items%}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.categories.name }}</td>
+        <td>{{ item.get_amount_pieces() }}</td>
+        <td>{{ item.piece_unit if item.piece_unit else item.set_unit }}</td>
+        <td>{{ item.get_last_price_per_piece() }}</td>
+        <td>{{ item.get_remaining_balance() }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock content %}
+
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#start_date').calendar(calendar_setting);
+  $('#end_date').calendar(calendar_setting);
+
+  $(document)
+    .ready(function () {
+      $('.ui.dropdown.validate.selection')
+        .dropdown({
+          allowAdditions: true,
+          fullTextSearch: 'exact'
+        });
+    });
+</script>
+{% endblock %}
