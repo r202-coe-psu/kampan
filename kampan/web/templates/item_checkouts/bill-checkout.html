@@ -10,7 +10,9 @@
 
 {% block content %}
 {% if checkouts %}
-{% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+{% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+%}
+{% if order.created_by == current_user %}
 <div class="ui secondary menu">
   <p style="margin-left:auto;">
     <a class="ui icon button" onclick="showModal('email')" style=" color: white; background-color: rgb(59, 115, 199);">
@@ -39,6 +41,7 @@
   </p>
 </div>
 {% endif %}
+{% endif %}
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
@@ -53,8 +56,10 @@
         <th>ราคาแต่ละหน่วยเล็ก</th>
         {#} <th>รวม</th>{#}
         {#<th>ราคา (ชิ้นละ)</th>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
+        {% if order.created_by == current_user %}
         <th>แก้ไข/ลบข้อมูล</th>
+        {% endif %}
         {% endif %}
       </tr>
     </thead>
@@ -80,7 +85,8 @@
         <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
         {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
         {#<td data-label="Price">{{ checkout.price }}</td>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
+        {% if order.created_by == current_user %}
         <td>
           <a class="ui icon button"
             href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
@@ -112,6 +118,7 @@
             </div>
           </div>
         </td>
+        {% endif %}
         {% endif %}
       </tr>
       {% endfor %}

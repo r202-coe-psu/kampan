@@ -272,6 +272,38 @@ def item_report():
     )
 
 
+@module.route("/all_report/download", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def download_item_report():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    search_start_date = request.args.get("search_start_date")
+    if search_start_date:
+        start_date = datetime.datetime.strptime(
+            search_start_date,
+            "%Y-%m-%d",
+        )
+    else:
+        start_date = datetime.datetime.combine(
+            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
+        )
+
+    search_end_date = request.args.get("search_end_date")
+    if search_end_date:
+        end_date = datetime.datetime.strptime(
+            search_end_date,
+            "%Y-%m-%d",
+        )
+    else:
+        end_date = datetime.datetime.combine(
+            datetime.datetime.now(), datetime.datetime.min.time()
+        )
+    response = utils.reports.get_item_report(start_date, end_date, organization)
+    return response
+
+
 @module.route("/", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser")
 def dashboard():
@@ -279,4 +311,44 @@ def dashboard():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    return render_template("/dashboard/dashboard.html", organization=organization)
+    notifications = 0
+
+    items = models.Item.objects(status="active")
+    orders = models.OrderItem.objects(
+        organization=organization, status="pending"
+    ).order_by("created_date")[0:3]
+    count_orders = (
+        models.OrderItem.objects(organization=organization, status="pending")
+        .order_by("created_date")
+        .count()
+    )
+    pending_orders = models.OrderItem.objects(
+        Q(organization=organization)
+        & Q(status__ne="denied")
+        & Q(status__ne="approved")
+        & Q(status__ne="pending")
+        & Q(status__ne="disactive")
+    ).order_by("created_date")[0:3]
+    count_pending_orders = (
+        models.OrderItem.objects(
+            Q(organization=organization)
+            & Q(status__ne="denied")
+            & Q(status__ne="approved")
+            & Q(status__ne="pending")
+            & Q(status__ne="disactive")
+        )
+        .order_by("created_date")
+        .count()
+    )
+    for item in items:
+        if item.minimum > item.get_amount_items():
+            notifications += 1
+    return render_template(
+        "/dashboard/dashboard.html",
+        organization=organization,
+        notifications=notifications,
+        orders=orders,
+        pending_orders=pending_orders,
+        count_orders=count_orders,
+        count_pending_orders=count_pending_orders,
+    )

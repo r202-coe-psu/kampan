@@ -34,7 +34,7 @@
           <span>ราคาวัสดุ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
         </div>
         <span>
-          <a class="fluid ui primary button"
+          <a class="fluid ui orange button"
             href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
             ดูรายละเอียด
           </a>

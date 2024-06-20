@@ -88,8 +88,8 @@
       <div class="description">ผู้ลงทะเบียน : {{ item.created_by.first_name }} {{ item.created_by.last_name }}</div>
     </div>
     <div class="extra content">
+      {% if item.status == 'pending' %}
       <div class="{{ 'three' if item.status == 'pending' else 'fluid' }} ui buttons vertical">
-        {% if item.status == 'pending' %}
         <a class="fluid ui primary button"
           href="{{ url_for('items.edit', item_id=item.id, organization_id=organization.id) }}">
           แก้ไข
@@ -120,34 +120,52 @@
             </a>
           </div>
         </div>
-        {% else %}
-        <a class="fluid ui primary button"
-          href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
-          ดูรายละเอียด
-        </a>
-        {% endif %}
         <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
           ลบข้อมูล
         </a>
-        <div class="ui modal {{item.id}}">
-          <div class="header">
-            ลบวัสดุ
-          </div>
-          <div class="content">
-            <p>ต้องการลบวัสดุ
-              <b>{{ item.name }}</b>
-            </p>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('items.delete', item_id=item.id, organization_id=organization.id) }}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
-            </a>
-          </div>
+      </div>
+      {% else %}
+
+      <div class="one ui buttons attached">
+        <a class="ui primary button"
+          href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
+          ดูรายละเอียด
+        </a>
+      </div>
+      <div class="two ui buttons">
+        <a class="ui yellow button" href="">
+          ยกยอด
+        </a>
+        <a class="ui orange button" href="">
+          เช็คสต๊อก
+        </a>
+      </div>
+      <div class="one ui buttons attached">
+        <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
+          ลบข้อมูล
+        </a>
+      </div>
+
+      {% endif %}
+
+      <div class="ui modal {{item.id}}">
+        <div class="header">
+          ลบวัสดุ
+        </div>
+        <div class="content">
+          <p>ต้องการลบวัสดุ
+            <b>{{ item.name }}</b>
+          </p>
+        </div>
+        <div class="actions">
+          <button class="ui black deny button">
+            ยกเลิก
+          </button>
+          <a class="ui negative right labeled icon button"
+            href="{{ url_for('items.delete', item_id=item.id, organization_id=organization.id) }}">
+            ยืนยัน
+            <i class="checkmark icon"></i>
+          </a>
         </div>
       </div>
     </div>

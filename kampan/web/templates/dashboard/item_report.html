@@ -6,6 +6,15 @@
 รายงานเฉพาะวัสดุ
 {% endblock %}
 
+{% block breadcrumbs %}
+{#}
+<a class="ui button primary" href="{{ url_for('dashboard.download_item_report',organization_id=organization.id,
+search_start_date=search_start_date, search_end_date=search_end_date) }}">
+  ดาวน์โหลดรายงานเฉพาะวัสดุ </a>
+{#}
+{% endblock %}
+
+
 {% block content %}
 <form method="post" style="padding-bottom: 0.5rem;">
   <div class="ui secondary menu">
@@ -33,24 +42,43 @@
     <thead>
       <tr>
         <th>ลำดับ</th>
-        <th>ชื่อวัสดุ</th>
-        <th>หมวดหมู่</th>
-        <th>คงเหลือ</th>
+        <th>วันที่</th>
+        <th>ผู้เบิก</th>
+        <th>ร้าน</th>
+        <th>จำนวน</th>
         <th>หน่วยนับ</th>
-        <th>ราคาหน่วย</th>
+        <th>ราคาต่อหน่วย</th>
         <th>เป็นเงิน</th>
+        <th>คงเหลือ</th>
       </tr>
     </thead>
     <tbody>
-      {% for item_snapshot in data %}
+      {% set remain = 0 %}
+      {% for row in data %}
       <tr>
+        {% if row._cls == "ItemSnapshot" %}
+        {% set remain = row.amount_pieces if row.item.item_format == "one to many" else row.amount %}
         <td>{{ loop.index }}</td>
-        <td>{{ item_snapshot.item.name }}</td>
-        <td>{{ item_snapshot.item.categories.name }}</td>
-        <td>{{ item_snapshot.amount_pieces }}</td>
-        <td>{{ item_snapshot.item.piece_unit }}</td>
-        <td>{{ item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-" }}</td>
-        <td>{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
+        <td>{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+        <td>ยกยอด</td>
+        <td></td>
+        <td>{{ row.amount_pieces if row.item.item_format == "one to many" else row.amount }}</td>
+        <td>{{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}</td>
+        <td>{{ row.last_price_per_piece if row.last_price_per_piece else "-" }}</td>
+        <td>{{ row.remaining_balance if row.remaining_balance else "-" }}</td>
+        <td>{{ row.amount_pieces if row.item.item_format == "one to many" else row.amount }}</td>
+        {% elif row._cls == "CheckoutItem" %}
+
+        <td>{{ loop.index }}</td>
+        <td>{{ row.checkout_date.strftime("%d/%m/%Y") }}</td>
+        <td>{{ row.user.get_name() }}</td>
+        <td></td>
+        <td>-{{ row.quantity }}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>

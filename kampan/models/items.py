@@ -11,6 +11,11 @@ ITEM_FORMAT = [
     ("one to one", "หนึ่งต่อหนึ่ง"),
 ]
 
+ITEM_SNAPSHOT = [
+    ("carry", "ยกยอด"),
+    ("check", "เช็คสต๊อก"),
+]
+
 
 class ItemSize(me.EmbeddedDocument):
     width = me.FloatField()
@@ -130,6 +135,7 @@ class ItemPosition(me.Document):
 
 class ItemSnapshot(me.Document):
     meta = {"collection": "item_snapshots"}
+    type_ = me.StringField(default="carry", choices=ITEM_SNAPSHOT, required=True)
 
     item = me.ReferenceField("Item", dbref=True)
     amount = me.IntField()

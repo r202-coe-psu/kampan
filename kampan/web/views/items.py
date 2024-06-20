@@ -31,7 +31,7 @@ def index():
         status__in=["active", "pending"], organization=organization
     ).order_by("status", "-created_date")
     form.item.choices = [("", "เลือกวัสดุ")] + [
-        (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
+        (str(item.id), f"{item.name} ({item.barcode_id}) ") for item in items
     ]
 
     form.categories.choices = [("", "หมวดหมู่")] + [
