@@ -3,13 +3,7 @@
 {% import '/base/pagination.html' as paginated %}
 
 {% block dashboard_title %}
-รายงานทั้งหมด
-{% endblock %}
-
-{% block breadcrumbs %}
-<a class="ui button primary" href="{{ url_for('dashboard.download_all_report',organization_id=organization.id,
-   search_date=search_date, search_categories=search_categories, search_item=search_item) }}">
-  ดาวน์โหลดรายงานวัสดุคงเหลือ </a>
+รายงานเฉพาะวัสดุ
 {% endblock %}
 
 {% block content %}
@@ -18,14 +12,13 @@
     {{form.hidden_tag()}}
     <p style="margin-left:auto;">
       <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
-      {{ form.item(class="ui search dropdown clearable") }}
-    </p>
-    <p style="margin-left:10px;">
-      <label style="font-weight: bold; padding-right: 10px;">{{ form.categories.label }}</label>
-      {{ form.categories(class="ui search dropdown") }}
+      {{ form.item(class="ui search dropdown") }}
     </p>
     <p style="margin-left:10px;">
       {{ renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+    </p>
+    <p style="margin-left:10px;">
+      {{ renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
     </p>
 
     <p>
@@ -34,7 +27,7 @@
     </p>
   </div>
 </form>
-{% if items_snapshot %}
+{% if data %}
 <div class="ui container" style="width: 100%;">
   <table class="ui celled table">
     <thead>
@@ -42,30 +35,21 @@
         <th>ลำดับ</th>
         <th>ชื่อวัสดุ</th>
         <th>หมวดหมู่</th>
-        <th>คงเหลือ (หน่วยนับใหญ่)</th>
-        <th>หน่วยนับใหญ่</th>
-        <th>คงเหลือ (หน่วยนับเล็ก)</th>
-        <th>หน่วยนับเล็ก</th>
-        <th>ราคาหน่วยใหญ่</th>
-        <th>ราคาหน่วยเล็ก</th>
-        <th>รวมเป็นเงิน</th>
+        <th>คงเหลือ</th>
+        <th>หน่วยนับ</th>
+        <th>ราคาหน่วย</th>
+        <th>เป็นเงิน</th>
       </tr>
     </thead>
     <tbody>
-      {% for item_snapshot in items_snapshot %}
+      {% for item_snapshot in data %}
       <tr>
         <td>{{ loop.index }}</td>
         <td>{{ item_snapshot.item.name }}</td>
         <td>{{ item_snapshot.item.categories.name }}</td>
-        <td>{{ item_snapshot.amount }}</td>
-        <td>{{ item_snapshot.item.set_unit }}</td>
-        <td>{{ (item_snapshot.get_amount_pieces()) if
-          item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td>{{ (item_snapshot.item.piece_unit) if
-          item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td>{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
-        <td>{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
-          item_snapshot.item.item_format == "one to many" else "-" }}</td>
+        <td>{{ item_snapshot.amount_pieces }}</td>
+        <td>{{ item_snapshot.item.piece_unit }}</td>
+        <td>{{ item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-" }}</td>
         <td>{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
       </tr>
       {% endfor %}

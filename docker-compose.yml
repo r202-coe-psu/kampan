@@ -65,5 +65,28 @@ services:
             options:
                 max-size: "10m"
                 max-file: "3"
+    controller:
+        build: .
+        image: kampan-image
+        container_name: kampan-controller
+        volumes:
+            # - ../deployment:/deployment
+            - /etc/localtime:/etc/localtime:ro
+        depends_on:
+            - mongodb
+            - redis
+        links:
+            - mongodb
+            - redis
+        restart: always
+        environment:
+            KAMPAN_SETTINGS: /app/kampan-production.cfg
+        command:
+            /venv/bin/kampan-controller
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
+
 networks:
     default:

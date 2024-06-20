@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from calendar import monthrange
+from mongoengine import Q
 import datetime
 from flask_mongoengine import Pagination
 
@@ -19,11 +20,6 @@ def index_user():
     return render_template(
         "/dashboard/daily_dashboard.html",
     )
-
-
-@module.route("/")
-def index():
-    return redirect(url_for("dashboard.daily_dashboard"))
 
 
 @module.route("/daily", methods=["GET", "POST"])
@@ -78,188 +74,7 @@ def daily_dashboard():
     )
 
 
-@module.route("/monthly", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
-def monthly_dashboard():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    form = forms.inventories.SearchMonthYearForm()
-
-    today = datetime.datetime.today().date().replace(day=1)
-    if form.validate_on_submit():
-        print(form.errors)
-        if form.month_year.data != None:
-            today = form.month_year.data
-
-    days_month = lambda dt: monthrange(dt.year, dt.month)[1]
-    next_time = today + datetime.timedelta(days_month(today))
-
-    # print(today, next_time)
-    monthly_item_orders = models.OrderItem.objects(
-        status="active",
-        created_date__gte=today,
-        created_date__lt=next_time,
-        organization=organization,
-    )
-
-    days_month_categories = list(range(1, days_month(today) + 1))
-    print(
-        datetime.datetime.combine(today, datetime.datetime.min.time()),
-        datetime.datetime.combine(next_time, datetime.datetime.min.time()),
-    )
-    pipeline_approved_checkout_items = [
-        {
-            "$match": {
-                "status": "active",
-                "approved_date": {
-                    "$gte": datetime.datetime.combine(
-                        today, datetime.datetime.min.time()
-                    ),
-                    "$lt": datetime.datetime.combine(
-                        next_time, datetime.datetime.min.time()
-                    ),
-                },
-            }
-        },
-        {
-            "$group": {
-                "_id": {"$dayOfMonth": "$approved_date"},
-                "total": {
-                    "$sum": {
-                        "$multiply": [
-                            "$price",
-                            "$aprroved_amount",
-                        ]
-                    }
-                },
-            }
-        },
-    ]
-
-    approved_checkout_items = models.CheckoutItem.objects().aggregate(
-        pipeline_approved_checkout_items
-    )
-    trend_checkout_items = [0] * days_month(today)
-    for checkout_item in approved_checkout_items:
-        trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
-    total_values = sum(trend_checkout_items)
-    months = [
-        "มกราคม",
-        "กุมภาพันธ์",
-        "มีนาคม",
-        "เมษายน",
-        "พฤษภาคม",
-        "มิถุนายน",
-        "กรกฎาคม",
-        "สิงหาคม",
-        "กันยายน",
-        "ตุลาคม",
-        "พฤษจิกายน",
-        "ธันวาคม",
-    ]
-    this_month = months[today.month - 1] + " " + str(today.year)
-
-    notifications = 0
-
-    items = models.Item.objects(status="active")
-    for item in items:
-        if item.minimum > item.get_amount_items():
-            notifications += 1
-    return render_template(
-        "/dashboard/monthly_dashboard.html",
-        trend_checkout_items=trend_checkout_items,
-        days_month_categories=days_month_categories,
-        form=form,
-        monthly_item_orders=monthly_item_orders,
-        total_values=total_values,
-        this_month=this_month,
-        notifications=notifications,
-        organization=organization,
-    )
-
-
-@module.route("/yearly", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
-def yearly_dashboard():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    form = forms.inventories.SearchYearForm()
-
-    today = datetime.datetime.today().date().replace(month=1, day=1)
-    if form.validate_on_submit():
-        print(form.errors)
-        if form.year.data != None:
-            year = form.year.data
-            today = today.replace(year=year)
-
-    next_time = today.replace(year=today.year + 1)
-
-    yearly_item_orders = models.OrderItem.objects(
-        status="active",
-        created_date__gte=today,
-        created_date__lt=next_time,
-        organization=organization,
-    )
-
-    # year_categories = list(range(1, days_month(today) + 1))
-    pipeline_checkout_item = [
-        {
-            "$match": {
-                "status": "active",
-                "approved_date": {
-                    "$gte": datetime.datetime.combine(
-                        today, datetime.datetime.min.time()
-                    ),
-                    "$lt": datetime.datetime.combine(
-                        next_time, datetime.datetime.min.time()
-                    ),
-                },
-            }
-        },
-        {
-            "$group": {
-                "_id": {"$month": "$approved_date"},
-                "total": {
-                    "$sum": {
-                        "$multiply": [
-                            "$price",
-                            "$aprroved_amount",
-                        ]
-                    }
-                },
-            }
-        },
-    ]
-    checkout_items = models.CheckoutItem.objects().aggregate(pipeline_checkout_item)
-    trend_checkout_items = [0] * 12
-    for checkout_item in checkout_items:
-        trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
-    total_values = sum(trend_checkout_items)
-    this_year = today.year
-
-    notifications = 0
-
-    items = models.Item.objects(status="active")
-    for item in items:
-        if item.minimum > item.get_amount_items():
-            notifications += 1
-    return render_template(
-        "/dashboard/yearly_dashboard.html",
-        yearly_item_orders=yearly_item_orders,
-        total_values=total_values,
-        trend_checkout_items=trend_checkout_items,
-        this_year=this_year,
-        form=form,
-        notifications=notifications,
-        organization=organization,
-    )
-
-
-@module.route("/report", methods=["GET", "POST"])
+@module.route("/all_report", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser")
 def all_report():
     organization_id = request.args.get("organization_id")
@@ -273,24 +88,18 @@ def all_report():
             status="active", organization=organization
         )
     ]
+    form.item.choices += [
+        (str(item.id), item.name)
+        for item in models.Item.objects(status="active", organization=organization)
+    ]
     if not form.validate_on_submit():
         form.start_date.data = datetime.datetime.combine(
-            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
-        )
-        search_start_date = request.args.get("search_start_date")
-        if search_start_date:
-            form.start_date.data = datetime.datetime.strptime(
-                search_start_date,
-                "%Y-%m-%d",
-            )
-
-        form.end_date.data = datetime.datetime.combine(
             datetime.datetime.now(), datetime.datetime.min.time()
         )
-        search_end_date = request.args.get("search_end_date")
-        if search_end_date:
-            form.end_date.data = datetime.datetime.strptime(
-                search_end_date,
+        search_date = request.args.get("search_date")
+        if search_date:
+            form.start_date.data = datetime.datetime.strptime(
+                search_date,
                 "%Y-%m-%d",
             )
 
@@ -301,97 +110,173 @@ def all_report():
         if form.categories.data:
             category = models.Category.objects(id=form.categories.data).first()
 
-        items = models.Item.objects(status="active")
+        search_item = request.args.get("search_item")
+        if search_item:
+            form.item.data = search_item
+        item = None
+        if form.item.data:
+            item = models.Item.objects(id=form.item.data).first()
 
-        # pipeline = [
-        #     {
-        #         "$match": {
-        #             "$and": [
-        #                 {
-        #                     "registeration_date": {"$gte": form.start_date.data},
-        #                 },
-        #                 {
-        #                     "registeration_date": {
-        #                         "$lt": form.end_date.data + datetime.timedelta(days=1)
-        #                     }
-        #                 },
-        #             ],
-        #         },
-        #     },
-        #     {
-        #         "$lookup": {
-        #             "from": "items",
-        #             "localField": "item.$id",
-        #             "foreignField": "_id",
-        #             "as": "itemDetails",
-        #             "pipeline": [
-        #                 {
-        #                     "$lookup": {
-        #                         "from": "categories",
-        #                         "localField": "categories.$id",
-        #                         "foreignField": "_id",
-        #                         "as": "categoriesDetails",
-        #                     }
-        #                 },
-        #                 {"$unwind": "$categoriesDetails"},
-        #                 {
-        #                     "$project": {
-        #                         "name": 1,
-        #                         "set_unit": 1,
-        #                         "piece_unit": 1,
-        #                         "piece_per_set": 1,
-        #                         "categories": "$categoriesDetails.name",
-        #                     }
-        #                 },
-        #             ],
-        #         }
-        #     },
-        #     {"$unwind": "$itemDetails"},
-        #     {
-        #         "$project": {
-        #             "_id": 1,
-        #             "name": "$itemDetails.name",
-        #             "set_unit": "$itemDetails.set_unit",
-        #             "piece_unit": "$itemDetails.piece_unit",
-        #             "piece_per_set": "$itemDetails.piece_per_set",
-        #             "category_name": "$itemDetails.categories",
-        #             "remain": 1,
-        #             "price": 1,
-        #         }
-        #     },
-        #     {
-        #         "$match": {
-        #             "category_name": {
-        #                 "$regex": category.name if category else "",
-        #                 "$options": "i",
-        #             }
-        #         }
-        #     },
-        # ]
-        # inventories = models.Inventory.objects(
-        #     status="active", organization=organization
-        # ).aggregate(pipeline)
-        # for inventory in inventories:
-        #     print(inventory)
-
-        if form.categories.data:
-            items = items.filter(categories=form.categories.data)
+        items_snapshot = models.ItemSnapshot.objects(
+            Q(created_date__gte=form.start_date.data)
+            & Q(created_date__lt=form.start_date.data + datetime.timedelta(days=1))
+            & Q(organization=organization)
+        )
+        if item:
+            items_snapshot = [i for i in items_snapshot if i.item == item]
+        elif category:
+            items = models.Item.objects(categories=category, status="active")
+            items_snapshot = [i for i in items_snapshot if i.item in items]
         print(form.errors)
         return render_template(
             "/dashboard/all_report.html",
             organization=organization,
-            items=items,
+            items_snapshot=items_snapshot,
             form=form,
         )
-    search_start_date = form.start_date.data
-    search_end_date = form.end_date.data
+    search_date = form.start_date.data
     search_categories = form.categories.data
+    search_item = form.item.data
     return redirect(
         url_for(
             "dashboard.all_report",
-            search_start_date=search_start_date,
-            search_end_date=search_end_date,
+            search_item=search_item,
+            search_date=search_date,
             search_categories=search_categories,
             organization_id=organization_id,
         )
     )
+
+
+@module.route("/all_report/download", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def download_all_report():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    search_date = request.args.get("search_date")
+    if not search_date:
+        date = datetime.datetime.combine(
+            datetime.datetime.now(), datetime.datetime.min.time()
+        )
+    else:
+        date = datetime.datetime.strptime(
+            search_date,
+            "%Y-%m-%d",
+        )
+    search_categories = request.args.get("search_categories")
+    category = None
+    if search_categories:
+        category = models.Category.objects(id=search_categories).first()
+
+    search_item = request.args.get("search_item")
+    item = None
+    if search_item:
+        item = models.Item.objects(id=search_item).first()
+    items_snapshot = models.ItemSnapshot.objects(
+        Q(created_date__gte=date)
+        & Q(created_date__lt=date + datetime.timedelta(days=1))
+        & Q(organization=organization)
+    ).order_by("item.name")
+    if item:
+        items_snapshot = [i for i in items_snapshot if i.item == item]
+    elif category:
+        items = models.Item.objects(categories=category, status="active")
+        items_snapshot = [i for i in items_snapshot if i.item in items]
+    response = utils.reports.get_all_report(items_snapshot, organization)
+    return response
+
+
+@module.route("/item_report", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def item_report():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    items = models.Item.objects(organization=organization, status="active")
+    form = forms.dashboard.ItemReport()
+    form.item.choices = [(str(item.id), item.name) for item in items]
+    if not form.validate_on_submit():
+        form.start_date.data = datetime.datetime.combine(
+            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
+        )
+        search_start_date = request.args.get("search_start_date")
+        if search_start_date:
+            form.start_date.data = datetime.datetime.strptime(
+                search_start_date,
+                "%Y-%m-%d",
+            )
+        form.end_date.data = datetime.datetime.combine(
+            datetime.datetime.now(), datetime.datetime.min.time()
+        )
+        search_end_date = request.args.get("search_end_date")
+        if search_end_date:
+            form.end_date.data = datetime.datetime.strptime(
+                search_end_date,
+                "%Y-%m-%d",
+            )
+
+        search_item = request.args.get("search_item")
+        if search_item:
+            form.item.data = search_item
+        else:
+            try:
+                form.item.data = form.item.choices[0][0]
+            except:
+                pass
+
+        item_snapshot = (
+            models.ItemSnapshot.objects(
+                Q(created_date__gte=form.start_date.data)
+                & Q(created_date__lt=form.end_date.data + datetime.timedelta(days=1))
+                & Q(item=form.item.data)
+                & Q(organization=organization)
+            )
+            .order_by("created_date")
+            .first()
+        )
+        inventories = models.Inventory.objects(
+            Q(registeration_date__gte=form.start_date.data)
+            & Q(registeration_date__lt=form.end_date.data + datetime.timedelta(days=1))
+            & Q(item=form.item.data)
+            & Q(organization=organization)
+        )
+        item_checkouts = models.CheckoutItem.objects(
+            Q(checkout_date__gte=form.start_date.data)
+            & Q(checkout_date__lt=form.end_date.data + datetime.timedelta(days=1))
+            & Q(item=form.item.data)
+            & Q(organization=organization)
+        )
+        print(item_snapshot)
+        data = [item_snapshot] + list(item_checkouts) + list(inventories)
+        print(form.errors)
+        return render_template(
+            "/dashboard/item_report.html",
+            organization=organization,
+            data=data,
+            form=form,
+        )
+    search_start_date = form.start_date.data
+    search_end_date = form.end_date.data
+    search_item = form.item.data
+    return redirect(
+        url_for(
+            "dashboard.item_report",
+            search_start_date=search_start_date,
+            search_end_date=search_end_date,
+            search_item=search_item,
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def dashboard():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    return render_template("/dashboard/dashboard.html", organization=organization)

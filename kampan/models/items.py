@@ -80,7 +80,7 @@ class Item(me.Document):
     def get_last_price(self):
         inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
-            return (inventories.order_by("registeration_date")).first().price
+            return inventories.order_by("registeration_date").first().price
 
     def get_last_price_per_piece(self):
         value = self.get_last_price()
@@ -92,8 +92,14 @@ class Item(me.Document):
 
     def get_remaining_balance(self):
         value = self.get_last_price()
+        amount_item = self.get_amount_items()
+        amount_piece = self.get_amount_pieces()
         if value:
-            return round(value / self.piece_per_set, 2) * self.get_amount_pieces()
+            set_remaining = (value * amount_item) + (
+                (amount_piece % self.piece_per_set)
+                * round(value / self.piece_per_set, 2)
+            )
+            return set_remaining
         return ""
 
     def get_booking_item(self):
@@ -120,3 +126,24 @@ class ItemPosition(me.Document):
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
+class ItemSnapshot(me.Document):
+    meta = {"collection": "item_snapshots"}
+
+    item = me.ReferenceField("Item", dbref=True)
+    amount = me.IntField()
+    amount_pieces = me.IntField()
+    last_price = me.DecimalField()
+    last_price_per_piece = me.DecimalField()
+
+    remaining_balance = me.DecimalField()
+    status = me.StringField(default="active")
+
+    organization = me.ReferenceField("Organization", dbref=True)
+
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+    def get_amount_pieces(self):
+        return self.amount_pieces % self.item.piece_per_set

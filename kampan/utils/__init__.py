@@ -3,3 +3,4 @@ from . import email_utils
 from . import inventories
 from . import items
 from . import suppliers
+from . import reports

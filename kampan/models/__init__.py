@@ -2,7 +2,7 @@ from flask_mongoengine import MongoEngine
 
 from .users import User
 from .oauth2 import OAuth2Token
-from .items import Item, ItemPosition
+from .items import Item, ItemPosition, ItemSnapshot
 from .suppliers import Supplier
 from .inventories import Inventory
 from .warehouses import Warehouse

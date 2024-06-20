@@ -17,15 +17,22 @@ module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    checkout_items = models.CheckoutItem.objects(
-        status="active", organization=organization
-    ).order_by("-created_date")
+    if current_user.has_organization_roles("admin", "supervisor supplier"):
+        checkout_items = models.CheckoutItem.objects(
+            status="active", organization=organization
+        ).order_by("-created_date")
+    else:
+        checkout_items = models.CheckoutItem.objects(
+            status="active", organization=organization, user=current_user
+        ).order_by("-created_date")
 
     items = models.Item.objects(status="active")
     form = forms.inventories.SearchStartEndDateForm()
@@ -87,7 +94,9 @@ def index():
 
 
 @module.route("/checkout", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def checkout():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -144,7 +153,9 @@ def checkout():
 
 
 @module.route("/all-checkout", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def bill_checkout():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -168,7 +179,9 @@ def bill_checkout():
 
 
 @module.route("/checkout/<checkout_item_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def edit(checkout_item_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -228,7 +241,9 @@ def edit(checkout_item_id):
 
 
 @module.route("/checkout/<checkout_item_id>/delete", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def delete(checkout_item_id):
     organization_id = request.args.get("organization_id")
 

@@ -5,17 +5,44 @@ from kampan import models
 
 
 class AllItemReport(FlaskForm):
+    item = fields.SelectField(
+        "วัสดุ",
+        choices=[("", "วัสดุ")],
+        validators=[validators.Optional()],
+    )
     categories = fields.SelectField(
         "หมวดหมู่",
         choices=[("", "หมวดหมู่")],
         validators=[validators.Optional()],
     )
     start_date = fields.DateField(
-        "วันที่เริ่ม",
+        "ณ วันที่",
         format="%d/%m/%Y",
         widget=widgets.TextInput(),
         validators=[validators.Optional()],
-        render_kw={"placeholder": "วันที่เริ่ม"},
+        render_kw={"placeholder": "ณ วันที่"},
+    )
+    # end_date = fields.DateField(
+    #     "วันที่สิ้นสุด",
+    #     format="%d/%m/%Y",
+    #     widget=widgets.TextInput(),
+    #     validators=[validators.Optional()],
+    #     render_kw={"placeholder": "วันที่สิ้นสุด"},
+    # )
+
+
+class ItemReport(FlaskForm):
+    item = fields.SelectField(
+        "วัสดุ",
+        choices=[("", "วัสดุ")],
+        validators=[validators.InputRequired()],
+    )
+    start_date = fields.DateField(
+        "วันที่เริ่มต้น",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "วันที่เริ่มต้น"},
     )
     end_date = fields.DateField(
         "วันที่สิ้นสุด",
@@ -23,11 +50,4 @@ class AllItemReport(FlaskForm):
         widget=widgets.TextInput(),
         validators=[validators.Optional()],
         render_kw={"placeholder": "วันที่สิ้นสุด"},
-    )
-
-
-class ItemReport(AllItemReport):
-    item = fields.SelectField(
-        "วัสดุ",
-        validators=[validators.InputRequired()],
     )
