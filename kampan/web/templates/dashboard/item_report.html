@@ -38,6 +38,7 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
 </form>
 {% if data %}
 <div class="ui container" style="width: 100%;">
+  {% if data %}
   <table class="ui celled table">
     <thead>
       <tr>
@@ -78,11 +79,25 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
         <td></td>
         <td></td>
         <td></td>
+        {% elif row._cls == "Inventory" %}
+
+        <td>{{ loop.index }}</td>
+        <td>{{ row.registeration_date.strftime("%d/%m/%Y") }}</td>
+        <td>{{ row.created_by.get_name() }}</td>
+        <td></td>
+        <td>{{ row.quantity }}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
         {% endif %}
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="ui info message">ไม่มีคำขอใหม่ในขณะนี้</div>
+  {% endif %}
 </div>
 {% else %}
 <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
