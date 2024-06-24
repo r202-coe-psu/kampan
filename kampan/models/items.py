@@ -30,6 +30,7 @@ class Item(me.Document):
 
     name = me.StringField(required=True, max_length=255)
     description = me.StringField()
+    remark = me.StringField()
     organization = me.ReferenceField("Organization", dbref=True)
 
     item_format = me.StringField(

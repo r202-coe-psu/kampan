@@ -55,6 +55,7 @@
       {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
       {{ row_detail(item.minimum) }}
 
+
       {% if current_user.has_organization_roles("admin") %}
       {{ row_detail("การแจ้งแตือน :") }}
       <div class="column">
@@ -67,6 +68,8 @@
       {{ row_detail(item.created_date.strftime("%d/%m/%Y")) }}
       {{ row_detail("ลงทะเบียนโดย :") }}
       {{ row_detail(item.created_by.get_name() ) }}
+      {{ row_detail("หมายเหตุ :") }}
+      {{ row_detail(item.remark) }}
     </div>
   </div>
 </div>

@@ -127,6 +127,7 @@ def checkout():
                         if item.get_booking_item() != 0
                         else ""
                     )
+                    + (f" หมายเหตุ {item.remark})" if item.remark else "")
                 ),
             )
             for item in items

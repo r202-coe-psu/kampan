@@ -16,6 +16,7 @@ ITEMS_HEADER = [
     "หน่วยนับใหญ่",
     "หน่วยนับเล็ก",
     "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)",
+    "หมายเหตุ",
 ]
 
 
@@ -34,6 +35,7 @@ def get_template_items_file():
             ITEMS_HEADER[6],
             ITEMS_HEADER[7],
             ITEMS_HEADER[8],
+            ITEMS_HEADER[9],
         ],
         "ประเภทข้อมูล": [
             "ตัวอักษร",
@@ -46,6 +48,7 @@ def get_template_items_file():
             "ตัวอักษร",
             "ตัวอักษร",
             "ตัวเลข",
+            "ตัวอักษร",
         ],
         "ความต้องการ": [
             "จำเป็น",
@@ -58,6 +61,7 @@ def get_template_items_file():
             "",
             "",
             "จำเป็น",
+            "",
         ],
         "ขอบเขตตัวเลือก": [
             "",
@@ -70,6 +74,7 @@ def get_template_items_file():
             "",
             "",
             "",
+            "",
         ],
         "ความหมายตัวเลือก": [
             "",
@@ -77,6 +82,7 @@ def get_template_items_file():
             "",
             "หนึ่งต่อหนึ่ง",
             "หนึ่งต่อหลายๆ",
+            "",
             "",
             "",
             "",
@@ -94,6 +100,7 @@ def get_template_items_file():
             "หากมีการใส่หน่วยนับใหญ่แต่ไม่มีการใส่หน่วยนับย่อย หน่วยนับย่อยจะเท่ากับหน่วยนับใหญ่",
             "",
             "",
+            "หมายเหตุต่างๆ",
         ],
     }
     description = pandas.DataFrame(data)
@@ -216,6 +223,7 @@ def process_items_file(file, organization, user):
             else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
         )
         item.barcode_id = "" if pandas.isnull(row["บาร์โค๊ด"]) else str(row["บาร์โค๊ด"])
+        item.remark = "" if pandas.isnull(row["หมายเหตุ"]) else str(row["หมายเหตุ"])
         item.created_by = user
         item.save()
     return True

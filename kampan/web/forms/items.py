@@ -29,6 +29,7 @@ BaseItemForm = model_form(
         "set_unit": {"label": "หน่วยนับใหญ่"},
         "piece_per_set": {"label": "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"},
         "piece_unit": {"label": "หน่วยนับเล็ก"},
+        "remark": {"label": "หมายเหตุ"},
     },
 )
 
