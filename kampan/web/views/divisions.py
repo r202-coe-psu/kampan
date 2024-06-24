@@ -148,10 +148,6 @@ def add_member(division_id):
             for u in users_in_organization
             if u not in users_in_division
         ]
-    else:
-        form.members.choices = [
-            (str(u.id), u.get_name()) for u in users_in_organization
-        ]
 
     if not form.validate_on_submit():
         print(form.errors)

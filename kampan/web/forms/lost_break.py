@@ -8,7 +8,7 @@ from kampan import models
 BaseItemLostBreakForm = model_form(
     models.LostBreakItem,
     FlaskForm,
-    exclude=["created_date", "user", "lost_from", "quantity"],
+    exclude=["created_date", "user", "lost_from", "quantity", "organization"],
     field_args={
         # "item": {"label": "ชื่อวัสดุ", "label_modifier": lambda i: i.name },
         "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
@@ -21,4 +21,4 @@ BaseItemLostBreakForm = model_form(
 class ItemLostBreakForm(BaseItemLostBreakForm):
     item = fields.SelectField(label="ชื่อวัสดุ")
     set_ = fields.IntegerField(label="จำนวนหน่วยใหญ่", default=0)
-    piece = fields.IntegerField(label="จำนวนหน่วยเล็ก", default=0)
+    piece = fields.IntegerField(label="จำนวนหน่วยเล็ก", default=1)

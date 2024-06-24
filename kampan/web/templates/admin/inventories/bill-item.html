@@ -19,7 +19,6 @@
     <thead>
       <tr>
         <th>รูปวัสดุ</th>
-        <th>รหัสวัสดุ</th>
         <th>ชื่อวัสดุ</th>
         <th>วันที่ลงทะเบียนวัสดุ</th>
         <th>คลังวัสดุ</th>
@@ -43,9 +42,8 @@
             {% endif %}
           </div>
         </td>
-        <td data-label="Item ID">{{ inventory.item.id }}</td>
         <td data-label="Item Name">{{ inventory.item.name }}</td>
-        <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Checkin Date">{{ inventory.created_date.strftime('%d/%m/%Y') }}</td>
         <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
         <td data-label="Quantity">{{ inventory.quantity }}</td>
         <td data-label="Remain">{{ inventory.remain }}</td>

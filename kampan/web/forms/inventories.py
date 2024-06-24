@@ -11,7 +11,7 @@ BaseInventoryForm = model_form(
     models.Inventory,
     FlaskForm,
     exclude=[
-        "registeration_date",
+        "created_date",
         "expiration_date",
         "created_by",
         "remain",

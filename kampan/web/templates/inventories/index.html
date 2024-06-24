@@ -52,7 +52,7 @@
               inventory.registration.receipt_id}} <i class="eye icon"></i>
             </a>
           </td>
-          <td data-label="Checkin Date">{{ inventory.registeration_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Checkin Date">{{ inventory.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
           <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{
             inventory.position.locker }} </td>

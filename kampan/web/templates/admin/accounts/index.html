@@ -24,9 +24,9 @@
     <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">
     {% endif %}
     <div class="ui grid two column">
-      {{ row_detail("Name :") }}
+      {{ row_detail("ชื่อ :") }}
       {{ row_detail(current_user.first_name) }}
-      {{ row_detail("Last Name :") }}
+      {{ row_detail("นามสกุล :") }}
       {{ row_detail(current_user.last_name) }}
 
       {% if current_user.metadata['thai_first_name'] %}

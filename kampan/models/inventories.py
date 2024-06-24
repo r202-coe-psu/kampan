@@ -23,9 +23,7 @@ class Inventory(me.Document):
     remain = me.IntField(required=True, default=0)
     price = me.DecimalField(required=True, default=0)
 
-    registeration_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now()
-    )
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now())
     expiration_date = me.DateTimeField()
     position = me.ReferenceField("ItemPosition", dbref=True)
 

@@ -8,7 +8,8 @@
 
 {% block breadcrumbs %}
 <a class="ui button primary" href="{{ url_for('dashboard.download_all_report',organization_id=organization.id,
-   search_date=search_date, search_categories=search_categories, search_item=search_item) }}">
+   search_quarter=search_quarter if search_quarter else form.quarter.data,
+    search_categories=search_categories, search_item=search_item) }}">
   ดาวน์โหลดรายงานวัสดุคงเหลือ </a>
 {% endblock %}
 
@@ -25,7 +26,8 @@
       {{ form.categories(class="ui search dropdown") }}
     </p>
     <p style="margin-left:10px;">
-      {{ renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      <label style="font-weight: bold; padding-right: 10px;">{{ form.quarter.label }}</label>
+      {{ form.quarter(class="ui search dropdown") }}
     </p>
 
     <p>

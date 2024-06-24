@@ -29,7 +29,7 @@ BaseCheckoutItemForm = model_form(
         # "set_": {"label": "จำนวนหน่วยใหญ่"},
         "piece": {"label": "จำนวนหน่วยเล็ก"},
         "message": {"label": "ข้อความ"},
-        "checkout_date": {"label": "ลงวันที่คำสั่งเบิก", "format": "%Y-%m-%d %H:%M"},
+        "created_date": {"label": "ลงวันที่คำสั่งเบิก", "format": "%Y-%m-%d %H:%M"},
     },
 )
 

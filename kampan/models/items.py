@@ -86,7 +86,7 @@ class Item(me.Document):
     def get_last_price(self):
         inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
-            return inventories.order_by("registeration_date").first().price
+            return inventories.order_by("created_date").first().price
 
     def get_last_price_per_piece(self):
         value = self.get_last_price()

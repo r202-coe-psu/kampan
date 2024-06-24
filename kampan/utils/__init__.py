@@ -4,3 +4,4 @@ from . import inventories
 from . import items
 from . import suppliers
 from . import reports
+from . import dashboards

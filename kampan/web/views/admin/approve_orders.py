@@ -65,7 +65,7 @@ def approved_detail(order_id):
     dict_checkouts = dict()
     for checkout in checkouts:
         dict_checkouts[checkout.item.name] = dict()
-        dict_checkouts[checkout.item.name]["checkout_date"] = checkout.checkout_date
+        dict_checkouts[checkout.item.name]["created_date"] = checkout.created_date
         dict_checkouts[checkout.item.name]["quantity"] = checkout.quantity
 
     for item in form:
@@ -81,8 +81,8 @@ def approved_detail(order_id):
             approved_checkout.user = current_user._get_current_object()
             approved_checkout.order = order
             approved_checkout.item = inventory.item
-            approved_checkout.checkout_date = dict_checkouts[inventory.item.name][
-                "checkout_date"
+            approved_checkout.created_date = dict_checkouts[inventory.item.name][
+                "created_date"
             ]
             approved_checkout.checkout_from = inventory
             approved_checkout.warehouse = inventory.warehouse

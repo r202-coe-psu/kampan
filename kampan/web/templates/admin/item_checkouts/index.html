@@ -32,7 +32,7 @@
       <tbody>
         {% for checkout in paginated_checkouts.items %}
         <tr>
-          <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Image" class="center aligned">
             <div>
               {% if not checkout.item.image %}

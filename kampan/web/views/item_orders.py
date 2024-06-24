@@ -76,17 +76,19 @@ def order():
         id=organization_id, status="active"
     ).first()
     form = forms.item_orders.OrderItemForm()
-    form.head_endorser.choices = [
-        (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users()
-        if ("endorser" in org_user.roles or "head" in org_user.roles)
-        and org_user.division == current_user.get_current_division()
-    ]
-    form.admin_approver.choices = [
-        (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users()
-        if ("admin" in org_user.roles)
-    ]
+    if organization.get_organization_users():
+        form.head_endorser.choices = [
+            (str(org_user.user.id), org_user.user.get_name())
+            for org_user in organization.get_organization_users()
+            if ("endorser" in org_user.roles or "head" in org_user.roles)
+            and org_user.division == current_user.get_current_division()
+        ]
+
+        form.admin_approver.choices = [
+            (str(org_user.user.id), org_user.user.get_name())
+            for org_user in organization.get_organization_users()
+            if ("admin" in org_user.roles)
+        ]
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(

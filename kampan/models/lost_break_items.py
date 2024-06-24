@@ -8,7 +8,7 @@ class LostBreakItem(me.Document):
     # ไอเทมที่ชำรุด หรือ เสียหาย
     mete = {"collection": "lost_break_items"}
     status = me.StringField(default="active")
-
+    organization = me.ReferenceField("Organization", dbref=True)
     user = me.ReferenceField("User", dbref=True)
     item = me.ReferenceField("Item", dbref=True)
 
@@ -17,3 +17,6 @@ class LostBreakItem(me.Document):
     description = me.StringField(max_length=255)
     quantity = me.IntField(required=True, min_value=1, default=1)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+    def get_all_price(self):
+        return self.item.get_last_price_per_piece() * self.quantity

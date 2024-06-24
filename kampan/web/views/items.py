@@ -196,6 +196,8 @@ def edit(item_id):
     if not item.item_format == "one to many":
         form.item_format.choices = form.item_format.choices[::-1]
     if not form.validate_on_submit():
+        if item.categories:
+            form.categories.data = str(item.categories.id)
         print(form.errors)
         return render_template(
             "/items/add_or_edit.html",
@@ -265,24 +267,6 @@ def confirm(item_id):
     item = models.Item.objects().get(id=item_id)
     item.status = "active"
     item.save()
-    item_snapshot = models.items.ItemSnapshot(
-        item=item,
-        amount=item.get_amount_items(),
-        amount_pieces=item.get_amount_pieces(),
-        organization=item.organization,
-    )
-    last_price = item.get_last_price()
-    last_price_per_piece = item.get_last_price_per_piece()
-    remaining_balance = item.get_remaining_balance()
-    if last_price:
-        item_snapshot.last_price = decimal.Decimal(last_price)
-
-    if last_price_per_piece:
-        item_snapshot.last_price_per_piece = decimal.Decimal(last_price_per_piece)
-
-    if remaining_balance:
-        item_snapshot.remaining_balance = decimal.Decimal(remaining_balance)
-    item_snapshot.save()
 
     return redirect(
         url_for(
@@ -303,26 +287,6 @@ def confirm_all():
     for item in items:
         item.status = "active"
         item.save()
-
-        item_snapshot = models.items.ItemSnapshot(
-            item=item,
-            amount=item.get_amount_items(),
-            amount_pieces=item.get_amount_pieces(),
-            organization=item.organization,
-        )
-
-        last_price = item.get_last_price()
-        last_price_per_piece = item.get_last_price_per_piece()
-        remaining_balance = item.get_remaining_balance()
-        if last_price:
-            item_snapshot.last_price = decimal.Decimal(last_price)
-
-        if last_price_per_piece:
-            item_snapshot.last_price_per_piece = decimal.Decimal(last_price_per_piece)
-
-        if remaining_balance:
-            item_snapshot.remaining_balance = decimal.Decimal(remaining_balance)
-        item_snapshot.save()
 
     return redirect(
         url_for(

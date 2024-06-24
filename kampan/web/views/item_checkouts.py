@@ -48,22 +48,22 @@ def index():
     ]
     if form.start_date.data == None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
-            checkout_date__lt=form.end_date.data,
+            created_date__lt=form.end_date.data,
         )
         # approved_checkout_items = approved_checkout_items.filter(
-        #     checkout_date__lt=form.end_date.data,
+        #     created_date__lt=form.end_date.data,
         # )
     elif form.start_date.data and form.end_date.data == None:
         checkout_items = checkout_items.filter(
-            checkout_date__gte=form.start_date.data,
+            created_date__gte=form.start_date.data,
         )
         # approved_checkout_items = approved_checkout_items.filter(
-        #     checkout_date__gte=form.start_date.data,
+        #     created_date__gte=form.start_date.data,
         # )
     elif form.start_date.data != None and form.end_date.data != None:
         checkout_items = checkout_items.filter(
-            checkout_date__gte=form.start_date.data,
-            checkout_date__lt=form.end_date.data,
+            created_date__gte=form.start_date.data,
+            created_date__lt=form.end_date.data,
         )
     if form.item.data:
         checkout_items = checkout_items.filter(item=form.item.data)
@@ -77,7 +77,7 @@ def index():
         checkout_items = set(list_checkout_items)
 
     checkouts = list(checkout_items)
-    checkouts = sorted(checkouts, key=lambda k: k["checkout_date"], reverse=True)
+    checkouts = sorted(checkouts, key=lambda k: k["created_date"], reverse=True)
 
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data or form.end_date.data:
@@ -127,7 +127,7 @@ def checkout():
                         if item.get_booking_item() != 0
                         else ""
                     )
-                    + (f" หมายเหตุ {item.remark})" if item.remark else "")
+                    + (f" หมายเหตุ {item.remark}" if item.remark else "")
                 ),
             )
             for item in items
@@ -143,7 +143,7 @@ def checkout():
     checkout_item.user = current_user._get_current_object()
     checkout_item.order = order
     checkout_item.item = item
-    checkout_item.checkout_date = form.checkout_date.data
+    checkout_item.created_date = form.created_date.data
     # checkout_item.set_ = form.set_.data
     checkout_item.piece = form.piece.data
     checkout_item.quantity = form.piece.data
@@ -227,7 +227,7 @@ def edit(checkout_item_id):
     item = models.Item.objects(id=form.item.data).first()
     checkout_item.user = current_user._get_current_object()
     checkout_item.item = item
-    checkout_item.checkout_date = form.checkout_date.data
+    checkout_item.created_date = form.created_date.data
     checkout_item.set_ = form.set_.data
     checkout_item.quantity = form.quantity.data
     checkout_item.organization = organization

@@ -91,6 +91,7 @@ def add():
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
+        lost_break_item.organization = organization
 
         if inventory.remain >= quantity:
             inventory.remain -= quantity
@@ -174,6 +175,7 @@ def edit(lost_break_item_id):
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
+        lost_break_item.organization = organization
 
         if inventory.remain >= quantity:
             inventory.remain -= quantity

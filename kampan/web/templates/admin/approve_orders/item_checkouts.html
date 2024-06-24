@@ -36,7 +36,7 @@
             {% endif %}
           </div>
         </td>
-        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
         {% if checkout.quantity > checkout.item.get_items_quantity() %}

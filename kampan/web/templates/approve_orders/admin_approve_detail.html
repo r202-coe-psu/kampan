@@ -94,7 +94,7 @@
             {% endif %}
           </div>
         </td>
-        <td data-label="Checkout Date">{{ checkout.checkout_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Piece">{{ checkout.piece }}</td>
         <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>

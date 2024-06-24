@@ -23,8 +23,16 @@ BaseOrderItemForm = model_form(
 
 
 class OrderItemForm(BaseOrderItemForm):
-    head_endorser = fields.SelectField("เลือกหัวหน้าฝ่ายที่ต้องการให้อนุมัติ")
-    admin_approver = fields.SelectField("เลือกเจ้าหน้าที่พัสดุที่ต้องการให้อนุมัติ")
+    head_endorser = fields.SelectField(
+        "เลือกหัวหน้าฝ่ายที่ต้องการให้อนุมัติ",
+        validators=[validators.InputRequired()],
+        choices=[("", "เลือกหัวหน้าฝ่ายที่ต้องการให้อนุมัติ")],
+    )
+    admin_approver = fields.SelectField(
+        "เลือกเจ้าหน้าที่พัสดุที่ต้องการให้อนุมัติ",
+        validators=[validators.InputRequired()],
+        choices=[("", "เลือกเจ้าหน้าที่พัสดุที่ต้องการให้อนุมัติ")],
+    )
 
 
 def get_approved_amount_form(items):

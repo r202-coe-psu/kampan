@@ -29,7 +29,7 @@ def index():
     form = forms.inventories.SearchStartEndDateForm()
     inventories = models.Inventory.objects(
         status="active", organization=organization
-    ).order_by("-registeration_date")
+    ).order_by("-created_date")
     items = models.Item.objects(status="active")
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
@@ -43,18 +43,18 @@ def index():
 
     if form.start_date.data == None and form.end_date.data != None:
         inventories = inventories.filter(
-            registeration_date__lt=form.end_date.data,
+            created_date__lt=form.end_date.data,
         )
 
     elif form.start_date.data and form.end_date.data == None:
         inventories = inventories.filter(
-            registeration_date__gte=form.start_date.data,
+            created_date__gte=form.start_date.data,
         )
 
     elif form.start_date.data != None and form.end_date.data != None:
         inventories = inventories.filter(
-            registeration_date__gte=form.start_date.data,
-            registeration_date__lt=form.end_date.data,
+            created_date__gte=form.start_date.data,
+            created_date__lt=form.end_date.data,
         )
 
     if form.item.data:

@@ -15,13 +15,7 @@ class AllItemReport(FlaskForm):
         choices=[("", "หมวดหมู่")],
         validators=[validators.Optional()],
     )
-    start_date = fields.DateField(
-        "ณ วันที่",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
-        validators=[validators.Optional()],
-        render_kw={"placeholder": "ณ วันที่"},
-    )
+    quarter = fields.SelectField("ไตรมาส")
     # end_date = fields.DateField(
     #     "วันที่สิ้นสุด",
     #     format="%d/%m/%Y",
@@ -37,17 +31,18 @@ class ItemReport(FlaskForm):
         choices=[("", "วัสดุ")],
         validators=[validators.InputRequired()],
     )
-    start_date = fields.DateField(
-        "วันที่เริ่มต้น",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
-        validators=[validators.Optional()],
-        render_kw={"placeholder": "วันที่เริ่มต้น"},
-    )
-    end_date = fields.DateField(
-        "วันที่สิ้นสุด",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
-        validators=[validators.Optional()],
-        render_kw={"placeholder": "วันที่สิ้นสุด"},
-    )
+    # start_date = fields.DateField(
+    #     "วันที่เริ่มต้น",
+    #     format="%d/%m/%Y",
+    #     widget=widgets.TextInput(),
+    #     validators=[validators.Optional()],
+    #     render_kw={"placeholder": "วันที่เริ่มต้น"},
+    # )
+    # end_date = fields.DateField(
+    #     "วันที่สิ้นสุด",
+    #     format="%d/%m/%Y",
+    #     widget=widgets.TextInput(),
+    #     validators=[validators.Optional()],
+    #     render_kw={"placeholder": "วันที่สิ้นสุด"},
+    # )
+    quarter = fields.SelectField("ไตรมาส")

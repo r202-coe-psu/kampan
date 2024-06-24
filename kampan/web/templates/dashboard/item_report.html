@@ -7,11 +7,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-{#}
 <a class="ui button primary" href="{{ url_for('dashboard.download_item_report',organization_id=organization.id,
-search_start_date=search_start_date, search_end_date=search_end_date) }}">
-  ดาวน์โหลดรายงานเฉพาะวัสดุ </a>
-{#}
+search_quarter=search_quarter if search_quarter else form.quarter.data) }}">
+  ดาวน์โหลดเอกสารรายการการเบิกวัสดุ </a>
 {% endblock %}
 
 
@@ -24,10 +22,8 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
       {{ form.item(class="ui search dropdown") }}
     </p>
     <p style="margin-left:10px;">
-      {{ renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{ renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+      <label style="font-weight: bold; padding-right: 10px;">{{ form.quarter.label }}</label>
+      {{ form.quarter(class="ui search dropdown") }}
     </p>
 
     <p>
@@ -44,7 +40,7 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
       <tr>
         <th>ลำดับ</th>
         <th>วันที่</th>
-        <th>ผู้เบิก</th>
+        <th>การดำเนินการ</th>
         <th>ร้าน</th>
         <th>จำนวน</th>
         <th>หน่วยนับ</th>
@@ -54,11 +50,9 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
       </tr>
     </thead>
     <tbody>
-      {% set remain = 0 %}
-      {% for row in data %}
+      {% for row, amount_item in data %}
       <tr>
         {% if row._cls == "ItemSnapshot" %}
-        {% set remain = row.amount_pieces if row.item.item_format == "one to many" else row.amount %}
         <td>{{ loop.index }}</td>
         <td>{{ row.created_date.strftime("%d/%m/%Y") }}</td>
         <td>ยกยอด</td>
@@ -67,29 +61,43 @@ search_start_date=search_start_date, search_end_date=search_end_date) }}">
         <td>{{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}</td>
         <td>{{ row.last_price_per_piece if row.last_price_per_piece else "-" }}</td>
         <td>{{ row.remaining_balance if row.remaining_balance else "-" }}</td>
-        <td>{{ row.amount_pieces if row.item.item_format == "one to many" else row.amount }}</td>
-        {% elif row._cls == "CheckoutItem" %}
+        <td>{{ amount_item }}</td>
 
+        {% elif row._cls == "CheckoutItem" %}
         <td>{{ loop.index }}</td>
-        <td>{{ row.checkout_date.strftime("%d/%m/%Y") }}</td>
-        <td>{{ row.user.get_name() }}</td>
+        <td>{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+        <td>เบิกโดย {{ row.user.get_name() }}</td>
         <td></td>
         <td>-{{ row.quantity }}</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>{{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}</td>
+        <td>{{ row.item.get_last_price_per_piece() }}</td>
+        <td>-{{ row.get_all_price() }}</td>
+        <td>{{ amount_item }}</td>
+
+
         {% elif row._cls == "Inventory" %}
 
         <td>{{ loop.index }}</td>
-        <td>{{ row.registeration_date.strftime("%d/%m/%Y") }}</td>
-        <td>{{ row.created_by.get_name() }}</td>
-        <td></td>
+        <td>{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+        <td>เติมวัสดุ</td>
+        <td>{{ row.registration.supplier.get_supplier_name() }}</td>
         <td>{{ row.quantity }}</td>
+        <td>{{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}</td>
+        <td>{{ row.item.get_last_price_per_piece() }}</td>
+        <td>{{ row.get_all_price() }}</td>
+        <td>{{ amount_item }}</td>
+
+        {% elif row._cls == "LostBreakItem" %}
+        <td>{{ loop.index }}</td>
+        <td>{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+        <td>ชำรุด {{ row.description }}</td>
         <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>-{{ row.quantity }}</td>
+        <td>{{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}</td>
+        <td>{{ row.item.get_last_price_per_piece() }}</td>
+        <td>-{{ row.get_all_price() }}</td>
+        <td>{{ amount_item }}</td>
+
         {% endif %}
       </tr>
       {% endfor %}
