@@ -216,9 +216,9 @@ def item_report():
     items = models.Item.objects(organization=organization, status="active")
     form = forms.dashboard.ItemReport()
     form.item.choices = [(str(item.id), item.name) for item in items]
+
     start_year = 2023
     now_year = datetime.datetime.now().year
-
     quarter_choices = []
     default_quarter = ""
     for year in range(start_year, now_year + 1):
@@ -415,4 +415,149 @@ def dashboard():
         pending_orders=pending_orders,
         count_orders=count_orders,
         count_pending_orders=count_pending_orders,
+    )
+
+
+@module.route("/chart", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def dashboard_chart():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    items = models.Item.objects(organization=organization, status="active")
+    form = forms.dashboard.ItemReport()
+    form.item.choices = [(str(item.id), item.name) for item in items]
+
+    start_year = 2023
+    now_year = datetime.datetime.now().year
+    quarter_choices = []
+    default_quarter = ""
+    for year in range(start_year, now_year + 1):
+        quarter_dates = get_quarter_of_year(year)
+        print(f"ปีงบประมาณ {year + 1}")
+        count = 0
+        for start_date, end_date in quarter_dates:
+            count += 1
+            print(
+                f"ปี {year+543+1} ไตรมาสที่ {count}: {start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}"
+            )
+            quarter_choices.append(
+                (
+                    f"{year}_{count}",
+                    f"ปี {year+543+1} ไตรมาสที่ {count} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
+                )
+            )
+            if start_date <= datetime.date.today():
+                default_quarter = f"{year}_{count}"
+    form.quarter.choices = quarter_choices
+    if not form.validate_on_submit():
+        form.quarter.data = default_quarter
+        search_quarter = request.args.get("search_quarter")
+        if search_quarter:
+            form.quarter.data = search_quarter
+        search_item = request.args.get("search_item")
+        if search_item:
+            form.item.data = search_item
+        else:
+            try:
+                form.item.data = form.item.choices[0][0]
+            except:
+                pass
+
+        year, quarter = str(form.quarter.data).split("_")
+        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
+        month_categories = [i for i in range(start_date.month, start_date.month + 3)]
+
+        incoming = []
+        outgoing = []
+        for month in month_categories:
+            checkouts = models.CheckoutItem.objects(
+                Q(status="active")
+                & Q(created_date__gte=start_date.replace(month=month))
+                & Q(
+                    created_date__lt=end_date.replace(month=month)
+                    + datetime.timedelta(days=1)
+                )
+                & Q(item=form.item.data)
+            ).count()
+            inventories = models.Inventory.objects(
+                Q(status="active")
+                & Q(created_date__gte=start_date.replace(month=month))
+                & Q(
+                    created_date__lt=end_date.replace(month=month)
+                    + datetime.timedelta(days=1)
+                )
+                & Q(item=form.item.data)
+            ).count()
+            outgoing.append(checkouts)
+            incoming.append(inventories)
+
+        print(form.errors)
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user.$id",
+                    "foreignField": "_id",
+                    "as": "userDetails",
+                    "pipeline": [
+                        {
+                            "$project": {
+                                "name": {
+                                    "$concat": [
+                                        "$first_name",
+                                        " ",
+                                        "$last_name",
+                                    ]
+                                },
+                            }
+                        },
+                    ],
+                }
+            },
+            {"$unwind": "$userDetails"},
+            {
+                "$group": {
+                    "_id": "$userDetails.name",
+                    "total": {"$sum": "$quantity"},
+                    "total_time": {"$sum": 1},
+                },
+            },
+            {"$sort": {"total": -1}},
+        ]
+        group_checkouts = models.CheckoutItem.objects(
+            Q(status="active")
+            & Q(created_date__gte=start_date.replace(month=month))
+            & Q(
+                created_date__lt=end_date.replace(month=month)
+                + datetime.timedelta(days=1)
+            )
+            & Q(item=form.item.data)
+        ).aggregate(pipeline)
+        item_name = (models.Item.objects(id=form.item.data).first()).name
+        name_chart = "กราฟแสดงข้อมูลวัสดุเข้า-ออกของ {} ไตรมาสที่ {} ประจำปี {}".format(
+            item_name,
+            (form.quarter.data).split("_")[-1],
+            int((form.quarter.data).split("_")[0]) + 543 + 1,
+        )
+        return render_template(
+            "/dashboard/dashboard_chart.html",
+            form=form,
+            organization=organization,
+            month_categories=month_categories,
+            incoming=incoming,
+            outgoing=outgoing,
+            group_checkouts=group_checkouts,
+            name_chart=name_chart,
+        )
+    search_quarter = form.quarter.data
+    search_item = form.item.data
+    return redirect(
+        url_for(
+            "dashboard.dashboard_chart",
+            search_quarter=search_quarter,
+            search_item=search_item,
+            organization_id=organization_id,
+        )
     )

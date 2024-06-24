@@ -1,0 +1,97 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block dashboard_title %}
+แสดงข้อมูลเข้า-ออก
+{% endblock %}
+
+{% block breadcrumbs %}
+
+{% endblock %}
+
+{% block content %}
+<form method="post" style="padding-bottom: 0.5rem;">
+  <div class="ui secondary menu">
+    {{form.hidden_tag()}}
+    <p style="margin-left:auto;">
+      <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
+      {{ form.item(class="ui search dropdown") }}
+    </p>
+    <p style="margin-left:10px;">
+      <label style="font-weight: bold; padding-right: 10px;">{{ form.quarter.label }}</label>
+      {{ form.quarter(class="ui search dropdown") }}
+    </p>
+
+    <p>
+      <button type="submit" class="ui primary button"
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    </p>
+  </div>
+</form>
+<div class="ui grid">
+  <div class="sixteen wide column">
+    <div class="ui container" style="width: 50%; z-index: indexs -1;">
+      <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;  text-align: center;">
+        {{ name_chart }}
+      </div>
+      <div id="chart"></div>
+    </div>
+  </div>
+  <div class="sixteen wide column">
+    <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;">
+      รายชื่อบุคคลที่ขอเบิก
+    </div>
+    {% if group_checkouts %}
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>ชื่อผู้เบิก</th>
+          <th>จำนวนครั้งที่เบิก</th>
+          <th>จำนวนวัสดุที่เบิก</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in group_checkouts %}
+        <tr>
+          <td>{{ checkout._id }}</td>
+          <td>{{ checkout.total_time }}</td>
+          <td>{{ checkout.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="ui info message">ไม่มีคำขอใหม่ในขณะนี้</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}
+
+{% block additional_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+  var incoming = {{ incoming }};
+  var outgoing = {{ outgoing }};
+  var month_categories = {{ month_categories }};
+  var options = {
+    chart: {
+      type: 'bar'
+    },
+    series: [{
+      name: 'นำเข้า',
+      data: incoming
+    }, {
+      name: 'เบิกออก',
+      data: outgoing
+    }],
+    xaxis: {
+      categories: month_categories
+    }
+  };
+
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+  chart.render();
+</script>
+{% endblock %}
