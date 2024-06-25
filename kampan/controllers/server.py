@@ -67,10 +67,10 @@ class ControllerServer:
             #     await self.item_queue.put(data)
             #     await asyncio.sleep(0.01)
             quarter_year = [
-                datetime.datetime(now_year, 10, 1),
-                datetime.datetime(now_year + 1, 1, 1),
-                datetime.datetime(now_year + 1, 4, 1),
-                datetime.datetime(now_year + 1, 7, 1),
+                datetime.datetime(now_year, 10, 1, int(hour), int(minute), 0),
+                datetime.datetime(now_year + 1, 1, 1, int(hour), int(minute), 0),
+                datetime.datetime(now_year + 1, 4, 1, int(hour), int(minute), 0),
+                datetime.datetime(now_year + 1, 7, 1, int(hour), int(minute), 0),
             ]
 
             time_to_check = quarter_year[self.quarter % 4] - datetime.datetime.now()
