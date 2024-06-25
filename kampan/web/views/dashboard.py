@@ -535,7 +535,8 @@ def dashboard_chart():
             )
             & Q(item=form.item.data)
         ).aggregate(pipeline)
-        item_name = (models.Item.objects(id=form.item.data).first()).name
+        this_item = models.Item.objects(id=form.item.data).first()
+        item_name = this_item.name if this_item else ""
         name_chart = "กราฟแสดงข้อมูลวัสดุเข้า-ออกของ {} ไตรมาสที่ {} ประจำปี {}".format(
             item_name,
             (form.quarter.data).split("_")[-1],
