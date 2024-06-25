@@ -25,7 +25,7 @@
       class="icon dashboard"></i>แดชบอร์ด</a>
   <a class="item" href="{{ url_for('dashboard.dashboard_chart', organization_id = organization.id) }}">
     <i class="chart bar icon"></i>กราฟแสดงวัสดุเข้า-ออก</a>
-  <a class="item" href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">รายงานทั้งหมด</a>
+  <a class="item" href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">รายงานวัสดุคงเหลือ</a>
   <a class="item" href="{{ url_for('dashboard.item_report', organization_id = organization.id) }}">
     รายงานเฉพาะวัสดุ</a>
   <a class="item" href="{{ url_for('notifications.index', organization_id = organization.id) }}">การแจ้งเตือน<i

@@ -24,7 +24,7 @@ def get_all_report(items_snapshot, organization, search_quarter):
     today = datetime.datetime.now()
     year, quarter = str(search_quarter).split("_")
     data = [
-        [f"รายงานวัสดุคงเหลือเงิน ปีงบประมาณ {int(year) + 543} ไตรมาสที่ {quarter}"],
+        [f"รายงานวัสดุคงเหลือเงิน ปีงบประมาณ {int(year) + 543 +1} ไตรมาสที่ {quarter}"],
         [organization.name],
         ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
     ]
@@ -132,7 +132,7 @@ def get_all_report(items_snapshot, organization, search_quarter):
     response = send_file(
         excel_output,
         as_attachment=True,
-        download_name=f"all-report-{int(year) + 543}-quarter-{quarter}.xlsx",
+        download_name=f"all-report-{int(year) + 543 +1}-quarter-{quarter}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     return response
