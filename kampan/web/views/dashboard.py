@@ -206,15 +206,15 @@ def download_all_report():
     return response
 
 
-@module.route("/item_report", methods=["GET", "POST"])
+@module.route("/item_report_quarter", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser")
-def item_report():
+def item_report_quarter():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
     items = models.Item.objects(organization=organization, status="active")
-    form = forms.dashboard.ItemReport()
+    form = forms.dashboard.ItemReportQuarter()
     form.item.choices = [(str(item.id), item.name) for item in items]
 
     start_year = 2023
@@ -240,24 +240,6 @@ def item_report():
                 default_quarter = f"{year}_{count}"
     form.quarter.choices = quarter_choices
     if not form.validate_on_submit():
-        # form.start_date.data = datetime.datetime.combine(
-        #     datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
-        # )
-        # search_start_date = request.args.get("search_start_date")
-        # if search_start_date:
-        #     form.start_date.data = datetime.datetime.strptime(
-        #         search_start_date,
-        #         "%Y-%m-%d",
-        #     )
-        # form.end_date.data = datetime.datetime.combine(
-        #     datetime.datetime.now(), datetime.datetime.min.time()
-        # )
-        # search_end_date = request.args.get("search_end_date")
-        # if search_end_date:
-        #     form.end_date.data = datetime.datetime.strptime(
-        #         search_end_date,
-        #         "%Y-%m-%d",
-        #     )
         form.quarter.data = default_quarter
 
         search_quarter = request.args.get("search_quarter")
@@ -320,7 +302,7 @@ def item_report():
         amount_item = 0
         for row in data:
             if row._cls == "ItemSnapshot":
-                amount_item += (
+                amount_item = (
                     row.amount_pieces
                     if row.item.item_format == "one to many"
                     else row.amount
@@ -336,7 +318,7 @@ def item_report():
 
         print(form.errors)
         return render_template(
-            "/dashboard/item_report.html",
+            "/dashboard/item_report_quarter.html",
             organization=organization,
             data=list_data,
             form=form,
@@ -345,8 +327,127 @@ def item_report():
     search_item = form.item.data
     return redirect(
         url_for(
-            "dashboard.item_report",
+            "dashboard.item_report_quarter",
             search_quarter=search_quarter,
+            search_item=search_item,
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/item_report_custom", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "endorser")
+def item_report_custom():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    items = models.Item.objects(organization=organization, status="active")
+    form = forms.dashboard.ItemReportCustom()
+    form.item.choices = [(str(item.id), item.name) for item in items]
+    if not form.validate_on_submit():
+        form.start_date.data = datetime.datetime.combine(
+            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
+        )
+        search_start_date = request.args.get("search_start_date")
+        if search_start_date:
+            form.start_date.data = datetime.datetime.strptime(
+                search_start_date,
+                "%Y-%m-%d",
+            )
+        form.end_date.data = datetime.datetime.combine(
+            datetime.datetime.now(), datetime.datetime.min.time()
+        )
+        search_end_date = request.args.get("search_end_date")
+        if search_end_date:
+            form.end_date.data = datetime.datetime.strptime(
+                search_end_date,
+                "%Y-%m-%d",
+            )
+
+        search_item = request.args.get("search_item")
+        if search_item:
+            form.item.data = search_item
+        else:
+            try:
+                form.item.data = form.item.choices[0][0]
+            except:
+                pass
+
+        item_snapshot = (
+            models.ItemSnapshot.objects(
+                Q(created_date__gte=form.start_date.data)
+                & Q(created_date__lt=form.end_date.data + datetime.timedelta(days=1))
+                & Q(status="active")
+                & Q(item=form.item.data)
+                & Q(organization=organization)
+            )
+            .order_by("created_date")
+            .first()
+        )
+        inventories = models.Inventory.objects(
+            Q(created_date__gte=form.start_date.data)
+            & Q(created_date__lt=form.end_date.data + datetime.timedelta(days=1))
+            & Q(status="active")
+            & Q(item=form.item.data)
+            & Q(organization=organization)
+        )
+        item_checkouts = models.CheckoutItem.objects(
+            Q(created_date__gte=form.start_date.data)
+            & Q(created_date__lt=form.end_date.data + datetime.timedelta(days=1))
+            & Q(status="active")
+            & Q(item=form.item.data)
+            & Q(organization=organization)
+        )
+        lost_break_items = models.LostBreakItem.objects(
+            Q(created_date__gte=form.start_date.data)
+            & Q(created_date__lt=form.end_date.data + datetime.timedelta(days=1))
+            & Q(status="active")
+            & Q(item=form.item.data)
+            & Q(organization=organization)
+        )
+
+        data = (
+            ([item_snapshot] if item_snapshot else [])
+            + list(item_checkouts)
+            + list(inventories)
+            + list(lost_break_items)
+        )
+
+        data = sorted(data, key=lambda el: el["created_date"])
+        list_data = []
+        amount_item = 0
+        for row in data:
+            if row._cls == "ItemSnapshot":
+                amount_item = (
+                    row.amount_pieces
+                    if row.item.item_format == "one to many"
+                    else row.amount
+                )
+            elif row._cls == "CheckoutItem":
+                amount_item -= row.quantity
+            elif row._cls == "Inventory":
+                amount_item += row.quantity
+            elif row._cls == "LostBreakItem":
+                amount_item -= row.quantity
+
+            list_data.append((row, amount_item))
+
+        print(form.errors)
+        return render_template(
+            "/dashboard/item_report_custom.html",
+            organization=organization,
+            data=list_data,
+            form=form,
+        )
+    search_start_date = form.start_date.data
+    search_end_date = form.end_date.data
+    search_item = form.item.data
+    return redirect(
+        url_for(
+            "dashboard.item_report_custom",
+            search_start_date=search_start_date,
+            search_end_date=search_end_date,
             search_item=search_item,
             organization_id=organization_id,
         )
@@ -361,8 +462,27 @@ def download_item_report():
         id=organization_id, status="active"
     ).first()
     search_quarter = request.args.get("search_quarter")
-    year, quarter = str(search_quarter).split("_")
-    start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
+    if search_quarter:
+        year, quarter = str(search_quarter).split("_")
+        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
+    search_start_date = request.args.get("search_start_date")
+    search_end_date = request.args.get("search_end_date")
+    if search_start_date and search_end_date:
+        start_date = datetime.datetime.strptime(
+            search_start_date,
+            "%Y-%m-%d %H:%M:%S",
+        )
+        end_date = datetime.datetime.strptime(
+            search_end_date,
+            "%Y-%m-%d %H:%M:%S",
+        )
+    if not start_date or not end_date:
+        return redirect(
+            url_for(
+                "dashboard.item_report_all",
+                organization_id=organization_id,
+            )
+        )
 
     response = utils.reports.get_item_report(start_date, end_date, organization)
     return response
@@ -426,7 +546,7 @@ def dashboard_chart():
         id=organization_id, status="active"
     ).first()
     items = models.Item.objects(organization=organization, status="active")
-    form = forms.dashboard.ItemReport()
+    form = forms.dashboard.ItemReportQuarter()
     form.item.choices = [(str(item.id), item.name) for item in items]
 
     start_year = 2023

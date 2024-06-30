@@ -28,54 +28,16 @@ class ControllerServer:
         process_time = datetime.time(int(hour), int(minute), 0)
         items = models.Item.objects(status="active")
 
-        month = datetime.datetime.now().month
-        logger.debug(f"month {month}")
-
-        now_year = datetime.datetime.now().year
-        quarter_month = [10, 1, 4, 7]
-        if month in quarter_month and (
-            datetime.datetime(2024, 7, 1) != datetime.datetime(now_year, month % 12, 1)
-        ):
-            self.quarter = quarter_month.index(month)
-
-        else:
-
-            for i in range(12):
-                month = month + 1
-                if datetime.date(2024, 7, 1) == datetime.date(
-                    now_year, (month) % 12, 1
-                ):
-                    continue
-                elif month in quarter_month:
-                    self.quarter = quarter_month.index(month)
-
-                    break
-
-        logger.debug(f"start at quarter M{month} Y{now_year} Q{self.quarter +1}")
-
         while self.running:
             logger.debug("start check item data daily")
 
-            now_year = datetime.datetime.now().year
-            # for item in items:
+            today = datetime.date.today()
+            next_month = today.replace(month=today.month % 12 + 1, day=1)
+            time_set = datetime.datetime.combine(next_month, process_time)
+            logger.debug(f"Next day {time_set}")
+            time_to_check = time_set - datetime.datetime.now()
+            logger.debug(f"Sleep {time_to_check.total_seconds()} seconds")
 
-            #     data = {
-            #         "action": "process",
-            #         "type": "submit",
-            #         "item_id": str(item.id),
-            #     }
-            #     await self.item_queue.put(data)
-            #     await asyncio.sleep(0.01)
-            quarter_year = [
-                datetime.datetime(now_year, 10, 1, int(hour), int(minute), 0),
-                datetime.datetime(now_year + 1, 1, 1, int(hour), int(minute), 0),
-                datetime.datetime(now_year + 1, 4, 1, int(hour), int(minute), 0),
-                datetime.datetime(now_year + 1, 7, 1, int(hour), int(minute), 0),
-            ]
-
-            time_to_check = quarter_year[self.quarter % 4] - datetime.datetime.now()
-
-            logger.debug(f"sleep {time_to_check} after {datetime.datetime.now()}")
             await asyncio.sleep(time_to_check.total_seconds())
 
             items = models.Item.objects(status="active")

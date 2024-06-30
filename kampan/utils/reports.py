@@ -182,9 +182,7 @@ def get_item_report(start_date, end_date, organization):
             )
 
             data = (
-                [item_snapshot]
-                if item_snapshot
-                else []
+                ([item_snapshot] if item_snapshot else [])
                 + list(item_checkouts)
                 + list(inventories)
                 + list(lost_break_items)
@@ -195,7 +193,7 @@ def get_item_report(start_date, end_date, organization):
             amount_item = 0
             for row in data:
                 if row._cls == "ItemSnapshot":
-                    amount_item += (
+                    amount_item = (
                         row.amount_pieces
                         if row.item.item_format == "one to many"
                         else row.amount
@@ -280,10 +278,12 @@ def get_item_report(start_date, end_date, organization):
         workbook.close()
 
     excel_output.seek(0)
+    start = f"{start_date.day}-{start_date.month}-{start_date.year}"
+    end = f"{end_date.day}-{end_date.month}-{end_date.year}"
     response = send_file(
         excel_output,
         as_attachment=True,
-        download_name=f"item-report-{start_date}-to-{end_date}.xlsx",
+        download_name=f"item-report-{start}-to-{end}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     return response

@@ -25,24 +25,32 @@ class AllItemReport(FlaskForm):
     # )
 
 
-class ItemReport(FlaskForm):
+class ItemReportQuarter(FlaskForm):
     item = fields.SelectField(
         "วัสดุ",
         choices=[("", "วัสดุ")],
         validators=[validators.InputRequired()],
     )
-    # start_date = fields.DateField(
-    #     "วันที่เริ่มต้น",
-    #     format="%d/%m/%Y",
-    #     widget=widgets.TextInput(),
-    #     validators=[validators.Optional()],
-    #     render_kw={"placeholder": "วันที่เริ่มต้น"},
-    # )
-    # end_date = fields.DateField(
-    #     "วันที่สิ้นสุด",
-    #     format="%d/%m/%Y",
-    #     widget=widgets.TextInput(),
-    #     validators=[validators.Optional()],
-    #     render_kw={"placeholder": "วันที่สิ้นสุด"},
-    # )
     quarter = fields.SelectField("ไตรมาส")
+
+
+class ItemReportCustom(FlaskForm):
+    item = fields.SelectField(
+        "วัสดุ",
+        choices=[("", "วัสดุ")],
+        validators=[validators.InputRequired()],
+    )
+    start_date = fields.DateField(
+        "วันที่เริ่มต้น",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        validators=[validators.InputRequired()],
+        render_kw={"placeholder": "วันที่เริ่มต้น"},
+    )
+    end_date = fields.DateField(
+        "วันที่สิ้นสุด",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        validators=[validators.InputRequired()],
+        render_kw={"placeholder": "วันที่สิ้นสุด"},
+    )
