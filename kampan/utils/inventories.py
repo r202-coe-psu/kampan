@@ -121,7 +121,7 @@ def process_inventory_engagement(inventory_engagement_file):
 
         position = models.ItemPosition.objects(
             status="active",
-            description=row["ตำแหน่ง (คำอธิบาย)"],
+            description=str(row["ตำแหน่ง (คำอธิบาย)"]),
             warehouse=warehouse,
         ).first()
 
@@ -214,14 +214,18 @@ def check_positions(df, organization):
     for idx, row in df.iterrows():
         warehouse = models.Warehouse.objects(
             status="active",
-            name=row["คลังวัสดุ"],
+            name=str(row["คลังวัสดุ"] if not pandas.isnull(row["คลังวัสดุ"]) else ""),
             organization=organization,
         ).first()
         if not warehouse:
             return f"ไม่พบคลังวัสดุชื่อ : {row['คลังวัสดุ']} ที่ได้ลงทะเบียนไว้"
         position = models.ItemPosition.objects(
             status="active",
-            description=row["ตำแหน่ง (คำอธิบาย)"],
+            description=str(
+                row["ตำแหน่ง (คำอธิบาย)"]
+                if not pandas.isnull(row["ตำแหน่ง (คำอธิบาย)"])
+                else ""
+            ),
             warehouse=warehouse,
         ).first()
         if not position:
