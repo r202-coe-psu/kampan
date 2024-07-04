@@ -38,10 +38,9 @@
       </div>
       #}
       {% if current_user.is_authenticated %}
-      <a class="item" href="{{ url_for('dashboard.daily_dashboard') }}">Dashboard</a>
       <a class="item" href="{{ url_for('accounts.logout') }}">Logout</a>
       {% else %}
-      <a class="item" href="{{ url_for('accounts.login') }}">Login</a>
+      <a class="item" href="{{ url_for('accounts.login_oauth', name='psu') }}">Login</a>
       {% endif %}
 
     </div>
