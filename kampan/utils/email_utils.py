@@ -95,6 +95,8 @@ def force_send_email_to_endorser(
     user,
     setting,
 ):
+    logger.debug(f"use force_send_email_to_endorser")
+
     creator = order.created_by
     division = order.division
     endorser = order.head_endorser
@@ -151,6 +153,8 @@ def force_send_email_to_supervisor_supplier(
     user,
     setting,
 ):
+    logger.debug(f"use force_send_email_to_supervisor_supplier")
+
     creator = order.created_by
     division = order.division
     organization = division.organization
@@ -210,6 +214,8 @@ def force_send_email_to_admin(
     user,
     setting,
 ):
+    logger.debug(f"use force_send_email_to_admin")
+
     creator = order.created_by
     division = order.division
     organization = division.organization
@@ -269,6 +275,8 @@ def force_send_email_to_staff(
     user,
     setting,
 ):
+    logger.debug(f"use force_send_email_to_staff")
+
     creator = order.created_by
     division = order.division
     organization = division.organization
