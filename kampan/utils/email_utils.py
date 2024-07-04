@@ -29,12 +29,18 @@ class PSUSMTP:
         self.port = setting.get("KAMPAN_EMAIL_PORT")
         self.user = setting.get("KAMPAN_EMAIL_USER")
         self.password = setting.get("KAMPAN_EMAIL_PASSWORD")
+        self.auth_required = setting.get("VIYYOOR_EMAIL_AUTH")
+
         self.server = smtplib.SMTP(self.host, self.port)
 
     def login(self):
         try:
             self.server.starttls()
-            self.server.login(self.user, self.password)
+            if self.auth_required:
+                self.server.login(self.user, self.password)
+            else:
+                self.server.logint()
+
         except Exception as e:
             logger.exception(e)
             return False
