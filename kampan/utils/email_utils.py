@@ -39,7 +39,7 @@ class PSUSMTP:
             if self.auth_required:
                 self.server.login(self.user, self.password)
             else:
-                self.server.logint()
+                self.server.login()
 
         except Exception as e:
             logger.exception(e)
