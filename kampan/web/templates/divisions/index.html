@@ -37,7 +37,6 @@
         <tr>
 
           <th>ชื่อผู้ใช้งาน</th>
-          <th>วันที่สั่งเบิกวัสดุ</th>
           <th>คำอธิบาย</th>
           <th>สมาชิก/เพิ่มสมาชิก</th>
           <th>รายละเอียด/แก้ไข/ลบข้อมูล</th>
@@ -48,7 +47,6 @@
         {% for division in paginated_divisions.items %}
         <tr>
           <td data-label="Name">{{ division.name }}</td>
-          <td data-label="Created Date">{{ division.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ division.description }}</td>
 
           <td>
