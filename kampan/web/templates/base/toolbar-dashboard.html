@@ -96,7 +96,7 @@
   </div>
   {% if current_user.has_organization_roles("endorser", "head") %}
   <a class="item"
-    href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">หัวหน้าอนุมัติคำสั่งเบิก</a>
+    href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">หัวหน้าฝ่ายอนุมัติคำสั่งเบิก</a>
   {% endif %}
   {% if current_user.has_organization_roles("supervisor supplier") %}
   <a class="item"
