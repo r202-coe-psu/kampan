@@ -56,17 +56,18 @@
   {% endif %}
 
 
+
+
+  {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การนำเข้าวัสดุ
   </div>
-
-  {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
   <a class="item" href="{{ url_for('item_registers.index', organization_id = organization.id) }}">นำเข้าวัสดุ<i
       class="arrow alternate circle down icon"></i></a>
   <a class="item" href="{{ url_for('inventories.index', organization_id = organization.id) }}">รายการนำเข้าวัสดุ<i
       class="list alternate icon"></i></a>
-  {% endif %}
+
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
@@ -74,6 +75,9 @@
   </div>
   <a class="item" href="{{ url_for('email_templates.index', organization_id = organization.id) }}">รูปแบบอีเมล<i
       class="envelope icon"></i></a>
+
+  {% endif %}
+
 
   {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
   current_user.get_current_division()) or current_user.has_roles(['admin']) %}

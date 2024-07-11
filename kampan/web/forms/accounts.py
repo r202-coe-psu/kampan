@@ -18,22 +18,26 @@ BaseProfileForm = model_form(
         "roles",
         "user_setting",
         "student_id",
+        "pic",
+        "thai_first_name",
+        "thai_last_name",
     ],
     field_args={
         "first_name": {"label": "First Name"},
         "last_name": {"label": "Last Name"},
-        "citizen_id": {"label": "เลขบัตรประจำตัวประชาชน"},
+        # "citizen_id": {"label": "เลขบัตรประจำตัวประชาชน"},
     },
 )
 
 
 class ProfileForm(BaseProfileForm):
-    pic = fields.FileField(
-        "Picture", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
-    )
+    # pic = fields.FileField(
+    #     "Picture", validators=[FileAllowed(["png", "jpg"], "allow png and jpg")]
+    # )
 
-    thai_first_name = fields.StringField("ชื่อ")
-    thai_last_name = fields.StringField("นามสกุล")
+    # thai_first_name = fields.StringField("ชื่อ")
+    # thai_last_name = fields.StringField("นามสกุล")
+    pass
 
 
 BaseUserSettingForm = model_form(

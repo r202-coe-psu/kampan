@@ -65,5 +65,5 @@ class SearchStartEndDateForm(FlaskForm):
         "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
     )
     item = fields.SelectField(
-        "วัสดุ", validate_choice=False, validators=None, choices=[("", "None")]
+        "วัสดุ", validate_choice=False, validators=None, choices=[("", "ไม่เลือก")]
     )

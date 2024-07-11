@@ -18,6 +18,7 @@
         {{ renderer.render_field(form.first_name) }}
         {{ renderer.render_field(form.last_name) }}
       </div>
+      {#}
       <div class="two fields">
         {{ renderer.render_field(form.thai_first_name) }}
         {{ renderer.render_field(form.thai_last_name) }}
@@ -26,7 +27,7 @@
         {{ renderer.render_field(form.citizen_id) }}
         {{ renderer.render_fileinput(form.pic) }}
       </div>
-
+      {#}
       <button name="create" type="submit" class="ui primary button">เปลี่ยนข้อมูล</button>
     </form>
   </div>
@@ -39,6 +40,7 @@
 
 {% endblock %}
 
+{#}
 {% block additional_js %}
 <script type="text/javascript">
   $(".attach-file-{{ form.pic.name }}").click(function () {
@@ -51,5 +53,5 @@
       $('.attach-file-{{ form.pic.name }}', $(e.target).parent()).val(name);
     });
 </script>
-
 {% endblock additional_js %}
+{#}
