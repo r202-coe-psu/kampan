@@ -204,7 +204,6 @@ def supervisor_supplier_index():
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_approve(order_id):
     organization_id = request.args.get("organization_id")
-
     order = models.OrderItem.objects.get(id=order_id)
     order.status = "pending on admin"
     order.save()
@@ -262,7 +261,7 @@ def supervisor_supplier_approved_detail(order_id):
 
 
 @module.route("/<order_id>/supervisor_supplier_approve_page", methods=["GET", "POST"])
-@acl.organization_roles_required("supervisor_supplier")
+@acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_approve_page(order_id):
     form = forms.approve_orders.SupplierApproveForm()
     order = models.OrderItem.objects.get(id=order_id)

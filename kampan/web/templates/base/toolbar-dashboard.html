@@ -15,7 +15,7 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"
   style="padding-left: 10px;">
   {% if organization %}
-  {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
+  {% if current_user.has_organization_roles("admin") %}
 
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
@@ -36,7 +36,7 @@
       class="bell icon"></i></a>
   {% endif %}
 
-  {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
+  {% if current_user.has_organization_roles("admin") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การจัดการ
@@ -58,7 +58,7 @@
 
 
 
-  {% if current_user.has_organization_roles("admin", "supervisor supplier") %}
+  {% if current_user.has_organization_roles("admin") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     การนำเข้าวัสดุ
@@ -113,7 +113,7 @@
   {% endif %}
   {% endif %}
 
-  {% if current_user.has_organization_roles("supervisor supplier", "admin") %}
+  {% if current_user.has_organization_roles("admin") %}
   <!-- Heading -->
   <div class="sidebar-heading" style="color: grey;">
     แจ้งวัสดุเสียหาย

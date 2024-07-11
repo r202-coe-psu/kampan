@@ -73,7 +73,7 @@ def daily_dashboard():
 
 
 @module.route("/all_report", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def all_report():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -169,7 +169,7 @@ def all_report():
 
 
 @module.route("/all_report/download", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def download_all_report():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -207,7 +207,7 @@ def download_all_report():
 
 
 @module.route("/item_report_quarter", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def item_report_quarter():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -336,7 +336,7 @@ def item_report_quarter():
 
 
 @module.route("/item_report_custom", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def item_report_custom():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -455,7 +455,7 @@ def item_report_custom():
 
 
 @module.route("/item_report/download", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def download_item_report():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -489,7 +489,7 @@ def download_item_report():
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def dashboard():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -539,7 +539,7 @@ def dashboard():
 
 
 @module.route("/chart", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def dashboard_chart():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(

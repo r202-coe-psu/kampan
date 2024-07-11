@@ -12,7 +12,7 @@ subviews = []
 
 
 @module.route("/")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -37,7 +37,7 @@ def index():
 
 
 @module.route("/<item_id>/set_status")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def set_status(item_id):
     organization_id = request.args.get("organization_id")
 

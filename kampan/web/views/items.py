@@ -20,7 +20,7 @@ module = Blueprint("items", __name__, url_prefix="/items")
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -63,7 +63,7 @@ def index():
 
 
 @module.route("/upload_file_items", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def upload_file():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -111,7 +111,7 @@ def upload_file():
 
 
 @module.route("/downlaod_template_items_file")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def download_template_items_file():
     organization_id = request.args.get("organization_id")
     response = utils.items.get_template_items_file()
@@ -119,7 +119,7 @@ def download_template_items_file():
 
 
 @module.route("/add", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def add():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -178,7 +178,7 @@ def add():
 
 
 @module.route("/<item_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def edit(item_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -243,7 +243,7 @@ def edit(item_id):
 
 
 @module.route("/<item_id>/delete")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def delete(item_id):
     organization_id = request.args.get("organization_id")
 
@@ -260,7 +260,7 @@ def delete(item_id):
 
 
 @module.route("/<item_id>/confirm")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def confirm(item_id):
     organization_id = request.args.get("organization_id")
 
@@ -277,7 +277,7 @@ def confirm(item_id):
 
 
 @module.route("/confirm_all")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def confirm_all():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -297,7 +297,7 @@ def confirm_all():
 
 
 @module.route("/<item_id>/detail")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "supervisor supplier")
 def detail(item_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -314,7 +314,7 @@ def detail(item_id):
 
 @module.route("/<item_id>/picture/<filename>")
 @acl.organization_roles_required(
-    "admin", "endorser", "staff", "head", "supervisor supplier"
+    "admin", "supervisor supplier", "head", "supervisor supplier"
 )
 def image(item_id, filename):
     organization_id = request.args.get("organization_id")
