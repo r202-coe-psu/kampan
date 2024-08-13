@@ -40,7 +40,7 @@ class LogoForm(BaseLogoForm):
     uploaded_logo_file = file.FileField(
         "Logo File",
         validators=[
-            file.FileAllowed(["png", "jpg"], "รับเฉพาะไฟล์ png เเละ jpg เท่านั้น"),
+            file.FileAllowed(["png", "jpg", "jpeg"], "รับเฉพาะไฟล์ png เเละ jpg เท่านั้น"),
         ],
     )
 

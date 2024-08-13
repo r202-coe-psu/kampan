@@ -38,7 +38,7 @@ class ItemForm(BaseItemForm):
     categories = fields.SelectField("หมวดหมู่")
     img = fields.FileField(
         "รูปภาพ",
-        validators=[FileAllowed(["png", "jpg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
+        validators=[FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
     item_format = fields.SelectField("รูปแบบวัสดุ", choices=models.items.ITEM_FORMAT)
 
