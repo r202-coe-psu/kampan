@@ -65,7 +65,7 @@ def daily_dashboard():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_items_quantity():
+        if item.minimum >= item.get_amount_pieces():
             notifications += 1
     return render_template(
         "/admin/dashboard/daily_dashboard.html",

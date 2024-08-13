@@ -58,7 +58,7 @@ def daily_dashboard():
 
     items = models.Item.objects(status="active")
     for item in items:
-        if item.minimum > item.get_amount_pieces():
+        if item.minimum >= item.get_amount_pieces():
             notifications += 1
     return render_template(
         "/dashboard/daily_dashboard.html",
@@ -525,7 +525,7 @@ def dashboard():
         .count()
     )
     for item in items:
-        if item.minimum > item.get_amount_pieces():
+        if item.minimum >= item.get_amount_pieces():
             notifications += 1
     return render_template(
         "/dashboard/dashboard.html",
