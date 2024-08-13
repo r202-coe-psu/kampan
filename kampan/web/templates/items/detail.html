@@ -53,7 +53,7 @@
       {{ row_detail("มีอยู่ในคลังจำนวน :") }}
       {{ row_detail(item.get_items_quantity() ) }}
       {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
-      {{ row_detail(item.minimum) }}
+      {{ row_detail(item.minimum|string + ' ' + item.piece_unit ) }}
 
 
       {% if current_user.has_organization_roles("admin") %}

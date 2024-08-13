@@ -46,7 +46,7 @@
         <td data-label="Item">{{ checkout.item.name }}</td>
         <td data-label="Set">{{ checkout.set_ }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.get_amount_items() > checkout.item.get_amount_items() %}
+        {% if checkout.get_amount_pieces() > checkout.item.get_amount_pieces() %}
         <td data-label="Status" class="red">
           <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
         </td>

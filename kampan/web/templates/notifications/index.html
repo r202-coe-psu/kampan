@@ -28,9 +28,9 @@
       </div>
       <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="details">
-          <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_amount_items() }}/{{ item.minimum }}
+          <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_amount_pieces() }}/{{ item.minimum }}
             {{
-            item.set_unit }}</span><br>
+            item.piece_unit }}</span><br>
           <span>ราคาวัสดุ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
         </div>
         <span>
