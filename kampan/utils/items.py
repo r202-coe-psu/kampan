@@ -218,7 +218,7 @@ def process_items_file(file, organization, user):
             else int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
         )
         item.minimum = (
-            1
+            0
             if pandas.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
             else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
         )

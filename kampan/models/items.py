@@ -43,7 +43,7 @@ class Item(me.Document):
 
     categories = me.ReferenceField("Category", dbref=True)
     image = me.ImageField(thumbnail_size=(800, 600, False))
-    minimum = me.IntField(required=True, min_value=1, default=1)
+    minimum = me.IntField(required=True, min_value=0, default=0)
     barcode_id = me.StringField(max_length=255)
     notification_status = me.BooleanField(default=True)
 
