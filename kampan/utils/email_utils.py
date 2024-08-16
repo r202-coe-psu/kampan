@@ -28,8 +28,12 @@ class PSUSMTP:
         self.host = setting.get("KAMPAN_EMAIL_HOST")
         self.port = setting.get("KAMPAN_EMAIL_PORT")
         self.user = setting.get("KAMPAN_EMAIL_USER")
+        self.sender = setting.get("KAMPAN_EMAIL_SENDER")
         self.password = setting.get("KAMPAN_EMAIL_PASSWORD")
         self.auth_required = setting.get("VIYYOOR_EMAIL_AUTH")
+
+        if not self.sender:
+            self.sender = self.user
 
         self.server = smtplib.SMTP(self.host, self.port)
 
@@ -49,7 +53,7 @@ class PSUSMTP:
 
     def send_email(self, receiver, subject, body):
         try:
-            sender = self.setting.get("KAMPAN_EMAIL_USER")
+            sender = self.sender
             receivers = [receiver]
 
             message = MIMEMultipart("alternative")
