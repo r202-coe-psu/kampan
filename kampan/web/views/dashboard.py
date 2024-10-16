@@ -588,29 +588,24 @@ def dashboard_chart():
         year, quarter = str(form.quarter.data).split("_")
         start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
         month_categories = [
-            int(i) if i < 12 else int(i % 12)
+            int(i) if i <= 12 else int(i % 12)
             for i in range(start_date.month, start_date.month + 3)
         ]
 
         incoming = []
         outgoing = []
         for month in month_categories:
+            end_date.replace(month=month, day=monthrange(end_date.year, month)[1])
             checkouts = models.CheckoutItem.objects(
                 Q(status="active")
                 & Q(created_date__gte=start_date.replace(month=month))
-                & Q(
-                    created_date__lt=end_date.replace(month=month)
-                    + datetime.timedelta(days=1)
-                )
+                & Q(created_date__lt=end_date + datetime.timedelta(days=1))
                 & Q(item=form.item.data)
             ).count()
             inventories = models.Inventory.objects(
                 Q(status="active")
                 & Q(created_date__gte=start_date.replace(month=month))
-                & Q(
-                    created_date__lt=end_date.replace(month=month)
-                    + datetime.timedelta(days=1)
-                )
+                & Q(created_date__lt=end_date + datetime.timedelta(days=1))
                 & Q(item=form.item.data)
             ).count()
             outgoing.append(checkouts)
@@ -649,6 +644,7 @@ def dashboard_chart():
             },
             {"$sort": {"total": -1}},
         ]
+        end_date.replace(day=monthrange(end_date.year, end_date.month)[1])
         group_checkouts = models.CheckoutItem.objects(
             Q(status="active")
             & Q(created_date__gte=start_date.replace(month=month))
