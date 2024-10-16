@@ -588,7 +588,8 @@ def dashboard_chart():
         year, quarter = str(form.quarter.data).split("_")
         start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
         month_categories = [
-            int(i % 12) for i in range(start_date.month, start_date.month + 3)
+            int(i) if i < 12 else int(i % 12)
+            for i in range(start_date.month, start_date.month + 3)
         ]
 
         incoming = []
