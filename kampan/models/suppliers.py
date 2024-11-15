@@ -43,5 +43,5 @@ class Supplier(me.Document):
 
     def get_supplier_name(self):
         if self.supplier_type == "person":
-            return self.person_name
-        return self.company_name
+            return self.person_name if self.person_name else self.company_name
+        return self.company_name if self.company_name else self.person_name

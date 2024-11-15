@@ -152,7 +152,7 @@ def edit(item_register_id):
     )
 
 
-@module.route("/<item_register_id>/delete")
+@module.route("/<item_register_id>/confirm_item_register")
 @acl.organization_roles_required("admin", "endorser", "staff")
 def confirm_item_register(item_register_id):
     organization_id = request.args.get("organization_id")
@@ -175,7 +175,7 @@ def confirm_item_register(item_register_id):
     )
 
 
-@module.route("/<item_register_id>/delete")
+@module.route("/<item_register_id>/delete_item_registers")
 @acl.organization_roles_required("admin", "endorser", "staff")
 def delete(item_register_id):
     organization_id = request.args.get("organization_id")
