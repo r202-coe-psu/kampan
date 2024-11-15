@@ -42,7 +42,7 @@ class Item(me.Document):
     piece_unit = me.StringField(default="ชิ้น", max_length=50)
 
     categories = me.ReferenceField("Category", dbref=True)
-    image = me.ImageField(thumbnail_size=(800, 600, False))
+    image = me.ImageField()
     minimum = me.IntField(required=True, min_value=0, default=0)
     barcode_id = me.StringField(max_length=255)
     notification_status = me.BooleanField(default=True)
