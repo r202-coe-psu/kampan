@@ -89,56 +89,64 @@
     </div>
     <div class="extra content">
       {% if item.status == 'pending' %}
-      <div class="{{ 'three' if item.status == 'pending' else 'fluid' }} ui buttons vertical">
-        <a class="fluid ui primary button"
+      <div class="ui three buttons" style="width: 100%;">
+        <a class="ui icon primary button" data-tooltip="แก้ไข"
           href="{{ url_for('items.edit', item_id=item.id, organization_id=organization.id) }}">
-          แก้ไข
+          <i class="edit icon"></i>
         </a>
-        <a class="ui positive button" onclick="showDeleteModal('{{ item.id }}_confirm')">
-          บันทึก
+
+        <a class="ui icon positive button" onclick="showDeleteModal('{{ item.id }}_confirm')"
+          data-tooltip="บันทึกข้อมูล">
+          <i class="save icon"></i>
         </a>
-        <div class="ui modal {{item.id}}_confirm">
-          <div class="header">
-            บันทึกวัสดุ
-          </div>
-          <div class="content">
-            <p>ต้องการบันทึกวัสดุ
-              <b>{{ item.name }}</b> หรือไม่?
-            </p>
-            <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
-              และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
-              *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('items.confirm', item_id=item.id, organization_id=organization.id) }}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
-            </a>
-          </div>
+
+
+        <a class="ui icon red button" onclick="showDeleteModal('{{ item.id }}')" data-tooltip="ลบข้อมูล">
+          <i class="trash alternate outline icon"></i>
+        </a>
+      </div>
+
+      <div class="ui modal {{item.id}}_confirm">
+        <div class="header">
+          บันทึกวัสดุ
         </div>
-        <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
-          ลบข้อมูล
-        </a>
+        <div class="content">
+          <p>ต้องการบันทึกวัสดุ
+            <b>{{ item.name }}</b> หรือไม่?
+          </p>
+          <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
+            และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+            *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
+        </div>
+        <div class="actions">
+          <button class="ui black deny button">
+            ยกเลิก
+          </button>
+          <a class="ui negative right labeled icon button"
+            href="{{ url_for('items.confirm', item_id=item.id, organization_id=organization.id) }}">
+            ยืนยัน
+            <i class="checkmark icon"></i>
+          </a>
+        </div>
       </div>
       {% else %}
 
-      <div class="one ui buttons attached">
-        <a class="ui primary button"
+      <div class="ui two buttons" style="width: 100%;">
+        <a class="ui primary button" style="padding-left: 0px; padding-right: 0px;"
           href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
-          ดูรายละเอียด
+          <i class="info icon"></i>
+          รายละเอียด
         </a>
-      </div>
-      <div class="one ui buttons attached">
+
         <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
+          <i class="trash alternate outline icon"></i>
           ลบข้อมูล
         </a>
       </div>
 
+
       {% endif %}
+
 
       <div class="ui modal {{item.id}}">
         <div class="header">
