@@ -223,6 +223,7 @@ def edit_roles():
     ]
 
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/admin/accounts/edit_roles.html",
             form=form,

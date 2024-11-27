@@ -9,7 +9,7 @@ from kampan.models.organizations import ORGANIZATION_ROLES
 
 class UserSetting(me.EmbeddedDocument):
     current_organization = me.ReferenceField("Organization", dbref=True)
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
 
 
 class TemporaryUser(me.Document):

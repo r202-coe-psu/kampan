@@ -17,6 +17,7 @@ Profile = model_form(
         "first_name",
         "last_name",
         "organization",
+        "user_setting"
     ],
     field_args={
     },

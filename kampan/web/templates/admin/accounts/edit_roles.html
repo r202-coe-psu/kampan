@@ -12,6 +12,7 @@
   <form method="POST" class="ui big form">
 
     {{ form.hidden_tag() }}
+    {{ form.csrf_token }}
     {{ renderer.render_multiple_select(form.roles) }}
     {#{{ renderer.render_field(form.organization)}}
     {{ renderer.render_field(form.first_name) }}
