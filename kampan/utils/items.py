@@ -165,7 +165,7 @@ def validate_items_engagement(file, organization):
                 name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
             ).first():
                 pass
-                return f"พบวัสดุชื่อ {row['ชื่อ']} ซ้ำในระบบ ในบรรทัดที่ {idx+2}"
+                # return f"พบวัสดุชื่อ {row['ชื่อ']} ซ้ำในระบบ ในบรรทัดที่ {idx+2}"
 
         if pandas.isnull(row["หมวดหมู่"]):
             return f"ไม่พบหมวดหมู่ในบรรทัดที่ {idx+2}"
