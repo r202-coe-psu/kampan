@@ -162,7 +162,7 @@ def validate_items_engagement(file, organization):
             return f"ไม่พบชื่อในบรรทัดที่ {idx+2}"
         else:
             if models.Item.objects(
-                name=str(row["ชื่อ"]), organization=organization
+                name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
             ).first():
                 return f"พบวัสดุชื่อ {row['ชื่อ']} ซ้ำในระบบ ในบรรทัดที่ {idx+2}"
 
@@ -247,7 +247,7 @@ def validate_edit_items_engagement(file, organization):
             return f"ไม่พบชื่อในบรรทัดที่ {idx+2}"
         else:
             if not models.Item.objects(
-                name=str(row["ชื่อ"]), organization=organization
+                name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
             ).first():
                 return f"ไม่พบวัสดุชื่อ {row['ชื่อ']} ในบรรทัดที่ {idx+2}"
 
@@ -280,7 +280,7 @@ def process_edit_items_file(file, organization, user):
 
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=str(row["ชื่อ"]), organization=organization
+            name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
         ).first()
         item.description = row["คำอธิบาย"] if not pandas.isnull(row["คำอธิบาย"]) else "-"
         item.item_format = (
@@ -332,7 +332,9 @@ def validate_delete_items_engagement(file, organization):
                 return f"ไม่พบชื่อในบรรทัดที่ {idx+2}"
             else:
                 if not models.Item.objects(
-                    name=str(row["ชื่อ"]), organization=organization
+                    name=str(row["ชื่อ"]),
+                    organization=organization,
+                    status__ne="disactive",
                 ).first():
                     return f"ไม่พบวัสดุชื่อ {row['ชื่อ']} ในระบบ ในบรรทัดที่ {idx+2}"
 
@@ -342,7 +344,7 @@ def process_delete_items_file(file, organization, user):
 
     for idx, row in df.iterrows():
         item = models.Item.objects(
-            name=str(row["ชื่อ"]), organization=organization
+            name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
         ).first()
         item.status = "disactive"
         item.save()
