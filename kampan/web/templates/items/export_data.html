@@ -1,0 +1,20 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/pagination.html' as paginated%}
+
+{% block title %}Items{% endblock %}
+{% block dashboard_title %}ส่งออกข้อมูลวัสดุ{% endblock %}
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ renderer.render_select(form.status) }}
+    {{ renderer.render_search_multiple_select(form.categories) }}
+    <button class="ui primary button" type="submit">ดาวน์โหลด</button>
+
+  </form>
+</div>
+{% endblock %}

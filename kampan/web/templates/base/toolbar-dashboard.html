@@ -50,9 +50,10 @@
       class="cart arrow down icon"></i></a>
   <a class="item" href="{{ url_for('warehouses.index', organization_id = organization.id) }}">คลังวัสดุ<i
       class="store alternate icon"></i></a>
+  {#}
   <a class="item" href="{{ url_for('item_positions.index', organization_id = organization.id) }}">ตำแหน่งวัสดุ<i
       class="map marker alternate icon"></i></a>
-
+  {#}
   {% endif %}
 
 

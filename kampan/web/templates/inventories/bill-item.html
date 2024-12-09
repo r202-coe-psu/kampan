@@ -6,34 +6,29 @@
 
 {% block breadcrumbs %}
 {% if item_register.status == "pending" %}
-<div class="ui grid">
-  <div class="three column row">
-    <div class="left floated column">
-      <div class="ui secondary menu">
-        <a class="ui primary button "
-          href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
-          <i class="file upload icon"></i>อัพโหลดไฟล์
-        </a>
-        <a class="ui primary button"
-          href="{{ url_for('inventories.download_template_inventory_file', organization_id=organization.id) }}">
-          <i class="file download icon"></i> ดาวน์โหลดรูปแบบนำเข้าวัสดุ
-        </a>
-      </div>
-      {#}
-      <a class="ui primary button"
-        href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
-        <i class="plus circle icon"></i> นำเข้าทีละวัสดุ
-      </a>
-      {#}
-    </div>
+<div class="ui secondary menu" style="margin-bottom: 0; ">
+  <div class="left item" style="gap: 0.5rem">
+    <a class="ui primary button "
+      href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
+      <i class="file upload icon"></i>อัพโหลดไฟล์
+    </a>
+    <a class="ui primary button"
+      href="{{ url_for('inventories.download_template_inventory_file', organization_id=organization.id) }}">
+      <i class="file download icon"></i> ดาวน์โหลดรูปแบบนำเข้าวัสดุ
+    </a>
+  </div>
+  {#}
+  <a class="ui primary button"
+    href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
+    <i class="plus circle icon"></i> นำเข้าทีละวัสดุ
+  </a>
+  {#}
 
-    <div class="right floated column right aligned">
-      <a class="ui primary button {{ '' if item_register.get_quantity_of_item() != 0 else 'disabled' }}"
-        onclick="showConfirmModal('{{ item_register.id }}')"
-        style=" color: white; background-color: rgb(59, 115, 199); ">
-        <i class="check icon"></i> ยืนยันการนำเข้าวัสดุ
-      </a>
-    </div>
+  <div class="right item">
+    <a class="ui primary button {{ '' if item_register.get_quantity_of_item() != 0 else 'disabled' }}"
+      onclick="showConfirmModal('{{ item_register.id }}')" style=" color: white; background-color: rgb(59, 115, 199); ">
+      <i class="check icon"></i> ยืนยันการนำเข้าวัสดุ
+    </a>
   </div>
 </div>
 

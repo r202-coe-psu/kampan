@@ -44,6 +44,7 @@ class ItemForm(BaseItemForm):
 
 
 class SearchItemForm(FlaskForm):
+    item_name = fields.StringField("ชื่อวัสดุ", validators=[validators.Optional()])
     item = fields.SelectField("วัสดุ", validate_choice=False)
     categories = fields.SelectField("หมวดหมู่", validate_choice=False)
 
@@ -53,3 +54,8 @@ class UploadFileForm(FlaskForm):
         "อัปโหลดไฟล์",
         validators=[FileAllowed(["xlsx"], "อนุญาตเฉพาะไฟล์ xlsx")],
     )
+
+
+class FilterExportItem(FlaskForm):
+    categories = fields.SelectMultipleField("หมวดหมู่", validate_choice=False)
+    status = fields.SelectField("สถานะ", validate_choice=False)

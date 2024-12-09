@@ -12,7 +12,7 @@ INVENTORY_HEADER = [
     "จำนวน (หน่วยนับใหญ่)",
     "ราคา (หน่วยใหญ่ละ)",
     "คลังวัสดุ",
-    "ตำแหน่ง (คำอธิบาย)",
+    # "ตำแหน่ง (คำอธิบาย)",
 ]
 
 
@@ -25,7 +25,7 @@ def get_template_inventory_file():
             INVENTORY_HEADER[2],
             INVENTORY_HEADER[3],
             INVENTORY_HEADER[4],
-            INVENTORY_HEADER[5],
+            # INVENTORY_HEADER[5],
         ],
         "ประเภทข้อมูล": [
             "ตัวอักษร",
@@ -33,7 +33,7 @@ def get_template_inventory_file():
             "ตัวเลข",
             "ตัวเลข",
             "ตัวอักษร",
-            "ตัวอักษร",
+            # "ตัวอักษร",
         ],
         "ความต้องการ": [
             "",
@@ -41,7 +41,7 @@ def get_template_inventory_file():
             "จำเป็น",
             "จำเป็น",
             "จำเป็น",
-            "จำเป็น",
+            # "จำเป็น",
         ],
         "ขอบเขตตัวเลือก": [
             "ใส่บาร์โค๊ดของวัสดุที่ต้องการ (หากมี)",
@@ -49,7 +49,7 @@ def get_template_inventory_file():
             "",
             "",
             "ใส่ชื่อของคลังที่ต้องการ",
-            "ใส่ตำแหน่งที่ต้องการ",
+            # "ใส่ตำแหน่งที่ต้องการ",
         ],
         "ความหมายตัวเลือก": [
             "",
@@ -57,7 +57,7 @@ def get_template_inventory_file():
             "",
             "",
             "",
-            "",
+            # "",
         ],
         "หมายเหตุ": [
             "",
@@ -65,7 +65,7 @@ def get_template_inventory_file():
             "",
             "",
             "",
-            "",
+            # "",
         ],
     }
     description = pandas.DataFrame(data)
@@ -119,11 +119,11 @@ def process_inventory_engagement(inventory_engagement_file):
             organization=organization,
         ).first()
 
-        position = models.ItemPosition.objects(
-            status="active",
-            description=str(row["ตำแหน่ง (คำอธิบาย)"]),
-            warehouse=warehouse,
-        ).first()
+        # position = models.ItemPosition.objects(
+        #     status="active",
+        #     description=str(row["ตำแหน่ง (คำอธิบาย)"]),
+        #     warehouse=warehouse,
+        # ).first()
 
         inventory = models.Inventory.objects(
             status="pending",
@@ -132,28 +132,20 @@ def process_inventory_engagement(inventory_engagement_file):
             organization=organization,
         ).first()
 
-        if inventory:
-            inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
-            inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
-            inventory.warehouse = warehouse
-            inventory.position = position
-            inventory.created_by = current_user._get_current_object()
-        else:
-            inventory = models.Inventory()
-            inventory.status = "pending"
-            inventory.registration = inventory_engagement_file.registration
-            inventory.warehouse = warehouse
-            inventory.organization = organization
-            inventory.item = item
-            inventory.position = position
-            inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
-            inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
-            inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
-            inventory.created_by = current_user._get_current_object()
-        # print(inventory)
+        if not inventory:
+            inventory = models.Inventory(
+                status="pending",
+                registration=inventory_engagement_file.registration,
+                organization=organization,
+            )
+
+        # inventory.position = position
+        inventory.set_ = row["จำนวน (หน่วยนับใหญ่)"]
+        inventory.quantity = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
+        inventory.remain = row["จำนวน (หน่วยนับใหญ่)"] * item.piece_per_set
+        inventory.warehouse = warehouse
+        inventory.price = row["ราคา (หน่วยใหญ่ละ)"]
+        inventory.created_by = current_user._get_current_object()
         inventory.save()
 
     inventory_engagement_file.status = "completed"
@@ -219,17 +211,17 @@ def check_positions(df, organization):
         ).first()
         if not warehouse:
             return f"ไม่พบคลังวัสดุชื่อ : {row['คลังวัสดุ']} ที่ได้ลงทะเบียนไว้"
-        position = models.ItemPosition.objects(
-            status="active",
-            description=str(
-                row["ตำแหน่ง (คำอธิบาย)"]
-                if not pandas.isnull(row["ตำแหน่ง (คำอธิบาย)"])
-                else ""
-            ),
-            warehouse=warehouse,
-        ).first()
-        if not position:
-            return f"ไม่พบตำแหน่งของวัสดุ : {row['ตำแหน่ง (คำอธิบาย)']} ที่ได้ลงทะเบียนไว้"
+        # position = models.ItemPosition.objects(
+        #     status="active",
+        #     description=str(
+        #         row["ตำแหน่ง (คำอธิบาย)"]
+        #         if not pandas.isnull(row["ตำแหน่ง (คำอธิบาย)"])
+        #         else ""
+        #     ),
+        #     warehouse=warehouse,
+        # ).first()
+        # if not position:
+        #     return f"ไม่พบตำแหน่งของวัสดุ : {row['ตำแหน่ง (คำอธิบาย)']} ที่ได้ลงทะเบียนไว้"
 
 
 def validate_inventory_engagement(inventory_engagement_file):
@@ -251,6 +243,6 @@ def validate_inventory_engagement(inventory_engagement_file):
     if invalid_items:
         return invalid_items
 
-    invalid_positions = check_positions(df, inventory_engagement_file.organization)
-    if invalid_positions:
-        return invalid_positions
+    # invalid_positions = check_positions(df, inventory_engagement_file.organization)
+    # if invalid_positions:
+    #     return invalid_positions

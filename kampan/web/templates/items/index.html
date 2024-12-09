@@ -7,20 +7,48 @@
 {% block breadcrumbs %}
 <div class="ui secondary menu">
   <div class="left item" style="gap: 0.5rem;">
-    <a class="ui primary button" href="{{ url_for('items.add', organization_id=organization.id) }}">
-      <i class="plus circle icon"></i>
-      ลงทะเบียนวัสดุ
-    </a>
-    <a class="ui primary button" href="{{ url_for('items.upload_file', organization_id=organization.id) }}">
-      <i class="file upload icon"></i>
-      ลงทะเบียนวัสดุแบบหลายรายการ
-    </a>
+    <div class="ui dropdown button">
+      <i class="wrench icon"></i>
+      การจัดการ
+      <div class="menu">
+        <a class="item" onclick="showDeleteModal('confirmAll')"><span class="ui green text">
+            <i class="check icon"></i>
+            บันทึกการลงทะเบียนวัสดุทั้งหมด</span></a>
+        <a class="item" href="{{ url_for('items.add', **request.args) }}">
+          <span class="ui primary text">
+            <i class="plus circle icon"></i>
+            ลงทะเบียนวัสดุ
+          </span>
+        </a>
+        <a class="item" href="{{ url_for('items.upload_file', **request.args) }}">
+          <span class="ui primary text">
+            <i class="file upload icon"></i>
+            ลงทะเบียนวัสดุแบบหลายรายการ
+          </span>
+        </a>
+        <a class="item" href="{{ url_for('items.upload_edit', **request.args) }}">
+          <span class="ui primary text">
+            <i class="edit icon"></i>
+            แก้ไขวัสดุแบบหลายรายการ
+          </span>
+        </a>
+        <a class="item" href="{{ url_for('items.export_data', **request.args) }}">
+          <span class="ui primary text">
+            <i class="file export icon"></i>
+            ส่งออกข้อมูล
+          </span>
+        </a>
+        <a class="item" href="{{ url_for('items.upload_delete', **request.args) }}">
+          <span class="ui error text">
+            <i class="trash alternate icon"></i>
+            ลบวัสดุแบบหลายรายการ
+          </span>
+        </a>
+      </div>
+    </div>
   </div>
 
   <div class="right item">
-    <a class="ui positive button" onclick="showDeleteModal('confirmAll')">
-      บันทึกการลงทะเบียนวัสดุทั้งหมด
-    </a>
     <div class="ui modal confirmAll">
       <div class="header">
         บันทึกวัสดุ
@@ -37,8 +65,7 @@
         <button class="ui black deny button">
           ยกเลิก
         </button>
-        <a class="ui positive right labeled icon button"
-          href="{{ url_for('items.confirm_all', organization_id=organization.id) }}">
+        <a class="ui positive right labeled icon button" href="{{ url_for('items.confirm_all', **request.args) }}">
           ยืนยัน
           <i class="checkmark icon"></i>
         </a>
@@ -55,6 +82,9 @@
   <div class="ui secondary menu">
     {{form.hidden_tag()}}
     <p style="margin-left:auto;">
+      {{ renderer.render_select_clearable(form.item_name) }}
+    </p>
+    <p style="margin-left:10px;">
       {{ renderer.render_select_clearable(form.item) }}
     </p>
     <p style="margin-left:10px;">
@@ -91,7 +121,7 @@
       {% if item.status == 'pending' %}
       <div class="ui three buttons" style="width: 100%;">
         <a class="ui icon primary button" data-tooltip="แก้ไข"
-          href="{{ url_for('items.edit', item_id=item.id, organization_id=organization.id) }}">
+          href="{{ url_for('items.edit', item_id=item.id, **request.args) }}">
           <i class="edit icon"></i>
         </a>
 
@@ -123,7 +153,7 @@
             ยกเลิก
           </button>
           <a class="ui negative right labeled icon button"
-            href="{{ url_for('items.confirm', item_id=item.id, organization_id=organization.id) }}">
+            href="{{ url_for('items.confirm', item_id=item.id, **request.args) }}">
             ยืนยัน
             <i class="checkmark icon"></i>
           </a>
@@ -133,7 +163,7 @@
 
       <div class="ui two buttons" style="width: 100%;">
         <a class="ui primary button" style="padding-left: 0px; padding-right: 0px;"
-          href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
+          href="{{ url_for('items.detail', item_id=item.id, **request.args) }}">
           <i class="info icon"></i>
           รายละเอียด
         </a>
@@ -162,7 +192,7 @@
             ยกเลิก
           </button>
           <a class="ui negative right labeled icon button"
-            href="{{ url_for('items.delete', item_id=item.id, organization_id=organization.id) }}">
+            href="{{ url_for('items.delete', item_id=item.id, **request.args) }}">
             ยืนยัน
             <i class="checkmark icon"></i>
           </a>

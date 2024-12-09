@@ -1,0 +1,74 @@
+{% extends '/inventories/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+แก้ไขข้อมูลวัสดุ
+{% endblock %}
+
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุทั้งหมด</a>
+<i class="right angle icon divider"></i>
+<div class="active section">แก้ไขข้อมูลผ่านไฟล์</div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+
+{% if upload_errors.errors %}
+<div class="ui modal upload_errors">
+  <div class="header">
+    เกิดปัญหา
+  </div>
+  <div class="content red">
+    <span class="ui error text">
+      <b>{{ upload_errors.errors }}</b>
+    </span>
+  </div>
+  <div class="actions">
+    <button class="ui negative right labeled icon button">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
+<div class="ui secondary menu">
+  <div class="right item">
+    <a class="ui primary button"
+      href="{{ url_for('items.download_template_items_file', organization_id=organization.id) }}">
+      <i class="file download icon"></i> ดาวน์โหลดรูปแบบการแก้ไขวัสดุ</a>
+  </div>
+</div>
+<div>
+  <form class="ui form" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ renderer.render_fileinput(form.upload_file) }}
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+{% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-{{ form.upload_file.name }}").click(function () {
+    $("#{{ form.upload_file.name }}").click();
+  });
+
+  $('#{{ form.upload_file.name }}')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-{{ form.upload_file.name }}', $(e.target).parent()).val(name);
+    });
+
+  $('.ui.modal.upload_errors')
+    .modal('show')
+    ;
+  $('.ui.modal.upload_completed')
+    .modal('show')
+    ;
+</script>
+{% endblock additional_js %}
