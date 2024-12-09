@@ -195,12 +195,14 @@ def process_items_file(file, organization, user):
     df = pandas.read_excel(file)
 
     for idx, row in df.iterrows():
-        if models.Item.objects(
+        item = models.Item.objects(
             name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
-        ).first():
-            continue
-        item = models.items.Item()
-        item.image = None
+        ).first()
+        if not item:
+            item = models.items.Item()
+            item.image = None
+            item.created_by = user
+
         item.name = row["ชื่อ"]
         item.description = row["คำอธิบาย"] if not pandas.isnull(row["คำอธิบาย"]) else "-"
         item.organization = organization
@@ -228,7 +230,6 @@ def process_items_file(file, organization, user):
         )
         item.barcode_id = "" if pandas.isnull(row["บาร์โค๊ด"]) else str(row["บาร์โค๊ด"])
         item.remark = "" if pandas.isnull(row["หมายเหตุ"]) else str(row["หมายเหตุ"])
-        item.created_by = user
         item.save()
     return True
 
