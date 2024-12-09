@@ -164,6 +164,7 @@ def validate_items_engagement(file, organization):
             if models.Item.objects(
                 name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
             ).first():
+                pass
                 return f"พบวัสดุชื่อ {row['ชื่อ']} ซ้ำในระบบ ในบรรทัดที่ {idx+2}"
 
         if pandas.isnull(row["หมวดหมู่"]):
@@ -194,6 +195,10 @@ def process_items_file(file, organization, user):
     df = pandas.read_excel(file)
 
     for idx, row in df.iterrows():
+        if models.Item.objects(
+            name=str(row["ชื่อ"]), organization=organization, status__ne="disactive"
+        ).first():
+            continue
         item = models.items.Item()
         item.image = None
         item.name = row["ชื่อ"]
