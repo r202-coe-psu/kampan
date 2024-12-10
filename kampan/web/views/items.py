@@ -31,12 +31,6 @@ def index():
     items = models.Item.objects(
         status__in=["active", "pending"], organization=organization
     ).order_by("status", "-created_date")
-    for item in items:
-        item.name = str(item.name).strip()
-        if not item.piece_per_set:
-            item.piece_per_set = 1
-
-        item.save()
 
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (
