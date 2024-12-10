@@ -449,7 +449,7 @@ def compare_file(file, categories, status, organization):
     df = pandas.read_excel(file)
     query = Q()
     query &= Q(organization=organization)
-    print(categories)
+
     if categories:
         query &= Q(categories__in=categories)
     if status:
