@@ -19,5 +19,7 @@ class Category(me.Document):
     )
 
     def get_count_item(self):
-        count = models.Item.objects(categories=self).count()
+        count = models.Item.objects(
+            categories=self, status__ne="disactive", organization=self.organization
+        ).count()
         return count
