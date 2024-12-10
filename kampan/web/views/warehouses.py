@@ -58,6 +58,7 @@ def add_or_edit(warehouse_id):
     form.populate_obj(warehouse)
     if not warehouse_id:
         warehouse.created_by = current_user._get_current_object()
+    warehouse.name = str(form.name).strip()
     warehouse.organization = organization
     warehouse.last_updated_by = current_user._get_current_object()
 
