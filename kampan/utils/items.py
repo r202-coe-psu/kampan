@@ -397,6 +397,8 @@ def export_data(categories, status, organization):
         query &= Q(categories__in=categories)
     if status:
         query &= Q(status=status)
+    else:
+        query &= Q(status__ne="disactive")
     items = models.Item.objects(query).order_by("categories", "name")
     for item in items:
         data["ชื่อ"].append(item.name)
@@ -452,6 +454,9 @@ def compare_file(file, categories, status, organization):
         query &= Q(categories__in=categories)
     if status:
         query &= Q(status=status)
+    else:
+        query &= Q(status__ne="disactive")
+
     items = models.Item.objects(query).order_by("categories", "name")
     for item in items:
         data["ชื่อ"].append(item.name)
