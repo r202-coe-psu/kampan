@@ -160,6 +160,28 @@ def validate_delete_items_engagement(file, organization):
     return errors
 
 
+def validate_compare_items_engagement(file, organization):
+    df, errors = validate_file(file, ITEMS_HEADER[:1])
+    if errors:
+        return errors
+
+    for idx, row in df.iterrows():
+        errors = validate_row_field(
+            row,
+            "ชื่อ",
+            idx,
+            errors,
+            lambda name: models.Item.objects(
+                name=name.strip(),
+                organization=organization,
+                status__ne="disactive",
+            ).first(),
+            "ไม่พบวัสดุชื่อ {value} ในระบบ ในบรรทัดที่ {idx} กรุณาตรวจสอบข้อมูล",
+            validate_duplicate=False,
+        )
+    return errors
+
+
 def get_item_by_name(name, organization):
     return models.Item.objects(
         name=name.strip(),
@@ -258,299 +280,6 @@ def process_delete_items_file(file, organization, user):
             item.save()
 
     return True
-
-
-#########################################################
-
-
-# def validate_items_upload_engagement(file, organization):
-#     errors = []
-#     try:
-#         df = pandas.read_excel(file)
-#     except:
-#         errors.append("กรุณาอัปโหลดเอกสารโดยใช้ Excel Format 2007")
-
-#     if errors:
-#         return errors
-
-#     for column in ITEMS_HEADER:
-#         if column not in df.columns:
-#             errors.append(f"ไม่พบ {column} ในหัวตาราง")
-
-#     if errors:
-#         return errors
-
-#     for idx, row in df.iterrows():
-#         if pandas.isnull(str(row["ชื่อ"]).strip()):
-#             errors.append(f"ไม่พบชื่อในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล")
-#         else:
-#             if models.Item.objects(
-#                 name=str(row["ชื่อ"]).strip(),
-#                 organization=organization,
-#                 status__ne="disactive",
-#             ).first():
-#                 errors.append(
-#                     f"พบวัสดุชื่อ {row['ชื่อ']} ซ้ำในระบบ ในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#                 )
-
-#         if pandas.isnull(row["หมวดหมู่"]):
-#             errors.append(f"ไม่พบชื่อหมวดหมู่ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล")
-
-#         category = models.Category.objects(name=str(row["หมวดหมู่"]).strip()).first()
-#         if not category:
-#             errors.append(
-#                 f"ไม่พบหมวดหมู่ที่ชื่อ {row['หมวดหมู่']} ในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#             )
-
-#         if row["รูปแบบวัสดุ"] not in VALID_MATERIAL_FORMATS:
-#             errors.append(
-#                 f"รูปแบบวัสดุ  '{row['รูปแบบวัสดุ']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#             )
-
-#         if pandas.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"]):
-#             errors.append(f"ไม่พบ จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล")
-
-#         try:
-#             number = int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#         except:
-#             errors.append(
-#                 f"จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)']}' กรุณาตรวจสอบข้อมูล"
-#             )
-
-#         if pandas.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"]):
-#             errors.append(
-#                 f"ไม่พบ จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล"
-#             )
-#         try:
-#             number = int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#         except:
-#             errors.append(
-#                 f"จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)']}' กรุณาตรวจสอบข้อมูล"
-#             )
-
-#     return errors
-
-
-# def process_items_upload_file(file, organization, user):
-#     df = pandas.read_excel(file)
-
-#     for idx, row in df.iterrows():
-#         item = models.Item.objects(
-#             name=str(row["ชื่อ"]).strip(),
-#             organization=organization,
-#             status__ne="disactive",
-#         ).first()
-#         if not item:
-#             item = models.items.Item()
-#             item.image = None
-#             item.created_by = user
-
-#         item.name = str(row["ชื่อ"]).strip()
-#         item.description = row["คำอธิบาย"] if not pandas.isnull(row["คำอธิบาย"]) else "-"
-#         item.organization = organization
-#         item.item_format = (
-#             "one to many" if row["รูปแบบวัสดุ"] == "one to many" else "one to one"
-#         )
-#         item.categories = models.Category.objects(
-#             name=str(row["หมวดหมู่"]).strip()
-#         ).first()
-#         item.set_unit = "ชุด" if pandas.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"]
-#         item.piece_unit = (
-#             ("ชิ้น" if pandas.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"])
-#             if pandas.isnull(row["หน่วยนับเล็ก"])
-#             else row["หน่วยนับเล็ก"]
-#         )
-#         item.piece_per_set = (
-#             1
-#             if pandas.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#             else int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#         )
-#         item.minimum = (
-#             0
-#             if pandas.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#             else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#         )
-#         item.barcode_id = "" if pandas.isnull(row["บาร์โค๊ด"]) else str(row["บาร์โค๊ด"])
-#         item.remark = "" if pandas.isnull(row["หมายเหตุ"]) else str(row["หมายเหตุ"])
-#         item.save()
-
-#     return True
-
-
-# def validate_edit_items_engagement(file, organization):
-#     errors = []
-#     try:
-#         df = pandas.read_excel(file)
-#     except:
-#         errors.append("กรุณาอัปโหลดเอกสารโดยใช้ Excel Format 2007")
-
-#     for column in ITEMS_HEADER[:1]:
-#         if column not in df.columns:
-#             errors.append(f"ไม่พบ {column} ในหัวตาราง")
-
-#     if errors:
-#         return errors
-
-#     for idx, row in df.iterrows():
-#         if pandas.isnull(str(row["ชื่อ"]).strip()):
-#             errors.append(f"ไม่พบชื่อในบรรทัดที่ {idx+2}")
-#         else:
-#             if not models.Item.objects(
-#                 name=str(row["ชื่อ"]).strip(),
-#                 organization=organization,
-#                 status__ne="disactive",
-#             ).first():
-#                 errors.append(f"ไม่พบวัสดุชื่อ {row['ชื่อ']} ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล")
-
-#         if "หมวดหมู่" in df.columns:
-#             if pandas.isnull(row["หมวดหมู่"]):
-#                 errors.append(f"ไม่พบชื่อหมวดหมู่ในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล")
-#             else:
-#                 category = models.Category.objects(
-#                     name=str(row["หมวดหมู่"]).strip()
-#                 ).first()
-#                 if not category:
-#                     errors.append(
-#                         f"ไม่พบหมวดหมู่ที่ชื่อ {row['หมวดหมู่']} ในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#                     )
-#         if "รูปแบบวัสดุ" in df.columns:
-#             if row["รูปแบบวัสดุ"] not in VALID_MATERIAL_FORMATS:
-#                 errors.append(
-#                     f"รูปแบบวัสดุ  '{row['รูปแบบวัสดุ']}'  ไม่ถูกต้องในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#                 )
-
-#         if "จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)" in df.columns:
-#             if pandas.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"]):
-#                 errors.append(
-#                     f"ไม่พบ จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล"
-#                 )
-#             try:
-#                 number = int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#             except:
-#                 errors.append(
-#                     f"จำนวนขั้นต่ำที่ต้องการแจ้งเตือน ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)']}' กรุณาตรวจสอบข้อมูล"
-#                 )
-
-#         if "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)" in df.columns:
-#             if pandas.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"]):
-#                 errors.append(
-#                     f"ไม่พบ จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล"
-#                 )
-#             try:
-#                 number = int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#             except:
-#                 errors.append(
-#                     f"จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่) ในบรรทัดที่ {idx+2} ไม่ใช่ตัวเลข '{row['จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)']}' กรุณาตรวจสอบข้อมูล"
-#                 )
-
-#     return errors
-
-
-# def process_edit_items_file(file, organization, user):
-#     df = pandas.read_excel(file)
-
-#     for idx, row in df.iterrows():
-#         item = models.Item.objects(
-#             name=str(row["ชื่อ"]).strip(),
-#             organization=organization,
-#             status__ne="disactive",
-#         ).first()
-
-#         if "คำอธิบาย" in df.columns:
-#             item.description = (
-#                 row["คำอธิบาย"] if not pandas.isnull(row["คำอธิบาย"]) else "-"
-#             )
-
-#         if item.status == "active":
-#             if "รูปแบบวัสดุ" in df.columns:
-#                 item.item_format = (
-#                     "one to many" if row["รูปแบบวัสดุ"] == "one to many" else "one to one"
-#                 )
-
-#         if "หมวดหมู่" in df.columns:
-#             item.categories = models.Category.objects(
-#                 name=str(row["หมวดหมู่"]).strip()
-#             ).first()
-
-#         if "หน่วยนับใหญ่" in df.columns:
-#             item.set_unit = (
-#                 "ชุด" if pandas.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"]
-#             )
-#         if "หน่วยนับเล็ก" in df.columns:
-#             if "หน่วยนับใหญ่" in df.columns:
-#                 item.piece_unit = (
-#                     ("ชิ้น" if pandas.isnull(row["หน่วยนับใหญ่"]) else row["หน่วยนับใหญ่"])
-#                     if pandas.isnull(row["หน่วยนับเล็ก"])
-#                     else row["หน่วยนับเล็ก"]
-#                 )
-#             else:
-#                 item.piece_unit = (
-#                     "ชิ้น" if pandas.isnull(row["หน่วยนับเล็ก"]) else row["หน่วยนับเล็ก"]
-#                 )
-#         if item.status == "active":
-#             if "จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)" in df.columns:
-#                 item.piece_per_set = (
-#                     1
-#                     if pandas.isnull(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#                     else int(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
-#                 )
-
-#         if item.status == "active":
-#             if "จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)" in df.columns:
-#                 item.minimum = (
-#                     0
-#                     if pandas.isnull(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#                     else int(row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"])
-#                 )
-
-#         if "บาร์โค๊ด" in df.columns:
-#             item.barcode_id = "" if pandas.isnull(row["บาร์โค๊ด"]) else str(row["บาร์โค๊ด"])
-
-#         if "หมายเหตุ" in df.columns:
-#             item.remark = "" if pandas.isnull(row["หมายเหตุ"]) else str(row["หมายเหตุ"])
-
-#         item.last_updated_by = user
-#         item.save()
-
-#     return True
-
-
-# def validate_delete_items_engagement(file, organization):
-#     errors = []
-#     try:
-#         df = pandas.read_excel(file)
-#     except:
-#         errors.append("กรุณาอัปโหลดเอกสารโดยใช้ Excel Format 2007")
-
-#     for column in ["ชื่อ"]:
-#         if column not in df.columns:
-#             errors.append(f"ไม่พบ {column} ในหัวตาราง")
-
-#     for idx, row in df.iterrows():
-#         if pandas.isnull(str(row["ชื่อ"]).strip()):
-#             errors.append(f"ไม่พบชื่อในบรรทัดที่ {idx+2} กรุณากรอกข้อมูล")
-#         else:
-#             if not models.Item.objects(
-#                 name=str(row["ชื่อ"]).strip(),
-#                 organization=organization,
-#                 status__ne="disactive",
-#             ).first():
-#                 errors.append(
-#                     f"ไม่พบวัสดุชื่อ {row['ชื่อ']} ในระบบ ในบรรทัดที่ {idx+2} กรุณาตรวจสอบข้อมูล"
-#                 )
-
-
-# def process_delete_items_file(file, organization, user):
-#     df = pandas.read_excel(file)
-
-#     for idx, row in df.iterrows():
-#         item = models.Item.objects(
-#             name=str(row["ชื่อ"]).strip(),
-#             organization=organization,
-#             status__ne="disactive",
-#         ).first()
-#         item.status = "disactive"
-#         item.save()
 
 
 def get_template_items_file():
@@ -659,16 +388,16 @@ def get_template_delete_items_file():
     )
 
 
-def export_data(categories, status):
+def export_data(categories, status, organization):
     data = {key: [] for key in ITEMS_HEADER}
 
-    qurry = Q()
+    query = Q()
+    query &= Q(organization=organization)
     if categories:
-        for category in categories:
-            qurry |= Q(categories=category)
+        query &= Q(categories__in=categories)
     if status:
-        qurry &= Q(status=status)
-    items = models.Item.objects(qurry).order_by("categories", "name")
+        query &= Q(status=status)
+    items = models.Item.objects(query).order_by("categories", "name")
     for item in items:
         data["ชื่อ"].append(item.name)
         data["คำอธิบาย"].append(item.description)
@@ -708,6 +437,73 @@ def export_data(categories, status):
         excel_output,
         as_attachment=True,
         download_name="item_data.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    return response
+
+
+def compare_file(file, categories, status, organization):
+    data = {key: [] for key in ITEMS_HEADER + ["วัสดุซ้ำ"]}
+    df = pandas.read_excel(file)
+    query = Q()
+    query &= Q(organization=organization)
+    print(categories)
+    if categories:
+        query &= Q(categories__in=categories)
+    if status:
+        query &= Q(status=status)
+    items = models.Item.objects(query).order_by("categories", "name")
+    for item in items:
+        data["ชื่อ"].append(item.name)
+        data["คำอธิบาย"].append(item.description)
+        data["บาร์โค๊ด"].append(item.barcode_id)
+        data["รูปแบบวัสดุ"].append(item.item_format)
+        data["หมวดหมู่"].append(item.categories.name)
+        data["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"].append(item.minimum)
+        data["หน่วยนับใหญ่"].append(item.set_unit)
+        data["หน่วยนับเล็ก"].append(item.piece_unit)
+        data["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"].append(item.piece_per_set)
+        data["หมายเหตุ"].append(item.remark)
+        data["วัสดุซ้ำ"].append("มีแล้ว")
+
+    for idx, row in df.iterrows():
+        duplicate_item = models.Item.objects(
+            name=str(row["ชื่อ"]).strip(),
+            organization=organization,
+            status__ne="disactive",
+        ).first()
+        data["ชื่อ"].append(row["ชื่อ"])
+        data["คำอธิบาย"].append(row["คำอธิบาย"])
+        data["บาร์โค๊ด"].append(row["บาร์โค๊ด"])
+        data["รูปแบบวัสดุ"].append(row["รูปแบบวัสดุ"])
+        data["หมวดหมู่"].append(row["หมวดหมู่"])
+        data["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"].append(
+            row["จำนวนขั้นต่ำที่ต้องการแจ้งเตือน (ขั้นต่ำของหน่วยนับใหญ่)"]
+        )
+        data["หน่วยนับใหญ่"].append(row["หน่วยนับใหญ่"])
+        data["หน่วยนับเล็ก"].append(row["หน่วยนับเล็ก"])
+        data["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"].append(row["จำนวน (หน่วยนับเล็กต่อหน่วยนับใหญ่)"])
+        data["หมายเหตุ"].append(row["หมายเหตุ"])
+        if duplicate_item not in items:
+            data["วัสดุซ้ำ"].append("ไม่ซ้ำ")
+        else:
+            data["วัสดุซ้ำ"].append("ซ้ำ")
+
+    new_df = pandas.DataFrame(data=data)
+    excel_output = BytesIO()
+    new_df = new_df.sort_values("วัสดุซ้ำ")
+    with pandas.ExcelWriter(excel_output) as writer:
+        workbook = writer.book
+
+        sheet_name = "ข้อมูล"
+        new_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        workbook.close()
+
+    excel_output.seek(0)
+    response = send_file(
+        excel_output,
+        as_attachment=True,
+        download_name="เปรียบเทียบข้อมูลในระบบ.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     return response

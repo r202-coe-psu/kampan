@@ -95,19 +95,12 @@ def process_inventory_engagement(inventory_engagement_file, organization):
     df.columns = df.columns.str.strip()
 
     for idx, row in df.iterrows():
-        if pandas.isnull(row["บาร์โค้ด"]):
-            item = models.Item.objects(
-                name=str(row["ชื่อวัสดุ"]).strip(),
-                status="active",
-                organization=organization,
-            ).first()
-        else:
-            item = models.Item.objects(
-                name=str(row["ชื่อวัสดุ"]).strip(),
-                barcode_id=str(row["บาร์โค้ด"]).strip(),
-                status="active",
-                organization=organization,
-            ).first()
+
+        item = models.Item.objects(
+            name=str(row["ชื่อวัสดุ"]).strip(),
+            status="active",
+            organization=organization,
+        ).first()
 
         warehouse = models.Warehouse.objects(
             status="active",
@@ -127,6 +120,7 @@ def process_inventory_engagement(inventory_engagement_file, organization):
                 status="pending",
                 registration=inventory_engagement_file.registration,
                 organization=organization,
+                item=item,
             )
 
         # inventory.position = position
@@ -287,8 +281,8 @@ def validate_upload_inventory_engagement(file, organization):
             errors,
             lambda name: models.Item.objects(
                 name=name.strip(),
+                status="active",
                 organization=organization,
-                status__ne="disactive",
             ).first(),
             "ไม่พบวัสดุชื่อ {value} ในระบบ ในบรรทัดที่ {idx} กรุณาตรวจสอบข้อมูล",
         )

@@ -43,6 +43,12 @@ class ItemForm(BaseItemForm):
     item_format = fields.SelectField("รูปแบบวัสดุ", choices=models.items.ITEM_FORMAT)
 
 
+class ItemActiveEditForm(ItemForm):
+    piece_per_set = None
+    set_ = None
+    item_format = None
+
+
 class SearchItemForm(FlaskForm):
     item_name = fields.StringField("ชื่อวัสดุ", validators=[validators.Optional()])
     item = fields.SelectField("วัสดุ", validate_choice=False)

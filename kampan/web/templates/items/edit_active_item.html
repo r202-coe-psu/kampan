@@ -1,0 +1,82 @@
+{% extends '/base/default-dashboard.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+<div class="active section">
+  {% set head = "แก้ไขวัสดุที่ลงทะเบียน"%}
+</div>
+{% block title %}{{ head }}{% endblock %}
+{% block dashboard_title %}{{ head }}{% endblock %}
+
+{% block breadcrumbs %}
+<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุ</a>
+<i class="right angle icon divider"></i>
+<div class="ui breadcrumb">
+  <div class="active section">{{ head }}</div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div>
+  <form class="ui form" method="POST" enctype="multipart/form-data">
+
+    {{ form.hidden_tag() }}
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_fileinput(form.img) }}
+    {{ renderer.render_field(form.barcode_id)}}
+    <div class="two fields">
+      {{ renderer.render_select(form.categories) }}
+      {{ renderer.render_field(form.minimum)}}
+    </div>
+    <div class="two fields">
+      <div class="field" id="set_unit_field">
+        {{ form.set_unit.label }}
+        {{ form.set_unit }}
+      </div>
+      <div class="field" id="piece_unit_field">
+        {{ form.piece_unit.label }}
+        {{ form.piece_unit }}
+      </div>
+    </div>
+
+    <div class="field">
+      {{ renderer.render_field(form.remark)}}
+    </div>
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+
+
+  </form>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-img").click(function () {
+    $(this).parent().find("#img").click();
+  });
+
+  $('#img')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-img', $(e.target).parent()).val(name);
+    });
+
+  element_set.classList.add("disabled");
+  element_unit.classList.add("disabled");
+  function check_item_format() {
+    var value = document.getElementById("item_format").value;
+    var element_piece_per_set = document.getElementById("piece_per_set_field");
+    var element_piece_unit = document.getElementById("piece_unit_field");
+
+    if (value == "one to one") {
+      element_piece_per_set.classList.add("disabled");
+      element_piece_unit.classList.add("disabled");
+    }
+    else {
+      element_piece_per_set.classList.remove("disabled");
+      element_piece_unit.classList.remove("disabled");
+    }
+  }
+</script>
+
+{% endblock additional_js %}

@@ -163,6 +163,7 @@ def add_member(division_id):
         org_user = models.OrganizationUserRole.objects(
             user=user_id,
             status="active",
+            organization=organization,
         ).first()
         org_user.division = division
         org_user.last_modifier = current_user._get_current_object()
@@ -191,6 +192,7 @@ def users(division_id):
     division = models.Division.objects(id=division_id, status="active").first()
     form = forms.organizations.SearchUserForm()
     division_users = division.get_division_users()
+    print(division_users)
     [
         form.user.choices.append((division_user.id, f"{division_user.user.get_name()}"))
         for division_user in division_users

@@ -41,8 +41,8 @@ class Item(me.Document):
     )
     set_ = me.IntField(required=True, min_value=1, default=1)
     set_unit = me.StringField(required=True, default="ชุด", max_length=50)
-    piece_per_set = me.IntField(min_value=1, default=1)
-    piece_unit = me.StringField(default="ชิ้น", max_length=50)
+    piece_per_set = me.IntField(min_value=1, default=1, required=True)
+    piece_unit = me.StringField(default="ชิ้น", max_length=50, required=True)
 
     categories = me.ReferenceField("Category", dbref=True)
     image = me.ImageField()

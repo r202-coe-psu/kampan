@@ -19,8 +19,8 @@ class Inventory(me.Document):
     item = me.ReferenceField("Item", dbref=True)
     # bill = me.FileField()
 
-    set_ = me.IntField(required=True, min_value=1, default=1)
-    quantity = me.IntField(required=True, min_value=1, default=1)
+    set_ = me.IntField(required=True, min_value=0, default=0)
+    quantity = me.IntField(required=True, min_value=0, default=0)
     remain = me.IntField(required=True, default=0)
     price = me.DecimalField(required=True, default=0)
 

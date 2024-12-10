@@ -33,6 +33,9 @@ def index():
     ).order_by("status", "-created_date")
     for item in items:
         item.name = str(item.name).strip()
+        if not item.piece_per_set:
+            item.piece_per_set = 1
+
         item.save()
 
     form.item.choices = [("", "เลือกวัสดุ")] + [
@@ -242,7 +245,7 @@ def upload_delete():
     )
 
 
-@module.route("/upload_compare_file")
+@module.route("/upload_compare_file", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "supervisor supplier")
 def upload_compare_file():
     organization_id = request.args.get("organization_id")
@@ -250,7 +253,7 @@ def upload_compare_file():
         id=organization_id, status="active"
     ).first()
 
-    form = forms.items.FilterExportItemForm()
+    form = forms.items.CompareItemForm()
     form.categories.choices = [("", "หมวดหมู่")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
@@ -262,6 +265,9 @@ def upload_compare_file():
         ("pending", "รอการยืนยัน"),
         ("active", "บันทึกแล้ว"),
     ]
+
+    errors = request.args.get("errors")
+
     if not form.validate_on_submit():
         if not form.categories.data:
             form.categories.data = [
@@ -270,26 +276,35 @@ def upload_compare_file():
                     organization=organization, status="active"
                 )
             ]
+
         return render_template(
             "/items/upload_compare_file.html",
             organization=organization,
             form=form,
+            errors=errors,
         )
+
     if form.upload_file.data:
-        errors = utils.items.validate_delete_items_engagement(
+        errors = utils.items.validate_compare_items_engagement(
             form.upload_file.data, organization
         )
-        if not errors:
-            completed = utils.items.process_delete_items_file(
-                form.upload_file.data, organization, current_user
-            )
-        else:
+        if errors:
             return render_template(
-                "/items/upload_delete_file.html",
+                "/items/upload_compare_file.html",
                 organization=organization,
-                errors=errors,
                 form=form,
+                errors=errors,
             )
+        response = utils.items.compare_file(
+            form.upload_file.data, form.categories.data, form.status.data, organization
+        )
+        return response
+
+    return redirect(
+        url_for(
+            "items.upload_delete", organization_id=organization_id, errors=["ไม่พบไฟล์"]
+        )
+    )
 
 
 @module.route("/download_template_items_file")
@@ -424,6 +439,58 @@ def edit(item_id):
     return redirect(url_for("items.index", **request.args))
 
 
+@module.route("/<item_id>/edit_active_item", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "supervisor supplier")
+def edit_active_item(item_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    item = models.Item.objects().get(id=item_id)
+
+    form = forms.items.ItemActiveEditForm(obj=item)
+    form.categories.choices = [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
+    ]
+
+    if not form.validate_on_submit():
+        if item.categories:
+            form.categories.data = str(item.categories.id)
+
+        return render_template(
+            "/items/edit_active_item.html",
+            form=form,
+            organization=organization,
+            item=item,
+        )
+
+    if form.img.data:
+        if item.image:
+            item.image.replace(
+                form.img.data,
+                filename=form.img.data.filename,
+                content_type=form.img.data.content_type,
+            )
+        else:
+            item.image.put(
+                form.img.data,
+                filename=form.img.data.filename,
+                content_type=form.img.data.content_type,
+            )
+
+    form.populate_obj(item)
+
+    item.name = str(form.name.data).strip()
+    item.categories = models.Category.objects(id=form.categories.data).first()
+    item.last_updated_by = current_user._get_current_object()
+    item.save()
+
+    return redirect(url_for("items.index", **request.args))
+
+
 @module.route("/<item_id>/delete")
 @acl.organization_roles_required("admin", "supervisor supplier")
 def delete(item_id):
@@ -533,5 +600,7 @@ def export_data():
             form=form,
         )
 
-    response = utils.items.export_data(form.categories.data, form.status.data)
+    response = utils.items.export_data(
+        form.categories.data, form.status.data, organization
+    )
     return response

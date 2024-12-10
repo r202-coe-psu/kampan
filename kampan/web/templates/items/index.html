@@ -14,6 +14,12 @@
         <a class="item" onclick="showDeleteModal('confirmAll')"><span class="ui green text">
             <i class="check icon"></i>
             บันทึกการลงทะเบียนวัสดุทั้งหมด</span></a>
+        <a class="item" href="{{ url_for('items.export_data', **request.args) }}">
+          <span class="ui primary text">
+            <i class="file export icon"></i>
+            ส่งออกข้อมูล
+          </span>
+        </a>
         <a class="item" href="{{ url_for('items.add', **request.args) }}">
           <span class="ui primary text">
             <i class="plus circle icon"></i>
@@ -32,10 +38,10 @@
             แก้ไขวัสดุแบบหลายรายการ
           </span>
         </a>
-        <a class="item" href="{{ url_for('items.export_data', **request.args) }}">
+        <a class="item" href="{{ url_for('items.upload_compare_file', **request.args) }}">
           <span class="ui primary text">
-            <i class="file export icon"></i>
-            ส่งออกข้อมูล
+            <i class="tasks icon"></i>
+            เปรียบเทียบวัสดุในระบบ
           </span>
         </a>
         <a class="item" href="{{ url_for('items.upload_delete', **request.args) }}">
@@ -78,6 +84,13 @@
 {% endblock %}
 
 {% block content %}
+{% set params=dict(request.args) %}
+{% if 'page' in params %}
+{% set _dummy=params.pop('page') %}
+{% endif %}
+
+
+
 <form method="post" style="padding-bottom: 0.5rem;">
   <div class="ui secondary menu">
     {{form.hidden_tag()}}
@@ -96,6 +109,7 @@
     </p>
   </div>
 </form>
+
 {% if items %}
 <div class="ui four cards">
   {% for item in paginated_items.items %}
@@ -160,19 +174,20 @@
         </div>
       </div>
       {% else %}
-
-      <div class="ui two buttons" style="width: 100%;">
-        <a class="ui primary button" style="padding-left: 0px; padding-right: 0px;"
+      <div class="ui three buttons" style="width: 100%;">
+        <a class="ui icon primary button" data-tooltip="แก้ไข"
+          href="{{ url_for('items.edit_active_item', item_id=item.id, **request.args) }}">
+          <i class="edit icon"></i>
+        </a>
+        <a class="ui icon teal button" data-tooltip="รายละเอียด"
           href="{{ url_for('items.detail', item_id=item.id, **request.args) }}">
           <i class="info icon"></i>
-          รายละเอียด
         </a>
-
-        <a class="ui red button" onclick="showDeleteModal('{{ item.id }}')">
+        <a class="ui icon red button" onclick="showDeleteModal('{{ item.id }}')" data-tooltip="ลบข้อมูล">
           <i class="trash alternate outline icon"></i>
-          ลบข้อมูล
         </a>
       </div>
+
 
 
       {% endif %}
@@ -202,10 +217,7 @@
   </div>
   {% endfor %}
 </div>
-{% set params=dict(request.args) %}
-{% if 'page' in params %}
-{% set _dummy=params.pop('page') %}
-{% endif %}
+
 {% if paginated_items.pages != 1 %}
 <div class="ui grid">
   <div class="column row">
