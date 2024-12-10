@@ -250,10 +250,7 @@ def upload_file_inventory_info(item_register_id):
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
     upload_completed = False
-    upload_errors = {
-        "headers": "อัปโหลดไฟล์นำเข้าวัสดุ",
-        "errors": None,
-    }
+    errors = request.args.get("errors")
 
     if not form.validate_on_submit():
         print(form.errors)
@@ -261,7 +258,7 @@ def upload_file_inventory_info(item_register_id):
             "/inventories/upload_file.html",
             form=form,
             item_register=item_register,
-            upload_errors=upload_errors,
+            errors=errors,
             organization=organization,
             upload_completed=upload_completed,
         )
@@ -286,23 +283,25 @@ def upload_file_inventory_info(item_register_id):
         inventory_engagement_file.save()
         # print(inventory_engagement_file.file)
     if inventory_engagement_file:
-        upload_errors["errors"] = utils.inventories.validate_inventory_engagement(
-            inventory_engagement_file
+        errors = utils.inventories.validate_upload_inventory_engagement(
+            inventory_engagement_file.file, organization
         )
-        if upload_errors["errors"]:
+        if errors:
             inventory_engagement_file.status = "failed"
             inventory_engagement_file.updated_date = datetime.datetime.now()
             inventory_engagement_file.save()
         else:
-            utils.inventories.process_inventory_engagement(inventory_engagement_file)
+            utils.inventories.process_inventory_engagement(
+                inventory_engagement_file, organization
+            )
             upload_completed = True
-    # print("------->", upload_errors["errors"])
+
     return render_template(
         "/inventories/upload_file.html",
         form=form,
         item_register=item_register,
         organization=organization,
-        upload_errors=upload_errors,
+        errors=errors,
         upload_completed=upload_completed,
     )
 

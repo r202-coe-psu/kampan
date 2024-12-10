@@ -56,6 +56,13 @@ class UploadFileForm(FlaskForm):
     )
 
 
-class FilterExportItem(FlaskForm):
+class FilterExportItemForm(FlaskForm):
     categories = fields.SelectMultipleField("หมวดหมู่", validate_choice=False)
     status = fields.SelectField("สถานะ", validate_choice=False)
+
+
+class CompareItemForm(FilterExportItemForm):
+    upload_file = fields.FileField(
+        "อัปโหลดไฟล์",
+        validators=[FileAllowed(["xlsx"], "อนุญาตเฉพาะไฟล์ xlsx")],
+    )

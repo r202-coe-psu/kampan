@@ -31,6 +31,10 @@ def index():
     items = models.Item.objects(
         status__in=["active", "pending"], organization=organization
     ).order_by("status", "-created_date")
+    for item in items:
+        item.name = str(item.name).strip()
+        item.save()
+
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (
             str(item.id),
@@ -102,37 +106,35 @@ def upload_file():
     ).first()
     form = forms.items.UploadFileForm()
     errors = request.args.get("errors")
-    upload_errors = {
-        "headers": "ลงทะเบียนวัสดุ",
-        "errors": errors,
-    }
+
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
             "/items/upload_file.html",
             organization=organization,
-            upload_errors=upload_errors,
+            errors=errors,
             form=form,
         )
 
     if form.upload_file.data:
-        errors = utils.items.validate_items_engagement(
+        errors = utils.items.validate_items_upload_engagement(
             form.upload_file.data, organization
         )
         if not errors:
-            completed = utils.items.process_items_file(
+            completed = utils.items.process_items_upload_file(
                 form.upload_file.data, organization, current_user
             )
         else:
-            return redirect(
-                url_for(
-                    "items.upload_edit", organization_id=organization_id, errors=errors
-                )
+            return render_template(
+                "/items/upload_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
             )
     else:
         return redirect(
             url_for(
-                "items.upload_edit", organization_id=organization_id, errors="ไม่พบไฟล์"
+                "items.upload_file", organization_id=organization_id, errors=["ไม่พบไฟล์"]
             )
         )
     return redirect(
@@ -152,16 +154,13 @@ def upload_edit():
     ).first()
     form = forms.items.UploadFileForm()
     errors = request.args.get("errors")
-    upload_errors = {
-        "headers": "แก้ไขวัสดุ",
-        "errors": errors,
-    }
+
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
             "/items/upload_edit_file.html",
             organization=organization,
-            upload_errors=upload_errors,
+            errors=errors,
             form=form,
         )
 
@@ -173,16 +172,18 @@ def upload_edit():
             completed = utils.items.process_edit_items_file(
                 form.upload_file.data, organization, current_user
             )
+
         else:
-            return redirect(
-                url_for(
-                    "items.upload_file", organization_id=organization_id, errors=errors
-                )
+            return render_template(
+                "/items/upload_edit_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
             )
     else:
         return redirect(
             url_for(
-                "items.upload_file", organization_id=organization_id, errors="ไม่พบไฟล์"
+                "items.upload_edit", organization_id=organization_id, errors="ไม่พบไฟล์"
             )
         )
     return redirect(
@@ -202,16 +203,13 @@ def upload_delete():
     ).first()
     form = forms.items.UploadFileForm()
     errors = request.args.get("errors")
-    upload_errors = {
-        "headers": "ลบวัสดุ",
-        "errors": errors,
-    }
+
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
             "/items/upload_delete_file.html",
             organization=organization,
-            upload_errors=upload_errors,
+            errors=errors,
             form=form,
         )
 
@@ -224,12 +222,11 @@ def upload_delete():
                 form.upload_file.data, organization, current_user
             )
         else:
-            return redirect(
-                url_for(
-                    "items.upload_delete",
-                    organization_id=organization_id,
-                    errors=errors,
-                )
+            return render_template(
+                "/items/upload_delete_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
             )
     else:
         return redirect(
@@ -243,6 +240,56 @@ def upload_delete():
             organization_id=organization_id,
         )
     )
+
+
+@module.route("/upload_compare_file")
+@acl.organization_roles_required("admin", "supervisor supplier")
+def upload_compare_file():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    form = forms.items.FilterExportItemForm()
+    form.categories.choices = [("", "หมวดหมู่")] + [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
+    ]
+    form.status.choices = [
+        ("", "ทั้งหมด"),
+        ("pending", "รอการยืนยัน"),
+        ("active", "บันทึกแล้ว"),
+    ]
+    if not form.validate_on_submit():
+        if not form.categories.data:
+            form.categories.data = [
+                str(category.id)
+                for category in models.Category.objects(
+                    organization=organization, status="active"
+                )
+            ]
+        return render_template(
+            "/items/upload_compare_file.html",
+            organization=organization,
+            form=form,
+        )
+    if form.upload_file.data:
+        errors = utils.items.validate_delete_items_engagement(
+            form.upload_file.data, organization
+        )
+        if not errors:
+            completed = utils.items.process_delete_items_file(
+                form.upload_file.data, organization, current_user
+            )
+        else:
+            return render_template(
+                "/items/upload_delete_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
+            )
 
 
 @module.route("/download_template_items_file")
@@ -306,6 +353,7 @@ def add():
         item.item_format == "one to many"
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
+    item.name = str(form.name.data).strip()
     item.categories = models.Category.objects(id=form.categories.data).first()
     item.created_by = current_user._get_current_object()
     item.last_updated_by = current_user._get_current_object()
@@ -367,6 +415,7 @@ def edit(item_id):
         item.item_format == "one to many"
         item.piece_per_set = form.piece_per_set.data
         item.piece_unit = form.piece_unit.data
+    item.name = str(form.name.data).strip()
     item.categories = models.Category.objects(id=form.categories.data).first()
     item.last_updated_by = current_user._get_current_object()
     item.organization = organization
@@ -458,7 +507,7 @@ def export_data():
         id=organization_id, status="active"
     ).first()
 
-    form = forms.items.FilterExportItem()
+    form = forms.items.FilterExportItemForm()
     form.categories.choices = [("", "หมวดหมู่")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(

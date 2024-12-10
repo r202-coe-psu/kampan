@@ -2,7 +2,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-ลงทะเบียนวัสดุ
+ลบข้อมูลวัสดุ
 {% endblock %}
 
 {% block dashboard_title %}
@@ -18,15 +18,18 @@
 {% block content %}
 
 
-{% if upload_errors.errors %}
+
+{% if errors %}
 <div class="ui modal upload_errors">
   <div class="header">
     เกิดปัญหา
   </div>
-  <div class="content red">
+  <div class="scrolling content red">
+    {% for error in errors %}
     <span class="ui error text">
-      <b>{{ upload_errors.errors }}</b>
+      <b>- {{ error }}</b><br>
     </span>
+    {% endfor %}
   </div>
   <div class="actions">
     <button class="ui negative right labeled icon button">
