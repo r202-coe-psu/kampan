@@ -17,17 +17,18 @@ BaseInventoryForm = model_form(
         "remain",
         "status",
         "quantity",
+        "position",
     ],
     field_args={
         # "item": {
         #     "label": "วัสดุ",
         #     "label_modifier": lambda i: f"{i.barcode_id} ({i.name})",
         # },
-        "position": {
-            "label": "ตำแหน่ง",
-            "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
-        },
-        "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
+        # "position": {
+        #     "label": "ตำแหน่ง",
+        #     "label_modifier": lambda p: f"{p.description} ({p.warehouse.name})",
+        # },
+        # "warehouse": {"label": "คลังวัสดุ", "label_modifier": lambda w: w.name},
         "set_": {"label": "จำนวนหน่วยใหญ่"},
         "price": {"label": "ราคา (หน่วยใหญ่ละ)"},
     },
@@ -35,6 +36,9 @@ BaseInventoryForm = model_form(
 
 
 class InventoryForm(BaseInventoryForm):
+    warehouse = fields.SelectField(
+        "คลังวัสดุ",
+    )
     item = fields.SelectField("วัสดุ", choices=[("", "Item")])
     calendar_select = fields.DateTimeField("วันที่เริ่มต้น", format="%Y-%m-%d")
     calendar_end = fields.DateTimeField("วันที่สุดท้าย", format="%Y-%m-%d")

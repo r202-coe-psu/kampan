@@ -103,6 +103,7 @@ def register():
             (item.id, f"{item.barcode_id} ({item.name})") for item in items
         ]
     if not form.validate_on_submit():
+
         print(form.errors)
         return render_template(
             "/inventories/register.html",
@@ -138,6 +139,12 @@ def edit(inventory_id):
     ).first()
     inventory = models.Inventory.objects().get(id=inventory_id)
     form = forms.inventories.InventoryForm(obj=inventory)
+    form.warehouse.choices = [
+        (str(warehouse.id), warehouse.name)
+        for warehouse in models.Warehouse.objects(
+            status="active", organization=organization
+        )
+    ]
     item_register = inventory.registration
 
     items = models.Item.objects(status="active")
@@ -156,6 +163,8 @@ def edit(inventory_id):
         )
 
     if not form.validate_on_submit():
+        if inventory:
+            form.warehouse.data = str(inventory.warehouse.id)
         print(form.errors)
         return render_template(
             "/inventories/register.html",
