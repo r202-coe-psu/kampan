@@ -49,17 +49,20 @@ class OrganizationUserForm(FlaskForm):
     users = fields.SelectMultipleField("")
 
 
-class OrganizationRoleSelectionForm(FlaskForm):
-    roles = fields.SelectMultipleField(choices=models.organizations.ORGANIZATION_ROLES)
-
-
-class OrgnaizationAddMemberForm(FlaskForm):
-    members = fields.SelectMultipleField("Select Members")
+class OrganizationRoleEditForm(FlaskForm):
+    first_name = fields.StringField("ชื่อ (ภาษาอังกฤษ)")
+    last_name = fields.StringField("ชื่อ (ภาษาอังกฤษ)")
+    email = fields.StringField("อีเมล")
+    appointment = fields.StringField("ตำแหน่ง", validators=[])
     roles = fields.SelectMultipleField(
-        "Role",
+        "ระดับผู้ใช้งาน",
         choices=models.organizations.ORGANIZATION_ROLES,
         validators=[validators.InputRequired()],
     )
+
+
+class OrgnaizationAddMemberForm(OrganizationRoleEditForm):
+    members = fields.SelectMultipleField("Select Members")
 
 
 class AdminOrganizationEditForm(BaseOrganizationForm):

@@ -76,17 +76,23 @@ def order():
         id=organization_id, status="active"
     ).first()
     form = forms.item_orders.OrderItemForm()
+    division = (
+        models.OrganizationUserRole.objects(
+            user=current_user,
+            organization=organization,
+            status__ne="disactive",
+        ).first()
+    ).division
     if organization.get_organization_users():
         form.head_endorser.choices = [
             (str(org_user.user.id), org_user.user.get_name())
-            for org_user in organization.get_organization_users()
+            for org_user in organization.get_organization_users(division)
             if ("endorser" in org_user.roles or "head" in org_user.roles)
-            and org_user.division == current_user.get_current_division()
         ]
 
         form.admin_approver.choices = [
             (str(org_user.user.id), org_user.user.get_name())
-            for org_user in organization.get_organization_users()
+            for org_user in organization.get_organization_users(division)
             if ("admin" in org_user.roles)
         ]
     if not form.validate_on_submit():
@@ -121,15 +127,21 @@ def edit(order_id):
     ).first()
     order = models.OrderItem.objects().get(id=order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
+    division = (
+        models.OrganizationUserRole.objects(
+            user=current_user,
+            organization=organization,
+            status__ne="disactive",
+        ).first()
+    ).division
     form.head_endorser.choices = [
         (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users()
+        for org_user in organization.get_organization_users(division)
         if ("endorser" in org_user.roles or "head" in org_user.roles)
-        and org_user.division == current_user.get_current_division()
     ]
     form.admin_approver.choices = [
         (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users()
+        for org_user in organization.get_organization_users(division)
         if ("admin" in org_user.roles)
     ]
     if not form.validate_on_submit():

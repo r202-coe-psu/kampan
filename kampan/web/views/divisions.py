@@ -105,9 +105,8 @@ def create_or_edit(division_id):
     else:
         return redirect(
             url_for(
-                "divisions.detail",
+                "divisions.index",
                 organization_id=organization_id,
-                division_id=division_id,
             )
         )
 
@@ -189,12 +188,16 @@ def users(division_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    division = models.Division.objects(id=division_id, status="active").first()
+    division = models.Division.objects(
+        id=division_id, status="active", organization=organization
+    ).first()
     form = forms.organizations.SearchUserForm()
     division_users = division.get_division_users()
-    print(division_users)
+
     [
-        form.user.choices.append((division_user.id, f"{division_user.user.get_name()}"))
+        form.user.choices.append(
+            (division_user.id, f"{division_user.display_fullname()}")
+        )
         for division_user in division_users
     ]
     if form.user.data:
@@ -265,5 +268,32 @@ def remove_division_user(division_id, division_user_id):
             "divisions.users",
             organization_id=organization_id,
             division_id=division_id,
+        )
+    )
+
+
+@module.route(
+    "/<division_id>/delete",
+    methods=["GET", "POST"],
+)
+@acl.organization_roles_required("admin")
+def delete(division_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    division = models.Division.objects(
+        id=division_id, status="active", organization=organization
+    ).first()
+    division.status = "disactive"
+    for org_user in division.get_division_users():
+        org_user.division = None
+        org_user.save()
+    division.save()
+
+    return redirect(
+        url_for(
+            "divisions.index",
+            organization_id=organization_id,
         )
     )

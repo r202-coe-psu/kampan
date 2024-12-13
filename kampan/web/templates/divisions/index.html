@@ -79,10 +79,10 @@
             </a>
             <div class="ui modal {{division.id}}">
               <div class="header">
-                ลบคำสั่งเบิกวัสดุ
+                ลบคำสั่งแผนก
               </div>
               <div class="content">
-                <p>ต้องการลบคำสั่งเบิกวัสดุ
+                <p>ต้องการลบคำสั่งแผนก
                   <b>{{ division.description }}</b>
                 </p>
               </div>
@@ -90,7 +90,8 @@
                 <button class="ui black deny button">
                   ยกเลิก
                 </button>
-                <a class="ui negative right labeled icon button" href="">
+                <a class="ui negative right labeled icon button"
+                  href="{{ url_for('divisions.delete',division_id=division.id, organization_id=organization.id )}}">
                   ยืนยัน
                   <i class="checkmark icon"></i>
                 </a>

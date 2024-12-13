@@ -1,0 +1,77 @@
+{% macro InputField(form) %}
+{% set style_ = " error" if form.flags.required else '' %}
+
+<div class="field">
+  <label>{{ form.label }}</label>
+  {{ form(class=style_) }}
+</div>
+
+{% endmacro %}
+
+
+{% macro SelectField(form) %}
+{% set style_ = "ui selection dropdown clearable search " + (" error" if form.flags.required else '') %}
+
+<div class="field">
+  <label>{{ form.label }}</label>
+  {{ form(class=style_) }}
+</div>
+
+{% endmacro %}
+
+
+{% macro DateField(form) %}
+{% set style_ = " error" if form.flags.required else '' %}
+
+<div class="field">
+  <label>{{ form.label }}</label>
+  <div class="ui calendar" id="{{ form.name }}">
+    <div class="ui input left icon">
+      <i class="calendar icon"></i>
+      {{ form(type="text") }}
+    </div>
+  </div>
+</div>
+{#}
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+
+
+  };
+  $('#{{ form.name }}').calendar(calendar_setting);
+</script>
+{#}
+{% endmacro %}
+
+{% macro RangeDateField(first_form, second_form) %}
+{{ DateField(first_form) }}
+{{ DateField(second_form) }}
+
+<script type="text/javascript">
+  $('#{{ first_form.name }}').calendar({
+    type: 'date',
+    endCalendar: $('#{{ second_form.name }}')
+  });
+  $('#{{ second_form.name }}').calendar({
+    type: 'date',
+    startCalendar: $('#{{ first_form.name }}')
+  });
+</script>
+{% endmacro %}

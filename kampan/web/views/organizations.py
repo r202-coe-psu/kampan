@@ -5,7 +5,7 @@ from flask_mongoengine import Pagination
 import datetime
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 
 module = Blueprint("organizations", __name__, url_prefix="/organizations")
 
@@ -105,7 +105,7 @@ def organizaiton_users(organization_id):
     org_users = organization.get_organization_users()
     if org_users:
         [
-            form.user.choices.append((org_user.id, f"{org_user.user.get_name()}"))
+            form.user.choices.append((org_user.id, f"{org_user.display_fullname()}"))
             for org_user in org_users
         ]
     if form.user.data:
@@ -162,7 +162,7 @@ def edit_roles(organization_id, org_user_id):
     org_user = models.OrganizationUserRole.objects(
         id=org_user_id, status="active"
     ).first()
-    form = forms.organizations.OrganizationRoleSelectionForm(obj=org_user)
+    form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
 
     if not form.validate_on_submit():
         print(form.errors)
@@ -172,7 +172,10 @@ def edit_roles(organization_id, org_user_id):
             organization=organization,
             org_user=org_user,
         )
-
+    org_user.first_name = form.first_name.data
+    org_user.last_name = form.last_name.data
+    org_user.email = form.email.data
+    org_user.appointment = form.appointment.data
     org_user.roles = form.roles.data
     org_user.last_modifier = current_user._get_current_object()
     org_user.last_ip_address = request.headers.get(
@@ -223,3 +226,61 @@ def view_email_templates(organization_id):
         form=form,
         default=query_default,
     )
+
+
+@module.route("/<organization_id>/upload_member_file", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "staff")
+def upload_member_file(organization_id):
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    form = forms.items.UploadFileForm()
+    errors = request.args.get("errors")
+
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/organizations/upload_member_file.html",
+            organization=organization,
+            errors=errors,
+            form=form,
+        )
+
+    if form.upload_file.data:
+        errors = utils.organizations.validate_member_upload_engagement(
+            form.upload_file.data, organization
+        )
+        if not errors:
+            completed = utils.organizations.process_member_upload_file(
+                form.upload_file.data, organization, current_user
+            )
+        else:
+            return render_template(
+                "/organizations/upload_member_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
+            )
+    else:
+        return redirect(
+            url_for(
+                "organizations.upload_member_file",
+                organization_id=organization_id,
+                errors=["ไม่พบไฟล์"],
+            )
+        )
+    return redirect(
+        url_for(
+            "organizations.organizaiton_users",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route(
+    "/<organization_id>/download_template_member_file", methods=["GET", "POST"]
+)
+@acl.organization_roles_required("admin", "staff")
+def download_template_member_file(organization_id):
+    return utils.organizations.get_template_delete_items_file()

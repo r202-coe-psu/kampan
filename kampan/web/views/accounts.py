@@ -132,19 +132,35 @@ def profile(user_id):
 @login_required
 def index():
     organization_id = request.args.get("organization_id")
-    organization = current_user.get_current_organization()
-    user = current_user._get_current_object()
-    if not organization and "admin" not in user.roles:
+    organization = None
+
+    if not organization:
+        organization = (
+            models.OrganizationUserRole.objects(
+                user=current_user,
+                status__ne="disactive",
+            ).first()
+        ).organization
+        organization_id = organization.id
+
+    if not organization:
+        organization = current_user.get_current_organization()
+
+    if organization:
+
         return render_template(
             "/accounts/index.html",
             user=current_user,
             organization=organization,
         )
-    if not organization:
-        organization = models.Organization.objects(
-            id=organization_id, status="active"
-        ).first()
-    if "admin" in user.roles and organization_id:
+    if not organization and "admin" not in current_user.roles:
+        return render_template(
+            "/accounts/index.html",
+            user=current_user,
+            organization=organization,
+        )
+
+    if "admin" in current_user.roles and organization_id:
         organization = models.Organization.objects(
             id=organization_id, status="active"
         ).first()

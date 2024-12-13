@@ -5,3 +5,4 @@ from . import items
 from . import suppliers
 from . import reports
 from . import dashboards
+from . import organizations

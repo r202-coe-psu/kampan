@@ -30,8 +30,8 @@
       <tbody>
         {% for org_user in paginated_org_users.items %}
         <tr>
-          <td data-label="Organization">{{ org_user.user.get_name() }}</td>
-          <td data-label="Email">{{ org_user.user.email }}</td>
+          <td data-label="Organization">{{ org_user.display_fullname() }}</td>
+          <td data-label="Email">{{ org_user.display_email() }}</td>
           <td data-label="Roles">{{ org_user.roles }}</td>
           <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
             org_user.created_date else "-"}}
@@ -51,7 +51,7 @@
                 ลบสมาชิก
               </div>
               <div class="content">
-                <p>ต้องการลบสมาชิก<b> {{ org_user.user.get_name() }}</b><br />
+                <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
 
 
                 </p>

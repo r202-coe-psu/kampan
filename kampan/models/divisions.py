@@ -51,7 +51,7 @@ class Division(me.Document):
     meta = {"collection": "divisions"}
 
     name = me.StringField(required=True, max_length=256)
-    description = me.StringField()
+    description = me.StringField(default="")
     status = me.StringField(required=True, default="active")
 
     organization = me.ReferenceField("Organization", dbref=True)

@@ -255,6 +255,14 @@ def handle_authorized_oauth2(remote, token):
     user.resources[remote.name] = user_info
     user.save()
 
+    member = models.OrganizationUserRole.objects(
+        email=user.email,
+        status__ne="disactive",
+    ).first()
+    if member:
+        member.user = user
+        member.save()
+
     if token:
         oauth2token = models.OAuth2Token(
             name=remote.name,

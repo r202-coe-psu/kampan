@@ -31,7 +31,7 @@
       <tbody>
         {% for division_user in paginated_division_users.items %}
         <tr>
-          <td data-label="Organization">{{ division_user.user.get_name() }}</td>
+          <td data-label="Organization">{{ division_user.display_fullname() }}</td>
           <td data-label="Roles">{{ division_user.display_roles() }}</td>
           <td data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
             division_user.created_date else "-"}}
@@ -46,7 +46,7 @@
                 ลบสมาชิก
               </div>
               <div class="content">
-                <p>ต้องการลบสมาชิก<b> {{ division_user.user.get_name() }}</b><br />
+                <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
 
 
                 </p>

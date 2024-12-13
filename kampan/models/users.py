@@ -9,7 +9,9 @@ from kampan.models.organizations import ORGANIZATION_ROLES
 
 class UserSetting(me.EmbeddedDocument):
     current_organization = me.ReferenceField("Organization", dbref=True)
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
+    updated_date = me.DateTimeField(
+        required=True, default=datetime.datetime.now, auto_now=True
+    )
 
 
 class TemporaryUser(me.Document):
@@ -109,8 +111,7 @@ class User(me.Document, UserMixin):
         try:
             org_user = OrganizationUserRole.objects(
                 user=self,
-                organization=self.get_current_organization(),
-                status="active",
+                status__ne="disactive",
             ).first()
             return org_user.roles
         except:
@@ -149,3 +150,15 @@ class User(me.Document, UserMixin):
 
         except:
             return []
+
+    def get_resources_fullname(self):
+        try:
+            fullname = (
+                self.resources["psu"]["display_name"]
+                + " ( "
+                + self.resources["psu"]["display_name_th"]
+                + " )"
+            )
+        except:
+            fullname = self.get_name()
+        return fullname

@@ -488,7 +488,7 @@ def download_item_report():
     return response
 
 
-@module.route("/", methods=["GET", "POST"])
+@module.route("/summary", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "supervisor supplier")
 def dashboard():
     organization_id = request.args.get("organization_id")

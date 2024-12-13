@@ -134,7 +134,7 @@ def organizaiton_users(organization_id):
     form = forms.organizations.SearchUserForm()
     org_users = organization.get_organization_users()
     [
-        form.user.choices.append((org_user.id, f"{org_user.user.get_name()}"))
+        form.user.choices.append((org_user.id, f"{org_user.display_fullname()}"))
         for org_user in org_users
     ]
     form.user.process(data="", formdata=form.user.choices)
@@ -188,7 +188,7 @@ def edit_roles(organization_id, org_user_id):
     org_user = models.OrganizationUserRole.objects(
         id=org_user_id, status="active"
     ).first()
-    form = forms.organizations.OrganizationRoleSelectionForm(obj=org_user)
+    form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
 
     if not form.validate_on_submit():
         print(form.errors)

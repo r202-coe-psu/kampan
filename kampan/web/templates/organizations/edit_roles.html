@@ -10,16 +10,20 @@
 <i class="right angle icon divider"></i>
 
 <div class="active section">
-  แก้ไขตำแหน่ง {{ org_user.user.get_name() }}
+  แก้ไขตำแหน่ง {{ org_user.display_fullname() }}
 </div>
 {% endblock %}
 
 {% block content %}
 
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="ui form" method="POST">
     {{ form.hidden_tag() }}
+    {{ renderer.render_field(form.first_name) }}
+    {{ renderer.render_field(form.last_name) }}
+    {{ renderer.render_field(form.email) }}
     {{ renderer.render_select(form.roles) }}
+    {{ renderer.render_field(form.appointment) }}
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>

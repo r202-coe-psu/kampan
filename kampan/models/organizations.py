@@ -14,19 +14,30 @@ ORGANIZATION_ROLES = [
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
 ]
 
+ORGANIZATION_USER_ROLE_STATUS = [
+    ("active", "เข้าสู่ระบบแล้ว"),
+    ("disactive", "นำออกแล้ว"),
+    ("pending", "รอการเข้าสู่ระบบ"),
+]
+
 
 class OrganizationUserRole(me.Document):
     meta = {"collection": "organization_user_roles"}
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
-    user = me.ReferenceField("User", dbref=True, required=True)
+    user = me.ReferenceField("User", dbref=True)
     roles = me.ListField(
         me.StringField(choices=ORGANIZATION_ROLES), default=["staff"], required=True
     )
 
+    first_name = me.StringField(default="")
+    last_name = me.StringField(default="")
+    email = me.StringField(default="")
+    appointment = me.StringField(default="")
+
     last_ip_address = me.StringField()
-    status = me.StringField(default="active")
+    status = me.StringField(default="active", choices=ORGANIZATION_USER_ROLE_STATUS)
 
     added_by = me.ReferenceField("User", dbref=True, required=True)
     last_modifier = me.ReferenceField("User", dbref=True, required=True)
@@ -42,6 +53,22 @@ class OrganizationUserRole(me.Document):
                 if role == organization_role:
                     roles.append(display_role)
         return " ,".join(roles)
+
+    def display_fullname(self):
+        if self.user:
+            return self.user.get_resources_fullname()
+        return self.first_name + " " + self.last_name
+
+    def display_email(self):
+        if self.user:
+            return self.user.email
+        return self.email
+
+    def display_appointment(self):
+        if len(self.appointment) >= 30:
+            return self.appointment[:30] + "..."
+
+        return self.appointment
 
 
 class Organization(me.Document):
@@ -72,10 +99,14 @@ class Organization(me.Document):
                 .distinct(field="user")
             )
 
-    def get_organization_users(self):
+    def get_organization_users(self, division=None):
         if OrganizationUserRole.objects().count():
+            if not division:
+                return OrganizationUserRole.objects(
+                    organization=self, status__ne="disactive"
+                ).order_by("-first_name")
             return OrganizationUserRole.objects(
-                organization=self, status="active"
+                organization=self, status__ne="disactive", division=division
             ).order_by("-first_name")
 
     def get_logo(self):
