@@ -132,7 +132,7 @@ def organizaiton_users(organization_id):
             created_date__lt=form.end_date.data,
         )
     if form.role.data:
-        org_users = org_users.filter(role=form.role.data)
+        org_users = org_users.filter(roles=form.role.data)
     if form.user.data:
         org_users = org_users.filter(id=form.user.data)
     page = request.args.get("page", default=1, type=int)
