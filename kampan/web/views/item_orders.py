@@ -85,7 +85,7 @@ def order():
     ).first()
     if member:
         division = member.division
-
+        print(division)
     if organization.get_organization_users():
         form.head_endorser.choices = [
             (str(org_user.user.id), org_user.user.get_name())
@@ -111,6 +111,7 @@ def order():
     order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
     order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
+    order.division = division
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
 
@@ -131,13 +132,14 @@ def edit(order_id):
     ).first()
     order = models.OrderItem.objects().get(id=order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
-    division = (
-        models.OrganizationUserRole.objects(
-            user=current_user,
-            organization=organization,
-            status__ne="disactive",
-        ).first()
-    ).division
+
+    member = models.OrganizationUserRole.objects(
+        user=current_user,
+        organization=organization,
+        status__ne="disactive",
+    ).first()
+    if member:
+        division = member.division
     form.head_endorser.choices = [
         (str(org_user.user.id), org_user.user.get_name())
         for org_user in organization.get_organization_users(division)
@@ -158,7 +160,8 @@ def edit(order_id):
     order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
     order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
-    print(current_user._get_current_object().get_current_division())
+    order.division = division
+
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
     order.organization = organization
