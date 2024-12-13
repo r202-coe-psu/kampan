@@ -75,14 +75,17 @@ def order():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
+    user = models.User
+    division = None
     form = forms.item_orders.OrderItemForm()
-    division = (
-        models.OrganizationUserRole.objects(
-            user=current_user,
-            organization=organization,
-            status__ne="disactive",
-        ).first()
-    ).division
+    member = models.OrganizationUserRole.objects(
+        user=current_user,
+        organization=organization,
+        status__ne="disactive",
+    ).first()
+    if member:
+        division = member.division
+
     if organization.get_organization_users():
         form.head_endorser.choices = [
             (str(org_user.user.id), org_user.user.get_name())
