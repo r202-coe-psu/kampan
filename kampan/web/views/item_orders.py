@@ -138,6 +138,8 @@ def edit(order_id):
         organization=organization,
         status__ne="disactive",
     ).first()
+    division = None
+
     if member:
         division = member.division
     form.head_endorser.choices = [
