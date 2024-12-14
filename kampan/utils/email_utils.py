@@ -30,7 +30,7 @@ class PSUSMTP:
         self.user = setting.get("KAMPAN_EMAIL_USER")
         self.sender = setting.get("KAMPAN_EMAIL_SENDER")
         self.password = setting.get("KAMPAN_EMAIL_PASSWORD")
-        self.auth_required = setting.get("VIYYOOR_EMAIL_AUTH")
+        self.auth_required = setting.get("KAMPAN_EMAIL_AUTH")
 
         if not self.sender:
             self.sender = self.user

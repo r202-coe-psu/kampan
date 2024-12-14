@@ -207,7 +207,6 @@ def force_send_email(order_id):
         id=organization_id, status="active"
     ).first()
     order = models.OrderItem.objects(id=order_id).first()
-
     job = redis_rq.redis_queue.queue.enqueue(
         email_utils.force_send_email_to_endorser,
         args=(order, current_user._get_current_object(), current_app.config),
