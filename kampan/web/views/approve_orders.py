@@ -281,7 +281,6 @@ def supervisor_supplier_approve_page(order_id):
     if not form.validate_on_submit():
         if order.admin_approver:
             form.admin_approver.data = str(order.admin_approver.id)
-        print(form.errors)
         return render_template(
             "/approve_orders/supervisor_supplier/supervisor_supplier_approve_page.html",
             order_id=order_id,
@@ -367,7 +366,6 @@ def admin_approve(order_id):
         # checkout.save()
         item = checkout.item
         quantity = (checkout.set_ * item.piece_per_set) + checkout.piece
-        # print("--->", quantity, item.get_amount_pieces())
         if quantity > item.get_amount_pieces():
             return redirect(
                 url_for(
@@ -455,7 +453,6 @@ def admin_approve_page(order_id):
         id=organization_id, status="active"
     ).first()
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/approve_orders/admin/admin_approve_page.html",
             order_id=order_id,

@@ -78,7 +78,6 @@ def checkout():
     items = models.Item.objects(status="active")
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
-        # print(item_register.get_item_in_bill())
 
     if items:
         form.item.choices = [
@@ -94,7 +93,6 @@ def checkout():
             for item in items
         ]
     if not form.validate_on_submit():
-        print(form.errors)
 
         return render_template(
             "/admin/item_checkouts/checkout.html",
@@ -145,7 +143,6 @@ def edit(checkout_item_id):
         items = list(items)
         if checkout_item.item:
             items.append(models.Item.objects(id=checkout_item.item.id).first())
-            # print(items)
     if items:
         form.item.choices = [
             (item.id, f"{item.barcode_id} ({item.name})") for item in items

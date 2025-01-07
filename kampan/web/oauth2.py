@@ -82,7 +82,6 @@ def create_user_engpsu(user_info, user=None):
 
 
 def create_user_psu(user_info, user=None):
-    print(user_info)
     if not user:
         user = models.User(
             username=user_info.get("username"),

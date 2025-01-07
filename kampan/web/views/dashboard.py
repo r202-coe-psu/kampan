@@ -33,7 +33,6 @@ def daily_dashboard():
 
     if form.start_date.data != None:
         today = form.start_date.data
-    # print(today)
     item_orders = models.OrderItem.objects(status="active", organization=organization)
 
     daily_item_orders = item_orders.filter(
@@ -97,13 +96,8 @@ def all_report():
     default_quarter = ""
     for year in range(start_year, now_year + 1):
         quarter_dates = get_quarter_of_year(year)
-        print(f"ปีงบประมาณ {year + 1}")
         count = 0
         for start_date, end_date in quarter_dates:
-            count += 1
-            print(
-                f"ปี {year+543+1} ไตรมาสที่ {count}: {start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}"
-            )
             quarter_choices.append(
                 (
                     f"{year}_{count}",
@@ -134,9 +128,6 @@ def all_report():
         if form.item.data:
             item = models.Item.objects(id=form.item.data).first()
         year, quarter = str(form.quarter.data).split("_")
-        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
-        print(start_date + datetime.timedelta(days=1))
-        print(end_date + datetime.timedelta(days=2))
         items_snapshot = models.ItemSnapshot.objects(
             Q(created_date__gte=start_date + datetime.timedelta(days=1))
             & Q(created_date__lt=end_date + datetime.timedelta(days=2))
@@ -147,7 +138,6 @@ def all_report():
         elif category:
             items = models.Item.objects(categories=category, status="active")
             items_snapshot = [i for i in items_snapshot if i.item in items]
-        print(form.errors)
         return render_template(
             "/dashboard/all_report.html",
             organization=organization,
@@ -223,13 +213,8 @@ def item_report_quarter():
     default_quarter = ""
     for year in range(start_year, now_year + 1):
         quarter_dates = get_quarter_of_year(year)
-        print(f"ปีงบประมาณ {year + 1}")
         count = 0
         for start_date, end_date in quarter_dates:
-            count += 1
-            print(
-                f"ปี {year+543+1} ไตรมาสที่ {count}: {start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}"
-            )
             quarter_choices.append(
                 (
                     f"{year}_{count}",
@@ -254,7 +239,6 @@ def item_report_quarter():
             except:
                 pass
         year, quarter = str(form.quarter.data).split("_")
-        print(quarter)
         start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
 
         item_snapshot = (
@@ -316,7 +300,6 @@ def item_report_quarter():
 
             list_data.append((row, amount_item))
 
-        print(form.errors)
         return render_template(
             "/dashboard/item_report_quarter.html",
             organization=organization,
@@ -433,7 +416,6 @@ def item_report_custom():
 
             list_data.append((row, amount_item))
 
-        print(form.errors)
         return render_template(
             "/dashboard/item_report_custom.html",
             organization=organization,
@@ -555,13 +537,8 @@ def dashboard_chart():
     default_quarter = ""
     for year in range(start_year, now_year + 1):
         quarter_dates = get_quarter_of_year(year)
-        print(f"ปีงบประมาณ {year + 1}")
         count = 0
         for start_date, end_date in quarter_dates:
-            count += 1
-            print(
-                f"ปี {year+543+1} ไตรมาสที่ {count}: {start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}"
-            )
             quarter_choices.append(
                 (
                     f"{year}_{count}",
@@ -611,7 +588,6 @@ def dashboard_chart():
             outgoing.append(checkouts)
             incoming.append(inventories)
 
-        print(form.errors)
         pipeline = [
             {
                 "$lookup": {

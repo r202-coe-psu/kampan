@@ -107,7 +107,6 @@ def get_all_report(items_snapshot, organization, search_quarter):
         )
         count += 1
     df = pandas.DataFrame(data)
-    print(description_data)
     description = pandas.DataFrame(description_data)
 
     excel_output = BytesIO()

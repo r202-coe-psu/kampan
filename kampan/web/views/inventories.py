@@ -96,7 +96,6 @@ def register():
     items = models.Item.objects(status="active")
     if item_register.get_item_in_bill():
         items = items.filter(id__nin=item_register.get_item_in_bill())
-        # print(item_register.get_item_in_bill())
 
     if items:
         form.item.choices = [
@@ -104,7 +103,6 @@ def register():
         ]
     if not form.validate_on_submit():
 
-        print(form.errors)
         return render_template(
             "/inventories/register.html",
             form=form,
@@ -165,7 +163,6 @@ def edit(inventory_id):
     if not form.validate_on_submit():
         if inventory:
             form.warehouse.data = str(inventory.warehouse.id)
-        print(form.errors)
         return render_template(
             "/inventories/register.html",
             item_register=item_register,
@@ -262,7 +259,6 @@ def upload_file_inventory_info(item_register_id):
     errors = request.args.get("errors")
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/inventories/upload_file.html",
             form=form,
@@ -290,7 +286,6 @@ def upload_file_inventory_info(item_register_id):
         inventory_engagement_file.organization = organization
         inventory_engagement_file.registration = item_register
         inventory_engagement_file.save()
-        # print(inventory_engagement_file.file)
     if inventory_engagement_file:
         errors = utils.inventories.validate_upload_inventory_engagement(
             inventory_engagement_file.file, organization

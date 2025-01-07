@@ -46,7 +46,6 @@ def upload_file():
         "errors": errors,
     }
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/suppliers/upload_file.html",
             organization=organization,
@@ -102,7 +101,6 @@ def add():
     supplier = models.Supplier()
     form = forms.suppliers.SupplierForm()
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/suppliers/add.html",
             form=form,

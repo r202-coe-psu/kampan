@@ -67,14 +67,12 @@ def register():
     items = models.Item.objects(status="active")
     if item_register.get_item_in_bill():
         items = items.filter(id__nin=item_register.get_item_in_bill())
-        # print(item_register.get_item_in_bill())
 
     if items:
         form.item.choices = [
             (item.id, f"{item.barcode_id} ({item.name})") for item in items
         ]
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/admin/inventories/register.html",
             form=form,

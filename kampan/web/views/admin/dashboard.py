@@ -40,7 +40,6 @@ def daily_dashboard():
 
     if form.start_date.data != None:
         today = form.start_date.data
-    # print(today)
     item_orders = models.OrderItem.objects(status="active")
 
     daily_item_orders = item_orders.filter(
@@ -86,14 +85,12 @@ def monthly_dashboard():
 
     today = datetime.datetime.today().date().replace(day=1)
     if form.validate_on_submit():
-        print(form.errors)
         if form.month_year.data != None:
             today = form.month_year.data
 
     days_month = lambda dt: monthrange(dt.year, dt.month)[1]
     next_time = today + datetime.timedelta(days_month(today))
 
-    # print(today, next_time)
     monthly_item_orders = models.OrderItem.objects(
         status="active",
         created_date__gte=today,
@@ -101,10 +98,7 @@ def monthly_dashboard():
     )
 
     days_month_categories = list(range(1, days_month(today) + 1))
-    print(
-        datetime.datetime.combine(today, datetime.datetime.min.time()),
-        datetime.datetime.combine(next_time, datetime.datetime.min.time()),
-    )
+
     pipeline_approved_checkout_items = [
         {
             "$match": {
@@ -158,7 +152,6 @@ def monthly_dashboard():
         "ธันวาคม",
     ]
     this_month = months[today.month - 1] + " " + str(today.year)
-    print(this_month)
     return render_template(
         "/admin/dashboard/monthly_dashboard.html",
         trend_checkout_items=trend_checkout_items,
@@ -178,7 +171,6 @@ def yearly_dashboard():
 
     today = datetime.datetime.today().date().replace(month=1, day=1)
     if form.validate_on_submit():
-        print(form.errors)
         if form.year.data != None:
             year = form.year.data
             today = today.replace(year=year)

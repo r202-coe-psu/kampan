@@ -85,7 +85,6 @@ def order():
     ).first()
     if member:
         division = member.division
-        print(division)
     if organization.get_organization_users():
         form.head_endorser.choices = [
             (str(org_user.user.id), org_user.user.get_name())
@@ -100,7 +99,6 @@ def order():
             if ("admin" in org_user.roles) and org_user.user
         ]
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/item_orders/order.html", form=form, organization=organization
         )
@@ -153,7 +151,6 @@ def edit(order_id):
         if ("admin" in org_user.roles) and org_user.user
     ]
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/item_orders/order.html", form=form, organization=organization
         )

@@ -63,7 +63,6 @@ def index():
         if categories:
             form.categories.data = categories
             items = items.filter(categories=form.categories.data)
-        # print(form.data)
 
         page = request.args.get("page", default=1, type=int)
         try:
@@ -104,7 +103,6 @@ def upload_file():
     errors = request.args.get("errors")
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/items/upload_file.html",
             organization=organization,
@@ -152,7 +150,6 @@ def upload_edit():
     errors = request.args.get("errors")
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/items/upload_edit_file.html",
             organization=organization,
@@ -201,7 +198,6 @@ def upload_delete():
     errors = request.args.get("errors")
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/items/upload_delete_file.html",
             organization=organization,
@@ -331,7 +327,6 @@ def add():
         )
     ]
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/items/add_or_edit.html",
             form=form,
@@ -341,7 +336,6 @@ def add():
     item = models.Item(
         created_by=current_user._get_current_object(),
     )
-    # print("->", form.categories.data)
     form.populate_obj(item)
 
     if form.img.data:
@@ -392,7 +386,6 @@ def edit(item_id):
     if not form.validate_on_submit():
         if item.categories:
             form.categories.data = str(item.categories.id)
-        print(form.errors)
         return render_template(
             "/items/add_or_edit.html",
             form=form,
@@ -413,7 +406,6 @@ def edit(item_id):
                 filename=form.img.data.filename,
                 content_type=form.img.data.content_type,
             )
-    # print("=======>", form.item_format.data)
     form.populate_obj(item)
     if form.item_format.data == "one to one":
         item.item_format == "one to one"

@@ -56,7 +56,6 @@ def approved_detail(order_id):
 
     form = forms.item_orders.get_approved_amount_form(items)
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/admin/approve_orders/approve_detail.html",
             form=form,

@@ -138,7 +138,6 @@ def catalogs(order_id):
         if categories:
             form.categories.data = categories
             items = items.filter(categories=form.categories.data)
-        # print(form.data)
 
         page = request.args.get("page", default=1, type=int)
         try:
@@ -186,7 +185,6 @@ def checkout():
     items = models.Item.objects(status="active")
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
-        # print(item_register.get_item_in_bill())
 
     if items:
         form.item.choices = [
@@ -211,7 +209,6 @@ def checkout():
         ]
     item_id = request.args.get("item_id")
     if not form.validate_on_submit():
-        print(form.errors)
         if item_id:
             form.item.data = item_id
         return render_template(
@@ -280,7 +277,6 @@ def edit(checkout_item_id):
         items = list(items)
         if checkout_item.item:
             items.append(models.Item.objects(id=checkout_item.item.id).first())
-            # print(items)
     if items:
         form.item.choices = [
             (

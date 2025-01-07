@@ -56,7 +56,6 @@ def index():
         paginated_lost_break_items = Pagination(
             lost_break_items, page=page, per_page=30
         )
-        print(form.errors)
         return render_template(
             "/lost_breaks/index.html",
             paginated_lost_break_items=paginated_lost_break_items,
@@ -106,7 +105,6 @@ def add():
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    # print("--->", quantity, item.get_amount_pieces())
     if quantity > item.get_amount_pieces():
         return redirect(
             url_for(
@@ -188,7 +186,6 @@ def edit(lost_break_item_id):
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    # print("--->", quantity, item.get_amount_pieces())
     if quantity > item.get_amount_pieces():
         return redirect(
             url_for(

@@ -16,7 +16,6 @@ def edit(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.organizations.OrganizationForm(obj=organization)
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/organizations/create_or_edit.html",
             form=form,
@@ -65,7 +64,6 @@ def add_member(organization_id):
         ]
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/organizations/add_member.html",
             form=form,
@@ -165,7 +163,6 @@ def edit_roles(organization_id, org_user_id):
     form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/organizations/edit_roles.html",
             form=form,
@@ -239,7 +236,6 @@ def upload_member_file(organization_id):
     errors = request.args.get("errors")
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/organizations/upload_member_file.html",
             organization=organization,

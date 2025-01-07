@@ -21,5 +21,3 @@ def get_data_item_report(start_date, end_date, item, organization):
         & Q(item=item)
         & Q(organization=organization)
     ).aggregate(pipeline)
-    for i in item_snapshot:
-        print(i)

@@ -39,7 +39,6 @@ def create_or_edit(category_id):
         if category:
             form.name.data = category.name
             form.description.data = category.description
-        print(form.errors)
         return render_template(
             "/categories/create_or_edit.html",
             form=form,

@@ -80,7 +80,6 @@ def create_or_edit(division_id):
         division = models.Division.objects(id=division_id, status="active").first()
         form = forms.divisions.DivisionForm(obj=division)
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/divisions/create_or_edit.html",
             form=form,
@@ -149,7 +148,6 @@ def add_member(division_id):
         ]
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/divisions/add_member.html",
             form=form,

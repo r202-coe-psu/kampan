@@ -45,7 +45,6 @@ def add_or_edit(warehouse_id):
         form = forms.warehouses.WarehouseForm(obj=warehouse)
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/warehouses/add-edit.html",
             form=form,
