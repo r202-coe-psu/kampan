@@ -4,6 +4,7 @@ import json
 from kampan import models
 import datetime
 from . import item_snapshot
+from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
@@ -29,28 +30,34 @@ class ControllerServer:
         items = models.Item.objects(status="active")
 
         while self.running:
-            logger.debug("start check item data daily")
+            try:
+                logger.debug("Start checking item data monthly")
 
-            today = datetime.date.today()
-            next_month = today.replace(month=today.month % 12 + 1, day=1)
-            time_set = datetime.datetime.combine(next_month, process_time)
-            logger.debug(f"Next day {time_set}")
-            time_to_check = time_set - datetime.datetime.now()
-            logger.debug(f"Sleep {time_to_check.total_seconds()} seconds")
+                today = datetime.date.today()
+                next_month = today + relativedelta(months=1)
+                next_month_start = next_month.replace(day=1)
+                time_set = datetime.datetime.combine(next_month_start, process_time)
 
-            await asyncio.sleep(time_to_check.total_seconds())
+                time_to_check = (time_set - datetime.datetime.now()).total_seconds()
+                if time_to_check > 0:
+                    logger.debug(
+                        f"Sleeping for {time_to_check} seconds until {time_set}"
+                    )
+                    await asyncio.sleep(time_to_check)
 
-            items = models.Item.objects(status="active")
-            for item in items:
-                data = {
-                    "action": "process",
-                    "type": "submit",
-                    "item_id": str(item.id),
-                }
-                await self.item_queue.put(data)
-                await asyncio.sleep(0.01)
-            self.quarter += 1
-            await asyncio.sleep(10)
+                items = models.Item.objects(status="active")
+                for item in items:
+                    data = {
+                        "action": "process",
+                        "type": "submit",
+                        "item_id": str(item.id),
+                    }
+                    await self.item_queue.put(data)
+                    await asyncio.sleep(0.01)
+
+                self.quarter += 1
+            except Exception as e:
+                logger.error(f"Error in check_items_daily: {e}")
 
     async def process_item_queue(self):
         logger.debug("start process item queue")
@@ -70,6 +77,7 @@ class ControllerServer:
             datefmt="%d-%b-%y %H:%M:%S",
             level=logging.DEBUG,
         )
+        logging.getLogger("pymongo").setLevel(logging.WARNING)
 
     def run(self):
         self.running = True
