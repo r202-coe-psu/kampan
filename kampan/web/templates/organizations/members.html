@@ -7,24 +7,47 @@
 {% block dashboard_title %}สมาชิกขององค์กร{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
-  เพิ่มสมาชิก
-</a>
-<a class="ui primary button" href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
-  เพิ่มสมาชิกแบบหลายรายการ
-</a>
+
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  <div class="ui form">
-    <div class="ui grid">
-      <div class="four wide column">{{ render_field.SelectField(form.user) }}</div>
-      <div class="four wide column">{{ render_field.SelectField(form.role) }}</div>
-      <div class="four wide column">{{ render_field.DateField(form.start_date) }}</div>
-      <div class="four wide column">{{ render_field.DateField(form.end_date) }}</div>
-      <div class="right floated four wide column"><button type="submit" class="right floated ui primary button">
-          ยืนยัน</button></div>
+
+<div class="ui secondary menu">
+  <div class="right menu">
+    <div class="ui dropdown button labeled icon">
+      <i class="wrench icon"></i>
+      การจัดการ
+      <div class="menu" style=" flex-direction: column !important;">
+        <a class="item" style="width: 100%;"
+          href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
+          <span class="ui primary text">
+            <i class="plus circle icon"></i>
+            เพิ่มสมาชิก
+          </span>
+        </a>
+        <a class="item" style="width: 100%;"
+          href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
+          <span class="ui primary text">
+            <i class="file upload icon"></i>
+            เพิ่มสมาชิกแบบหลายรายการ
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
+    {{ render_field.SelectField(form.user) }}
+    {{ render_field.SelectField(form.role) }}
+    {{ render_field.DateField(form.start_date) }}
+    {{ render_field.DateField(form.end_date) }}
+  </div>
+
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
     </div>
   </div>
 </form>
@@ -117,7 +140,7 @@
 {% endif %}
 
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
 {% endif %}
 {% endblock %}
 

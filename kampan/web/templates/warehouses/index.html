@@ -3,18 +3,20 @@
 
 {% block title %}คลังวัสดุ{% endblock %}
 {% block dashboard_title %}คลังวัสดุ{% endblock %}
+
 {% block breadcrumbs %}
-{% if request.endpoint == 'warehouses.index' %}
-<a class="ui primary button" href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
-  เพิ่มคลังวัสดุ
-</a>
-{% else %}
-<a class="section" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">คลังวัสดุ</a>
-<div class="divider"> / </div>
-{% endif %}
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary button labeled icon"
+      href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มคลังวัสดุ
+    </a>
+  </div>
+</div>
 {% if warehouses %}
 <div class="ui four cards">
   {% for warehouse in paginated_warehouses.items %}
@@ -92,7 +94,7 @@
   {% endif %}
 </div>
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock %}
 

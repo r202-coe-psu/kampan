@@ -2,19 +2,31 @@
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated%}
 
+
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}ส่งออกข้อมูลวัสดุ{% endblock %}
+
 {% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("วัสดุทั้งหมด", url_for("items.index", organization_id=organization.id)),
+("ส่งออกข้อมูลวัสดุ", "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary" style="padding-bottom: 10px;">
+  <div class="left menu">
+    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     {{ renderer.render_select(form.status) }}
     {{ renderer.render_search_multiple_select(form.categories) }}
     <button class="ui primary button" type="submit">ดาวน์โหลด</button>
-
   </form>
 </div>
 {% endblock %}

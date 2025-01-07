@@ -10,12 +10,20 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้าทั้งหมด</a>
-<i class="right angle icon divider"></i>
-<div class="active section">ลงทะเบียนร้านค้า</div>
+{{ RenderBreadcrumb([
+("ร้านค้าทั้งหมด", url_for('suppliers.index', organization_id=organization.id) ),
+("ลงทะเบียนร้านค้า "if 'edit' in request.path else 'เพิ่มร้านค้า', "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
 

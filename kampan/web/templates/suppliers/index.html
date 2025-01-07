@@ -5,18 +5,33 @@
 {% block dashboard_title %}ร้านค้า{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
-  <i class="plus circle icon"></i>
-  เพิ่มร้านค้า
-</a>
-<a class="ui primary button" href="{{ url_for('suppliers.upload_file', organization_id=organization.id) }}">
-  <i class="file upload icon"></i>
-  ลงทะเบียนร้านค้าแบบหลายรายการ
-</a>
+
 {% endblock %}
 
 {% block content %}
-
+<div class="ui secondary menu">
+  <div class="right menu">
+    <div class="ui dropdown button labeled icon">
+      <i class="wrench icon"></i>
+      การจัดการ
+      <div class="menu" style=" flex-direction: column !important;">
+        <a class="item" style="width: 100%;" href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
+          <span class="ui primary text">
+            <i class="plus circle icon"></i>
+            เพิ่มร้านค้า
+          </span>
+        </a>
+        <a class="item" style="width: 100%;"
+          href="{{ url_for('suppliers.upload_file', organization_id=organization.id) }}">
+          <span class="ui primary text">
+            <i class="file upload icon"></i>
+            ลงทะเบียนร้านค้าแบบหลายรายการ
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 {% if suppliers %}
 <div class="ui four cards">
   {% for supplier in paginated_suppliers.items %}
@@ -105,7 +120,7 @@
 
 
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 {% endblock %}

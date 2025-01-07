@@ -6,37 +6,43 @@
 {% endblock %}
 
 {% block dashboard_title %}
-หัวหน้าฝ่ายบริหารจัดการอนุมัติคำสั่งเบิกวัสดุ
+หัวหน้าแผนกอนุมัติคำสั่งเบิกวัสดุ
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id=organization.id) }}">
-  คำสั่งเบิกวัสดุ </a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  อนุมัติคำสั่งเบิกวัสดุ
-</div>
+{{ RenderBreadcrumb([
+("คำสั่งเบิกวัสดุ", url_for('approve_orders.endorser_index', organization_id=organization.id) ),
+('อนุมัติคำสั่งเบิกวัสดุ', "")]) }}
 {% endblock %}
 
 
 
 {% block content %}
-{% if checkouts %}
-
-{% if order.status=="pending on supervisor supplier" %}
-<div class="ui secondary menu">
-  <p style="margin-left:auto;">
-    <a class="ui positive button"
-      href="{{ url_for('approve_orders.supervisor_supplier_approve_page',order_id=order.id, organization_id=organization.id)}}"
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{url_for('approve_orders.endorser_index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+  {% if order.status=="pending" and checkouts %}
+  <div class="right menu">
+    <a class="ui positive button" onclick="showModal('approve')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
     <a class="ui negative button" onclick="showModal('denied')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="times icon"></i>ไม่อนุมัติการเบิกวัสดุ</a>
-  </p>
-
+  </div>
+  {% endif %}
 </div>
-<div class="ui modal denied">
+{% if checkouts %}
+
+{% if order.status=="pending" %}
+<form action="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
+  class="ui modal denied">
+
   <div class="header">
     <span class="ui text red">
       ปฏิเสธคำสั่งเบิกวัสดุ
@@ -46,19 +52,49 @@
     <p>ต้องการปฏิเสธคำสั่งเบิกวัสดุ
       <b>{{ order.description }}</b>
     </p>
+    <div class="ui form">
+      <div class="field">
+        <label for="reason">เหตุผล</label>
+        <input type="text" id="reason" name="reason">
+        <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
+          style="display: none;">
+      </div>
+    </div>
+
+  </div>
+  <div class="actions">
+    <button class="ui black deny button" type="button">
+      ยกเลิก
+    </button>
+    <button class="ui negative right labeled icon button" type="submit">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </button>
+  </div>
+</form>
+
+<div class="ui modal approve">
+  <div class="header">
+    <span class="ui text green">
+      อนุมัติการเบิกวัสดุ
+    </span>
+  </div>
+  <div class="content">
+    <p>ต้องการอนุมัติการเบิกวัสดุ
+      <b>{{ order.description }}</b>
+    </p>
   </div>
   <div class="actions">
     <button class="ui black deny button">
       ยกเลิก
     </button>
-    <a class="ui negative right labeled icon button"
-      href="{{ url_for('approve_orders.supervisor_supplier_denied',order_id=order.id, organization_id=organization.id)}}">
+    <a class="ui positive right labeled icon button"
+      href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}">
       ยืนยัน
       <i class="checkmark icon"></i>
     </a>
   </div>
 </div>
-
 {% endif %}
 
 <div style="padding-bottom: 1em ;">
@@ -123,7 +159,7 @@
   {% endif %}
 </div>
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 {% endblock %}

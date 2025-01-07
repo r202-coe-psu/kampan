@@ -13,18 +13,20 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<i class="right angle icon divider"></i>
-<div class="active section">
-  {% if 'edit' in request.path %}
-  แก้ไขข้อมูลวัสดุ
-  {% else %}
-  เพิ่มข้อมูลวัสดุ
-  {% endif %}
-</div>
+{{ RenderBreadcrumb([
+("นำเข้าวัสดุ", url_for("item_registers.index", organization_id=organization.id)),
+('แก้ไขข้อมูลวัสดุ' if 'edit' in request.path else 'เพิ่มข้อมูลวัสดุ' , "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}

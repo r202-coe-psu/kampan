@@ -5,13 +5,24 @@
 {% block dashboard_title %}นำวัสดุออก{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกวัสดุ</a> /
-<div class="active section">นำวัสดุออก</div>
+{{ RenderBreadcrumb([
+("คำสั่งเบิกวัสดุ", url_for('item_orders.index', organization_id=organization.id) ),
+("รายการวัสดุทั้งหมด", url_for('item_checkouts.catalogs',order_id=order.id, organization_id=organization.id) ),
+('นำวัสดุออก' , "")]) }}
 {% endblock %}
 
 
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{ url_for('item_checkouts.catalogs',order_id=order.id, organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
 

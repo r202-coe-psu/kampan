@@ -4,7 +4,7 @@
 {% block title %}
 
 {% if 'edit' in request.path %}
-แก้ไขรูปแบบรายอีเมล
+แก้ไขรูปแบบอีเมล
 {% else %}
 เพิ่มรูปแบบอีเมล
 {% endif %}
@@ -16,22 +16,9 @@
 
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('email_templates.index', organization_id=organization.id)}}">
-  รูปแบบอีเมลทั้งหมด </a>
-<i class="right angle icon divider"></i>
-{% if not email_template %}
-<div class="active section">
-  {{ self.title() }}
-</div>
-{% else %}
-<a class="section"
-  href="{{ url_for('email_templates.detail',email_template_id=email_template.id, organization_id=organization.id)}}">
-  {{ email_template.name }} </a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  {{ self.title() }}
-</div>
-{% endif %}
+{{ RenderBreadcrumb([
+("รูปแบบอีเมลทั้งหมด", url_for('email_templates.index', organization_id=organization.id) ),
+('แก้ไขรูปแบบอีเมล' if 'edit' in request.path else 'เพิ่มรูปแบบอีเมล', "")]) }}
 {% endblock %}
 
 {% block content %}
@@ -59,7 +46,14 @@
   </div>
 </div>
 #}
-
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div class="ui horizontal equal width raised segments">
   <div class="ui clearing segment" style="width: 100vw">
     <div class="email-template create-edit">
@@ -83,7 +77,7 @@
     </div>
   </div>
 
-  <div class="ui info message segment">
+  <div class="ui message segment">
     <div class="ui compact header">
       รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
     </div>

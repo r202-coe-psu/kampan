@@ -93,6 +93,83 @@ def index():
     )
 
 
+@module.route("/order/<order_id>/catalogs", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "supervisor supplier")
+def catalogs(order_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    order = models.OrderItem.objects(id=order_id).first()
+    form = forms.items.SearchItemForm()
+
+    items = models.Item.objects(
+        status__in=["active"], organization=organization
+    ).order_by("status", "-created_date")
+
+    form.item.choices = [("", "เลือกวัสดุ")] + [
+        (
+            str(item.id),
+            f"{item.name} " + (f"({item.barcode_id}) " if item.barcode_id else ""),
+        )
+        for item in items
+    ]
+
+    form.categories.choices = [("", "หมวดหมู่")] + [
+        (str(category.id), category.name)
+        for category in models.Category.objects(
+            organization=organization, status="active"
+        )
+    ]
+    if not form.validate_on_submit():
+
+        item_name = request.args.get("item_name")
+        if item_name:
+            form.item_name.data = item_name
+            items = items.filter(name__icontains=form.item_name.data)
+
+        item_select_id = request.args.get("item_select_id")
+        if item_select_id:
+            form.item.data = item_select_id
+            items = items.filter(id=form.item.data)
+
+        categories = request.args.get("categories")
+
+        if categories:
+            form.categories.data = categories
+            items = items.filter(categories=form.categories.data)
+        # print(form.data)
+
+        page = request.args.get("page", default=1, type=int)
+        try:
+            paginated_items = Pagination(items, page=page, per_page=24)
+        except:
+            paginated_items = Pagination(items, page=1, per_page=24)
+
+        return render_template(
+            "/item_checkouts/catalogs.html",
+            paginated_items=paginated_items,
+            items=items,
+            form=form,
+            organization=organization,
+            order=order,
+        )
+    item_name = form.item_name.data
+    item_select_id = form.item.data
+    categories = form.categories.data
+    organization_id = organization.id
+    return redirect(
+        url_for(
+            "item_checkouts.catalogs",
+            organization_id=organization_id,
+            item_name=item_name,
+            categories=categories,
+            item_select_id=item_select_id,
+            order_id=order_id,
+        )
+    )
+
+
 @module.route("/checkout", methods=["GET", "POST"])
 @acl.organization_roles_required(
     "admin", "endorser", "staff", "head", "supervisor supplier"
@@ -116,7 +193,7 @@ def checkout():
             (
                 item.id,
                 (
-                    f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()})"
+                    f"{item.barcode_id} {item.name} (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (
                         f" ({item.set_unit} {item.piece_unit}ละ {item.piece_per_set})"
                         if item.piece_per_set > 1
@@ -132,11 +209,16 @@ def checkout():
             )
             for item in items
         ]
+    item_id = request.args.get("item_id")
     if not form.validate_on_submit():
         print(form.errors)
-
+        if item_id:
+            form.item.data = item_id
         return render_template(
-            "/item_checkouts/checkout.html", form=form, organization=organization
+            "/item_checkouts/checkout.html",
+            form=form,
+            order=order,
+            organization=organization,
         )
     item = models.Item.objects(id=form.item.data).first()
     checkout_item = models.CheckoutItem()

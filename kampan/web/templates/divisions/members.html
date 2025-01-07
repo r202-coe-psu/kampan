@@ -1,21 +1,50 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
+{% import '/base/components/forms.html' as render_form %}
 
 {% block title %}สมาชิกของแผนก{% endblock %}
 
 {% block dashboard_title %}สมาชิกของแผนก{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button"
-  href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
-  เพิ่มสมาชิก
-</a>
+{{ RenderBreadcrumb([
+("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+('สมาชิกของแผนก' + division.name, "")]) }}
+
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  {{ renderer.render_default_search_user(form) }}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มสมาชิก
+    </a>
+  </div>
+</div>
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
+
+    {{form.hidden_tag()}}
+    {{render_form.SelectField(form.user)}}
+    {{render_form.SelectField(form.role)}}
+    {{render_form.RangeDateField(form.start_date, form.end_date)}}
+  </div>
+
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
+    </div>
+  </div>
+
 
   {% if paginated_division_users.pages >= 1 %}
   <div style="padding-bottom: 1em ;">
@@ -83,7 +112,7 @@
     {% endif %}
   </div>
   {% else %}
-  <div class="ui info message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+  <div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
   {% endif %}
 </form>
 {% endblock %}

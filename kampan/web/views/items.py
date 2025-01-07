@@ -47,7 +47,6 @@ def index():
         )
     ]
     if not form.validate_on_submit():
-        print(form.errors)
 
         item_name = request.args.get("item_name")
         if item_name:

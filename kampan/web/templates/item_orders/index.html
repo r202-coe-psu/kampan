@@ -1,28 +1,40 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
+{% import '/base/components/forms.html' as render_form %}
 
 {% block title %}คำสั่งเบิกวัสดุ{% endblock %}
 {% block dashboard_title %}คำสั่งเบิกวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 
-{% if request.endpoint == 'item_orders.index' %}
-<a class="ui left primary button" href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
-  เพิ่มคำสั่งเบิก
-</a>
-{% else %}
-<a class="section" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">คำสั่งเบิกวัสดุ</a>
-{% endif %}
-
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มคำสั่งเบิก
+    </a>
+  </div>
+</div>
 
 
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
 
-<form method="post">
-  {{ renderer.render_default_search_order(form) }}
+    {{form.hidden_tag()}}
+    {{render_form.SelectField(form.item)}}
+    {{render_form.RangeDateField(form.start_date, form.end_date)}}
+  </div>
+
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
+    </div>
+  </div>
   {% if orders %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
@@ -33,6 +45,7 @@
           <th>ชื่อผู้ใช้งาน</th>
           <th>รายการวัสดุ</th>
           <th>สถานะ</th>
+          <th>เหตุผล</th>
           <th>นัดรับ ณ วันที่</th>
           <th>จัดการ</th>
 
@@ -71,6 +84,9 @@
           </td>
           {% endif %}
           <td>
+            {{ order.denied_reason }}
+          </td>
+          <td>
             {{ order.sent_item_date.strftime("%d/%m/%Y %H:%M")
             if order.sent_item_date else "" }}
           </td>
@@ -80,7 +96,7 @@
             %}
             <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               data-tooltip="เบิกวัสดุ"
-              href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
+              href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
               <i class="plus icon"></i>
             </a>
             {% endif %}
@@ -130,7 +146,7 @@
     {% endif %}
   </div>
   {% else %}
-  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
   {% endif %}
 </form>
 {% endblock %}

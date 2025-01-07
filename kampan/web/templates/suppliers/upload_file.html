@@ -2,7 +2,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-เพิ่มร้านค้า
+ลงทะเบียนร้านค้าแบบหลายรายการ
 {% endblock %}
 
 {% block dashboard_title %}
@@ -10,9 +10,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">ร้านค้าทั้งหมด</a>
-<i class="right angle icon divider"></i>
-<div class="active section">ลงทะเบียนร้านค้า</div>
+{{ RenderBreadcrumb([
+("ร้านค้าทั้งหมด", url_for('suppliers.index', organization_id=organization.id) ),
+("ลงทะเบียนร้านค้าแบบหลายรายการ ", "")]) }}
 {% endblock %}
 
 {% block content %}
@@ -34,8 +34,14 @@
   </div>
 </div>
 {% endif %}
-<div class="ui secondary menu">
-  <div class="right item">
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('suppliers.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+  <div class="right menu">
     <a class="ui primary button"
       href="{{ url_for('suppliers.download_template_suppliers_file', organization_id=organization.id) }}">
       <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนร้านค้า</a>

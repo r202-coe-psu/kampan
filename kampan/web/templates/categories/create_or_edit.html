@@ -13,12 +13,20 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('categories.index', organization_id=organization.id) }}">หมวดหมู่</a>
-<div class="divider"> / </div>
-<div class="active section">เพิ่มหมวดหมู่</div>
+{{ RenderBreadcrumb([
+("หมวดหมู่", url_for("categories.index", organization_id=organization.id)),
+('แก้ไขหมวดหมู่' if 'edit' in request.path else 'เพิ่มหมวดหมู่', "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('categories.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
 

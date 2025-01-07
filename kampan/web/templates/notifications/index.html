@@ -17,14 +17,13 @@
 
 
 {% block content %}
-<p>
-  {% if notifications %}
+{% if notifications %}
 <div class="ui four cards">
   {% for item in paginated_notifications.items %}
   <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
     <div class="content" style="flex: 2; background-color: rgb(255, 192, 192);">
       <div class="header" style="font-size: 1.5rem;">
-        <snap style="padding-right: 5px;">{{ item.name }}</snap>
+        <div style="padding-right: 5px;">{{ item.name }}</div>
       </div>
       <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
         <div class="details">
@@ -69,20 +68,24 @@
     </div>
   </div>
   {% endfor %}
-  {% if paginated_notifications.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_notifications,"notifications.index")}}
-      </div>
+
+</div>
+{% set params=dict(request.args) %}
+{% if 'page' in params %}
+{% set _dummy=params.pop('page') %}
+{% endif %}
+{% if paginated_notifications %}
+<div class="ui grid">
+  <div class="column row">
+    <div class="center aligned column">
+      {{ paginated.render_pagination(paginated_notifications, "notifications.index", params) }}
     </div>
   </div>
-  {% endif %}
 </div>
-{% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
-</p>
+{% else %}
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 <style>
   .card {
     border-radius: 10px;

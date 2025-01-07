@@ -6,6 +6,7 @@ from flask_mongoengine import Pagination
 from kampan.web import forms, acl
 from kampan import models
 import mongoengine as me
+import datetime
 
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
@@ -18,33 +19,62 @@ def index():
         id=organization_id, status="active"
     ).first()
     lost_break_items = models.LostBreakItem.objects(status="active")
-    form = forms.inventories.SearchStartEndDateForm()
-    if form.start_date.data == None and form.end_date.data != None:
-        lost_break_items = lost_break_items.filter(
-            created_date__lt=form.end_date.data,
-        )
+    form = forms.lost_break.SearchLostBreakForm()
+    if not form.validate_on_submit():
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        if start_date:
+            start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+            form.start_date.data = start_date
+        if end_date:
+            end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+            form.end_date.data = end_date
 
-    elif form.start_date.data and form.end_date.data == None:
-        lost_break_items = lost_break_items.filter(
-            created_date__gte=form.start_date.data,
-        )
+        name = request.args.get("name")
+        if name:
+            form.name.data = name
+            items = models.Item.objects(name__icontains=name)
+            lost_break_items = lost_break_items.filter(item__in=items)
+        if form.start_date.data == None and form.end_date.data != None:
+            lost_break_items = lost_break_items.filter(
+                created_date__lt=form.end_date.data,
+            )
 
-    elif form.start_date.data != None and form.end_date.data != None:
-        lost_break_items = lost_break_items.filter(
-            created_date__gte=form.start_date.data,
-            created_date__lt=form.end_date.data,
-        )
-    page = request.args.get("page", default=1, type=int)
-    if form.start_date.data or form.end_date.data:
-        page = 1
-    paginated_lost_break_items = Pagination(lost_break_items, page=page, per_page=30)
+        elif form.start_date.data and form.end_date.data == None:
+            lost_break_items = lost_break_items.filter(
+                created_date__gte=form.start_date.data,
+            )
 
-    return render_template(
-        "/lost_breaks/index.html",
-        paginated_lost_break_items=paginated_lost_break_items,
-        lost_break_items=lost_break_items,
-        form=form,
-        organization=organization,
+        elif form.start_date.data != None and form.end_date.data != None:
+            lost_break_items = lost_break_items.filter(
+                created_date__gte=form.start_date.data,
+                created_date__lt=form.end_date.data,
+            )
+        page = request.args.get("page", default=1, type=int)
+        if form.start_date.data or form.end_date.data:
+            page = 1
+        paginated_lost_break_items = Pagination(
+            lost_break_items, page=page, per_page=30
+        )
+        print(form.errors)
+        return render_template(
+            "/lost_breaks/index.html",
+            paginated_lost_break_items=paginated_lost_break_items,
+            lost_break_items=lost_break_items,
+            form=form,
+            organization=organization,
+        )
+    start_date = form.start_date.data
+    end_date = form.end_date.data
+    name = form.name.data
+    return redirect(
+        url_for(
+            "lost_breaks.index",
+            organization_id=organization_id,
+            start_date=start_date,
+            end_date=end_date,
+            name=name,
+        )
     )
 
 

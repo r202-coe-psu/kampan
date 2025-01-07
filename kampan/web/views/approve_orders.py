@@ -76,7 +76,7 @@ def endorser_index():
         page = 1
     paginated_orders = Pagination(orders, page=page, per_page=100)
     return render_template(
-        "/approve_orders/endorser_approve_index.html",
+        "/approve_orders/endorser/endorser_approve_index.html",
         paginated_orders=paginated_orders,
         form=form,
         orders=orders,
@@ -115,7 +115,7 @@ def endorser_approve(order_id):
     )
 
 
-@module.route("/<order_id>/endorser_denied", methods=["GET"])
+@module.route("/<order_id>/endorser_denied", methods=["GET", "POST"])
 @acl.organization_roles_required("head", "endorser")
 def endorser_denied(order_id):
     organization_id = request.args.get("organization_id")
@@ -123,6 +123,7 @@ def endorser_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
+    order.denied_reason = request.args.get("reason", default="", type=str)
     order.save()
 
     for checkout in checkout_items:
@@ -146,7 +147,7 @@ def endorser_approved_detail(order_id):
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
     return render_template(
-        "/approve_orders/endorser_approve_detail.html",
+        "/approve_orders/endorser/endorser_approve_detail.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         order=order,
@@ -192,7 +193,7 @@ def supervisor_supplier_index():
         page = 1
     paginated_orders = Pagination(orders, page=page, per_page=100)
     return render_template(
-        "/approve_orders/supervisor_supplier_approve_index.html",
+        "/approve_orders/supervisor_supplier/supervisor_supplier_approve_index.html",
         paginated_orders=paginated_orders,
         form=form,
         orders=orders,
@@ -215,7 +216,7 @@ def supervisor_supplier_approve(order_id):
     )
 
 
-@module.route("/<order_id>/supervisor_supplier_denied", methods=["GET"])
+@module.route("/<order_id>/supervisor_supplier_denied", methods=["GET", "POST"])
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_denied(order_id):
     organization_id = request.args.get("organization_id")
@@ -223,6 +224,8 @@ def supervisor_supplier_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
+    order.denied_reason = request.args.get("reason", default="", type=str)
+
     order.save()
 
     for checkout in checkout_items:
@@ -251,7 +254,7 @@ def supervisor_supplier_approved_detail(order_id):
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
     return render_template(
-        "/approve_orders/supervisor_supplier_approve_detail.html",
+        "/approve_orders/supervisor_supplier/supervisor_supplier_approve_detail.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         order=order,
@@ -280,7 +283,7 @@ def supervisor_supplier_approve_page(order_id):
             form.admin_approver.data = str(order.admin_approver.id)
         print(form.errors)
         return render_template(
-            "/approve_orders/supervisor_supplier_approve_page.html",
+            "/approve_orders/supervisor_supplier/supervisor_supplier_approve_page.html",
             order_id=order_id,
             form=form,
             order=order,
@@ -343,7 +346,7 @@ def admin_index():
         page = 1
     paginated_orders = Pagination(orders, page=page, per_page=100)
     return render_template(
-        "/approve_orders/admin_approve_index.html",
+        "/approve_orders/admin/admin_approve_index.html",
         paginated_orders=paginated_orders,
         form=form,
         orders=orders,
@@ -397,7 +400,7 @@ def admin_approve(order_id):
     )
 
 
-@module.route("/<order_id>/admin_denied", methods=["GET"])
+@module.route("/<order_id>/admin_denied", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def admin_denied(order_id):
     organization_id = request.args.get("organization_id")
@@ -405,6 +408,8 @@ def admin_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
+    order.denied_reason = request.args.get("reason", default="", type=str)
+
     order.save()
 
     for checkout in checkout_items:
@@ -431,7 +436,7 @@ def admin_approved_detail(order_id):
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
     return render_template(
-        "/approve_orders/admin_approve_detail.html",
+        "/approve_orders/admin/admin_approve_detail.html",
         paginated_checkouts=paginated_checkouts,
         order_id=order_id,
         order=order,
@@ -452,7 +457,7 @@ def admin_approve_page(order_id):
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/approve_orders/admin_approve_page.html",
+            "/approve_orders/admin/admin_approve_page.html",
             order_id=order_id,
             form=form,
             order=order,

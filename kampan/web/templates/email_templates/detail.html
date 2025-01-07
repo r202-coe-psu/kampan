@@ -13,27 +13,27 @@
 
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('email_templates.index', organization_id=organization.id)}}">
-  รูปแบบอีเมลทั้งหมด </a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  {{ email_template.name }}
-</div>
+{{ RenderBreadcrumb([
+("รูปแบบอีเมลทั้งหมด", url_for("email_templates.index", organization_id=organization.id)),
+(email_template.name, "")]) }}
 {% endblock %}
 
 
 {% block content %}
-
-<div class="ui segment">
-
-  {% if email_template %}
-  <a class="ui primary labeled icon button"
-    href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
-    <i class="edit icon"></i>
-    แก้ไขรูปแบบอีเมล
-  </a>
-
-  {% endif %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
+      <i class="edit icon"></i>
+      แก้ไขรูปแบบอีเมล
+    </a>
+  </div>
 </div>
 
 <div class="upload-email-template form" style="display: none;">
@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <div class="ui info message segment">
+  <div class="ui message segment">
     <div class="ui compact header">
       รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
     </div>

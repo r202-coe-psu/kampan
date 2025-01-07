@@ -1,4 +1,5 @@
 {% extends "/base/base-layout.html" %}
+{% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 
 {% block title %}
 {{ config.get('APP_TITLE') }} Dashboard
@@ -79,6 +80,12 @@
     .fixed.menu>.container {
       width: 100% !important;
     }
+  }
+
+  .navbarmenu {
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
   }
 </style>
 

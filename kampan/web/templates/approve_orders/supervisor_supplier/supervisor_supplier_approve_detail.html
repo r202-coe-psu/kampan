@@ -6,44 +6,45 @@
 {% endblock %}
 
 {% block dashboard_title %}
-เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก
+หัวหน้าฝ่ายบริหารจัดการอนุมัติคำสั่งเบิกวัสดุ
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('approve_orders.admin_index', organization_id=organization.id) }}">
-  คำสั่งเบิกวัสดุ </a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก
-</div>
+{{ RenderBreadcrumb([
+("คำสั่งเบิกวัสดุ", url_for('approve_orders.supervisor_supplier_index', organization_id=organization.id) ),
+('อนุมัติคำสั่งเบิกวัสดุ', "")]) }}
 {% endblock %}
 
 
-
 {% block content %}
-{% if checkouts %}
-{% if error_message %}
-<div class="ui negative message">
-  <div class="header">
-    จำนวนที่เลือกมากกว่าจำนวนวัสดุที่มี
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{url_for('approve_orders.supervisor_supplier_index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
   </div>
-</div>
-{% endif %}
-
-{% if order.status=="pending on admin" %}
-<div class="ui secondary menu">
-  <p style="margin-left:auto;">
+  {% if order.status=="pending on supervisor supplier" and checkouts %}
+  <div class="right menu">
     <a class="ui positive button"
-      href="{{ url_for('approve_orders.admin_approve_page',order_id=order.id, organization_id=organization.id)}}"
+      href="{{ url_for('approve_orders.supervisor_supplier_approve_page',order_id=order.id, organization_id=organization.id)}}"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
     <a class="ui negative button" onclick="showModal('denied')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="times icon"></i>ไม่อนุมัติการเบิกวัสดุ</a>
-  </p>
-
+  </div>
+  {% endif %}
 </div>
-<div class="ui modal denied">
+{% if checkouts %}
+
+{% if order.status=="pending on supervisor supplier" %}
+
+<form
+  action="{{ url_for('approve_orders.supervisor_supplier_denied',order_id=order.id, organization_id=organization.id) }}"
+  class="ui modal denied">
+
   <div class="header">
     <span class="ui text red">
       ปฏิเสธคำสั่งเบิกวัสดุ
@@ -53,20 +54,29 @@
     <p>ต้องการปฏิเสธคำสั่งเบิกวัสดุ
       <b>{{ order.description }}</b>
     </p>
+    <div class="ui form">
+      <div class="field">
+        <label for="reason">เหตุผล</label>
+        <input type="text" id="reason" name="reason">
+        <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
+          style="display: none;">
+      </div>
+    </div>
+
   </div>
   <div class="actions">
-    <button class="ui black deny button">
+    <button class="ui black deny button" type="button">
       ยกเลิก
     </button>
-    <a class="ui negative right labeled icon button"
-      href="{{ url_for('approve_orders.admin_denied',order_id=order.id, organization_id=organization.id)}}">
+    <button class="ui negative right labeled icon button" type="submit">
       ยืนยัน
       <i class="checkmark icon"></i>
-    </a>
+    </button>
   </div>
-</div>
+</form>
 
 {% endif %}
+
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -74,6 +84,7 @@
         <th>รูปวัสดุ</th>
         <th>วันที่นำวัสดุออก</th>
         <th>ชื่อวัสดุ</th>
+        {#}<th>จำนวนหน่วยใหญ่</th>{#}
         <th>จำนวนหน่วยเล็ก</th>
         <th>ราคาแต่ละหน่วยเล็ก</th>
         <th>รวม</th>
@@ -96,6 +107,7 @@
         </td>
         <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
         <td data-label="Item">{{ checkout.item.name }}</td>
+        {#} <td data-label="Set">{{ checkout.set_ }}</td> {#}
         <td data-label="Piece">{{ checkout.piece }}</td>
         <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
         <td data-label="Quantity">{{ checkout.quantity }}</td>
@@ -120,14 +132,14 @@
   <div class="ui grid">
     <div class="column row">
       <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+        {{ paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
       </div>
     </div>
   </div>
   {% endif %}
 </div>
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 {% endblock %}
@@ -135,8 +147,8 @@
 {% block additional_js %}
 <script type="text/javascript">
 
-  function showModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
+  function showModal(status) {
+    status ? $('.ui.modal.' + status).modal('show') : $('.ui.modal').modal('hide')
       ;
   }
 </script>

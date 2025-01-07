@@ -5,7 +5,7 @@
 {% if 'edit' in request.path %}
 แก้ไข
 {% else %}
-นำเข้าวัสดุ
+นำเข้าวัสดุแบบอัพโหลดไฟล์
 {% endif %}
 {% endblock %}
 {% block dashboard_title %}
@@ -13,12 +13,11 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าวัสดุ</a>
-<i class="right angle icon divider"></i>
-<a class="section"
-  href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">รายการบิลวัสดุ</a>
-<i class="right angle icon divider"></i>
-<div class="active section">อัพโหลดไฟล์</div>
+{{ RenderBreadcrumb([
+("นำเข้าวัสดุ", url_for("item_registers.index", organization_id=organization.id)),
+('อัพโหลดไฟล์' , url_for("inventories.bill_item",item_register_id=item_register.id,
+organization_id=organization.id)),
+("อัพโหลดไฟล์","")]) }}
 {% endblock breadcrumbs %}
 
 {% block content %}
@@ -63,6 +62,15 @@
   </div>
 </div>
 {% endif %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href='{{ url_for("inventories.bill_item",item_register_id=item_register.id, organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}

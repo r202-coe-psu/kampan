@@ -8,14 +8,20 @@
 {% block dashboard_title %}{{ head }}{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุ</a>
-<i class="right angle icon divider"></i>
-<div class="ui breadcrumb">
-  <div class="active section">{{ head }}</div>
-</div>
+{{ RenderBreadcrumb([
+("วัสดุทั้งหมด", url_for("items.index", organization_id=organization.id)),
+(head, "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary" style="padding-bottom: 10px;">
+  <div class="left menu">
+    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
 
@@ -61,22 +67,6 @@
       $('.attach-file-img', $(e.target).parent()).val(name);
     });
 
-  element_set.classList.add("disabled");
-  element_unit.classList.add("disabled");
-  function check_item_format() {
-    var value = document.getElementById("item_format").value;
-    var element_piece_per_set = document.getElementById("piece_per_set_field");
-    var element_piece_unit = document.getElementById("piece_unit_field");
-
-    if (value == "one to one") {
-      element_piece_per_set.classList.add("disabled");
-      element_piece_unit.classList.add("disabled");
-    }
-    else {
-      element_piece_per_set.classList.remove("disabled");
-      element_piece_unit.classList.remove("disabled");
-    }
-  }
 </script>
 
 {% endblock additional_js %}

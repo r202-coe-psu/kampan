@@ -4,12 +4,9 @@
 {% block dashboard_title %} รายละเอียดองค์กร {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('divisions.index',organization_id=organization.id) }}">
-  แผนกทั้งหมด </a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  รายละเอียด
-</div>
+{{ RenderBreadcrumb([
+("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+('รายละเอียด', "")]) }}
 {% endblock %}
 
 {% macro row_detail(text) -%}
@@ -19,6 +16,14 @@
 {%- endmacro %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
     <h2 class="ui header">รายละเอียดแผนก <a class="btn-floating btn-large waves-effect waves-light"

@@ -5,17 +5,21 @@
 {% block dashboard_title %} แก้ไขตำแหน่ง {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section"
-  href="{{ url_for('organizations.organizaiton_users', organization_id=organization.id) }}">สมาชิกขององค์กร</a>
-<i class="right angle icon divider"></i>
-
-<div class="active section">
-  แก้ไขตำแหน่ง {{ org_user.display_fullname() }}
-</div>
+{{ RenderBreadcrumb([
+("สมาชิกขององค์กร", url_for('organizations.organizaiton_users', organization_id=organization.id) ),
+("แก้ไขตำแหน่ง " + org_user.display_fullname(), "")]) }}
 {% endblock %}
 
 {% block content %}
-
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{ url_for('organizations.organizaiton_users', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
     {{ form.hidden_tag() }}

@@ -5,12 +5,18 @@
 {% block dashboard_title %}หมวดหมู่{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('categories.create_or_edit', organization_id=organization.id) }}">
-  เพิ่มหมวดหมู่
-</a>
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary button labeled icon"
+      href="{{ url_for('categories.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มหมวดหมู่
+    </a>
+  </div>
+</div>
 {% if paginated_categories.items %}
 <div style="padding-bottom: 2em;">
   <table class="ui celled table table-hover ">
@@ -74,7 +80,7 @@
 
 </div>
 {% else %}
-<div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 <style>
   table.table.table-hover {

@@ -8,16 +8,26 @@
 เพิ่มคลังวัสดุ
 {% endif %}
 {% endblock %}
+
 {% block dashboard_title %}
 {{ self.title() }}
 {% endblock %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<div class="active section">แก้ไขหรือเพิ่มข้อมูลคลังวัสดุ</div>
+{{ RenderBreadcrumb([
+("คลังวัสดุ", url_for("warehouses.index", organization_id=organization.id)),
+('แก้ไขคลังวัสดุ' if 'edit' in request.path else 'เพิ่มคลังวัสดุ', "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
 

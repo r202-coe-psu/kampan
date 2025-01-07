@@ -2,7 +2,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-การยืนยันอนุมัติคำสั่งเบิกและเลือกเจ้าหน้าที่พัสดุ
+การยืนยันอนุมัติคำสั่งเบิก
 {% endblock %}
 
 {% block dashboard_title %}
@@ -10,29 +10,31 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id=organization.id) }}">
-  คำสั่งเบิกวัสดุ </a>
-<i class="right angle icon divider"></i>
-<a class="section"
-  href="{{ url_for('approve_orders.supervisor_supplier_approved_detail',order_id=order.id, organization_id=organization.id) }}">
-  หัวหน้าฝ่ายบริหารจัดการอนุมัติคำสั่งเบิกวัสดุ
-</a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  อนุมัติคำสั่งเบิก
-</div>
+{{ RenderBreadcrumb([
+("คำสั่งเบิกวัสดุ", url_for('approve_orders.admin_index', organization_id=organization.id)),
+("เจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก", url_for('approve_orders.admin_approved_detail',order_id=order.id,
+organization_id=organization.id)),
+('อนุมัติคำสั่งเบิก', "")]) }}
 {% endblock %}
 
 
-
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{ url_for('approve_orders.admin_approved_detail',order_id=order.id, organization_id=organization.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
     <div style="margin-top: 1rem; margin-bottom: 1rem;">
       <span class="ui large text header">คำขอ : {{ order.description }}</span>
     </div>
     {{ form.hidden_tag() }}
-    {{ renderer.render_select(form.admin_approver) }}
+    {{ renderer.render_calendar_default(form.sent_item_date, calendar_id="sent_item_date") }}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>

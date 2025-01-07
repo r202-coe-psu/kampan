@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import fields, validators
+from wtforms import fields, validators, widgets
 from .fields import TagListField, TextListField
 
 from flask_mongoengine.wtf import model_form
@@ -22,3 +22,19 @@ class ItemLostBreakForm(BaseItemLostBreakForm):
     item = fields.SelectField(label="ชื่อวัสดุ")
     set_ = fields.IntegerField(label="จำนวนหน่วยใหญ่", default=0)
     piece = fields.IntegerField(label="จำนวนหน่วยเล็ก", default=1)
+
+
+class SearchLostBreakForm(FlaskForm):
+    name = fields.StringField(label="ชื่อวัสดุ", validators=[validators.Optional()])
+    start_date = fields.DateField(
+        "วันที่เริ่มต้น",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        validators=[validators.Optional()],
+    )
+    end_date = fields.DateField(
+        "วันที่สุดท้าย",
+        format="%d/%m/%Y",
+        widget=widgets.TextInput(),
+        validators=[validators.Optional()],
+    )

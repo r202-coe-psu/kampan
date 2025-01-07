@@ -12,16 +12,22 @@
 
 
 {% block breadcrumbs %}
-<a class="ui left primary button"
-  href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
-  เพิ่มรูปแบบอีเมล
-</a>
+
 {% endblock %}
 
 
 {% block content %}
 
 {% if email_templates %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui labeled icon primary button"
+      href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มรูปแบบอีเมล
+    </a>
+  </div>
+</div>
 <table class="ui striped padded celled table">
   <thead>
     <tr>
@@ -106,7 +112,7 @@
 {% endif %}
 
 {% if not email_templates %}
-<div class="ui info message">ไม่มีข้อมูลรูปแบบอีเมลในขณะนี้</div>
+<div class="ui message">ไม่มีข้อมูลรูปแบบอีเมลในขณะนี้</div>
 {% endif %}
 
 

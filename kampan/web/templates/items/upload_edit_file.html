@@ -10,9 +10,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุทั้งหมด</a>
-<i class="right angle icon divider"></i>
-<div class="active section">แก้ไขข้อมูลผ่านไฟล์</div>
+{{ RenderBreadcrumb([
+("วัสดุทั้งหมด", url_for("items.index", organization_id=organization.id)),
+("แก้ไขข้อมูลผ่านไฟล์", "")]) }}
 {% endblock breadcrumbs %}
 
 {% block content %}
@@ -38,13 +38,20 @@
   </div>
 </div>
 {% endif %}
-<div class="ui secondary menu">
-  <div class="right item">
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+  <div class="right menu">
     <a class="ui primary button"
       href="{{ url_for('items.download_template_items_file', organization_id=organization.id) }}">
       <i class="file download icon"></i> ดาวน์โหลดรูปแบบการแก้ไขวัสดุ</a>
   </div>
 </div>
+
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}

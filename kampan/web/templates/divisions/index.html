@@ -1,4 +1,5 @@
 {% extends '/base/default-dashboard.html' %}
+{% import '/base/components/forms.html' as render_form %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
 
@@ -7,28 +8,30 @@
 {% block dashboard_title %}แผนกทั้งหมด{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui left primary button" href="{{ url_for('divisions.create_or_edit', organization_id=organization.id) }}">
-  เพิ่มแผนก
-</a>
 {% endblock %}
 
 {% block content %}
-<form method="post">
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('divisions.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มแผนก
+    </a>
+  </div>
+</div>
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
+
+    {{form.hidden_tag()}}
+    {{render_form.SelectField(form.name)}}
+    {{render_form.RangeDateField(form.start_date, form.end_date)}}
+  </div>
+
   <div class="ui secondary menu">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.render_select_clearable_row(form.name)}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
+    </div>
   </div>
   {% if divisions %}
   <div style="padding-bottom: 1em ;">
@@ -117,7 +120,7 @@
     {% endif %}
   </div>
   {% else %}
-  <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
   {% endif %}
 </form>
 {% endblock %}

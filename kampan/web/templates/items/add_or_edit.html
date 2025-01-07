@@ -12,14 +12,20 @@
 {% block dashboard_title %}{{ head }}{% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('items.index', organization_id=organization.id) }}">วัสดุ</a>
-<i class="right angle icon divider"></i>
-<div class="ui breadcrumb">
-  <div class="active section">{{ head }}</div>
-</div>
+{{ RenderBreadcrumb([
+("วัสดุทั้งหมด", url_for("items.index", organization_id=organization.id)),
+(head, "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="ui secondary" style="padding-bottom: 10px;">
+  <div class="left menu">
+    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
 

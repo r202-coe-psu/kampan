@@ -15,23 +15,20 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-{% if 'edit' in request.path %}
-<a class="section" href="{{ url_for('divisions.detail', division_id=division_id, organization_id=organization.id) }}">
-  แผนกทั้งหมด </a>
-{% else %}
-<a class="section" href="{{ url_for('divisions.index', organization_id=organization.id) }}">รายละเอียดแผนก</a>
-{% endif %}
-<i class="right angle icon divider"></i>
-<div class="active section">
-  {% if 'edit' in request.path %}
-  แก้ไขรายละเอียดองค์กร
-  {% else %}
-  เพิ่มองค์กร
-  {% endif %}
-</div>
+{{ RenderBreadcrumb([
+("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+('แก้ไขรายละเอียดแผนก' if 'edit' in request.path else "เพิ่มแผนก", "")]) }}
 {% endblock %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button" href='{{ url_for("divisions.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST">
     {{ form.hidden_tag() }}

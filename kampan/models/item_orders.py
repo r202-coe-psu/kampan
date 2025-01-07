@@ -30,6 +30,7 @@ class OrderItem(me.Document):
     status = me.StringField(required=True, default="pending", choices=ORDER_ITEM_STATUS)
 
     approval_status = me.StringField(default="pending")
+    denied_reason = me.StringField(default="")
 
     head_endorser = me.ReferenceField("User", dbref=True)
     admin_approver = me.ReferenceField("User", dbref=True)

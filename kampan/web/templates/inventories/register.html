@@ -13,15 +13,24 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">นำเข้าวัสดุ</a>
-<i class="right angle icon divider"></i>
-<a class="section"
-  href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">รายการบิลวัสดุ</a>
-<i class="right angle icon divider"></i>
-<div class="active section">นำเข้าทีละวัสดุ</div>
+{{ RenderBreadcrumb([
+("นำเข้าวัสดุ", url_for("item_registers.index", organization_id=organization.id)),
+('รายการบิลวัสดุ' , url_for("inventories.bill_item",item_register_id=item_register.id,
+organization_id=organization.id)),
+("นำเข้าทีละวัสดุ","")]) }}
+
 {% endblock breadcrumbs %}
 
 {% block content %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href='{{ url_for("inventories.bill_item",item_register_id=item_register.id, organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="ui form" method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}

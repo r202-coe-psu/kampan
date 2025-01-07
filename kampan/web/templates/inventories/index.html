@@ -1,6 +1,7 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/pagination.html' as paginated %}
+{% import '/base/components/forms.html' as render_form %}
 
 {% block title %}รายการนำเข้าอุปกรณ์{% endblock %}
 {% block dashboard_title %}รายการนำเข้าอุปกรณ์{% endblock %}
@@ -9,8 +10,20 @@
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  {{ renderer.render_default_search_item(form) }}
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
+
+    {{ form.hidden_tag() }}
+    {{ render_form.SelectField(form.item) }}
+    {{ render_form.SelectField(form.categories) }}
+    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+
+  </div>
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
+    </div>
+  </div>
   <div>
     {% if inventories %}
     <table class="ui striped padded celled table">
@@ -81,7 +94,7 @@
     </div>
     {% endif %}
     {% else %}
-    <div class="ui info message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
   </div>
 </form>
