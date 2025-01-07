@@ -1,86 +1,16 @@
 {% extends '/base/default-dashboard.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% import '/base/components/forms.html' as render_form %}
 {% import '/base/pagination.html' as paginated%}
+{% from '/base/components/breadcrumbs.html' import RenderBreadcrumb%}
 
 {% block title %}Items{% endblock %}
 {% block dashboard_title %}วัสดุทั้งหมด{% endblock %}
 {% block breadcrumbs %}
-<div class="ui secondary menu">
-  <div class="left item" style="gap: 0.5rem;">
-    <div class="ui dropdown button">
-      <i class="wrench icon"></i>
-      การจัดการ
-      <div class="menu">
-        <a class="item" onclick="showDeleteModal('confirmAll')"><span class="ui green text">
-            <i class="check icon"></i>
-            บันทึกการลงทะเบียนวัสดุทั้งหมด</span></a>
-        <a class="item" href="{{ url_for('items.export_data', **request.args) }}">
-          <span class="ui primary text">
-            <i class="file export icon"></i>
-            ส่งออกข้อมูล
-          </span>
-        </a>
-        <a class="item" href="{{ url_for('items.add', **request.args) }}">
-          <span class="ui primary text">
-            <i class="plus circle icon"></i>
-            ลงทะเบียนวัสดุ
-          </span>
-        </a>
-        <a class="item" href="{{ url_for('items.upload_file', **request.args) }}">
-          <span class="ui primary text">
-            <i class="file upload icon"></i>
-            ลงทะเบียนวัสดุแบบหลายรายการ
-          </span>
-        </a>
-        <a class="item" href="{{ url_for('items.upload_edit', **request.args) }}">
-          <span class="ui primary text">
-            <i class="edit icon"></i>
-            แก้ไขวัสดุแบบหลายรายการ
-          </span>
-        </a>
-        <a class="item" href="{{ url_for('items.upload_compare_file', **request.args) }}">
-          <span class="ui primary text">
-            <i class="tasks icon"></i>
-            เปรียบเทียบวัสดุในระบบ
-          </span>
-        </a>
-        <a class="item" href="{{ url_for('items.upload_delete', **request.args) }}">
-          <span class="ui error text">
-            <i class="trash alternate icon"></i>
-            ลบวัสดุแบบหลายรายการ
-          </span>
-        </a>
-      </div>
-    </div>
-  </div>
+{{ RenderBreadcrumb([
+("วัสดุทั้งหมด", "")
+]) }}
 
-  <div class="right item">
-    <div class="ui modal confirmAll">
-      <div class="header">
-        บันทึกวัสดุ
-      </div>
-      <div class="content">
-        <p>ต้องการบันทึกวัสดุ
-          <b>ทั้งหมด</b> หรือไม่?
-        </p>
-        <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
-          และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
-          *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
-      </div>
-      <div class="actions">
-        <button class="ui black deny button">
-          ยกเลิก
-        </button>
-        <a class="ui positive right labeled icon button" href="{{ url_for('items.confirm_all', **request.args) }}">
-          ยืนยัน
-          <i class="checkmark icon"></i>
-        </a>
-      </div>
-    </div>
-  </div>
-
-
-</div>
 {% endblock %}
 
 {% block content %}
@@ -89,26 +19,94 @@
 {% set _dummy=params.pop('page') %}
 {% endif %}
 
+<div class="ui secondary menu">
+  <div class="right menu">
+    <div class="ui dropdown button labeled icon">
+      <i class="wrench icon"></i>
+      การจัดการ
 
+      <div class="menu" style=" flex-direction: column !important;">
+        <a class="item" style="width: 100%;" onclick="showDeleteModal('confirmAll')"><span class="ui green text">
+            <i class="check icon"></i>
+            บันทึกการลงทะเบียนวัสดุทั้งหมด</span></a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.export_data', **request.args) }}">
+          <span class="ui primary text">
+            <i class="file export icon"></i>
+            ส่งออกข้อมูล
+          </span>
+        </a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.add', **request.args) }}">
+          <span class="ui primary text">
+            <i class="plus circle icon"></i>
+            ลงทะเบียนวัสดุ
+          </span>
+        </a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.upload_file', **request.args) }}">
+          <span class="ui primary text">
+            <i class="file upload icon"></i>
+            ลงทะเบียนวัสดุแบบหลายรายการ
+          </span>
+        </a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.upload_edit', **request.args) }}">
+          <span class="ui primary text">
+            <i class="edit icon"></i>
+            แก้ไขวัสดุแบบหลายรายการ
+          </span>
+        </a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.upload_compare_file', **request.args) }}">
+          <span class="ui primary text">
+            <i class="tasks icon"></i>
+            เปรียบเทียบวัสดุในระบบ
+          </span>
+        </a>
+        <a class="item" style="width: 100%;" href="{{ url_for('items.upload_delete', **request.args) }}">
+          <span class="ui error text">
+            <i class="trash alternate icon"></i>
+            ลบวัสดุแบบหลายรายการ
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
-<form method="post" style="padding-bottom: 0.5rem;">
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  {{form.hidden_tag()}}
+  <div class="equal width fields">
+    {{ render_form.InputField(form.item_name) }}
+    {{ render_form.SelectField(form.item) }}
+    {{ render_form.SelectField(form.categories) }}
+  </div>
   <div class="ui secondary menu">
-    {{form.hidden_tag()}}
-    <p style="margin-left:auto;">
-      {{ renderer.render_select_clearable(form.item_name) }}
-    </p>
-    <p style="margin-left:10px;">
-      {{ renderer.render_select_clearable(form.item) }}
-    </p>
-    <p style="margin-left:10px;">
-      {{ renderer.render_select_clearable(form.categories) }}
-    </p>
-    <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ค้นหา</button>
+    </div>
   </div>
 </form>
+
+<div class="ui modal confirmAll">
+  <div class="header">
+    บันทึกวัสดุ
+  </div>
+  <div class="content">
+    <p>ต้องการบันทึกวัสดุ
+      <b>ทั้งหมด</b> หรือไม่?
+    </p>
+    <span class="ui error text">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
+      และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+      *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
+  </div>
+  <div class="actions">
+    <button class="ui black deny button">
+      ยกเลิก
+    </button>
+    <a class="ui positive right labeled icon button" href="{{ url_for('items.confirm_all', **request.args) }}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+
 
 {% if items %}
 <div class="ui four cards">

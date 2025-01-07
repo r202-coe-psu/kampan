@@ -31,11 +31,10 @@
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>
-          <th>เบิกวัสดุ</th>
           <th>รายการวัสดุ</th>
           <th>สถานะ</th>
           <th>นัดรับ ณ วันที่</th>
-          <th>แก้ไข/ลบข้อมูล</th>
+          <th>จัดการ</th>
 
         </tr>
       </thead>
@@ -45,21 +44,11 @@
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
-          <td>
-            {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
-            "pending"
-            %}
-            <a class="ui primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-              href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
-              เบิกวัสดุ
-            </a>
-            {% endif %}
-          </td>
+
 
           <td data-label="Bill">
-            <a class="ui primary button"
-              href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
+            <a class="ui icon primary button"
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
               <i class="eye icon"></i>
             </a>
           </td>
@@ -86,14 +75,22 @@
             if order.sent_item_date else "" }}
           </td>
           <td>
+            {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
+            "pending"
+            %}
+            <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              data-tooltip="เบิกวัสดุ"
+              href="{{ url_for('item_checkouts.checkout', order_id=order.id, organization_id=organization.id) }}">
+              <i class="plus icon"></i>
+            </a>
+            {% endif %}
             {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
-            <a class="ui icon button"
-              href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
+            <a class="ui icon button primary" data-tooltip="แก้ไข"
+              href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
               <i class="edit icon"></i>
             </a>
-            <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-              style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ order.id }}')">
+            <a class="ui icon button red {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              data-tooltip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
               <i class="trash icon"></i>
             </a>
             <div class="ui modal {{order.id}}">
