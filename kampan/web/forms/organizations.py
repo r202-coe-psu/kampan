@@ -74,12 +74,14 @@ class SearchUserForm(FlaskForm):
         "เริ่มเพิ่มเมื่อวันที่",
         format="%d/%m/%Y",
         widget=widgets.TextInput(),
+        validators=[validators.Optional()],
         render_kw={"placeholder": "Date"},
     )
     end_date = fields.DateField(
         "จนถึงวันที่",
         format="%d/%m/%Y",
         widget=widgets.TextInput(),
+        validators=[validators.Optional()],
         render_kw={"placeholder": "Date"},
     )
     role = fields.SelectField(

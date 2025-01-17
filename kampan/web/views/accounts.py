@@ -135,14 +135,15 @@ def index():
     organization = None
 
     if not organization:
-        organization = (
+        organization_user_role = (
             models.OrganizationUserRole.objects(
                 user=current_user,
                 status__ne="disactive",
             ).first()
         ).organization
-        organization_id = organization.id
-
+        if organization_user_role:
+            organization = organization_user_role.organization
+            organization_id = organization.id
     if not organization:
         organization = current_user.get_current_organization()
 
