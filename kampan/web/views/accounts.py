@@ -140,7 +140,7 @@ def index():
                 user=current_user,
                 status__ne="disactive",
             ).first()
-        ).organization
+        )
         if organization_user_role:
             organization = organization_user_role.organization
             organization_id = organization.id
