@@ -113,38 +113,68 @@ def organizaiton_users(organization_id):
 
     if not form.validate_on_submit():
         print(form.errors)
+        start_date = request.args.get("start_date", default="")
+        end_date = request.args.get("end_date", default="")
+        user = request.args.get("user", default="")
+        role = request.args.get("role", default="")
+        if role:
+            form.role.data = role
+        if user:
+            form.user.data = user
+        if start_date:
+            start_date = datetime.datetime.strptime(
+                start_date,
+                "%Y-%m-%d",
+            )
+            form.start_date.data = start_date
+        if end_date:
+            end_date = datetime.datetime.strptime(
+                end_date,
+                "%Y-%m-%d",
+            )
+            form.end_date.data = end_date
 
-    if form.start_date.data == None and form.end_date.data != None:
-        org_users = org_users.filter(
-            created_date__lt=form.end_date.data,
-        )
+        if form.start_date.data == None and form.end_date.data != None:
+            org_users = org_users.filter(
+                created_date__lt=form.end_date.data,
+            )
 
-    elif form.start_date.data and form.end_date.data == None:
-        org_users = org_users.filter(
-            created_date__gte=form.start_date.data,
-        )
+        elif form.start_date.data and form.end_date.data == None:
+            org_users = org_users.filter(
+                created_date__gte=form.start_date.data,
+            )
 
-    elif form.start_date.data != None and form.end_date.data != None:
-        org_users = org_users.filter(
-            created_date__gte=form.start_date.data,
-            created_date__lt=form.end_date.data,
+        elif form.start_date.data != None and form.end_date.data != None:
+            org_users = org_users.filter(
+                created_date__gte=form.start_date.data,
+                created_date__lt=form.end_date.data,
+            )
+        if form.role.data:
+            org_users = org_users.filter(roles=form.role.data)
+        if form.user.data:
+            org_users = org_users.filter(id=form.user.data)
+        page = request.args.get("page", default=1, type=int)
+        if form.start_date.data or form.end_date.data:
+            page = 1
+        paginated_org_users = None
+        if org_users:
+            paginated_org_users = Pagination(org_users, page=page, per_page=30)
+        return render_template(
+            "/organizations/members.html",
+            form=form,
+            paginated_org_users=paginated_org_users,
+            organization=organization,
+            org_users=org_users,
         )
-    if form.role.data:
-        org_users = org_users.filter(roles=form.role.data)
-    if form.user.data:
-        org_users = org_users.filter(id=form.user.data)
-    page = request.args.get("page", default=1, type=int)
-    if form.start_date.data or form.end_date.data:
-        page = 1
-    paginated_org_users = None
-    if org_users:
-        paginated_org_users = Pagination(org_users, page=page, per_page=30)
-    return render_template(
-        "/organizations/members.html",
-        form=form,
-        paginated_org_users=paginated_org_users,
-        organization=organization,
-        org_users=org_users,
+    return redirect(
+        url_for(
+            "organizations.organizaiton_users",
+            organization_id=organization.id,
+            role=form.role.data,
+            user=form.user.data,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+        )
     )
 
 
