@@ -258,6 +258,14 @@ def handle_authorized_oauth2(remote, token):
         email=user.email,
         status__ne="disactive",
     ).first()
+    if not member:
+        try:
+            member = models.OrganizationUserRole.objects(
+                username=str(user.email).split("@")[0],
+                status__ne="disactive",
+            ).first()
+        except:
+            member = None
     if member:
         member.user = user
         member.save()

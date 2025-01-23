@@ -85,7 +85,7 @@ class User(me.Document, UserMixin):
         return ""
 
     def get_name(self):
-        return self.first_name + " " + self.last_name
+        return self.get_resources_fullname_th()
 
     def get_picture(self):
         if self.picture:
@@ -153,12 +153,25 @@ class User(me.Document, UserMixin):
 
     def get_resources_fullname(self):
         try:
-            fullname = (
-                self.resources["psu"]["display_name"]
-                + " ( "
-                + self.resources["psu"]["display_name_th"]
-                + " )"
-            )
+            if self.resources["psu"]["display_name_th"]:
+                fullname = (
+                    self.resources["psu"]["display_name_th"]
+                    + " ( "
+                    + self.resources["psu"]["display_name"]
+                    + " )"
+                )
+            else:
+                fullname = self.resources["psu"]["display_name"]
+        except:
+            fullname = self.get_name()
+        return fullname
+
+    def get_resources_fullname_th(self):
+        try:
+            if self.resources["psu"]["display_name_th"]:
+                fullname = self.resources["psu"]["display_name_th"]
+            else:
+                fullname = self.resources["psu"]["display_name"]
         except:
             fullname = self.get_name()
         return fullname
