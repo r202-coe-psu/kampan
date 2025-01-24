@@ -7,9 +7,8 @@ from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 import mongoengine as me
-
 import datetime
 
 
@@ -353,5 +352,61 @@ def delete(checkout_item_id):
             "item_checkouts.bill_checkout",
             order_id=checkout_item.order.id,
             organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/order/<order_id>/upload_file_items", methods=["GET", "POST"])
+@acl.organization_roles_required("admin", "supervisor supplier")
+def upload_file(order_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    form = forms.items.UploadFileForm()
+    errors = request.args.get("errors")
+    order = models.OrderItem.objects(id=order_id).first()
+
+    if not form.validate_on_submit():
+        return render_template(
+            "/item_checkouts/upload_file.html",
+            organization=organization,
+            errors=errors,
+            form=form,
+            order_id=order.id,
+            order=order,
+        )
+
+    if form.upload_file.data:
+        errors = utils.item_checkouts.validate_items_upload_engagement(
+            form.upload_file.data, organization
+        )
+        if not errors:
+            completed = utils.item_checkouts.process_items_upload_file(
+                form.upload_file.data, organization, order
+            )
+        else:
+            return render_template(
+                "/item_checkouts/upload_file.html",
+                organization=organization,
+                errors=errors,
+                form=form,
+                order_id=order_id,
+                order=order,
+            )
+    else:
+        return redirect(
+            url_for(
+                "item_checkouts.upload_file",
+                organization_id=organization_id,
+                errors=["ไม่พบไฟล์"],
+                order_id=order_id,
+            )
+        )
+    return redirect(
+        url_for(
+            "item_checkouts.bill_checkout",
+            organization_id=organization_id,
+            order_id=order.id,
         )
     )

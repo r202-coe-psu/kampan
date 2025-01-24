@@ -1,0 +1,101 @@
+{% extends '/inventories/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}
+{% if 'edit' in request.path %}
+แก้ไข
+{% else %}
+อัพโหลดไฟล์รายการนำวัสดุออก
+{% endif %}
+{% endblock %}
+{% block dashboard_title %}
+{{ self.title() }}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("นำเข้าวัสดุ", url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id)),
+('อัพโหลดไฟล์รายการนำวัสดุออก' ,"")]) }}
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+{% if errors %}
+<div class="ui modal upload_errors">
+  <div class="header">
+    เกิดปัญหา
+  </div>
+  <div class="scrolling content red">
+    {% for error in errors %}
+    <span class="ui error text">
+      <b>- {{ error }}</b><br>
+    </span>
+    {% endfor %}
+  </div>
+  <div class="actions">
+    <button class="ui negative right labeled icon button">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{% if upload_completed %}
+<div class="ui modal upload_completed">
+  <div class="header">
+    ไฟล์นำเข้าวัสดุอัพโหลดเรียบร้อย
+  </div>
+  <div class="content red">
+    <span class="ui text">
+      <b>นำเข้าวัสดุทั้งหมดเรียบร้อย</b>
+    </span>
+  </div>
+  <div class="actions">
+    <a class="ui positive right labeled icon button"
+      href="{{ url_for('item_checkouts.bill_checkout',organization_id=organization.id, order_id=order.id) }}">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
+<div class="navbarmenu">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href="{{ url_for('item_checkouts.bill_checkout',organization_id=organization.id, order_id=order.id) }}">
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
+<div>
+  <form class="ui form" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ renderer.render_fileinput(form.upload_file) }}
+    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+  </form>
+</div>
+
+{% endblock content %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(".attach-file-{{ form.upload_file.name }}").click(function () {
+    $("#{{ form.upload_file.name }}").click();
+  });
+
+  $('#{{ form.upload_file.name }}')
+    .on('change', function (e) {
+      var name = e.target.files[0].name;
+      $('.attach-file-{{ form.upload_file.name }}', $(e.target).parent()).val(name);
+    });
+
+  $('.ui.modal.upload_errors')
+    .modal('show')
+    ;
+  $('.ui.modal.upload_completed')
+    .modal('show')
+    ;
+</script>
+{% endblock additional_js %}

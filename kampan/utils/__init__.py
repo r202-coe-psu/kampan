@@ -6,3 +6,4 @@ from . import suppliers
 from . import reports
 from . import dashboards
 from . import organizations
+from . import item_checkouts

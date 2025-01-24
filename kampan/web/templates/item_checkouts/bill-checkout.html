@@ -18,15 +18,42 @@
       ย้อนกลับ
     </a>
   </div>
-  {% if checkouts and order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
-  "pending" and order.created_by == current_user
-  %}
   <div class="right menu">
+    {% if current_user.has_organization_roles("admin") %}
+
+    <a href="{{ url_for('item_checkouts.upload_file', organization_id=organization.id, order_id=order.id) }}"
+      class="ui primary button">อัปโหลดไฟล์</a>
+    {% endif %}
+    {% if checkouts and order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
+    "pending" and order.created_by == current_user
+    %}
     <a class="ui button primary" onclick="showModal('email')">
       ยืนยันการเบิกพัสดุ
     </a>
+    {% endif %}
   </div>
-  {% endif %}
+</div>
+<div class="ui ordered steps" style="width: 100%;">
+  <a class="completed step"
+    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+    <div class="content">
+      <div class="title">เพิ่มคำสั่งเบิก</div>
+      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
+    </div>
+  </a>
+  <a class="completed step"
+    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">เลือกพัสดุ</div>
+      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
+    </div>
+  </a>
+  <div class="active step">
+    <div class="content">
+      <div class="title">ยืนยันการเบิกพัสดุ</div>
+      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
+    </div>
+  </div>
 </div>
 {% if checkouts %}
 {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
@@ -55,28 +82,7 @@
 {% endif %}
 {% endif %}
 
-<div class="ui ordered steps" style="width: 100%;">
-  <a class="completed step"
-    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-    <div class="content">
-      <div class="title">เพิ่มคำสั่งเบิก</div>
-      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
-    </div>
-  </a>
-  <a class="completed step"
-    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">เลือกพัสดุ</div>
-      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
-    </div>
-  </a>
-  <div class="active step">
-    <div class="content">
-      <div class="title">ยืนยันการเบิกพัสดุ</div>
-      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
-    </div>
-  </div>
-</div>
+
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
