@@ -52,7 +52,7 @@ def endorser_index():
         approval_status="pending",
         status="pending",
         organization=organization,
-        head_endorser=current_user,
+        head_endorser=current_user._get_current_object(),
     )
 
     form = forms.inventories.SearchStartEndDateForm()
