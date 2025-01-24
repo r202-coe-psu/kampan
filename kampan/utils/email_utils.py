@@ -108,7 +108,7 @@ def force_send_email_to_endorser(
     creator = order.created_by
     division = order.division
     endorser = order.head_endorser
-    organization = division.organization
+    organization = order.organization
     email_template = organization.get_default_email_template("to endorser")
 
     if not email_template:
@@ -132,7 +132,9 @@ def force_send_email_to_endorser(
     template_body = Template(email_template.body)
 
     host_url = setting.get("KAMPAN_HOST_URL")
-    endorsement_url = f"{host_url}/approve_orders/endorser?organization_id={organization.id}"
+    endorsement_url = (
+        f"{host_url}/approve_orders/endorser?organization_id={organization.id}"
+    )
     text_format = get_endorser_text_format(
         division, user, endorser, order, endorsement_url
     )
@@ -251,7 +253,9 @@ def force_send_email_to_admin(
     template_body = Template(email_template.body)
 
     host_url = setting.get("KAMPAN_HOST_URL")
-    endorsement_url = f"{host_url}/approve_orders/admin?organization_id={organization.id}"
+    endorsement_url = (
+        f"{host_url}/approve_orders/admin?organization_id={organization.id}"
+    )
 
     text_format = get_endorser_text_format(
         division, user, endorser, order, endorsement_url
