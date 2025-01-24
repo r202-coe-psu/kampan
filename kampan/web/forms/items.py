@@ -17,6 +17,7 @@ BaseItemForm = model_form(
         "updated_date",
         "image",
         "last_updated_by",
+        "status",
         "notification_status",
     ],
     field_args={
