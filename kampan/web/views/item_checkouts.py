@@ -324,7 +324,8 @@ def edit(checkout_item_id):
     checkout_item.user = current_user._get_current_object()
     checkout_item.item = item
     checkout_item.created_date = form.created_date.data
-    checkout_item.quantity = form.quantity.data
+    checkout_item.quantity = form.piece.data
+    checkout_item.piece = form.piece.data
     checkout_item.organization = organization
     checkout_item.save()
     return render_template(
