@@ -217,8 +217,7 @@ def force_send_email(order_id):
     print("=====> submit", job.get_id())
     return redirect(
         url_for(
-            "item_checkouts.bill_checkout",
-            order_id=order_id,
+            "item_orders.index",
             organization_id=organization.id,
         )
     )

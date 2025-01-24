@@ -23,6 +23,31 @@
     </a>
   </div>
 </div>
+
+<div class="ui ordered steps" style="width: 100%;">
+  <a class="completed step"
+    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+    <div class="content">
+      <div class="title">เพิ่มคำสั่งเบิก</div>
+      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
+    </div>
+  </a>
+  <a class="active step"
+    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">เลือกพัสดุ</div>
+      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
+    </div>
+  </a>
+  <a class="step"
+    href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">ยืนยันการเบิกพัสดุ</div>
+      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
+    </div>
+  </a>
+</div>
+
 <div>
   <form class="ui form" method="POST">
 
@@ -38,6 +63,33 @@
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
+
+{% if success %}
+<div class="ui modal">
+
+  <div class="header">
+    <span class="ui text green">
+      บันทึกสำเร็จ
+    </span>
+  </div>
+  <div class="content">
+    <p>บันทีกข้อมูลสำเร็จ
+    </p>
+
+  </div>
+  <div class="actions">
+    <a class="ui black deny button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+      ออก
+    </a>
+    <a class="ui positive right labeled icon button"
+      href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
+      ถัดไป
+      <i class="checkmark icon"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
+
 {% endblock content %}
 
 {% block additional_js %}
@@ -83,5 +135,11 @@
           allowAdditions: true
         });
     });
+</script>
+
+<script type="text/javascript">
+  $('.ui.modal')
+    .modal('show')
+    ;
 </script>
 {% endblock %}

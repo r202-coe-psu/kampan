@@ -5,7 +5,7 @@ from kampan import models
 
 ORDER_ITEM_STATUS = [
     ("denied", "ปฎิเสธ"),
-    ("approved", "อนุมัติ รอรับวัสดุ"),
+    ("approved", "อนุมัติรอรับวัสดุ"),
     ("pending on admin", "รอการจัดการจากเจ้าหน้าที่พัสดุ"),
     ("pending on supervisor supplier", "รอการอนุมัติจากหัวหน้าฝ่ายบริหาร"),
     ("pending", "รอการอนุมัติจากหัวหน้าฝ่าย"),
@@ -30,7 +30,7 @@ class OrderItem(me.Document):
     status = me.StringField(required=True, default="pending", choices=ORDER_ITEM_STATUS)
 
     approval_status = me.StringField(default="pending")
-    denied_reason = me.StringField(default="")
+    remark = me.StringField(default="")
 
     head_endorser = me.ReferenceField("User", dbref=True)
     admin_approver = me.ReferenceField("User", dbref=True)
@@ -77,3 +77,15 @@ class OrderItem(me.Document):
                 )
                 for checkout_item in checkout_items
             ]
+
+    def get_status(self):
+        key_color = {
+            "denied": "red",
+            "approved": "green",
+            "pending on admin": "blue",
+            "pending on supervisor supplier": "orange",
+            "pending": "yellow",
+            "disactive": "red",
+            "active": "blue",
+        }
+        return f'<td data-label="Status" class="{key_color[self.status]}"><span class="ui {key_color[self.status]} text">{self.get_status_display()}</span></td>'

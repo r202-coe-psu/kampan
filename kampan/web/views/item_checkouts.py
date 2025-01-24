@@ -175,13 +175,24 @@ def catalogs(order_id):
 )
 def checkout():
     organization_id = request.args.get("organization_id")
+    item_id = request.args.get("item_id")
+
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
     # items = models.Item.objects()
     form = forms.item_checkouts.CheckoutItemForm()
     order = models.OrderItem.objects(id=request.args.get("order_id")).first()
-
+    checkout_item = models.CheckoutItem.objects(item=item_id).first()
+    if checkout_item:
+        return redirect(
+            url_for(
+                "item_checkouts.edit",
+                checkout_item_id=checkout_item.id,
+                order_id=checkout_item.order.id,
+                organization_id=organization_id,
+            )
+        )
     items = models.Item.objects(status="active")
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
@@ -207,7 +218,6 @@ def checkout():
             )
             for item in items
         ]
-    item_id = request.args.get("item_id")
     if not form.validate_on_submit():
         if item_id:
             form.item.data = item_id
@@ -229,7 +239,13 @@ def checkout():
     checkout_item.organization = organization
     checkout_item.save()
 
-    return redirect(url_for("item_orders.index", organization_id=organization_id))
+    return render_template(
+        "/item_checkouts/checkout.html",
+        form=form,
+        order=order,
+        organization=organization,
+        success=True,
+    )
 
 
 @module.route("/all-checkout", methods=["GET", "POST"])
@@ -300,7 +316,10 @@ def edit(checkout_item_id):
         form.item.process(data=checkout_item.item.id, formdata=form.item.choices)
     if not form.validate_on_submit():
         return render_template(
-            "/item_checkouts/checkout.html", form=form, organization=organization
+            "/item_checkouts/checkout.html",
+            form=form,
+            organization=organization,
+            order=order,
         )
     item = models.Item.objects(id=form.item.data).first()
     checkout_item.user = current_user._get_current_object()
@@ -310,12 +329,12 @@ def edit(checkout_item_id):
     checkout_item.quantity = form.quantity.data
     checkout_item.organization = organization
     checkout_item.save()
-    return redirect(
-        url_for(
-            "item_checkouts.bill_checkout",
-            order_id=checkout_item.order.id,
-            organization_id=organization_id,
-        )
+    return render_template(
+        "/item_checkouts/checkout.html",
+        form=form,
+        organization=organization,
+        order=order,
+        success=True,
     )
 
 

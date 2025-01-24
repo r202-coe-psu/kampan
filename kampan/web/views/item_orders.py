@@ -83,6 +83,7 @@ def order():
         organization=organization,
         status__ne="disactive",
     ).first()
+    order = None
     if member:
         division = member.division
     if organization.get_organization_users():
@@ -93,21 +94,18 @@ def order():
             and org_user.user
         ]
 
-        form.admin_approver.choices = [
-            (str(org_user.user.id), org_user.user.get_name())
-            for org_user in organization.get_organization_users(division)
-            if ("admin" in org_user.roles) and org_user.user
-        ]
     if not form.validate_on_submit():
         return render_template(
-            "/item_orders/order.html", form=form, organization=organization
+            "/item_orders/order.html",
+            form=form,
+            organization=organization,
+            order=order,
         )
 
     order = models.OrderItem()
 
     form.populate_obj(order)
     order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
-    order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
     order.division = division
     if current_user._get_current_object().get_current_division():
@@ -116,7 +114,13 @@ def order():
     order.organization = organization
     order.save()
 
-    return redirect(url_for("item_orders.index", organization_id=organization_id))
+    return render_template(
+        "/item_orders/order.html",
+        form=form,
+        organization=organization,
+        order=order,
+        success=True,
+    )
 
 
 @module.route("/<order_id>/edit", methods=["GET", "POST"])
@@ -152,7 +156,10 @@ def edit(order_id):
     ]
     if not form.validate_on_submit():
         return render_template(
-            "/item_orders/order.html", form=form, organization=organization
+            "/item_orders/order.html",
+            form=form,
+            organization=organization,
+            order=order,
         )
 
     form.populate_obj(order)
@@ -167,7 +174,13 @@ def edit(order_id):
 
     order.save()
 
-    return redirect(url_for("item_orders.index", organization_id=organization_id))
+    return render_template(
+        "/item_orders/order.html",
+        form=form,
+        organization=organization,
+        order=order,
+        success=True,
+    )
 
 
 @module.route("/<order_id>/delete")

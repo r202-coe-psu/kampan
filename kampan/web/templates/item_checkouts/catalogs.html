@@ -15,12 +15,38 @@
 {% block content %}
 <div class="navbarmenu">
   <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+    <a class="ui labeled icon button"
+      href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
       <i class="left arrow icon"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
+
+<div class="ui ordered steps" style="width: 100%;">
+  <a class="completed step"
+    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+    <div class="content">
+      <div class="title">เพิ่มคำสั่งเบิก</div>
+      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
+    </div>
+  </a>
+  <a class="active step"
+    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">เลือกพัสดุ</div>
+      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
+    </div>
+  </a>
+  <a class="step"
+    href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">ยืนยันการเบิกพัสดุ</div>
+      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
+    </div>
+  </a>
+</div>
+
 {% set params=dict(request.args) %}
 {% if 'order_id' not in params %}
 {% set _dummy=params.update({"order_id": order.id|string}) %}
@@ -55,7 +81,7 @@
         alt="{{ item.name }}">
       {% endif %}
       {% if item.get_amount_items() == 0 %}
-      <div class="ui center  dimmer active">
+      <div class="ui center dimmer active">
         <div class="content">
           <div class="center">
             <h2 class="ui inverted header">วัสดุหมดชั่วคราว</h2>

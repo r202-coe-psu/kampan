@@ -22,9 +22,8 @@
   "pending" and order.created_by == current_user
   %}
   <div class="right menu">
-    <a class="ui icon button labeled icon primary" onclick="showModal('email')">
-      <i class="envelope outline icon"></i>
-      ส่งอีเมลแจ้งเตือน
+    <a class="ui button primary" onclick="showModal('email')">
+      ยืนยันการเบิกพัสดุ
     </a>
   </div>
   {% endif %}
@@ -35,10 +34,10 @@
 {% if order.created_by == current_user %}
 <div class="ui modal email">
   <div class="header">
-    ส่งอีเมลแจ้งเตือน
+    ยืนยันการเบิกพัสดุ
   </div>
   <div class="content">
-    <p>ต้องการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
+    <p>ทำการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
 
     </p>
   </div>
@@ -55,6 +54,29 @@
 </div>
 {% endif %}
 {% endif %}
+
+<div class="ui ordered steps" style="width: 100%;">
+  <a class="completed step"
+    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+    <div class="content">
+      <div class="title">เพิ่มคำสั่งเบิก</div>
+      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
+    </div>
+  </a>
+  <a class="completed step"
+    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+    <div class="content">
+      <div class="title">เลือกพัสดุ</div>
+      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
+    </div>
+  </a>
+  <div class="active step">
+    <div class="content">
+      <div class="title">ยืนยันการเบิกพัสดุ</div>
+      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
+    </div>
+  </div>
+</div>
 
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">

@@ -60,23 +60,7 @@
           {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
           <td data-label="Piece">{{ checkout.piece }}</td>
           {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
-          {% if checkout.order.status == "pending" %}
-          <td data-label="Status" class="yellow">
-            <span class="ui yellow text">{{ checkout.order.get_status_display() }}</span>
-          </td>
-          {% elif checkout.order.approval_status == "approved" and checkout.order.approval_status == "approved" %}
-          <td data-label="Status" class="green">
-            <span class="ui green text">{{ checkout.order.get_status_display() }} </span>
-          </td>
-          {% elif checkout.order.status == "denied" or checkout.order.approval_status == "denied"%}
-          <td data-label="Status" class="red">
-            <span class="ui red text">{{ checkout.order.get_status_display() }}</span>
-          </td>
-          {% else %}
-          <td data-label="Status" class="yellow">
-            <span class="ui yellow text">{{ checkout.order.get_status_display() }}</span>
-          </td>
-          {% endif %}
+          {{ checkout.order.get_status()|safe }}
 
           <td data-label="User">{{ checkout.user.get_name() }}</td>
           {#}<td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>

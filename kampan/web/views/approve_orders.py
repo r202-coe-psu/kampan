@@ -123,7 +123,7 @@ def endorser_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
-    order.denied_reason = request.args.get("reason", default="", type=str)
+    order.remark = request.args.get("reason", default="", type=str)
     order.save()
 
     for checkout in checkout_items:
@@ -207,6 +207,8 @@ def supervisor_supplier_approve(order_id):
     organization_id = request.args.get("organization_id")
     order = models.OrderItem.objects.get(id=order_id)
     order.status = "pending on admin"
+    order.remark = request.args.get("reason", default="", type=str)
+
     order.save()
 
     return redirect(
@@ -224,7 +226,7 @@ def supervisor_supplier_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
-    order.denied_reason = request.args.get("reason", default="", type=str)
+    order.remark = request.args.get("reason", default="", type=str)
 
     order.save()
 
@@ -405,7 +407,7 @@ def admin_denied(order_id):
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
-    order.denied_reason = request.args.get("reason", default="", type=str)
+    order.remark = request.args.get("reason", default="", type=str)
 
     order.save()
 
@@ -474,5 +476,30 @@ def admin_approve_page(order_id):
             "approve_orders.admin_approve",
             organization_id=organization_id,
             order_id=order_id,
+        )
+    )
+
+
+@module.route(
+    "/<order_id>/change_quantity/organization/<organization_id>", methods=["GET"]
+)
+@acl.organization_roles_required("supervisor supplier", "admin")
+def change_quantity(order_id, organization_id):
+    order = models.OrderItem.objects.get(id=order_id)
+    checkout_items = models.CheckoutItem.objects(order=order, status="active")
+
+    for checkout in checkout_items:
+        quantity = request.args.get(f"{checkout.id}", type=int, default=0)
+        checkout.piece = quantity
+        checkout.quantity = quantity
+        checkout.save()
+
+    order.save()
+
+    return redirect(
+        url_for(
+            "approve_orders.supervisor_supplier_approved_detail",
+            organization_id=organization_id,
+            order_id=order.id,
         )
     )

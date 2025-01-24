@@ -27,8 +27,7 @@
   </div>
   {% if order.status=="pending on supervisor supplier" and checkouts %}
   <div class="right menu">
-    <a class="ui positive button"
-      href="{{ url_for('approve_orders.supervisor_supplier_approve_page',order_id=order.id, organization_id=organization.id)}}"
+    <a class="ui positive button" onclick="showModal('approve')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
     <a class="ui negative button" onclick="showModal('denied')"
@@ -75,69 +74,123 @@
   </div>
 </form>
 
-{% endif %}
 
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>รูปวัสดุ</th>
-        <th>วันที่นำวัสดุออก</th>
-        <th>ชื่อวัสดุ</th>
-        {#}<th>จำนวนหน่วยใหญ่</th>{#}
-        <th>จำนวนหน่วยเล็ก</th>
-        <th>ราคาแต่ละหน่วยเล็ก</th>
-        <th>รวม</th>
-        <th>จำนวนที่มีในคลัง</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for checkout in paginated_checkouts.items %}
-      <tr>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img
-              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
-              width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Item">{{ checkout.item.name }}</td>
-        {#} <td data-label="Set">{{ checkout.set_ }}</td> {#}
-        <td data-label="Piece">{{ checkout.piece }}</td>
-        <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
-        <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.quantity > checkout.item.get_amount_pieces() %}
-        <td data-label="Status" class="red">
-          <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
-        </td>
-        {% else %}
-        <td data-label="Status" class="green">
-          <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
-        </td>
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% set params=dict(request.args) %}
-  {% if 'page' in params %}
-  {% set _dummy=params.pop('page') %}
-  {% endif %}
-  {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{ paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+
+<form
+  action="{{ url_for('approve_orders.supervisor_supplier_approve',order_id=order.id, organization_id=organization.id) }}"
+  class="ui modal approve">
+
+  <div class="header">
+    <span class="ui text green">
+      อนุมัติคำสั่งเบิกวัสดุ
+    </span>
+  </div>
+  <div class="content">
+    <p>ต้องการอนุมัติคำสั่งเบิกวัสดุ
+      <b>{{ order.description }}</b>
+    </p>
+    <div class="ui form">
+      <div class="field">
+        <label for="reason">เหตุผล</label>
+        <input type="text" id="reason" name="reason">
+        <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
+          style="display: none;">
       </div>
+    </div>
+
+  </div>
+  <div class="actions">
+    <button class="ui black deny button" type="button">
+      ยกเลิก
+    </button>
+    <button class="ui positive right labeled icon button" type="submit">
+      ยืนยัน
+      <i class="checkmark icon"></i>
+    </button>
+  </div>
+</form>
+{% endif %}
+<form action="{{ url_for('approve_orders.change_quantity',order_id=order.id, organization_id=organization.id) }}">
+  {% if order.status=="pending on supervisor supplier" and checkouts %}
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button class="ui button primary">
+        บันทึกข้อมูลที่แก้ไข
+      </button>
     </div>
   </div>
   {% endif %}
-</div>
+  <div style="padding-bottom: 1em ;">
+    <table class="ui celled table">
+      <thead>
+        <tr>
+          <th>รูปวัสดุ</th>
+          <th>วันที่นำวัสดุออก</th>
+          <th>ชื่อวัสดุ</th>
+          {#}<th>จำนวนหน่วยใหญ่</th>{#}
+          <th>จำนวนหน่วยเล็ก</th>
+          <th>ราคาแต่ละหน่วยเล็ก</th>
+          <th>รวม</th>
+          <th>จำนวนที่มีในคลัง</th>
+          <th>จำนวนที่ให้</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Item">{{ checkout.item.name }}</td>
+          {#} <td data-label="Set">{{ checkout.set_ }}</td> {#}
+          <td data-label="Piece">{{ checkout.piece }}</td>
+          <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
+          <td data-label="Quantity">{{ checkout.quantity }}</td>
+          {% if checkout.quantity > checkout.item.get_amount_pieces() %}
+          <td data-label="Status" class="red">
+            <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% else %}
+          <td data-label="Status" class="green">
+            <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% endif %}
+          <td>
+            <div class="ui form">
+              <div class="field">
+                <input type="number" name="{{ checkout.id }}" id="{{ checkout.id }}" value="{{ checkout.quantity }}"
+                  min="0" max="{{ checkout.item.get_amount_items() }}">
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_checkouts.pages != 1 %}
+    <div class="ui grid">
+      <div class="column row">
+        <div class="center aligned column">
+          {{ paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</form>
 {% else %}
 <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
