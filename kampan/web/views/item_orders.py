@@ -149,12 +149,10 @@ def edit(order_id):
         for org_user in organization.get_organization_users(division)
         if ("endorser" in org_user.roles or "head" in org_user.roles) and org_user.user
     ]
-    form.admin_approver.choices = [
-        (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users(division)
-        if ("admin" in org_user.roles) and org_user.user
-    ]
+
     if not form.validate_on_submit():
+        if order:
+            form.head_endorser.data = str(order.head_endorser.id)
         return render_template(
             "/item_orders/order.html",
             form=form,
