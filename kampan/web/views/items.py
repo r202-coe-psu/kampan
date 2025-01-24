@@ -472,6 +472,7 @@ def edit_active_item(item_id):
     item.name = str(form.name.data).strip()
     item.categories = models.Category.objects(id=form.categories.data).first()
     item.last_updated_by = current_user._get_current_object()
+    item.organization = organization
     item.status = "active"
 
     item.save()

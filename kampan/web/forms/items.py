@@ -19,6 +19,7 @@ BaseItemForm = model_form(
         "last_updated_by",
         "status",
         "notification_status",
+        "organization",
     ],
     field_args={
         "name": {"label": "ชื่อ"},
