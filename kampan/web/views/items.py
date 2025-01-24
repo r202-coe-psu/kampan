@@ -415,6 +415,7 @@ def edit(item_id):
         item.item_format == "one to many"
         item.piece_per_set = form.piece_per_set.data
         item.piece_unit = form.piece_unit.data
+    item.status = "active"
     item.name = str(form.name.data).strip()
     item.categories = models.Category.objects(id=form.categories.data).first()
     item.last_updated_by = current_user._get_current_object()
@@ -471,6 +472,8 @@ def edit_active_item(item_id):
     item.name = str(form.name.data).strip()
     item.categories = models.Category.objects(id=form.categories.data).first()
     item.last_updated_by = current_user._get_current_object()
+    item.status = "active"
+
     item.save()
 
     return redirect(url_for("items.index", **request.args))
