@@ -31,10 +31,30 @@
   </div>
 
   <div class="ui secondary menu">
+    <div class="left menu">
+
+      <span class="ui button" data-html="
+    <div style='font-size: 18px; width: 400px;'>
+      <div><span class='ui red text'>● สีแดง:</span> ปฎิเสธ</div>
+      <div><span class='ui green text'>● สีเขียว:</span> อนุมัติรอรับวัสดุ</div>
+      <div><span class='ui blue text'>● สีน้ำเงิน:</span> รอการจัดการจากเจ้าหน้าที่พัสดุ</div>
+      <div><span class='ui orange text'>● สีส้ม:</span> รอการอนุมัติจากหัวหน้าฝ่ายบริหาร</div>
+      <div><span class='ui yellow text'>● สีเหลือง:</span> รอการอนุมัติจากหัวหน้าฝ่าย</div>
+    </div>
+  " data-position="top center">
+        แสดงความหมายของสี
+      </span>
+    </div>
     <div class="right menu">
       <button type="submit" class="ui primary button">ค้นหา</button>
     </div>
   </div>
+
+  <script>
+    $(document).ready(function () {
+      $('.ui.button').popup();
+    });
+  </script>
   {% if orders %}
   <div style="padding-bottom: 1em ;">
     <table class="ui celled table">
@@ -65,26 +85,10 @@
               <i class="eye icon"></i>
             </a>
           </td>
-          {% if order.status == "pending" %}
-          <td data-label="Status" class="yellow">
-            <span class="ui yellow text">{{ order.get_status_display() }}</span>
-          </td>
-          {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
-          <td data-label="Status" class="green">
-            <span class="ui green text">{{ order.get_status_display() }}
-            </span>
-          </td>
-          {% elif order.status == "denied" or order.approval_status == "denied"%}
-          <td data-label="Status" class="red">
-            <span class="ui red text">{{ order.get_status_display() }}</span>
-          </td>
-          {% else %}
-          <td data-label="Status" class="yellow">
-            <span class="ui yellow text">{{ order.get_status_display() }}</span>
-          </td>
-          {% endif %}
+          {{ order.get_status()|safe }}
+
           <td>
-            {{ order.denied_reason }}
+            {{ order.remark }}
           </td>
           <td>
             {{ order.sent_item_date.strftime("%d/%m/%Y %H:%M")
