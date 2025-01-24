@@ -321,7 +321,6 @@ def admin_index():
         approval_status="pending",
         status="pending on admin",
         organization=organization,
-        admin_approver=current_user,
     )
 
     form = forms.inventories.SearchStartEndDateForm()
