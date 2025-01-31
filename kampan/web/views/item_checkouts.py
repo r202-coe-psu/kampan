@@ -182,7 +182,9 @@ def checkout():
     # items = models.Item.objects()
     form = forms.item_checkouts.CheckoutItemForm()
     order = models.OrderItem.objects(id=request.args.get("order_id")).first()
-    checkout_item = models.CheckoutItem.objects(item=item_id).first()
+    checkout_item = None
+    if order:
+        checkout_item = models.CheckoutItem.objects(item=item_id, order=order, status__ne="disactive").first()
     if checkout_item:
         return redirect(
             url_for(
