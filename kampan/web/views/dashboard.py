@@ -133,8 +133,7 @@ def all_report():
             item = models.Item.objects(id=form.item.data).first()
         year, quarter = str(form.quarter.data).split("_")
 
-        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
-        
+        start_date, end_date = get_quarter_of_year(int(year))[int(quarter)]
         items_snapshot = models.ItemSnapshot.objects(
             Q(created_date__gte=start_date + datetime.timedelta(days=1))
             & Q(created_date__lt=end_date + datetime.timedelta(days=2))
