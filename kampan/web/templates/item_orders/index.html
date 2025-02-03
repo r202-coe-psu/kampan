@@ -40,6 +40,8 @@
       <div><span class='ui blue text'>● สีน้ำเงิน:</span> รอการจัดการจากเจ้าหน้าที่พัสดุ</div>
       <div><span class='ui orange text'>● สีส้ม:</span> รอการอนุมัติจากหัวหน้าฝ่ายบริหาร</div>
       <div><span class='ui yellow text'>● สีเหลือง:</span> รอการอนุมัติจากหัวหน้าฝ่าย</div>
+      <div><span class='ui pink text'>● สีชมพู:</span> รอการยืนยันการเบิก</div>
+
     </div>
   " data-position="top center">
         แสดงความหมายของสี
@@ -95,20 +97,20 @@
             if order.sent_item_date else "" }}
           </td>
           <td>
-            {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
-            "pending"
-            %}
+            {% if order.status == 'pending'  %}
             <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               data-tooltip="เบิกวัสดุ"
               href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
               <i class="plus icon"></i>
             </a>
             {% endif %}
-            {% if order.approval_status != 'approved' and order.approval_status != "denied" %}
+            {% if order.status == 'pending'  %}
             <a class="ui icon button primary" data-tooltip="แก้ไข"
               href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
               <i class="edit icon"></i>
             </a>
+            {% endif %}
+
             <a class="ui icon button red {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               data-tooltip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
               <i class="trash icon"></i>
@@ -133,7 +135,6 @@
                 </a>
               </div>
             </div>
-            {% endif %}
           </td>
         </tr>
         {% endfor %}

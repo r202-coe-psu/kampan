@@ -8,7 +8,8 @@ ORDER_ITEM_STATUS = [
     ("approved", "อนุมัติรอรับวัสดุ"),
     ("pending on admin", "รอการจัดการจากเจ้าหน้าที่พัสดุ"),
     ("pending on supervisor supplier", "รอการอนุมัติจากหัวหน้าฝ่ายบริหาร"),
-    ("pending", "รอการอนุมัติจากหัวหน้าฝ่าย"),
+    ("pending", "รอการยืนยันการเบิก"),
+    ("confirmed", "รอการอนุมัติจากหัวหน้าฝ่าย"),
     ("disactive", "ยกเลิก"),
     ("active", "ดำเนินการ"),
 ]
@@ -84,7 +85,8 @@ class OrderItem(me.Document):
             "approved": "green",
             "pending on admin": "blue",
             "pending on supervisor supplier": "orange",
-            "pending": "yellow",
+            "pending": "pink",
+            "confirmed": "yellow",
             "disactive": "red",
             "active": "blue",
         }

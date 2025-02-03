@@ -50,7 +50,7 @@ def endorser_index():
     ).first()
     orders = models.OrderItem.objects(
         approval_status="pending",
-        status="pending",
+        status="confirmed",
         organization=organization,
         head_endorser=current_user._get_current_object(),
     )
