@@ -48,7 +48,7 @@
       <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
     </div>
   </a>
-  <div class="active step">
+  <div class="{{'active' if order.status == 'pending' else 'completed'}} step">
     <div class="content">
       <div class="title">ยืนยันการเบิกพัสดุ</div>
       <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
