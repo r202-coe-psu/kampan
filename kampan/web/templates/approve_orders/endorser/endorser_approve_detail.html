@@ -2,11 +2,11 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
-เพิ่มคำสั่งเบิก
+หัวหน้าฝ่ายอนุมัติคำสั่งเบิก
 {% endblock %}
 
 {% block dashboard_title %}
-หัวหน้าแผนกอนุมัติคำสั่งเบิกวัสดุ
+หัวหน้าฝ่ายอนุมัติคำสั่งเบิก
 {% endblock %}
 
 {% block breadcrumbs %}
@@ -26,7 +26,7 @@
       ย้อนกลับ
     </a>
   </div>
-  {% if order.status=="pending" and checkouts %}
+  {% if order.status=="confirmed" and checkouts %}
   <div class="right menu">
     <a class="ui positive button" onclick="showModal('approve')"
       style="height:fit-content; margin-top:auto; margin-left:15px; ">
@@ -39,7 +39,7 @@
 </div>
 {% if checkouts %}
 
-{% if order.status=="pending" %}
+{% if order.status=="confirmed" %}
 <form action="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
   class="ui modal denied">
 
