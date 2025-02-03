@@ -4,6 +4,7 @@ import datetime
 from kampan import models
 
 ORDER_ITEM_STATUS = [
+    ("admin denied", "ปฎิเสธ"),
     ("denied", "ปฎิเสธ"),
     ("approved", "อนุมัติรอรับวัสดุ"),
     ("pending on admin", "รอการจัดการจากเจ้าหน้าที่พัสดุ"),
@@ -82,6 +83,7 @@ class OrderItem(me.Document):
     def get_status(self):
         key_color = {
             "denied": "red",
+            "admin denied": "red",
             "approved": "green",
             "pending on admin": "blue",
             "pending on supervisor supplier": "orange",

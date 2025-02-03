@@ -21,7 +21,7 @@
     </p>
     <p>
       <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+        style="height:fit-content; margin-top:auto; margin-left:15px; ">ค้นหา</button>
     </p>
   </div>
   <div>
@@ -32,6 +32,7 @@
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>คำอธิบาย</th>
           <th>ชื่อผู้ใช้งาน</th>
+          <th>สถานะ</th>
           <th>การอนุมัติ</th>
         </tr>
       </thead>
@@ -41,6 +42,7 @@
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
+          {{ order.get_status()|safe }}
           <td data-label="Status">
             <a class="positive ui button"
               href="{{ url_for('approve_orders.admin_approved_detail', order_id=order.id, organization_id=organization.id)}}">

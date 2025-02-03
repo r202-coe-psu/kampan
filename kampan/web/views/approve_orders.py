@@ -320,10 +320,9 @@ def admin_index():
         id=organization_id, status="active"
     ).first()
     orders = models.OrderItem.objects(
-        approval_status="pending",
-        status="pending on admin",
+        status__in=["pending on admin", "admin denied", "approved"],
         organization=organization,
-    )
+    ).order_by("-created_date")
 
     form = forms.inventories.SearchStartEndDateForm()
     if form.start_date.data == None and form.end_date.data != None:
@@ -406,8 +405,8 @@ def admin_denied(order_id):
     organization_id = request.args.get("organization_id")
     order = models.OrderItem.objects.get(id=order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
-    order.approval_status = "denied"
-    order.status = "denied"
+    order.approval_status = "admin denied"
+    order.status = "admin denied"
     order.remark = request.args.get("reason", default="", type=str)
 
     order.save()
