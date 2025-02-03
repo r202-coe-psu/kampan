@@ -364,6 +364,7 @@ def admin_approve(order_id):
 
     for checkout in checkout_items:
         checkout.status = "active"
+        checkout.approval_status = "approved"
         # checkout.save()
         item = checkout.item
         quantity = (checkout.set_ * item.piece_per_set) + checkout.piece
