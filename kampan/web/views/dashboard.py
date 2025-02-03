@@ -104,11 +104,15 @@ def all_report():
                     f"ปี {year+543+1} ไตรมาสที่ {count} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
                 )
             )
+            count += 1
             if end_date <= datetime.date.today():
-                default_quarter = f"{year}_{count}"
+                default_quarter = f"{year}_{count%4}"
     form.quarter.choices = quarter_choices
+    
     if not form.validate_on_submit():
-        form.quarter.data = default_quarter
+        if not form.quarter.data:
+            form.quarter.data = default_quarter
+        
 
         search_quarter = request.args.get("search_quarter")
         if search_quarter:

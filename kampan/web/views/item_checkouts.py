@@ -107,7 +107,11 @@ def catalogs(order_id):
     items = models.Item.objects(
         status__in=["active"], organization=organization
     ).order_by("status", "-created_date")
-
+    list_items = []
+    for item in items:
+        if item.get_amount_items() > 0:
+            list_items.append(item)
+    items = list_items
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (
             str(item.id),
