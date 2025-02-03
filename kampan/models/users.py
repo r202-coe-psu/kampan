@@ -175,3 +175,37 @@ class User(me.Document, UserMixin):
         except:
             fullname = self.get_name()
         return fullname
+    
+    def get_first_name_th(self):
+        try:
+            if self.resources["psu"]["first_name_th"]:
+                first_name = self.resources["psu"]["first_name_th"]
+            else:
+                first_name = self.resources["psu"]["first_name_th"]
+        except:
+            first_name = self.first_name
+        return first_name
+    
+    def get_last_name_th(self):
+        try:
+            if self.resources["psu"]["first_name_th"]:
+                last_name = self.resources["psu"]["last_name_th"]
+            else:
+                last_name = self.resources["psu"]["last_name_th"]
+        except:
+            last_name = self.last_name
+        return last_name
+    
+    def get_current_organization_user_role(self):
+        from . import OrganizationUserRole
+
+        try:
+            organization_user_role = OrganizationUserRole.objects(
+                user=self,
+                organization=self.get_current_organization(),
+                status="active",
+            ).first()
+            return organization_user_role
+
+        except:
+            return

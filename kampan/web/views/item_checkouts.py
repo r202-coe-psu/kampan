@@ -93,7 +93,9 @@ def index():
 
 
 @module.route("/order/<order_id>/catalogs", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def catalogs(order_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(

@@ -109,9 +109,9 @@ def add_member(organization_id):
 
     for user_id in form.members.data:
         user = models.User.objects(id=user_id).first()
-        if not user.get_current_organization():
-            user.user_setting.current_organization = organization
-            user.save()
+        user.user_setting.current_organization = organization
+        user.save()
+            
 
         org_user = models.OrganizationUserRole(
             organization=organization,
