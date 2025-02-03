@@ -101,7 +101,7 @@ def all_report():
             quarter_choices.append(
                 (
                     f"{year}_{count}",
-                    f"ปี {year+543+1} ไตรมาสที่ {count+1} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
+                    f"ปี {year+543+1} ไตรมาสที่ {(count%4)+1} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
                 )
             )
             count += 1
