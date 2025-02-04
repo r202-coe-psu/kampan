@@ -20,14 +20,30 @@ REPORT_HEADER = [
 ]
 
 
-def get_all_report(items_snapshot, organization, search_quarter):
-    today = datetime.datetime.now()
-    year, quarter = str(search_quarter).split("_")
-    data = [
-        [f"รายงานวัสดุคงเหลือเงิน ปีงบประมาณ {int(year) + 543 +1} ไตรมาสที่ {quarter}"],
-        [organization.name],
-        ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
-    ]
+def get_all_report(
+    items_snapshot, organization, start_date=None, end_date=None, search_quarter=None
+):
+    if search_quarter:
+        year, quarter = str(search_quarter).split("_")
+        data = [
+            [f"รายงานวัสดุคงเหลือเงิน ปีงบประมาณ {int(year) + 543 +1} ไตรมาสที่ {quarter}"],
+            [organization.name],
+            ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
+        ]
+    elif start_date and end_date:
+        data = [
+            [
+                f"รายงานวัสดุคงเหลือเงิน {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+            ],
+            [organization.name],
+            ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
+        ]
+    else:
+        data = [
+            [f"รายงานวัสดุคงเหลือเงิน"],
+            [organization.name],
+            ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
+        ]
     all_remaining_balance = 0
     item_snapshot_by_category = {}
 
@@ -40,6 +56,12 @@ def get_all_report(items_snapshot, organization, search_quarter):
             item_snapshot_by_category[item_snapshot.item.categories.name] = [
                 item_snapshot
             ]
+    sorted_item_snapshot_by_category = {}
+    for key in item_snapshot_by_category:
+        sorted_item_snapshot_by_category[key] = sorted(
+            item_snapshot_by_category[key], key=lambda x: x.item.name, reverse=False
+        )
+    item_snapshot_by_category = sorted_item_snapshot_by_category
     count = 1
     if item_snapshot_by_category:
         for k in item_snapshot_by_category.keys():
@@ -131,7 +153,7 @@ def get_all_report(items_snapshot, organization, search_quarter):
     response = send_file(
         excel_output,
         as_attachment=True,
-        download_name=f"all-report-{int(year) + 543 +1}-quarter-{quarter}.xlsx",
+        download_name=f"all-report.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     return response

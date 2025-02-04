@@ -33,11 +33,11 @@
     <a class="item {{ 'active' if '/dashboard/summary' in request.path else '' }}"
       href="{{ url_for('dashboard.dashboard', organization_id = organization.id) }}"><i
         class="icon dashboard"></i>แดชบอร์ด</a>
-
+    {#}
     <a class="item {{ 'active' if '/dashboard/chart' in request.path else '' }}"
       href="{{ url_for('dashboard.dashboard_chart', organization_id = organization.id) }}">
       <i class="chart bar icon"></i>กราฟแสดงวัสดุเข้า-ออก</a>
-
+{#}
     <a class="item {{ 'active' if '/dashboard/all_report' in request.path else '' }}"
       href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">รายงานวัสดุคงเหลือ</a>
 

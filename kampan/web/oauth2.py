@@ -286,7 +286,7 @@ def handle_authorized_oauth2(remote, token):
         session.pop("next")
         return redirect(next_uri)
 
-    return redirect(url_for("accounts.index"))
+    return redirect(url_for("site.select_system"))
 
 
 def init_oauth(app):
