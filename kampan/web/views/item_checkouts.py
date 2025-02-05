@@ -107,11 +107,7 @@ def catalogs(order_id):
     items = models.Item.objects(
         status__in=["active"], organization=organization
     ).order_by("status", "-created_date")
-    list_items = []
-    for item in items:
-        if item.get_amount_items() > 0:
-            list_items.append(item)
-    items = list_items
+    
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (
             str(item.id),
@@ -126,12 +122,15 @@ def catalogs(order_id):
             organization=organization, status="active"
         )
     ]
+    
     if not form.validate_on_submit():
 
         item_name = request.args.get("item_name")
+        
         if item_name:
             form.item_name.data = item_name
             items = items.filter(name__icontains=form.item_name.data)
+            
 
         item_select_id = request.args.get("item_select_id")
         if item_select_id:
@@ -144,12 +143,17 @@ def catalogs(order_id):
             form.categories.data = categories
             items = items.filter(categories=form.categories.data)
 
+        list_items = []
+        for item in items:
+            if item.get_amount_items() > 0:
+                list_items.append(item)
+        items = list_items
         page = request.args.get("page", default=1, type=int)
+        
         try:
             paginated_items = Pagination(items, page=page, per_page=24)
         except:
             paginated_items = Pagination(items, page=1, per_page=24)
-
         return render_template(
             "/item_checkouts/catalogs.html",
             paginated_items=paginated_items,
@@ -158,6 +162,7 @@ def catalogs(order_id):
             organization=organization,
             order=order,
         )
+    
     item_name = form.item_name.data
     item_select_id = form.item.data
     categories = form.categories.data
