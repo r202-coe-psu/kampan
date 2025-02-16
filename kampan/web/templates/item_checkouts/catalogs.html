@@ -68,6 +68,9 @@
   </div>
 </form>
 
+{% if checkouts and order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
+"pending" and order.created_by == current_user
+%}
 {% if items %}
 <div class="ui four cards">
   {% for item in paginated_items.items %}
@@ -120,6 +123,7 @@
 {% endif %}
 {% else %}
 <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {% endif %}
 {% endblock %}
 
