@@ -37,7 +37,7 @@
     <a class="item {{ 'active' if '/dashboard/chart' in request.path else '' }}"
       href="{{ url_for('dashboard.dashboard_chart', organization_id = organization.id) }}">
       <i class="chart bar icon"></i>กราฟแสดงวัสดุเข้า-ออก</a>
-{#}
+    {#}
     <a class="item {{ 'active' if '/dashboard/all_report' in request.path else '' }}"
       href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">รายงานวัสดุคงเหลือ</a>
 
@@ -195,8 +195,11 @@ current_user.get_current_division()) or current_user.has_roles(['admin']) %}
 
 {% if organization %}
 <a class="item {{ 'active' if '/accounts' in request.path else '' }}"
+  href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026"><i
+    class="laptop house icon"></i>Smart Office</a>
+<a class="item {{ 'active' if '/accounts' in request.path else '' }}"
   href="{{ url_for('accounts.index',organization_id=organization.id) }}"><i
-    class="address book icon"></i>ข้อมูลผู้ใช้งาน</a>
+    class="address book icon "></i>ข้อมูลผู้ใช้งาน</a>
 <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
 {% endif %}
 
