@@ -19,8 +19,10 @@
 {% block content %}
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
-    <h2 class="ui header">ข้อมูลผู้ใช้งาน <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
+    <h2 class="ui header">ข้อมูลผู้ใช้งาน
+      <!--       
+      <a class="btn-floating btn-large waves-effect waves-light"
+        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a> -->
     </h2>
     {% if current_user.get_picture() %}
     <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">
@@ -33,7 +35,8 @@
 
       {% if current_user.get_current_organization_user_role() %}
       {{ row_detail("ตำแหน่ง :") }}
-      {{ row_detail((current_user.get_current_organization_user_role()).display_appointment() if (current_user.get_current_organization_user_role()).display_appointment() else "-" ) }}
+      {{ row_detail((current_user.get_current_organization_user_role()).display_appointment() if
+      (current_user.get_current_organization_user_role()).display_appointment() else "-" ) }}
       {% endif %}
 
       {% if current_user.get_current_division() %}
