@@ -62,6 +62,8 @@
     <table class="ui celled table">
       <thead>
         <tr>
+          <th></th>
+
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>
@@ -76,6 +78,8 @@
       <tbody>
         {% for order in paginated_orders.items %}
         <tr>
+          <td data-label="Index">{{ loop.index }}</td>
+
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
@@ -97,14 +101,14 @@
             if order.sent_item_date else "" }}
           </td>
           <td>
-            {% if order.status == 'pending'  %}
+            {% if order.status == 'pending' %}
             <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               data-tooltip="เบิกวัสดุ"
               href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
               <i class="plus icon"></i>
             </a>
             {% endif %}
-            {% if order.status == 'pending'  %}
+            {% if order.status == 'pending' %}
             <a class="ui icon button primary" data-tooltip="แก้ไข"
               href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
               <i class="edit icon"></i>
