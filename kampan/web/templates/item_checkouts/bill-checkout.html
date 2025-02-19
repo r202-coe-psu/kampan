@@ -24,9 +24,9 @@
     <a href="{{ url_for('item_checkouts.upload_file', organization_id=organization.id, order_id=order.id) }}"
       class="ui primary button">อัปโหลดไฟล์</a>
     {% endif %}
-    {% if checkouts and order.approval_status != 'approved' and order.approval_status != "denied" and order.status ==
-    "pending" and order.created_by == current_user
-    %}
+    {% if order.status ==
+      "pending" 
+      %}
     <a class="ui button primary" onclick="showModal('email')">
       ยืนยันการเบิกพัสดุ
     </a>
