@@ -368,23 +368,27 @@ def item_report_custom():
     form.item.choices = [(str(item.id), item.name) for item in items]
 
     if not form.validate_on_submit():
-        form.start_date.data = datetime.datetime.combine(
-            datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
-        )
-        form.end_date.data = datetime.datetime.combine(
-            datetime.datetime.now(), datetime.datetime.min.time()
-        )
+
         search_start_date = request.args.get("search_start_date")
         if search_start_date:
-            form.end_date.data = datetime.datetime.strptime(
+            form.start_date.data = datetime.datetime.strptime(
                 search_start_date,
                 "%Y-%m-%d",
+            )
+
+        else:
+            form.start_date.data = datetime.datetime.combine(
+                datetime.datetime.now().replace(day=1), datetime.datetime.min.time()
             )
         search_end_date = request.args.get("search_end_date")
         if search_end_date:
             form.end_date.data = datetime.datetime.strptime(
                 search_end_date,
                 "%Y-%m-%d",
+            )
+        else:
+            form.end_date.data = datetime.datetime.combine(
+                datetime.datetime.now(), datetime.datetime.min.time()
             )
 
         form.item.data = request.args.get(
@@ -395,7 +399,6 @@ def item_report_custom():
             form.start_date.data, form.end_date.data, form.item.data, organization
         )
         list_data = calculate_amount_item(data)
-
         return render_template(
             "/dashboard/item_report_custom.html",
             organization=organization,
