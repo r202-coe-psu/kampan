@@ -1,0 +1,46 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}
+{{ "เพิ่มรถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดรถยนต์" }}
+{% endblock %}
+
+{% block dashboard_title %}
+{{ "เพิ่มรถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดรถยนต์"}}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("รถยนต์", url_for('vehicle_lending.cars.index', organization_id=organization.id) ),
+( "เพิ่มรถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดรถยนต์", "")]) }}
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary" style="padding-bottom: 10px;">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href='{{ url_for("vehicle_lending.cars.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form" enctype="multipart/form-data">
+  <div class="equal width fields">
+    {{form.csrf_token }}
+    {{render_form.InputField(form.license_plate)}}
+  </div>
+  <div class="equal width fields">
+    {{render_form.InputField(form.description)}}
+  </div>
+  <div class="equal width fields">
+    {{render_form.FileInputField(form.upload_image)}}
+  </div>
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ยืนยัน</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

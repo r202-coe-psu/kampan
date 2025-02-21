@@ -15,3 +15,5 @@ from . import email_templates
 from . import approve_orders
 from . import categories
 from . import dashboard
+from . import vehicles
+from . import vehicle_applications

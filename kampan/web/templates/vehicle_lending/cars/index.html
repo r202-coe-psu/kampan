@@ -1,0 +1,98 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}รถยนต์{% endblock %}
+
+{% block dashboard_title %}รถยนต์{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('vehicle_lending.cars.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มรถยนต์
+    </a>
+  </div>
+</div>
+
+
+<div class="ui divided items">
+  {% for car in cars %}
+  <div class="item">
+    <div class="image">
+      {% if not car.image %}
+      <img src="{{ url_for('static', filename='/images/image.png') }}">
+      {% else %}
+      <img
+        src="{{ url_for('vehicle_lending.cars.image', car_id=car.id, filename=car.image.filename, organization_id=organization.id) }}"
+        alt="{{ car.license_plate }}">
+      {% endif %}
+    </div>
+    <div class="content">
+      <a class="header"> {{ car.license_plate }}</a>
+      <div class="meta">
+
+      </div>
+      <div class="description">
+        <span class="cinema">{{ car.description }}</span>
+      </div>
+
+      <div class="extra">
+
+        <a class="ui right floated red button labeled icon" onclick="showDeleteModal('{{ car.id }}')">
+          ลบ
+          <i class="trash icon"></i>
+        </a>
+
+        <a class="ui right floated primary button labeled icon"
+          href="{{ url_for('vehicle_lending.cars.create_or_edit', organization_id=organization.id, car_id=car.id) }}">
+          แก้ไข
+          <i class="edit icon"></i>
+        </a>
+        <div class="ui modal {{car.id}}">
+          <div class="header">
+            ลบข้อมูลรถยนต์
+          </div>
+          <div class="content">
+            <p>ต้องการลบข้อมูลรถยนต์
+              <b>{{ car.description }}</b>
+            </p>
+          </div>
+          <div class="actions">
+            <button class="ui black deny button">
+              ยกเลิก
+            </button>
+            <a class="ui negative right labeled icon button"
+              href="{{ url_for('vehicle_lending.cars.delete', car_id=car.id) }}">
+              ยืนยัน
+              <i class="checkmark icon"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {% endfor %}
+  {% if not cars %}
+  <div class="ui message"> ไม่พบข้อมูลในขณะนี้</div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+
+  function showDeleteModal(item_id) {
+    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+{% endblock %}

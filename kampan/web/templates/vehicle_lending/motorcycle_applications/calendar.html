@@ -1,0 +1,93 @@
+{% extends '/vehicle_lending/base/default-motorcycle-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/pagination.html' as paginated %}
+
+
+{% block title %}คำขอใช้รถจักรยานยนต์{% endblock %}
+{% block dashboard_title %}คำขอใช้รถจักรยานยนต์{% endblock %}
+
+{% block breadcrumbs %}
+
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มคำขอใช้รถจักรยานยนต์
+    </a>
+  </div>
+</div>
+<div id='calendar'></div>
+
+{% endblock %}
+
+{% block additional_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async function () {
+
+    async function initDivisions(organizationId = '') {
+      const url = organizationId
+        ? "{{ url_for('vehicle_lending.motorcycle_applications.get_motorcycle_applications', organization_id='ORGANIZATION_ID') }}"
+          .replace('ORGANIZATION_ID', organizationId)
+        : "{{ url_for('vehicle_lending.motorcycle_applications.get_motorcycle_applications') }}";
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        return data.motorcycle_applications; // Ensure the data is returned properly
+      } catch (error) {
+        console.error('Error:', error);
+        return []; // Return an empty array in case of an error
+      }
+    }
+
+    const motorcycle_applications = await initDivisions('{{ organization.id }}');
+
+    console.log("Car applications loaded:", motorcycle_applications);
+
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      locale: 'th',
+      initialView: 'dayGridMonth',
+      events: motorcycle_applications,
+      buttonText: {
+        today: 'วันนี้',    // Rename "Today" button
+        month: 'เดือน',    // Rename "Month" view
+        week: 'สัปดาห์',   // Rename "Week" view
+        day: 'วัน',       // Rename "Day" view
+        list: 'รายการ'    // Rename "List" view
+      },
+      eventClick: function (info) {
+        alert('การใช้งาน: ' + info.event.title);
+
+        info.el.style.borderColor = 'black';
+      },
+
+      dateClick: function (info) {
+        const selectedDate = info.dateStr;
+        const url = "{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
+
+        window.location.href = url;
+      }
+    });
+
+    calendar.render();
+
+  });
+
+</script>
+
+<script type="text/javascript">
+
+  function showDeleteModal(motorcycle_application_id) {
+    motorcycle_application_id ? $('.ui.modal.' + motorcycle_application_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+
+{% endblock %}

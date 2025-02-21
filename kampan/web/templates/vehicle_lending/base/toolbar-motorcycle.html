@@ -1,0 +1,78 @@
+<div class="item">
+  {%- if current_user.get_image() %}
+  <a href="" class="ui image">
+    <img class="ui avatar image" src="{{ current_user.get_image() }}">
+  </a>
+  {% endif -%}
+  <a href=""><span class="white-text name">{{
+      current_user.first_name }}</span></a><br />
+  <a href=""><span class="white-text email">{{
+      current_user.email }}</span></a>
+</div>
+
+{% if not organization %}
+<div class="ui sidebar inverted vertical menu">
+  <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
+</div>
+{% endif %}
+
+
+{% if organization %}
+
+{% if current_user.has_organization_roles("admin") %}
+
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycles.index', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">รถจักรยานยนต์<i class="motorcycle alternate icon"></i></div>
+</a>
+
+{% endif %}
+
+{% endif %}
+
+
+{% if organization %}
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycle_applications.index', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">การขอใช้รถจักรยานยนต์<i class="motorcycle alternate icon"></i></div>
+</a>
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">ปฏิทินการขอใช้รถจักรยานยนต์<i class="calendar alternate icon"></i></div>
+</a>
+
+{#}
+{% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier") %}
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycle_permissions.header_page', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">หัวหน้าฝ่ายอนุมัติขอใช้รถจักรยานยนต์<i class="file alternate icon"></i>
+  </div>
+</a>
+{% endif %}
+{% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier") %}
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycle_permissions.director_page', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">ผอ. อนุมัติขอใช้รถจักรยานยนต์<i class="file alternate icon"></i></div>
+</a>
+{% endif %}
+{#}
+{% if current_user.has_organization_roles("admin") %}
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
+  href="{{ url_for('vehicle_lending.motorcycle_permissions.admin_page', organization_id=organization.id ) }}">
+  <div class="item" style="padding: 7.5px 0px;">พัสดุอนุมัติการขอใช้รถจักรยานยนต์</i>
+  </div>
+</a>
+{% endif %}
+
+<a class="item"
+  href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026"><i
+    class="laptop house icon"></i>Smart Office</a>
+<a class="item" href="{{ url_for('site.select_system') }}">เปลี่ยนระบบ</a>
+<a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
+{% endif %}
+
+<script type="text/javascript">
+  $(document).ready(function () {
+    $('.ui.accordion').accordion();
+  });
+</script>

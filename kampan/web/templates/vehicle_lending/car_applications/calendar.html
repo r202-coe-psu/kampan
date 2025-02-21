@@ -1,0 +1,93 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/pagination.html' as paginated %}
+
+
+{% block title %}คำขอใช้รถยนต์{% endblock %}
+{% block dashboard_title %}คำขอใช้รถยนต์{% endblock %}
+
+{% block breadcrumbs %}
+
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary menu">
+  <div class="right menu">
+    <a class="ui primary labeled icon button"
+      href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
+      <i class="plus icon"></i>
+      เพิ่มคำขอใช้รถยนต์
+    </a>
+  </div>
+</div>
+<div id='calendar'></div>
+
+{% endblock %}
+
+{% block additional_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async function () {
+
+    async function initDivisions(organizationId = '') {
+      const url = organizationId
+        ? "{{ url_for('vehicle_lending.car_applications.get_car_applications', organization_id='ORGANIZATION_ID') }}"
+          .replace('ORGANIZATION_ID', organizationId)
+        : "{{ url_for('vehicle_lending.car_applications.get_car_applications') }}";
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        return data.car_applications; // Ensure the data is returned properly
+      } catch (error) {
+        console.error('Error:', error);
+        return []; // Return an empty array in case of an error
+      }
+    }
+
+    const car_applications = await initDivisions('{{ organization.id }}');
+
+    console.log("Car applications loaded:", car_applications);
+
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      locale: 'th',
+      initialView: 'dayGridMonth',
+      events: car_applications,
+      buttonText: {
+        today: 'วันนี้',    // Rename "Today" button
+        month: 'เดือน',    // Rename "Month" view
+        week: 'สัปดาห์',   // Rename "Week" view
+        day: 'วัน',       // Rename "Day" view
+        list: 'รายการ'    // Rename "List" view
+      },
+      eventClick: function (info) {
+        alert('การใช้งาน: ' + info.event.title);
+
+        info.el.style.borderColor = 'black';
+      },
+
+      dateClick: function (info) {
+        const selectedDate = info.dateStr;
+        const url = "{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
+
+        window.location.href = url;
+      }
+    });
+
+    calendar.render();
+
+  });
+
+</script>
+
+<script type="text/javascript">
+
+  function showDeleteModal(car_application_id) {
+    car_application_id ? $('.ui.modal.' + car_application_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+
+{% endblock %}

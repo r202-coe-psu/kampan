@@ -1,0 +1,160 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/pagination.html' as paginated %}
+
+{% block title %}
+{{ "เพิ่มการขอใช้รถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถยนต์" }}
+{% endblock %}
+
+{% block dashboard_title %}
+{{ "เพิ่มการขอใช้รถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถยนต์"}}
+{% endblock %}
+
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("การขอใช้รถยนต์", url_for('vehicle_lending.car_applications.index', organization_id=organization.id) ),
+( "เพิ่มการขอใช้รถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถยนต์", "")]) }}
+{% endblock %}
+
+{% block content %}
+<div class="ui secondary" style="padding-bottom: 10px;">
+  <div class="left menu">
+    <a class="ui labeled icon button"
+      href='{{ url_for("vehicle_lending.car_applications.index", organization_id=organization.id) }}'>
+      <i class="left arrow icon"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
+<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+  <div class="equal width fields">
+    {{form.csrf_token }}
+    {{render_form.InputField(form.request_reason)}}
+  </div>
+  <div class="equal width fields">
+    {{render_form.InputField(form.location)}}
+  </div>
+  <div class="equal width fields">
+    {{ render_form.SelectField(form.car, clearable=false) }}
+    {{ render_form.InputField(form.passenger_number) }}
+  </div>
+  {{ render_form.RadioField(form.travel_type) }}
+  {{ render_form.RadioField(form.using_type) }}
+
+  <div class="equal width fields">
+    {{render_form.DateField(form.departure_date) }}
+    {{render_form.TimeField(form.departure_time) }}
+
+  </div>
+  <div class="equal width fields" id="return_datetime">
+    {{render_form.DateField(form.return_date) }}
+    {{render_form.TimeField(form.return_time) }}
+  </div>
+  <div class="equal width fields" id="flight_datetime">
+    {{render_form.DateField(form.flight_date) }}
+    {{render_form.TimeField(form.flight_time) }}
+  </div>
+  <div class="ui secondary menu">
+    <div class="right menu">
+      <button type="submit" class="ui primary button">ยืนยัน</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block additional_js %}
+<script type="text/javascript">
+  $(document).ready(function () {
+
+    function toggleReturnDate() {
+      let travelType = $("input[name='travel_type']:checked").val();
+      let return_dateField = $("#return_date input");
+      let return_timeField = $("#return_time input");
+      if (travelType === "one way") {
+        $("#return_datetime").hide();
+        return_dateField.prop("required", false);
+        return_timeField.prop("required", false);
+      } else {
+        $("#return_datetime").show();
+        return_dateField.prop("required", true);
+        return_timeField.prop("required", true);
+      }
+    }
+
+    $("input[name='travel_type']").change(toggleReturnDate);
+
+    toggleReturnDate();
+  });
+</script>
+<script type="text/javascript">
+  $(document).ready(function () {
+
+    function toggleFlightDate() {
+      let usingType = $("input[name='using_type']:checked").val();
+      let flight_dateField = $("#flight_date input");
+      let flight_timeField = $("#flight_time input");
+      if (usingType === "airport transfer") {
+        $("#flight_datetime").show();
+        flight_dateField.prop("required", true);
+        flight_timeField.prop("required", true);
+      } else {
+        $("#flight_datetime").hide();
+        flight_dateField.prop("required", false);
+        flight_timeField.prop("required", false);
+      }
+    }
+
+    $("input[name='using_type']").change(toggleFlightDate);
+
+    toggleFlightDate();
+  });
+</script>
+<script type="text/javascript">
+
+  function showDeleteModal(order_id) {
+    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
+      ;
+  }
+</script>
+<script type="text/javascript">
+  datetime_formatter = {
+    date: "DD/MM/YYYY"
+  };
+  var calendar_setting = {
+    type: 'date',
+    monthFirst: false,
+    formatter: datetime_formatter,
+    today: false,
+    ampm: false,
+    text: {
+      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
+      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      today: 'วันนี้',
+      now: 'ปัจจุบัน',
+      am: 'AM',
+      pm: 'PM'
+    },
+  };
+  $('#departure_date').calendar(calendar_setting);
+  $('#return_date').calendar(calendar_setting);
+  $('#flight_date').calendar(calendar_setting);
+
+
+  time_formatter = {
+    date: "HH:mm"
+  };
+  var time_setting = {
+    type: 'time',
+    monthFirst: false,
+    formatter: time_formatter,
+    today: false,
+    ampm: true,
+  };
+  $('#departure_time').calendar(time_setting);
+  $('#return_time').calendar(time_setting);
+  $('#flight_time').calendar(time_setting);
+
+</script>
+{% endblock %}

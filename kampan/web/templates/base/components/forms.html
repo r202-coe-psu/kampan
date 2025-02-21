@@ -9,8 +9,9 @@
 {% endmacro %}
 
 
-{% macro SelectField(form) %}
-{% set style_ = "ui selection dropdown clearable search " + (" error" if form.flags.required else '') %}
+{% macro SelectField(form, clearable=true) %}
+{% set style_ = "ui selection dropdown " + ("clearable" if clearable else " ") + " search " + (" error" if
+form.flags.required else '') %}
 
 <div class="field">
   <label>{{ form.label }}</label>
@@ -19,6 +20,18 @@
 
 {% endmacro %}
 
+{% macro TimeField(form) %}
+<div class="field">
+  <label>{{ form.label }}</label>
+  <div class="ui calendar" id="{{ form.name }}">
+    <div class="ui input left icon">
+      <i class="clock icon"></i>
+      {{ form(type="text", autocomplete="off") }}
+    </div>
+  </div>
+</div>
+
+{% endmacro %}
 
 {% macro DateField(form) %}
 {% set style_ = " error" if form.flags.required else '' %}
@@ -74,4 +87,43 @@
     startCalendar: $('#{{ first_form.name }}')
   });
 </script>
+{% endmacro %}
+
+
+{% macro FileInputField(field) -%}
+<div class="field">
+  {{ field.label }}
+  <div class="ui file action input">
+    {{ field }}
+    <label for="{{field.name}}" class="ui blue button">
+      <i class="attach icon"></i>
+    </label>
+
+  </div>
+</div>
+
+{%- endmacro %}
+
+
+{% macro RadioField(field) %}
+
+<div class="ui form">
+  <div class="grouped fields">
+    <label>{{ field.label }}</label>
+    {% for subfield in field %}
+    <div class="field">
+      <div class="ui radio checkbox">
+        {{ subfield }}
+        <label for="{{ subfield.id }}">{{ subfield.label.text }}</label>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  $('.ui.radio.checkbox').checkbox();
+</script>
+
+
 {% endmacro %}
