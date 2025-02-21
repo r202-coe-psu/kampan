@@ -67,6 +67,7 @@
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>
+          <th>ขออนุมัติจาก</th>
           <th>รายการวัสดุ</th>
           <th>สถานะ</th>
           <th>เหตุผล</th>
@@ -83,6 +84,7 @@
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>
           <td data-label="User">{{ order.created_by.get_name() }}</td>
+          <td data-label="User">{{ order.head_endorser.get_name() if order.head_endorser else "" }}</td>
 
 
           <td data-label="Bill">
