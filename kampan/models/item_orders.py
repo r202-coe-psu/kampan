@@ -8,7 +8,7 @@ ORDER_ITEM_STATUS = [
     ("denied", "ปฎิเสธ"),
     ("approved", "อนุมัติรอรับวัสดุ"),
     ("pending on admin", "รอการจัดการจากเจ้าหน้าที่พัสดุ"),
-    ("pending on supervisor supplier", "รอการอนุมัติจากหัวหน้าฝ่ายบริหาร"),
+    ("pending on supervisor supplier", "รอการอนุมัติจากหัวหน้าเจ้าหน้าที่พัสดุ"),
     ("pending", "รอการยืนยันการเบิก"),
     ("confirmed", "รอการอนุมัติจากหัวหน้าฝ่าย"),
     ("disactive", "ยกเลิก"),
