@@ -77,11 +77,15 @@
     {% if 'page' in params %}
     {% set _dummy=params.pop('page') %}
     {% endif %}
+    {% if "organization_id" not in params %}
+    {% set _dummy=params.update({"organization_id": organization.id }) %}
+    {% endif %}
     {% if paginated_org_users.pages != 1 %}
     <div class="ui grid">
       <div class="column row">
         <div class="center aligned column">
-          {{paginated.render_pagination(paginated_org_users,"item_checkouts.bill_checkout", params)}}
+          
+          {{paginated.render_pagination(paginated_org_users,"admin.organizations.organizaiton_users", params)}}
         </div>
       </div>
     </div>

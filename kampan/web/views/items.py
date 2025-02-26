@@ -536,9 +536,6 @@ def detail(item_id):
 
 
 @module.route("/<item_id>/picture/<filename>")
-@acl.organization_roles_required(
-    "admin", "supervisor supplier", "head", "supervisor supplier"
-)
 def image(item_id, filename):
     organization_id = request.args.get("organization_id")
 
