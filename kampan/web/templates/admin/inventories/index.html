@@ -45,7 +45,7 @@
           </td>
           <td data-label="Item Name">{{ inventory.item.name }}</td>
           <td data-label="Registrarion ID">{{ inventory.registration.receipt_id}}</td>
-          <td data-label="Checkin Date">{{ inventory.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
           <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
           <td data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} / {{
             inventory.position.locker }} </td>

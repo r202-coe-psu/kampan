@@ -43,7 +43,7 @@
           </div>
         </td>
         <td data-label="Item Name">{{ inventory.item.name }}</td>
-        <td data-label="Checkin Date">{{ inventory.created_date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
         <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
         <td data-label="Quantity">{{ inventory.quantity }}</td>
         <td data-label="Remain">{{ inventory.remain }}</td>

@@ -24,7 +24,7 @@ class Inventory(me.Document):
     remain = me.IntField(required=True, default=0)
     price = me.DecimalField(required=True, default=0)
 
-    created_date = me.DateTimeField(required=True, default=datetime.datetime.now())
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     expiration_date = me.DateTimeField()
 
     # notification_status = me.BooleanField(default=True)
@@ -44,6 +44,11 @@ class Inventory(me.Document):
 
     def get_price_per_piece(self):
         return round(self.price / self.item.piece_per_set, 2)
+
+    def get_created_date(self):
+        if self.created_date >= self.registration.created_date:
+            return self.created_date.strftime("%d/%m/%Y")
+        return self.registration.created_date.strftime("%d/%m/%Y")
 
 
 class InventoryEngagementFile(me.Document):

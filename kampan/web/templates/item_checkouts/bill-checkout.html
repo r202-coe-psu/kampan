@@ -25,8 +25,8 @@
       class="ui primary button">อัปโหลดไฟล์</a>
     {% endif %}
     {% if order.status ==
-      "pending" 
-      %}
+    "pending"
+    %}
     <a class="ui button primary" onclick="showModal('email')">
       ยืนยันการเบิกพัสดุ
     </a>
@@ -82,8 +82,10 @@
 {% endif %}
 {% endif %}
 
-
-
+<div style="display: flex; width: 100%; justify-content: flex-end; padding: 0 0 1em 0"><b>
+    <span class="text ui right"> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</span>
+  </b>
+</div>
 <div style="padding-bottom: 1em ;">
   <table class="ui celled table">
     <thead>
@@ -95,7 +97,7 @@
         {#<th>จำนวนหน่วยใหญ่</th>{#}
         <th>จำนวนหน่วยเล็ก</th>
         <th>ราคาแต่ละหน่วยเล็ก</th>
-        {#} <th>รวม</th>{#}
+        <th>รวมราคา</th>
         {#<th>ราคา (ชิ้นละ)</th>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
         {% if order.created_by == current_user %}
@@ -124,7 +126,7 @@
         {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
         <td data-label="Piece">{{ checkout.piece }}</td>
         <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
-        {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
+        <td data-label="Quantity">{{ checkout.get_all_price() }}</td>
         {#<td data-label="Price">{{ checkout.price }}</td>#}
         {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
         {% if order.created_by == current_user %}

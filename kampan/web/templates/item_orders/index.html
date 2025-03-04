@@ -62,8 +62,9 @@
     <table class="ui celled table">
       <thead>
         <tr>
-          <th></th>
-
+          {% if current_user.has_organization_roles("admin") %}
+          <th>เลขลำดับ</th>
+          {% endif %}
           <th>วันที่สั่งเบิกวัสดุ</th>
           <th>วัตถุประสงค์</th>
           <th>ชื่อผู้ใช้งาน</th>
@@ -79,7 +80,9 @@
       <tbody>
         {% for order in paginated_orders.items %}
         <tr>
-          <td data-label="Index">{{ loop.index }}</td>
+          {% if current_user.has_organization_roles("admin") %}
+          <td data-label="Index">{{ order.ordinal_number }}</td>
+          {% endif %}
 
           <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
           <td data-label="Description">{{ order.description }}</td>

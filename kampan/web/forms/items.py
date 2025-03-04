@@ -57,6 +57,12 @@ class SearchItemForm(FlaskForm):
     categories = fields.SelectField("หมวดหมู่", validate_choice=False)
 
 
+class SearcCategoryForm(FlaskForm):
+    item_name = fields.StringField("ชื่อวัสดุ", validators=[validators.Optional()])
+    # item = fields.SelectField("วัสดุ", validate_choice=False)
+    categories = fields.SelectField("หมวดหมู่", validate_choice=False)
+
+
 class UploadFileForm(FlaskForm):
     upload_file = fields.FileField(
         "อัปโหลดไฟล์",

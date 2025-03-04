@@ -29,6 +29,8 @@ class OrderEmail(me.EmbeddedDocument):
 class OrderItem(me.Document):
     # เบิกวัสดุ
     meta = {"collection": "order_items"}
+    ordinal_number = me.StringField(default="")
+
     status = me.StringField(required=True, default="pending", choices=ORDER_ITEM_STATUS)
 
     approval_status = me.StringField(default="pending")
@@ -58,6 +60,16 @@ class OrderItem(me.Document):
                 for approved_item in models.ApprovedCheckoutItem.objects(
                     status="active",
                     order=self,
+                )
+            ]
+        )
+
+    def get_checkout_all_price(self):
+        return sum(
+            [
+                check_out.get_all_price()
+                for check_out in models.CheckoutItem.objects(
+                    order=self, status__ne="disactive"
                 )
             ]
         )

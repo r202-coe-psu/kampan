@@ -102,19 +102,19 @@ def catalogs(order_id):
         id=organization_id, status="active"
     ).first()
     order = models.OrderItem.objects(id=order_id).first()
-    form = forms.items.SearchItemForm()
+    form = forms.items.SearcCategoryForm()
 
     items = models.Item.objects(
         status__in=["active"], organization=organization
     ).order_by("status", "-created_date")
-    
-    form.item.choices = [("", "เลือกวัสดุ")] + [
-        (
-            str(item.id),
-            f"{item.name} " + (f"({item.barcode_id}) " if item.barcode_id else ""),
-        )
-        for item in items
-    ]
+
+    # form.item.choices = [("", "เลือกวัสดุ")] + [
+    #     (
+    #         str(item.id),
+    #         f"{item.name} " + (f"({item.barcode_id}) " if item.barcode_id else ""),
+    #     )
+    #     for item in items
+    # ]
 
     form.categories.choices = [("", "หมวดหมู่")] + [
         (str(category.id), category.name)
@@ -122,20 +122,19 @@ def catalogs(order_id):
             organization=organization, status="active"
         )
     ]
-    
+
     if not form.validate_on_submit():
 
         item_name = request.args.get("item_name")
-        
+
         if item_name:
             form.item_name.data = item_name
             items = items.filter(name__icontains=form.item_name.data)
-            
 
-        item_select_id = request.args.get("item_select_id")
-        if item_select_id:
-            form.item.data = item_select_id
-            items = items.filter(id=form.item.data)
+        # item_select_id = request.args.get("item_select_id")
+        # if item_select_id:
+        #     form.item.data = item_select_id
+        #     items = items.filter(id=form.item.data)
 
         categories = request.args.get("categories")
 
@@ -149,7 +148,7 @@ def catalogs(order_id):
                 list_items.append(item)
         items = list_items
         page = request.args.get("page", default=1, type=int)
-        
+
         try:
             paginated_items = Pagination(items, page=page, per_page=24)
         except:
@@ -162,9 +161,9 @@ def catalogs(order_id):
             organization=organization,
             order=order,
         )
-    
+
     item_name = form.item_name.data
-    item_select_id = form.item.data
+    # item_select_id = form.item.data
     categories = form.categories.data
     organization_id = organization.id
     return redirect(
@@ -173,7 +172,7 @@ def catalogs(order_id):
             organization_id=organization_id,
             item_name=item_name,
             categories=categories,
-            item_select_id=item_select_id,
+            # item_select_id=item_select_id,
             order_id=order_id,
         )
     )
@@ -195,7 +194,9 @@ def checkout():
     order = models.OrderItem.objects(id=request.args.get("order_id")).first()
     checkout_item = None
     if order:
-        checkout_item = models.CheckoutItem.objects(item=item_id, order=order, status__ne="disactive").first()
+        checkout_item = models.CheckoutItem.objects(
+            item=item_id, order=order, status__ne="disactive"
+        ).first()
     if checkout_item:
         return redirect(
             url_for(

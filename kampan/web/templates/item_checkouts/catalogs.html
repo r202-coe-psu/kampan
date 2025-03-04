@@ -56,9 +56,12 @@
 {% endif %}
 <form method="post" style="padding-bottom: 0.5rem;" class="ui form">
   {{form.hidden_tag()}}
+  <div><b>
+      <span class="large text ui">ค้นหาชื่อวัสดุหรือหมวดหมู่</span>
+    </b>
+  </div>
   <div class="equal width fields">
     {{ render_form.InputField(form.item_name) }}
-    {{ render_form.SelectField(form.item) }}
     {{ render_form.SelectField(form.categories) }}
   </div>
   <div class="ui secondary menu">
@@ -69,7 +72,7 @@
 </form>
 
 {% if order.status ==
-"pending" 
+"pending"
 %}
 {% if items %}
 <div class="ui four cards">
