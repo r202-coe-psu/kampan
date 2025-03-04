@@ -7,10 +7,11 @@ from kampan import models
 
 
 class SupplierApproveForm(FlaskForm):
-    admin_approver = fields.SelectField(
-        "เจ้าหน้าที่พัสดุที่จัดการวัสดุ",
-        validators=[validators.InputRequired()],
-    )
+    # admin_approver = fields.SelectField(
+    #     "เจ้าหน้าที่พัสดุที่จัดการวัสดุ",
+    #     validators=[validators.InputRequired()],
+    # )
+    pass
 
 
 class AdminApproveForm(FlaskForm):

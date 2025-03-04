@@ -36,7 +36,9 @@ organization_id=organization.id) ),
       <span class="ui large text header">คำขอ : {{ order.description }}</span>
     </div>
     {{ form.hidden_tag() }}
+    {#}
     {{ renderer.render_select(form.admin_approver) }}
+    {#}
 
     <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
   </form>

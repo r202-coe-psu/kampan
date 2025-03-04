@@ -166,6 +166,13 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)
 
+    def get_admins(self):
+        endorsers_in_org = models.OrganizationUserRole.objects(
+            organization=self, roles__in=["admin"], status="active"
+        )
+        user_ids = [endorser.user.id for endorser in endorsers_in_org]
+        return models.User.objects(id__in=user_ids)
+
     def get_default_email_template(self, email_type):
         try:
             email_template = models.EmailTemplate.objects(

@@ -229,16 +229,17 @@ def force_send_email_to_admin(
     creator = order.created_by
     division = order.division
     organization = division.organization
-    endorser = order.admin_approver
+    # endorser = order.admin_approver
+    all_admins = organization.get_admins()
     email_template = organization.get_default_email_template("to admin")
 
     if not email_template:
         logger.debug(f"There are no email template for {division.name}")
         return False
 
-    if not endorser:
-        logger.debug(f"attendant endorser is required")
-        return False
+    # if not endorser:
+    #     logger.debug(f"attendant endorser is required")
+    #     return False
 
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
@@ -249,35 +250,39 @@ def force_send_email_to_admin(
         logger.debug(f"email cannot login")
         return False
 
-    template_subject = Template(email_template.subject)
-    template_body = Template(email_template.body)
+    for admin in all_admins:
+        if not admin.email:
+            pass
+        template_subject = Template(email_template.subject)
+        template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
-    endorsement_url = (
-        f"{host_url}/approve_orders/admin?organization_id={organization.id}"
-    )
+        host_url = setting.get("KAMPAN_HOST_URL")
+        endorsement_url = (
+            f"{host_url}/approve_orders/admin?organization_id={organization.id}"
+        )
 
-    text_format = get_endorser_text_format(
-        division, user, endorser, order, endorsement_url
-    )
+        text_format = get_endorser_text_format(
+            division, user, admin, order, endorsement_url
+        )
 
-    email_subject = template_subject.render(text_format)
-    email_body = template_body.render(text_format)
+        email_subject = template_subject.render(text_format)
+        email_body = template_body.render(text_format)
 
-    logger.debug(f"send email to {endorser.email}")
+        logger.debug(f"send email to {admin.email}")
 
-    order_email = models.OrderEmail(
-        receiver_email=endorser.email,
-        sent_by=user,
-        name="แจ้งเตือนการจัดการวัสดุ",
-    )
-    order.emails.append(order_email)
-    order.save()
-    if psu_smtp.send_email(endorser.email, email_subject, email_body):
-        order.emails[-1].status = "sent"
-    else:
-        order.emails[-1].status = "failed"
-    order.save()
+        order_email = models.OrderEmail(
+            receiver_email=admin.email,
+            sent_by=user,
+            name="แจ้งเตือนการจัดการวัสดุ",
+        )
+        order.emails.append(order_email)
+        order.save()
+        if psu_smtp.send_email(admin.email, email_subject, email_body):
+            order.emails[-1].status = "sent"
+        else:
+            order.emails[-1].status = "failed"
+        order.save()
+
     psu_smtp.quit()
     return True
 
@@ -292,16 +297,16 @@ def force_send_email_to_staff(
     creator = order.created_by
     division = order.division
     organization = division.organization
-    endorser = order.admin_approver
+    endorser = organization.get_admins()[0]
     email_template = organization.get_default_email_template("to staff")
 
     if not email_template:
         logger.debug(f"There are no email template for {division.name}")
         return False
 
-    if not endorser:
-        logger.debug(f"attendant endorser is required")
-        return False
+    # if not endorser:
+    #     logger.debug(f"attendant endorser is required")
+    #     return False
 
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
@@ -325,10 +330,10 @@ def force_send_email_to_staff(
     email_subject = template_subject.render(text_format)
     email_body = template_body.render(text_format)
 
-    logger.debug(f"send email to {endorser.email}")
+    logger.debug(f"send email to {creator.email}")
 
     order_email = models.OrderEmail(
-        receiver_email=endorser.email,
+        receiver_email=creator.email,
         sent_by=user,
         name="แจ้งเตือนวันรับพัสดุ",
     )

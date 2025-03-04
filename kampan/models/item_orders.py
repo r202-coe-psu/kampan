@@ -35,7 +35,7 @@ class OrderItem(me.Document):
     remark = me.StringField(default="")
 
     head_endorser = me.ReferenceField("User", dbref=True)
-    admin_approver = me.ReferenceField("User", dbref=True)
+    # admin_approver = me.ReferenceField("User", dbref=True)
 
     description = me.StringField()
     created_by = me.ReferenceField("User", dbref=True)

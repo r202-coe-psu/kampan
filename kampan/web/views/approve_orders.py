@@ -275,14 +275,14 @@ def supervisor_supplier_approve_page(order_id):
         id=organization_id, status="active"
     ).first()
 
-    form.admin_approver.choices = [
-        (str(org_user.user.id), org_user.user.get_name())
-        for org_user in organization.get_organization_users()
-        if ("admin" in org_user.roles)
-    ]
+    # form.admin_approver.choices = [
+    #     (str(org_user.user.id), org_user.user.get_name())
+    #     for org_user in organization.get_organization_users()
+    #     if ("admin" in org_user.roles)
+    # ]
     if not form.validate_on_submit():
-        if order.admin_approver:
-            form.admin_approver.data = str(order.admin_approver.id)
+        # if order.admin_approver:
+        #     form.admin_approver.data = str(order.admin_approver.id)
         return render_template(
             "/approve_orders/supervisor_supplier/supervisor_supplier_approve_page.html",
             order_id=order_id,
@@ -290,7 +290,7 @@ def supervisor_supplier_approve_page(order_id):
             order=order,
             organization=organization,
         )
-    order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
+    # order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.save()
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.force_send_email_to_admin,

@@ -162,7 +162,7 @@ def edit(order_id):
 
     form.populate_obj(order)
     order.head_endorser = models.User.objects(id=form.head_endorser.data).first()
-    order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
+    # order.admin_approver = models.User.objects(id=form.admin_approver.data).first()
     order.created_by = current_user._get_current_object()
     order.division = division
 
