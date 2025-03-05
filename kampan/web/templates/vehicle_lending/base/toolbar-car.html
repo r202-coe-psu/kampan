@@ -41,13 +41,13 @@
   <div class="item" style="padding: 7.5px 0px;">ปฏิทินการขอใช้รถยนต์<i class="calendar alternate icon"></i></div>
 </a>
 
-{% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier") %}
+{% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
 <a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
   href="{{ url_for('vehicle_lending.car_permissions.header_page', organization_id=organization.id ) }}">
   <div class="item" style="padding: 7.5px 0px;">หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์<i class="file alternate icon"></i></div>
 </a>
 {% endif %}
-{% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier") %}
+{% if current_user.is_directer_organization() or current_user.has_organization_roles("admin") %}
 <a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
   href="{{ url_for('vehicle_lending.car_permissions.director_page', organization_id=organization.id ) }}">
   <div class="item" style="padding: 7.5px 0px;">ผอ. อนุมัติขอใช้รถยนต์<i class="file alternate icon"></i></div>

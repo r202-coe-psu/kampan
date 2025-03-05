@@ -20,7 +20,9 @@ module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
 
 @module.route("", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -38,7 +40,9 @@ def index():
 
 
 @module.route("/calendar", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def calendar():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -57,7 +61,9 @@ def calendar():
 
 @module.route("/create", methods=["GET", "POST"], defaults={"car_application_id": None})
 @module.route("/<car_application_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def create_or_edit(car_application_id):
     car_application = None
     organization_id = request.args.get("organization_id")
@@ -146,7 +152,9 @@ def create_or_edit(car_application_id):
 
 
 @module.route("/<car_application_id>/delete")
-@acl.organization_roles_required("admin", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier", "supervisor supplier"
+)
 def delete(car_application_id):
     organization_id = request.args.get("organization_id")
 

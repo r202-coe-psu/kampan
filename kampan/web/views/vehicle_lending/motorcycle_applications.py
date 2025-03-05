@@ -23,7 +23,9 @@ module = Blueprint(
 
 
 @module.route("", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -43,7 +45,9 @@ def index():
 
 
 @module.route("/calendar", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def calendar():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -66,7 +70,9 @@ def calendar():
     "/create", methods=["GET", "POST"], defaults={"motorcycle_application_id": None}
 )
 @module.route("/<motorcycle_application_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def create_or_edit(motorcycle_application_id):
     motorcycle_application = None
     organization_id = request.args.get("organization_id")
@@ -145,7 +151,9 @@ def create_or_edit(motorcycle_application_id):
 
 
 @module.route("/<motorcycle_application_id>/return_motorcycle", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def return_motorcycle(motorcycle_application_id):
     motorcycle_application = None
     organization_id = request.args.get("organization_id")
@@ -199,7 +207,9 @@ def return_motorcycle(motorcycle_application_id):
 
 
 @module.route("/<motorcycle_application_id>/delete")
-@acl.organization_roles_required("admin", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier", "supervisor supplier"
+)
 def delete(motorcycle_application_id):
     organization_id = request.args.get("organization_id")
 

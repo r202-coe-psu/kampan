@@ -175,7 +175,7 @@ class User(me.Document, UserMixin):
         except:
             fullname = self.get_name()
         return fullname
-    
+
     def get_first_name_th(self):
         try:
             if self.resources["psu"]["first_name_th"]:
@@ -185,7 +185,7 @@ class User(me.Document, UserMixin):
         except:
             first_name = self.first_name
         return first_name
-    
+
     def get_last_name_th(self):
         try:
             if self.resources["psu"]["first_name_th"]:
@@ -195,7 +195,7 @@ class User(me.Document, UserMixin):
         except:
             last_name = self.last_name
         return last_name
-    
+
     def get_current_organization_user_role(self):
         from . import OrganizationUserRole
 
@@ -209,3 +209,40 @@ class User(me.Document, UserMixin):
 
         except:
             return
+
+    def is_admin_organization(self):
+        if "admin" in self.roles:
+            return True
+
+        if "admin" in self.get_current_organization_roles():
+            return True
+
+    def is_supervisor_supplier_organization(self):
+        if "admin" in self.roles:
+            return True
+
+        if "admin" in self.get_current_organization_roles():
+            return True
+
+        if "supervisor supplier" in self.get_current_organization_roles():
+            return True
+
+    def is_directer_organization(self):
+        division = self.get_current_division()
+
+        print(division.name)
+        if "admin" in self.roles:
+            return True
+
+        if "admin" in self.get_current_organization_roles():
+            return True
+
+        division_name = ""
+        if division:
+            division_name = division.name
+
+        if (
+            "head" in self.get_current_organization_roles()
+            and division_name == "ฝ่ายบริหาร"
+        ):
+            return True

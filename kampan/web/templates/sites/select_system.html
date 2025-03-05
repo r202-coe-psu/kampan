@@ -15,7 +15,7 @@
     </a>
     {% if current_user.email in ["6510110693@email.psu.ac.th", "yanisa.suwa@psu.ac.th", "jennipich.y@psu.ac.th"] %}
     <a class="column car-system ui segment text center aligned massive primary "
-      href="{{ url_for('vehicle_lending.cars.index', organization_id=organization.id ) }}"
+      href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}"
       style="padding-top: 4rem; padding-bottom: 4rem; transition: all 0.3s;"
       onmouseover="this.style.backgroundColor='skyblue'; this.style.transform='scale(1.05)';"
       onmouseout="this.style.backgroundColor=''; this.style.transform='';">
@@ -24,7 +24,7 @@
       </b>
     </a>
     <a class="column motorcycle-system ui segment text center aligned massive green  "
-      href="{{ url_for('vehicle_lending.motorcycles.index', organization_id=organization.id ) }}"
+      href="{{ url_for('vehicle_lending.motorcycle_applications.index', organization_id=organization.id ) }}"
       style="padding-top: 4rem; padding-bottom: 4rem; transition: all 0.3s;"
       onmouseover="this.style.backgroundColor='lime'; this.style.transform='scale(1.05)';"
       onmouseout="this.style.backgroundColor=''; this.style.transform='';">
