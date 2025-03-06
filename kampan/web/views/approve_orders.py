@@ -210,7 +210,13 @@ def supervisor_supplier_approve(order_id):
     order.remark = request.args.get("reason", default="", type=str)
 
     order.save()
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.force_send_email_to_admin,
+        args=(order, current_user._get_current_object(), current_app.config),
+        job_id=f"force_sent_email_supervisor_supplier_order_{order.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "approve_orders.supervisor_supplier_index", organization_id=organization_id
@@ -393,6 +399,9 @@ def admin_approve(order_id):
     order.approval_status = "approved"
     order.status = "approved"
     order.approved_date = datetime.datetime.now()
+    order.ordinal_number = str(
+        len(models.OrderItem.objects(ordinal_number__ne=None)) + 1
+    )
     order.save()
     return redirect(
         url_for("approve_orders.admin_index", organization_id=organization_id)
