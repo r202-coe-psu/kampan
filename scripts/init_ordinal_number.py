@@ -21,10 +21,12 @@ def init_ordinal_number():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        # me.connect(db="kampandb", host=sys.argv[1])
-        me.connect(db="kampandb", host="mongodb", port=27017)
+        me.connect(db="kampandb", host=sys.argv[1])
+        # me.connect(db="kampandb", host="mongodb", port=27017)
     else:
-        me.connect(db="kampandb")
+        # me.connect(db="kampandb")
+        me.connect(host="mongodb://mongodb:27017/kampandb")
+
     print("start")
     init_ordinal_number()
     print("end")
