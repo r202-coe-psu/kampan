@@ -67,8 +67,12 @@ class OrderItem(me.Document):
     def get_checkout_all_price(self):
         checkouts = models.CheckoutItem.objects(order=self, status__ne="disactive")
         if checkouts:
+            summation = 0
+            for check_out in checkouts:
+                if check_out.get_all_price():
+                    summation += check_out.get_all_price()
 
-            return sum([int(check_out.get_all_price()) for check_out in checkouts])
+            return summation
         return ""
 
     def get_item_in_bill(self):

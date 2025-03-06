@@ -97,7 +97,7 @@ class Item(me.Document):
 
             return round(value / self.piece_per_set, 2)
 
-        return 0
+        return ""
 
     def get_remaining_balance(self):
         value = self.get_last_price()
