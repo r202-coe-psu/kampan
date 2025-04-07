@@ -3,7 +3,6 @@
 ```
 python3 -m venv venv
 source venv/bin/activate
-./scripts/setup
 ```
 -  create python virtual env
 -  install poetry
