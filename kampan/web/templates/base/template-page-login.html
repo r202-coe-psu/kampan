@@ -1,4 +1,4 @@
-{% extends "/base/base-layout.html" %}
+{% extends "/base/base.html" %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 
 {% block title %}
@@ -100,7 +100,7 @@
 
 {% block body %}
 <div class="ui vertical inverted sidebar large menu left">
-  {% include "/base/toolbar-dashboard.html" with context %}
+  {% include "/base/sidebar.html" with context %}
 </div>
 
 <div class="ui fixed inverted main menu">
@@ -118,7 +118,7 @@
   <div class="full height">
     <div class="toc">
       <div class="ui vertical inverted large menu" style="font-size: 18px;">
-        {% include "/base/toolbar-dashboard.html" with context %}
+        {% include "/base/sidebar.html" with context %}
       </div>
     </div>
 

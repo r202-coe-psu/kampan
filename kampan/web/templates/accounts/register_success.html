@@ -1,4 +1,4 @@
-{% extends "/base/default-page.html" %}
+{% extends "/base/template-page-unlogin.html" %}
 
 {% block title %}ลงทะเบียนสำเร็จ{% endblock %}
 
@@ -6,7 +6,7 @@
 <script type="text/javascript">
   console.log('script update')
   setTimeout(function () {
-       window.location.href = "{{ url_for('accounts.login') }}";
+    window.location.href = "{{ url_for('accounts.login') }}";
   }, 2000);
 </script>
 {% endblock %}

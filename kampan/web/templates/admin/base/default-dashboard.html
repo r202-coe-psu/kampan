@@ -1,4 +1,4 @@
-{% extends "/admin/base/base-layout.html" %}
+{% extends "/admin/base/base.html" %}
 
 {% block title %}
 {{ config.get('APP_TITLE') }} Dashboard
@@ -93,7 +93,7 @@
 
 {% block body %}
 <div class="ui vertical inverted sidebar large menu left">
-  {% include "/admin/base/toolbar-dashboard.html" with context %}
+  {% include "/admin/base/sidebar.html" with context %}
 </div>
 
 <div class="ui fixed inverted main menu">
@@ -111,7 +111,7 @@
   <div class="full height">
     <div class="toc">
       <div class="ui vertical inverted large menu">
-        {% include "/admin/base/toolbar-dashboard.html" with context %}
+        {% include "/admin/base/sidebar.html" with context %}
       </div>
     </div>
 

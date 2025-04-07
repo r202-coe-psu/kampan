@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}
 {{ "เพิ่มการขอใช้รถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถยนต์" }}

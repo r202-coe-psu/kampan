@@ -1,14 +1,25 @@
 {
   "name": "static",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tw": "npx @tailwindcss/cli -i ./css/setup.css -o ./css/app.css",
+    "tw:watch": "npx @tailwindcss/cli -i ./css/setup.css -o ./css/app.css --watch",
+    "tw:minify": "npx @tailwindcss/cli -i ./css/setup.css -o ./css/app.css --minify"
   },
   "author": "",
   "license": "ISC",
+  "description": "",
   "dependencies": {
-    "fomantic-ui-css": "^2.8.8"
+    "@phosphor-icons/web": "^2.1.1",
+    "@tailwindcss/cli": "^4.0.3",
+    "cally": "^0.8.0",
+    "htmx.org": "^1.9.12",
+    "jquery": "^3.7.1",
+    "tailwindcss": "^4.0.3"
+  },
+  "devDependencies": {
+    "daisyui": "^5.0.3"
   }
 }

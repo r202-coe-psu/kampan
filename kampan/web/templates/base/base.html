@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0" />
+    <title>{% block title %}{{ config.get('APP_TITLE') }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ 'css/app.css' | static_url }}">
+    <script src="{{ 'node_modules/jquery/dist/jquery.min.js' | static_url }}"></script>
+    <script type="module" src="{{ 'node_modules/cally/dist/cally.js' | static_url }}"></script>
+    <script src="{{ 'node_modules/htmx.org/dist/htmx.min.js' | static_url }}"></script>
+    <script src="{{ 'js/forms/date_picker.js' | static_url }}"></script>
+    <link rel="stylesheet" type="text/css"
+      href="{{ 'node_modules/@phosphor-icons/web/src/regular/style.css' | static_url }}">
+
+    {% block default_head %}{% endblock %}
+    {% block additional_head %}{% endblock %}
+  </head>
+
+  <body>
+    {% block body %}{% endblock %}
+  </body>
+  {% block additional_js %}{% endblock %}
+
+</html>

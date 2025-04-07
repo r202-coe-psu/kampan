@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd kampan/web/static
+npm $1 $2

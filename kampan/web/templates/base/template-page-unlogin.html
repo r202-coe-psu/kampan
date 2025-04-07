@@ -1,23 +1,25 @@
-{% extends "/base/base-layout.html" %}
+{% extends "/base/base.html" %}
+
 {% block body %}
 <header>
   {% block header %}
-  {% include "/base/toolbar.html" %}
+  {% include "/base/navbar.html" %}
+
   {% if request.path == '/' %}
   {% include "/base/banner.html" %}
   {% else %}
-  <div style="padding-top:50px;"></div>
+  <div class="pt-12"></div>
   {% endif %}
   {% endblock %}
 </header>
 
 <main>
-  <div class="container" style="min-height: 20vh;">
+  <div class="min-h-[20vh] px-4 mx-auto max-w-7xl">
     {% block content %}{% endblock content %}
   </div>
 </main>
 
-<footer class="ui vertical footer segment" style="padding-top: 2em;">
+<footer class="mt-12 pt-8 border-t">
   {% include "/base/footer.html" %}
 </footer>
 {% endblock %}

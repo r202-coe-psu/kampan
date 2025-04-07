@@ -1,6 +1,6 @@
-{% extends '/admin/base/default-dashboard.html' %}
+{% extends '/admin/base/template-page-login.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
-{% import '/admin/base/pagination.html' as paginated %}
+{% import '/admin/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}สมาชิกขององค์กร{% endblock %}
 {% block dashboard_title %}สมาชิกขององค์กร{% endblock %}
@@ -84,7 +84,7 @@
     <div class="ui grid">
       <div class="column row">
         <div class="center aligned column">
-          
+
           {{paginated.render_pagination(paginated_org_users,"admin.organizations.organizaiton_users", params)}}
         </div>
       </div>
