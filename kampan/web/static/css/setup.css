@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@100..900&display=swap");
 @import "tailwindcss";
 @config "./tailwind.config.js";
+
 @plugin "daisyui" {
   themes: patsara;
 }
@@ -46,6 +47,10 @@
 
 .ph-size {
   font-size: 20px;
+}
+
+.ph {
+  font-size: 24px;
 }
 
 .table-style {

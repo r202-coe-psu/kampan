@@ -3,14 +3,14 @@
 {% block title %}เข้าสู่ระบบ{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-center min-h-screen pb-60">
+<div class="flex items-center justify-center pb-30">
   <div class="w-full max-w-md text-center">
     <h2 class="text-4xl font-bold">
       <div class="h-80 flex justify-center items-center">
         <img class="h-full object-contain" src="../static/images/diis_psu_black.png" alt="diis-psu">
       </div>
-      <div class="pt-8">
-        เข้าสู่ระบบ
+      <div class="pt-8 w-full">
+        ระบบคลังวัสดุ <br> กรุณาเข้าสู่ระบบ
       </div>
     </h2>
 
@@ -19,13 +19,8 @@
         <!-- PSU Login Button -->
         <div>
           <a href="{{ url_for('accounts.login_oauth', name='psu') }}"
-            class="flex items-center justify-center space-x-2 px-6 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-lg font-medium shadow-md transition duration-300">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 10a2 2 0 100-4 2 2 0 000 4z" />
-              <path fill-rule="evenodd"
-                d="M.458 10C1.732 4.943 5.522 2 10 2s8.268 2.943 9.542 8c-1.274 5.057-5.064 8-9.542 8S1.732 15.057.458 10zM10 18a8 8 0 100-16 8 8 0 000 16z"
-                clip-rule="evenodd" />
-            </svg>
+            class="flex items-center justify-center space-x-2 px-6 py-3 btn btn-primary rounded-lg text-lg font-medium h-12">
+            <i class="ph ph-sign-in"></i>
             <span>PSU Passport</span>
           </a>
         </div>
