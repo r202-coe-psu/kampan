@@ -19,28 +19,28 @@
       {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
-      <button type="submit" class="ui primary button"
+      <button type="submit" class="btn btn-primary"
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
   <div>
     {% if orders %}
-    <table class="ui celled table">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>วันที่สั่งเบิกวัสดุ</th>
-          <th>คำอธิบาย</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>การอนุมัติ</th>
+          <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">การอนุมัติ</th>
         </tr>
       </thead>
       <tbody>
         {% for order in paginated_orders.items %}
         <tr>
-          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.created_by.get_name() }}</td>
-          <td data-label="Status">
+          <td class="table-style" data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td class="table-style" data-label="Description">{{ order.description }}</td>
+          <td class="table-style" data-label="User">{{ order.created_by.get_name() }}</td>
+          <td class="table-style" data-label="Status">
             <a class="positive ui button"
               href="{{ url_for('approve_orders.supervisor_supplier_approved_detail', order_id=order.id, organization_id=organization.id)}}">
               ตรวจสอบวัสดุ
@@ -52,13 +52,9 @@
       </tbody>
     </table>
     {% if paginated_orders.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_orders,"approve_orders.index")}}
-        </div>
-      </div>
-    </div>
+
+    {{ paginated.render_pagination(paginated_orders,"approve_orders.index")}}
+
     {% endif %}
     {% else %}
     <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

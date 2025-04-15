@@ -95,14 +95,14 @@ class OrderItem(me.Document):
 
     def get_status(self):
         key_color = {
-            "denied": "red",
-            "admin denied": "red",
-            "approved": "green",
-            "pending on admin": "blue",
-            "pending on supervisor supplier": "orange",
-            "pending": "pink",
-            "confirmed": "yellow",
-            "disactive": "red",
-            "active": "blue",
+            "denied": "text-error",
+            "admin denied": "text-error",
+            "approved": "text-green-500",
+            "pending on admin": "text-primary",
+            "pending on supervisor supplier": "text-orange-500",
+            "pending": "text-pink-500",
+            "confirmed": "text-yellow-500",
+            "disactive": "text-error",
+            "active": "text-primary",
         }
-        return f'<td data-label="Status" class="{key_color[self.status]}"><span class="ui {key_color[self.status]} text">{self.get_status_display()}</span></td>'
+        return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'

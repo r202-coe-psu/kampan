@@ -47,19 +47,19 @@
             <tbody>
               <tr>
                 <td style="font-weight: bold;">ที่อยู่:</td>
-                <td>{{ supplier.address }}</td>
+                <td class="table-style">{{ supplier.address }}</td>
               </tr>
               <tr>
                 <td style="font-weight: bold;">เลขผู้เสียภาษี:</td>
-                <td>{{ supplier.tax_id }}</td>
+                <td class="table-style">{{ supplier.tax_id }}</td>
               </tr>
               <tr>
                 <td style="font-weight: bold;">ช่องทางการติดต่อ:</td>
-                <td>{{ supplier.contact }}</td>
+                <td class="table-style">{{ supplier.contact }}</td>
               </tr>
               <tr>
                 <td style="font-weight: bold;">อีเมล:</td>
-                <td>{{ supplier.email }}</td>
+                <td class="table-style">{{ supplier.email }}</td>
               </tr>
             </tbody>
           </table>
@@ -73,7 +73,7 @@
           <p>{{ supplier.description }}</p>
         </div>
         <div class="" style="margin-top: 50px; text-align: right; ">
-          <a class="ui primary button"
+          <a class="btn btn-primary"
             href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
             <div style="font-size: 1.2em;"> <i class="edit icon"></i> แก้ไข </div>
           </a>
@@ -107,13 +107,9 @@
 
   {% endfor %}
   {% if paginated_suppliers.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_suppliers,"suppliers.index")}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_suppliers,"suppliers.index")}}
+
   {% endif %}
 </div>
 

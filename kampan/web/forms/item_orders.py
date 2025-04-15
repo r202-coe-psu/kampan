@@ -58,12 +58,24 @@ def get_approved_amount_form(items):
 
 
 class SearchStartEndDateForm(FlaskForm):
-    start_date = fields.DateField(
-        "วันที่เริ่มต้น", format="%d/%m/%Y", widget=widgets.TextInput()
-    )
-    end_date = fields.DateField(
-        "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
-    )
+    start_date = fields.DateField("วันที่เริ่มต้น")
+    end_date = fields.DateField("วันที่สุดท้าย")
     item = fields.SelectField(
         "วัสดุ", validate_choice=False, validators=None, choices=[("", "ไม่เลือก")]
+    )
+
+
+class SearchStartEndDateAndStatusForm(FlaskForm):
+    start_date = fields.DateField("วันที่เริ่มต้น")
+    end_date = fields.DateField("วันที่สุดท้าย")
+    item = fields.SelectField(
+        "สถานะ",
+        validate_choice=False,
+        validators=None,
+        choices=[
+            ("", "ทั้งหมด"),
+            ("pending", "รอดำเนินการ"),
+            ("approved", "อนุมัติ"),
+            ("denied", "ปฏิเสธ"),
+        ],
     )

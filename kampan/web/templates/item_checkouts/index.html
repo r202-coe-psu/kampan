@@ -21,7 +21,7 @@
   </div>
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
@@ -29,27 +29,28 @@
 <div>
 
   {% if checkouts %}
-  <table class="ui celled table">
+  <table class="table-auto w-full">
     <thead>
       <tr>
-        <th>วันที่สั่งเบิกวัสดุ</th>
-        <th>วัตถุประสงค์</th>
-        <th>รูปวัสดุ</th>
-        <th>ชื่อวัสดุ</th>
-        {#} <th>จำนวนหน่วยใหญ่</th>{#}
-        <th>จำนวนหน่วยเล็ก</th>
-        {#<th>จำนวนที่เบิกทั้งหมด</th>{#}
-        <th>สถานะ</th>
-        <th>ชื่อผู้ขอเบิกใช้งาน</th>
-        <th>ราคา (หน่วยเล็กละ)</th>
-        <th>นัดรับ ณ วันที่</th>
+        <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+        <th class="table-style">วัตถุประสงค์</th>
+        <th class="table-style">รูปวัสดุ</th>
+        <th class="table-style">ชื่อวัสดุ</th>
+        {#} <th class="table-style">จำนวนหน่วยใหญ่</th>{#}
+        <th class="table-style">จำนวนหน่วยเล็ก</th>
+        {#<th class="table-style">จำนวนที่เบิกทั้งหมด</th>{#}
+        <th class="table-style">สถานะ</th>
+        <th class="table-style">ชื่อผู้ขอเบิกใช้งาน</th>
+        <th class="table-style">ราคา (หน่วยเล็กละ)</th>
+        <th class="table-style">นัดรับ ณ วันที่</th>
       </tr>
     </thead>
     <tbody>
       {% for checkout in paginated_checkouts.items %}
       <tr>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Objective"> <a class="primary button"
+        <td class="table-style" data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+        </td>
+        <td class="table-style" data-label="Objective"> <a class="primary button"
             href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
             style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
             <i class="eye icon"></i>
@@ -58,7 +59,7 @@
             class="ui secondary text" style="color: black;">{{ checkout.order.description }}</a>
 
         </td>
-        <td data-label="Image" class="center aligned">
+        <td class="table-style" data-label="Image" class="center aligned">
           <div>
             {% if not checkout.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -69,32 +70,31 @@
             {% endif %}
           </div>
         </td>
-        <td data-label="Item">{{ checkout.item.name }}
+        <td class="table-style" data-label="Item">{{ checkout.item.name }}
         </td>
-        {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
-        <td data-label="Piece">{{ checkout.piece }}</td>
-        {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
+        {#<td class="table-style" data-label="Set">{{ checkout.set_ }}</td>{#}
+        <td class="table-style" data-label="Piece">{{ checkout.piece }}</td>
+        {#<td class="table-style" data-label="Quantity">{{ checkout.quantity }}</td>{#}
         {{ checkout.order.get_status()|safe }}
 
-        <td data-label="User">{{ checkout.user.get_name() }}</td>
-        {#}<td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
-        <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>{#}
-        <td data-label="Price">{{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
+        <td class="table-style" data-label="User">{{ checkout.user.get_name() }}</td>
+        {#}<td class="table-style" data-label="Amount-Approved">
+          {{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}
         </td>
-        <td data-label="Checkout Date">{{ checkout.order.sent_item_date.strftime('%d/%m/%Y %H:%M:%S') if
+        <td class="table-style" data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>{#}
+        <td class="table-style" data-label="Price">
+          {{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
+        </td>
+        <td class="table-style" data-label="Checkout Date">{{ checkout.order.sent_item_date.strftime('%d/%m/%Y %H:%M:%S') if
           checkout.order.sent_item_date else "-" }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
+
   {% endif %}
   {% else %}
   <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

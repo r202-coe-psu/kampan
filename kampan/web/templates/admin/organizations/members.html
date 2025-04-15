@@ -6,7 +6,7 @@
 {% block dashboard_title %}สมาชิกขององค์กร{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
+<a class="btn btn-primary" href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
   เพิ่มสมาชิก
 </a>
 {% endblock %}
@@ -16,80 +16,78 @@
   {{ renderer.render_default_search_user(form) }}
 
   {% if org_users %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>ชื่อสมาชิก</th>
-          <th>อีเมล</th>
-          <th>ตำแหน่ง</th>
-          <th>เพิ่มเข้ามาเมื่อวันที่</th>
-          <th>แก้ไขตำแหน่ง/ลบสมาชิก</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for org_user in paginated_org_users.items %}
-        <tr>
-          <td data-label="Organization">{{ org_user.display_fullname() }}</td>
-          <td data-label="Email">{{ org_user.display_email() }}</td>
-          <td data-label="Roles">{{ org_user.roles }}</td>
-          <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="overflow-x-auto mt-10 rounded-xl">
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            <th class="table-style">ชื่อสมาชิก</th>
+            <th class="table-style">อีเมล</th>
+            <th class="table-style">ตำแหน่ง</th>
+            <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+            <th class="table-style">แก้ไขตำแหน่ง/ลบสมาชิก</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for org_user in paginated_org_users.items %}
+          <tr>
+            <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
+            <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
+            <td class="table-style" data-label="Roles">{{ org_user.roles }}</td>
+            <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
             org_user.created_date else "-"}}
-          </td>
-          <td>
-            <a class="ui icon button"
-              href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
-            </a>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ org_user.id }}')">
-              <i class="trash icon"></i>
-            </a>
-            <div class="ui modal {{ org_user.id }}">
-              <div class="header">
-                ลบสมาชิก
+            </td>
+            <td class="table-style">
+              <a class="ui icon button"
+                href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
+                style=" color: white; background-color: rgb(59, 115, 199);">
+                <i class="edit icon"></i>
+              </a>
+              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+                onclick="showDeleteModal('{{ org_user.id }}')">
+                <i class="trash icon"></i>
+              </a>
+              <div class="ui modal {{ org_user.id }}">
+                <div class="header">
+                  ลบสมาชิก
+                </div>
+                <div class="content">
+                  <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
+
+
+                  </p>
+                </div>
+                <div class="actions">
+                  <button class="ui black deny button">
+                    ยกเลิก
+                  </button>
+                  <a class="ui negative right labeled icon button"
+                    href="{{ url_for('admin.organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
+                    ยืนยัน
+                    <i class="checkmark icon"></i>
+                  </a>
+                </div>
               </div>
-              <div class="content">
-                <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
+            </td>
+          </tr>
+
+          {% endfor %}
+        </tbody>
+      </table>
+      {% set params=dict(request.args) %}
+      {% if 'page' in params %}
+      {% set _dummy=params.pop('page') %}
+      {% endif %}
+      {% if "organization_id" not in params %}
+      {% set _dummy=params.update({"organization_id": organization.id }) %}
+      {% endif %}
+      {% if paginated_org_users.pages != 1 %}
 
 
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('admin.organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
-          </td>
-        </tr>
+      {{ paginated.render_pagination(paginated_org_users,"admin.organizations.organizaiton_users", params)}}
 
-        {% endfor %}
-      </tbody>
-    </table>
-    {% set params=dict(request.args) %}
-    {% if 'page' in params %}
-    {% set _dummy=params.pop('page') %}
-    {% endif %}
-    {% if "organization_id" not in params %}
-    {% set _dummy=params.update({"organization_id": organization.id }) %}
-    {% endif %}
-    {% if paginated_org_users.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-
-          {{paginated.render_pagination(paginated_org_users,"admin.organizations.organizaiton_users", params)}}
-        </div>
-      </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
   {% else %}
   <div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>

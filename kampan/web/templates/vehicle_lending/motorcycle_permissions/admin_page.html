@@ -12,35 +12,37 @@
 {% block content %}
 {% if paginated_motorcycle_applications.total %}
 
-<table class="ui celled table">
+<table class="table-auto w-full">
   <thead>
     <tr>
-      <th></th>
-      <th>วันที่ต้องการใช้</th>
-      <th>เหตุผลที่ต้องการใช้</th>
-      <th>ชื่อผู้ใช้งาน</th>
-      <th>สถานะ</th>
-      <th>เหตุผล</th>
-      <th>จัดการ</th>
+      <th class="table-style"></th>
+      <th class="table-style">วันที่ต้องการใช้</th>
+      <th class="table-style">เหตุผลที่ต้องการใช้</th>
+      <th class="table-style">ชื่อผู้ใช้งาน</th>
+      <th class="table-style">สถานะ</th>
+      <th class="table-style">เหตุผล</th>
+      <th class="table-style">จัดการ</th>
 
     </tr>
   </thead>
   <tbody>
     {% for motorcycle_application in paginated_motorcycle_applications.items %}
     <tr>
-      <td> {{ loop.index }}</td>
-      <td data-label="Created Date">{{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-      <td data-label="Description">{{ motorcycle_application.description }}</td>
-      <td data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
+      <td class="table-style"> {{ loop.index }}</td>
+      <td class="table-style" data-label="Created Date">
+        {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+      </td>
+      <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+      <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
 
 
 
       {{ motorcycle_application.get_status()|safe }}
 
-      <td>
+      <td class="table-style">
         {{ motorcycle_application.remark }}
       </td>
-      <td>
+      <td class="table-style">
         {% if motorcycle_application.status == "pending" %}
         <!-- Approve/Deny Button -->
         <a class="ui icon button blue {{ 'disabled' if motorcycle_application.status == 'approved' else ''}}"
@@ -163,13 +165,9 @@
 </table>
 {#}
 {% if paginated_motorcycle_applications.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
+
 {% endif %}
 {#}
 {% else %}

@@ -6,7 +6,7 @@
 {% block dashboard_title %}รายชื่อองค์กร{% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui primary button" href="{{ url_for('admin.organizations.create_or_edit') }}">
+<a class="btn btn-primary" href="{{ url_for('admin.organizations.create_or_edit') }}">
   เพิ่มองค์กร
 </a>
 
@@ -23,105 +23,104 @@
       {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
-      <button type="submit" class="ui primary button"
+      <button type="submit" class="btn btn-primary"
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
   {% if organizations %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>ชื่อองค์กร</th>
-          <th>คำอธิบาย</th>
-          <th>วันลงทะเบียน</th>
-          <th>รายละเอียด</th>
-          <th>เพิ่มสมาชิก/แก้ไข/ลบข้อมูล</th>
-          <th>สวมสิทธิ์องค์กร</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for organization in paginated_organizations.items %}
-        <tr>
-          <td data-label="Organization">{{ organization.name }}</td>
-          <td data-label="Description">{{ organization.description }}</td>
-          <td data-label="Registeration Date">{{ organization.created_date.strftime('%d/%m/%Y') }}</td>
-          <td data-label="Checkin Items">
-            <a class="ui primary button icon"
-              href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}"
-              style=" color: white; background-color: rgb(59, 115, 199); ">
-              <i class="eye icon"></i>
-            </a>
-            {% if organization.get_organization_users() %}
-            <a class="ui primary button icon"
-              href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}"
-              style=" color: white; background-color: rgb(59, 115, 199); ">
-              <i class="users icon"></i>
-            </a>
-            {% endif %}
-          </td>
-          <td>
-            <a class="ui icon button"
-              href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="user plus icon"></i>
-            </a>
-            <a class="ui icon button"
-              href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
-            </a>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ organization.id }}')">
-              <i class="trash icon"></i>
-            </a>
-            <div class="ui modal {{organization.id}}">
-              <div class="header">
-                ลบข้อมูลองค์กร
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="overflow-x-auto mt-10 rounded-xl">
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            <th class="table-style">ชื่อองค์กร</th>
+            <th class="table-style">คำอธิบาย</th>
+            <th class="table-style">วันลงทะเบียน</th>
+            <th class="table-style">รายละเอียด</th>
+            <th class="table-style">เพิ่มสมาชิก/แก้ไข/ลบข้อมูล</th>
+            <th class="table-style">สวมสิทธิ์องค์กร</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for organization in paginated_organizations.items %}
+          <tr>
+            <td class="table-style" data-label="Organization">{{ organization.name }}</td>
+            <td class="table-style" data-label="Description">{{ organization.description }}</td>
+            <td class="table-style" data-label="Registeration Date">{{ organization.created_date.strftime('%d/%m/%Y') }}
+            </td>
+            <td class="table-style" data-label="Checkin Items">
+              <a class="btn btn-primary icon"
+                href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}"
+                style=" color: white; background-color: rgb(59, 115, 199); ">
+                <i class="eye icon"></i>
+              </a>
+              {% if organization.get_organization_users() %}
+              <a class="btn btn-primary icon"
+                href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}"
+                style=" color: white; background-color: rgb(59, 115, 199); ">
+                <i class="users icon"></i>
+              </a>
+              {% endif %}
+            </td>
+            <td class="table-style">
+              <a class="ui icon button"
+                href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}"
+                style=" color: white; background-color: rgb(59, 115, 199);">
+                <i class="user plus icon"></i>
+              </a>
+              <a class="ui icon button"
+                href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
+                style=" color: white; background-color: rgb(59, 115, 199);">
+                <i class="edit icon"></i>
+              </a>
+              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+                onclick="showDeleteModal('{{ organization.id }}')">
+                <i class="trash icon"></i>
+              </a>
+              <div class="ui modal {{organization.id}}">
+                <div class="header">
+                  ลบข้อมูลองค์กร
+                </div>
+                <div class="content">
+                  <p>ต้องการลบองค์กร<b>{{ organization.name }}</b><br />
+                    องค์กร : <b>{{ organization.name }}</b><br />
+                    {{ organization.description }}
+                  </p>
+                </div>
+                <div class="actions">
+                  <button class="ui black deny button">
+                    ยกเลิก
+                  </button>
+                  <a class="ui negative right labeled icon button"
+                    href="{{ url_for('admin.organizations.delete', organization_id=organization.id) }}">
+                    ยืนยัน
+                    <i class="checkmark icon"></i>
+                  </a>
+                </div>
               </div>
-              <div class="content">
-                <p>ต้องการลบองค์กร<b>{{ organization.name }}</b><br />
-                  องค์กร : <b>{{ organization.name }}</b><br />
-                  {{ organization.description }}
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('admin.organizations.delete', organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
-          </td>
-          <td>
-            <a class="ui primary button icon"
-              href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}"
-              style=" color: white; background-color: rgb(59, 115, 199); ">
-              สวมสิทธิ์
-            </a>
-          </td>
-        </tr>
+            </td>
+            <td class="table-style">
+              <a class="btn btn-primary icon"
+                href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}"
+                style=" color: white; background-color: rgb(59, 115, 199); ">
+                สวมสิทธิ์
+              </a>
+            </td>
+          </tr>
 
-        {% endfor %}
-      </tbody>
-    </table>
-    {% if paginated_organizations.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{ paginated.render_pagination(paginated_organizations,"organizations.index") }}
-        </div>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if paginated_organizations.pages != 1 %}
+
+      {{ paginated.render_pagination(paginated_organizations,"organizations.index") }}
+
+      {% endif %}
     </div>
+    {% else %}
+    <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
   </div>
-  {% else %}
-  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% endif %}
 </form>
 {% endblock %}
 

@@ -48,31 +48,31 @@
 
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
 {% if org_users %}
 
-<table class="ui celled table">
+<table class="table-auto w-full">
   <thead>
     <tr>
-      <th>ชื่อสมาชิก (ภาษาอังกฤษ)</th>
-      <th>อีเมล</th>
-      <th>ตำแหน่ง</th>
-      <th>ระดับ</th>
-      <th>แผนก</th>
-      <th>เพิ่มเข้ามาเมื่อวันที่</th>
-      <th>จัดการ</th>
+      <th class="table-style">ชื่อสมาชิก (ภาษาอังกฤษ)</th>
+      <th class="table-style">อีเมล</th>
+      <th class="table-style">ตำแหน่ง</th>
+      <th class="table-style">ระดับ</th>
+      <th class="table-style">แผนก</th>
+      <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+      <th class="table-style">จัดการ</th>
     </tr>
   </thead>
   <tbody>
     {% for org_user in paginated_org_users.items %}
     <tr>
-      <td data-label="Organization">{{ org_user.display_fullname() }}</td>
-      <td data-label="Email">{{ org_user.display_email() }}</td>
-      <td data-label="Email">
+      <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
+      <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
+      <td class="table-style" data-label="Email">
         {% if org_user.appointment|length >= 30 %}
         <span data-tooltip="{{ org_user.appointment }}">
           {{ org_user.display_appointment() }}
@@ -81,12 +81,12 @@
         {{ org_user.display_appointment() }}
         {% endif %}
       </td>
-      <td data-label="Roles">{{ org_user.display_roles() }}</td>
-      <td data-label="Roles">{{ org_user.division.name }}</td>
-      <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
+      <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
+      <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
+      <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
         org_user.created_date else "-"}}
       </td>
-      <td>
+      <td class="table-style">
         <a class="ui icon button" data-tooltip="แก้ไข"
           href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
           style=" color: white; background-color: rgb(59, 115, 199);">
@@ -131,13 +131,9 @@
 {% set _dummy=params.update({"organization_id": organization.id}) %}
 {% endif %}
 {% if paginated_org_users.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_org_users,"organizations.organizaiton_users", params)}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_org_users,"organizations.organizaiton_users", params)}}
+
 {% endif %}
 
 {% else %}

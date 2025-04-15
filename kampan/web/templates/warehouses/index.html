@@ -10,7 +10,7 @@
 {% block content %}
 <div class="ui secondary menu">
   <div class="right menu">
-    <a class="ui primary button labeled icon"
+    <a class="btn btn-primary labeled icon"
       href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
       <i class="plus icon"></i>
       เพิ่มคลังวัสดุ
@@ -84,13 +84,9 @@
 
   {% endfor %}
   {% if paginated_warehouses.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
+
   {% endif %}
 </div>
 {% else %}

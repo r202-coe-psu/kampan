@@ -31,27 +31,27 @@
 <table class="ui striped padded celled table">
   <thead>
     <tr>
-      <th>ชื่อ</th>
-      <th>ประเภท</th>
-      <th>หัวข้อ</th>
-      <th>ค่าเริ่มต้น</th>
-      <th>แก้ไข</th>
+      <th class="table-style">ชื่อ</th>
+      <th class="table-style">ประเภท</th>
+      <th class="table-style">หัวข้อ</th>
+      <th class="table-style">ค่าเริ่มต้น</th>
+      <th class="table-style">แก้ไข</th>
     </tr>
   </thead>
   <tbody>
     {% for email_template in email_templates %}
     <tr>
-      <td data-label="Name">{{ email_template.name }}</td>
-      <td data-label="Type">{{ email_template.get_type_display() }}</td>
-      <td data-label="Subject">{{ email_template.subject }}</td>
-      <td data-label="Default" class="{{ 'green' if email_template.is_default else 'red' }}">{{
+      <td class="table-style" data-label="Name">{{ email_template.name }}</td>
+      <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
+      <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
+      <td class="table-style" data-label="Default" class="{{ 'green' if email_template.is_default else 'red' }}">{{
         email_template.is_default }}
         <a style="cursor: pointer;" data-content="change defualt setting"
           onclick="$('.modal.set-default.{{ email_template.id }}').modal('show')">
           <i class="sync blue icon"></i>
         </a>
       </td>
-      <td data-label="Actions">
+      <td class="table-style" data-label="Actions">
 
         <a class="ui link primary icon circular button"
           href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)}}">

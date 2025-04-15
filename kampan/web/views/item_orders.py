@@ -28,13 +28,7 @@ def index():
         orders = models.OrderItem.objects(
             status__ne="disactive", organization=organization, created_by=current_user
         ).order_by("-created_date")
-    form = forms.inventories.SearchStartEndDateForm()
-    form.item.label = "สถานะ"
-    form.item.choices += [
-        ("pending", "รอดำเนินการ"),
-        ("approved", "อนุมัติ"),
-        ("denied", "ปฏิเสธ"),
-    ]
+    form = forms.item_orders.SearchStartEndDateAndStatusForm()
     if form.start_date.data == None and form.end_date.data != None:
         orders = orders.filter(
             created_date__lt=form.end_date.data,

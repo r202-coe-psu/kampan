@@ -18,7 +18,7 @@
 {% block content %}
 <div class="ui secondary menu">
   <div class="right menu">
-    <a class="ui primary button labeled icon"
+    <a class="btn btn-primary labeled icon"
       href="{{ url_for('item_registers.register', organization_id=organization.id) }}">
       <i class="plus icon"></i>
       เพิ่มบิลวัสดุ
@@ -36,89 +36,87 @@
   </div>
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
   {% if item_registers %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>เลขกำกับใบเสร็จ</th>
-          <th>คำอธิบาย</th>
-          <th>ร้านค้า</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>วันลงทะเบียนวัสดุ</th>
-          <th>สถานะ</th>
-          <th>รายการนำเข้าวัสดุ</th>
-          <th>แก้ไข/ลบข้อมูลวัสดุ</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in paginated_item_registers.items %}
-        <tr>
-          <td data-label="Item Name">{{ item.receipt_id }}</td>
-          <td data-label="Warehouse">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.supplier.get_supplier_name() }}</td>
-          <td data-label="User">{{ item.created_by.get_name() }}</td>
-          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
-          <td class="{{ 'green' if item.status == 'active' else 'yellow'}}">
-            {{ 'ยืนยัน' if item.status == "active" else 'รอดำเนินการ' }}
-          </td>
-          <td data-label="Checkin Items">
-            <a class="ui primary button icon"
-              href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199); ">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          <td>
-            {% if item.status != "active" %}
-            <a class="ui icon button"
-              href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
-            </a>
-            {% endif %}
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ item.id }}')">
-              <i class="trash icon"></i>
-            </a>
-            <div class="ui modal {{item.id}}">
-              <div class="header">
-                ลบข้อมูลนำเข้าวัสดุ
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="overflow-x-auto mt-10 rounded-xl">
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            <th class="table-style">เลขกำกับใบเสร็จ</th>
+            <th class="table-style">คำอธิบาย</th>
+            <th class="table-style">ร้านค้า</th>
+            <th class="table-style">ชื่อผู้ใช้งาน</th>
+            <th class="table-style">วันลงทะเบียนวัสดุ</th>
+            <th class="table-style">สถานะ</th>
+            <th class="table-style">รายการนำเข้าวัสดุ</th>
+            <th class="table-style">แก้ไข/ลบข้อมูลวัสดุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in paginated_item_registers.items %}
+          <tr>
+            <td class="table-style" data-label="Item Name">{{ item.receipt_id }}</td>
+            <td class="table-style" data-label="Warehouse">{{ item.description }}</td>
+            <td class="table-style" data-label="Quantity">{{ item.supplier.get_supplier_name() }}</td>
+            <td class="table-style" data-label="User">{{ item.created_by.get_name() }}</td>
+            <td class="table-style" data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+            <td class="{{ 'green' if item.status == 'active' else 'yellow'}}">
+              {{ 'ยืนยัน' if item.status == "active" else 'รอดำเนินการ' }}
+            </td>
+            <td class="table-style" data-label="Checkin Items">
+              <a class="btn btn-primary icon"
+                href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}"
+                style=" color: white; background-color: rgb(59, 115, 199); ">
+                <i class="eye icon"></i>
+              </a>
+            </td>
+            <td class="table-style">
+              {% if item.status != "active" %}
+              <a class="ui icon button"
+                href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}"
+                style=" color: white; background-color: rgb(59, 115, 199);">
+                <i class="edit icon"></i>
+              </a>
+              {% endif %}
+              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+                onclick="showDeleteModal('{{ item.id }}')">
+                <i class="trash icon"></i>
+              </a>
+              <div class="ui modal {{item.id}}">
+                <div class="header">
+                  ลบข้อมูลนำเข้าวัสดุ
+                </div>
+                <div class="content">
+                  <p>ต้องการลบข้อมูลนำเข้าวัสดุ <b>{{ item.description }}</b><br />
+                    เลขกำกับใบเสร็จ : <b>{{ item.receipt_id }}</b>
+                  </p>
+                </div>
+                <div class="actions">
+                  <button class="ui black deny button">
+                    ยกเลิก
+                  </button>
+                  <a class="ui negative right labeled icon button"
+                    href="{{ url_for('item_registers.delete', item_register_id=item.id, organization_id=organization.id) }}">
+                    ยืนยัน
+                    <i class="checkmark icon"></i>
+                  </a>
+                </div>
               </div>
-              <div class="content">
-                <p>ต้องการลบข้อมูลนำเข้าวัสดุ <b>{{ item.description }}</b><br />
-                  เลขกำกับใบเสร็จ : <b>{{ item.receipt_id }}</b>
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('item_registers.delete', item_register_id=item.id, organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
-          </td>
-        </tr>
+            </td>
+          </tr>
 
-        {% endfor %}
-      </tbody>
-    </table>
-    {% if paginated_item_registers.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_item_registers,"item_registers.index")}}
-        </div>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if paginated_item_registers.pages != 1 %}
+
+      {{ paginated.render_pagination(paginated_item_registers,"item_registers.index")}}
+
+      {% endif %}
     </div>
-    {% endif %}
   </div>
   {% else %}
   <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

@@ -41,75 +41,73 @@
 
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 
 
   {% if paginated_division_users.pages >= 1 %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          <th>ชื่อสมาชิก</th>
-          <th>ตำแหน่ง</th>
-          <th>เพิ่มเข้ามาเมื่อวันที่</th>
-          <th>ลบสมาชิก</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for division_user in paginated_division_users.items %}
-        <tr>
-          <td data-label="Organization">{{ division_user.display_fullname() }}</td>
-          <td data-label="Roles">{{ division_user.display_roles() }}</td>
-          <td data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="overflow-x-auto mt-10 rounded-xl">
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            <th class="table-style">ชื่อสมาชิก</th>
+            <th class="table-style">ตำแหน่ง</th>
+            <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+            <th class="table-style">ลบสมาชิก</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for division_user in paginated_division_users.items %}
+          <tr>
+            <td class="table-style" data-label="Organization">{{ division_user.display_fullname() }}</td>
+            <td class="table-style" data-label="Roles">{{ division_user.display_roles() }}</td>
+            <td class="table-style" data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
             division_user.created_date else "-"}}
-          </td>
-          <td>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ division_user.id }}')">
-              <i class="trash icon"></i>
-            </a>
-            <div class="ui modal {{ division_user.id }}">
-              <div class="header">
-                ลบสมาชิก
-              </div>
-              <div class="content">
-                <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
+            </td>
+            <td class="table-style">
+              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+                onclick="showDeleteModal('{{ division_user.id }}')">
+                <i class="trash icon"></i>
+              </a>
+              <div class="ui modal {{ division_user.id }}">
+                <div class="header">
+                  ลบสมาชิก
+                </div>
+                <div class="content">
+                  <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
 
 
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button" href="{{ url_for('divisions.remove_division_user', 
+                  </p>
+                </div>
+                <div class="actions">
+                  <button class="ui black deny button">
+                    ยกเลิก
+                  </button>
+                  <a class="ui negative right labeled icon button" href="{{ url_for('divisions.remove_division_user', 
                 organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)}}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
+                    ยืนยัน
+                    <i class="checkmark icon"></i>
+                  </a>
+                </div>
               </div>
-            </div>
-          </td>
-        </tr>
+            </td>
+          </tr>
 
-        {% endfor %}
-      </tbody>
-    </table>
-    {% set params=dict(request.args) %}
-    {% if 'page' in params %}
-    {% set _dummy=params.pop('page') %}
-    {% endif %}
-    {% if paginated_division_users.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
-        </div>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% set params=dict(request.args) %}
+      {% if 'page' in params %}
+      {% set _dummy=params.pop('page') %}
+      {% endif %}
+      {% if paginated_division_users.pages != 1 %}
+
+      {{ paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
+
+      {% endif %}
     </div>
-    {% endif %}
   </div>
   {% else %}
   <div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>

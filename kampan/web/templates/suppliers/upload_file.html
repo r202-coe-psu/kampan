@@ -42,7 +42,7 @@
     </a>
   </div>
   <div class="right menu">
-    <a class="ui primary button"
+    <a class="btn btn-primary"
       href="{{ url_for('suppliers.download_template_suppliers_file', organization_id=organization.id) }}">
       <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนร้านค้า</a>
   </div>
@@ -52,7 +52,7 @@
 
     {{ form.hidden_tag() }}
     {{ renderer.render_fileinput(form.upload_file) }}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

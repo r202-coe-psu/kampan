@@ -13,35 +13,36 @@
 {% block content %}
 {% if paginated_car_applications.total %}
 
-<table class="ui celled table">
+<table class="table-auto w-full">
   <thead>
     <tr>
-      <th></th>
-      <th>วันที่ต้องการใช้</th>
-      <th>เหตุผลที่ต้องการใช้</th>
-      <th>ชื่อผู้ใช้งาน</th>
-      <th>สถานะ</th>
-      <th>เหตุผล</th>
-      <th>จัดการ</th>
+      <th class="table-style"></th>
+      <th class="table-style">วันที่ต้องการใช้</th>
+      <th class="table-style">เหตุผลที่ต้องการใช้</th>
+      <th class="table-style">ชื่อผู้ใช้งาน</th>
+      <th class="table-style">สถานะ</th>
+      <th class="table-style">เหตุผล</th>
+      <th class="table-style">จัดการ</th>
 
     </tr>
   </thead>
   <tbody>
     {% for car_application in paginated_car_applications.items %}
     <tr>
-      <td> {{ loop.index }}</td>
-      <td data-label="Created Date">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-      <td data-label="Description">{{ car_application.description }}</td>
-      <td data-label="User">{{ car_application.creator.get_name() }}</td>
+      <td class="table-style"> {{ loop.index }}</td>
+      <td class="table-style" data-label="Created Date">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+      </td>
+      <td class="table-style" data-label="Description">{{ car_application.description }}</td>
+      <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
 
 
 
       {{ car_application.get_status()|safe }}
 
-      <td>
+      <td class="table-style">
         {{ car_application.remark }}
       </td>
-      <td>
+      <td class="table-style">
         <!-- Approve/Deny Button -->
         <a class="ui icon button blue {{ 'disabled' if car_application.status == 'approved' else ''}}"
           data-tooltip="อนุมัติ / ปฏิเสธ"
@@ -161,13 +162,9 @@
 </table>
 {#}
 {% if paginated_car_applications.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_car_applications,"item_car_applications.index")}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_car_applications,"item_car_applications.index")}}
+
 {% endif %}
 {#}
 {% else %}

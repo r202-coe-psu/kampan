@@ -79,7 +79,7 @@
   </div>
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
@@ -217,13 +217,9 @@
 </div>
 
 {% if paginated_items.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_items,"items.index", params)}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_items,"items.index", params)}}
+
 {% endif %}
 {% else %}
 <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

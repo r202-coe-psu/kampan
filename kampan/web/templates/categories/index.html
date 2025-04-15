@@ -10,7 +10,7 @@
 {% block content %}
 <div class="ui secondary menu">
   <div class="right menu">
-    <a class="ui primary button labeled icon"
+    <a class="btn btn-primary labeled icon"
       href="{{ url_for('categories.create_or_edit', organization_id=organization.id) }}">
       <i class="plus icon"></i>
       เพิ่มหมวดหมู่
@@ -19,22 +19,22 @@
 </div>
 {% if paginated_categories.items %}
 <div style="padding-bottom: 2em;">
-  <table class="ui celled table table-hover ">
+  <table class="table-auto w-full table-hover ">
     <thead>
       <tr>
-        <th class="table-header">หมวดหมู่</th>
-        <th class="table-header">คำอธิบาย</th>
-        <th class="table-header">จำนวนวัสดุในหมวดหมู่</th>
-        <th class="table-header">เครื่องมือ</th>
+        <th class="table-style">หมวดหมู่</th>
+        <th class="table-style">คำอธิบาย</th>
+        <th class="table-style">จำนวนวัสดุในหมวดหมู่</th>
+        <th class="table-style">เครื่องมือ</th>
       </tr>
     </thead>
     <tbody>
       {% for category in paginated_categories.items %}
       <tr>
-        <td data-label="Name">{{ category.name }}</td>
-        <td data-label="Description">{{ category.description }}</td>
-        <td data-label="Amount">{{ category.get_count_item() }}</td>
-        <td data-label="Actions">
+        <td class="table-style" data-label="Name">{{ category.name }}</td>
+        <td class="table-style" data-label="Description">{{ category.description }}</td>
+        <td class="table-style" data-label="Amount">{{ category.get_count_item() }}</td>
+        <td class="table-style" data-label="Actions">
           <a class="ui primary icon button"
             href="{{ url_for('categories.create_or_edit', category_id=category.id, organization_id=organization.id) }}">
             <i class="edit icon"></i> แก้ไข
@@ -69,13 +69,9 @@
     </tbody>
   </table>
   {% if paginated_categories.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_categories,"item_positions.index")}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_categories,"item_positions.index")}}
+
   {% endif %}
 
 </div>
@@ -94,13 +90,6 @@
 
   table.table.table-hover td {
     vertical-align: middle;
-  }
-
-  .table-header {
-    background-color: #363636;
-    color: #fff;
-    text-align: center;
-    padding: 10px;
   }
 </style>
 {#

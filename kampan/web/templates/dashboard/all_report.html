@@ -31,44 +31,44 @@
   </div>
   <div class="ui secondary menu">
     <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
 {% if items_snapshot %}
 <div class="ui container" style="width: 100%;">
-  <table class="ui celled table">
+  <table class="table-auto w-full">
     <thead>
       <tr>
-        <th>ลำดับ</th>
-        <th>ชื่อวัสดุ</th>
-        <th>หมวดหมู่</th>
-        <th>คงเหลือ (หน่วยนับใหญ่)</th>
-        <th>หน่วยนับใหญ่</th>
-        <th>คงเหลือ (หน่วยนับเล็ก)</th>
-        <th>หน่วยนับเล็ก</th>
-        <th>ราคาหน่วยใหญ่</th>
-        <th>ราคาหน่วยเล็ก</th>
-        <th>รวมเป็นเงิน</th>
+        <th class="table-style">ลำดับ</th>
+        <th class="table-style">ชื่อวัสดุ</th>
+        <th class="table-style">หมวดหมู่</th>
+        <th class="table-style">คงเหลือ (หน่วยนับใหญ่)</th>
+        <th class="table-style">หน่วยนับใหญ่</th>
+        <th class="table-style">คงเหลือ (หน่วยนับเล็ก)</th>
+        <th class="table-style">หน่วยนับเล็ก</th>
+        <th class="table-style">ราคาหน่วยใหญ่</th>
+        <th class="table-style">ราคาหน่วยเล็ก</th>
+        <th class="table-style">รวมเป็นเงิน</th>
       </tr>
     </thead>
     <tbody>
       {% for item_snapshot in items_snapshot %}
       <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ item_snapshot.item.name }}</td>
-        <td>{{ item_snapshot.item.categories.name }}</td>
-        <td>{{ item_snapshot.amount }}</td>
-        <td>{{ item_snapshot.item.set_unit }}</td>
-        <td>{{ (item_snapshot.get_amount_pieces()) if
+        <td class="table-style">{{ loop.index }}</td>
+        <td class="table-style">{{ item_snapshot.item.name }}</td>
+        <td class="table-style">{{ item_snapshot.item.categories.name }}</td>
+        <td class="table-style">{{ item_snapshot.amount }}</td>
+        <td class="table-style">{{ item_snapshot.item.set_unit }}</td>
+        <td class="table-style">{{ (item_snapshot.get_amount_pieces()) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td>{{ (item_snapshot.item.piece_unit) if
+        <td class="table-style">{{ (item_snapshot.item.piece_unit) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td>{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
-        <td>{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
+        <td class="table-style">{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
+        <td class="table-style">{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td>{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
+        <td class="table-style">{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
       </tr>
       {% endfor %}
     </tbody>

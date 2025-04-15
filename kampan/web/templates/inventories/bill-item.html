@@ -94,28 +94,28 @@
 </div>
 {% if paginated_inventories.pages %}
 <div>
-  <table class="ui celled table">
+  <table class="table-auto w-full">
     <thead>
       <tr>
-        <th>รูปวัสดุ</th>
-        <th>ชื่อวัสดุ</th>
-        <th>วันที่ลงทะเบียนวัสดุ</th>
-        <th>คลังวัสดุ</th>
-        <th>จำนวนหน่วยใหญ่</th>
-        <th>จำนวนหน่วยเล็ก</th>
-        <th>จำนวนคงเหลือ</th>
-        <th>ราคาแต่ละหน่วยใหญ่</th>
-        <th>ราคาแต่ละหน่วยเล็ก</th>
-        <th>ราคารวมทั้งหมด</th>
+        <th class="table-style">รูปวัสดุ</th>
+        <th class="table-style">ชื่อวัสดุ</th>
+        <th class="table-style">วันที่ลงทะเบียนวัสดุ</th>
+        <th class="table-style">คลังวัสดุ</th>
+        <th class="table-style">จำนวนหน่วยใหญ่</th>
+        <th class="table-style">จำนวนหน่วยเล็ก</th>
+        <th class="table-style">จำนวนคงเหลือ</th>
+        <th class="table-style">ราคาแต่ละหน่วยใหญ่</th>
+        <th class="table-style">ราคาแต่ละหน่วยเล็ก</th>
+        <th class="table-style">ราคารวมทั้งหมด</th>
         {% if item_register.status == "pending" %}
-        <th>แก้ไข/ลบข้อมูล</th>
+        <th class="table-style">แก้ไข/ลบข้อมูล</th>
         {% endif %}
       </tr>
     </thead>
     <tbody>
       {% for inventory in paginated_inventories.items %}
       <tr>
-        <td data-label="Image" class="center aligned">
+        <td class="table-style" data-label="Image" class="center aligned">
           <div>
             {% if not inventory.item.image %}
             <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -126,17 +126,17 @@
             {% endif %}
           </div>
         </td>
-        <td data-label="Item Name">{{ inventory.item.name }}</td>
-        <td data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
-        <td data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-        <td data-label="Set">{{ inventory.set_ }}</td>
-        <td data-label="Quantity">{{ inventory.quantity }}</td>
-        <td data-label="Remain">{{ inventory.remain }}</td>
-        <td data-label="Price">{{ inventory.price }}</td>
-        <td data-label="Price Per Piece">{{ inventory.get_price_per_piece() }}</td>
-        <td data-label="All Price">{{ inventory.get_all_price() }}</td>
+        <td class="table-style" data-label="Item Name">{{ inventory.item.name }}</td>
+        <td class="table-style" data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
+        <td class="table-style" data-label="Warehouse">{{ inventory.warehouse.name }}</td>
+        <td class="table-style" data-label="Set">{{ inventory.set_ }}</td>
+        <td class="table-style" data-label="Quantity">{{ inventory.quantity }}</td>
+        <td class="table-style" data-label="Remain">{{ inventory.remain }}</td>
+        <td class="table-style" data-label="Price">{{ inventory.price }}</td>
+        <td class="table-style" data-label="Price Per Piece">{{ inventory.get_price_per_piece() }}</td>
+        <td class="table-style" data-label="All Price">{{ inventory.get_all_price() }}</td>
         {% if item_register.status == "pending" %}
-        <td>
+        <td class="table-style">
           <a class="ui icon button"
             href="{{ url_for('inventories.edit', inventory_id=inventory.id, organization_id=organization.id) }}"
             style=" color: white; background-color: rgb(59, 115, 199);">
@@ -177,13 +177,9 @@
   {% set _dummy=params.pop('page') %}
   {% endif %}
   {% if paginated_inventories.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_inventories,"inventories.bill_item", params)}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_inventories,"inventories.bill_item", params)}}
+
   {% endif %}
 </div>
 {% else %}

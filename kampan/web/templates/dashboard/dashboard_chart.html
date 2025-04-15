@@ -24,7 +24,7 @@
     </p>
 
     <p>
-      <button type="submit" class="ui primary button"
+      <button type="submit" class="btn btn-primary"
         style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
     </p>
   </div>
@@ -43,20 +43,20 @@
       รายชื่อบุคคลที่ขอเบิก
     </div>
     {% if group_checkouts %}
-    <table class="ui celled table">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>ชื่อผู้เบิก</th>
-          <th>จำนวนครั้งที่เบิก</th>
-          <th>จำนวนวัสดุที่เบิก</th>
+          <th class="table-style">ชื่อผู้เบิก</th>
+          <th class="table-style">จำนวนครั้งที่เบิก</th>
+          <th class="table-style">จำนวนวัสดุที่เบิก</th>
         </tr>
       </thead>
       <tbody>
         {% for checkout in group_checkouts %}
         <tr>
-          <td>{{ checkout._id }}</td>
-          <td>{{ checkout.total_time }}</td>
-          <td>{{ checkout.total }}</td>
+          <td class="table-style">{{ checkout._id }}</td>
+          <td class="table-style">{{ checkout.total_time }}</td>
+          <td class="table-style">{{ checkout.total }}</td>
         </tr>
         {% endfor %}
       </tbody>

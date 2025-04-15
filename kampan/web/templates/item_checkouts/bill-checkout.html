@@ -22,7 +22,7 @@
     {% if current_user.has_organization_roles("admin") %}
 
     <a href="{{ url_for('item_checkouts.upload_file', organization_id=organization.id, order_id=order.id) }}"
-      class="ui primary button">อัปโหลดไฟล์</a>
+      class="btn btn-primary">อัปโหลดไฟล์</a>
     {% endif %}
     {% if order.status ==
     "pending"
@@ -86,100 +86,101 @@
     <span class="text ui right"> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</span>
   </b>
 </div>
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>รูปวัสดุ</th>
-        <th>วันที่นำวัสดุออก</th>
-        <th>ชื่อวัสดุ</th>
-        {#<th>คลังวัสดุ</th>#}
-        {#<th>จำนวนหน่วยใหญ่</th>{#}
-        <th>จำนวนหน่วยเล็ก</th>
-        <th>ราคาแต่ละหน่วยเล็ก</th>
-        <th>รวมราคา</th>
-        {#<th>ราคา (ชิ้นละ)</th>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
-        {% if order.created_by == current_user %}
-        <th>แก้ไข/ลบข้อมูล</th>
-        {% endif %}
-        {% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for checkout in paginated_checkouts.items %}
-      <tr>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img
-              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
-              width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Item">{{ checkout.item.name }}</td>
-        {#<td data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
-        {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
-        <td data-label="Piece">{{ checkout.piece }}</td>
-        <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
-        <td data-label="Quantity">{{ checkout.get_all_price() }}</td>
-        {#<td data-label="Price">{{ checkout.price }}</td>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
-        {% if order.created_by == current_user %}
-        <td>
-          <a class="ui icon button"
-            href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-            style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
-            <i class="trash icon"></i>
-          </a>
-          <div class="ui modal {{checkout.id}}">
-            <div class="header">
-              ลบคำสั่งเบิกวัสดุ
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-10 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">รูปวัสดุ</th>
+          <th class="table-style">วันที่นำวัสดุออก</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          {#<th class="table-style">คลังวัสดุ</th>#}
+          {#<th class="table-style">จำนวนหน่วยใหญ่</th>{#}
+          <th class="table-style">จำนวนหน่วยเล็ก</th>
+          <th class="table-style">ราคาแต่ละหน่วยเล็ก</th>
+          <th class="table-style">รวมราคา</th>
+          {#<th class="table-style">ราคา (ชิ้นละ)</th>#}
+          {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+          %}
+          {% if order.created_by == current_user %}
+          <th class="table-style">แก้ไข/ลบข้อมูล</th>
+          {% endif %}
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td class="table-style" data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+                width="70">
+              {% endif %}
             </div>
-            <div class="content">
-              <p>ต้องการลบคำสั่งเบิกวัสดุ
-                <b>{{ checkout.item.name }}</b>
-              </p>
+          </td>
+          <td class="table-style" data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Item">{{ checkout.item.name }}</td>
+          {#<td class="table-style" data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
+          {#<td class="table-style" data-label="Set">{{ checkout.set_ }}</td>{#}
+          <td class="table-style" data-label="Piece">{{ checkout.piece }}</td>
+          <td class="table-style" data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
+          <td class="table-style" data-label="Quantity">{{ checkout.get_all_price() }}</td>
+          {#<td class="table-style" data-label="Price">{{ checkout.price }}</td>#}
+          {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+          %}
+          {% if order.created_by == current_user %}
+          <td class="table-style">
+            <a class="ui icon button"
+              href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
+              style=" color: white; background-color: rgb(59, 115, 199);">
+              <i class="edit icon"></i>
+            </a>
+            <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
+              <i class="trash icon"></i>
+            </a>
+            <div class="ui modal {{checkout.id}}">
+              <div class="header">
+                ลบคำสั่งเบิกวัสดุ
+              </div>
+              <div class="content">
+                <p>ต้องการลบคำสั่งเบิกวัสดุ
+                  <b>{{ checkout.item.name }}</b>
+                </p>
+              </div>
+              <div class="actions">
+                <button class="ui black deny button">
+                  ยกเลิก
+                </button>
+                <a class="ui negative right labeled icon button"
+                  href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
+                  ยืนยัน
+                  <i class="checkmark icon"></i>
+                </a>
+              </div>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
-                ยกเลิก
-              </button>
-              <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="checkmark icon"></i>
-              </a>
-            </div>
-          </div>
-        </td>
-        {% endif %}
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% set params=dict(request.args) %}
-  {% if 'page' in params %}
-  {% set _dummy=params.pop('page') %}
-  {% endif %}
-  {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"item_checkouts.bill_checkout", params)}}
-      </div>
-    </div>
+          </td>
+          {% endif %}
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_checkouts.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.bill_checkout", params)}}
+
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 {% else %}
 <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

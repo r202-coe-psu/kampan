@@ -81,17 +81,17 @@ class CarApplication(VehicleApplication, me.Document):
 
     def get_status(self):
         key_color = {
-            "denied by header": "red",
-            "denied by director": "red",
-            "denied by admin": "red",
-            "approved": "green",
-            "pending on director": "orange",
-            "pending on admin": "orange",
-            "pending on header": "orange",
-            "disactive": "red",
-            "active": "blue",
+            "denied by header": "text-error",
+            "denied by director": "text-error",
+            "denied by admin": "text-error",
+            "approved": "text-green-500",
+            "pending on director": "text-orange-500",
+            "pending on admin": "text-orange-500",
+            "pending on header": "text-orange-500",
+            "disactive": "text-error",
+            "active": "text-primary",
         }
-        return f'<td data-label="Status" class="{key_color[self.status]}"><span class="ui {key_color[self.status]} text">{self.get_status_display()}</span></td>'
+        return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'
 
 
 class MotorcycleApplication(VehicleApplication, me.Document):
@@ -104,10 +104,10 @@ class MotorcycleApplication(VehicleApplication, me.Document):
 
     def get_status(self):
         key_color = {
-            "denied": "red",
-            "returned": "green",
-            "pending": "orange",
-            "disactive": "red",
-            "active": "blue",
+            "denied": "text-error",
+            "returned": "text-green-500",
+            "pending": "text-orange-500",
+            "disactive": "text-error",
+            "active": "text-primary",
         }
-        return f'<td data-label="Status" class="{key_color[self.status]}"><span class="ui {key_color[self.status]} text">{self.get_status_display()}</span></td>'
+        return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'

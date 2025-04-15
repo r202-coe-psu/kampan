@@ -40,43 +40,43 @@
       คำขอใหม่
     </div>
     {% if orders %}
-    <table class="ui celled table">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>วันที่สั่งเบิกวัสดุ</th>
-          <th>วัตถุประสงค์</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>สถานะ</th>
-          <th>รายการวัสดุ</th>
+          <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+          <th class="table-style">วัตถุประสงค์</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">รายการวัสดุ</th>
 
         </tr>
       </thead>
       <tbody>
         {% for order in orders %}
         <tr>
-          <td>{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td>{{ order.description }}</td>
-          <td>{{ order.created_by.get_name() }}</td>
+          <td class="table-style">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td class="table-style">{{ order.description }}</td>
+          <td class="table-style">{{ order.created_by.get_name() }}</td>
           {% if order.status == "pending" %}
-          <td data-label="Status" class="yellow">
+          <td class="table-style" data-label="Status" class="yellow">
             <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
-          <td data-label="Status" class="green">
+          <td class="table-style" data-label="Status" class="text-success">
             <span class="ui green text">{{ order.get_status_display() }}
             </span>
           </td>
           {% elif order.status == "denied" or order.approval_status == "denied"%}
-          <td data-label="Status" class="red">
+          <td class="table-style" data-label="Status" class="text-error">
             <span class="ui red text">{{ order.get_status_display() }}</span>
           </td>
           {% else %}
-          <td data-label="Status" class="yellow">
+          <td class="table-style" data-label="Status" class="yellow">
             <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% endif %}
-          <td>
-            <a class="ui primary button"
+          <td class="table-style">
+            <a class="btn btn-primary"
               href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
@@ -111,43 +111,43 @@
       คำขอที่กำลังดำเนินการอยู่
     </div>
     {% if pending_orders %}
-    <table class="ui celled table">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>วันที่สั่งเบิกวัสดุ</th>
-          <th>วัตถุประสงค์</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>สถานะ</th>
-          <th>รายการวัสดุ</th>
+          <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+          <th class="table-style">วัตถุประสงค์</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">รายการวัสดุ</th>
 
         </tr>
       </thead>
       <tbody>
         {% for order in pending_orders %}
         <tr>
-          <td>{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td>{{ order.description }}</td>
-          <td>{{ order.created_by.get_name() }} </td>
+          <td class="table-style">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td class="table-style">{{ order.description }}</td>
+          <td class="table-style">{{ order.created_by.get_name() }} </td>
           {% if order.status == "pending" %}
-          <td data-label="Status" class="yellow">
+          <td class="table-style" data-label="Status" class="yellow">
             <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
-          <td data-label="Status" class="green">
+          <td class="table-style" data-label="Status" class="text-success">
             <span class="ui green text">{{ order.get_status_display() }}
             </span>
           </td>
           {% elif order.status == "denied" or order.approval_status == "denied"%}
-          <td data-label="Status" class="red">
+          <td class="table-style" data-label="Status" class="text-error">
             <span class="ui red text">{{ order.get_status_display() }}</span>
           </td>
           {% else %}
-          <td data-label="Status" class="yellow">
+          <td class="table-style" data-label="Status" class="yellow">
             <span class="ui yellow text">{{ order.get_status_display() }}</span>
           </td>
           {% endif %}
-          <td>
-            <a class="ui primary button"
+          <td class="table-style">
+            <a class="btn btn-primary"
               href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
               <i class="eye icon"></i>
