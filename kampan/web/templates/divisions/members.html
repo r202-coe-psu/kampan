@@ -70,27 +70,14 @@
               <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
-              <div role="dialog" class="modal {{ division_user.id }}">
-                <div class="text-2xl font-bold">
-                  ลบสมาชิก
-                </div>
-                <div class=" modal-box">
-                  <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
-
-
-                  </p>
-                </div>
-                <div class="modal-action">
-                  <button class="btn">
-                    ยกเลิก
-                  </button>
-                  <a class="btn-error btn" href="{{ url_for('divisions.remove_division_user', 
-                organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)}}">
-                    ยืนยัน
-                    <i class="ph ph-check"></i>
-                  </a>
-                </div>
-              </div>
+              {{ ModalNegative(
+                id=division_user.id,
+                header="ลบสมาชิก",  
+                body="ต้องการลบสมาชิก<b> %s</b><br />" | format(division_user.display_fullname()),  
+                cancel="ยกเลิก",  
+                submit="ยืนยัน",  
+                redirect="{{ url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id) }}"
+              ) }}
             </td>
           </tr>
 

@@ -1,191 +1,57 @@
-{% macro Dialog(
-id,
-title,
-body,
-class_="",
-init_show=False,
-click_outside_to_close=True,
-close_at_corner=False,
-method="GET",
-disable_cancel_button=False,
-cancel_button_text="ปิด",
-cancel_button_href="",
-cancel_button_onclick="",
-cancel_button_color="",
-action_button_text="",
-action_button_type="action",
-action_button_href="",
-action_button_onclick="",
-action_button_color="primary",
-summit_button_color="primary",
-summit_button_text="",
-summit_button_type="submit") %}
-
-{#
-### วิธีใช้ Dialog 101 ###
-
-id: ตั้งค่า id ให้แต่ละไดอะล็อก อาจจะเป็น id ของ model.id หรือ ชื่อ form.name
-
-title: หัวเรื่องของไดอะล็อก
-
-body: เนื้อหาของไดอะล็อก
-
-init_show:
-- True: ไดอะล็อกแสดงทันที
-- False ไดอะล็อกจะต้องแสดงด้วย js ด้วยคำสั่ง $(#dialog_id)[0].showModal();
-
-click_outside_to_close: ให้กดด้านนอกไดอะล็อคเพื่อปิดไหม?
-
-close_at_corner: จะให้มีปุ่มปิดขวาบนไหม?
-
-method: เป็น method ของ forms สำหรับปุ่มแอคชั่น ด้วย GET หรือ POST ค่าเริ่มต้นเป็น "GET"
-
-cancel_button_text: ข้อความของปุ่มยกเลิก ค่าเริ่มต้นเป็นคำว่า "ปิด"
-cancel_button_href: ถ้าหากจะให้ปุ่มยกเลิก redirect สามารถใส่ได้
-cancel_button_color: สีของปุ่มยกเลิก
-
-action_button_text: ข้อความของปุ่มแอคชั่น
-action_button_type: ประเภทของ button ปุ่มแอคชั่น หากจะใช้ method="POST" ให้ใช้ action_button_type="submit"
-action_button_color: สีของปุ่มแอคชั่น
-
-action_button_href: ลิงค์สำหรับ redirect ของปุ่มแอคชั่น
-action_button_onclick: ฟังก์ชัน javascript สำหรับปุ่มแอคชั่นถ้าหากไม่ใส่
-
-** เลือกระหว่าง href หรือ onclick ว่าจะให้เป็นการ href หรือจะเป็นการใช้ฟังก์ชัน onclick
-ระบบจะเรนเดอร์ href ก่อนหากใส่มาทั้ง 2
-#}
-<dialog id="{{ id }}" role="dialog" class="modal modal-bottom sm:modal-middle">
-  <div class="modal-box {{ class_ }}">
-    {% if close_at_corner %}
-    {% if cancel_button_href %}
-    <a href="{{ cancel_button_href }}" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 outline-none">✕</a>
-    {% else %}
-    <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 outline-none"
-      onclick="document.getElementById('{{ id }}').close();">✕</button>
-    {% endif %}
-    {% endif %}
-
-    <h3 class="font-bold text-xl">{{ title | safe }}</h3>
-    <p class="py-4 " style="overflow-wrap: break-word;">{{ body | safe }}</p>
-
-    <div class="modal-action">
-      <!-- Cancel Button -->
-      {% if not disable_cancel_button %}
-      {% if cancel_button_href or cancel_button_onclick %}
-      <a class="btn btn-{{ cancel_button_color }} outline-none" {% if cancel_button_href %}
-        href="{{ cancel_button_href }}" {% endif %} {% if cancel_button_onclick %} onclick="{{ cancel_button_onclick}}"
-        {% endif %}>
-        {{ cancel_button_text | safe }}
-      </a>
-      {% else %}
-      <form method="dialog">
-        <button type="button" class="btn btn-{{ cancel_button_color }} outline-none"
-          onclick="document.getElementById('{{ id }}').close();">{{ cancel_button_text | safe }}</button>
-      </form>
-      {% endif %}
-      {% endif %}
-
-      <!-- Action Button -->
-      {% if action_button_text %}
-      <form method="{{ method }}" action="{{ action_button_href }}">
-        {% set action_tag = "button" if action_button_type == "submit" else "a" %}
-        {% if action_button_href or action_button_onclick %}
-        <{{action_tag}} class="btn btn-{{ action_button_color }}" type="{{ action_button_type }}"
-          onclick="{{ action_button_onclick}}">
-          {{ action_button_icon | safe }}
-          {{ action_button_text | safe }}
-        </{{action_tag}}>
-        {% endif %}
-      </form>
-      {% endif %}
-      {% if summit_button_text %}
-      {% set summit_tag = "button" if summit_button_type == "submit" else "a" %}
-      <{{summit_tag}} class="btn btn-{{ summit_button_color }}" type="{{ summit_button_type }}">
-        {{ summit_button_icon | safe }}
-        {{ summit_button_text | safe }}
-      </{{summit_tag}}>
-      {% endif %}
+{% macro ModalPositive(
+id="modal_id",
+header="ยืนยัน",
+body="",
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect="") %}
+<dialog class="modal {{ id }}">
+  <div class=" modal-box">
+    <div class="text-2xl font-bold">
+      {{ header | safe }}
     </div>
+    <p>
+      {{ body | safe }}
+    </p>
+    <form method="dialog" class="modal-action">
+      <button class="btn">
+        {{ cancel | safe }}
+      </button>
+      <a class="btn btn-success" href="{{ redirect }}">
+        {{ submit | safe }}
+        <i class="ph ph-check"></i>
+      </a>
+    </form>
   </div>
-  {% if click_outside_to_close %}
-  <form method="dialog" class="modal-backdrop"><button>กดเพื่อปิด</button></form>
-  {% endif %}
 </dialog>
-<script>
-  {% if init_show %}
-  document.getElementById("{{ id }}").showModal();
-  {% endif %}
-</script>
-{% endmacro %}
+{% endmacro%}
 
 
-{% macro CompletedDialog(id, body, title="ดำเนินการเสร็จสิ้น", cancel_button_text="ตกลง") %}
-{{
-Dialog(
-id=id,
-body=body,
-title='
-<svg class="mx-auto mb-4 text-green-500" xmlns="http://www.w3.org/2000/svg" width="10em" height="10em"
-  viewBox="0 0 24 24">
-  <g fill="none" stroke="currentColor">
-    <circle cx="12" cy="12" r="0" fill="currentColor" fill-opacity="0">
-      <set attributeName="fill-opacity" to="1" />
-      <animate fill="freeze" attributeName="r" dur="0.5s" values="0;8" calcMode="spline" keyTimes="0;1"
-        keySplines="0.5 0.2 0.3 0.7" />
-    </circle>
-    <g stroke-linecap="round" stroke-linejoin="round" stroke="white">
-      <path stroke-dasharray="14" stroke-dashoffset="14" d="M8 12L11 15L16 10">
-        <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.5s" dur="0.7s" values="14;0" calcMode="spline"
-          keyTimes="0;1" keySplines="0.2 0.6 0.7 0.8" />
-      </path>
-    </g>
-  </g>
-</svg>
-%s
-' | format(title),
-class_="bg-base-100 !rounded-4xl *:text-center *:flex-row *:items-center *:justify-center *:justify-items-center",
-cancel_button_color="ghost rounded-full mb-2 no-animation btn-wide bg-green-500 text-white hover:bg-green-500",
-cancel_button_text=cancel_button_text,
-init_show=True,
-**kwargs
-)
-}}
-<script>
-  // prevent form resubmission
-  if (window.history.replaceState) {
-    window.history.replaceState(null, null, window.location.href);
-  }
-</script>
-{% endmacro %}
 
-
-{% macro DisactiveDialog(id, title, body, url) %}
-{{
-Dialog(
-id=id,
-title=title,
-body=body,
-method="POST",
-close_at_corner=True,
-cancel_button_text="ยกเลิก",
-action_button_text="ยืนยัน",
-action_button_type="submit",
-action_button_color="error",
-action_button_href=url,
-)
-}}
-{% endmacro %}
-
-{% macro ErrorDialog(id, title, body, init_show=True) %}
-{{
-Dialog(
-id=id,
-title=title,
-body=body,
-close_at_corner=True,
-cancel_button_text="ตกลง",
-cancel_button_color="error",
-init_show=init_show
-)
-}}
-{% endmacro %}
+{% macro ModalNegative(
+id="modal_id",
+header="ลบข้อมูล",
+body="",
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect="") %}
+<dialog class="modal {{ id }}">
+  <div class=" modal-box">
+    <div class="text-2xl font-bold">
+      {{ header | safe }}
+    </div>
+    <p>
+      {{ body | safe }}
+    </p>
+    <form method="dialog" class="modal-action">
+      <button class="btn">
+        {{ cancel | safe }}
+      </button>
+      <a class="btn btn-error" href="{{ redirect }}">
+        {{ submit | safe }}
+        <i class="ph ph-check"></i>
+      </a>
+    </form>
+  </div>
+</dialog>
+{% endmacro%}

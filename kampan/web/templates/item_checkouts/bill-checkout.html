@@ -30,26 +30,15 @@
 {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
 %}
 {% if order.created_by == current_user %}
-<div role="dialog" class="modal email">
-  <div class="text-2xl font-bold">
-    ยืนยันการเบิกพัสดุ
-  </div>
-  <div class=" modal-box">
-    <p>ทำการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
+{{ ModalPositive(
+id="email",
+header="ยืนยันการเบิกพัสดุ",
+body="ทำการส่งอีเมลแจ้งเตือนให้แก่ <b> %s </b>" | format(order.head_endorser.get_name()),
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect=url_for('email_templates.force_send_email', order_id=order.id, organization_id=organization.id),
+) }}
 
-    </p>
-  </div>
-  <div class="modal-action">
-    <button class="btn">
-      ยกเลิก
-    </button>
-    <a class="btn btn-success"
-      href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </a>
-  </div>
-</div>
 {% endif %}
 {% endif %}
 
@@ -138,26 +127,15 @@
               onclick="showDeleteModal('{{ checkout.id }}')">
               <i class="ph ph-trash"></i>
             </a>
-            <div role="dialog" class="modal {{checkout.id}}">
-              <div class=" modal-box">
-                <div class="text-2xl font-bold">
-                  ลบคำสั่งเบิกวัสดุ
-                </div>
-                <p>ต้องการลบคำสั่งเบิกวัสดุ
-                  <b>{{ checkout.item.name }}</b>
-                </p>
-                <div class="modal-action">
-                  <button class="btn">
-                    ยกเลิก
-                  </button>
-                  <a class="btn-error btn"
-                    href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
-                    ยืนยัน
-                    <i class="ph ph-check"></i>
-                  </a>
-                </div>
-              </div>
-            </div>
+            {{ ModalNegative(
+              id=checkout.id,
+              header="ลบคำสั่งเบิกวัสดุ",
+              body="ต้องการลบคำสั่งเบิกวัสดุ <b> %s </b>" | format(checkout.item.name),
+            cancel="ยกเลิก",
+            submit="ยืนยัน",
+            redirect="{{ url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id)
+            }}"
+            ) }}
           </td>
           {% endif %}
           {% endif %}

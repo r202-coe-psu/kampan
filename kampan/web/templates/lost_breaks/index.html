@@ -116,26 +116,15 @@
               <a class="btn btn-circle btn-primary" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
-              <div role="dialog" class="modal {{item.id}}">
-                <div class="text-2xl font-bold">
-                  ลบข้อมูลวัสดุชำรุด หรือ สูญหาย
-                </div>
-                <div class=" modal-box">
-                  <p>ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย
-                    <b>{{ item.item.name }}</b>
-                  </p>
-                </div>
-                <div class="modal-action">
-                  <button class="btn">
-                    ยกเลิก
-                  </button>
-                  <a class="btn-error btn"
-                    href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
-                    ยืนยัน
-                    <i class="ph ph-check"></i>
-                  </a>
-                </div>
-              </div>
+              {{ ModalNegative(
+                id=item.id,
+                header="ลบข้อมูลวัสดุชำรุด หรือ สูญหาย",
+                body="ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย <b> %s</b>" | format(item.item.name),
+              cancel="ยกเลิก",
+              submit="ยืนยัน",
+              redirect="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id)
+              }}"
+              ) }}
             </td>
           </tr>
           {% endif %}
