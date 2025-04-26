@@ -21,14 +21,14 @@
 
 {% block content %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="flex justify-start w-full gap-2">
-    <a class="ui primary labeled icon button"
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary"
       href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
       <i class="ph ph-pen"></i>
       แก้ไขรูปแบบอีเมล
@@ -36,39 +36,24 @@
   </div>
 </div>
 
-<div class="upload-email-template form" style="display: none;">
-  <div class="ui raised segment">
-    <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
-      action="{{ url_for('email_templates.upload_email_template', organization_id=organization.id) }}"
-      enctype="multipart/form-data" method="POST">
-      {{ form.csrf_token() }}
-      {{ renderer.file_input(form.email_template_file)}}
-      <ul>
-        <li>Accept only <b>.html</b> file</li>
-      </ul>
-      <button class="ui teal button" type="submit"><i class="save icon"></i> Submit</button>
-    </form>
-  </div>
-</div>
-
-<div class="ui horizontal equal width segments">
-  <div class="ui segment" style="width: 100vw">
-    <div class="email-template view">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="grid grid-cols-2 w-full gap-6">
+    <div class="col-span-1 w-full">
       {% if email_template %}
 
-      <div class="ui secondary segment">
+      <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
         <div class="ui tiny header" style="width: fit-content">ชื่อ</div>
         <div class="ui basic vertically fitted segment">
           {{ email_template.name }}
         </div>
       </div>
-      <div class="ui secondary segment">
+      <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
         <div class="ui tiny header" style="width: fit-content">หัวข้อ</div>
         <div class="ui basic vertically fitted segment">
           {{ email_template.subject }}
         </div>
       </div>
-      <div class="ui secondary segment">
+      <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
         <div class="ui tiny header" style="width: fit-content">เนื้อหา</div>
         <div class="ui basic vertically fitted segment">
           {{ email_template.body }}
@@ -76,50 +61,50 @@
       </div>
       {% else %}
       คุณไม่มี <b>รูปแบบอีเมล</b> กรุณา
-      <a href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}"
-        style="cursor: pointer">
+      <a href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
         สร้างรูปแบบอีเมล
-      </a>.
+      </a>
       {% endif %}
     </div>
+    <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+      <div class="text-2xl font-bold">
+        รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
+      </div>
+      <div class="ui relaxed list">
+        <div class="item">
+          <div class="text-xl font-bold"><i class=" globe icon"></i> องค์กร</div>
+          <div class="px-2">
+            <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
+          <div class="px-2">
+            <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
+            <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
+            <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="text-xl font-bold"><i class=" archive icon"></i> แผนก</div>
+          <div class="px-2">
+            <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
+            <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
+
+          </div>
+        </div>
+        <div class="item">
+          <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
+          <div class="px-2">
+            <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
+            <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="flex w-full justify-center py-6 text-xl segment">
-    <div class="ui compact header">
-      รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
-    </div>
-    <div class="ui relaxed list">
-      <div class="item">
-        <div class="text-2xl font-bold"><i class=" globe icon"></i> องค์กร</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
-          <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
-          <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-2xl font-bold"><i class=" archive icon"></i> แผนก</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
-          <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
 
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
-          <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
 

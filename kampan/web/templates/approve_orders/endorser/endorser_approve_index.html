@@ -9,21 +9,21 @@
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  <div class="flex flex-row w-full justify-between">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.date_field(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.date_field(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="btn btn-primary"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-    </p>
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row w-full">
+
+    {{form.hidden_tag()}}
+    {{renderer.date_range_field(form.start_date, form.end_date)}}
   </div>
-  <div>
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn" href="{{ url_for('approve_orders.endorser_index', organization_id=organization.id) }}">
+      ล้างการค้นหา
+    </a>
+    <button type="submit" class="btn btn-primary">ยืนยัน</button>
+  </div>
+</form>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto">
     {% if paginated_orders.items %}
     <table class="table-auto w-full">
       <thead>
@@ -41,7 +41,7 @@
           <td class="table-style" data-label="Description">{{ order.description }}</td>
           <td class="table-style" data-label="User">{{ order.created_by.get_name() }}</td>
           <td class="table-style" data-label="Status">
-            <a class="positive ui button"
+            <a class="btn btn-success"
               href="{{ url_for('approve_orders.endorser_approved_detail', order_id=order.id, organization_id=organization.id)}}">
               ตรวจสอบวัสดุ
             </a>
@@ -60,41 +60,5 @@
     <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
   </div>
-</form>
-{% endblock %}
-
-
-{% block additional_js %}
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
+</div>
 {% endblock %}

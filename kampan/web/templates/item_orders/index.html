@@ -91,7 +91,7 @@
             <td class="table-style" data-label="Bill">
               <a class="btn-circle btn btn-primary"
                 href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
-                <i class="ph ph-eye"></i>
+                <i class="ph ph-list-magnifying-glass"></i>
               </a>
             </td>
             {{ order.get_status()|safe }}
@@ -108,7 +108,7 @@
               <a class="btn-circle btn btn-primary {{ 'disabled' if order.approval_status == 'approved' else ''}}"
                 data-tooltip="เบิกวัสดุ"
                 href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
-                <i class="ph ph-eye"></i>
+                <i class="ph ph-list-plus"></i>
               </a>
               {% endif %}
               {% if order.status == 'pending' %}

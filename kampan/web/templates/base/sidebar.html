@@ -102,9 +102,11 @@
       </details>
     </li>
     <li>
-      <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
+      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
         href="{{ url_for('email_templates.index', organization_id = organization.id) }}">
-        <i class="ph ph-size ph-house-line"></i> รูปแบบอีเมล
+        <i class="ph ph-envelope-simple"></i>
+
+        รูปแบบอีเมล
       </a>
     </li>
     {% endif %}
@@ -135,14 +137,14 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin", "endorser", "head", "supervisor supplier") %}
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/approve_orders' in request.path %} open {% endif %}>
         <summary>
-          <i class="ph ph-size ph-briefcase"></i> การอนุมัติ
+          <i class="ph ph-list-checks"></i> การอนุมัติ
         </summary>
         <ul>
           {% if current_user.has_organization_roles("endorser", "head") %}
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/endorser' in request.path else '' }}"
               href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">
               หัวหน้าฝ่ายอนุมัติคำสั่งเบิก
             </a>
@@ -150,7 +152,7 @@
           {% endif %}
           {% if current_user.has_organization_roles("supervisor supplier") %}
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/supervisor_supplier' in request.path else '' }}"
               href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id = organization.id )}}">
               หัวหน้าเจ้าหน้าที่พัสดุ<br>อนุมัติคำสั่งเบิก
             </a>
@@ -158,7 +160,7 @@
           {% endif %}
           {% if current_user.has_organization_roles("admin") %}
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/admin' in request.path else '' }}"
               href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">
               พัสดุอนุมัติคำสั่งเบิก
             </a>

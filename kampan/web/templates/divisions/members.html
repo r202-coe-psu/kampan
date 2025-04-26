@@ -76,7 +76,7 @@
                 body="ต้องการลบสมาชิก<b> %s</b><br />" | format(division_user.display_fullname()),  
                 cancel="ยกเลิก",  
                 submit="ยืนยัน",  
-                redirect="{{ url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id) }}"
+                redirect=url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)
               ) }}
             </td>
           </tr>

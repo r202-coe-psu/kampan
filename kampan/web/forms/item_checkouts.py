@@ -37,4 +37,8 @@ BaseCheckoutItemForm = model_form(
 class CheckoutItemForm(BaseCheckoutItemForm):
     item = fields.SelectField("ชื่อวัสดุ")
     calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล")
-    created_date = fields.DateField("ลงวันที่คำสั่งเบิก", default=datetime.datetime.now())
+    created_date = fields.DateField(
+        "ลงวันที่คำสั่งเบิก",
+        format="%Y-%m-%dT%H:%M",
+        default=datetime.datetime.now,
+    )

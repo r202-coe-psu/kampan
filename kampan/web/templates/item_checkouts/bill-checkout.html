@@ -26,7 +26,6 @@
   </div>
 </div>
 
-{% if checkouts %}
 {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
 %}
 {% if order.created_by == current_user %}
@@ -68,9 +67,11 @@ redirect=url_for('email_templates.force_send_email', order_id=order.id, organiza
     </div>
   </div>
   <div class="flex text-end w-full justify-end ">
-    <b> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</b>
+    <b> รวมราคาทั้งหมด {{ order.get_checkout_all_price() if order.get_checkout_all_price() else "-" }} บาท</b>
 
   </div>
+  {% if checkouts %}
+
   <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
@@ -133,8 +134,8 @@ redirect=url_for('email_templates.force_send_email', order_id=order.id, organiza
               body="ต้องการลบคำสั่งเบิกวัสดุ <b> %s </b>" | format(checkout.item.name),
             cancel="ยกเลิก",
             submit="ยืนยัน",
-            redirect="{{ url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id)
-            }}"
+            redirect=url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id)
+            
             ) }}
           </td>
           {% endif %}
@@ -153,8 +154,11 @@ redirect=url_for('email_templates.force_send_email', order_id=order.id, organiza
 
     {% endif %}
   </div>
+  {% endif %}
+
 </div>
-{% else %}
+{% if not checkouts %}
+
 <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 

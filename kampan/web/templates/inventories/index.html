@@ -62,7 +62,7 @@
           <td class="table-style" data-label="Registrarion ID">
             <a
               href="{{ url_for('inventories.bill_item', item_register_id=inventory.registration.id, organization_id=organization.id) }}">{{
-              inventory.registration.receipt_id}} <i class="ph ph-eye"></i>
+              inventory.registration.receipt_id}} <i class="ph ph-list-magnifying-glass"></i>
             </a>
           </td>
           <td class="table-style" data-label="Checkin Date">{{ inventory.get_created_date() }}</td>

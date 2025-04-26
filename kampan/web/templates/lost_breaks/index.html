@@ -122,8 +122,8 @@
                 body="ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย <b> %s</b>" | format(item.item.name),
               cancel="ยกเลิก",
               submit="ยืนยัน",
-              redirect="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id)
-              }}"
+              redirect= url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id)
+              
               ) }}
             </td>
           </tr>

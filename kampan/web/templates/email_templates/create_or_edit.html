@@ -22,107 +22,75 @@
 {% endblock %}
 
 {% block content %}
-{#
-<div class="ui segment">
 
-  <a class="ui teal labeled icon button" onclick="$('.upload-email-template.form').transition('fade down')">
-    <i class="upload icon"></i>
-    {{ ("Upload Email Template File") }}
-  </a>
-
-  <div class="upload-email-template form" style="display: none;">
-    <div class="ui segment" style="margin-top: 1em">
-      <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
-        action="{{ url_for('email_templates.upload_email_template', organization_id=organization.id, email_template_id=email_template.id) }}"
-        enctype="multipart/form-data" method="POST">
-        {{ upload_form.csrf_token() }}
-        {{ renderer.file_input(upload_form.email_template_file)}}
-        <ul>
-          <li>{{("Accept only <b>.html</b> file")}}</li>
-        </ul>
-        <button class="ui teal button" type="submit"><i class="save icon"></i> {{("Submit")}}</button>
-      </form>
-    </div>
-  </div>
-</div>
-#}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
-<div class="ui horizontal equal width raised segments">
-  <div class="ui clearing segment" style="width: 100vw">
-    <div class="email-template create-edit">
-      <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
-        enctype="multipart/form-data">
-        {{ form.csrf_token }}
-        {{ renderer.render_select_field(form.type) }}
-        {{ renderer.render_field(form.name) }}
-        {{ renderer.render_field(form.subject) }}
+<form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm grid grid-cols-2 w-full gap-6"
+  method="POST" enctype="multipart/form-data">
+  <div class="">
+    {{ form.csrf_token }}
+    {{ renderer.render_select_field(form.type) }}
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.render_field(form.subject) }}
 
-        <div class="ui hidden divider"></div>
-        <b style="font-size: 13px;">{{ form.body.label }}</b>
-        {{ form.body(class_="ui input fluid", style="height: 100vh !important") }}
-        <div class="ui spaced buttons" style="margin-top: 10px !important">
-          <button class="ui primary labeled icon button" type="submit">
-            <i class="save icon"></i>
-            {{ 'บันทึก' if 'edit' in request.path else 'สร้าง' }}
-          </button>
-          <a class="ui button" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ยกเลิก</a>
-        </div>
-      </form>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">{{ form.body.label }}</legend>
+      {{ form.body(class_="textarea w-full h-96") }}
+    </fieldset>
+
+    <div class="ui spaced buttons" style="margin-top: 10px !important">
+      <button class="btn btn-primary" type="submit">
+        {{ 'บันทึก' if 'edit' in request.path else 'สร้าง' }}
+      </button>
+      <a class="btn" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ยกเลิก</a>
     </div>
   </div>
-
-  <div class="flex w-full justify-center py-6 text-xl segment">
-    <div class="ui compact header">
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="text-2xl font-bold">
       รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
     </div>
     <div class="ui relaxed list">
       <div class="item">
-        <div class="text-2xl font-bold"><i class=" globe icon"></i> องค์กร</div>
-        <div class="ui list">
+        <div class="text-xl font-bold"><i class=" globe icon"></i> องค์กร</div>
+        <div class="px-2">
           <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
         </div>
       </div>
       <div class="item">
-        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ sender_name }}' }}</b> - ชื่อผู้ส่งอีเมล</div>
-          <div class="item"> <b>{{ '{{ sender_email }}' }}</b> - อีเมลผู้ส่ง</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-2xl font-bold"><i class=" file alternate icon"></i> รายละเอียดการเบิก</div>
-        <div class="ui list">
-          <div class="item"> <b>{{ '{{ order_creator }}' }}</b> - ผู้ขอเบิกวัสดุ</div>
+        <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
+        <div class="px-2">
+          <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
           <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
           <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
-          <div class="item"> <b>{{ '{{ sent_item_datetime }}' }}</b> - วันเวลาที่รับวัสดุ</div>
         </div>
       </div>
       <div class="item">
-        <div class="text-2xl font-bold"><i class=" archive icon"></i> แผนก</div>
-        <div class="ui list">
+        <div class="text-xl font-bold"><i class=" archive icon"></i> แผนก</div>
+        <div class="px-2">
           <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
           <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
 
         </div>
       </div>
       <div class="item">
-        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="ui list">
+        <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
+        <div class="px-2">
           <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
           <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+</form>
+
+
 
 
 

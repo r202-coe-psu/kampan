@@ -19,19 +19,17 @@
 
 {% block content %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href="{{url_for('approve_orders.endorser_index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
   {% if order.status=="confirmed" and checkouts %}
-  <div class="flex justify-start w-full gap-2">
-    <a class="ui positive button" onclick="showModal('approve')"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-success" onclick="showModal('approve')">
       <i class="check icon"></i>อนุมัติการเบิกวัสดุ</a>
-    <a class="ui negative button" onclick="showModal('denied')"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">
+    <a class="btn btn-error" onclick="showModal('denied')">
       <i class="times icon"></i>ไม่อนุมัติการเบิกวัสดุ</a>
   </div>
   {% endif %}
@@ -39,61 +37,62 @@
 {% if checkouts %}
 
 {% if order.status=="confirmed" %}
-<form action="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
-  role="dialog" class="modal denied">
+<dialog class="modal denied" id="denied">
+  <form action="{{ url_for('approve_orders.endorser_denied',order_id=order.id, organization_id=organization.id)}}"
+    class="modal-box">
 
-  <div class="text-2xl font-bold">
-    <span class=" ui text red">
-      ปฏิเสธคำสั่งเบิกวัสดุ
-    </span>
-  </div>
-  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      <span class="text-error">
+        ปฏิเสธคำสั่งเบิกวัสดุ
+      </span>
+    </div>
     <p>ต้องการปฏิเสธคำสั่งเบิกวัสดุ
       <b>{{ order.description }}</b>
     </p>
-    <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-      <div class="field">
-        <label for="reason">เหตุผล</label>
-        <input type="text" id="reason" name="reason">
-        <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
-          style="display: none;">
-      </div>
+
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">เหตุผล</legend>
+      <input type="text" id="reason" name="reason" class="input">
+      <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
+        style="display: none;">
+    </fieldset>
+    <div class="modal-action">
+      <button class="btn" type="button" onclick="denied.close()">
+        ยกเลิก
+      </button>
+      <button class="btn-error btn" type="submit">
+        ยืนยัน
+        <i class="ph ph-check"></i>
+      </button>
     </div>
+  </form>
+</dialog>
 
-  </div>
-  <div class="modal-action">
-    <button class="btn btn-error" type="button">
-      ยกเลิก
-    </button>
-    <button class="btn-error btn" type="submit">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </button>
-  </div>
-</form>
 
-<div role="dialog" class="modal approve">
-  <div class="text-2xl font-bold">
-    <span class=" text-success">
-      อนุมัติการเบิกวัสดุ
-    </span>
-  </div>
+<dialog role="dialog" class="modal approve">
   <div class="modal-box">
+    <div class="text-2xl font-bold">
+      <span class=" text-success">
+        อนุมัติการเบิกวัสดุ
+      </span>
+    </div>
     <p>ต้องการอนุมัติการเบิกวัสดุ
       <b>{{ order.description }}</b>
     </p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">
+          ยกเลิก
+        </button>
+        <a class="btn btn-success"
+          href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}">
+          ยืนยัน
+          <i class="ph ph-check"></i>
+        </a>
+      </form>
+    </div>
   </div>
-  <div class="modal-action">
-    <button class="btn">
-      ยกเลิก
-    </button>
-    <a class="btn btn-success"
-      href="{{ url_for('approve_orders.endorser_approve',order_id=order.id, organization_id=organization.id)}}">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </a>
-  </div>
-</div>
+</dialog>
 {% endif %}
 
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">

@@ -13,14 +13,16 @@ redirect="") %}
     <p>
       {{ body | safe }}
     </p>
-    <form method="dialog" class="modal-action">
-      <button class="btn">
-        {{ cancel | safe }}
-      </button>
-      <a class="btn btn-success" href="{{ redirect }}">
-        {{ submit | safe }}
-        <i class="ph ph-check"></i>
-      </a>
+    <form method="dialog">
+      <div class="modal-action">
+        <button class="btn">
+          {{ cancel | safe }}
+        </button>
+        <a class="btn btn-success" href="{{ redirect }}">
+          {{ submit | safe }}
+          <i class="ph ph-check"></i>
+        </a>
+      </div>
     </form>
   </div>
 </dialog>
@@ -43,14 +45,18 @@ redirect="") %}
     <p>
       {{ body | safe }}
     </p>
-    <form method="dialog" class="modal-action">
-      <button class="btn">
-        {{ cancel | safe }}
-      </button>
-      <a class="btn btn-error" href="{{ redirect }}">
-        {{ submit | safe }}
-        <i class="ph ph-check"></i>
-      </a>
+    <form method="dialog">
+      <div class="modal-action">
+
+        <button class="btn">
+          {{ cancel | safe }}
+        </button>
+        <a class="btn btn-error" href="{{ redirect }}">
+          {{ submit | safe }}
+          <i class="ph ph-check"></i>
+        </a>
+      </div>
+
     </form>
   </div>
 </dialog>

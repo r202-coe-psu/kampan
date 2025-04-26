@@ -18,97 +18,90 @@
 
 {% block content %}
 
-{% if email_templates %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="ui labeled icon primary button"
-      href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary" href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มรูปแบบอีเมล
     </a>
   </div>
 </div>
-<table class="ui striped padded celled table">
-  <thead>
-    <tr>
-      <th class="table-style">ชื่อ</th>
-      <th class="table-style">ประเภท</th>
-      <th class="table-style">หัวข้อ</th>
-      <th class="table-style">ค่าเริ่มต้น</th>
-      <th class="table-style">แก้ไข</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for email_template in email_templates %}
-    <tr>
-      <td class="table-style" data-label="Name">{{ email_template.name }}</td>
-      <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
-      <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
-      <td class="table-style" data-label="Default" class="{{ 'green' if email_template.is_default else 'red' }}">{{
-        email_template.is_default }}
-        <a style="cursor: pointer;" data-content="change defualt setting"
-          onclick="$('.modal.set-default.{{ email_template.id }}').modal('show')">
-          <i class="sync blue icon"></i>
-        </a>
-      </td>
-      <td class="table-style" data-label="modal-action">
+{% if email_templates %}
 
-        <a class="ui link primary icon circular button"
-          href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)}}">
-          <i class="ph ph-eye"></i>
-        </a>
-        <a class="ui link primary icon circular button"
-          href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id, email_template_id=email_template.id)}}">
-          <i class="ph ph-pen"></i>
-        </a>
-        <a class="ui link pop negative icon circular button"
-          onclick="$('.modal.delete.{{email_template.id}}').modal('show')">
-          <i class="ph ph-trash"></i>
-        </a>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
 
-      </td>
-    </tr>
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="ui striped padded celled table">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อ</th>
+          <th class="table-style">ประเภท</th>
+          <th class="table-style">หัวข้อ</th>
+          <th class="table-style">ค่าเริ่มต้น</th>
+          <th class="table-style">แก้ไข</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for email_template in email_templates %}
+        <tr>
+          <td class="table-style" data-label="Name">{{ email_template.name }}</td>
+          <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
+          <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
+          <td class="table-style">
+            <span class=" {{ 'text-success' if email_template.is_default else 'text-error' }}">
+              {{ email_template.is_default }}
+            </span>
+            <a class="tooltip btn btn-circle btn-success" data-tip="change defualt setting"
+              onclick="showModal('set-default-' + '{{ email_template.id }}')">
+              <i class="ph ph-arrows-clockwise"></i>
+            </a>
+          </td>
+          <td class="table-style" data-label="modal-action">
 
-    <div class="ui small modal delete {{email_template.id}}">
-      <div class="text-2xl font-bold">ลบรูปแบบอีเมล</div>
-      <div class=" modal-box">
-        <h4 class="ui headers">
-          คุณการต้องการลบ <span class="text-error">{{ email_template.name }}</span> ?
-        </h4>
-        <a class="ui right floated negative button" style="margin-bottom: 1em;"
-          href="{{ url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id) }}">
-          ลบ</i>
-        </a>
-        <button class="ui right floated button" onclick="$('.modal.delete.{{email_template.id}}').modal('hide')">
-          ยกเลิก</button>
-      </div>
-    </div>
+            <a class="btn btn-primary btn-circle"
+              href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)}}">
+              <i class="ph ph-list-magnifying-glass"></i>
+            </a>
+            <a class="btn btn-primary btn-circle"
+              href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id, email_template_id=email_template.id)}}">
+              <i class="ph ph-pen"></i>
+            </a>
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ email_template.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
 
-    <div role="dialog" class="modal set-default {{ email_template.id }}">
-      {% if email_template.is_default == false %}
-      {% set new_is_default = true %}
-      {% else %}
-      {% set new_is_default = false %}
-      {% endif %}
+          </td>
+        </tr>
+        {{ ModalNegative(
+          id=email_template.id,
+          header="ลบรูปแบบอีเมล",
+          body="คุณการต้องการลบ <b> %s </b>?" | format(email_template.name),
+        cancel="ยกเลิก",
+        submit="ยืนยัน",
+        redirect= url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id)
+        ) }}
+        {% if email_template.is_default == false %}
+        {% set new_is_default = true %}
+        {% else %}
+        {% set new_is_default = false %}
+        {% endif %}
 
-      <div class="text-2xl font-bold">เปลี่ยนเป็นค่าเริ่มต้น</div>
-      <div class=" modal-box">
-        คุณต้องการเปลี่ยนให้อีเมล <span class="ui blue text">{{ email_template.name }}</span>
-        {{ "ไม่" if new_is_default else "" }} เป็นค่าเริ่มต้น?
-      </div>
-      <div class="ui fitted divider"></div>
-      <div class="modal-box">
-        <a class="ui {{ 'green' if new_is_default == true }} right floated button" style="margin-bottom: 1em;"
-          href="{{ url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default=new_is_default) }}">
-          เปลี่ยน
-        </a>
-      </div>
-    </div>
+        {{ ModalPositive(
+          id="set-default-" + email_template.id | string,
+          header="เปลี่ยนเป็นค่าเริ่มต้น",
+          body="คุณต้องการเปลี่ยนให้อีเมล <b> %s </b>" | format(email_template.name) + ("" if new_is_default else "ไม่") + "เป็นค่าเริ่มต้น?",
+        cancel="ยกเลิก",
+        submit="เปลี่ยน",
+        redirect= url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default=new_is_default)
+        ) }}
 
-    {% endfor %}
 
-  </tbody>
-</table>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endif %}
 
 {% if not email_templates %}
@@ -117,14 +110,4 @@
 
 
 
-{% endblock %}
-
-{% block additional_js %}
-<script>
-  $('.link.pop').popup({
-    delay: {
-      show: 800,
-    }
-  })
-</script>
 {% endblock %}

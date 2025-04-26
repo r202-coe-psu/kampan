@@ -23,8 +23,7 @@
       {{renderer.date_field(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
-      <button type="submit" class="btn btn-primary"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+      <button type="submit" class="btn btn-primary">ยืนยัน</button>
     </p>
   </div>
   {% if organizations %}
@@ -51,7 +50,7 @@
             <td class="table-style" data-label="Checkin Items">
               <a class="btn btn-primary icon"
                 href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}">
-                <i class="ph ph-eye"></i>
+                <i class="ph ph-list-magnifying-glass"></i>
               </a>
               {% if organization.get_organization_users() %}
               <a class="btn btn-primary icon"
