@@ -38,12 +38,11 @@
             org_user.created_date else "-"}}
             </td>
             <td class="table-style">
-              <a class="btn btn-circle"
-                href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
-                style=" color: white; background-color: rgb(59, 115, 199);">
+              <a class="btn btn-circle btn-primary" style=" color: white;"
+                href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
                 <i class="ph ph-pen"></i>
               </a>
-              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
+              <a class="btn btn-circle btn-primary" style="color: white;"
                 onclick="showDeleteModal('{{ org_user.id }}')">
                 <i class="ph ph-trash"></i>
               </a>

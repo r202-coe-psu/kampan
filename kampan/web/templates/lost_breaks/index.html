@@ -79,9 +79,8 @@
                 style=" color: white; background-color: rgb(59, 115, 199);">
                 <i class="ph ph-pen"></i>
               </a>
-              <a class="btn btn-circle"
-                href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}"
-                style="color: white; background-color: rgb(192, 55, 55);">
+              <a class="btn btn-circle btn-error"
+                href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
                 <i class="ph ph-trash"></i>
               </a>
             </td>
@@ -114,8 +113,7 @@
                 style=" color: white; background-color: rgb(59, 115, 199);">
                 <i class="ph ph-pen"></i>
               </a>
-              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
-                onclick="showDeleteModal('{{ item.id }}')">
+              <a class="btn btn-circle btn-primary" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
               <div role="dialog" class="modal {{item.id}}">

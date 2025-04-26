@@ -33,5 +33,16 @@
       }
     }
   </script>
+  <script>
+    function showModal(modalId) {
+      const safeSelector = CSS.escape(modalId); // escape ให้เป็น selector ที่ใช้ได้
+      const modal = document.querySelector(`.modal.${safeSelector}`);
+      if (modal) {
+        modal.setAttribute('open', '');
+      } else {
+        console.warn(`ไม่พบ modal สำหรับ id: ${modalId}`);
+      }
+    }
+  </script>
 
 </html>

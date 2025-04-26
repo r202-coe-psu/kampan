@@ -69,20 +69,19 @@
             <td class="table-style" data-label="Checkin Items">
               <a class="btn btn-primary icon"
                 href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}"
-                style=" color: white; background-color: rgb(59, 115, 199); ">
+                style=" color: white;">
                 <i class="ph ph-eye"></i>
               </a>
             </td>
             <td class="table-style">
               {% if item.status != "active" %}
-              <a class="btn btn-circle"
+              <a class="btn btn-circle btn-primary"
                 href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}"
-                style=" color: white; background-color: rgb(59, 115, 199);">
+                style=" color: white;">
                 <i class="ph ph-pen"></i>
               </a>
               {% endif %}
-              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
-                onclick="showDeleteModal('{{ item.id }}')">
+              <a class="btn btn-circle btn-primary" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
               <div role="dialog" class="modal {{item.id}}">

@@ -130,13 +130,12 @@
           %}
           {% if order.created_by == current_user %}
           <td class="table-style">
-            <a class="btn btn-circle"
-              href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
+            <a class="btn btn-circle btn-primary" style=" color: white;"
+              href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}">
               <i class="ph ph-pen"></i>
             </a>
-            <a class="btn btn-circle {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-              style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
+            <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              onclick="showDeleteModal('{{ checkout.id }}')">
               <i class="ph ph-trash"></i>
             </a>
             <div role="dialog" class="modal {{checkout.id}}">
@@ -181,18 +180,4 @@
 <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
-{% endblock %}
-
-{% block additional_js %}
-<script type="text/javascript">
-
-  function showModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-  function showDeleteModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
 {% endblock %}

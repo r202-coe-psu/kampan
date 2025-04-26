@@ -530,6 +530,9 @@ placeholder="") %}
     input.value = label;  // แสดงชื่อใน input
     hiddenInput.value = value;  // ส่งค่าที่เลือกไปที่ input hidden
 
+    input.setCustomValidity("");
+    input.reportValidity();
+
     let dropdown = document.getElementById(fieldId + "-dropdown");
     dropdown.style.display = "none";  // ซ่อน dropdown หลังจากเลือกค่า
   }

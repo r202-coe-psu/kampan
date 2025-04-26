@@ -50,31 +50,26 @@
             </td>
             <td class="table-style" data-label="Checkin Items">
               <a class="btn btn-primary icon"
-                href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}"
-                style=" color: white; background-color: rgb(59, 115, 199); ">
+                href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}">
                 <i class="ph ph-eye"></i>
               </a>
               {% if organization.get_organization_users() %}
               <a class="btn btn-primary icon"
-                href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}"
-                style=" color: white; background-color: rgb(59, 115, 199); ">
+                href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}">
                 <i class="users icon"></i>
               </a>
               {% endif %}
             </td>
             <td class="table-style">
-              <a class="btn btn-circle"
-                href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}"
-                style=" color: white; background-color: rgb(59, 115, 199);">
+              <a class="btn btn-circle btn-primary"
+                href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
                 <i class="user plus icon"></i>
               </a>
-              <a class="btn btn-circle"
-                href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
-                style=" color: white; background-color: rgb(59, 115, 199);">
+              <a class="btn btn-circle btn-primary"
+                href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}">
                 <i class="ph ph-pen"></i>
               </a>
-              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
-                onclick="showDeleteModal('{{ organization.id }}')">
+              <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ organization.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
               <div role="dialog" class="modal {{organization.id}}">
@@ -101,8 +96,7 @@
             </td>
             <td class="table-style">
               <a class="btn btn-primary icon"
-                href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}"
-                style=" color: white; background-color: rgb(59, 115, 199); ">
+                href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}">
                 สวมสิทธิ์
               </a>
             </td>

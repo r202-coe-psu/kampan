@@ -24,12 +24,12 @@
       <div class="lg:flex gap-4 flex w-full">
         {{form.hidden_tag()}}
         {{renderer.date_range_field(form.start_date, form.end_date)}}
-        {{renderer.render_field(form.item)}}
+        {{renderer.render_select_field(form.item)}}
       </div>
     </div>
     <div class="gap-2 flex w-full flex-wrap justify-between items-center my-auto mt-2">
       <div class="dropdown dropdown-start">
-        <div tabindex="0" role="button" class="btn m-1">แสดงความหมายของสี</div>
+        <div tabindex="0" role="button" class="btn">แสดงความหมายของสี</div>
         <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
           <div><span class="text-red-500 font-semibold">● สีแดง:</span> ปฎิเสธ</div>
           <div><span class="text-green-500 font-semibold">● สีเขียว:</span> อนุมัติรอรับวัสดุ</div>
