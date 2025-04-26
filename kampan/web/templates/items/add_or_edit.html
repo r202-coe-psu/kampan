@@ -19,7 +19,7 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
@@ -35,45 +35,44 @@
     {{ renderer.render_text_area_field(form.description) }}
     {{ renderer.file_input(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
-    <div class="two fields">
-      <div class="field">
-        {{ form.item_format.label }}
-        {{ form.item_format(class='ui dropdown', onchange="check_item_format()") }}
-      </div>
+    <div class="grid grid-cols-3 gap-2">
+      <fieldset class="fieldset w-full">
+        <legend class="fieldset-legend"> {{ form.item_format.label.text }}</legend>
+        {{ form.item_format(class='select w-full', onchange="check_item_format()") }}
+      </fieldset>
+
       {{ renderer.render_select_field(form.categories) }}
       {{ renderer.render_field(form.minimum)}}
     </div>
-    <div class="two fields">
-      <div class="field disabled" id="set_field">
-        {{ form.set_.label }}
-        {{ form.set_ }}
+    <div class="flex w-full gap-2">
+      <div class="flex w-full disabled" id="set_field">
+        {{ renderer.render_field(form.set_)}}
+
       </div>
-      <div class="field" id="set_unit_field">
-        {{ form.set_unit.label }}
-        {{ form.set_unit }}
+      <div class="flex w-full" id="set_unit_field">
+        {{ renderer.render_field(form.set_unit)}}
+
       </div>
     </div>
-    <div class="two fields">
+    <div class="flex w-full gap-2 ">
       {% if item %}
-      <div class="field {{ 'disabled' if not item.item_format == 'one to many' else ''}}" id="piece_per_set_field">
-        {{ form.piece_per_set.label }}
-        {{ form.piece_per_set }}
+      <div class="flex w-full {{ 'disabled' if not item.item_format == 'one to many' else ''}}"
+        id="piece_per_set_field">
+
+        {{ renderer.render_field(form.piece_per_set)}}
       </div>
       {% else %}
-      <div class="field " id="piece_per_set_field">
-        {{ form.piece_per_set.label }}
-        {{ form.piece_per_set }}
+      <div class="flex w-full " id="piece_per_set_field">
+        {{ renderer.render_field(form.piece_per_set)}}
+
       </div>
       {% endif %}
-      <div class="field" id="piece_unit_field">
-        {{ form.piece_unit.label }}
-        {{ form.piece_unit }}
+      <div class="flex w-full" id="piece_unit_field">
+        {{ renderer.render_field(form.piece_unit)}}
       </div>
 
     </div>
-    <div class="field">
-      {{ renderer.render_field(form.remark)}}
-    </div>
+    {{ renderer.render_text_area_field(form.remark)}}
 
 
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
@@ -85,30 +84,20 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-  $(".attach-file-img").click(function () {
-    $(this).parent().find("#img").click();
-  });
-
-  $('#img')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-img', $(e.target).parent()).val(name);
-    });
-
-  element_set.classList.add("disabled");
-  element_unit.classList.add("disabled");
+  element_set.disabled = true;
+  element_unit.disabled = true;
   function check_item_format() {
     var value = document.getElementById("item_format").value;
-    var element_piece_per_set = document.getElementById("piece_per_set_field");
-    var element_piece_unit = document.getElementById("piece_unit_field");
+    var element_piece_per_set = document.getElementById("piece_per_set_field").querySelector('input, select, textarea');
+    var element_piece_unit = document.getElementById("piece_unit_field").querySelector('input, select, textarea');
 
     if (value == "one to one") {
-      element_piece_per_set.classList.add("disabled");
-      element_piece_unit.classList.add("disabled");
+      element_piece_per_set.disabled = true;
+      element_piece_unit.disabled = true;
     }
     else {
-      element_piece_per_set.classList.remove("disabled");
-      element_piece_unit.classList.remove("disabled");
+      element_piece_per_set.disabled = false;
+      element_piece_unit.disabled = false;
     }
   }
 </script>

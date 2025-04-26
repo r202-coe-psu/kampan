@@ -19,33 +19,37 @@
 
 
 {% if errors %}
-<div role="dialog" class="modal upload_errors">
-  <div class="text-2xl font-bold">
-    เกิดปัญหา
+<dialog role="dialog" class="modal upload_errors " open>
+  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      เกิดปัญหา
+    </div>
+    <div class="overflow-y-auto">
+      {% for error in errors %}
+      <span class="text-error">
+        <b>- {{ error }}</b><br>
+      </span>
+      {% endfor %}
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn-error btn">
+          ยืนยัน
+          <i class="ph ph-check"></i>
+        </button>
+      </form>
+    </div>
   </div>
-  <div class=" scrolling content red">
-    {% for error in errors %}
-    <span class="ui error text">
-      <b>- {{ error }}</b><br>
-    </span>
-    {% endfor %}
-  </div>
-  <div class="modal-action">
-    <button class="btn-error btn">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </button>
-  </div>
-</div>
+</dialog>
 {% endif %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="flex justify-start w-full gap-2">
+  <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
       href="{{ url_for('items.download_template_items_file', organization_id=organization.id) }}">
       <i class="file download icon"></i> ดาวน์โหลดรูปแบบการเปรียบเทียบวัสดุ</a>
@@ -57,7 +61,7 @@
     {{ form.hidden_tag() }}
     {{ renderer.file_input(form.upload_file) }}
     {{ renderer.render_select_field(form.status) }}
-    {{ renderer.render_search_multiple_select(form.categories) }}
+    {{ renderer.render_multiple_select_field(form.categories) }}
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>

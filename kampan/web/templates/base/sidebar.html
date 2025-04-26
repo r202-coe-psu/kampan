@@ -45,13 +45,13 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/items/' in request.path or '/work_categories' in request.path %} open {% endif %}>
         <summary>
-          <i class="ph ph-size ph-briefcase"></i> การจัดการวัสดุ
+          <i class="ph ph-cube"></i>การจัดการวัสดุ
         </summary>
         <ul>
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/items/' in request.path else '' }}"
               href="{{ url_for('items.index', organization_id = organization.id) }}">
               วัสดุทั้งหมด
             </a>

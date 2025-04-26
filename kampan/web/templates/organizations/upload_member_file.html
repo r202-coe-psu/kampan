@@ -18,24 +18,28 @@
 {% block content %}
 
 {% if errors %}
-<div role="dialog" class="modal upload_errors">
-  <div class="text-2xl font-bold">
-    เกิดปัญหา
+<dialog role="dialog" class="modal upload_errors " open>
+  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      เกิดปัญหา
+    </div>
+    <div class="overflow-y-auto">
+      {% for error in errors %}
+      <span class="text-error">
+        <b>- {{ error }}</b><br>
+      </span>
+      {% endfor %}
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn-error btn">
+          ยืนยัน
+          <i class="ph ph-check"></i>
+        </button>
+      </form>
+    </div>
   </div>
-  <div class=" scrolling content red">
-    {% for error in errors %}
-    <span class="ui error text">
-      <b>- {{ error }}</b><br>
-    </span>
-    {% endfor %}
-  </div>
-  <div class="modal-action">
-    <button class="btn-error btn">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </button>
-  </div>
-</div>
+</dialog>
 {% endif %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-end w-full gap-2">

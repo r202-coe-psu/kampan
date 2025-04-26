@@ -600,7 +600,8 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
 
 <div class="form-control w-full" id="{{ form.id }}_dropzone">
   <label class="label">
-    <span class="label-text">{{ form.label }}
+    <span class="label-text">
+      <label class="fieldset fieldset-legend">{{ form.label.text }}</label>
       {% if form.flags.required %}<span class="label-text-alt text-red-600">*</span>{% endif %}
       <p class="text-gray-500">
         {% for validator in form.validators %}

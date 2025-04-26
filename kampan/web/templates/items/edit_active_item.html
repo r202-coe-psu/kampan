@@ -15,7 +15,7 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
@@ -31,43 +31,22 @@
     {{ renderer.render_text_area_field(form.description) }}
     {{ renderer.file_input(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
-    <div class="two fields">
+    <div class="flex w-full gap-2">
       {{ renderer.render_select_field(form.categories) }}
       {{ renderer.render_field(form.minimum)}}
     </div>
-    <div class="two fields">
-      <div class="field" id="set_unit_field">
-        {{ form.set_unit.label }}
-        {{ form.set_unit }}
-      </div>
-      <div class="field" id="piece_unit_field">
-        {{ form.piece_unit.label }}
-        {{ form.piece_unit }}
-      </div>
+    <div class="flex gap-2 w-full">
+      {{ renderer.render_field(form.set_unit)}}
+      {{ renderer.render_field(form.piece_unit)}}
     </div>
-
     <div class="field">
-      {{ renderer.render_field(form.remark)}}
+      {{ renderer.render_text_area_field(form.remark)}}
     </div>
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
-
-
   </form>
 </div>
 {% endblock %}
 
 {% block additional_js %}
-<script type="text/javascript">
-  $(".attach-file-img").click(function () {
-    $(this).parent().find("#img").click();
-  });
-
-  $('#img')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-img', $(e.target).parent()).val(name);
-    });
-
-</script>
 
 {% endblock additional_js %}

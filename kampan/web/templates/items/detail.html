@@ -12,71 +12,71 @@
 {% endblock %}
 
 {% macro row_detail(text) -%}
-<div class="column">
-  <h3> {{ text if text else "-" }}</h3>
+<div class="col-span-1">
+  <h3 class="text-lg font-medium">{{ text if text else "-" }}</h3>
 </div>
 {%- endmacro %}
 
 {% block content %}
-<div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
-    <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
-      <i class="ph ph-arrow-u-up-left"></i>
-      ย้อนกลับ
-    </a>
-  </div>
+<div class="flex justify-start w-full gap-2 mb-4">
+  <a class="btn btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+    <i class="ph ph-arrow-u-up-left"></i>
+    ย้อนกลับ
+  </a>
 </div>
-<div class="ui container" style="width: 100%;">
-  <div class="ui segment">
-    <h2 class="ui header">ข้อมูลวัสดุ {{ item.name }}
-    </h2>
-    <div class="image">
+<div class="bg-base-100 border border-base-300 rounded-2xl p-6 shadow-sm">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold">ข้อมูลวัสดุ {{ item.name }}</h2>
+  </div>
+  <div class="mb-6">
+    <div class="w-32 h-32">
       {% if not item.image %}
-      <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
+      <img class="object-cover w-full h-full" src="{{ url_for('static', filename='/images/image.png') }}"
+        alt="{{ item.name }}">
       {% else %}
-      <img
+      <img class="object-cover w-full h-full"
         src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
         alt="{{ item.name }}">
       {% endif %}
     </div>
-    <div class="ui grid two column">
-      {{ row_detail("ชื่อ :") }}
-      {{ row_detail(item.name) }}
-      {{ row_detail("บาร์โค๊ด :") }}
-      {{ row_detail(item.barcode_id) }}
-      {{ row_detail("รายละเอียด :") }}
-      {{ row_detail(item.description) }}
-      {{ row_detail("รูปแบบวัสดุ :") }}
-      {{ row_detail( "หนึ่งต่อหลายๆชิ้น" if item.item_format == 'one to many' else "หนึ่งต่อหนึ่งชิ้น") }}
-      {{ row_detail("หน่วยใหญ่ :") }}
-      {{ row_detail(item.set_unit) }}
-      {{ row_detail("หน่วยเล็ก :") }}
-      {{ row_detail(item.piece_unit) }}
-      {{ row_detail("จำนวนต่อ 1 หน่วยใหญ่ :") }}
-      {{ row_detail(item.piece_per_set) }}
-      {{ row_detail("หมวดหมู่ :") }}
-      {{ row_detail(item.categories.name) }}
-      {{ row_detail("มีอยู่ในคลังจำนวน :") }}
-      {{ row_detail(item.get_items_quantity() ) }}
-      {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
-      {{ row_detail(item.minimum|string + ' ' + item.piece_unit ) }}
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    {{ row_detail("ชื่อ :") }}
+    {{ row_detail(item.name) }}
+    {{ row_detail("บาร์โค๊ด :") }}
+    {{ row_detail(item.barcode_id) }}
+    {{ row_detail("รายละเอียด :") }}
+    {{ row_detail(item.description) }}
+    {{ row_detail("รูปแบบวัสดุ :") }}
+    {{ row_detail("หนึ่งต่อหลายๆชิ้น" if item.item_format == 'one to many' else "หนึ่งต่อหนึ่งชิ้น") }}
+    {{ row_detail("หน่วยใหญ่ :") }}
+    {{ row_detail(item.set_unit) }}
+    {{ row_detail("หน่วยเล็ก :") }}
+    {{ row_detail(item.piece_unit) }}
+    {{ row_detail("จำนวนต่อ 1 หน่วยใหญ่ :") }}
+    {{ row_detail(item.piece_per_set) }}
+    {{ row_detail("หมวดหมู่ :") }}
+    {{ row_detail(item.categories.name) }}
+    {{ row_detail("มีอยู่ในคลังจำนวน :") }}
+    {{ row_detail(item.get_items_quantity()) }}
+    {{ row_detail("ขั้นต่ำในการแจ้งเตือน :") }}
+    {{ row_detail(item.minimum|string + ' ' + item.piece_unit) }}
 
-
-      {% if current_user.has_organization_roles("admin") %}
-      {{ row_detail("การแจ้งแตือน :") }}
-      <div class="column">
-        <a href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}"
-          class="ui button {{ 'positive' if item.notification_status else 'negative' }}">{{ 'เปิดการแจ้งเตือน' if
-          item.notification_status else 'ปิดการแจ้งเตือน' }}</a>
-      </div>
-      {% endif %}
-      {{ row_detail("วันที่สร้าง :") }}
-      {{ row_detail(item.created_date.strftime("%d/%m/%Y")) }}
-      {{ row_detail("ลงทะเบียนโดย :") }}
-      {{ row_detail(item.created_by.get_name() ) }}
-      {{ row_detail("หมายเหตุ :") }}
-      {{ row_detail(item.remark) }}
+    {% if current_user.has_organization_roles("admin") %}
+    {{ row_detail("การแจ้งแตือน :") }}
+    <div class="col-span-1">
+      <a href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}"
+        class="btn {{ 'btn-success' if item.notification_status else 'btn-error' }}">
+        {{ 'เปิดการแจ้งเตือน' if item.notification_status else 'ปิดการแจ้งเตือน' }}
+      </a>
     </div>
+    {% endif %}
+    {{ row_detail("วันที่สร้าง :") }}
+    {{ row_detail(item.created_date.strftime("%d/%m/%Y")) }}
+    {{ row_detail("ลงทะเบียนโดย :") }}
+    {{ row_detail(item.created_by.get_name()) }}
+    {{ row_detail("หมายเหตุ :") }}
+    {{ row_detail(item.remark) }}
   </div>
 </div>
 {% endblock %}
