@@ -55,7 +55,7 @@
   <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
     enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    {{ renderer.render_fileinput(form.upload_file) }}
+    {{ renderer.file_input(form.upload_file) }}
     {{ renderer.render_select_field(form.status) }}
     {{ renderer.render_search_multiple_select(form.categories) }}
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>

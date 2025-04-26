@@ -36,7 +36,7 @@
         action="{{ url_for('email_templates.upload_email_template', organization_id=organization.id, email_template_id=email_template.id) }}"
         enctype="multipart/form-data" method="POST">
         {{ upload_form.csrf_token() }}
-        {{ renderer.render_fileinput(upload_form.email_template_file)}}
+        {{ renderer.file_input(upload_form.email_template_file)}}
         <ul>
           <li>{{("Accept only <b>.html</b> file")}}</li>
         </ul>

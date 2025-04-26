@@ -29,7 +29,7 @@
     {{ form.hidden_tag() }}
     {{ renderer.render_field(form.name) }}
     {{ renderer.render_text_area_field(form.description) }}
-    {{ renderer.render_fileinput(form.img) }}
+    {{ renderer.file_input(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
     <div class="two fields">
       {{ renderer.render_select_field(form.categories) }}
