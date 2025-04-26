@@ -4,7 +4,7 @@ render_number_field
 render_field
 render_select_field
 render_toggle_field
-datetime_field
+date_field
 date_range_field
 render_text_area_field
 render_multiple_select_field
@@ -221,7 +221,7 @@ readonly=False) %}
 {{ render_select_field(field, top_left_label=field.label, type="toggle", **kwargs)}}
 {% endmacro %}
 
-{% macro datetime_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
+{% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
 calendar_id='calendar',
 readonly=False) %}
 {% set style = "input flex items-center gap-2 w-full" %}
@@ -666,5 +666,46 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
     document.getElementById(form_id).files = files;
     document.getElementById(form_id).onchange();
   }
+</script>
+{% endmacro %}
+
+{% macro datetime_field(form, calendar_id="") %}
+<fieldset class="w-full fieldset" id="field-{{ form.id }}">
+  <label for="datetime" class="fieldset-legend">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </label>
+  <input type="datetime-local" id="{{ form.name }}" name="{{ form.name }}"
+    value="{{ form.data|format_date('%Y-%m-%dT%H:%M') if form.data else '' }}" class="w-full input pointer-events-none"
+    {% if form.flags.required %}required{% endif %} />
+  <p class="validator-hint text-error">
+    {% for error in form.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fieldset = document.getElementById('field-{{ form.id }}');
+    const input = document.getElementById('{{ form.name }}');
+
+    if (input) {
+      if (!input.value) {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+      }
+
+      fieldset.addEventListener('click', () => {
+        input.showPicker && input.showPicker(); // Modern browsers
+        input.focus(); // Fallback
+      });
+    }
+  });
 </script>
 {% endmacro %}

@@ -23,10 +23,10 @@ search_end_date=search_end_date if search_end_date else form.end_date.data) }}">
       {{ form.item(class="ui search dropdown") }}
     </p>
     <p style="margin-left:10px;">
-      {{ renderer.datetime_field(form.start_date, calendar_id="start_date") }}
+      {{ renderer.date_field(form.start_date, calendar_id="start_date") }}
     </p>
     <p style="margin-left:10px;">
-      {{ renderer.datetime_field(form.end_date, calendar_id="end_date") }}
+      {{ renderer.date_field(form.end_date, calendar_id="end_date") }}
     </p>
     <p>
       <button type="submit" class="btn btn-primary"

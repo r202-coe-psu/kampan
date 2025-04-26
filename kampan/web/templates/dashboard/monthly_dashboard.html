@@ -85,7 +85,7 @@
   <form method="POST">
     <div class="flex flex-row w-full justify-between" style="text-align:center;">
       {{ form.hidden_tag() }}
-      {{ renderer.datetime_field(form.month_year, calendar_id="month_year_calendar") }}
+      {{ renderer.date_field(form.month_year, calendar_id="month_year_calendar") }}
       <button type="submit" class="btn btn-primary" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>

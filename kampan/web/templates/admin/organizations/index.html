@@ -17,10 +17,10 @@
   <div class="flex flex-row w-full justify-between">
     <p style="margin-left:auto;">
       {{form.hidden_tag()}}
-      {{renderer.datetime_field(form.start_date, calendar_id="start_date")}}
+      {{renderer.date_field(form.start_date, calendar_id="start_date")}}
     </p>
     <p style="margin-left:10px;">
-      {{renderer.datetime_field(form.end_date, calendar_id="end_date")}}
+      {{renderer.date_field(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
       <button type="submit" class="btn btn-primary"

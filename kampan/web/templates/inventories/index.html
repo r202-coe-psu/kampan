@@ -14,7 +14,7 @@
   <div class="flex flex-row justify-between w-full gap-2">
 
     {{ form.hidden_tag() }}
-    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_search_select_field(form.item) }}
     {{ renderer.render_select_field(form.categories) }}
     {{ renderer.date_range_field(form.start_date, form.end_date)}}
 

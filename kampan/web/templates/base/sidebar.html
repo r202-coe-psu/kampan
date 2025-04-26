@@ -111,19 +111,20 @@
     {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
     current_user.get_current_division()) or current_user.has_roles(['admin']) %}
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/item_orders/' in request.path or '/item_checkouts/order/' in request.path
+        or '/item_checkouts/all-checkout' in request.path or '/item_checkouts/' in request.path %} open {% endif %}>
         <summary>
-          <i class="ph ph-size ph-briefcase"></i> การเบิกวัสดุ
+          <i class="ph ph-list-numbers"></i> การเบิกวัสดุ
         </summary>
         <ul>
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/item_orders/' in request.path or '/item_checkouts/order/' in request.path or '/item_checkouts/all-checkout' in request.path else '' }}"
               href="{{ url_for('item_orders.index', organization_id = organization.id) }}">
               คำสั่งเบิกวัสดุ
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/item_checkouts/' == request.path else '' }}"
               href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}">
               รายการนำวัสดุออก
             </a>

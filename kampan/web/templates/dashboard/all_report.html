@@ -19,7 +19,7 @@
 <form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{form.hidden_tag()}}
   <div class="flex flex-row justify-between w-full gap-2">
-    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_search_select_field(form.item) }}
     {{ renderer.render_select_field(form.categories) }}
   </div>
 

@@ -45,8 +45,7 @@
     {{ form.hidden_tag() }}
     {{ renderer.render_search_select_field(form.item) }}
     {{ renderer.render_field(form.piece) }}
-    {{ renderer.datetime_field(form.created_date, calendar_id="created_date_calendar") }}
-
+    {{ renderer.datetime_field(form.created_date) }}
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>

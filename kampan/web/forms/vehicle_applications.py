@@ -48,40 +48,31 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
     departure_date = fields.DateField(
         "วันเวลาออกเดินทาง",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )
     departure_time = fields.TimeField(
         "เวลาออกเดินทาง",
         format="%I:%M %p",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )
 
     return_date = fields.DateField(
         "วันกลับ",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
     )
     return_time = fields.TimeField(
         "เวลากลับ",
         format="%I:%M %p",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
     )
 
     flight_date = fields.DateField(
         "วันไฟล์ทบิน",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
     )
     flight_time = fields.TimeField(
         "เวลาไฟล์ทบิน",
         format="%I:%M %p",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
     )
 
@@ -117,14 +108,11 @@ class MotorcycleApplicationForm(BaseMotorcycleApplicationForm):
     motorcycle = fields.SelectField("รถมอเตอร์ไซค์", validate_choice=True)
     departure_date = fields.DateField(
         "วันเวลาออกเดินทาง",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )
     departure_time = fields.TimeField(
         "เวลาออกเดินทาง",
         format="%I:%M %p",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )
 
@@ -162,13 +150,10 @@ class ReturnMotorcycleApplicationForm(BaseReturnMotorcycleApplicationForm):
 
     return_date = fields.DateField(
         "วันกลับ",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )
     return_time = fields.TimeField(
         "เวลากลับ",
         format="%I:%M %p",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
     )

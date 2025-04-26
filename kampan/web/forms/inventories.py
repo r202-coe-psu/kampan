@@ -40,8 +40,8 @@ class InventoryForm(BaseInventoryForm):
         "คลังวัสดุ",
     )
     item = fields.SelectField("วัสดุ", choices=[("", "Item")])
-    calendar_select = fields.DateTimeField("วันที่เริ่มต้น", format="%Y-%m-%d")
-    calendar_end = fields.DateTimeField("วันที่สุดท้าย", format="%Y-%m-%d")
+    calendar_select = fields.DateTimeField("วันที่เริ่มต้น")
+    calendar_end = fields.DateTimeField("วันที่สุดท้าย")
     calendar_month_year = fields.DateTimeField("กรุณาเลือกเดือนและปี", format="%Y-%m")
     calendar_year = fields.DateTimeField("กรุณาเลือกปี", format="%Y")
 
@@ -54,12 +54,8 @@ class UploadInventoryFileForm(FlaskForm):
 
 
 class SearchStartEndDateForm(FlaskForm):
-    start_date = fields.DateField(
-        "วันที่เริ่มต้น", format="%d/%m/%Y", widget=widgets.TextInput()
-    )
-    end_date = fields.DateField(
-        "วันที่สุดท้าย", format="%d/%m/%Y", widget=widgets.TextInput()
-    )
+    start_date = fields.DateField("วันที่เริ่มต้น")
+    end_date = fields.DateField("วันที่สุดท้าย")
     item = fields.SelectField(
         "วัสดุ", validate_choice=False, validators=None, choices=[("", "ไม่เลือก")]
     )

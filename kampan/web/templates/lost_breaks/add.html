@@ -40,7 +40,7 @@
   <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     {{ form.hidden_tag() }}
     <div class="two fields">
-      {{ renderer.render_select_field(form.item) }}
+      {{ renderer.render_search_select_field(form.item) }}
       <!-- {{ renderer.render_field(form.set_) }} -->
       {{ renderer.render_field(form.piece) }}
     </div>

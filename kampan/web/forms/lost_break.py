@@ -28,13 +28,7 @@ class SearchLostBreakForm(FlaskForm):
     name = fields.StringField(label="ชื่อวัสดุ", validators=[validators.Optional()])
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
-        validators=[validators.Optional()],
     )
     end_date = fields.DateField(
         "วันที่สุดท้าย",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
-        validators=[validators.Optional()],
     )

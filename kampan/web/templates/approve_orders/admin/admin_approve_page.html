@@ -34,7 +34,7 @@ organization_id=organization.id)),
       <span class="ui large text header">คำขอ : {{ order.description }}</span>
     </div>
     {{ form.hidden_tag() }}
-    {{ renderer.datetime_field(form.sent_item_date, calendar_id="sent_item_date") }}
+    {{ renderer.date_field(form.sent_item_date, calendar_id="sent_item_date") }}
 
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
