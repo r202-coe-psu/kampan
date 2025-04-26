@@ -12,8 +12,8 @@
 
 {% block content %}
 
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <div class="ui dropdown button labeled icon">
       <i class="wrench icon"></i>
       การจัดการ
@@ -37,8 +37,8 @@
   </div>
 </div>
 
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
     {{ form.csrf_token }}
     {{ render_field.SelectField(form.user) }}
     {{ render_field.SelectField(form.role) }}
@@ -46,8 +46,8 @@
     {{ render_field.DateField(form.end_date) }}
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
@@ -87,33 +87,33 @@
         org_user.created_date else "-"}}
       </td>
       <td class="table-style">
-        <a class="ui icon button" data-tooltip="แก้ไข"
+        <a class="btn btn-circle" data-tooltip="แก้ไข"
           href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
           style=" color: white; background-color: rgb(59, 115, 199);">
-          <i class="edit icon"></i>
+          <i class="ph ph-pen"></i>
         </a>
-        <a class="ui icon button" data-tooltip="ลบ" style="color: white; background-color: rgb(192, 55, 55);"
+        <a class="btn btn-circle" data-tooltip="ลบ" style="color: white; background-color: rgb(192, 55, 55);"
           onclick="showDeleteModal('{{ org_user.id }}')">
-          <i class="trash icon"></i>
+          <i class="ph ph-trash"></i>
         </a>
-        <div class="ui modal {{ org_user.id }}">
-          <div class="header">
+        <div role="dialog" class="modal {{ org_user.id }}">
+          <div class="text-2xl font-bold">
             ลบสมาชิก
           </div>
-          <div class="content">
+          <div class=" modal-box">
             <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
 
 
             </p>
           </div>
-          <div class="actions">
-            <button class="ui black deny button">
+          <div class="modal-action">
+            <button class="btn">
               ยกเลิก
             </button>
-            <a class="ui negative right labeled icon button"
+            <a class="btn-error btn"
               href="{{ url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
               ยืนยัน
-              <i class="checkmark icon"></i>
+              <i class="ph ph-check"></i>
             </a>
           </div>
         </div>

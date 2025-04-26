@@ -19,22 +19,22 @@ organization_id=organization.id)),
 
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+<div class="flex flex-row justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary"
       href="{{ url_for('approve_orders.admin_approved_detail',order_id=order.id, organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     <div style="margin-top: 1rem; margin-bottom: 1rem;">
       <span class="ui large text header">คำขอ : {{ order.description }}</span>
     </div>
     {{ form.hidden_tag() }}
-    {{ renderer.render_calendar_default(form.sent_item_date, calendar_id="sent_item_date") }}
+    {{ renderer.datetime_field(form.sent_item_date, calendar_id="sent_item_date") }}
 
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>

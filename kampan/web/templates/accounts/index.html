@@ -6,7 +6,7 @@
 
 {% block breadcrumbs %}
 {% if current_user.has_roles(['admin']) %}
-<a class="ui button primary" href="{{ url_for('admin.index') }}"><i class="user tie icon"></i>Administrator</a>
+<a class="btn  btn-primary" href="{{ url_for('admin.index') }}"><i class="ph ph-user"></i></i>Administrator</a>
 {% endif %}
 {% endblock %}
 
@@ -20,9 +20,7 @@
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
     <h2 class="ui header">ข้อมูลผู้ใช้งาน
-      <!--       
-      <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a> -->
+
     </h2>
     {% if current_user.get_picture() %}
     <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">

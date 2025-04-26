@@ -16,10 +16,10 @@
 {%- endmacro %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
@@ -28,7 +28,7 @@
   <div class="ui segment">
     <h2 class="ui header">รายละเอียดแผนก <a class="btn-floating btn-large waves-effect waves-light"
         href="{{ url_for('divisions.create_or_edit',division_id=division.id, organization_id=organization.id) }}"
-        title='Edit Organization.'><i class="edit icon"></i></a>
+        title='Edit Organization.'><i class="ph ph-pen"></i></a>
     </h2>
     <div class="ui grid two column">
       {{ row_detail("ชื่อ :") }}

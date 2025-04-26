@@ -1,6 +1,7 @@
 {% extends "/base/base.html" %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 {% import "/base/components/dialogs.html" as dialog %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block body %}
 <div class="drawer 2xl:drawer-open">
@@ -14,37 +15,10 @@
               class="btn rounded-none border-0 bg-primary drawer-button 2xl:hidden text-white hover:bg-base-100 hover:text-black">
               <i class="ph ph-size ph-list"></i>
             </label>
-            {% if ("create" in request.path) or ("edit" in request.path) or ("change_password" in request.path) or
-            referrer_link %}
-            <div class="my-auto mr-1">
-              <a href="{{ request.referrer if not referrer_link else referrer_link }}"
-                class="btn btn-sm rounded-full border-0 drawer-button 2xl:hidden text-black">
-                <div class="justify-center w-full">
-                  <i class="ph ph-size ph-arrow-u-up-left"></i>
-                </div>
-              </a>
-            </div>
-            {% else %}
-            <div class="my-auto mr-1">
-              <a href="/" class="btn btn-sm rounded-full border-0 drawer-button 2xl:hidden text-black">
-                <div class="justify-center w-full">
-                  <i class="ph ph-size ph-house"></i>
-                </div>
-              </a>
-            </div>
-            {% endif %}
+
           </div>
           <div class="flex flex-col px-2 lg:px-10">
             <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
-              {% if ("create" in request.path) or ("edit" in request.path) or ("change_password" in request.path) or
-              referrer_link %}
-              <a href="{{ request.referrer if not referrer_link else referrer_link }}"
-                class="btn btn-sm border-0 btn-neutral drawer-button">
-                <div class="justify-center w-full">
-                  <i class="ph ph-caret-left text-lg"></i>
-                </div>
-              </a>
-              {% endif %}
               <span class="text-3xl font-bold">
                 {% block dashboard_title %}{{ self.title }} {% endblock %}
               </span>
@@ -55,10 +29,13 @@
           </div>
         </div>
       </div>
-      <div class="lg:px-2 mx-2 pb-5">
-        {% block content %}
-        {% endblock content %}
-        <footer class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 border-t border-base-300">
+      <div class="lg:px-2 mx-2 pb-5 h-full flex flex-col justify-between">
+        <div>
+          {% block content %}
+          {% endblock content %}
+        </div>
+        <footer
+          class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 border-t border-base-300 items-end">
           {% include "/base/footer.html" %}
         </footer>
       </div>

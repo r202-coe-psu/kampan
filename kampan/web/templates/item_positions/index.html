@@ -37,32 +37,32 @@
         <td class="table-style" data-label="Rack">{{ item_position.rack }}</td>
         <td class="table-style" data-label="Row">{{ item_position.row }}</td>
         <td class="table-style" data-label="Locker">{{ item_position.locker }}</td>
-        <td class="table-style" data-label="Actions">
+        <td class="table-style" data-label="modal-action">
           <a class="ui primary icon button"
             href="{{ url_for('item_positions.edit', item_position_id=item_position.id, organization_id=organization.id) }}">
-            <i class="edit icon"></i> แก้ไข
+            <i class="ph ph-pen"></i> แก้ไข
           </a>
           <a class="ui red icon button" onclick="showDeleteModal('{{ item_position.id }}')">
-            <i class="trash icon"></i> ลบ
+            <i class="ph ph-trash"></i> ลบ
           </a>
-          <div class="ui modal {{item_position.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{item_position.id}}">
+            <div class="text-2xl font-bold">
               ลบตำแหน่งวัสดุ
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการลบตำแหน่งวัสดุ
                 <b>{{ item_position.warehouse.name }}</b><br />
                 <b>{{ item_position.description }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('item_positions.delete', item_position_id=item_position.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>

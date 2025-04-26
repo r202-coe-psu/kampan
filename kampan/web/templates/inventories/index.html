@@ -10,17 +10,17 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{ form.hidden_tag() }}
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.SelectField(form.categories) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_select_field(form.categories) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
@@ -62,7 +62,7 @@
           <td class="table-style" data-label="Registrarion ID">
             <a
               href="{{ url_for('inventories.bill_item', item_register_id=inventory.registration.id, organization_id=organization.id) }}">{{
-              inventory.registration.receipt_id}} <i class="eye icon"></i>
+              inventory.registration.receipt_id}} <i class="ph ph-eye"></i>
             </a>
           </td>
           <td class="table-style" data-label="Checkin Date">{{ inventory.get_created_date() }}</td>

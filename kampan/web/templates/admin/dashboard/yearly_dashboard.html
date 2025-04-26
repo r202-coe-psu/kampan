@@ -46,16 +46,16 @@
 
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
-  <div class="content" style="color: #292d33;">
+  <div class="modal-box" style="color: #292d33;">
     <div class="ui medium header"> แผนภูมิรายปี {{ this_year }} </div>
     <p>
       ข้อมูลแผนภูมินี้จะแสดงจำนวนเงินของวัสดุที่เบิกในแต่ละปี
     </p>
   </div>
   <form method="post">
-    <div class="ui secondary menu" style="text-align:center;">
+    <div class="flex flex-row w-full justify-between" style="text-align:center;">
       {{ form.hidden_tag() }}
-      {{renderer.render_calendar_default(form.year, calendar_id="year_calendar")}}
+      {{renderer.datetime_field(form.year, calendar_id="year_calendar")}}
       <button type="submit" class="btn btn-primary" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>

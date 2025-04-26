@@ -22,71 +22,62 @@
 
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 
-<div class="ui ordered steps" style="width: 100%;">
-  <a class="active step" href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-    <div class="content">
-      <div class="title">เพิ่มคำสั่งเบิก</div>
-      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
-    </div>
-  </a>
-  <a class="{{ 'disabled' if not order else ''}} step"
-    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">เลือกพัสดุ</div>
-      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
-    </div>
-  </a>
-  <a class="{{ 'disabled' if not order else ''}} step"
-    href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">ยืนยันการเบิกพัสดุ</div>
-      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
-    </div>
-  </a>
-</div>
+
 
 <div>
-  <form class="ui form" method="POST">
-
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
+    <div class="steps steps-vertical lg:steps-horizontal w-full py-6">
+      <a class="step-primary step">
+        เพิ่มคำสั่งเบิก
+      </a>
+      <a class="step" {% if order %}
+        href='{{ url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}' {% endif %}>
+        เลือกพัสดุ
+      </a>
+      <a class="step" {% if order %}
+        href='{{ url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}' {%
+        endif %}>
+        ยืนยันการเบิกพัสดุ
+      </a>
+    </div>
     {{ form.hidden_tag() }}
-    {{ renderer.render_field(form.description) }}
-    {{ renderer.render_select(form.head_endorser) }}
-
+    {{ renderer.render_text_area_field(form.description) }}
+    {{ renderer.render_select_field(form.head_endorser) }}
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 
 {% if order and success %}
-<div class="ui modal">
+<div class="modal" open>
+  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      <span class="text-success">
+        บันทึกสำเร็จ
+      </span>
+    </div>
 
-  <div class="header">
-    <span class="ui text green">
-      บันทึกสำเร็จ
-    </span>
-  </div>
-  <div class="content">
-    <p>บันทีกข้อมูลสำเร็จ
+    <p class="px-2">บันทีกข้อมูลสำเร็จ
     </p>
 
-  </div>
-  <div class="actions">
-    <a class="ui black deny button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
-      ออก
-    </a>
-    <a class="ui positive right labeled icon button"
-      href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-      ถัดไป
-      <i class="checkmark icon"></i>
-    </a>
+    <div class="modal-action">
+      <a class="btn btn-error" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+        ออก
+      </a>
+      <a class="btn btn-success"
+        href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+        ถัดไป
+        <i class="ph ph-check"></i>
+      </a>
+    </div>
   </div>
 </div>
 {% endif %}

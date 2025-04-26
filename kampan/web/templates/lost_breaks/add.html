@@ -23,28 +23,28 @@
 {% block content %}
 {% if error_message %}
 <div class="ui negative message">
-  <div class="header">
+  <div class="text-2xl font-bold">
     จำนวนที่เลือกมากกว่าจำนวนวัสดุที่มี
   </div>
 </div>
 {% endif %}
-<div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="left menu">
-    <a class="ui labeled icon button" href='{{ url_for("lost_breaks.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+<div class=" ui secondary" style="padding-bottom: 10px;">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href='{{ url_for("lost_breaks.index", organization_id=organization.id) }}'>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     {{ form.hidden_tag() }}
     <div class="two fields">
-      {{ renderer.render_select(form.item) }}
+      {{ renderer.render_select_field(form.item) }}
       <!-- {{ renderer.render_field(form.set_) }} -->
       {{ renderer.render_field(form.piece) }}
     </div>
-    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_text_area_field(form.description) }}
 
     <button class="btn btn-primary" type="submit">Submit</button>
   </form>

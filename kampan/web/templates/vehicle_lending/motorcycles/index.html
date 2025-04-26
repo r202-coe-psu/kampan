@@ -10,11 +10,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <a class="ui primary labeled icon button"
       href="{{ url_for('vehicle_lending.motorcycles.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มรถจักรยานยนต์
     </a>
   </div>
@@ -33,9 +33,9 @@
         alt="{{ motorcycle.license_plate }}">
       {% endif %}
     </div>
-    <div class="content">
-      <a class="header"> {{ motorcycle.license_plate }}</a>
-      <div class="meta">
+    <div class="modal-box">
+      <a class="text-2xl font-bold"> {{ motorcycle.license_plate }}</a>
+      <div class=" meta">
 
       </div>
       <div class="description">
@@ -46,31 +46,31 @@
 
         <a class="ui right floated red button labeled icon" onclick="showDeleteModal('{{ motorcycle.id }}')">
           ลบ
-          <i class="trash icon"></i>
+          <i class="ph ph-trash"></i>
         </a>
 
         <a class="ui right floated primary button labeled icon"
           href="{{ url_for('vehicle_lending.motorcycles.create_or_edit', organization_id=organization.id, motorcycle_id=motorcycle.id) }}">
           แก้ไข
-          <i class="edit icon"></i>
+          <i class="ph ph-pen"></i>
         </a>
-        <div class="ui modal {{motorcycle.id}}">
-          <div class="header">
+        <div role="dialog" class="modal {{motorcycle.id}}">
+          <div class="text-2xl font-bold">
             ลบข้อมูลรถจักรยานยนต์
           </div>
-          <div class="content">
+          <div class=" modal-box">
             <p>ต้องการลบข้อมูลรถจักรยานยนต์
               <b>{{ motorcycle.description }}</b>
             </p>
           </div>
-          <div class="actions">
-            <button class="ui black deny button">
+          <div class="modal-action">
+            <button class="btn">
               ยกเลิก
             </button>
-            <a class="ui negative right labeled icon button"
+            <a class="btn-error btn"
               href="{{ url_for('vehicle_lending.motorcycles.delete', motorcycle_id=motorcycle.id) }}">
               ยืนยัน
-              <i class="checkmark icon"></i>
+              <i class="ph ph-check"></i>
             </a>
           </div>
         </div>

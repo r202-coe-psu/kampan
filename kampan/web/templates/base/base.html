@@ -22,5 +22,16 @@
     {% block body %}{% endblock %}
   </body>
   {% block additional_js %}{% endblock %}
+  <script>
+    function showDeleteModal(orderId) {
+      const safeSelector = CSS.escape(orderId); // escape ให้เป็น selector ที่ใช้ได้
+      const modal = document.querySelector(`.modal.${safeSelector}`);
+      if (modal) {
+        modal.setAttribute('open', '');
+      } else {
+        console.warn(`ไม่พบ modal สำหรับ order id: ${orderId}`);
+      }
+    }
+  </script>
 
 </html>

@@ -8,11 +8,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn btn-primary labeled icon"
       href="{{ url_for('categories.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มหมวดหมู่
     </a>
   </div>
@@ -34,32 +34,32 @@
         <td class="table-style" data-label="Name">{{ category.name }}</td>
         <td class="table-style" data-label="Description">{{ category.description }}</td>
         <td class="table-style" data-label="Amount">{{ category.get_count_item() }}</td>
-        <td class="table-style" data-label="Actions">
+        <td class="table-style" data-label="modal-action">
           <a class="ui primary icon button"
             href="{{ url_for('categories.create_or_edit', category_id=category.id, organization_id=organization.id) }}">
-            <i class="edit icon"></i> แก้ไข
+            <i class="ph ph-pen"></i> แก้ไข
           </a>
           <a class="ui red icon button" onclick="showDeleteModal('{{ category.id }}')">
-            <i class="trash icon"></i> ลบ
+            <i class="ph ph-trash"></i> ลบ
           </a>
-          <div class="ui modal {{category.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{category.id}}">
+            <div class="text-2xl font-bold">
               ลบหมวดหมู่
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการลบหมวดหมู่
                 <b>{{ category.name }}</b><br />
                 <b>{{ category.description }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('categories.delete', category_id=category.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>

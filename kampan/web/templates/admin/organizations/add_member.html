@@ -14,7 +14,7 @@
 
 {% block breadcrumbs %}
 <a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 <div class="active section">
   เพิ่มสมาชิก
 </div>
@@ -22,10 +22,11 @@
 
 {% block content %}
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     {{ renderer.render_search_multiple_select(form.members) }}
-    {{ renderer.render_select(form.roles) }}
+    {{ renderer.render_select_field(form.roles) }}
 
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>

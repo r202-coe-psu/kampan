@@ -2,6 +2,7 @@ from calendar import calendar
 from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
+import datetime
 
 from flask_mongoengine.wtf import model_form
 from kampan import models
@@ -29,13 +30,11 @@ BaseCheckoutItemForm = model_form(
         # "set_": {"label": "จำนวนหน่วยใหญ่"},
         "piece": {"label": "จำนวนหน่วยเล็ก"},
         "message": {"label": "ข้อความ"},
-        "created_date": {"label": "ลงวันที่คำสั่งเบิก", "format": "%Y-%m-%d %H:%M"},
     },
 )
 
 
 class CheckoutItemForm(BaseCheckoutItemForm):
     item = fields.SelectField("ชื่อวัสดุ")
-    calendar_select_checkout = fields.DateTimeField(
-        "เลือกวันที่เพื่อแสดงข้อมูล", format="%Y-1%m-%d %H:%M"
-    )
+    calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล")
+    created_date = fields.DateField("ลงวันที่คำสั่งเบิก", default=datetime.datetime.now())

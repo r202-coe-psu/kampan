@@ -1,5 +1,4 @@
 {% extends '/base/template-page-login.html' %}
-{% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 
@@ -13,63 +12,48 @@
 {% block content %}
 <div class="flex flex-row w-full justify-end">
   <a class="btn btn-primary" href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
-    <i class="plus icon"></i>
+    <i class="ph ph-plus"></i>
     เพิ่มคำสั่งเบิก
   </a>
 </div>
 
 
-<form method="post" style="padding-bottom: 0.5rem;">
+<form method="post">
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-
     <div class="flex flex-wrap flex-col w-full">
       <div class="lg:flex gap-4 flex w-full">
         {{form.hidden_tag()}}
         {{renderer.date_range_field(form.start_date, form.end_date)}}
-        {{renderer.render_select_field(form.item)}}
+        {{renderer.render_field(form.item)}}
       </div>
     </div>
     <div class="gap-2 flex w-full flex-wrap justify-between items-center my-auto mt-2">
-      <div class="relative inline-block">
-        <button id="color-legend-btn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition">
-          แสดงความหมายของสี
-        </button>
-
-        <div id="color-legend-tooltip"
-          class="absolute z-10 p-4 w-80 text-sm text-left bg-white border rounded shadow-xl mt-2 hidden"
-          style="font-size: 16px;">
+      <div class="dropdown dropdown-start">
+        <div tabindex="0" role="button" class="btn m-1">แสดงความหมายของสี</div>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
           <div><span class="text-red-500 font-semibold">● สีแดง:</span> ปฎิเสธ</div>
           <div><span class="text-green-500 font-semibold">● สีเขียว:</span> อนุมัติรอรับวัสดุ</div>
           <div><span class="text-blue-500 font-semibold">● สีน้ำเงิน:</span> รอการจัดการจากเจ้าหน้าที่พัสดุ</div>
           <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติจากหัวหน้าเจ้าหน้าที่พัสดุ</div>
           <div><span class="text-yellow-500 font-semibold">● สีเหลือง:</span> รอการอนุมัติจากหัวหน้าฝ่าย</div>
           <div><span class="text-pink-500 font-semibold">● สีชมพู:</span> รอการยืนยันการเบิก</div>
-        </div>
+        </ul>
       </div>
-
-      <script>
-        const button = document.getElementById('color-legend-btn');
-        const tooltip = document.getElementById('color-legend-tooltip');
-
-        const showTooltip = () => tooltip.classList.remove('hidden');
-        const hideTooltip = () => tooltip.classList.add('hidden');
-
-        button.addEventListener('mouseenter', showTooltip);
-        button.addEventListener('mouseleave', hideTooltip);
-        tooltip.addEventListener('mouseenter', showTooltip);
-        tooltip.addEventListener('mouseleave', hideTooltip);
-      </script>
-
-      <button class="btn btn-primary" type="submit">
-        ค้นหา
-        <i class="ph ph-size ph-magnifying-glass"></i>
-      </button>
+      <div class="gap-2 flex">
+        <a class="btn" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+          ล้างการค้นหา
+        </a>
+        <button class="btn btn-primary" type="submit">
+          ค้นหา
+          <i class="ph ph-size ph-magnifying-glass"></i>
+        </button>
+      </div>
     </div>
   </div>
 
   {% if orders %}
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-10 rounded-xl">
+    <div class="overflow-x-auto mt-2 rounded-xl">
       <table class="table-auto w-full">
         <thead>
           <tr>
@@ -105,14 +89,15 @@
 
 
             <td class="table-style" data-label="Bill">
-              <a class="ui icon primary button"
+              <a class="btn-circle btn btn-primary"
                 href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
-                <i class="eye icon"></i>
+                <i class="ph ph-eye"></i>
               </a>
             </td>
             {{ order.get_status()|safe }}
 
             <td class="table-style">
+              sadna;josfniosa nfdjkas
               {{ order.remark }}
             </td>
             <td class="table-style">
@@ -121,42 +106,42 @@
             </td>
             <td class="table-style">
               {% if order.status == 'pending' %}
-              <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              <a class="btn-circle btn btn-primary {{ 'disabled' if order.approval_status == 'approved' else ''}}"
                 data-tooltip="เบิกวัสดุ"
                 href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
-                <i class="plus icon"></i>
+                <i class="ph ph-eye"></i>
               </a>
               {% endif %}
               {% if order.status == 'pending' %}
-              <a class="ui icon button primary" data-tooltip="แก้ไข"
+              <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
                 href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
-                <i class="edit icon"></i>
+                <i class="ph ph-pen"></i>
               </a>
               {% endif %}
 
-              <a class="ui icon button red {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
                 data-tooltip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
-              <div class="ui modal {{order.id}}">
-                <div class="header">
-                  ลบคำสั่งเบิกวัสดุ
-                </div>
-                <div class="content">
+              <div role="dialog" class="modal {{order.id}}">
+
+                <div class="modal-box">
+                  <h3 class="text-lg font-bold">ลบคำสั่งเบิกวัสดุ</h3>
                   <p>ต้องการลบคำสั่งเบิกวัสดุ
                     <b>{{ order.description }}</b>
                   </p>
+                  <div class="modal-action">
+                    <button class="btn">
+                      ยกเลิก
+                    </button>
+                    <a class="btn-error btn"
+                      href="{{ url_for('item_orders.delete', order_id=order.id, organization_id=organization.id) }}">
+                      ยืนยัน
+                      <i class="ph ph-check"></i>
+                    </a>
+                  </div>
                 </div>
-                <div class="actions">
-                  <button class="ui black deny button">
-                    ยกเลิก
-                  </button>
-                  <a class="ui negative right labeled icon button"
-                    href="{{ url_for('item_orders.delete', order_id=order.id, organization_id=organization.id) }}">
-                    ยืนยัน
-                    <i class="checkmark icon"></i>
-                  </a>
-                </div>
+
               </div>
             </td>
           </tr>

@@ -222,6 +222,7 @@ readonly=False) %}
 {% endmacro %}
 
 {% macro datetime_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
+calendar_id='calendar',
 readonly=False) %}
 {% set style = "input flex items-center gap-2 w-full" %}
 {% if field.errors | count > 0 %}

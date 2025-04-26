@@ -39,7 +39,7 @@ def index():
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
 
-    form.categories.choices = [("", "หมวดหมู่")] + [
+    form.categories.choices = [("", "หมวดหมู่ทั้งหมด")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
             organization=organization, status="active"
@@ -116,7 +116,7 @@ def catalogs(order_id):
     #     for item in items
     # ]
 
-    form.categories.choices = [("", "หมวดหมู่")] + [
+    form.categories.choices = [("", "หมวดหมู่ทั้งหมด")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
             organization=organization, status="active"
@@ -198,6 +198,7 @@ def checkout():
             item=item_id, order=order, status__ne="disactive"
         ).first()
     if checkout_item:
+        print(form.errors)
         return redirect(
             url_for(
                 "item_checkouts.edit",
@@ -213,7 +214,7 @@ def checkout():
     if items:
         form.item.choices = [
             (
-                item.id,
+                str(item.id),
                 (
                     f"{item.barcode_id} {item.name} (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (
@@ -233,7 +234,7 @@ def checkout():
         ]
     if not form.validate_on_submit():
         if item_id:
-            form.item.data = item_id
+            form.item.data = str(item_id)
         return render_template(
             "/item_checkouts/checkout.html",
             form=form,
@@ -309,7 +310,7 @@ def edit(checkout_item_id):
     if items:
         form.item.choices = [
             (
-                item.id,
+                str(item.id),
                 (
                     f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (

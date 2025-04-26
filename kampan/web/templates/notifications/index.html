@@ -18,11 +18,11 @@
 
 {% block content %}
 {% if notifications %}
-<div class="ui four cards">
+<div class="grid grid-cols-4 gap-2">
   {% for item in paginated_notifications.items %}
   <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-    <div class="content" style="flex: 2; background-color: rgb(255, 192, 192);">
-      <div class="header" style="font-size: 1.5rem;">
+    <div class="modal-box" style="flex: 2; background-color: rgb(255, 192, 192);">
+      <div class="text-2xl font-bold" style=" font-size: 1.5rem;">
         <div style="padding-right: 5px;">{{ item.name }}</div>
       </div>
       <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
@@ -38,28 +38,28 @@
             ดูรายละเอียด
           </a>
           {#}
-          <a class="ui icon button" style="color: white; background-color: red;"
+          <a class="btn btn-circle" style="color: white; background-color: red;"
             onclick="showDeleteModal('{{ item.id }}')">
             <i class="trash slash icon small" style="font-size: 10px;"></i>
           </a>
           {#}
-          <div class="ui modal {{item.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{item.id}}">
+            <div class="text-2xl font-bold">
               ยกเลิกการแจ้งเตือน
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการยกเลิกการแจ้งเตือนของวัสดุ
                 <b>{{ item.name }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>

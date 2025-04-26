@@ -16,10 +16,10 @@
   <div class="sixteen wide column">
     <div class="ui cards">
       <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-        <div class="content" style="flex: 2; background-color: rgb(255, 192, 192);">
+        <div class="modal-box" style="flex: 2; background-color: rgb(255, 192, 192);">
 
           <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="header" style="font-size: 1.5rem;">
+            <div class="text-2xl font-bold" style=" font-size: 1.5rem;">
               <span class="ui large text" style="padding-right: 5px; font-weight: 600;">แจ้งเตือนวัสดุคงเหลือ : {{
                 notifications }}</span>
             </div>
@@ -36,7 +36,7 @@
   </div>
   {% endif %}
   <div class="ten wide column">
-    <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;">
+    <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px;">
       คำขอใหม่
     </div>
     {% if orders %}
@@ -63,12 +63,12 @@
           </td>
           {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
           <td class="table-style" data-label="Status" class="text-success">
-            <span class="ui green text">{{ order.get_status_display() }}
+            <span class="text-success">{{ order.get_status_display() }}
             </span>
           </td>
           {% elif order.status == "denied" or order.approval_status == "denied"%}
           <td class="table-style" data-label="Status" class="text-error">
-            <span class="ui red text">{{ order.get_status_display() }}</span>
+            <span class="text-error">{{ order.get_status_display() }}</span>
           </td>
           {% else %}
           <td class="table-style" data-label="Status" class="yellow">
@@ -79,7 +79,7 @@
             <a class="btn btn-primary"
               href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
+              <i class="ph ph-eye"></i>
             </a>
           </td>
         </tr>
@@ -92,7 +92,7 @@
   </div>
   <div class="six wide column" style="display:flex; align-items: center; justify-content: center;">
     <div class="ui card" style="height: 100%; width:70%;">
-      <div class="content">
+      <div class="modal-box">
         <div class="center aligned header" style="font-size: 2rem; line-height: 2.5rem; padding-top:1rem;">จำนวนคำขอใหม่
         </div>
         <div class="center aligned description"
@@ -107,7 +107,7 @@
   </div>
 
   <div class="ten wide column">
-    <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;">
+    <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px;">
       คำขอที่กำลังดำเนินการอยู่
     </div>
     {% if pending_orders %}
@@ -134,12 +134,12 @@
           </td>
           {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
           <td class="table-style" data-label="Status" class="text-success">
-            <span class="ui green text">{{ order.get_status_display() }}
+            <span class="text-success">{{ order.get_status_display() }}
             </span>
           </td>
           {% elif order.status == "denied" or order.approval_status == "denied"%}
           <td class="table-style" data-label="Status" class="text-error">
-            <span class="ui red text">{{ order.get_status_display() }}</span>
+            <span class="text-error">{{ order.get_status_display() }}</span>
           </td>
           {% else %}
           <td class="table-style" data-label="Status" class="yellow">
@@ -150,7 +150,7 @@
             <a class="btn btn-primary"
               href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
+              <i class="ph ph-eye"></i>
             </a>
           </td>
         </tr>
@@ -163,7 +163,7 @@
   </div>
   <div class="six wide column" style="display:flex; align-items: center; justify-content: center; ">
     <div class="ui card" style="height: 100%; width:70%;">
-      <div class="content">
+      <div class="modal-box">
         <div class="center aligned header" style="font-size: 1.75rem; line-height: 2.5rem; padding-top:1rem;">
           จำนวนคำขอที่กำลังดำเนินการอยู่
         </div>

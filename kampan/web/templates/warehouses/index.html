@@ -8,23 +8,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn btn-primary labeled icon"
       href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มคลังวัสดุ
     </a>
   </div>
 </div>
 {% if warehouses %}
-<div class="ui four cards">
+<div class="grid grid-cols-4 gap-2">
   {% for warehouse in paginated_warehouses.items %}
   <div class="card" style="width: 100%;">
-    <div class="content"
+    <div class="modal-box"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
-        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ warehouse.name }}
+        <div class="text-2xl font-bold" style=" font-size: 2em; font-weight: bold; color: #333;">{{ warehouse.name }}
           <a style="margin-right: 10px;"
             href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id, organization_id=organization.id) }}">
             <i class="edit icon" style="color: Orange;"></i>
@@ -52,28 +52,28 @@
         <div class="description" style="font-size: 1.2em;">
           <p>{{ warehouse.description }}</p>
         </div>
-        <div class="actions" style="margin-top: 50px; text-align: right;">
+        <div class="modal-action" style="margin-top: 50px; text-align: right;">
           <a class="ui red button" onclick="showDeleteModal('{{ warehouse.id }}')">
-            <div style=" font-size: 1.2em;"><i class="trash icon"></i> ลบ
+            <div style=" font-size: 1.2em;"><i class="ph ph-trash"></i> ลบ
             </div>
           </a>
-          <div class="ui modal {{warehouse.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{warehouse.id}}">
+            <div class="text-2xl font-bold">
               ลบคลังวัสดุ
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการลบคลังวัสดุ
                 <b>{{ warehouse.name }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>

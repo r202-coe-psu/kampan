@@ -44,18 +44,18 @@
       <td class="table-style">
         {% if car_application.status == "pending on admin" %}
         <!-- Approve/Deny Button -->
-        <a class="ui icon button blue {{ 'disabled' if car_application.status == 'approved' else ''}}"
+        <a class="btn btn-circle blue {{ 'disabled' if car_application.status == 'approved' else ''}}"
           data-tooltip="อนุมัติ / ปฏิเสธ"
           onclick="showApprovalModal('{{ car_application.id }}', '{{ car_application.description }}')">
           <i class="check circle icon"></i>
         </a>
 
         <!-- Approval Modal -->
-        <div class="ui modal" id="approval_modal">
-          <div class="header">
+        <div class="modal" id="approval_modal">
+          <div class="text-2xl font-bold">
             อนุมัติ / ปฏิเสธ คำขอใช้รถยนต์
           </div>
-          <div class="content">
+          <div class=" modal-box">
             <p>คุณต้องการ <b>อนุมัติ</b> หรือ <b>ปฏิเสธ</b> คำขอใช้รถยนต์นี้หรือไม่?</p>
             <div class="ui segment">
               <h3 class="ui header">ข้อมูลคำขอใช้รถยนต์</h3>
@@ -127,11 +127,12 @@
             </div>
 
             <!-- Approval Form -->
-            <form id="approval_form" method="POST" class="ui form">
+            <form id="approval_form" method="POST"
+              class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
               <input type="hidden" name="car_application_id" id="car_application_id">
               <input type="hidden" name="organization_id" id="organization_id">
 
-              <div class="equal width fields">
+              <div class="flex flex-row justify-between w-full gap-2">
                 <div class="field">
 
                   <label>หมายเหตุ (หากปฏิเสธ):</label>
@@ -141,13 +142,13 @@
             </form>
           </div>
 
-          <div class="actions">
-            <button class="ui black deny button">ยกเลิก</button>
-            <button class="ui positive right labeled icon button" onclick="submitForm('approve')">
+          <div class="modal-action">
+            <button class="btn">ยกเลิก</button>
+            <button class="btn btn-success" onclick="submitForm('approve')">
               อนุมัติ
-              <i class="checkmark icon"></i>
+              <i class="ph ph-check"></i>
             </button>
-            <button class="ui negative right labeled icon button" onclick="submitForm('deny')">
+            <button class="btn-error btn" onclick="submitForm('deny')">
               ปฏิเสธ
               <i class="times icon"></i>
             </button>

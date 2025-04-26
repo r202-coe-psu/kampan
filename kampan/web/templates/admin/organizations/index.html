@@ -14,13 +14,13 @@
 
 {% block content %}
 <form method="post">
-  <div class="ui secondary menu">
+  <div class="flex flex-row w-full justify-between">
     <p style="margin-left:auto;">
       {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      {{renderer.datetime_field(form.start_date, calendar_id="start_date")}}
     </p>
     <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+      {{renderer.datetime_field(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
       <button type="submit" class="btn btn-primary"
@@ -29,7 +29,7 @@
   </div>
   {% if organizations %}
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-10 rounded-xl">
+    <div class="overflow-x-auto mt-2 rounded-xl">
       <table class="table-auto w-full">
         <thead>
           <tr>
@@ -52,7 +52,7 @@
               <a class="btn btn-primary icon"
                 href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}"
                 style=" color: white; background-color: rgb(59, 115, 199); ">
-                <i class="eye icon"></i>
+                <i class="ph ph-eye"></i>
               </a>
               {% if organization.get_organization_users() %}
               <a class="btn btn-primary icon"
@@ -63,38 +63,38 @@
               {% endif %}
             </td>
             <td class="table-style">
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}"
                 style=" color: white; background-color: rgb(59, 115, 199);">
                 <i class="user plus icon"></i>
               </a>
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
                 style=" color: white; background-color: rgb(59, 115, 199);">
-                <i class="edit icon"></i>
+                <i class="ph ph-pen"></i>
               </a>
-              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
                 onclick="showDeleteModal('{{ organization.id }}')">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
-              <div class="ui modal {{organization.id}}">
-                <div class="header">
+              <div role="dialog" class="modal {{organization.id}}">
+                <div class="text-2xl font-bold">
                   ลบข้อมูลองค์กร
                 </div>
-                <div class="content">
+                <div class=" modal-box">
                   <p>ต้องการลบองค์กร<b>{{ organization.name }}</b><br />
                     องค์กร : <b>{{ organization.name }}</b><br />
                     {{ organization.description }}
                   </p>
                 </div>
-                <div class="actions">
-                  <button class="ui black deny button">
+                <div class="modal-action">
+                  <button class="btn">
                     ยกเลิก
                   </button>
-                  <a class="ui negative right labeled icon button"
+                  <a class="btn-error btn"
                     href="{{ url_for('admin.organizations.delete', organization_id=organization.id) }}">
                     ยืนยัน
-                    <i class="checkmark icon"></i>
+                    <i class="ph ph-check"></i>
                   </a>
                 </div>
               </div>

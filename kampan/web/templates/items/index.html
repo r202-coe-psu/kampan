@@ -19,14 +19,14 @@
 {% set _dummy=params.pop('page') %}
 {% endif %}
 
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <div class="ui dropdown button labeled icon">
       <i class="wrench icon"></i>
       การจัดการ
 
       <div class="menu" style=" flex-direction: column !important;">
-        <a class="item" style="width: 100%;" onclick="showDeleteModal('confirmAll')"><span class="ui green text">
+        <a class="item" style="width: 100%;" onclick="showDeleteModal('confirmAll')"><span class="text-success">
             <i class="check icon"></i>
             บันทึกการลงทะเบียนวัสดุทั้งหมด</span></a>
         <a class="item" style="width: 100%;" href="{{ url_for('items.export_data', **request.args) }}">
@@ -49,7 +49,7 @@
         </a>
         <a class="item" style="width: 100%;" href="{{ url_for('items.upload_edit', **request.args) }}">
           <span class="ui primary text">
-            <i class="edit icon"></i>
+            <i class="ph ph-pen"></i>
             แก้ไขวัสดุแบบหลายรายการ
           </span>
         </a>
@@ -70,25 +70,25 @@
   </div>
 </div>
 
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{form.hidden_tag()}}
-  <div class="equal width fields">
-    {{ render_form.InputField(form.item_name) }}
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.SelectField(form.categories) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_field(form.item_name) }}
+    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_select_field(form.categories) }}
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
-<div class="ui modal confirmAll">
-  <div class="header">
+<div role="dialog" class="modal confirmAll">
+  <div class="text-2xl font-bold">
     บันทึกวัสดุ
   </div>
-  <div class="content">
+  <div class=" modal-box">
     <p>ต้องการบันทึกวัสดุ
       <b>ทั้งหมด</b> หรือไม่?
     </p>
@@ -96,22 +96,22 @@
       และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
       *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
   </div>
-  <div class="actions">
-    <button class="ui black deny button">
+  <div class="modal-action">
+    <button class="btn">
       ยกเลิก
     </button>
-    <a class="ui positive right labeled icon button" href="{{ url_for('items.confirm_all', **request.args) }}">
+    <a class="btn btn-success" href="{{ url_for('items.confirm_all', **request.args) }}">
       ยืนยัน
-      <i class="checkmark icon"></i>
+      <i class="ph ph-check"></i>
     </a>
   </div>
 </div>
 
 
 {% if items %}
-<div class="ui four cards">
+<div class="grid grid-cols-4 gap-2">
   {% for item in paginated_items.items %}
-  <div class="card">
+  <div class="card bg-base-100 w-96 shadow-sm">
     <div class="image">
       {% if not item.image %}
       <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
@@ -121,10 +121,10 @@
         alt="{{ item.name }}">
       {% endif %}
     </div>
-    <div class="content">
-      <div class="header">ชื่อวัสดุ : {{ item.name }}</div>
-      <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
-      <div class="meta">คำอธิบาย : {{ item.description }}</div>
+    <div class="modal-box">
+      <div class="text-2xl font-bold">ชื่อวัสดุ : {{ item.name }}</div>
+      <div class=" text-2xl font-bold">จำนวน : {{ item.get_items_quantity() }}</div>
+      <div class=" meta">คำอธิบาย : {{ item.description }}</div>
       <div class="meta">จำนวนขั้นต่ำที่แจ้งเตือน : {{ item.minimum }} {{ item.unit }}</div>
       <div class="meta">หมวดหมู่: {{ item.categories.name }}</div>
       <div class="description">ผู้ลงทะเบียน : {{ item.created_by.first_name }} {{ item.created_by.last_name }}</div>
@@ -132,9 +132,9 @@
     <div class="extra content">
       {% if item.status == 'pending' %}
       <div class="ui three buttons" style="width: 100%;">
-        <a class="ui icon primary button" data-tooltip="แก้ไข"
+        <a class="btn-circle btn btn-primary" data-tooltip="แก้ไข"
           href="{{ url_for('items.edit', item_id=item.id, **request.args) }}">
-          <i class="edit icon"></i>
+          <i class="ph ph-pen"></i>
         </a>
 
         <a class="ui icon positive button" onclick="showDeleteModal('{{ item.id }}_confirm')"
@@ -148,11 +148,11 @@
         </a>
       </div>
 
-      <div class="ui modal {{item.id}}_confirm">
-        <div class="header">
+      <div role="dialog" class="modal {{item.id}}_confirm">
+        <div class="text-2xl font-bold">
           บันทึกวัสดุ
         </div>
-        <div class="content">
+        <div class=" modal-box">
           <p>ต้องการบันทึกวัสดุ
             <b>{{ item.name }}</b> หรือไม่?
           </p>
@@ -160,22 +160,21 @@
             และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
             *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
         </div>
-        <div class="actions">
-          <button class="ui black deny button">
+        <div class="modal-action">
+          <button class="btn">
             ยกเลิก
           </button>
-          <a class="ui negative right labeled icon button"
-            href="{{ url_for('items.confirm', item_id=item.id, **request.args) }}">
+          <a class="btn-error btn" href="{{ url_for('items.confirm', item_id=item.id, **request.args) }}">
             ยืนยัน
-            <i class="checkmark icon"></i>
+            <i class="ph ph-check"></i>
           </a>
         </div>
       </div>
       {% else %}
       <div class="ui three buttons" style="width: 100%;">
-        <a class="ui icon primary button" data-tooltip="แก้ไข"
+        <a class="btn-circle btn btn-primary" data-tooltip="แก้ไข"
           href="{{ url_for('items.edit_active_item', item_id=item.id, **request.args) }}">
-          <i class="edit icon"></i>
+          <i class="ph ph-pen"></i>
         </a>
         <a class="ui icon teal button" data-tooltip="รายละเอียด"
           href="{{ url_for('items.detail', item_id=item.id, **request.args) }}">
@@ -191,23 +190,22 @@
       {% endif %}
 
 
-      <div class="ui modal {{item.id}}">
-        <div class="header">
+      <div role="dialog" class="modal {{item.id}}">
+        <div class="text-2xl font-bold">
           ลบวัสดุ
         </div>
-        <div class="content">
+        <div class=" modal-box">
           <p>ต้องการลบวัสดุ
             <b>{{ item.name }}</b>
           </p>
         </div>
-        <div class="actions">
-          <button class="ui black deny button">
+        <div class="modal-action">
+          <button class="btn">
             ยกเลิก
           </button>
-          <a class="ui negative right labeled icon button"
-            href="{{ url_for('items.delete', item_id=item.id, **request.args) }}">
+          <a class="btn-error btn" href="{{ url_for('items.delete', item_id=item.id, **request.args) }}">
             ยืนยัน
-            <i class="checkmark icon"></i>
+            <i class="ph ph-check"></i>
           </a>
         </div>
       </div>

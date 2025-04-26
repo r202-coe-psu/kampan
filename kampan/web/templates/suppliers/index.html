@@ -9,8 +9,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <div class="ui dropdown button labeled icon">
       <i class="wrench icon"></i>
       การจัดการ
@@ -33,13 +33,14 @@
   </div>
 </div>
 {% if suppliers %}
-<div class="ui four cards">
+<div class="grid grid-cols-4 gap-2">
   {% for supplier in paginated_suppliers.items %}
   <div class="card" style="width: 100%;">
-    <div class="content"
+    <div class="modal-box"
       style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
       <div class="left" style="flex: 1;">
-        <div class="header" style="font-size: 2em; font-weight: bold; color: #333;">{{ supplier.get_supplier_name() }}
+        <div class="text-2xl font-bold" style=" font-size: 2em; font-weight: bold; color: #333;">
+          {{ supplier.get_supplier_name() }}
 
         </div>
         <div class="meta" style="font-size: 1.2em; margin-top: 10px;">
@@ -75,28 +76,28 @@
         <div class="" style="margin-top: 50px; text-align: right; ">
           <a class="btn btn-primary"
             href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
-            <div style="font-size: 1.2em;"> <i class="edit icon"></i> แก้ไข </div>
+            <div style="font-size: 1.2em;"> <i class="ph ph-pen"></i> แก้ไข </div>
           </a>
           <a class="ui red button" onclick="showDeleteModal('{{ supplier.id }}')">
-            <div style="font-size: 1.2em;"><i class="trash icon"></i> ลบ </div>
+            <div style="font-size: 1.2em;"><i class="ph ph-trash"></i> ลบ </div>
           </a>
-          <div class="ui modal {{supplier.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{supplier.id}}">
+            <div class="text-2xl font-bold">
               ลบร้านค้า
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการลบร้านค้า
                 <b>{{ supplier.get_supplier_name() }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('suppliers.delete', supplier_id=supplier.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>

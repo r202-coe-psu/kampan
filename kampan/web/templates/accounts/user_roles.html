@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-10 rounded-xl">
+  <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
@@ -22,9 +22,9 @@
           <td class="table-style" data-label="Name">{{ user.get_name() }}</td>
           <td class="table-style" data-label="Email">{{ user.email }}</td>
           <td class="table-style" data-label="Roles">{{ user.roles|join(', ') }}</td>
-          <td class="table-style" data-label="Edit Roles">
+          <td class="table-style flex gap-2" data-label="Edit Roles">
             <a class="ui green icon button" href="{{ url_for('accounts.edit_roles', user_id=user.id) }}">
-              <i class="edit icon"></i>
+              <i class="ph ph-pen"></i>
             </a>
           </td>
         </tr>

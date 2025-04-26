@@ -17,7 +17,7 @@
 
   {% if org_users %}
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-10 rounded-xl">
+    <div class="overflow-x-auto mt-2 rounded-xl">
       <table class="table-auto w-full">
         <thead>
           <tr>
@@ -38,33 +38,33 @@
             org_user.created_date else "-"}}
             </td>
             <td class="table-style">
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('admin.organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
                 style=" color: white; background-color: rgb(59, 115, 199);">
-                <i class="edit icon"></i>
+                <i class="ph ph-pen"></i>
               </a>
-              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
                 onclick="showDeleteModal('{{ org_user.id }}')">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
-              <div class="ui modal {{ org_user.id }}">
-                <div class="header">
+              <div role="dialog" class="modal {{ org_user.id }}">
+                <div class="text-2xl font-bold">
                   ลบสมาชิก
                 </div>
-                <div class="content">
+                <div class=" modal-box">
                   <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
 
 
                   </p>
                 </div>
-                <div class="actions">
-                  <button class="ui black deny button">
+                <div class="modal-action">
+                  <button class="btn">
                     ยกเลิก
                   </button>
-                  <a class="ui negative right labeled icon button"
+                  <a class="btn-error btn"
                     href="{{ url_for('admin.organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
                     ยืนยัน
-                    <i class="checkmark icon"></i>
+                    <i class="ph ph-check"></i>
                   </a>
                 </div>
               </div>

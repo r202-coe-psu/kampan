@@ -11,8 +11,8 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;">
-  <div class="ui secondary menu">
+<form method="post">
+  <div class="flex flex-row w-full justify-between">
     {{form.hidden_tag()}}
     <p style="margin-left:auto;">
       <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
@@ -32,14 +32,15 @@
 <div class="ui grid">
   <div class="sixteen wide column">
     <div class="ui container" style="width: 50%; z-index: indexs -1;">
-      <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;  text-align: center;">
+      <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px; text-align:
+        center;">
         {{ name_chart }}
       </div>
       <div id="chart"></div>
     </div>
   </div>
   <div class="sixteen wide column">
-    <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;">
+    <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px;">
       รายชื่อบุคคลที่ขอเบิก
     </div>
     {% if group_checkouts %}

@@ -15,23 +15,24 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="left menu">
-    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
 
     {{ form.hidden_tag() }}
     {{ renderer.render_field(form.name) }}
-    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_text_area_field(form.description) }}
     {{ renderer.render_fileinput(form.img) }}
     {{ renderer.render_field(form.barcode_id)}}
     <div class="two fields">
-      {{ renderer.render_select(form.categories) }}
+      {{ renderer.render_select_field(form.categories) }}
       {{ renderer.render_field(form.minimum)}}
     </div>
     <div class="two fields">

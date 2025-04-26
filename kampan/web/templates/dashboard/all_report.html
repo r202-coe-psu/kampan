@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-<a class="ui button primary" href="{{ url_for('dashboard.download_all_report',organization_id=organization.id,
+<a class="btn  btn-primary" href="{{ url_for('dashboard.download_all_report',organization_id=organization.id,
    search_quarter=search_quarter if search_quarter else form.quarter.data,
     search_categories=search_categories, search_item=search_item, 
     search_start_date=request.args.get('search_start_date') ,search_end_date=request.args.get('search_end_date')) }}">
@@ -16,21 +16,21 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{form.hidden_tag()}}
-  <div class="equal width fields">
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.SelectField(form.categories) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_select_field(form.categories) }}
   </div>
 
-  <div class="equal width fields">
-    {{ render_form.SelectField(form.quarter) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.quarter) }}
 
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>

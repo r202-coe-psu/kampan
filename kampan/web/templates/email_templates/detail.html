@@ -20,17 +20,17 @@
 
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="right menu">
+  <div class="flex justify-start w-full gap-2">
     <a class="ui primary labeled icon button"
       href="{{ url_for('email_templates.create_or_edit', email_template_id=email_template.id, organization_id=organization.id) }}">
-      <i class="edit icon"></i>
+      <i class="ph ph-pen"></i>
       แก้ไขรูปแบบอีเมล
     </a>
   </div>
@@ -38,7 +38,7 @@
 
 <div class="upload-email-template form" style="display: none;">
   <div class="ui raised segment">
-    <form class="ui form"
+    <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
       action="{{ url_for('email_templates.upload_email_template', organization_id=organization.id) }}"
       enctype="multipart/form-data" method="POST">
       {{ form.csrf_token() }}
@@ -90,13 +90,13 @@
     </div>
     <div class="ui relaxed list">
       <div class="item">
-        <div class="header"><i class="globe icon"></i> องค์กร</div>
+        <div class="text-2xl font-bold"><i class=" globe icon"></i> องค์กร</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
         </div>
       </div>
       <div class="item">
-        <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
+        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
           <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
@@ -104,7 +104,7 @@
         </div>
       </div>
       <div class="item">
-        <div class="header"><i class="archive icon"></i> แผนก</div>
+        <div class="text-2xl font-bold"><i class=" archive icon"></i> แผนก</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
           <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
@@ -112,7 +112,7 @@
         </div>
       </div>
       <div class="item">
-        <div class="header"><i class="user tie icon"></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
+        <div class="text-2xl font-bold"><i class=" ph ph-user"></i></i> หัวหน้าแผนก/ผู้อนุมัติ</div>
         <div class="ui list">
           <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
           <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>

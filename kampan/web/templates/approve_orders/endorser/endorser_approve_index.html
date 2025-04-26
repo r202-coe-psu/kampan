@@ -10,13 +10,13 @@
 
 {% block content %}
 <form method="post">
-  <div class="ui secondary menu">
+  <div class="flex flex-row w-full justify-between">
     <p style="margin-left:auto;">
       {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      {{renderer.datetime_field(form.start_date, calendar_id="start_date")}}
     </p>
     <p style="margin-left:10px;">
-      {{renderer.render_calendar_default(form.end_date, calendar_id="end_date")}}
+      {{renderer.datetime_field(form.end_date, calendar_id="end_date")}}
     </p>
     <p>
       <button type="submit" class="btn btn-primary"

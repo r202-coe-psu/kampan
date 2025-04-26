@@ -21,56 +21,57 @@
 {% block content %}
 
 {% if errors %}
-<div class="ui modal upload_errors">
-  <div class="header">
+<div role="dialog" class="modal upload_errors">
+  <div class="text-2xl font-bold">
     เกิดปัญหา
   </div>
-  <div class="scrolling content red">
+  <div class=" scrolling content red">
     {% for error in errors %}
     <span class="ui error text">
       <b>- {{ error }}</b><br>
     </span>
     {% endfor %}
   </div>
-  <div class="actions">
-    <button class="ui negative right labeled icon button">
+  <div class="modal-action">
+    <button class="btn-error btn">
       ยืนยัน
-      <i class="checkmark icon"></i>
+      <i class="ph ph-check"></i>
     </button>
   </div>
 </div>
 {% endif %}
 
 {% if upload_completed %}
-<div class="ui modal upload_completed">
-  <div class="header">
+<div role="dialog" class="modal upload_completed">
+  <div class="text-2xl font-bold">
     ไฟล์นำเข้าวัสดุอัพโหลดเรียบร้อย
   </div>
-  <div class="content red">
+  <div class=" content red">
     <span class="ui text">
       <b>นำเข้าวัสดุทั้งหมดเรียบร้อย</b>
     </span>
   </div>
-  <div class="actions">
-    <a class="ui positive right labeled icon button"
+  <div class="modal-action">
+    <a class="btn btn-success"
       href="{{ url_for('item_checkouts.bill_checkout',organization_id=organization.id, order_id=order.id) }}">
       ยืนยัน
-      <i class="checkmark icon"></i>
+      <i class="ph ph-check"></i>
     </a>
   </div>
 </div>
 {% endif %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+<div class="flex flex-row justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary"
       href="{{ url_for('item_checkouts.bill_checkout',organization_id=organization.id, order_id=order.id) }}">
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     {{ renderer.render_fileinput(form.upload_file) }}
     <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>

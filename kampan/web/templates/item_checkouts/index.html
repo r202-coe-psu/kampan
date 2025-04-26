@@ -11,16 +11,16 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{form.hidden_tag()}}
-  <div class="equal width fields">
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.SelectField(form.categories) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.item) }}
+    {{ renderer.render_select_field(form.categories) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
@@ -53,7 +53,7 @@
         <td class="table-style" data-label="Objective"> <a class="primary button"
             href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
             style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
-            <i class="eye icon"></i>
+            <i class="ph ph-eye"></i>
           </a><a
             href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
             class="ui secondary text" style="color: black;">{{ checkout.order.description }}</a>

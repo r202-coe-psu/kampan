@@ -14,17 +14,18 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="left menu">
-    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    {{ renderer.render_select(form.status) }}
+    {{ renderer.render_select_field(form.status) }}
     {{ renderer.render_search_multiple_select(form.categories) }}
     <button class="btn btn-primary" type="submit">ดาวน์โหลด</button>
   </form>

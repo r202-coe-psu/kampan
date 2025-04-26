@@ -61,14 +61,14 @@
 
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
-  <div class="content" style="color: #292d33;">
+  <div class="modal-box" style="color: #292d33;">
     <div class="ui medium header"> คำสั่งเบิกวัสดุรายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
   </div>
 
   <form method="post">
-    <div class="ui secondary menu" style="text-align:center;">
+    <div class="flex flex-row w-full justify-between" style="text-align:center;">
       {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
+      {{renderer.datetime_field(form.start_date, calendar_id="start_date")}}
       <button type="submit" class="btn btn-primary" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>
@@ -76,7 +76,7 @@
 </div>
 {% if daily_item_orders %}
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-10 rounded-xl">
+  <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
@@ -106,45 +106,44 @@
           <td class="table-style" data-label="Bill">
             <a class="btn btn-primary" href="{{ url_for('admin.item_checkouts.bill_checkout', order_id=order.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="eye icon"></i>
+              <i class="ph ph-eye"></i>
             </a>
           </td>
           {% if order.approval_status == "pending" %}
           <td class="table-style" data-label="Status" class="text-error">
-            <span class="ui red text">รออนุมัติ</span>
+            <span class="text-error">รออนุมัติ</span>
           </td>
           {% else %}
           <td class="table-style" data-label="Status" class="text-success">
-            <span class="ui green text">อนุมัติ</span>
+            <span class="text-success">อนุมัติ</span>
           </td>
           {% endif %}
           <td class="table-style">
-            <a class="ui icon button" href="{{ url_for('admin.item_orders.edit', order_id=order.id) }}"
+            <a class="btn btn-circle" href="{{ url_for('admin.item_orders.edit', order_id=order.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
+              <i class="ph ph-pen"></i>
             </a>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+            <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
               onclick="showDeleteModal('{{ order.id }}')">
-              <i class="trash icon"></i>
+              <i class="ph ph-trash"></i>
             </a>
-            <div class="ui modal {{order.id}}">
-              <div class="header">
-                ลบคำสั่งเบิกวัสดุ
-              </div>
-              <div class="content">
+            <div role="dialog" class="modal {{order.id}}">
+              <div class=" modal-box">
+                <div class="text-2xl font-bold">
+                  ลบคำสั่งเบิกวัสดุ
+                </div>
                 <p>ต้องการลบคำสั่งเบิกวัสดุ
                   <b>{{ order.description }}</b>
                 </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('admin.item_orders.delete', order_id=order.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
+                <div class="modal-action">
+                  <button class="btn">
+                    ยกเลิก
+                  </button>
+                  <a class="btn-error btn" href="{{ url_for('admin.item_orders.delete', order_id=order.id) }}">
+                    ยืนยัน
+                    <i class="ph ph-check"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </td>

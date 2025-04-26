@@ -34,7 +34,7 @@ def index():
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
-    form.categories.choices = [("", "หมวดหมู่")] + [
+    form.categories.choices = [("", "หมวดหมู่ทั้งหมด")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
             organization=organization, status="active"

@@ -54,7 +54,7 @@ action_button_onclick: ฟังก์ชัน javascript สำหรับป
 ** เลือกระหว่าง href หรือ onclick ว่าจะให้เป็นการ href หรือจะเป็นการใช้ฟังก์ชัน onclick
 ระบบจะเรนเดอร์ href ก่อนหากใส่มาทั้ง 2
 #}
-<dialog id="{{ id }}" class="modal modal-bottom sm:modal-middle">
+<dialog id="{{ id }}" role="dialog" class="modal modal-bottom sm:modal-middle">
   <div class="modal-box {{ class_ }}">
     {% if close_at_corner %}
     {% if cancel_button_href %}

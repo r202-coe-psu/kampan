@@ -8,7 +8,7 @@
 {% block breadcrumbs %}
 <a class="section"
   href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกวัสดุ</a>
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 <div class="active section">
   รายละเอียดคำสั่งเบิกวัสดุ
 </div>
@@ -17,7 +17,7 @@
 {% block content %}
 {% if checkouts %}
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-10 rounded-xl">
+  <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
@@ -50,11 +50,11 @@
           <td class="table-style" data-label="Quantity">{{ checkout.quantity }}</td>
           {% if checkout.get_amount_pieces() > checkout.item.get_amount_pieces() %}
           <td class="table-style" data-label="Status" class="text-error">
-            <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
+            <span class="text-error"> {{ checkout.item.get_items_quantity() }}</span>
           </td>
           {% else %}
           <td class="table-style" data-label="Status" class="text-success">
-            <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
+            <span class="text-success"> {{ checkout.item.get_items_quantity() }}</span>
           </td>
           {% endif %}
 

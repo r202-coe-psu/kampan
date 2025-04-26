@@ -10,31 +10,31 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <a class="ui primary labeled icon button" href="{{ url_for('lost_breaks.add', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มวัสดุชำรุด/สูญหาย
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{ form.hidden_tag() }}
-    {{ render_form.InputField(form.name) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
   {% if lost_break_items %}
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-10 rounded-xl">
+    <div class="overflow-x-auto mt-2 rounded-xl">
       <table class="table-auto w-full">
         <thead>
           <tr>
@@ -74,15 +74,15 @@
               {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
             </td>
             <td class="table-style">
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}"
                 style=" color: white; background-color: rgb(59, 115, 199);">
-                <i class="edit icon"></i>
+                <i class="ph ph-pen"></i>
               </a>
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}"
                 style="color: white; background-color: rgb(192, 55, 55);">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
             </td>
           </tr>
@@ -109,32 +109,32 @@
               {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
             </td>
             <td class="table-style">
-              <a class="ui icon button"
+              <a class="btn btn-circle"
                 href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}"
                 style=" color: white; background-color: rgb(59, 115, 199);">
-                <i class="edit icon"></i>
+                <i class="ph ph-pen"></i>
               </a>
-              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
                 onclick="showDeleteModal('{{ item.id }}')">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
-              <div class="ui modal {{item.id}}">
-                <div class="header">
+              <div role="dialog" class="modal {{item.id}}">
+                <div class="text-2xl font-bold">
                   ลบข้อมูลวัสดุชำรุด หรือ สูญหาย
                 </div>
-                <div class="content">
+                <div class=" modal-box">
                   <p>ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย
                     <b>{{ item.item.name }}</b>
                   </p>
                 </div>
-                <div class="actions">
-                  <button class="ui black deny button">
+                <div class="modal-action">
+                  <button class="btn">
                     ยกเลิก
                   </button>
-                  <a class="ui negative right labeled icon button"
+                  <a class="btn-error btn"
                     href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
                     ยืนยัน
-                    <i class="checkmark icon"></i>
+                    <i class="ph ph-check"></i>
                   </a>
                 </div>
               </div>

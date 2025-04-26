@@ -11,83 +11,78 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
-  </div>
-  <div class="right menu">
     {% if current_user.has_organization_roles("admin") %}
 
     <a href="{{ url_for('item_checkouts.upload_file', organization_id=organization.id, order_id=order.id) }}"
       class="btn btn-primary">อัปโหลดไฟล์</a>
     {% endif %}
-    {% if order.status ==
-    "pending"
-    %}
-    <a class="ui button primary" onclick="showModal('email')">
-      ยืนยันการเบิกพัสดุ
-    </a>
-    {% endif %}
+
   </div>
 </div>
-<div class="ui ordered steps" style="width: 100%;">
-  <a class="completed step"
-    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-    <div class="content">
-      <div class="title">เพิ่มคำสั่งเบิก</div>
-      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
-    </div>
-  </a>
-  <a class="completed step"
-    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">เลือกพัสดุ</div>
-      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
-    </div>
-  </a>
-  <div class="{{'active' if order.status == 'pending' else 'completed'}} step">
-    <div class="content">
-      <div class="title">ยืนยันการเบิกพัสดุ</div>
-      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
-    </div>
-  </div>
-</div>
+
 {% if checkouts %}
 {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
 %}
 {% if order.created_by == current_user %}
-<div class="ui modal email">
-  <div class="header">
+<div role="dialog" class="modal email">
+  <div class="text-2xl font-bold">
     ยืนยันการเบิกพัสดุ
   </div>
-  <div class="content">
+  <div class=" modal-box">
     <p>ทำการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
 
     </p>
   </div>
-  <div class="actions">
-    <button class="ui black deny button">
+  <div class="modal-action">
+    <button class="btn">
       ยกเลิก
     </button>
-    <a class="ui positive right labeled icon button"
+    <a class="btn btn-success"
       href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}">
       ยืนยัน
-      <i class="checkmark icon"></i>
+      <i class="ph ph-check"></i>
     </a>
   </div>
 </div>
 {% endif %}
 {% endif %}
 
-<div style="display: flex; width: 100%; justify-content: flex-end; padding: 0 0 1em 0"><b>
-    <span class="text ui right"> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</span>
-  </b>
-</div>
+
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-10 rounded-xl">
+  <div class="flex justify-end w-full gap-2">
+
+    {% if order.status ==
+    "pending"
+    %}
+    <a class="btn  btn-success" onclick="showModal('email')">
+      ยืนยันการเบิกพัสดุ
+    </a>
+    {% endif %}
+  </div>
+  <div class="steps steps-vertical lg:steps-horizontal w-full py-6">
+    <a class="step-primary step"
+      href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+      เพิ่มคำสั่งเบิก
+    </a>
+    <a class="step-primary step"
+      href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+      เลือกพัสดุ
+    </a>
+    <div class="{{'step-primary' if order.status == 'pending' else 'completed'}} step">
+      ยืนยันการเบิกพัสดุ
+    </div>
+  </div>
+  <div class="flex text-end w-full justify-end ">
+    <b> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</b>
+
+  </div>
+  <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
@@ -135,33 +130,33 @@
           %}
           {% if order.created_by == current_user %}
           <td class="table-style">
-            <a class="ui icon button"
+            <a class="btn btn-circle"
               href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
               style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
+              <i class="ph ph-pen"></i>
             </a>
-            <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+            <a class="btn btn-circle {{ 'disabled' if order.approval_status == 'approved' else ''}}"
               style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
-              <i class="trash icon"></i>
+              <i class="ph ph-trash"></i>
             </a>
-            <div class="ui modal {{checkout.id}}">
-              <div class="header">
-                ลบคำสั่งเบิกวัสดุ
-              </div>
-              <div class="content">
+            <div role="dialog" class="modal {{checkout.id}}">
+              <div class=" modal-box">
+                <div class="text-2xl font-bold">
+                  ลบคำสั่งเบิกวัสดุ
+                </div>
                 <p>ต้องการลบคำสั่งเบิกวัสดุ
                   <b>{{ checkout.item.name }}</b>
                 </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
+                <div class="modal-action">
+                  <button class="btn">
+                    ยกเลิก
+                  </button>
+                  <a class="btn-error btn"
+                    href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
+                    ยืนยัน
+                    <i class="ph ph-check"></i>
+                  </a>
+                </div>
               </div>
             </div>
           </td>

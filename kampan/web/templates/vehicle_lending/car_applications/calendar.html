@@ -11,11 +11,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
     <a class="ui primary labeled icon button"
       href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มคำขอใช้รถยนต์
     </a>
   </div>

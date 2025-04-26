@@ -15,32 +15,32 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="right menu">
+  <div class="flex justify-start w-full gap-2">
     <a class="ui primary labeled icon button"
       href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มสมาชิก
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{form.hidden_tag()}}
-    {{render_form.SelectField(form.user)}}
-    {{render_form.SelectField(form.role)}}
-    {{render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{renderer.render_select_field(form.user)}}
+    {{renderer.render_select_field(form.role)}}
+    {{renderer.date_range_field(form.start_date, form.end_date)}}
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
@@ -48,7 +48,7 @@
 
   {% if paginated_division_users.pages >= 1 %}
   <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-10 rounded-xl">
+    <div class="overflow-x-auto mt-2 rounded-xl">
       <table class="table-auto w-full">
         <thead>
           <tr>
@@ -67,28 +67,28 @@
             division_user.created_date else "-"}}
             </td>
             <td class="table-style">
-              <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
+              <a class="btn btn-circle" style="color: white; background-color: rgb(192, 55, 55);"
                 onclick="showDeleteModal('{{ division_user.id }}')">
-                <i class="trash icon"></i>
+                <i class="ph ph-trash"></i>
               </a>
-              <div class="ui modal {{ division_user.id }}">
-                <div class="header">
+              <div role="dialog" class="modal {{ division_user.id }}">
+                <div class="text-2xl font-bold">
                   ลบสมาชิก
                 </div>
-                <div class="content">
+                <div class=" modal-box">
                   <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
 
 
                   </p>
                 </div>
-                <div class="actions">
-                  <button class="ui black deny button">
+                <div class="modal-action">
+                  <button class="btn">
                     ยกเลิก
                   </button>
-                  <a class="ui negative right labeled icon button" href="{{ url_for('divisions.remove_division_user', 
+                  <a class="btn-error btn" href="{{ url_for('divisions.remove_division_user', 
                 organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)}}">
                     ยืนยัน
-                    <i class="checkmark icon"></i>
+                    <i class="ph ph-check"></i>
                   </a>
                 </div>
               </div>
