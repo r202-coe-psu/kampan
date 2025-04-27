@@ -1,6 +1,5 @@
 from atexit import register
 from calendar import calendar
-from crypt import methods
 from pyexpat import model
 from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request

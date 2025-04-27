@@ -9,32 +9,33 @@
       <p class="text-center">แดชบอร์ด</p>
     </div>
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/summary' in request.path or '/all_report' in request.path or '/item_report_quarter' in
+        request.path or '/item_report_custom' in request.path %} open {% endif %}>
         <summary>
-          <i class="ph ph-size ph-briefcase"></i> แดชบอร์ด
+          <i class="ph ph-chart-bar"></i> แดชบอร์ด
         </summary>
         <ul>
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/summary' in request.path else '' }}"
               href="{{ url_for('dashboard.dashboard', organization_id = organization.id) }}">
               แดชบอร์ด
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/all_report' in request.path else '' }}"
               href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">
               รายงานวัสดุคงเหลือ
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/item_report_quarter' in request.path else '' }}"
               href="{{ url_for('dashboard.item_report_quarter', organization_id = organization.id) }}">
               รายงานวัสดุคงเหลือ
               <br> ตามช่วงไตรมาส
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/item_report_custom' in request.path else '' }}"
               href="{{ url_for('dashboard.item_report_custom', organization_id = organization.id) }}">
               รายงานเฉพาะวัสดุ <br> ตามช่วงที่กำหนด
             </a>
@@ -184,7 +185,8 @@
 
     {% if current_user.has_organization_roles("admin") and organization %}
     <li>
-      <details {% if '/divisions/' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/divisions/' in request.path or '/organizaiton_users' in request.path or '/detail' in request.path
+        %} open {% endif %}>
         <summary>
           <i class="ph ph-size ph-briefcase"></i> จัดการองค์กร
         </summary>
@@ -196,13 +198,13 @@
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/organizaiton_users' in request.path else '' }}"
               href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">
               สมาชิกขององค์กร
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/detail' in request.path else '' }}"
               href="{{ url_for('organizations.detail', organization_id = organization.id)}}">
               รายละเอียดองค์กร
             </a>
@@ -219,7 +221,7 @@
       </a>
     </li>
     <li>
-      <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
+      <a class="{{ 'menu-active' if '/accounts' in request.path else '' }}"
         href="{{ url_for('accounts.index',organization_id=organization.id) }}">
         <i class="ph ph-size ph-house-line"></i> ข้อมูลผู้ใช้งาน
       </a>
@@ -227,7 +229,6 @@
     {% endif %}
 
     <div class="mt-auto"></div>
-    <li class="menu-title text-neutral">ตั้งค่าบัญชี</li>
     <div class="dropdown dropdown-top dropdown-end">
       <div class="rounded-field w-full px-2 justify-between">
         <div class="flex items-center gap-2 justify-between">

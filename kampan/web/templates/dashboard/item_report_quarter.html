@@ -14,144 +14,106 @@ search_quarter=search_quarter if search_quarter else form.quarter.data) }}">
 
 
 {% block content %}
-<form method="post">
-  <div class="flex flex-row w-full justify-between">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row w-full justify-between gap-2">
     {{form.hidden_tag()}}
-    <p style="margin-left:auto;">
-      <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
-      {{ form.item(class="ui search dropdown") }}
-    </p>
-    <p style="margin-left:10px;">
-      <label style="font-weight: bold; padding-right: 10px;">{{ form.quarter.label }}</label>
-      {{ form.quarter(class="ui search dropdown") }}
-    </p>
+    {{ renderer.render_search_select_field(form.item) }}
+    {{ renderer.render_select_field(form.quarter) }}
 
-    <p>
-      <button type="submit" class="btn btn-primary">ยืนยัน</button>
-    </p>
+  </div>
+  <div class="flex flex-row w-full justify-end gap-2">
+    <a class="btn" href='{{  url_for("dashboard.item_report_quarter",organization_id=organization.id )}}'>
+      ล้างการค้นหา
+    </a>
+    <button type="submit" class="btn btn-primary">ยืนยัน</button>
   </div>
 </form>
 {% if data %}
-<div class="ui container" style="width: 100%;">
-  {% if data %}
-  <table class="table-auto w-full">
-    <thead>
-      <tr>
-        <th class="table-style">ลำดับ</th>
-        <th class="table-style">วันที่</th>
-        <th class="table-style">การดำเนินการ</th>
-        <th class="table-style">ร้าน</th>
-        <th class="table-style">จำนวน</th>
-        <th class="table-style">หน่วยนับ</th>
-        <th class="table-style">ราคาต่อหน่วย</th>
-        <th class="table-style">เป็นเงิน</th>
-        <th class="table-style">คงเหลือ</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row, amount_item in data %}
-      <tr>
-        {% if row._cls == "ItemSnapshot" %}
-        <td class="table-style">{{ loop.index }}</td>
-        <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
-        <td class="table-style">ยกยอด</td>
-        <td class="table-style"></td>
-        <td class="table-style">{{ row.amount_pieces if row.item.item_format == "one to many" else row.amount }}</td>
-        <td class="table-style">
-          {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
-        </td>
-        <td class="table-style">{{ row.last_price_per_piece if row.last_price_per_piece else "-" }}</td>
-        <td class="table-style">{{ row.remaining_balance if row.remaining_balance else "-" }}</td>
-        <td class="table-style">{{ amount_item }}</td>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    {% if data %}
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ลำดับ</th>
+          <th class="table-style">วันที่</th>
+          <th class="table-style">การดำเนินการ</th>
+          <th class="table-style">ร้าน</th>
+          <th class="table-style">จำนวน</th>
+          <th class="table-style">หน่วยนับ</th>
+          <th class="table-style">ราคาต่อหน่วย</th>
+          <th class="table-style">เป็นเงิน</th>
+          <th class="table-style">คงเหลือ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row, amount_item in data %}
+        <tr>
+          {% if row._cls == "ItemSnapshot" %}
+          <td class="table-style">{{ loop.index }}</td>
+          <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+          <td class="table-style">ยกยอด</td>
+          <td class="table-style"></td>
+          <td class="table-style">{{ row.amount_pieces if row.item.item_format == "one to many" else row.amount }}</td>
+          <td class="table-style">
+            {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
+          </td>
+          <td class="table-style">{{ row.last_price_per_piece if row.last_price_per_piece else "-" }}</td>
+          <td class="table-style">{{ row.remaining_balance if row.remaining_balance else "-" }}</td>
+          <td class="table-style">{{ amount_item }}</td>
 
-        {% elif row._cls == "CheckoutItem" %}
-        <td class="table-style">{{ loop.index }}</td>
-        <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
-        <td class="table-style">เบิกโดย {{ row.user.get_name() }}</td>
-        <td class="table-style"></td>
-        <td class="table-style">-{{ row.quantity }}</td>
-        <td class="table-style">
-          {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
-        </td>
-        <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
-        <td class="table-style">-{{ row.get_all_price() }}</td>
-        <td class="table-style">{{ amount_item }}</td>
+          {% elif row._cls == "CheckoutItem" %}
+          <td class="table-style">{{ loop.index }}</td>
+          <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+          <td class="table-style">เบิกโดย {{ row.user.get_name() }}</td>
+          <td class="table-style"></td>
+          <td class="table-style">-{{ row.quantity }}</td>
+          <td class="table-style">
+            {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
+          </td>
+          <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
+          <td class="table-style">-{{ row.get_all_price() }}</td>
+          <td class="table-style">{{ amount_item }}</td>
 
 
-        {% elif row._cls == "Inventory" %}
+          {% elif row._cls == "Inventory" %}
 
-        <td class="table-style">{{ loop.index }}</td>
-        <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
-        <td class="table-style">เติมวัสดุ</td>
-        <td class="table-style">{{ row.registration.supplier.get_supplier_name() }}</td>
-        <td class="table-style">{{ row.quantity }}</td>
-        <td class="table-style">
-          {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
-        </td>
-        <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
-        <td class="table-style">{{ row.get_all_price() }}</td>
-        <td class="table-style">{{ amount_item }}</td>
+          <td class="table-style">{{ loop.index }}</td>
+          <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+          <td class="table-style">เติมวัสดุ</td>
+          <td class="table-style">{{ row.registration.supplier.get_supplier_name() }}</td>
+          <td class="table-style">{{ row.quantity }}</td>
+          <td class="table-style">
+            {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
+          </td>
+          <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
+          <td class="table-style">{{ row.get_all_price() }}</td>
+          <td class="table-style">{{ amount_item }}</td>
 
-        {% elif row._cls == "LostBreakItem" %}
-        <td class="table-style">{{ loop.index }}</td>
-        <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
-        <td class="table-style">ชำรุด {{ row.description }}</td>
-        <td class="table-style"></td>
-        <td class="table-style">-{{ row.quantity }}</td>
-        <td class="table-style">
-          {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
-        </td>
-        <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
-        <td class="table-style">-{{ row.get_all_price() }}</td>
-        <td class="table-style">{{ amount_item }}</td>
+          {% elif row._cls == "LostBreakItem" %}
+          <td class="table-style">{{ loop.index }}</td>
+          <td class="table-style">{{ row.created_date.strftime("%d/%m/%Y") }}</td>
+          <td class="table-style">ชำรุด {{ row.description }}</td>
+          <td class="table-style"></td>
+          <td class="table-style">-{{ row.quantity }}</td>
+          <td class="table-style">
+            {{ row.item.piece_unit if row.item.item_format == "one to many" else row.item.set_unit }}
+          </td>
+          <td class="table-style">{{ row.item.get_last_price_per_piece() }}</td>
+          <td class="table-style">-{{ row.get_all_price() }}</td>
+          <td class="table-style">{{ amount_item }}</td>
 
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="flex w-full justify-center py-6 text-xl">ไม่มีคำขอใหม่ในขณะนี้</div>
-  {% endif %}
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="flex w-full justify-center py-6 text-xl">ไม่มีคำขอใหม่ในขณะนี้</div>
+    {% endif %}
+  </div>
 </div>
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock content %}
-
-
-
-{% block additional_js %}
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
-{% endblock %}

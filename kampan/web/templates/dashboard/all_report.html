@@ -30,88 +30,56 @@
 
   </div>
   <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("dashboard.all_report",organization_id=organization.id )}}'>
+        ล้างการค้นหา
+      </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
 {% if items_snapshot %}
-<div class="ui container" style="width: 100%;">
-  <table class="table-auto w-full">
-    <thead>
-      <tr>
-        <th class="table-style">ลำดับ</th>
-        <th class="table-style">ชื่อวัสดุ</th>
-        <th class="table-style">หมวดหมู่</th>
-        <th class="table-style">คงเหลือ (หน่วยนับใหญ่)</th>
-        <th class="table-style">หน่วยนับใหญ่</th>
-        <th class="table-style">คงเหลือ (หน่วยนับเล็ก)</th>
-        <th class="table-style">หน่วยนับเล็ก</th>
-        <th class="table-style">ราคาหน่วยใหญ่</th>
-        <th class="table-style">ราคาหน่วยเล็ก</th>
-        <th class="table-style">รวมเป็นเงิน</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item_snapshot in items_snapshot %}
-      <tr>
-        <td class="table-style">{{ loop.index }}</td>
-        <td class="table-style">{{ item_snapshot.item.name }}</td>
-        <td class="table-style">{{ item_snapshot.item.categories.name }}</td>
-        <td class="table-style">{{ item_snapshot.amount }}</td>
-        <td class="table-style">{{ item_snapshot.item.set_unit }}</td>
-        <td class="table-style">{{ (item_snapshot.get_amount_pieces()) if
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ลำดับ</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          <th class="table-style">หมวดหมู่</th>
+          <th class="table-style">คงเหลือ (หน่วยนับใหญ่)</th>
+          <th class="table-style">หน่วยนับใหญ่</th>
+          <th class="table-style">คงเหลือ (หน่วยนับเล็ก)</th>
+          <th class="table-style">หน่วยนับเล็ก</th>
+          <th class="table-style">ราคาหน่วยใหญ่</th>
+          <th class="table-style">ราคาหน่วยเล็ก</th>
+          <th class="table-style">รวมเป็นเงิน</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item_snapshot in items_snapshot %}
+        <tr>
+          <td class="table-style">{{ loop.index }}</td>
+          <td class="table-style">{{ item_snapshot.item.name }}</td>
+          <td class="table-style">{{ item_snapshot.item.categories.name }}</td>
+          <td class="table-style">{{ item_snapshot.amount }}</td>
+          <td class="table-style">{{ item_snapshot.item.set_unit }}</td>
+          <td class="table-style">{{ (item_snapshot.get_amount_pieces()) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td class="table-style">{{ (item_snapshot.item.piece_unit) if
+          <td class="table-style">{{ (item_snapshot.item.piece_unit) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td class="table-style">{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
-        <td class="table-style">{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
+          <td class="table-style">{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
+          <td class="table-style">{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-        <td class="table-style">{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          <td class="table-style">{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock content %}
-
-
-
-{% block additional_js %}
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
-{% endblock %}

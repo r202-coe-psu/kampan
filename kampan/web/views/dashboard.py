@@ -718,7 +718,7 @@ def dashboard():
         if item.minimum >= item.get_amount_pieces():
             notifications += 1
     return render_template(
-        "/dashboard/dashboard.html",
+        "/dashboard/summary.html",
         organization=organization,
         notifications=notifications,
         orders=orders,
