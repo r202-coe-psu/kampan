@@ -174,7 +174,7 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
+      <a class="{{ 'menu-active' if '/lost_breaks/' in request.path else '' }}"
         href="{{ url_for('lost_breaks.index', organization_id = organization.id) }}">
         <i class="ph ph-image-broken"></i>
         วัสดุชำรุด/สูญหาย
@@ -184,13 +184,13 @@
 
     {% if current_user.has_organization_roles("admin") and organization %}
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/divisions/' in request.path or '/work_categories' in request.path %} open {% endif %}>
         <summary>
           <i class="ph ph-size ph-briefcase"></i> จัดการองค์กร
         </summary>
         <ul>
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/divisions/' in request.path else '' }}"
               href="{{ url_for('divisions.index', organization_id = organization.id)}}">
               แผนกทั้งหมด
             </a>

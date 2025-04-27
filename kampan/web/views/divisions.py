@@ -19,10 +19,10 @@ def index():
     ).first()
     divisions = models.Division.objects(status="active", organization=organization)
     form = forms.divisions.SearchDivisionStartEndDateForm()
-    [
-        form.name.choices.append((division.id, f"{division.name}"))
-        for division in divisions
+    form.name.choices = [("", "ทั้งหมด")] + [
+        (str(division.id), f"{division.name}") for division in divisions
     ]
+
     if form.name.data:
         form.name.data = form.name.data
     else:
@@ -191,13 +191,11 @@ def users(division_id):
     ).first()
     form = forms.organizations.SearchUserForm()
     division_users = division.get_division_users()
-
-    [
-        form.user.choices.append(
-            (division_user.id, f"{division_user.display_fullname()}")
-        )
+    form.user.choices = [("", "ทั้งหมด")] + [
+        (str(division_user.id), f"{division_user.display_fullname()}")
         for division_user in division_users
     ]
+
     if form.user.data:
         form.user.data = form.user.data
     else:

@@ -62,7 +62,9 @@ class OrganizationRoleEditForm(FlaskForm):
 
 
 class OrgnaizationAddMemberForm(OrganizationRoleEditForm):
-    members = fields.SelectMultipleField("Select Members")
+    members = fields.SelectField(
+        "เลือกสมาชิก",
+    )
 
 
 class AdminOrganizationEditForm(BaseOrganizationForm):
@@ -80,14 +82,14 @@ class SearchUserForm(FlaskForm):
     )
     role = fields.SelectField(
         "ตำแหน่ง",
-        choices=[("", "Role")] + models.organizations.ORGANIZATION_ROLES,
+        choices=[("", "ทั้งหมด")] + models.organizations.ORGANIZATION_ROLES,
         validate_choice=False,
         validators=None,
         render_kw={"placeholder": "role"},
     )
     user = fields.SelectField(
         "สมาชิก",
-        choices=[("", "User")],
+        choices=[("", "ทั้งหมด")],
         validate_choice=False,
         validators=None,
         render_kw={"placeholder": "user"},

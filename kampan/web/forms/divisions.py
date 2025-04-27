@@ -33,9 +33,11 @@ class DivisionForm(BaseDivionForm):
 class SearchDivisionStartEndDateForm(FlaskForm):
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
+        validators=[validators.Optional()],
     )
     end_date = fields.DateField(
         "วันที่สุดท้าย",
+        validators=[validators.Optional()],
     )
     name = fields.SelectField(
         "แผนก",

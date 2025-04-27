@@ -12,9 +12,8 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="ui primary labeled icon button"
-      href="{{ url_for('divisions.create_or_edit', organization_id=organization.id) }}">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary" href="{{ url_for('divisions.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มแผนก
     </a>
@@ -29,93 +28,96 @@
   </div>
 
   <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("divisions.index", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
-  {% if divisions %}
-  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-2 rounded-xl">
-      <table class="table-auto w-full">
-        <thead>
-          <tr>
-
-            <th class="table-style">ชื่อผู้ใช้งาน</th>
-            <th class="table-style">คำอธิบาย</th>
-            <th class="table-style">สมาชิก/เพิ่มสมาชิก</th>
-            <th class="table-style">รายละเอียด/แก้ไข/ลบข้อมูล</th>
-
-          </tr>
-        </thead>
-        <tbody>
-          {% for division in paginated_divisions.items %}
-          <tr>
-            <td class="table-style" data-label="Name">{{ division.name }}</td>
-            <td class="table-style" data-label="Description">{{ division.description }}</td>
-
-            <td class="table-style">
-              <a class="btn btn-circle btn-primary" style=" color: white;"
-                href="{{ url_for('divisions.users', division_id=division.id ,organization_id=organization.id) }}">
-                <i class="users icon"></i>
-              </a>
-              <a class="btn btn-circle btn-primary" style=" color: white;"
-                href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
-                <i class="user plus icon"></i>
-              </a>
-            </td>
-
-            <td class="table-style">
-              <a class="btn btn-circle btn-primary" style=" color: white;"
-                href="{{ url_for('divisions.detail', organization_id=organization.id, division_id=division.id ) }}">
-                <i class="ph ph-list-magnifying-glass"></i>
-              </a>
-              <a class="btn btn-circle btn-primary" style=" color: white;"
-                href="{{ url_for('divisions.create_or_edit', organization_id=organization.id, division_id=division.id ) }}">
-                <i class="ph ph-pen"></i>
-              </a>
-              <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division.id }}')">
-                <i class="ph ph-trash"></i>
-              </a>
-              <div role="dialog" class="modal {{division.id}}">
-                <div class="text-2xl font-bold">
-                  ลบคำสั่งแผนก
-                </div>
-                <div class=" modal-box">
-                  <p>ต้องการลบคำสั่งแผนก
-                    <b>{{ division.description }}</b>
-                  </p>
-                </div>
-                <div class="modal-action">
-                  <button class="btn">
-                    ยกเลิก
-                  </button>
-                  <a class="btn-error btn"
-                    href="{{ url_for('divisions.delete',division_id=division.id, organization_id=organization.id )}}">
-                    ยืนยัน
-                    <i class="ph ph-check"></i>
-                  </a>
-                </div>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% set params=dict(request.args) %}
-      {% if 'page' in params %}
-      {% set _dummy=params.pop('page') %}
-      {% endif %}
-      {% if paginated_divisions.pages != 1 %}
-
-      {{ paginated.render_pagination(paginated_divisions,"item_orders.index")}}
-
-      {% endif %}
-    </div>
-  </div>
-  {% else %}
-  <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% endif %}
 </form>
+{% if divisions %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">สมาชิก/เพิ่มสมาชิก</th>
+          <th class="table-style">รายละเอียด/แก้ไข/ลบข้อมูล</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        {% for division in paginated_divisions.items %}
+        <tr>
+          <td class="table-style" data-label="Name">{{ division.name }}</td>
+          <td class="table-style" data-label="Description">{{ division.description }}</td>
+
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('divisions.users', division_id=division.id ,organization_id=organization.id) }}">
+              <i class="ph ph-user-list"></i>
+            </a>
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
+              <i class="ph ph-user-circle-plus"></i>
+            </a>
+          </td>
+
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('divisions.detail', organization_id=organization.id, division_id=division.id ) }}">
+              <i class="ph ph-list-magnifying-glass"></i>
+            </a>
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('divisions.create_or_edit', organization_id=organization.id, division_id=division.id ) }}">
+              <i class="ph ph-pen"></i>
+            </a>
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            <div role="dialog" class="modal {{division.id}}">
+              <div class="text-2xl font-bold">
+                ลบคำสั่งแผนก
+              </div>
+              <div class=" modal-box">
+                <p>ต้องการลบคำสั่งแผนก
+                  <b>{{ division.description }}</b>
+                </p>
+              </div>
+              <div class="modal-action">
+                <button class="btn">
+                  ยกเลิก
+                </button>
+                <a class="btn-error btn"
+                  href="{{ url_for('divisions.delete',division_id=division.id, organization_id=organization.id )}}">
+                  ยืนยัน
+                  <i class="ph ph-check"></i>
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_divisions.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_divisions,"item_orders.index")}}
+
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

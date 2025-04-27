@@ -16,14 +16,14 @@
 
 {% block content %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="flex justify-start w-full gap-2">
-    <a class="ui primary labeled icon button"
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มสมาชิก
@@ -40,37 +40,40 @@
   </div>
 
   <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("divisions.users", division_id=division.id ,organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 
-
-  {% if paginated_division_users.pages >= 1 %}
-  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-2 rounded-xl">
-      <table class="table-auto w-full">
-        <thead>
-          <tr>
-            <th class="table-style">ชื่อสมาชิก</th>
-            <th class="table-style">ตำแหน่ง</th>
-            <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
-            <th class="table-style">ลบสมาชิก</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for division_user in paginated_division_users.items %}
-          <tr>
-            <td class="table-style" data-label="Organization">{{ division_user.display_fullname() }}</td>
-            <td class="table-style" data-label="Roles">{{ division_user.display_roles() }}</td>
-            <td class="table-style" data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
+</form>
+{% if paginated_division_users.pages >= 1 %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อสมาชิก</th>
+          <th class="table-style">ตำแหน่ง</th>
+          <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+          <th class="table-style">ลบสมาชิก</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for division_user in paginated_division_users.items %}
+        <tr>
+          <td class="table-style" data-label="Organization">{{ division_user.display_fullname() }}</td>
+          <td class="table-style" data-label="Roles">{{ division_user.display_roles() }}</td>
+          <td class="table-style" data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
             division_user.created_date else "-"}}
-            </td>
-            <td class="table-style">
-              <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
-                <i class="ph ph-trash"></i>
-              </a>
-              {{ ModalNegative(
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            {{ ModalNegative(
                 id=division_user.id,
                 header="ลบสมาชิก",  
                 body="ต้องการลบสมาชิก<b> %s</b><br />" | format(division_user.display_fullname()),  
@@ -78,27 +81,26 @@
                 submit="ยืนยัน",  
                 redirect=url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)
               ) }}
-            </td>
-          </tr>
+          </td>
+        </tr>
 
-          {% endfor %}
-        </tbody>
-      </table>
-      {% set params=dict(request.args) %}
-      {% if 'page' in params %}
-      {% set _dummy=params.pop('page') %}
-      {% endif %}
-      {% if paginated_division_users.pages != 1 %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_division_users.pages != 1 %}
 
-      {{ paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
+    {{ paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
 
-      {% endif %}
-    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
-  {% endif %}
-</form>
+</div>
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

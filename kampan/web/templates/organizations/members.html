@@ -13,26 +13,27 @@
 {% block content %}
 
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <div class="ui dropdown button labeled icon">
-      <i class="ph ph-list-dashes"></i>
-      การจัดการ
-      <div class="menu" style=" flex-direction: column !important;">
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
-          <span class="ui primary text">
+  <div class="flex justify-end w-full gap-2">
+    <div class="dropdown dropdown-end">
+      <label tabindex="0" class="btn btn-primary flex items-center gap-2">
+        <i class="ph ph-list-dashes"></i>
+        การจัดการ
+      </label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li>
+          <a class="text-success" href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
             <i class="plus circle icon"></i>
             เพิ่มสมาชิก
-          </span>
-        </a>
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
-          <span class="ui primary text">
+          </a>
+        </li>
+        <li>
+          <a class="text-success"
+            href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
             <i class="file upload icon"></i>
             เพิ่มสมาชิกแบบหลายรายการ
-          </span>
-        </a>
-      </div>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
@@ -40,87 +41,84 @@
 <form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex flex-row justify-between w-full gap-2">
     {{ form.csrf_token }}
-    {{ render_field.SelectField(form.user) }}
-    {{ render_field.SelectField(form.role) }}
-    {{ render_field.DateField(form.start_date) }}
-    {{ render_field.DateField(form.end_date) }}
+    {{ renderer.render_select_field(form.user) }}
+    {{ renderer.render_select_field(form.role) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
   </div>
 
   <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("organizations.organizaiton_users", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
 {% if org_users %}
-
-<table class="table-auto w-full">
-  <thead>
-    <tr>
-      <th class="table-style">ชื่อสมาชิก (ภาษาอังกฤษ)</th>
-      <th class="table-style">อีเมล</th>
-      <th class="table-style">ตำแหน่ง</th>
-      <th class="table-style">ระดับ</th>
-      <th class="table-style">แผนก</th>
-      <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
-      <th class="table-style">จัดการ</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for org_user in paginated_org_users.items %}
-    <tr>
-      <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
-      <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
-      <td class="table-style" data-label="Email">
-        {% if org_user.appointment|length >= 30 %}
-        <span data-tooltip="{{ org_user.appointment }}">
-          {{ org_user.display_appointment() }}
-        </span>
-        {% else %}
-        {{ org_user.display_appointment() }}
-        {% endif %}
-      </td>
-      <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
-      <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
-      <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อสมาชิก (ภาษาอังกฤษ)</th>
+          <th class="table-style">อีเมล</th>
+          <th class="table-style">ตำแหน่ง</th>
+          <th class="table-style">ระดับ</th>
+          <th class="table-style">แผนก</th>
+          <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+          <th class="table-style">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org_user in paginated_org_users.items %}
+        <tr>
+          <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
+          <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
+          <td class="table-style" data-label="Email">
+            {% if org_user.appointment|length >= 30 %}
+            <span data-tooltip="{{ org_user.appointment }}">
+              {{ org_user.display_appointment() }}
+            </span>
+            {% else %}
+            {{ org_user.display_appointment() }}
+            {% endif %}
+          </td>
+          <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
+          <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
+          <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
         org_user.created_date else "-"}}
-      </td>
-      <td class="table-style">
-        <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
-          href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
-          <i class="ph ph-pen"></i>
-        </a>
-        <a class="btn btn-circle btn-error" data-tooltip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
-          <i class="ph ph-trash"></i>
-        </a>
-        <div role="dialog" class="modal {{ org_user.id }}">
-          <div class="text-2xl font-bold">
-            ลบสมาชิก
-          </div>
-          <div class=" modal-box">
-            <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
-
-
-            </p>
-          </div>
-          <div class="modal-action">
-            <button class="btn">
-              ยกเลิก
-            </button>
-            <a class="btn-error btn"
-              href="{{ url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
-              ยืนยัน
-              <i class="ph ph-check"></i>
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
+              href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-          </div>
-        </div>
-      </td>
-    </tr>
+            <a class="btn btn-circle btn-error" data-tooltip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
 
-    {% endfor %}
-  </tbody>
-</table>
+
+
+
+            {{ ModalNegative(
+                id=org_user.id,
+                header="ลบสมาชิก",
+                body="คุณต้องการลบสมาชิกนี้หรือไม่ <b> %s </b>" | format(org_user.display_fullname()),
+                cancel="ยกเลิก",
+                submit="ยืนยัน",
+                redirect=url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
+            ) }}
+
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% set params=dict(request.args) %}
 {% if 'page' in params %}
 {% set _dummy=params.pop('page') %}

@@ -11,37 +11,35 @@
 {% endblock %}
 
 {% macro row_detail(text) -%}
-<div class="column">
-  <h3> {{ text }}</h3>
+<div class="col-span-1">
+  <h3 class="text-lg font-semibold">{{ text }}</h3>
 </div>
 {%- endmacro %}
 
 {% block content %}
-<div class="ui container" style="width: 100%;">
-  <div class="ui segment">
-    <h2 class="ui header">ข้อมูลผู้ใช้งาน
+<div class="mt-4 border border-gray-300 bg-white rounded-2xl p-6 shadow-sm">
+  <div class="mb-4">
+    <h2 class="text-2xl font-bold">ข้อมูลผู้ใช้งาน</h2>
+  </div>
+  {% if current_user.get_picture() %}
+  <img class="w-32 h-32 rounded-full mx-auto mb-4" src="{{ current_user.get_picture() }}">
+  {% endif %}
+  <div class="grid grid-cols-2 gap-4">
+    {{ row_detail("ชื่อ :") }}
+    {{ row_detail(current_user.get_first_name_th() ) }}
+    {{ row_detail("นามสกุล :") }}
+    {{ row_detail(current_user.get_last_name_th() ) }}
 
-    </h2>
-    {% if current_user.get_picture() %}
-    <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">
+    {% if current_user.get_current_organization_user_role() %}
+    {{ row_detail("ตำแหน่ง :") }}
+    {{ row_detail((current_user.get_current_organization_user_role()).display_appointment() if
+    (current_user.get_current_organization_user_role()).display_appointment() else "-" ) }}
     {% endif %}
-    <div class="ui grid two column">
-      {{ row_detail("ชื่อ :") }}
-      {{ row_detail(current_user.get_first_name_th() ) }}
-      {{ row_detail("นามสกุล :") }}
-      {{ row_detail(current_user.get_last_name_th() ) }}
 
-      {% if current_user.get_current_organization_user_role() %}
-      {{ row_detail("ตำแหน่ง :") }}
-      {{ row_detail((current_user.get_current_organization_user_role()).display_appointment() if
-      (current_user.get_current_organization_user_role()).display_appointment() else "-" ) }}
-      {% endif %}
-
-      {% if current_user.get_current_division() %}
-      {{ row_detail("สังกัดฝ่าย :") }}
-      {{ row_detail((current_user.get_current_division()).name ) }}
-      {% endif %}
-    </div>
+    {% if current_user.get_current_division() %}
+    {{ row_detail("สังกัดฝ่าย :") }}
+    {{ row_detail((current_user.get_current_division()).name ) }}
+    {% endif %}
   </div>
 </div>
 {% endblock %}
