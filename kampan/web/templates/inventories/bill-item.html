@@ -12,89 +12,87 @@
 
 {% block content %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
-    <a class="btn  btn-primary" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn btn-primary" href="{{ url_for('item_registers.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
   {% if item_register.status == "pending" %}
 
-  <div class="flex justify-start w-full gap-2">
-    <div class="ui dropdown button labeled icon">
-      <i class="wrench icon"></i>
-      การจัดการ
-
-      <div class="menu" style=" flex-direction: column !important;">
-
-        <a class="item" style="width: 100%;" onclick="showConfirmModal('{{ item_register.id }}')"><span
-            class="text-success">
-            <i class="check icon"></i>
-            ยืนยันการนำเข้าวัสดุ</span></a>
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
-          <span class="ui primary text">
-            <i class="file upload icon"></i>
-            อัพโหลดไฟล์
-          </span>
-        </a>
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('inventories.download_template_inventory_file', organization_id=organization.id) }}">
-          <span class="ui primary text">
-            <i class="file download icon"></i>
-            ดาวน์โหลดรูปแบบนำเข้าวัสดุ
-          </span>
-        </a>
-
-      </div>
+  <div class="flex justify-end w-full gap-2">
+    <div class="dropdown dropdown-hover dropdown-end">
+      <label tabindex="0" class="btn btn-primary">
+        <i class="ph ph-list-dashes"></i>
+        การจัดการ
+      </label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li>
+          <a onclick="showModal('{{ item_register.id }}')">
+            <span class="text-success">
+              <i class="check icon"></i>
+              ยืนยันการนำเข้าวัสดุ
+            </span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{{ url_for('inventories.upload_file_inventory_info', item_register_id=item_register.id, organization_id=organization.id) }}">
+            <span class="text-primary">
+              <i class="file upload icon"></i>
+              อัพโหลดไฟล์
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('inventories.download_template_inventory_file', organization_id=organization.id) }}">
+            <span class="text-primary">
+              <i class="file download icon"></i>
+              ดาวน์โหลดรูปแบบนำเข้าวัสดุ
+            </span>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
   {% endif %}
-
 </div>
 
-
-<div role="dialog" class="modal {{item_register.id}}">
-  <div class="text-2xl font-bold">
-    ยืนยันการนำเข้าวัสดุ
-  </div>
-  <div class=" modal-box">
-    <p>ต้องการยืนยันการนำเข้าวัสดุ
+{{ ModalPositive(
+  id=item_register.id | string,
+  header="ยืนยันการนำเข้าวัสดุ",
+  body="""
+  <p>ต้องการยืนยันการนำเข้าวัสดุ
       <br />
       เลขกำกับใบเสร็จ :
-      <b>{{ item_register.receipt_id }}</b>
-      <br />
-      รายละเอียด :
-      <b>{{ item_register.description }}</b>
-      <br />
-      ร้านค้า :
-      <b>{{ item_register.supplier.get_supplier_name() }}</b>
-      <br />
-      ผู้ลงทะเบียนวัสดุ :
-      <b>{{ item_register.created_by.get_name() }}</b>
-      <br />
-      วันที่ลงทะเบียนวัสดุ :
-      <b>{{ item_register.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</b>
-      <br />
-      <span class="text-error">คำเตือน : สามารถยืนยันการนำเข้าวัสดุได้ครั้งเดียวเท่านั้น
-        และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
-        *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
-    </p>
-  </div>
-  <div class="modal-action">
-    <button class="ui negative deny button">
-      ยกเลิก
-    </button>
-    <a class="btn btn-success"
-      href="{{ url_for('item_registers.confirm_item_register', item_register_id=item_register.id, organization_id=organization.id) }}">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </a>
-  </div>
-</div>
+      <b> %s </b> """ | format(item_register.receipt_id ) + """
+<br />
+รายละเอียด :
+<b> %s </b> """ | format( item_register.description ) + """
+<br />
+ร้านค้า :
+<b> %s </b> """ | format(item_register.supplier.get_supplier_name()) + """
+<br />
+ผู้ลงทะเบียนวัสดุ :
+<b> %s </b> """ | format(item_register.created_by.get_name()) + """
+<br />
+วันที่ลงทะเบียนวัสดุ :
+<b> %s </b> """ | format(item_register.created_date.strftime('%d/%m/%Y')) + """
+<br />
+<span class='text-error'>คำเตือน : สามารถยืนยันการนำเข้าวัสดุได้ครั้งเดียวเท่านั้น
+  และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+  *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>
+</p>
+""",
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect=url_for('item_registers.confirm_item_register', item_register_id=item_register.id,
+organization_id=organization.id),
+) }}
+
 {% if paginated_inventories.pages %}
-<div>
-  <table class="table-auto w-full">
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <table class="table w-full">
     <thead>
       <tr>
         <th class="table-style">รูปวัสดุ</th>
@@ -115,26 +113,26 @@
     <tbody>
       {% for inventory in paginated_inventories.items %}
       <tr>
-        <td class="table-style" data-label="Image" class="center aligned">
+        <td class="table-style">
           <div>
             {% if not inventory.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+            <img src="{{ url_for('static', filename='/images/image.png' ) }}" class="w-16">
             {% else %}
             <img
               src="{{ url_for('items.image', item_id=inventory.item.id, filename=inventory.item.image.filename, organization_id=organization.id) }}"
-              width="70">
+              class="w-16">
             {% endif %}
           </div>
         </td>
-        <td class="table-style" data-label="Item Name">{{ inventory.item.name }}</td>
-        <td class="table-style" data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
-        <td class="table-style" data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-        <td class="table-style" data-label="Set">{{ inventory.set_ }}</td>
-        <td class="table-style" data-label="Quantity">{{ inventory.quantity }}</td>
-        <td class="table-style" data-label="Remain">{{ inventory.remain }}</td>
-        <td class="table-style" data-label="Price">{{ inventory.price }}</td>
-        <td class="table-style" data-label="Price Per Piece">{{ inventory.get_price_per_piece() }}</td>
-        <td class="table-style" data-label="All Price">{{ inventory.get_all_price() }}</td>
+        <td class="table-style">{{ inventory.item.name }}</td>
+        <td class="table-style">{{ inventory.get_created_date() }}</td>
+        <td class="table-style">{{ inventory.warehouse.name }}</td>
+        <td class="table-style">{{ inventory.set_ }}</td>
+        <td class="table-style">{{ inventory.quantity }}</td>
+        <td class="table-style">{{ inventory.remain }}</td>
+        <td class="table-style">{{ inventory.price }}</td>
+        <td class="table-style">{{ inventory.get_price_per_piece() }}</td>
+        <td class="table-style">{{ inventory.get_all_price() }}</td>
         {% if item_register.status == "pending" %}
         <td class="table-style">
           <a class="btn btn-circle btn-primary"
@@ -144,26 +142,14 @@
           <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ inventory.id }}')">
             <i class="ph ph-trash"></i>
           </a>
-          <div role="dialog" class="modal {{inventory.id}}">
-            <div class="text-2xl font-bold">
-              ลบข้อมูลวัสดุในบิล
-            </div>
-            <div class=" modal-box">
-              <p>ต้องการลบข้อมูลวัสดุ
-                <b>{{ inventory.item.name }}</b>
-              </p>
-            </div>
-            <div class="modal-action">
-              <button class="btn">
-                ยกเลิก
-              </button>
-              <a class="btn-error btn"
-                href="{{ url_for('inventories.delete', inventory_id=inventory.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="ph ph-check"></i>
-              </a>
-            </div>
-          </div>
+          {{ ModalNegative(
+            id=inventory.id,
+            header="ลบข้อมูลวัสดุในบิล",
+            body="ต้องการลบข้อมูลวัสดุ <b> %s </b>" | format(inventory.item.name) + "จากรายการนำเข้าวัสดุ <b> %s </b>" | format(item_register.receipt_id),
+            cancel="ยกเลิก",
+            submit="ยืนยัน",
+            redirect=url_for('inventories.delete', inventory_id=inventory.id, organization_id=organization.id),
+          ) }}
         </td>
         {% endif %}
       </tr>
@@ -189,13 +175,11 @@
 <script type="text/javascript">
 
   function showDeleteModal(inventory_id) {
-    inventory_id ? $('.ui.modal.' + inventory_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    inventory_id ? document.querySelector('.modal.' + inventory_id).classList.add('modal-open') : document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('modal-open'));
   }
 
   function showConfirmModal(item_register_id) {
-    item_register_id ? $('.ui.modal.' + item_register_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    item_register_id ? document.querySelector('.modal.' + item_register_id).classList.add('modal-open') : document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('modal-open'));
   }
 </script>
 {% endblock %}

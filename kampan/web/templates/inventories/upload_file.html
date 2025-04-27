@@ -15,7 +15,7 @@
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
 ("นำเข้าวัสดุ", url_for("item_registers.index", organization_id=organization.id)),
-('อัพโหลดไฟล์' , url_for("inventories.bill_item",item_register_id=item_register.id,
+('รายการบิลวัสดุ' , url_for("inventories.bill_item",item_register_id=item_register.id,
 organization_id=organization.id)),
 ("อัพโหลดไฟล์","")]) }}
 {% endblock breadcrumbs %}
@@ -48,26 +48,28 @@ organization_id=organization.id)),
 {% endif %}
 
 {% if upload_completed %}
-<div role="dialog" class="modal upload_completed">
-  <div class="text-2xl font-bold">
-    ไฟล์นำเข้าวัสดุอัพโหลดเรียบร้อย
-  </div>
-  <div class=" content red">
-    <span class="ui text">
-      <b>นำเข้าวัสดุทั้งหมดเรียบร้อย</b>
-    </span>
-  </div>
-  <div class="modal-action">
-    <a class="btn btn-success"
-      href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">
-      ยืนยัน
-      <i class="ph ph-check"></i>
-    </a>
+<div role="dialog" class="modal upload_completed" open>
+  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      ไฟล์นำเข้าวัสดุอัพโหลดเรียบร้อย
+    </div>
+    <div class="">
+      <span class="text-success">
+        <b>นำเข้าวัสดุทั้งหมดเรียบร้อย</b>
+      </span>
+    </div>
+    <div class="modal-action">
+      <a class="btn btn-success"
+        href="{{ url_for('inventories.bill_item', item_register_id=item_register.id, organization_id=organization.id) }}">
+        ยืนยัน
+        <i class="ph ph-check"></i>
+      </a>
+    </div>
   </div>
 </div>
 {% endif %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
       href='{{ url_for("inventories.bill_item",item_register_id=item_register.id, organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>

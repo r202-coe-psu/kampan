@@ -20,13 +20,19 @@
 
   </div>
   <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("inventories.index", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
-  <div>
-    {% if inventories %}
-    <table class="ui striped padded celled table">
+</form>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if inventories %}
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
       <thead>
         <tr>
           <th class="table-style">รูปอุปกรณ์</th>
@@ -34,7 +40,6 @@
           <th class="table-style">เลขลงทะเบียนอุปกรณ์</th>
           <th class="table-style">วันที่ลงทะเบียนอุปกรณ์</th>
           <th class="table-style">คลังอุปกรณ์</th>
-          <th class="table-style">ตำแหน่ง ( ชั้นวาง / แถว / ตู้เก็บของ )</th>
           <th class="table-style">จำนวนชุด</th>
           <th class="table-style">จำนวนชิ้น</th>
           <th class="table-style">จำนวนคงเหลือ</th>
@@ -60,25 +65,23 @@
           </td>
           <td class="table-style" data-label="Item Name">{{ inventory.item.name }}</td>
           <td class="table-style" data-label="Registrarion ID">
-            <a
+            <a class="text-primary underline"
               href="{{ url_for('inventories.bill_item', item_register_id=inventory.registration.id, organization_id=organization.id) }}">{{
-              inventory.registration.receipt_id}} <i class="ph ph-list-magnifying-glass"></i>
+              inventory.registration.receipt_id}}
             </a>
           </td>
           <td class="table-style" data-label="Checkin Date">{{ inventory.get_created_date() }}</td>
           <td class="table-style" data-label="Warehouse">{{ inventory.warehouse.name }}</td>
-          <td class="table-style" data-label="Position">{{ inventory.position.rack }} / {{ inventory.position.row }} /
-            {{
-            inventory.position.locker }}
-          </td>
+
           <td class="table-style" data-label="Set">{{ inventory.set_ }}</td>
           <td class="table-style" data-label="Quantity">{{ inventory.quantity }}</td>
           <td class="table-style" data-label="Remain">{{ inventory.remain }}</td>
           <td class="table-style" data-label="Price">{{ inventory.price }}</td>
           <td class="table-style">
-            <a href="{{ url_for('inventories.bill', inventory_id=inventory.id, organization_id=organization.id) }}"
-              target="_blank">
-              {{inventory.get_bill_file_name() }}
+            <a {% if inventory.get_bill_file_name() !="ไม่พบบิล"
+              %}href="{{ url_for('inventories.bill', inventory_id=inventory.id, organization_id=organization.id) }}" {%
+              endif %} target="_blank">
+              {{ inventory.get_bill_file_name() }}
             </a>
           </td>
           <td class="table-style" data-label="User">{{ inventory.created_by.get_name() }}</td>
@@ -86,50 +89,20 @@
           {% endfor %}
       </tbody>
     </table>
-    {% if paginated_inventories.pages != 1 %}
+    {% if paginated_inventories.items %}
 
-    {{ paginated.render_pagination(paginated_inventories,"inventories.index")}}
+    {{ paginated.render_pagination(paginated_inventories,"inventories.index", request.args )}}
 
-    {% endif %}
     {% else %}
     <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
   </div>
-</form>
+  {% endif %}
+
+</div>
 {% endblock %}
 
 
 {% block additional_js %}
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
 
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
 {% endblock %}

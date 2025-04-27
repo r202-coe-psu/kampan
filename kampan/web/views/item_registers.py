@@ -21,7 +21,7 @@ def index():
         status__ne="disactive", organization=organization
     ).order_by("-created_date")
     form = forms.item_orders.SearchStartEndDateForm()
-    form.item.label = "สถานะ"
+    form.item.label.text = "สถานะ"
     form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]
     if form.start_date.data == None and form.end_date.data != None:
         item_registers = item_registers.filter(

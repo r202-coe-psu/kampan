@@ -17,7 +17,7 @@
 
 {% block content %}
 {% if item_positions %}
-<div style="padding-bottom: 2em;">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <table class="table-auto w-full table-hover ">
     <thead>
       <tr>
@@ -38,11 +38,11 @@
         <td class="table-style" data-label="Row">{{ item_position.row }}</td>
         <td class="table-style" data-label="Locker">{{ item_position.locker }}</td>
         <td class="table-style" data-label="modal-action">
-          <a class="ui primary icon button"
+          <a class="btn btn-primary btn-circle"
             href="{{ url_for('item_positions.edit', item_position_id=item_position.id, organization_id=organization.id) }}">
             <i class="ph ph-pen"></i> แก้ไข
           </a>
-          <a class="ui red icon button" onclick="showDeleteModal('{{ item_position.id }}')">
+          <a class="btn btn-error btn-circle" onclick="showDeleteModal('{{ item_position.id }}')">
             <i class="ph ph-trash"></i> ลบ
           </a>
           <div role="dialog" class="modal {{item_position.id}}">

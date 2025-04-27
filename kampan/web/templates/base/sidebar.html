@@ -45,7 +45,8 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <details {% if '/items/' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/items/' in request.path or '/categories' in request.path or '/suppliers' in request.path
+        or '/warehouses' in request.path %} open {% endif %}>
         <summary>
           <i class="ph ph-cube"></i>การจัดการวัสดุ
         </summary>
@@ -57,20 +58,20 @@
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/categories' in request.path else '' }}"
               href="{{ url_for('categories.index', organization_id = organization.id) }}">
               หมวดหมู่
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/suppliers' in request.path else '' }}"
               href="{{ url_for('suppliers.index', organization_id = organization.id) }}">
               ร้านค้า
 
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/warehouses/' in request.path else '' }}"
               href="{{ url_for('warehouses.index', organization_id = organization.id) }}">
               คลังวัสดุ
             </a>
@@ -81,19 +82,20 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
+      <details {% if '/item_registers/' in request.path or '/inventories/' in request.path %} open {% endif %}>
         <summary>
-          <i class="ph ph-size ph-briefcase"></i> การนำเข้าวัสดุ
+          <i class="ph ph-arrow-square-in"></i>
+          การนำเข้าวัสดุ
         </summary>
         <ul>
           <li>
-            <a class="{{ 'menu-active' if '/technician_groups' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/item_registers/' in request.path else '' }}"
               href="{{ url_for('item_registers.index', organization_id = organization.id) }}">
               นำเข้าวัสดุ
             </a>
           </li>
           <li>
-            <a class="{{ 'menu-active' if '/work_categories' in request.path else '' }}"
+            <a class="{{ 'menu-active' if '/inventories/' in request.path else '' }}"
               href="{{ url_for('inventories.index', organization_id = organization.id) }}">
               รายการนำเข้าวัสดุ
             </a>
@@ -170,6 +172,16 @@
       </details>
     </li>
     {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
+        href="{{ url_for('lost_breaks.index', organization_id = organization.id) }}">
+        <i class="ph ph-image-broken"></i>
+        วัสดุชำรุด/สูญหาย
+      </a>
+    </li>
+    {% endif %}
+
     {% if current_user.has_organization_roles("admin") and organization %}
     <li>
       <details {% if '/technician_groups' in request.path or '/work_categories' in request.path %} open {% endif %}>
@@ -203,7 +215,7 @@
     <li>
       <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
         href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026">
-        <i class="ph ph-size ph-house-line"></i> รูปแบบอีเมล
+        <i class="ph ph-lightbulb"></i> Smart Office
       </a>
     </li>
     <li>

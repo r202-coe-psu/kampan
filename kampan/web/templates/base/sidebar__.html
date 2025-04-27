@@ -162,8 +162,7 @@ current_user.get_current_division()) or current_user.has_roles(['admin']) %}
 
 {% if current_user.has_organization_roles("admin") %}
 
-<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}"
-  href="{{ url_for('lost_breaks.index', organization_id = organization.id)}}">
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}">
   <div class="item" style="padding: 7.5px 0px;">วัสดุชำรุด/สูญหาย<i class="exclamation circle icon"></i></div>
 </a>
 {% endif %}

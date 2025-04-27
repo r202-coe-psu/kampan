@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
+  <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary labeled icon"
       href="{{ url_for('categories.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
@@ -18,7 +18,7 @@
   </div>
 </div>
 {% if paginated_categories.items %}
-<div style="padding-bottom: 2em;">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <table class="table-auto w-full table-hover ">
     <thead>
       <tr>
@@ -35,34 +35,21 @@
         <td class="table-style" data-label="Description">{{ category.description }}</td>
         <td class="table-style" data-label="Amount">{{ category.get_count_item() }}</td>
         <td class="table-style" data-label="modal-action">
-          <a class="ui primary icon button"
+          <a class="btn btn-primary btn-circle"
             href="{{ url_for('categories.create_or_edit', category_id=category.id, organization_id=organization.id) }}">
-            <i class="ph ph-pen"></i> แก้ไข
+            <i class="ph ph-pen"></i>
           </a>
-          <a class="ui red icon button" onclick="showDeleteModal('{{ category.id }}')">
-            <i class="ph ph-trash"></i> ลบ
+          <a class="btn btn-error btn-circle" onclick="showDeleteModal('{{ category.id }}')">
+            <i class="ph ph-trash"></i>
           </a>
-          <div role="dialog" class="modal {{category.id}}">
-            <div class="text-2xl font-bold">
-              ลบหมวดหมู่
-            </div>
-            <div class=" modal-box">
-              <p>ต้องการลบหมวดหมู่
-                <b>{{ category.name }}</b><br />
-                <b>{{ category.description }}</b>
-              </p>
-            </div>
-            <div class="modal-action">
-              <button class="btn">
-                ยกเลิก
-              </button>
-              <a class="btn-error btn"
-                href="{{ url_for('categories.delete', category_id=category.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="ph ph-check"></i>
-              </a>
-            </div>
-          </div>
+          {{ ModalNegative(
+            id=category.id,
+            header="ลบหมวดหมู่",
+            body="ต้องการลบหมวดหมู่ <b> %s </b>" | format(category.name),
+            cancel="ยกเลิก",
+            submit="ยืนยัน",
+            redirect=url_for('categories.delete', category_id=category.id, organization_id=organization.id),
+            ) }}
         </td>
       </tr>
       {% endfor %}

@@ -23,7 +23,7 @@ organization_id=organization.id)),
 
 {% block content %}
 <div class="flex flex-row justify-between">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
       href='{{ url_for("inventories.bill_item",item_register_id=item_register.id, organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
@@ -36,10 +36,7 @@ organization_id=organization.id)),
     enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="three fields">
-      <div class="field">
-        {{ form.item.label }}
-        {{ form.item(class="ui fluid search dropdown") }}
-      </div>
+      {{ renderer.render_search_select_field(form.item) }}
       {{ renderer.render_field(form.set_) }}
       {{ renderer.render_field(form.price) }}
     </div>

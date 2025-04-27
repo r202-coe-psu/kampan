@@ -99,7 +99,7 @@ def register():
 
     if items:
         form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+            (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
         ]
     if not form.validate_on_submit():
 
@@ -153,11 +153,11 @@ def edit(inventory_id):
             items.append(models.Item.objects(id=inventory.item.id).first())
     if items:
         form.item.choices = [
-            (item.id, f"{item.barcode_id} ({item.name})") for item in items
+            (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
         ]
         form.item.process(
             formdata=form.item.choices,
-            data=inventory.item.id,
+            data=str(inventory.item.id),
         )
 
     if not form.validate_on_submit():

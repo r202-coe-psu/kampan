@@ -11,111 +11,78 @@
 {% block content %}
 <div class="flex flex-row w-full justify-between">
   <div class="flex justify-start w-full gap-2">
-    <div class="ui dropdown button labeled icon">
-      <i class="wrench icon"></i>
-      การจัดการ
-      <div class="menu" style=" flex-direction: column !important;">
-        <a class="item" style="width: 100%;" href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
-          <span class="ui primary text">
-            <i class="plus circle icon"></i>
+    <div class="dropdown dropdown-hover">
+      <label tabindex="0" class="btn btn-primary gap-2">
+        <i class="wrench icon"></i>
+        การจัดการ
+      </label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li>
+          <a href="{{ url_for('suppliers.add', organization_id=organization.id) }}">
+            <i class="plus-circle icon"></i>
             เพิ่มร้านค้า
-          </span>
-        </a>
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('suppliers.upload_file', organization_id=organization.id) }}">
-          <span class="ui primary text">
-            <i class="file upload icon"></i>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('suppliers.upload_file', organization_id=organization.id) }}">
+            <i class="file-upload icon"></i>
             ลงทะเบียนร้านค้าแบบหลายรายการ
-          </span>
-        </a>
-      </div>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
 {% if suppliers %}
-<div class="grid grid-cols-4 gap-2">
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {% for supplier in paginated_suppliers.items %}
-  <div class="card" style="width: 100%;">
-    <div class="modal-box"
-      style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
-      <div class="left" style="flex: 1;">
-        <div class="text-2xl font-bold" style=" font-size: 2em; font-weight: bold; color: #333;">
-          {{ supplier.get_supplier_name() }}
-
-        </div>
-        <div class="meta" style="font-size: 1.2em; margin-top: 10px;">
-          <table>
+  <div class="card bg-base-100 shadow-md mb-4">
+    <div class="card-body flex flex-col md:flex-row gap-4">
+      <div class="flex-1">
+        <h2 class="card-title text-2xl font-bold text-gray-800">{{ supplier.get_supplier_name() }}</h2>
+        <div class="mt-2">
+          <table class="table-auto w-full">
             <tbody>
               <tr>
-                <td style="font-weight: bold;">ที่อยู่:</td>
-                <td class="table-style">{{ supplier.address }}</td>
+                <td class="font-bold">ที่อยู่:</td>
+                <td>{{ supplier.address }}</td>
               </tr>
               <tr>
-                <td style="font-weight: bold;">เลขผู้เสียภาษี:</td>
-                <td class="table-style">{{ supplier.tax_id }}</td>
+                <td class="font-bold">เลขผู้เสียภาษี:</td>
+                <td>{{ supplier.tax_id }}</td>
               </tr>
               <tr>
-                <td style="font-weight: bold;">ช่องทางการติดต่อ:</td>
-                <td class="table-style">{{ supplier.contact }}</td>
+                <td class="font-bold">ช่องทางการติดต่อ:</td>
+                <td>{{ supplier.contact }}</td>
               </tr>
               <tr>
-                <td style="font-weight: bold;">อีเมล:</td>
-                <td class="table-style">{{ supplier.email }}</td>
+                <td class="font-bold">อีเมล:</td>
+                <td>{{ supplier.email }}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-      <div class="right" style="flex: 1; background-color: #f5f5f5; padding: 20px;">
-        <div class="description" style="font-size: 1.7em; margin-bottom: 10px; color: rgb(80, 87, 122);"><b>คำอธิบาย</b>
-        </div>
-        <div class="description" style="font-size: 1.2em;">
-          <p>{{ supplier.description }}</p>
-        </div>
-        <div class="" style="margin-top: 50px; text-align: right; ">
+      <div class="flex-1 bg-gray-100 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">คำอธิบาย</h3>
+        <p>{{ supplier.description }}</p>
+        <div class="mt-6 flex justify-end gap-2">
           <a class="btn btn-primary"
             href="{{ url_for('suppliers.edit', supplier_id=supplier.id, organization_id=organization.id) }}">
-            <div style="font-size: 1.2em;"> <i class="ph ph-pen"></i> แก้ไข </div>
+            <i class="ph ph-pen"></i> แก้ไข
           </a>
-          <a class="ui red button" onclick="showDeleteModal('{{ supplier.id }}')">
-            <div style="font-size: 1.2em;"><i class="ph ph-trash"></i> ลบ </div>
-          </a>
-          <div role="dialog" class="modal {{supplier.id}}">
-            <div class="text-2xl font-bold">
-              ลบร้านค้า
-            </div>
-            <div class=" modal-box">
-              <p>ต้องการลบร้านค้า
-                <b>{{ supplier.get_supplier_name() }}</b>
-              </p>
-            </div>
-            <div class="modal-action">
-              <button class="btn">
-                ยกเลิก
-              </button>
-              <a class="btn-error btn"
-                href="{{ url_for('suppliers.delete', supplier_id=supplier.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="ph ph-check"></i>
-              </a>
-            </div>
-          </div>
+          <button class="btn btn-error" onclick="showDeleteModal('{{ supplier.id }}')">
+            <i class="ph ph-trash"></i> ลบ
+          </button>
         </div>
       </div>
     </div>
   </div>
-
   {% endfor %}
   {% if paginated_suppliers.pages != 1 %}
-
-  {{ paginated.render_pagination(paginated_suppliers,"suppliers.index")}}
-
+  {{ paginated.render_pagination(paginated_suppliers,"suppliers.index") }}
   {% endif %}
 </div>
-
-
-
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
@@ -124,10 +91,8 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-
   function showDeleteModal(supplier_id) {
-    supplier_id ? $('.ui.modal.' + supplier_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    supplier_id ? document.querySelector(`.modal.${supplier_id}`).classList.add('modal-open') : document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('modal-open'));
   }
 </script>
 {% endblock %}

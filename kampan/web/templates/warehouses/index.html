@@ -9,8 +9,8 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="btn btn-primary labeled icon"
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary flex items-center gap-2"
       href="{{ url_for('warehouses.add_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มคลังวัสดุ
@@ -18,88 +18,55 @@
   </div>
 </div>
 {% if warehouses %}
-<div class="grid grid-cols-4 gap-2">
+<div class="grid grid-cols-2 gap-4 mt-4 lg:grid-cols-4">
   {% for warehouse in paginated_warehouses.items %}
-  <div class="card" style="width: 100%;">
-    <div class="modal-box"
-      style="padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex;">
-      <div class="left" style="flex: 1;">
-        <div class="text-2xl font-bold" style=" font-size: 2em; font-weight: bold; color: #333;">{{ warehouse.name }}
-          <a style="margin-right: 10px;"
-            href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id, organization_id=organization.id) }}">
-            <i class="edit icon" style="color: Orange;"></i>
-          </a>
-        </div>
-        <div class="meta" style="font-size: 1.2em; margin-top: 10px">
-          <table>
-            <tbody>
-              <tr>
-                <td style="font-weight: bold;">ชื่อผู้เพิ่ม:</td>
-              </tr>
-              <tr>
-                <td style="color: rgb(80, 87, 122);"><b>{{ warehouse.created_by.first_name }} {{
-                    warehouse.created_by.last_name
-                    }}</b></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+  <div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+      <div class="flex justify-between items-center">
+        <h2 class="card-title text-xl font-bold">{{ warehouse.name }}</h2>
+        <a class="btn btn-primary btn-circle"
+          href="{{ url_for('warehouses.edit', warehouse_id=warehouse.id, organization_id=organization.id) }}">
+          <i class="ph ph-pencil"></i>
+        </a>
+      </div>
+      <p class="text-sm text-gray-500 mt-2">ชื่อผู้เพิ่ม: <b>{{ warehouse.created_by.first_name }}
+          {{ warehouse.created_by.last_name }}</b></p>
+      <div class="mt-4">
+        <h3 class="text-lg font-semibold">คำอธิบาย</h3>
+        <p class="text-sm text-gray-700">{{ warehouse.description }}</p>
+      </div>
+      <div class="card-actions justify-end mt-4">
+        <button class="btn btn-error btn-sm" onclick="showDeleteModal('{{ warehouse.id }}')">
+          <i class="ph ph-trash"></i> ลบ
+        </button>
       </div>
 
-      <div class="right" style="flex: 2; background-color: #f5f5f5; padding: 20px;">
-        <div class="description" style="font-size: 1.7em; margin-bottom: 10px; color: rgb(80, 87, 122);"><b>คำอธิบาย</b>
-        </div>
-        <div class="description" style="font-size: 1.2em;">
-          <p>{{ warehouse.description }}</p>
-        </div>
-        <div class="modal-action" style="margin-top: 50px; text-align: right;">
-          <a class="ui red button" onclick="showDeleteModal('{{ warehouse.id }}')">
-            <div style=" font-size: 1.2em;"><i class="ph ph-trash"></i> ลบ
-            </div>
-          </a>
-          <div role="dialog" class="modal {{warehouse.id}}">
-            <div class="text-2xl font-bold">
-              ลบคลังวัสดุ
-            </div>
-            <div class=" modal-box">
-              <p>ต้องการลบคลังวัสดุ
-                <b>{{ warehouse.name }}</b>
-              </p>
-            </div>
-            <div class="modal-action">
-              <button class="btn">
-                ยกเลิก
-              </button>
-              <a class="btn-error btn"
-                href="{{ url_for('warehouses.delete', warehouse_id=warehouse.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="ph ph-check"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      {{ ModalNegative(
+          id=warehouse.id,
+          header="ลบคลังวัสดุ",
+          body="ต้องการลบคลังวัสดุ <b> %s </b>" | format(warehouse.name),
+          cancel="ยกเลิก",
+          submit="ยืนยัน",
+          redirect=url_for('warehouses.delete', warehouse_id=warehouse.id, organization_id=organization.id),
+          ) }}
     </div>
   </div>
-
   {% endfor %}
   {% if paginated_warehouses.pages != 1 %}
-
-  {{ paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
-
+  <div class="mt-4">
+    {{ paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
+  </div>
   {% endif %}
 </div>
 {% else %}
-<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl text-gray-500">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endblock %}
 
 {% block additional_js %}
 <script type="text/javascript">
-
   function showDeleteModal(item_id) {
-    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    item_id ? document.querySelector('.modal.' + item_id).classList.add('modal-open') : document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('modal-open'));
   }
 </script>
 {% endblock %}
