@@ -10,7 +10,7 @@
       <b>ระบบเบิกวัสดุ</b>
     </a>
 
-    {% if current_user.email in ["6510110693@email.psu.ac.th", "yanisa.suwa@psu.ac.th", "jennipich.y@psu.ac.th"] %}
+    <!-- {% if current_user.email in ["6510110693@email.psu.ac.th", "yanisa.suwa@psu.ac.th", "jennipich.y@psu.ac.th"] %} -->
 
     <!-- ระบบการขอใช้รถยนต์ -->
     <a href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}"
@@ -24,7 +24,7 @@
       <b>ระบบการขอใช้รถจักรยานยนต์</b>
     </a>
 
-    {% endif %}
+    <!-- {% endif %} -->
   </div>
 </div>
 {% endblock content %}

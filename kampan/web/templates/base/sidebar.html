@@ -229,6 +229,11 @@
         <i class="ph ph-size ph-house-line"></i> ข้อมูลผู้ใช้งาน
       </a>
     </li>
+    <li>
+      <a class="{{ 'menu-active' if '/-----' in request.path else '' }}" href="{{ url_for('site.select_system') }}">
+        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      </a>
+    </li>
     {% endif %}
 
     <div class="mt-auto"></div>
