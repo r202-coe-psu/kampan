@@ -21,22 +21,6 @@
   </div>
 </div>
 
-{#}
-<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex flex-row justify-between w-full gap-2">
-
-    {{form.hidden_tag()}}
-    {{renderer.render_search_select_field(form.item)}}
-    {{renderer.date_range_field(form.start_date, form.end_date)}}
-  </div>
-
-  <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
-      <button type="submit" class="btn btn-primary">ค้นหา</button>
-    </div>
-  </div>
-</form>
-{#}
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   <div class="overflow-x-auto mt-2 rounded-xl">
     {% if paginated_motorcycle_applications.total %}
@@ -115,46 +99,4 @@
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
 {% endif %}
-{% endblock %}
-
-{% block additional_js %}
-<script type="text/javascript">
-
-  function showDeleteModal(motorcycle_application_id) {
-    motorcycle_application_id ? $('.ui.modal.' + motorcycle_application_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
 {% endblock %}

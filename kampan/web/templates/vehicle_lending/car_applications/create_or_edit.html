@@ -47,17 +47,17 @@
   {{ render_form.RadioField(form.using_type) }} -->
 
   <div class="flex flex-row w-full gap-2">
-    {{renderer.date_field(form.departure_date) }}
+    {{renderer.date_field_js(form.departure_date) }}
     {{renderer.time_field(form.departure_time) }}
 
 
   </div>
   <div class="flex flex-row justify-between w-full gap-2 items-end" id="return_datetime">
-    {{renderer.date_field(form.return_date) }}
+    {{renderer.date_field_js(form.return_date) }}
     {{renderer.time_field(form.return_time) }}
   </div>
   <div class="flex flex-row justify-between w-full gap-2" id="flight_datetime">
-    {{renderer.date_field(form.flight_date) }}
+    {{renderer.date_field_js(form.flight_date) }}
     {{renderer.time_field(form.flight_time) }}
   </div>
   <div class="flex flex-row w-full justify-between">
@@ -75,8 +75,10 @@
 
     function toggleReturnDate() {
       let travelType = $("input[name='travel_type']:checked").val();
-      let return_dateField = $("#return_date input");
-      let return_timeField = $("#return_time input");
+      let return_dateField = $("#return_date");
+      let return_timeField = $("#return_time");
+      console.log(return_date.required);
+
       if (travelType === "one way") {
         $("#return_datetime").hide();
         return_dateField.prop("required", false);
@@ -98,8 +100,12 @@
 
     function toggleFlightDate() {
       let usingType = $("input[name='using_type']:checked").val();
-      let flight_dateField = $("#flight_date input");
-      let flight_timeField = $("#flight_time input");
+      console.log(usingType);
+
+      let flight_dateField = $("#flight_date");
+      let flight_timeField = $("#flight_time");
+      console.log(flight_timeField);
+
       if (usingType === "airport transfer") {
         $("#flight_datetime").show();
         flight_dateField.prop("required", true);
@@ -115,52 +121,5 @@
 
     toggleFlightDate();
   });
-</script>
-<script type="text/javascript">
-
-  function showDeleteModal(order_id) {
-    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#departure_date').calendar(calendar_setting);
-  $('#return_date').calendar(calendar_setting);
-  $('#flight_date').calendar(calendar_setting);
-
-
-  time_formatter = {
-    date: "HH:mm"
-  };
-  var time_setting = {
-    type: 'time',
-    monthFirst: false,
-    formatter: time_formatter,
-    today: false,
-    ampm: true,
-  };
-  $('#departure_time').calendar(time_setting);
-  $('#return_time').calendar(time_setting);
-  $('#flight_time').calendar(time_setting);
-
 </script>
 {% endblock %}
