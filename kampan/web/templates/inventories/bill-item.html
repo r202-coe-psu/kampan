@@ -28,6 +28,15 @@
       </label>
       <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
         <li>
+          <a
+            href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
+            <span class="text-success">
+              <i class="check icon"></i>
+              นำเข้าวัสดุทีละรายการ
+            </span>
+          </a>
+        </li>
+        <li>
           <a onclick="showModal('{{ item_register.id }}')">
             <span class="text-success">
               <i class="check icon"></i>

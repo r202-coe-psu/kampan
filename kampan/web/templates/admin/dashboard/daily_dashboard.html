@@ -150,7 +150,7 @@
     </table>
     {% if paginated_daily_item_orders.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
+    {{ paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard", request.args)}}
 
     {% endif %}
   </div>

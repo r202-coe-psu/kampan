@@ -11,10 +11,11 @@ from flask import (
     send_file,
     abort,
 )
+from flask_mongoengine import Pagination
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models, utils
-from flask_mongoengine import Pagination
+from kampan.repositories.item_registers import RegisterItemRepository
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
@@ -86,21 +87,17 @@ def index():
 @acl.organization_roles_required("admin", "endorser", "staff")
 def register():
     organization_id = request.args.get("organization_id")
+    item_register_id = request.args.get("item_register_id")
+
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    form = forms.inventories.InventoryForm()
-    item_register_id = request.args.get("item_register_id")
+    form = RegisterItemRepository.get_inventory_form(
+        organization_id=organization_id,
+        item_register_id=item_register_id,
+    )
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
-    items = models.Item.objects(status="active")
-    if item_register.get_item_in_bill():
-        items = items.filter(id__nin=item_register.get_item_in_bill())
-
-    if items:
-        form.item.choices = [
-            (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
-        ]
     if not form.validate_on_submit():
 
         return render_template(
@@ -113,10 +110,12 @@ def register():
     inventory = models.Inventory()
     form.populate_obj(inventory)
     inventory.item = models.Item.objects(id=form.item.data).first()
+    inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
     inventory.created_by = current_user._get_current_object()
     inventory.status = "pending"
     inventory.registration = item_register
     inventory.remain = inventory.quantity
+    inventory.organization = organization
     inventory.save()
 
     return redirect(
@@ -152,9 +151,7 @@ def edit(inventory_id):
         if inventory.item:
             items.append(models.Item.objects(id=inventory.item.id).first())
     if items:
-        form.item.choices = [
-            (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
-        ]
+        form.item.choices = [(str(item.id), f"{item.name}") for item in items]
         form.item.process(
             formdata=form.item.choices,
             data=str(inventory.item.id),
@@ -173,9 +170,12 @@ def edit(inventory_id):
     form.populate_obj(inventory)
 
     inventory.item = models.Item.objects(id=form.item.data).first()
+    inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
     inventory.created_by = current_user._get_current_object()
+    inventory.status = "pending"
     inventory.registration = item_register
     inventory.remain = inventory.quantity
+    inventory.organization = organization
     inventory.save()
 
     return redirect(

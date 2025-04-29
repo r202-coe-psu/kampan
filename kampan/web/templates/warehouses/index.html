@@ -54,7 +54,7 @@
   {% endfor %}
   {% if paginated_warehouses.pages != 1 %}
   <div class="mt-4">
-    {{ paginated.render_pagination(paginated_warehouses,"warehouses.index")}}
+    {{ paginated.render_pagination(paginated_warehouses,"warehouses.index", request.args)}}
   </div>
   {% endif %}
 </div>

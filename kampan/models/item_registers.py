@@ -23,7 +23,24 @@ class RegistrationItem(me.Document):
             registration=self, status__ne="disactive"
         )
         if inventories:
-            return [inventory.item.id for inventory in inventories]
+            return [
+                inventory.item.id
+                for inventory in inventories
+                if inventory.item.status == "active"
+            ]
+        return []
+
+    def get_item_in_bills(self):
+        inventories = models.Inventory.objects(
+            registration=self, status__ne="disactive"
+        )
+        if inventories:
+            return [
+                inventory.item
+                for inventory in inventories
+                if inventory.item.status == "active"
+            ]
+        return []
 
     def get_quantity_of_item(self):
         quantiy_item = models.Inventory.objects(

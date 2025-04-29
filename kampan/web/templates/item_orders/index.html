@@ -148,7 +148,7 @@
         </tbody>
       </table>
       {% if paginated_orders.pages != 1 %}
-      {{ paginated.render_pagination(paginated_orders,"item_orders.index")}}
+      {{ paginated.render_pagination(paginated_orders,"item_orders.index", request.args) }}
       {% endif %}
     </div>
   </div>

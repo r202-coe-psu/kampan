@@ -18,6 +18,7 @@ BaseInventoryForm = model_form(
         "status",
         "quantity",
         "position",
+        "organization",
     ],
     field_args={
         # "item": {

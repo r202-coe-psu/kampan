@@ -2,9 +2,13 @@ from flask import url_for
 from email.policy import default
 import mongoengine as me
 from mongoengine import Q
-import datetime
+import datetime, calendar
 from kampan import models
 
+
+from kampan.models.inventories import Inventory
+from kampan.models.item_checkouts import CheckoutItem
+from kampan.models.lost_break_items import LostBreakItem
 
 ITEM_FORMAT = [
     ("one to many", "หนึ่งต่อหลายๆ"),
@@ -89,15 +93,15 @@ class Item(me.Document):
     def get_last_price(self):
         inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
-            return inventories.order_by("created_date").first().price
+            return inventories.order_by("-created_date").first().price
 
     def get_last_price_per_piece(self):
         value = self.get_last_price()
-        if value:
+        if value != None:
 
             return round(value / self.piece_per_set, 2)
 
-        return ""
+        return 0
 
     def get_remaining_balance(self):
         value = self.get_last_price()
@@ -157,3 +161,140 @@ class ItemSnapshot(me.Document):
 
     def get_amount_pieces(self):
         return self.amount_pieces % self.item.piece_per_set
+
+    def update_data(self):
+        date = self.created_date - datetime.timedelta(days=1)
+
+        item_id = self.item.id
+        organization_id = self.organization.id
+
+        start_date = datetime.datetime(2024, 1, 1, 0, 0, 0)
+        end_date = datetime.datetime(
+            date.year,
+            date.month,
+            calendar.monthrange(date.year, date.month)[1],
+            23,
+            59,
+            59,
+        )
+        reports = []
+        inventories = Inventory.objects(
+            item=item_id,
+            status="active",
+            organization=organization_id,
+            created_date__gte=start_date,
+            created_date__lte=end_date,
+        ).order_by("-created_date")
+        for inventory in inventories:
+            data = {
+                "type": "inventory",
+                "created_date": inventory.created_date,
+                "description": "เติมวัสดุ: "
+                + str(inventory.registration.description)
+                + "<br>"
+                + "เลขกำกับใบเสร็จ "
+                + str(inventory.registration.receipt_id),
+                "warehouse": inventory.warehouse.name,
+                "quantity": inventory.get_all_quantity(),
+                "unit": (
+                    inventory.item.piece_unit
+                    if inventory.item.item_format == "one to many"
+                    else inventory.item.set_unit
+                ),
+                "price": inventory.item.get_last_price_per_piece(),
+                "total": inventory.get_all_price(),
+                "remain": 0,
+                "id": str(inventory.id),
+            }
+            reports.append(data)
+        checkouts = CheckoutItem.objects(
+            item=item_id,
+            organization=organization_id,
+            status="active",
+            # created_date__gte=start_date,
+            # created_date__lte=end_date,
+        ).order_by("-created_date")
+        for checkout in checkouts:
+            try:
+                if (
+                    checkout.order.approved_date >= start_date
+                    and checkout.order.approved_date <= end_date
+                ):
+                    data = {
+                        "type": "checkout",
+                        "created_date": checkout.order.approved_date,
+                        "description": "เบิกวัสดุ: "
+                        + str(checkout.order.description)
+                        + "<br>"
+                        + "เบิกโดย:"
+                        + checkout.user.get_name(),
+                        "warehouse": "",
+                        "quantity": -checkout.quantity,
+                        "unit": (
+                            checkout.item.piece_unit
+                            if checkout.item.item_format == "one to many"
+                            else checkout.item.set_unit
+                        ),
+                        "price": checkout.item.get_last_price_per_piece(),
+                        "total": checkout.get_all_price(),
+                        "remain": 0,
+                        "id": str(checkout.id),
+                    }
+                    reports.append(data)
+            except:
+                pass
+        lost_breaks = LostBreakItem.objects(
+            item=item_id,
+            organization=organization_id,
+            status="active",
+            created_date__gte=start_date,
+            created_date__lte=end_date,
+        ).order_by("-created_date")
+        for lost_break in lost_breaks:
+
+            data = {
+                "type": "lost_break",
+                "created_date": lost_break.created_date,
+                "description": "วัสดุชำรุด/สูญหาย: " + str(lost_break.description),
+                "warehouse": "",
+                "quantity": -lost_break.quantity,
+                "unit": (
+                    lost_break.item.piece_unit
+                    if lost_break.item.item_format == "one to many"
+                    else lost_break.item.set_unit
+                ),
+                "price": lost_break.item.get_last_price_per_piece(),
+                "total": lost_break.get_all_price(),
+                "remain": 0,
+                "id": str(lost_break.id),
+            }
+            reports.append(data)
+
+        reports.sort(key=lambda x: x["created_date"])
+        total = 0
+        for i in range(len(reports)):
+            if i == 0:
+                total += reports[i]["quantity"]
+            elif reports[i]["type"] != "snapshot":
+                total += reports[i]["quantity"]
+            reports[i]["remain"] = total
+
+        if not reports:
+            last_snap = ItemSnapshot.objects(
+                item=self, status="active", created_date__lte=end_date
+            ).order_by("-created_date")
+            if last_snap:
+                self.amount = last_snap.amount
+                self.amount_pieces = last_snap.amount_pieces
+                self.last_price_per_piece = last_snap.last_price_per_piece
+                self.last_price = last_snap.last_price
+                self.remaining_balance = last_snap.remaining_balance
+                self.save()
+        else:
+
+            self.amount = total
+            self.amount_pieces = total * self.item.piece_per_set
+            self.last_price_per_piece = reports[-1]["price"]
+            self.last_price = reports[-1]["total"]
+            self.remaining_balance = int(str(total * int(reports[-1]["price"])))
+            self.save()

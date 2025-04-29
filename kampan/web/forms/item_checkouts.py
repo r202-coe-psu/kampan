@@ -23,12 +23,6 @@ BaseCheckoutItemForm = model_form(
     ],
     field_args={
         "order": {"label": "คำสั่งเบิก"},
-        # "item": {
-        #     "label": "ชื่อวัสดุ",
-        #     "label_modifier": lambda obj: f"{obj.barcode_id} ({obj.name})",
-        # },
-        # "set_": {"label": "จำนวนหน่วยใหญ่"},
-        "piece": {"label": "จำนวนหน่วยเล็ก"},
         "message": {"label": "ข้อความ"},
     },
 )
@@ -36,6 +30,11 @@ BaseCheckoutItemForm = model_form(
 
 class CheckoutItemForm(BaseCheckoutItemForm):
     item = fields.SelectField("ชื่อวัสดุ")
+    piece = fields.IntegerField(
+        "จำนวนหน่วยเล็ก",
+        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        default=1,
+    )
     calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล")
     created_date = fields.DateField(
         "ลงวันที่คำสั่งเบิก",

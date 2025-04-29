@@ -35,6 +35,7 @@ class ItemSnapshot:
 
         try:
             item_snapshot.save()
+            item_snapshot.update_data()
         except Exception as e:
             logger.debug(e)
 

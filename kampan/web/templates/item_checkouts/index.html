@@ -85,7 +85,7 @@
     </table>
     {% if paginated_checkouts.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
+    {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.index", request.args)}}
 
     {% endif %}
     {% else %}

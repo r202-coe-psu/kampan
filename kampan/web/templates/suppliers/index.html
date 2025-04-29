@@ -80,7 +80,7 @@
   </div>
   {% endfor %}
   {% if paginated_suppliers.pages != 1 %}
-  {{ paginated.render_pagination(paginated_suppliers,"suppliers.index") }}
+  {{ paginated.render_pagination(paginated_suppliers,"suppliers.index", request.args) }}
   {% endif %}
 </div>
 {% else %}
