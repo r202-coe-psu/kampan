@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}
 {{ "เพิ่มการขอใช้รถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถยนต์" }}
@@ -18,45 +18,51 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary"
       href='{{ url_for("vehicle_lending.car_applications.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
     {{form.csrf_token }}
-    {{render_form.InputField(form.request_reason)}}
+    {{renderer.render_field(form.request_reason)}}
   </div>
-  <div class="equal width fields">
-    {{render_form.InputField(form.location)}}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{renderer.render_field(form.location)}}
   </div>
-  <div class="equal width fields">
-    {{ render_form.SelectField(form.car, clearable=false) }}
-    {{ render_form.InputField(form.passenger_number) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.car, clearable=false) }}
+    {{ renderer.render_field(form.passenger_number) }}
   </div>
-  {{ render_form.RadioField(form.travel_type) }}
-  {{ render_form.RadioField(form.using_type) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_radio(form.using_type) }}
+    {{ renderer.render_radio(form.travel_type) }}
+  </div>
 
-  <div class="equal width fields">
-    {{render_form.DateField(form.departure_date) }}
-    {{render_form.TimeField(form.departure_time) }}
+  <!-- {{ render_form.RadioField(form.travel_type) }}
+  {{ render_form.RadioField(form.using_type) }} -->
+
+  <div class="flex flex-row w-full gap-2">
+    {{renderer.date_field_js(form.departure_date) }}
+    {{renderer.time_field(form.departure_time) }}
+
 
   </div>
-  <div class="equal width fields" id="return_datetime">
-    {{render_form.DateField(form.return_date) }}
-    {{render_form.TimeField(form.return_time) }}
+  <div class="flex flex-row justify-between w-full gap-2 items-end" id="return_datetime">
+    {{renderer.date_field_js(form.return_date) }}
+    {{renderer.time_field(form.return_time) }}
   </div>
-  <div class="equal width fields" id="flight_datetime">
-    {{render_form.DateField(form.flight_date) }}
-    {{render_form.TimeField(form.flight_time) }}
+  <div class="flex flex-row justify-between w-full gap-2" id="flight_datetime">
+    {{renderer.date_field_js(form.flight_date) }}
+    {{renderer.time_field(form.flight_time) }}
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ยืนยัน</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
+      <button type="submit" class="btn btn-primary">ยืนยัน</button>
     </div>
   </div>
 </form>
@@ -69,8 +75,10 @@
 
     function toggleReturnDate() {
       let travelType = $("input[name='travel_type']:checked").val();
-      let return_dateField = $("#return_date input");
-      let return_timeField = $("#return_time input");
+      let return_dateField = $("#return_date");
+      let return_timeField = $("#return_time");
+      console.log(return_date.required);
+
       if (travelType === "one way") {
         $("#return_datetime").hide();
         return_dateField.prop("required", false);
@@ -92,8 +100,12 @@
 
     function toggleFlightDate() {
       let usingType = $("input[name='using_type']:checked").val();
-      let flight_dateField = $("#flight_date input");
-      let flight_timeField = $("#flight_time input");
+      console.log(usingType);
+
+      let flight_dateField = $("#flight_date");
+      let flight_timeField = $("#flight_time");
+      console.log(flight_timeField);
+
       if (usingType === "airport transfer") {
         $("#flight_datetime").show();
         flight_dateField.prop("required", true);
@@ -109,52 +121,5 @@
 
     toggleFlightDate();
   });
-</script>
-<script type="text/javascript">
-
-  function showDeleteModal(order_id) {
-    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#departure_date').calendar(calendar_setting);
-  $('#return_date').calendar(calendar_setting);
-  $('#flight_date').calendar(calendar_setting);
-
-
-  time_formatter = {
-    date: "HH:mm"
-  };
-  var time_setting = {
-    type: 'time',
-    monthFirst: false,
-    formatter: time_formatter,
-    today: false,
-    ampm: true,
-  };
-  $('#departure_time').calendar(time_setting);
-  $('#return_time').calendar(time_setting);
-  $('#flight_time').calendar(time_setting);
-
 </script>
 {% endblock %}

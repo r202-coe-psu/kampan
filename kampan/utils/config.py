@@ -13,9 +13,6 @@ def get_settings():
     if not settings:
         filename = os.environ.get("KAMPAN_SETTINGS", None)
 
-        # if filename is None:
-        #     print('This program require NOKKHUM_SETTINGS environment')
-
         logger.debug(f"setting environment file: {filename}")
 
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")

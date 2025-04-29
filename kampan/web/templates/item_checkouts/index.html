@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer%}
-{% import '/base/pagination.html' as paginated%}
+{% import '/base/components/paginations/pagination.html' as paginated%}
 {% import '/base/components/forms.html' as render_form %}
 
 {% block title %}รายการนำวัสดุออก{% endblock %}
@@ -11,129 +11,92 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{form.hidden_tag()}}
-  <div class="equal width fields">
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.SelectField(form.categories) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_search_select_field(form.item) }}
+    {{ renderer.render_select_field(form.categories) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("item_checkouts.index",organization_id=organization.id )}}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
-<div>
-
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   {% if checkouts %}
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>วันที่สั่งเบิกวัสดุ</th>
-        <th>วัตถุประสงค์</th>
-        <th>รูปวัสดุ</th>
-        <th>ชื่อวัสดุ</th>
-        {#} <th>จำนวนหน่วยใหญ่</th>{#}
-        <th>จำนวนหน่วยเล็ก</th>
-        {#<th>จำนวนที่เบิกทั้งหมด</th>{#}
-        <th>สถานะ</th>
-        <th>ชื่อผู้ขอเบิกใช้งาน</th>
-        <th>ราคา (หน่วยเล็กละ)</th>
-        <th>นัดรับ ณ วันที่</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for checkout in paginated_checkouts.items %}
-      <tr>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Objective"> <a class="primary button"
-            href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
-            style="color: rgb(38, 0, 255); background-color: rgb(255, 255, 255);">
-            <i class="eye icon"></i>
-          </a><a
-            href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
-            class="ui secondary text" style="color: black;">{{ checkout.order.description }}</a>
+  <div class="overflow-x-auto mt-2 rounded-xl">
 
-        </td>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img
-              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
-              width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Item">{{ checkout.item.name }}
-        </td>
-        {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
-        <td data-label="Piece">{{ checkout.piece }}</td>
-        {#<td data-label="Quantity">{{ checkout.quantity }}</td>{#}
-        {{ checkout.order.get_status()|safe }}
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+          <th class="table-style">วัตถุประสงค์</th>
+          <th class="table-style">รูปวัสดุ</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          <th class="table-style">จำนวนหน่วยเล็ก</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">ชื่อผู้ขอเบิกใช้งาน</th>
+          <th class="table-style">ราคา (หน่วยเล็กละ)</th>
+          <th class="table-style">นัดรับ ณ วันที่</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td class="table-style" data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Objective"> <a
+              href="{{ url_for('item_checkouts.bill_checkout', order_id=checkout.order.id, organization_id=organization.id) }}"
+              class="underline hover:text-primary">{{ checkout.order.description }}</a>
 
-        <td data-label="User">{{ checkout.user.get_name() }}</td>
-        {#}<td data-label="Amount-Approved">{{ checkout.aprroved_amount if checkout.aprroved_amount else "-"}}</td>
-        <td data-label="Warehouse">{{ checkout.warehouse if checkout.warehouse else "-" }}</td>{#}
-        <td data-label="Price">{{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
-        </td>
-        <td data-label="Checkout Date">{{ checkout.order.sent_item_date.strftime('%d/%m/%Y %H:%M:%S') if
+          </td>
+          <td class="table-style" data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td class="table-style" data-label="Item">{{ checkout.item.name }}
+          </td>
+          <td class="table-style" data-label="Piece">{{ checkout.piece }}</td>
+          {{ checkout.order.get_status()|safe }}
+
+          <td class="table-style" data-label="User">{{ checkout.user.get_name() }}</td>
+          <td class="table-style" data-label="Price">
+            {{ checkout.inventories[0].get_price_per_piece() if checkout.inventories else "-"}}
+          </td>
+          <td class="table-style" data-label="Checkout Date">{{ checkout.order.sent_item_date.strftime('%d/%m/%Y %H:%M:%S') if
           checkout.order.sent_item_date else "-" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
-      </div>
-    </div>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_checkouts.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.index")}}
+
+    {% endif %}
+    {% else %}
+    <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
   </div>
-  {% endif %}
-  {% else %}
-  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% endif %}
 </div>
+
 {% endblock %}
 
 
 {% block additional_js %}
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
 
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
 {% endblock %}

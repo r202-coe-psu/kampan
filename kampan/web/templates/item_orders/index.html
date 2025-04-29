@@ -1,7 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
-{% import '/base/components/forms.html' as render_form %}
+{% extends '/base/template-page-login.html' %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
 
 {% block title %}คำสั่งเบิกวัสดุ{% endblock %}
 {% block dashboard_title %}คำสั่งเบิกวัสดุ{% endblock %}
@@ -11,198 +10,153 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary labeled icon button"
-      href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
-      เพิ่มคำสั่งเบิก
-    </a>
-  </div>
+<div class="flex flex-row w-full justify-end">
+  <a class="btn btn-primary" href="{{ url_for('item_orders.order', organization_id=organization.id) }}">
+    <i class="ph ph-plus"></i>
+    เพิ่มคำสั่งเบิก
+  </a>
 </div>
 
 
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
-
-    {{form.hidden_tag()}}
-    {{render_form.SelectField(form.item)}}
-    {{render_form.RangeDateField(form.start_date, form.end_date)}}
-  </div>
-
-  <div class="ui secondary menu">
-    <div class="left menu">
-
-      <span class="ui button" data-html="
-    <div style='font-size: 18px; width: 400px;'>
-      <div><span class='ui red text'>● สีแดง:</span> ปฎิเสธ</div>
-      <div><span class='ui green text'>● สีเขียว:</span> อนุมัติรอรับวัสดุ</div>
-      <div><span class='ui blue text'>● สีน้ำเงิน:</span> รอการจัดการจากเจ้าหน้าที่พัสดุ</div>
-      <div><span class='ui orange text'>● สีส้ม:</span> รอการอนุมัติจากหัวหน้าเจ้าหน้าที่พัสดุ</div>
-      <div><span class='ui yellow text'>● สีเหลือง:</span> รอการอนุมัติจากหัวหน้าฝ่าย</div>
-      <div><span class='ui pink text'>● สีชมพู:</span> รอการยืนยันการเบิก</div>
-
-    </div>
-  " data-position="top center">
-        แสดงความหมายของสี
-      </span>
-    </div>
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
-    </div>
-  </div>
-
-  <script>
-    $(document).ready(function () {
-      $('.ui.button').popup();
-    });
-  </script>
-  {% if orders %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
-      <thead>
-        <tr>
-          {% if current_user.has_organization_roles("admin") %}
-          <th>เลขลำดับ</th>
-          {% endif %}
-          <th>วันที่สั่งเบิกวัสดุ</th>
-          <th>วัตถุประสงค์</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>ขออนุมัติจาก</th>
-          <th>รายการวัสดุ</th>
-          <th>สถานะ</th>
-          <th>เหตุผล</th>
-          <th>นัดรับ ณ วันที่</th>
-          <th>จัดการ</th>
-
-        </tr>
-      </thead>
-      <tbody>
-        {% for order in paginated_orders.items %}
-        <tr>
-          {% if current_user.has_organization_roles("admin") %}
-          <td data-label="Index">{{ order.ordinal_number }}</td>
-          {% endif %}
-
-          <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td data-label="Description">{{ order.description }}</td>
-          <td data-label="User">{{ order.created_by.get_name() }}</td>
-          <td data-label="User">{{ order.head_endorser.get_name() if order.head_endorser else "" }}</td>
-
-
-          <td data-label="Bill">
-            <a class="ui icon primary button"
-              href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
-              <i class="eye icon"></i>
-            </a>
-          </td>
-          {{ order.get_status()|safe }}
-
-          <td>
-            {{ order.remark }}
-          </td>
-          <td>
-            {{ order.sent_item_date.strftime("%d/%m/%Y %H:%M")
-            if order.sent_item_date else "" }}
-          </td>
-          <td>
-            {% if order.status == 'pending' %}
-            <a class="ui icon primary button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-              data-tooltip="เบิกวัสดุ"
-              href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
-              <i class="plus icon"></i>
-            </a>
-            {% endif %}
-            {% if order.status == 'pending' %}
-            <a class="ui icon button primary" data-tooltip="แก้ไข"
-              href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
-              <i class="edit icon"></i>
-            </a>
-            {% endif %}
-
-            <a class="ui icon button red {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-              data-tooltip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
-              <i class="trash icon"></i>
-            </a>
-            <div class="ui modal {{order.id}}">
-              <div class="header">
-                ลบคำสั่งเบิกวัสดุ
-              </div>
-              <div class="content">
-                <p>ต้องการลบคำสั่งเบิกวัสดุ
-                  <b>{{ order.description }}</b>
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('item_orders.delete', order_id=order.id, organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% if paginated_orders.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_orders,"item_orders.index")}}
-        </div>
+<form method="post">
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex flex-wrap flex-col w-full">
+      <div class="lg:flex gap-4 flex w-full">
+        {{form.hidden_tag()}}
+        {{renderer.date_range_field(form.start_date, form.end_date)}}
+        {{renderer.render_search_select_field(form.item)}}
       </div>
     </div>
-    {% endif %}
+    <div class="gap-2 flex w-full flex-wrap justify-between items-center my-auto mt-2">
+      <div class="dropdown dropdown-start">
+        <div tabindex="0" role="button" class="btn">แสดงความหมายของสี</div>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+          <div><span class="text-red-500 font-semibold">● สีแดง:</span> ปฎิเสธ</div>
+          <div><span class="text-green-500 font-semibold">● สีเขียว:</span> อนุมัติรอรับวัสดุ</div>
+          <div><span class="text-blue-500 font-semibold">● สีน้ำเงิน:</span> รอการจัดการจากเจ้าหน้าที่พัสดุ</div>
+          <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติจากหัวหน้าเจ้าหน้าที่พัสดุ</div>
+          <div><span class="text-yellow-500 font-semibold">● สีเหลือง:</span> รอการอนุมัติจากหัวหน้าฝ่าย</div>
+          <div><span class="text-pink-500 font-semibold">● สีชมพู:</span> รอการยืนยันการเบิก</div>
+        </ul>
+      </div>
+      <div class="gap-2 flex">
+        <a class="btn" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+          ล้างการค้นหา
+        </a>
+        <button class="btn btn-primary" type="submit">
+          ค้นหา
+          <i class="ph ph-size ph-magnifying-glass"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {% if orders %}
+  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="overflow-x-auto mt-2 rounded-xl">
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            {% if current_user.has_organization_roles("admin") %}
+            <th class="table-style">เลขลำดับ</th>
+            {% endif %}
+            <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+            <th class="table-style">วัตถุประสงค์</th>
+            <th class="table-style">ชื่อผู้ใช้งาน</th>
+            <th class="table-style">ขออนุมัติจาก</th>
+            <th class="table-style">รายการวัสดุ</th>
+            <th class="table-style">สถานะ</th>
+            <th class="table-style">เหตุผล</th>
+            <th class="table-style">นัดรับ ณ วันที่</th>
+            <th class="table-style">จัดการ</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in paginated_orders.items %}
+          <tr>
+            {% if current_user.has_organization_roles("admin") %}
+            <td class="table-style text-center" data-label="Index">{{ order.ordinal_number }}</td>
+            {% endif %}
+
+            <td class="table-style" data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+            </td>
+            <td class="table-style" data-label="Description">{{ order.description }}</td>
+            <td class="table-style" data-label="User">{{ order.created_by.get_name() }}</td>
+            <td class="table-style" data-label="User">
+              {{ order.head_endorser.get_name() if order.head_endorser else "" }}
+            </td>
+
+
+            <td class="table-style" data-label="Bill">
+              <a class="btn-circle btn btn-primary"
+                href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
+                <i class="ph ph-list-magnifying-glass"></i>
+              </a>
+            </td>
+            {{ order.get_status()|safe }}
+
+            <td class="table-style">
+              {{ order.remark }}
+            </td>
+            <td class="table-style">
+              {{ order.sent_item_date.strftime("%d/%m/%Y %H:%M")
+            if order.sent_item_date else "" }}
+            </td>
+            <td class="table-style">
+              {% if order.status == 'pending' %}
+              <a class="btn-circle btn btn-primary {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+                data-tip="เบิกวัสดุ"
+                href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
+                <i class="ph ph-list-plus"></i>
+              </a>
+              {% endif %}
+              {% if order.status == 'pending' %}
+              <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
+                href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
+                <i class="ph ph-pen"></i>
+              </a>
+              {% endif %}
+
+              <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+                data-tip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
+                <i class="ph ph-trash"></i>
+              </a>
+              <div role="dialog" class="modal {{order.id}}">
+
+                <div class="modal-box">
+                  <h3 class="text-lg font-bold">ลบคำสั่งเบิกวัสดุ</h3>
+                  <p>ต้องการลบคำสั่งเบิกวัสดุ
+                    <b>{{ order.description }}</b>
+                  </p>
+                  <div class="modal-action">
+                    <button class="btn">
+                      ยกเลิก
+                    </button>
+                    <a class="btn-error btn"
+                      href="{{ url_for('item_orders.delete', order_id=order.id, organization_id=organization.id) }}">
+                      ยืนยัน
+                      <i class="ph ph-check"></i>
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if paginated_orders.pages != 1 %}
+      {{ paginated.render_pagination(paginated_orders,"item_orders.index")}}
+      {% endif %}
+    </div>
   </div>
   {% else %}
-  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+  <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
   {% endif %}
 </form>
 {% endblock %}
 
 {% block additional_js %}
-<script type="text/javascript">
-
-  function showDeleteModal(order_id) {
-    order_id ? $('.ui.modal.' + order_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
 {% endblock %}

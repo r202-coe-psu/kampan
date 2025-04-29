@@ -20,51 +20,56 @@
 
 
 {% if errors %}
-<div class="ui modal upload_errors">
-  <div class="header">
-    เกิดปัญหา
+<dialog role="dialog" class="modal upload_errors " open>
+  <div class="modal-box">
+    <div class="text-2xl font-bold">
+      เกิดปัญหา
+    </div>
+    <div class="overflow-y-auto">
+      {% for error in errors %}
+      <span class="text-error">
+        <b>- {{ error }}</b><br>
+      </span>
+      {% endfor %}
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn-error btn">
+          ยืนยัน
+          <i class="ph ph-check"></i>
+        </button>
+      </form>
+    </div>
   </div>
-  <div class="scrolling content red">
-    {% for error in errors %}
-    <span class="ui error text">
-      <b>- {{ error }}</b><br>
-    </span>
-    {% endfor %}
-  </div>
-  <div class="actions">
-    <button class="ui negative right labeled icon button">
-      ยืนยัน
-      <i class="checkmark icon"></i>
-    </button>
-  </div>
-</div>
+</dialog>
 {% endif %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href='{{ url_for("items.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href='{{ url_for("items.index", organization_id=organization.id) }}'>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="right menu">
-    <a class="ui primary button"
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('items.download_template_items_file', organization_id=organization.id) }}">
       <i class="file download icon"></i> ดาวน์โหลดรูปแบบการลงทะเบียนวัสดุ</a>
   </div>
 </div>
 <div>
 
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {#}
     <div style="padding-bottom: 1rem;">
       <p> คอลัมน์ที่สำคัญในตารางที่จำเป็นต้องกรอกได้แก่
-        <span class="ui red text"> ชื่อ บาร์โค๊ด และหมวดหมู่ </span>
+        <span class="text-error"> ชื่อ บาร์โค๊ด และหมวดหมู่ </span>
       </p>
     </div>
     {#}
     {{ form.hidden_tag() }}
-    {{ renderer.render_fileinput(form.upload_file) }}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    {{ renderer.file_input(form.upload_file) }}
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

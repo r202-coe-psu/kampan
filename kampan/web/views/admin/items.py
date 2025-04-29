@@ -37,7 +37,6 @@ def index():
         items = items.filter(id=form.item.data)
     if form.categories.data != None:
         items = items.filter(categories=form.categories.data)
-    print(form.data)
 
     page = request.args.get("page", default=1, type=int)
     paginated_items = Pagination(items, page=page, per_page=24)

@@ -22,33 +22,31 @@ organization_id=organization.id)),
 {% endblock breadcrumbs %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary"
       href='{{ url_for("inventories.bill_item",item_register_id=item_register.id, organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <div class="three fields">
-      <div class="field">
-        {{ form.item.label }}
-        {{ form.item(class="ui fluid search dropdown") }}
-      </div>
+      {{ renderer.render_search_select_field(form.item) }}
       {{ renderer.render_field(form.set_) }}
       {{ renderer.render_field(form.price) }}
     </div>
     {{ form.csrf_token }}
     <div class="two fields">
 
-      {{ renderer.render_select(form.warehouse) }}
+      {{ renderer.render_select_field(form.warehouse) }}
 
     </div>
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

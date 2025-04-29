@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_form %}
 
 {% block title %}สมาชิกของแผนก{% endblock %}
@@ -15,82 +15,72 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-  <div class="right menu">
-    <a class="ui primary labeled icon button"
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มสมาชิก
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{form.hidden_tag()}}
-    {{render_form.SelectField(form.user)}}
-    {{render_form.SelectField(form.role)}}
-    {{render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{renderer.render_select_field(form.user)}}
+    {{renderer.render_select_field(form.role)}}
+    {{renderer.date_range_field(form.start_date, form.end_date)}}
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("divisions.users", division_id=division.id ,organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 
-
-  {% if paginated_division_users.pages >= 1 %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
+</form>
+{% if paginated_division_users.pages >= 1 %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>ชื่อสมาชิก</th>
-          <th>ตำแหน่ง</th>
-          <th>เพิ่มเข้ามาเมื่อวันที่</th>
-          <th>ลบสมาชิก</th>
+          <th class="table-style">ชื่อสมาชิก</th>
+          <th class="table-style">ตำแหน่ง</th>
+          <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+          <th class="table-style">ลบสมาชิก</th>
         </tr>
       </thead>
       <tbody>
         {% for division_user in paginated_division_users.items %}
         <tr>
-          <td data-label="Organization">{{ division_user.display_fullname() }}</td>
-          <td data-label="Roles">{{ division_user.display_roles() }}</td>
-          <td data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
+          <td class="table-style" data-label="Organization">{{ division_user.display_fullname() }}</td>
+          <td class="table-style" data-label="Roles">{{ division_user.display_roles() }}</td>
+          <td class="table-style" data-label="Create date">{{ division_user.created_date.strftime('%d/%m/%Y') if
             division_user.created_date else "-"}}
           </td>
-          <td>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ division_user.id }}')">
-              <i class="trash icon"></i>
+          <td class="table-style">
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
+              <i class="ph ph-trash"></i>
             </a>
-            <div class="ui modal {{ division_user.id }}">
-              <div class="header">
-                ลบสมาชิก
-              </div>
-              <div class="content">
-                <p>ต้องการลบสมาชิก<b> {{ division_user.display_fullname() }}</b><br />
-
-
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button" href="{{ url_for('divisions.remove_division_user', 
-                organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)}}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
+            {{ ModalNegative(
+                id=division_user.id,
+                header="ลบสมาชิก",  
+                body="ต้องการลบสมาชิก<b> %s</b><br />" | format(division_user.display_fullname()),  
+                cancel="ยกเลิก",  
+                submit="ยืนยัน",  
+                redirect=url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)
+              ) }}
           </td>
         </tr>
 
@@ -102,19 +92,15 @@
     {% set _dummy=params.pop('page') %}
     {% endif %}
     {% if paginated_division_users.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
-        </div>
-      </div>
-    </div>
+
+    {{ paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
+
     {% endif %}
   </div>
-  {% else %}
-  <div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
-  {% endif %}
-</form>
+</div>
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

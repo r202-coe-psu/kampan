@@ -1,5 +1,5 @@
 {% extends '/item_checkouts/index.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}รายการนำวัสดุออก{% endblock %}
 {% block dashboard_title %}รายการนำวัสดุออก{% endblock %}
@@ -8,7 +8,7 @@
 {% block breadcrumbs %}
 <a class="section"
   href="{{ url_for('approve_orders.index', organization_id=organization.id) }}">รายการอนุมัติการเบิกวัสดุ</a>
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 <div class="active section">
   รายละเอียดคำสั่งเบิกวัสดุ
 </div>
@@ -16,66 +16,65 @@
 
 {% block content %}
 {% if checkouts %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>รูปวัสดุ</th>
-        <th>วันที่นำวัสดุออก</th>
-        <th>ชื่อวัสดุ</th>
-        <th>จำนวนหน่วยใหญ่</th>
-        <th>จำนวนหน่วยเล็ก</th>
-        <th>จำนวนที่มีในคลัง</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for checkout in paginated_checkouts.items %}
-      <tr>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img
-              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
-              width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Item">{{ checkout.item.name }}</td>
-        <td data-label="Set">{{ checkout.set_ }}</td>
-        <td data-label="Quantity">{{ checkout.quantity }}</td>
-        {% if checkout.get_amount_pieces() > checkout.item.get_amount_pieces() %}
-        <td data-label="Status" class="red">
-          <span class="ui red text"> {{ checkout.item.get_items_quantity() }}</span>
-        </td>
-        {% else %}
-        <td data-label="Status" class="green">
-          <span class="ui green text"> {{ checkout.item.get_items_quantity() }}</span>
-        </td>
-        {% endif %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">รูปวัสดุ</th>
+          <th class="table-style">วันที่นำวัสดุออก</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          <th class="table-style">จำนวนหน่วยใหญ่</th>
+          <th class="table-style">จำนวนหน่วยเล็ก</th>
+          <th class="table-style">จำนวนที่มีในคลัง</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td class="table-style" data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td class="table-style" data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Item">{{ checkout.item.name }}</td>
+          <td class="table-style" data-label="Set">{{ checkout.set_ }}</td>
+          <td class="table-style" data-label="Quantity">{{ checkout.quantity }}</td>
+          {% if checkout.get_amount_pieces() > checkout.item.get_amount_pieces() %}
+          <td class="table-style" data-label="Status" class="text-error">
+            <span class="text-error"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% else %}
+          <td class="table-style" data-label="Status" class="text-success">
+            <span class="text-success"> {{ checkout.item.get_items_quantity() }}</span>
+          </td>
+          {% endif %}
 
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% set params=dict(request.args) %}
-  {% if 'page' in params %}
-  {% set _dummy=params.pop('page') %}
-  {% endif %}
-  {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
-      </div>
-    </div>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_checkouts.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_checkouts,"approve_orders.item_checkouts", params)}}
+
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 {% else %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
 {% endblock %}

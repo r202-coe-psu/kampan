@@ -230,7 +230,6 @@ class User(me.Document, UserMixin):
     def is_directer_organization(self):
         division = self.get_current_division()
 
-        print(division.name)
         if "admin" in self.roles:
             return True
 

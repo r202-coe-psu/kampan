@@ -17,8 +17,7 @@ class SupplierApproveForm(FlaskForm):
 class AdminApproveForm(FlaskForm):
     sent_item_date = fields.DateTimeField(
         "วันที่ส่งมอบพัสดุ",
-        format="%d/%m/%Y %H:%M",
-        widget=widgets.TextInput(),
+        format="%Y-%m-%dT%H:%M",
         validators=[validators.InputRequired()],
         default=datetime.datetime.now,
     )

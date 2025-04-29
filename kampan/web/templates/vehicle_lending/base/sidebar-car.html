@@ -1,0 +1,84 @@
+<div class="drawer-side shadow">
+  <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
+  <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
+    <div class="py-2 border-b mb-2">
+      <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
+    </div>
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/cars' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.cars.index', organization_id=organization.id ) }}">
+        <i class="ph ph-car"></i>รถยนต์
+      </a>
+    </li>
+    {% endif %}
+    {% if organization %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_applications' in request.path and '/vehicle_lending/car_applications/calendar' not in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}">
+        <i class="ph ph-hand-arrow-up"></i> การขอใช้รถยนต์
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_applications/calendar' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id ) }}">
+        <i class="ph ph-calendar-blank"></i> ปฏิทินการขอใช้รถยนต์
+      </a>
+    </li>
+    {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/header_page' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_permissions.header_page', organization_id=organization.id ) }}">
+        <i class="ph ph-check-square"></i> หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์
+      </a>
+    </li>
+    {% endif %}
+    {% if current_user.is_directer_organization() or current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/director_page' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_permissions.director_page', organization_id=organization.id ) }}">
+        <i class="ph ph-check-square"></i> ผอ. อนุมัติขอใช้รถยนต์
+      </a>
+    </li>
+    {% endif %}
+
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/admin_page' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_permissions.admin_page', organization_id=organization.id ) }}">
+        <i class="ph ph-check-square"></i> พัสดุอนุมัติขอใช้รถยนต์
+      </a>
+    </li>
+    {% endif %}
+    <li>
+      <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
+        href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026">
+        <i class="ph ph-lightbulb"></i> Smart Office
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/-----' in request.path else '' }}" href="{{ url_for('site.select_system') }}">
+        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      </a>
+    </li>
+    {% endif %}
+
+    <div class="mt-auto"></div>
+    <div class="dropdown dropdown-top dropdown-end">
+      <div class="rounded-field w-full px-2 justify-between">
+        <div class="flex items-center gap-2 justify-between">
+          <i class="ph ph-size ph-user p-2"></i>
+          <div class="flex justify-center">
+            <div class="break-all">
+              <p>{{ current_user.get_resources_fullname_th() }}</p>
+              <p>{{ current_user.email }}</p>
+            </div>
+          </div>
+          <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+            <i class="ph ph-size ph-sign-out"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </ul>
+</div>

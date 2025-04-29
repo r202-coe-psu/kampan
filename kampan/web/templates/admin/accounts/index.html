@@ -1,4 +1,4 @@
-{% extends '/admin/base/default-dashboard.html' %}
+{% extends '/admin/base/template-page-login.html' %}
 
 {% block dashboard_title %}
 ข้อมูลผู้ใช้งาน
@@ -18,7 +18,7 @@
 <div class="ui container" style="width: 100%;">
   <div class="ui segment">
     <h2 class="ui header">ข้อมูลผู้ใช้งาน <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('admin.accounts.edit_profile') }}" title='Edit profile.'><i class="edit icon"></i></a>
+        href="{{ url_for('admin.accounts.edit_profile') }}" title='Edit profile.'><i class="ph ph-pen"></i></a>
     </h2>
     {% if current_user.get_picture() %}
     <img class="ui medium rounded image" src="{{ current_user.get_picture() }}">

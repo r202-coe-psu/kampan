@@ -1,7 +1,7 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import 'base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated%}
+{% import '/base/components/paginations/pagination.html' as paginated%}
 
 {% block title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
 {% block dashboard_title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
@@ -10,50 +10,56 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary labeled icon button" href="{{ url_for('lost_breaks.add', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary" href="{{ url_for('lost_breaks.add', organization_id=organization.id) }}">
+      <i class="ph ph-plus"></i>
       เพิ่มวัสดุชำรุด/สูญหาย
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{ form.hidden_tag() }}
-    {{ render_form.InputField(form.name) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{ renderer.render_field(form.name) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("lost_breaks.index", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
-  {% if lost_break_items %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
+</form>
+
+{% if lost_break_items %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>รูปวัสดุ</th>
-          <th>ชื่อวัสดุ</th>
-          <th>คำอธิบาย</th>
-          <th>จำนวนทั้งหมด</th>
-          <th>คลังวัสดุ</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>วันที่วัสดุชำรุดหรือสูญหาย</th>
-          <th>แก้ไข/ลบข้อมูล</th>
+          <th class="table-style">รูปวัสดุ</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">จำนวนทั้งหมด</th>
+          <th class="table-style">คลังวัสดุ</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">วันที่วัสดุชำรุดหรือสูญหาย</th>
+          <th class="table-style">แก้ไข/ลบข้อมูล</th>
         </tr>
       </thead>
       <tbody>
         {% for item in paginated_lost_break_items.items %}
 
-        {% if calendar_select %}
-        {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
+        <!-- {% if calendar_select %} -->
+        <!-- {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
         <tr>
-          <td data-label="Image" class="center aligned">
+          <td class="table-style" data-label="Image" class="center aligned">
             <div>
               {% if not item.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -64,29 +70,29 @@
               {% endif %}
             </div>
           </td>
-          <td data-label="Item">{{ item.item.name}}</td>
-          <td data-label="Description">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.quantity }}</td>
-          <td data-label="Warehouse">{{ item.warehouse.name }}</td>
-          <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td>
-            <a class="ui icon button"
-              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
+          <td class="table-style" data-label="Item">{{ item.item.name}}</td>
+          <td class="table-style" data-label="Description">{{ item.description }}</td>
+          <td class="table-style" data-label="Quantity">{{ item.quantity }}</td>
+          <td class="table-style" data-label="Warehouse">{{ item.warehouse.name }}</td>
+          <td class="table-style" data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+          <td class="table-style" data-label="Registeration Date">
+            {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-            <a class="ui icon button"
-              href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}"
-              style="color: white; background-color: rgb(192, 55, 55);">
-              <i class="trash icon"></i>
+            <a class="btn btn-circle btn-error"
+              href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
+              <i class="ph ph-trash"></i>
             </a>
           </td>
         </tr>
         {% endif %}
-        {% else %}
+        {% else %} -->
         <tr>
-          <td data-label="Image" class="center aligned">
+          <td class="table-style" data-label="Image" class="center aligned">
             <div>
               {% if not item.item.image %}
               <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
@@ -97,62 +103,47 @@
               {% endif %}
             </div>
           </td>
-          <td data-label="Item">{{ item.item.name}}</td>
-          <td data-label="Description">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.quantity }}</td>
-          <td data-label="Warehouse">{{ item.warehouse.name }}</td>
-          <td data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-          <td>
-            <a class="ui icon button"
-              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
+          <td class="table-style" data-label="Item">{{ item.item.name}}</td>
+          <td class="table-style" data-label="Description">{{ item.description }}</td>
+          <td class="table-style" data-label="Quantity">{{ item.quantity }}</td>
+          <td class="table-style" data-label="Warehouse">{{ item.warehouse.name }}</td>
+          <td class="table-style" data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
+          <td class="table-style" data-label="Registeration Date">
+            {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ item.id }}')">
-              <i class="trash icon"></i>
+            <a class="btn btn-circle btn-error" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
+              <i class="ph ph-trash"></i>
             </a>
-            <div class="ui modal {{item.id}}">
-              <div class="header">
-                ลบข้อมูลวัสดุชำรุด หรือ สูญหาย
-              </div>
-              <div class="content">
-                <p>ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย
-                  <b>{{ item.item.name }}</b>
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
+            {{ ModalNegative(
+                id=item.id,
+                header="ลบข้อมูลวัสดุชำรุด หรือ สูญหาย",
+                body="ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย <b> %s</b>" | format(item.item.name),
+              cancel="ยกเลิก",
+              submit="ยืนยัน",
+              redirect= url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id)
+              
+              ) }}
           </td>
         </tr>
-        {% endif %}
+        <!-- {% endif %} -->
         {% endfor %}
       </tbody>
     </table>
     {% if paginated_lost_break_items.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index")}}
-        </div>
-      </div>
-    </div>
+
+    {{ paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index")}}
+
     {% endif %}
   </div>
-  {% else %}
-  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% endif %}
-</form>
+</div>
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

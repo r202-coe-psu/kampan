@@ -4,7 +4,7 @@
 
 {% block breadcrumbs %}
 {{ super() }}
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 <div class="active section">แก้ไขบัญชีผู้ใช้งาน</div>
 {% endblock %}
 
@@ -12,7 +12,8 @@
 <div class="ui content">
   <div class="ui segment">
     <h2>ข้อมูลผู้ใช้งาน</h2>
-    <form method="POST" class="ui form" enctype="multipart/form-data">
+    <form method="POST" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
+      enctype="multipart/form-data">
       {{ form.csrf_token }}
       <div class="two fields">
         {{ renderer.render_field(form.first_name) }}
@@ -25,10 +26,10 @@
       </div>
       <div class="two fields">
         {{ renderer.render_field(form.citizen_id) }}
-        {{ renderer.render_fileinput(form.pic) }}
+        {{ renderer.file_input(form.pic) }}
       </div>
       {#}
-      <button name="create" type="submit" class="ui primary button">เปลี่ยนข้อมูล</button>
+      <button name="create" type="submit" class="btn btn-primary">เปลี่ยนข้อมูล</button>
     </form>
   </div>
 </div>
@@ -39,19 +40,3 @@
 </div>
 
 {% endblock %}
-
-{#}
-{% block additional_js %}
-<script type="text/javascript">
-  $(".attach-file-{{ form.pic.name }}").click(function () {
-    $("#{{ form.pic.name }}").click();
-  });
-
-  $('#{{ form.pic.name }}')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-{{ form.pic.name }}', $(e.target).parent()).val(name);
-    });
-</script>
-{% endblock additional_js %}
-{#}

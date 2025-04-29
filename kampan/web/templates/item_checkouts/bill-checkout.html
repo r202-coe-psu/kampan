@@ -1,5 +1,5 @@
 {% extends '/item_checkouts/index.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}รายการนำวัสดุออก{% endblock %}
 {% block dashboard_title %}รายการนำวัสดุออก{% endblock %}
@@ -11,192 +11,155 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
-  </div>
-  <div class="right menu">
     {% if current_user.has_organization_roles("admin") %}
 
     <a href="{{ url_for('item_checkouts.upload_file', organization_id=organization.id, order_id=order.id) }}"
-      class="ui primary button">อัปโหลดไฟล์</a>
+      class="btn btn-primary">อัปโหลดไฟล์</a>
     {% endif %}
+
+  </div>
+</div>
+
+{% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+%}
+{% if order.created_by == current_user %}
+{{ ModalPositive(
+id="email",
+header="ยืนยันการเบิกพัสดุ",
+body="ทำการส่งอีเมลแจ้งเตือนให้แก่ <b> %s </b>" | format(order.head_endorser.get_name()),
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect=url_for('email_templates.force_send_email', order_id=order.id, organization_id=organization.id),
+) }}
+
+{% endif %}
+{% endif %}
+
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex justify-end w-full gap-2">
+
     {% if order.status ==
     "pending"
     %}
-    <a class="ui button primary" onclick="showModal('email')">
+    <a class="btn  btn-success" onclick="showModal('email')">
       ยืนยันการเบิกพัสดุ
     </a>
     {% endif %}
   </div>
-</div>
-<div class="ui ordered steps" style="width: 100%;">
-  <a class="completed step"
-    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-    <div class="content">
-      <div class="title">เพิ่มคำสั่งเบิก</div>
-      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
-    </div>
-  </a>
-  <a class="completed step"
-    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">เลือกพัสดุ</div>
-      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
-    </div>
-  </a>
-  <div class="{{'active' if order.status == 'pending' else 'completed'}} step">
-    <div class="content">
-      <div class="title">ยืนยันการเบิกพัสดุ</div>
-      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
-    </div>
-  </div>
-</div>
-{% if checkouts %}
-{% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
-%}
-{% if order.created_by == current_user %}
-<div class="ui modal email">
-  <div class="header">
-    ยืนยันการเบิกพัสดุ
-  </div>
-  <div class="content">
-    <p>ทำการส่งอีเมลแจ้งเตือนให้แก่ <b>{{ order.head_endorser.get_name() }}</b>
-
-    </p>
-  </div>
-  <div class="actions">
-    <button class="ui black deny button">
-      ยกเลิก
-    </button>
-    <a class="ui positive right labeled icon button"
-      href="{{ url_for('email_templates.force_send_email',order_id=order.id, organization_id=organization.id) }}">
-      ยืนยัน
-      <i class="checkmark icon"></i>
+  <div class="steps steps-vertical lg:steps-horizontal w-full py-6">
+    <a class="step-primary step"
+      href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+      เพิ่มคำสั่งเบิก
     </a>
-  </div>
-</div>
-{% endif %}
-{% endif %}
-
-<div style="display: flex; width: 100%; justify-content: flex-end; padding: 0 0 1em 0"><b>
-    <span class="text ui right"> รวมราคาทั้งหมด {{ order.get_checkout_all_price() }} บาท</span>
-  </b>
-</div>
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
-        <th>รูปวัสดุ</th>
-        <th>วันที่นำวัสดุออก</th>
-        <th>ชื่อวัสดุ</th>
-        {#<th>คลังวัสดุ</th>#}
-        {#<th>จำนวนหน่วยใหญ่</th>{#}
-        <th>จำนวนหน่วยเล็ก</th>
-        <th>ราคาแต่ละหน่วยเล็ก</th>
-        <th>รวมราคา</th>
-        {#<th>ราคา (ชิ้นละ)</th>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
-        {% if order.created_by == current_user %}
-        <th>แก้ไข/ลบข้อมูล</th>
-        {% endif %}
-        {% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for checkout in paginated_checkouts.items %}
-      <tr>
-        <td data-label="Image" class="center aligned">
-          <div>
-            {% if not checkout.item.image %}
-            <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-            {% else %}
-            <img
-              src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
-              width="70">
-            {% endif %}
-          </div>
-        </td>
-        <td data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Item">{{ checkout.item.name }}</td>
-        {#<td data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
-        {#<td data-label="Set">{{ checkout.set_ }}</td>{#}
-        <td data-label="Piece">{{ checkout.piece }}</td>
-        <td data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
-        <td data-label="Quantity">{{ checkout.get_all_price() }}</td>
-        {#<td data-label="Price">{{ checkout.price }}</td>#}
-        {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending" %}
-        {% if order.created_by == current_user %}
-        <td>
-          <a class="ui icon button"
-            href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-            style="color: white; background-color: rgb(192, 55, 55);" onclick="showDeleteModal('{{ checkout.id }}')">
-            <i class="trash icon"></i>
-          </a>
-          <div class="ui modal {{checkout.id}}">
-            <div class="header">
-              ลบคำสั่งเบิกวัสดุ
-            </div>
-            <div class="content">
-              <p>ต้องการลบคำสั่งเบิกวัสดุ
-                <b>{{ checkout.item.name }}</b>
-              </p>
-            </div>
-            <div class="actions">
-              <button class="ui black deny button">
-                ยกเลิก
-              </button>
-              <a class="ui negative right labeled icon button"
-                href="{{ url_for('item_checkouts.delete',  checkout_item_id=checkout.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="checkmark icon"></i>
-              </a>
-            </div>
-          </div>
-        </td>
-        {% endif %}
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% set params=dict(request.args) %}
-  {% if 'page' in params %}
-  {% set _dummy=params.pop('page') %}
-  {% endif %}
-  {% if paginated_checkouts.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_checkouts,"item_checkouts.bill_checkout", params)}}
-      </div>
+    <a class="step-primary step"
+      href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+      เลือกพัสดุ
+    </a>
+    <div class="{{'step-primary' if order.status == 'pending' else 'completed'}} step">
+      ยืนยันการเบิกพัสดุ
     </div>
   </div>
+  <div class="flex text-end w-full justify-end ">
+    <b> รวมราคาทั้งหมด {{ order.get_checkout_all_price() if order.get_checkout_all_price() else "-" }} บาท</b>
+
+  </div>
+  {% if checkouts %}
+
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">รูปวัสดุ</th>
+          <th class="table-style">วันที่นำวัสดุออก</th>
+          <th class="table-style">ชื่อวัสดุ</th>
+          {#<th class="table-style">คลังวัสดุ</th>#}
+          {#<th class="table-style">จำนวนหน่วยใหญ่</th>{#}
+          <th class="table-style">จำนวนหน่วยเล็ก</th>
+          <th class="table-style">ราคาแต่ละหน่วยเล็ก</th>
+          <th class="table-style">รวมราคา</th>
+          {#<th class="table-style">ราคา (ชิ้นละ)</th>#}
+          {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+          %}
+          {% if order.created_by == current_user %}
+          <th class="table-style">แก้ไข/ลบข้อมูล</th>
+          {% endif %}
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for checkout in paginated_checkouts.items %}
+        <tr>
+          <td class="table-style" data-label="Image" class="center aligned">
+            <div>
+              {% if not checkout.item.image %}
+              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
+              {% else %}
+              <img
+                src="{{ url_for('items.image', item_id=checkout.item.id, filename=checkout.item.image.filename, organization_id=organization.id) }}"
+                width="70">
+              {% endif %}
+            </div>
+          </td>
+          <td class="table-style" data-label="Checkout Date">{{ checkout.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Item">{{ checkout.item.name }}</td>
+          {#<td class="table-style" data-label="Warehouse">{{ checkout.warehouse.name }}</td>#}
+          {#<td class="table-style" data-label="Set">{{ checkout.set_ }}</td>{#}
+          <td class="table-style" data-label="Piece">{{ checkout.piece }}</td>
+          <td class="table-style" data-label="Price Per Piece">{{ checkout.item.get_last_price_per_piece() }}</td>
+          <td class="table-style" data-label="Quantity">{{ checkout.get_all_price() }}</td>
+          {#<td class="table-style" data-label="Price">{{ checkout.price }}</td>#}
+          {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
+          %}
+          {% if order.created_by == current_user %}
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary" style=" color: white;"
+              href="{{ url_for('item_checkouts.edit', checkout_item_id=checkout.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
+            </a>
+            <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
+              onclick="showDeleteModal('{{ checkout.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            {{ ModalNegative(
+              id=checkout.id,
+              header="ลบคำสั่งเบิกวัสดุ",
+              body="ต้องการลบคำสั่งเบิกวัสดุ <b> %s </b>" | format(checkout.item.name),
+            cancel="ยกเลิก",
+            submit="ยืนยัน",
+            redirect=url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id)
+            
+            ) }}
+          </td>
+          {% endif %}
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params=dict(request.args) %}
+    {% if 'page' in params %}
+    {% set _dummy=params.pop('page') %}
+    {% endif %}
+    {% if paginated_checkouts.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_checkouts,"item_checkouts.bill_checkout", params)}}
+
+    {% endif %}
+  </div>
   {% endif %}
+
 </div>
-{% else %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% if not checkouts %}
+
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 
-{% endblock %}
-
-{% block additional_js %}
-<script type="text/javascript">
-
-  function showModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-  function showDeleteModal(checkout_item_id) {
-    checkout_item_id ? $('.ui.modal.' + checkout_item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
 {% endblock %}

@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
 FLASK_DEBUG=true KAMPAN_SETTINGS=$(pwd)/kampan-development.cfg kampan-web -H 0.0.0.0 -d 
+# source ./venv/bin/activate
+# KAMPAN_SETTINGS=$(pwd)/kampan-development.cfg poetry run kampan-web -d

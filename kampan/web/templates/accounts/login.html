@@ -1,42 +1,30 @@
-{% extends "/base/default-page.html" %}
+{% extends "/base/template-page-unlogin.html" %}
 
-{% block title %}เข้าสู่ระบบ
-{% endblock %}
+{% block title %}เข้าสู่ระบบ{% endblock %}
 
 {% block content %}
-<div class="ui middle aligned center aligned grid" style="padding-bottom: 15rem;">
-  <div class="column">
-    <h2 class="ui image" style="font-size: 3em;">
-      <div style="height: 20rem;">
-        <img class="big ui image" src="../static/images/diis_psu.png" alt="diis-psu">
+<div class="flex items-center justify-center pb-30">
+  <div class="w-full max-w-md text-center">
+    <h2 class="text-4xl font-bold">
+      <div class="h-80 flex justify-center items-center">
+        <img class="h-full object-contain" src="../static/images/diis_psu_black.png" alt="diis-psu">
       </div>
-      <div class="content" style="padding-top: 2rem;">
-        เข้าสู่ระบบ
+      <div class="pt-8 w-full">
+        ระบบคลังวัสดุ <br> กรุณาเข้าสู่ระบบ
       </div>
     </h2>
-    <div>
-      <div class="ui large vertical buttons">
-        <div class="row">
-          <div class="column header" style="text-align: left;">
-            <h3></h3>
-          </div>
-        </div>
 
-        <div class="row" style="padding-top: 5px;">
-          <a class="ui labeled icon button primary huge" href="{{ url_for('accounts.login_oauth', name='psu') }}">
-            <i class="user icon"></i>
-            PSU Passport
+    <div class="mt-8">
+      <div class="flex flex-col space-y-4">
+        <!-- PSU Login Button -->
+        <div>
+          <a href="{{ url_for('accounts.login_oauth', name='psu') }}"
+            class="flex items-center justify-center space-x-2 px-6 py-3 btn btn-primary rounded-lg text-lg font-medium h-12">
+            <i class="ph ph-sign-in"></i>
+            <span>PSU Passport</span>
           </a>
         </div>
 
-        {#}
-        <div class="row" style="padding-top: 5px;">
-          <a class="ui labeled icon red button huge" href="{{ url_for('accounts.login_oauth', name='google') }}">
-            <i class="google icon"></i>
-            Google
-          </a>
-        </div>
-        {#}
       </div>
     </div>
   </div>

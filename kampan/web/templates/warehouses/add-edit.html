@@ -20,26 +20,26 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('warehouses.index', organization_id=organization.id) }}">
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
 
     {{ form.hidden_tag() }}
 
     {{ renderer.render_field(form.name) }}
-    {{ renderer.render_field(form.description) }}
+    {{ renderer.render_text_area_field(form.description) }}
 
     {% if 'edit' == request.path %}
-    <button class="ui primary button" type="submit">แก้ไข</button>
+    <button class="btn btn-primary" type="submit">แก้ไข</button>
     {% else %}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
     {% endif %}
   </form>
 </div>

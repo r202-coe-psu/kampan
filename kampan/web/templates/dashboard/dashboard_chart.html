@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block dashboard_title %}
 แสดงข้อมูลเข้า-ออก
@@ -11,8 +11,8 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" style="padding-bottom: 0.5rem;">
-  <div class="ui secondary menu">
+<form method="post">
+  <div class="flex flex-row w-full justify-between">
     {{form.hidden_tag()}}
     <p style="margin-left:auto;">
       <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
@@ -24,45 +24,45 @@
     </p>
 
     <p>
-      <button type="submit" class="ui primary button"
-        style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+      <button type="submit" class="btn btn-primary">ยืนยัน</button>
     </p>
   </div>
 </form>
 <div class="ui grid">
   <div class="sixteen wide column">
     <div class="ui container" style="width: 50%; z-index: indexs -1;">
-      <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;  text-align: center;">
+      <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px; text-align:
+        center;">
         {{ name_chart }}
       </div>
       <div id="chart"></div>
     </div>
   </div>
   <div class="sixteen wide column">
-    <div class="header" style="font-size: 1.5rem; font-weight: bold; padding-left:  10px;">
+    <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px;">
       รายชื่อบุคคลที่ขอเบิก
     </div>
     {% if group_checkouts %}
-    <table class="ui celled table">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>ชื่อผู้เบิก</th>
-          <th>จำนวนครั้งที่เบิก</th>
-          <th>จำนวนวัสดุที่เบิก</th>
+          <th class="table-style">ชื่อผู้เบิก</th>
+          <th class="table-style">จำนวนครั้งที่เบิก</th>
+          <th class="table-style">จำนวนวัสดุที่เบิก</th>
         </tr>
       </thead>
       <tbody>
         {% for checkout in group_checkouts %}
         <tr>
-          <td>{{ checkout._id }}</td>
-          <td>{{ checkout.total_time }}</td>
-          <td>{{ checkout.total }}</td>
+          <td class="table-style">{{ checkout._id }}</td>
+          <td class="table-style">{{ checkout.total_time }}</td>
+          <td class="table-style">{{ checkout.total }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% else %}
-    <div class="ui message">ไม่มีคำขอใหม่ในขณะนี้</div>
+    <div class="flex w-full justify-center py-6 text-xl">ไม่มีคำขอใหม่ในขณะนี้</div>
     {% endif %}
   </div>
 </div>

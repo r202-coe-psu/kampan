@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import 'base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated%}
+{% import '/base/components/paginations/pagination.html' as paginated%}
 {% import '/base/components/forms.html' as render_form %}
 
 {% block title %}นำเข้าวัสดุ{% endblock %}
@@ -16,94 +16,87 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary button labeled icon"
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary labeled icon"
       href="{{ url_for('item_registers.register', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มบิลวัสดุ
     </a>
   </div>
 </div>
 
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
 
     {{ form.hidden_tag() }}
-    {{ render_form.SelectField(form.item) }}
-    {{ render_form.RangeDateField(form.start_date, form.end_date)}}
+    {{ renderer.render_search_select_field(form.item) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
 
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("item_registers.index", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
-  {% if item_registers %}
-  <div style="padding-bottom: 1em ;">
-    <table class="ui celled table">
+</form>
+
+{% if item_registers %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
       <thead>
         <tr>
-          <th>เลขกำกับใบเสร็จ</th>
-          <th>คำอธิบาย</th>
-          <th>ร้านค้า</th>
-          <th>ชื่อผู้ใช้งาน</th>
-          <th>วันลงทะเบียนวัสดุ</th>
-          <th>สถานะ</th>
-          <th>รายการนำเข้าวัสดุ</th>
-          <th>แก้ไข/ลบข้อมูลวัสดุ</th>
+          <th class="table-style">เลขกำกับใบเสร็จ</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">ร้านค้า</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">วันลงทะเบียนวัสดุ</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">รายการนำเข้าวัสดุ</th>
+          <th class="table-style">แก้ไข/ลบข้อมูลวัสดุ</th>
         </tr>
       </thead>
       <tbody>
         {% for item in paginated_item_registers.items %}
         <tr>
-          <td data-label="Item Name">{{ item.receipt_id }}</td>
-          <td data-label="Warehouse">{{ item.description }}</td>
-          <td data-label="Quantity">{{ item.supplier.get_supplier_name() }}</td>
-          <td data-label="User">{{ item.created_by.get_name() }}</td>
-          <td data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
-          <td class="{{ 'green' if item.status == 'active' else 'yellow'}}">
-            {{ 'ยืนยัน' if item.status == "active" else 'รอดำเนินการ' }}
+          <td class="table-style" data-label="Item Name">{{ item.receipt_id }}</td>
+          <td class="table-style" data-label="Warehouse">{{ item.description }}</td>
+          <td class="table-style" data-label="Quantity">{{ item.supplier.get_supplier_name() }}</td>
+          <td class="table-style" data-label="User">{{ item.created_by.get_name() }}</td>
+          <td class="table-style" data-label="Registeration Date">{{ item.created_date.strftime('%d/%m/%Y') }}</td>
+          <td class="table-style">
+            <span
+              class=" {{ 'text-success' if item.status == 'active' else 'text-warning' }}">{{ 'ยืนยัน' if item.status == "active" else 'รอดำเนินการ' }}</span>
           </td>
-          <td data-label="Checkin Items">
-            <a class="ui primary button icon"
-              href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199); ">
-              <i class="eye icon"></i>
+          <td class="table-style" data-label="Checkin Items">
+            <a class="btn btn-primary"
+              href="{{ url_for('inventories.bill_item', item_register_id=item.id, organization_id=organization.id) }}" ">
+              <i class=" ph ph-list-magnifying-glass"></i>
             </a>
           </td>
-          <td>
+          <td class="table-style">
             {% if item.status != "active" %}
-            <a class="ui icon button"
-              href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}"
-              style=" color: white; background-color: rgb(59, 115, 199);">
-              <i class="edit icon"></i>
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
             {% endif %}
-            <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-              onclick="showDeleteModal('{{ item.id }}')">
-              <i class="trash icon"></i>
+            <a class="btn btn-circle btn-error" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
+              <i class="ph ph-trash"></i>
             </a>
-            <div class="ui modal {{item.id}}">
-              <div class="header">
-                ลบข้อมูลนำเข้าวัสดุ
-              </div>
-              <div class="content">
-                <p>ต้องการลบข้อมูลนำเข้าวัสดุ <b>{{ item.description }}</b><br />
-                  เลขกำกับใบเสร็จ : <b>{{ item.receipt_id }}</b>
-                </p>
-              </div>
-              <div class="actions">
-                <button class="ui black deny button">
-                  ยกเลิก
-                </button>
-                <a class="ui negative right labeled icon button"
-                  href="{{ url_for('item_registers.delete', item_register_id=item.id, organization_id=organization.id) }}">
-                  ยืนยัน
-                  <i class="checkmark icon"></i>
-                </a>
-              </div>
-            </div>
+
+            {{ ModalNegative(
+              id=item.id,
+              header="ลบข้อมูลนำเข้าวัสดุ",
+              body="ต้องการลบข้อมูลนำเข้าวัสดุ <b> %s </b>" | format(item.description)  + "เลขกำกับใบเสร็จ : <b> %s </b>" | format(item.receipt_id),
+              cancel="ยกเลิก",
+              submit="ยืนยัน",
+              redirect=url_for('item_registers.delete', item_register_id=item.id, organization_id=organization.id),
+            ) }}
           </td>
         </tr>
 
@@ -111,19 +104,15 @@
       </tbody>
     </table>
     {% if paginated_item_registers.pages != 1 %}
-    <div class="ui grid">
-      <div class="column row">
-        <div class="center aligned column">
-          {{paginated.render_pagination(paginated_item_registers,"item_registers.index")}}
-        </div>
-      </div>
-    </div>
+
+    {{ paginated.render_pagination(paginated_item_registers,"item_registers.index")}}
+
     {% endif %}
   </div>
-  {% else %}
-  <div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-  {% endif %}
-</form>
+</div>
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

@@ -1,12 +1,12 @@
-{% extends '/base/default-dashboard.html' %}
-{% import '/base/pagination.html' as paginated %}
+{% extends '/base/template-page-login.html' %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}ตำแหน่งวัสดุ{% endblock %}
 {% block dashboard_title %}ตำแหน่งวัสดุ{% endblock %}
 
 {% block breadcrumbs %}
 {% if request.endpoint == 'item_positions.index' %}
-<a class="ui primary button" href="{{ url_for('item_positions.add_or_edit', organization_id=organization.id) }}">
+<a class="btn btn-primary" href="{{ url_for('item_positions.add_or_edit', organization_id=organization.id) }}">
   เพิ่มตำแหน่งวัสดุ
 </a>
 {% else %}
@@ -17,52 +17,52 @@
 
 {% block content %}
 {% if item_positions %}
-<div style="padding-bottom: 2em;">
-  <table class="ui celled table table-hover ">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <table class="table-auto w-full table-hover ">
     <thead>
       <tr>
-        <th class="table-header">คลังวัสดุ</th>
-        <th class="table-header">คำอธิบาย</th>
-        <th class="table-header">ชั้นวาง</th>
-        <th class="table-header">แถว</th>
-        <th class="table-header">ตู้เก็บของ</th>
-        <th class="table-header">เครื่องมือ</th>
+        <th class="table-style">คลังวัสดุ</th>
+        <th class="table-style">คำอธิบาย</th>
+        <th class="table-style">ชั้นวาง</th>
+        <th class="table-style">แถว</th>
+        <th class="table-style">ตู้เก็บของ</th>
+        <th class="table-style">เครื่องมือ</th>
       </tr>
     </thead>
     <tbody>
       {% for item_position in paginated_item_positions.items %}
       <tr>
-        <td data-label="Warehouse">{{ item_position.warehouse.name }}</td>
-        <td data-label="Description">{{ item_position.description }}</td>
-        <td data-label="Rack">{{ item_position.rack }}</td>
-        <td data-label="Row">{{ item_position.row }}</td>
-        <td data-label="Locker">{{ item_position.locker }}</td>
-        <td data-label="Actions">
-          <a class="ui primary icon button"
+        <td class="table-style" data-label="Warehouse">{{ item_position.warehouse.name }}</td>
+        <td class="table-style" data-label="Description">{{ item_position.description }}</td>
+        <td class="table-style" data-label="Rack">{{ item_position.rack }}</td>
+        <td class="table-style" data-label="Row">{{ item_position.row }}</td>
+        <td class="table-style" data-label="Locker">{{ item_position.locker }}</td>
+        <td class="table-style" data-label="modal-action">
+          <a class="btn btn-primary btn-circle"
             href="{{ url_for('item_positions.edit', item_position_id=item_position.id, organization_id=organization.id) }}">
-            <i class="edit icon"></i> แก้ไข
+            <i class="ph ph-pen"></i> แก้ไข
           </a>
-          <a class="ui red icon button" onclick="showDeleteModal('{{ item_position.id }}')">
-            <i class="trash icon"></i> ลบ
+          <a class="btn btn-error btn-circle" onclick="showDeleteModal('{{ item_position.id }}')">
+            <i class="ph ph-trash"></i> ลบ
           </a>
-          <div class="ui modal {{item_position.id}}">
-            <div class="header">
+          <div role="dialog" class="modal {{item_position.id}}">
+            <div class="text-2xl font-bold">
               ลบตำแหน่งวัสดุ
             </div>
-            <div class="content">
+            <div class=" modal-box">
               <p>ต้องการลบตำแหน่งวัสดุ
                 <b>{{ item_position.warehouse.name }}</b><br />
                 <b>{{ item_position.description }}</b>
               </p>
             </div>
-            <div class="actions">
-              <button class="ui black deny button">
+            <div class="modal-action">
+              <button class="btn">
                 ยกเลิก
               </button>
-              <a class="ui negative right labeled icon button"
+              <a class="btn-error btn"
                 href="{{ url_for('item_positions.delete', item_position_id=item_position.id, organization_id=organization.id) }}">
                 ยืนยัน
-                <i class="checkmark icon"></i>
+                <i class="ph ph-check"></i>
               </a>
             </div>
           </div>
@@ -72,17 +72,13 @@
     </tbody>
   </table>
   {% if paginated_item_positions.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_item_positions,"item_positions.index")}}
-      </div>
-    </div>
-  </div>
+
+  {{ paginated.render_pagination(paginated_item_positions,"item_positions.index")}}
+
   {% endif %}
 </div>
 {% else %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 <style>
   table.table.table-hover {
@@ -98,7 +94,7 @@
     vertical-align: middle;
   }
 
-  .table-header {
+  .table-style {
     background-color: #363636;
     color: #fff;
     text-align: center;

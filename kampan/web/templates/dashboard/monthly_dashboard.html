@@ -1,4 +1,4 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}แดชบอร์ดรายเดือน{% endblock %}
@@ -76,17 +76,17 @@
 
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
-  <div class="content" style="color: #292d33;">
+  <div class="modal-box" style="color: #292d33;">
     <div class="ui medium header"> แผนภูมิรายเดือนประจำเดือน {{ this_month }}</div>
     <p>
       ข้อมูลแผนภูมินี้จะแสดงให้คุณเห็นจำนวนรายรับตลอดทั้งเดือน
     </p>
   </div>
   <form method="POST">
-    <div class="ui secondary menu" style="text-align:center;">
+    <div class="flex flex-row w-full justify-between" style="text-align:center;">
       {{ form.hidden_tag() }}
-      {{ renderer.render_calendar_default(form.month_year, calendar_id="month_year_calendar") }}
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
+      {{ renderer.date_field(form.month_year, calendar_id="month_year_calendar") }}
+      <button type="submit" class="btn btn-primary" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>
 </div>
@@ -94,7 +94,7 @@
 
 {#
 {% if checkout_quantity == 0 %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 
 {% else %}
 

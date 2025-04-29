@@ -1,6 +1,6 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_field %}
 
 {% block title %}สมาชิกขององค์กร{% endblock %}
@@ -12,117 +12,113 @@
 
 {% block content %}
 
-<div class="ui secondary menu">
-  <div class="right menu">
-    <div class="ui dropdown button labeled icon">
-      <i class="wrench icon"></i>
-      การจัดการ
-      <div class="menu" style=" flex-direction: column !important;">
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
-          <span class="ui primary text">
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <div class="dropdown dropdown-end">
+      <label tabindex="0" class="btn btn-primary flex items-center gap-2">
+        <i class="ph ph-list-dashes"></i>
+        การจัดการ
+      </label>
+      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li>
+          <a class="text-success" href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
             <i class="plus circle icon"></i>
             เพิ่มสมาชิก
-          </span>
-        </a>
-        <a class="item" style="width: 100%;"
-          href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
-          <span class="ui primary text">
+          </a>
+        </li>
+        <li>
+          <a class="text-success"
+            href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
             <i class="file upload icon"></i>
             เพิ่มสมาชิกแบบหลายรายการ
-          </span>
-        </a>
-      </div>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
 
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-row justify-between w-full gap-2">
     {{ form.csrf_token }}
-    {{ render_field.SelectField(form.user) }}
-    {{ render_field.SelectField(form.role) }}
-    {{ render_field.DateField(form.start_date) }}
-    {{ render_field.DateField(form.end_date) }}
+    {{ renderer.render_select_field(form.user) }}
+    {{ renderer.render_select_field(form.role) }}
+    {{ renderer.date_range_field(form.start_date, form.end_date)}}
   </div>
 
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn" href='{{  url_for("organizations.organizaiton_users", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
 
 {% if org_users %}
-
-<table class="ui celled table">
-  <thead>
-    <tr>
-      <th>ชื่อสมาชิก (ภาษาอังกฤษ)</th>
-      <th>อีเมล</th>
-      <th>ตำแหน่ง</th>
-      <th>ระดับ</th>
-      <th>แผนก</th>
-      <th>เพิ่มเข้ามาเมื่อวันที่</th>
-      <th>จัดการ</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for org_user in paginated_org_users.items %}
-    <tr>
-      <td data-label="Organization">{{ org_user.display_fullname() }}</td>
-      <td data-label="Email">{{ org_user.display_email() }}</td>
-      <td data-label="Email">
-        {% if org_user.appointment|length >= 30 %}
-        <span data-tooltip="{{ org_user.appointment }}">
-          {{ org_user.display_appointment() }}
-        </span>
-        {% else %}
-        {{ org_user.display_appointment() }}
-        {% endif %}
-      </td>
-      <td data-label="Roles">{{ org_user.display_roles() }}</td>
-      <td data-label="Roles">{{ org_user.division.name }}</td>
-      <td data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อสมาชิก (ภาษาอังกฤษ)</th>
+          <th class="table-style">อีเมล</th>
+          <th class="table-style">ตำแหน่ง</th>
+          <th class="table-style">ระดับ</th>
+          <th class="table-style">แผนก</th>
+          <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+          <th class="table-style">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org_user in paginated_org_users.items %}
+        <tr>
+          <td class="table-style" data-label="Organization">{{ org_user.display_fullname() }}</td>
+          <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
+          <td class="table-style" data-label="Email">
+            {% if org_user.appointment|length >= 30 %}
+            <span data-tip="{{ org_user.appointment }}">
+              {{ org_user.display_appointment() }}
+            </span>
+            {% else %}
+            {{ org_user.display_appointment() }}
+            {% endif %}
+          </td>
+          <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
+          <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
+          <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
         org_user.created_date else "-"}}
-      </td>
-      <td>
-        <a class="ui icon button" data-tooltip="แก้ไข"
-          href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}"
-          style=" color: white; background-color: rgb(59, 115, 199);">
-          <i class="edit icon"></i>
-        </a>
-        <a class="ui icon button" data-tooltip="ลบ" style="color: white; background-color: rgb(192, 55, 55);"
-          onclick="showDeleteModal('{{ org_user.id }}')">
-          <i class="trash icon"></i>
-        </a>
-        <div class="ui modal {{ org_user.id }}">
-          <div class="header">
-            ลบสมาชิก
-          </div>
-          <div class="content">
-            <p>ต้องการลบสมาชิก<b> {{ org_user.display_fullname() }}</b><br />
-
-
-            </p>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id)}}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
+              href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-          </div>
-        </div>
-      </td>
-    </tr>
+            <a class="btn btn-circle btn-error" data-tip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
 
-    {% endfor %}
-  </tbody>
-</table>
+
+
+
+            {{ ModalNegative(
+                id=org_user.id,
+                header="ลบสมาชิก",
+                body="คุณต้องการลบสมาชิกนี้หรือไม่ <b> %s </b>" | format(org_user.display_fullname()),
+                cancel="ยกเลิก",
+                submit="ยืนยัน",
+                redirect=url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
+            ) }}
+
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% set params=dict(request.args) %}
 {% if 'page' in params %}
 {% set _dummy=params.pop('page') %}
@@ -131,17 +127,13 @@
 {% set _dummy=params.update({"organization_id": organization.id}) %}
 {% endif %}
 {% if paginated_org_users.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_org_users,"organizations.organizaiton_users", params)}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_org_users,"organizations.organizaiton_users", params)}}
+
 {% endif %}
 
 {% else %}
-<div class="ui message">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
 {% endif %}
 {% endblock %}
 

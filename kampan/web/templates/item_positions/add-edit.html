@@ -19,11 +19,11 @@
 
 {% block content %}
 <div>
-  <form class="ui form" method="POST">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
 
     {{ form.hidden_tag() }}
-    {{ renderer.render_select(form.warehouse) }}
-    {{ renderer.render_field(form.description)}}
+    {{ renderer.render_select_field(form.warehouse) }}
+    {{ renderer.render_text_area_field(form.description)}}
     <div class="ui three fields">
       {{ renderer.render_field(form.rack) }}
       {{ renderer.render_field(form.row) }}
@@ -31,9 +31,9 @@
     </div>
 
     {% if 'edit' == request.path %}
-    <button class="ui primary button" type="submit">แก้ไขตำแหน่งวัสดุ</button>
+    <button class="btn btn-primary" type="submit">แก้ไขตำแหน่งวัสดุ</button>
     {% else %}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
     {% endif %}
   </form>
 </div>

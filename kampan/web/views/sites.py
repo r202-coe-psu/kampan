@@ -7,7 +7,7 @@ module = Blueprint("site", __name__)
 
 @module.route("/")
 def index():
-    return render_template("sites/index.html")
+    return redirect(url_for("accounts.login"))
 
 
 @module.route("/select_system")

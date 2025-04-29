@@ -21,15 +21,11 @@ class AllItemReport(FlaskForm):
     )
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
         render_kw={"placeholder": "วันที่เริ่มต้น"},
     )
     end_date = fields.DateField(
         "วันที่สิ้นสุด",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.Optional()],
         render_kw={"placeholder": "วันที่สิ้นสุด"},
     )
@@ -52,15 +48,11 @@ class ItemReportCustom(FlaskForm):
     )
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
         render_kw={"placeholder": "วันที่เริ่มต้น"},
     )
     end_date = fields.DateField(
         "วันที่สิ้นสุด",
-        format="%d/%m/%Y",
-        widget=widgets.TextInput(),
         validators=[validators.InputRequired()],
         render_kw={"placeholder": "วันที่สิ้นสุด"},
     )

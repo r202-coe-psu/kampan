@@ -1,6 +1,6 @@
-{% extends '/admin/base/default-dashboard.html' %}
+{% extends '/admin/base/template-page-login.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
-{% import '/admin/base/pagination.html' as paginated %}
+{% import '/admin/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}แดชบอร์ดรายวัน{% endblock %}
 {% block dashboard_title %}
@@ -61,110 +61,105 @@
 
 <div class="ui icon message" style="background-color: #e9ecef; border-radius: 10px;">
   <i class="chart line icon"></i>
-  <div class="content" style="color: #292d33;">
+  <div class="modal-box" style="color: #292d33;">
     <div class="ui medium header"> คำสั่งเบิกวัสดุรายวัน ณ วันที่ {{ today.strftime('%d-%m-%Y') }}</div>
   </div>
 
   <form method="post">
-    <div class="ui secondary menu" style="text-align:center;">
+    <div class="flex flex-row w-full justify-between" style="text-align:center;">
       {{form.hidden_tag()}}
-      {{renderer.render_calendar_default(form.start_date, calendar_id="start_date")}}
-      <button type="submit" class="ui primary button" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
+      {{renderer.date_field(form.start_date, calendar_id="start_date")}}
+      <button type="submit" class="btn btn-primary" style="height:fit-content; margin-left:15px; ">ยืนยัน</button>
     </div>
   </form>
 
 </div>
 {% if daily_item_orders %}
-<div style="padding-bottom: 1em ;">
-  <table class="ui celled table">
-    <thead>
-      <tr>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
 
-        <th>วันที่สั่งเบิกวัสดุ</th>
-        <th>คำอธิบาย</th>
-        <th>ชื่อผู้ใช้งาน</th>
-        <th>เบิกวัสดุ</th>
-        <th>รายการวัสดุ</th>
-        <th>สถานะ</th>
-        <th>แก้ไข/ลบข้อมูล</th>
+          <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">เบิกวัสดุ</th>
+          <th class="table-style">รายการวัสดุ</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">แก้ไข/ลบข้อมูล</th>
 
-      </tr>
-    </thead>
-    <tbody>
-      {% for order in paginated_daily_item_orders.items %}
-      <tr>
-        <td data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-        <td data-label="Description">{{ order.description }}</td>
-        <td data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
-        <td>
-          <a class="ui primary button" href="{{ url_for('admin.item_checkouts.checkout', order_id=order.id) }}">
-            เบิกวัสดุ
-          </a>
-        </td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in paginated_daily_item_orders.items %}
+        <tr>
+          <td class="table-style" data-label="Created Date">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td class="table-style" data-label="Description">{{ order.description }}</td>
+          <td class="table-style" data-label="User">{{ order.user.first_name }} {{ order.user.last_name }}</td>
+          <td class="table-style">
+            <a class="btn btn-primary" href="{{ url_for('admin.item_checkouts.checkout', order_id=order.id) }}">
+              เบิกวัสดุ
+            </a>
+          </td>
 
-        <td data-label="Bill">
-          <a class="ui primary button" href="{{ url_for('admin.item_checkouts.bill_checkout', order_id=order.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="eye icon"></i>
-          </a>
-        </td>
-        {% if order.approval_status == "pending" %}
-        <td data-label="Status" class="red">
-          <span class="ui red text">รออนุมัติ</span>
-        </td>
-        {% else %}
-        <td data-label="Status" class="green">
-          <span class="ui green text">อนุมัติ</span>
-        </td>
-        {% endif %}
-        <td>
-          <a class="ui icon button" href="{{ url_for('admin.item_orders.edit', order_id=order.id) }}"
-            style=" color: white; background-color: rgb(59, 115, 199);">
-            <i class="edit icon"></i>
-          </a>
-          <a class="ui icon button" style="color: white; background-color: rgb(192, 55, 55);"
-            onclick="showDeleteModal('{{ order.id }}')">
-            <i class="trash icon"></i>
-          </a>
-          <div class="ui modal {{order.id}}">
-            <div class="header">
-              ลบคำสั่งเบิกวัสดุ
+          <td class="table-style" data-label="Bill">
+            <a class="btn btn-primary" href="{{ url_for('admin.item_checkouts.bill_checkout', order_id=order.id) }}">
+              <i class="ph ph-list-magnifying-glass"></i>
+            </a>
+          </td>
+          {% if order.approval_status == "pending" %}
+          <td class="table-style" data-label="Status" class="text-error">
+            <span class="text-error">รออนุมัติ</span>
+          </td>
+          {% else %}
+          <td class="table-style" data-label="Status" class="text-success">
+            <span class="text-success">อนุมัติ</span>
+          </td>
+          {% endif %}
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary" href="{{ url_for('admin.item_orders.edit', order_id=order.id) }}">
+              <i class="ph ph-pen"></i>
+            </a>
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ order.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            <div role="dialog" class="modal {{order.id}}">
+              <div class=" modal-box">
+                <div class="text-2xl font-bold">
+                  ลบคำสั่งเบิกวัสดุ
+                </div>
+                <p>ต้องการลบคำสั่งเบิกวัสดุ
+                  <b>{{ order.description }}</b>
+                </p>
+                <div class="modal-action">
+                  <button class="btn">
+                    ยกเลิก
+                  </button>
+                  <a class="btn-error btn" href="{{ url_for('admin.item_orders.delete', order_id=order.id) }}">
+                    ยืนยัน
+                    <i class="ph ph-check"></i>
+                  </a>
+                </div>
+              </div>
             </div>
-            <div class="content">
-              <p>ต้องการลบคำสั่งเบิกวัสดุ
-                <b>{{ order.description }}</b>
-              </p>
-            </div>
-            <div class="actions">
-              <button class="ui black deny button">
-                ยกเลิก
-              </button>
-              <a class="ui negative right labeled icon button"
-                href="{{ url_for('admin.item_orders.delete', order_id=order.id) }}">
-                ยืนยัน
-                <i class="checkmark icon"></i>
-              </a>
-            </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if paginated_daily_item_orders.pages != 1 %}
-  <div class="ui grid">
-    <div class="column row">
-      <div class="center aligned column">
-        {{paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
-      </div>
-    </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_daily_item_orders.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_daily_item_orders,"dashboard.daily_dashboard")}}
+
+    {% endif %}
   </div>
-  {% endif %}
 </div>
-{% else %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-{% endif %}
 
+{% else %}
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+
+{% endif %}
 <style>
   .button-group {
     display: flex;

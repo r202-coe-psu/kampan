@@ -1,0 +1,166 @@
+{% extends '/base/template-page-login.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block dashboard_title %}
+แดชบอร์ด
+{% endblock %}
+
+{% block breadcrumbs %}
+
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col w-full gap-2">
+  {% if notifications%}
+  <div class="flex w-full">
+    <div class="alert alert-warning w-full justify-between flex">
+      <div class="text-2xl font-bold">
+        <span>แจ้งเตือนวัสดุคงเหลือ : {{
+                notifications }}</span>
+      </div>
+      <a class="btn btn-primary" href="{{ url_for('notifications.index' , organization_id=organization.id )}}">
+        ตรวจสอบรายละเอียด
+      </a>
+    </div>
+  </div>
+  <div>
+    {% endif %}
+    <div class="grid grid-cols-4 gap-2">
+      <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm w-full col-span-3">
+
+        <div class="text-2xl font-bold" style=" font-size: 1.5rem; font-weight: bold; padding-left: 10px;">
+          คำขอใหม่
+        </div>
+        {% if orders %}
+        <table class="table-auto w-full">
+          <thead>
+            <tr>
+              <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+              <th class="table-style">วัตถุประสงค์</th>
+              <th class="table-style">ชื่อผู้ใช้งาน</th>
+              <th class="table-style">สถานะ</th>
+              <th class="table-style">รายการวัสดุ</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td class="table-style">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td class="table-style">{{ order.description }}</td>
+              <td class="table-style">{{ order.created_by.get_name() }}</td>
+              {% if order.status == "pending" %}
+              <td class="table-style" data-label="Status" class="yellow">
+                <span class="ui yellow text">{{ order.get_status_display() }}</span>
+              </td>
+              {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
+              <td class="table-style" data-label="Status" class="text-success">
+                <span class="text-success">{{ order.get_status_display() }}
+                </span>
+              </td>
+              {% elif order.status == "denied" or order.approval_status == "denied"%}
+              <td class="table-style" data-label="Status" class="text-error">
+                <span class="text-error">{{ order.get_status_display() }}</span>
+              </td>
+              {% else %}
+              <td class="table-style" data-label="Status" class="yellow">
+                <span class="ui yellow text">{{ order.get_status_display() }}</span>
+              </td>
+              {% endif %}
+              <td class="table-style">
+                <a class="btn btn-primary"
+                  href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
+                  <i class="ph ph-list-magnifying-glass"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="flex w-full justify-center py-6 text-xl">ไม่มีคำขอใหม่ในขณะนี้</div>
+        {% endif %}
+      </div>
+
+      <div
+        class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm w-full col-span-1 text-center justify-between flex-col flex">
+        <div class="flex items-center h-full justify-center">
+          <h2 class="text-3xl font-bold">จำนวนคำขอใหม่</h2>
+        </div>
+        <div class="flex items-center h-full justify-center">
+          <h2 class="text-3xl font-bold">{{ count_orders }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-cols-4 gap-2">
+    <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm w-full col-span-3">
+
+      <div class="ten wide column">
+        <div class="text-2xl font-bold">
+          คำขอที่กำลังดำเนินการอยู่
+        </div>
+        {% if pending_orders %}
+        <table class="table-auto w-full">
+          <thead>
+            <tr>
+              <th class="table-style">วันที่สั่งเบิกวัสดุ</th>
+              <th class="table-style">วัตถุประสงค์</th>
+              <th class="table-style">ชื่อผู้ใช้งาน</th>
+              <th class="table-style">สถานะ</th>
+              <th class="table-style">รายการวัสดุ</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in pending_orders %}
+            <tr>
+              <td class="table-style">{{ order.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td class="table-style">{{ order.description }}</td>
+              <td class="table-style">{{ order.created_by.get_name() }} </td>
+              {% if order.status == "pending" %}
+              <td class="table-style" data-label="Status" class="yellow">
+                <span class="ui yellow text">{{ order.get_status_display() }}</span>
+              </td>
+              {% elif order.approval_status == "approved" and order.approval_status == "approved" %}
+              <td class="table-style" data-label="Status" class="text-success">
+                <span class="text-success">{{ order.get_status_display() }}
+                </span>
+              </td>
+              {% elif order.status == "denied" or order.approval_status == "denied"%}
+              <td class="table-style" data-label="Status" class="text-error">
+                <span class="text-error">{{ order.get_status_display() }}</span>
+              </td>
+              {% else %}
+              <td class="table-style" data-label="Status" class="yellow">
+                <span class="ui yellow text">{{ order.get_status_display() }}</span>
+              </td>
+              {% endif %}
+              <td class="table-style">
+                <a class="btn btn-primary"
+                  href="{{ url_for('item_checkouts.bill_checkout', order_id=order.id, organization_id=organization.id) }}">
+                  <i class="ph ph-list-magnifying-glass"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="flex w-full justify-center py-6 text-xl">ไม่มีคำขอที่กำลังดำเนินการอยู่ในขณะนี้</div>
+        {% endif %}
+      </div>
+    </div>
+    <div
+      class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm w-full col-span-1 text-center justify-between flex-col flex">
+      <div class="flex items-center h-full justify-center">
+        <h2 class="text-3xl font-bold">จำนวนคำขอที่กำลังดำเนินการอยู่</h2>
+      </div>
+      <div class="flex items-center h-full justify-center">
+        <h2 class="text-3xl font-bold">{{ count_pending_orders }}</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

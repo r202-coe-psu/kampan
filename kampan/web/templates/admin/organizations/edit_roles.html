@@ -1,4 +1,4 @@
-{% extends '/admin/base/default-dashboard.html' %}
+{% extends '/admin/base/template-page-login.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block title %} แก้ไขตำแหน่ง {% endblock %}
@@ -6,10 +6,10 @@
 
 {% block breadcrumbs %}
 <a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 <a class="section"
   href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id) }}">สมาชิกขององค์กร</a>
-<i class="right angle icon divider"></i>
+<i class="ph ph-caret-right"></i>
 
 <div class="active section">
   แก้ไขตำแหน่ง {{ org_user.user.get_name() }}
@@ -19,10 +19,11 @@
 {% block content %}
 
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    {{ renderer.render_select(form.roles) }}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    {{ renderer.render_select_field(form.roles) }}
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 

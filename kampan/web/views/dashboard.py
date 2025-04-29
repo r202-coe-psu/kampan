@@ -42,57 +42,6 @@ def get_choice_of_quarter():
     return quarter_choices, default_quarter
 
 
-# @module.route("/daily", methods=["GET", "POST"])
-# @login_required
-# def daily_dashboard():
-#     organization_id = request.args.get("organization_id")
-#     organization = current_user.get_current_organization()
-#     form = forms.inventories.SearchStartEndDateForm()
-#     form.end_date.validators = None
-#     form.item.validators = None
-
-#     today = datetime.date.today()
-
-#     if form.start_date.data != None:
-#         today = form.start_date.data
-#     item_orders = models.OrderItem.objects(status="active", organization=organization)
-
-#     daily_item_orders = item_orders.filter(
-#         created_date__gte=today,
-#         created_date__lt=today + datetime.timedelta(days=1),
-#     )
-#     approved_orders = item_orders.filter(
-#         created_date__gte=today,
-#         created_date__lt=today + datetime.timedelta(days=1),
-#         approval_status="approved",
-#     )
-
-#     total_values = sum(
-#         [approved_order.get_all_price() for approved_order in approved_orders]
-#     )
-#     page = request.args.get("page", default=1, type=int)
-#     if form.start_date.data:
-#         page = 1
-#     paginated_daily_item_orders = Pagination(daily_item_orders, page=page, per_page=30)
-
-#     notifications = 0
-
-#     items = models.Item.objects(status="active")
-#     for item in items:
-#         if item.minimum >= item.get_amount_pieces():
-#             notifications += 1
-#     return render_template(
-#         "/dashboard/daily_dashboard.html",
-#         form=form,
-#         total_values=total_values,
-#         daily_item_orders=daily_item_orders,
-#         paginated_daily_item_orders=paginated_daily_item_orders,
-#         today=today,
-#         notifications=notifications,
-#         organization=organization,
-#     )
-
-
 @module.route("/all_report", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "supervisor supplier")
 def all_report():
@@ -168,6 +117,19 @@ def all_report():
                 & Q(created_date__lt=end_date + datetime.timedelta(days=2))
                 & Q(organization=organization)
             )
+
+            latest_snapshots = {}
+
+            for snapshot in items_snapshot:
+                item_id = snapshot.item  # or snapshot.item if you want the whole object
+                if item_id not in latest_snapshots:
+                    latest_snapshots[item_id] = snapshot
+                else:
+                    if snapshot.created_date > latest_snapshots[item_id].created_date:
+                        latest_snapshots[item_id] = snapshot
+
+            items_snapshot = list(latest_snapshots.values())
+
         if item:
             items_snapshot = [i for i in items_snapshot if i.item == item]
         elif category:
@@ -238,6 +200,17 @@ def download_all_report():
             & Q(created_date__lt=end_date + datetime.timedelta(days=2))
             & Q(organization=organization)
         ).order_by("item.name")
+        latest_snapshots = {}
+
+        for snapshot in items_snapshot:
+            item_id = snapshot.item  # or snapshot.item if you want the whole object
+            if item_id not in latest_snapshots:
+                latest_snapshots[item_id] = snapshot
+            else:
+                if snapshot.created_date > latest_snapshots[item_id].created_date:
+                    latest_snapshots[item_id] = snapshot
+
+        items_snapshot = list(latest_snapshots.values())
     if item:
         items_snapshot = [i for i in items_snapshot if i.item == item]
     elif category:
@@ -718,7 +691,7 @@ def dashboard():
         if item.minimum >= item.get_amount_pieces():
             notifications += 1
     return render_template(
-        "/dashboard/dashboard.html",
+        "/dashboard/summary.html",
         organization=organization,
         notifications=notifications,
         orders=orders,

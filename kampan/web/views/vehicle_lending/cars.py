@@ -58,7 +58,6 @@ def create_or_edit(car_id):
     if car_id:
         car = models.vehicles.Car.objects(id=car_id).first()
     if form.upload_image.data:
-        print(form.upload_image.data)
         if car.image:
             car.image.replace(
                 form.upload_image.data,

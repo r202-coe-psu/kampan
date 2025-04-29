@@ -25,7 +25,7 @@ form.flags.required else '') %}
   <label>{{ form.label }}</label>
   <div class="ui calendar" id="{{ form.name }}">
     <div class="ui input left icon">
-      <i class="clock icon"></i>
+      <i class="ph ph-clock"></i>
       {{ form(type="text", autocomplete="off") }}
     </div>
   </div>
@@ -107,7 +107,7 @@ form.flags.required else '') %}
 
 {% macro RadioField(field) %}
 
-<div class="ui form">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="grouped fields">
     <label>{{ field.label }}</label>
     {% for subfield in field %}

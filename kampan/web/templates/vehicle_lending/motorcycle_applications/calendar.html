@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-motorcycle-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 
 {% block title %}คำขอใช้รถจักรยานยนต์{% endblock %}
@@ -11,16 +11,18 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary labeled icon button"
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มคำขอใช้รถจักรยานยนต์
     </a>
   </div>
 </div>
-<div id='calendar'></div>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div id='calendar'></div>
+</div>
 
 {% endblock %}
 

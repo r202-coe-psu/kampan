@@ -27,7 +27,7 @@ def index():
         if item.minimum >= item.get_amount_pieces():
             notifications.append(item)
     page = request.args.get("page", default=1, type=int)
-    paginated_notifications = Pagination(notifications, page=page, per_page=30)
+    paginated_notifications = Pagination(notifications, page=page, per_page=32)
     return render_template(
         "/notifications/index.html",
         paginated_notifications=paginated_notifications,

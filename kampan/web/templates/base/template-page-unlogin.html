@@ -1,0 +1,19 @@
+{% extends "/base/base.html" %}
+
+{% block body %}
+<header>
+  {% block header %}
+  {% include "/base/navbar.html" %}
+  {% endblock %}
+</header>
+
+<main class=" flex h-[70vh]">
+  <div class="px-4 mx-auto max-w-7xl ">
+    {% block content %}{% endblock content %}
+  </div>
+</main>
+
+<footer class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 border-t border-base-300">
+  {% include "/base/footer.html" %}
+</footer>
+{% endblock %}

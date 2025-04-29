@@ -1,4 +1,4 @@
-{% extends '/admin/item_registers/index.html' %}
+{% extends '/admin/organizations/index.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
 
 
@@ -13,21 +13,26 @@
 
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="right angle icon divider"></i>
-<div class="active section">
-  เพิ่มสมาชิก
-</div>
+
 {% endblock %}
 
 {% block content %}
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('admin.organizations.index') }}">
+      <i class="ph ph-arrow-u-up-left"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
-  <form class="ui form" method="POST" enctype="multipart/form-data">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST"
+    enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    {{ renderer.render_search_multiple_select(form.members) }}
-    {{ renderer.render_select(form.roles) }}
+    {{ renderer.render_select_field(form.members) }}
+    {{ renderer.render_multiple_select_field(form.roles) }}
 
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

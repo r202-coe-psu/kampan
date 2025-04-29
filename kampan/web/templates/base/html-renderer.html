@@ -1,182 +1,818 @@
-{% import '/base/error-handler.html' as eh %}
+<!-- base_render
+render_checkbox
+render_number_field
+render_field
+render_select_field
+render_toggle_field
+date_field
+date_range_field
+render_text_area_field
+render_multiple_select_field
+render_search_select_field
+file_input -->
 
-{% macro render_field(field, class_='') -%}
-{%- set style = '%s' | format(eh.get_validate_class(field.errors)) -%}
-{%- if class_ != '' -%}
-{%- set style = '%s %s' | format(class_, eh.get_validate_class(field.errors)) -%}
-{%- endif -%}
-<div class="field">
-  {{ field.label }}
-  {{ field(class_=style) }}
-</div>
-{{ eh.get_error_messages(field.errors) }}
-{%- endmacro %}
+{% macro base_render(
+field,
+id="",
+id_prefix="",
+class_="",
+placeholder="",
+prefix="",
+suffix="",
+disabled=False,
+readonly=False,
+disabled_optional_text=True
+) %}
 
-{% macro render_checkbox(field) -%}
-<div class="field">
-  <div class="ui checkbox">
-    {{ field }}
-    {{ field.label }}
-  </div>
-</div>
-{%- endmacro %}
+{#% set style = "input input-bordered flex items-center gap-2 w-full" %#}
+{% set style = "input flex items-center gap-2 w-full" %}
+{% set field_id = id_prefix + field.id %}
+
+{% if field.errors | count > 0 %}
+{% set style = style + " input-error" %}
+{% endif %}
+
+{% if readonly or disabled %}
+{% endif %}
+
+{% if class_ != "" %}
+{% set style = style + " " + class_ %}
+{% endif %}
+
+{% if field.type == "HiddenField" %}
+{{ field(**kwargs) }}
+{% else %}
+<fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+    {% if not field.flags.required and not disabled_optional_text %}
+    <p class="fieldset-label">(ไม่บังคับ)</p>
+    {% endif %}
+  </legend>
+  <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
+    {% if prefix %}
+    {{ prefix_icon }}
+    {% endif %}
+    {{ field(placeholder=placeholder, readonly=readonly, **kwargs) }}
+    {% if suffix %}
+    {{ suffix_icon }}
+    {% endif %}
+  </label>
+  <span class="label-text-alt text-error text-sm">
+    {% for error in field.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </span>
+</fieldset>
+{% endif %}
+{% endmacro %}
 
 
-{% macro render_fileinput(field) -%}
-<div class="field">
-  {{ field.label }}
-  <div class="ui action input">
-    <input type="text" placeholder="{{ field.label.text }}" readonly class="attach-file-{{field.name}}">
-    {{ field(style="display: none;") }}
-    <div class="ui icon button attach-file-{{field.name}}">
-      <i class="attach icon"></i>
+{% macro render_checkbox(field, class="") %}
+<fieldset class="fieldset" id="field-{{ field.id }}">
+  <label class="fieldset-label font-semibold text-base-content">
+    {{ field(class_="checkbox") }}
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </label>
+</fieldset>
+{% endmacro %}
+
+
+{% macro render_number_field(
+field,
+class_="",
+placeholder="",
+prefix="",
+suffix="",
+disabled=False,
+readonly=False,
+disabled_optional_text=False,
+min=None,
+max=None
+) %}
+
+{% set style = "input flex items-center gap-2 w-full" %}
+
+{% if field.errors | count > 0 %}
+{% set style = style + " input-error" %}
+{% endif %}
+
+{% if class_ != "" %}
+{% set style = style + " " + class_ %}
+{% endif %}
+
+{% if field.type == "HiddenField" %}
+{{ field(**kwargs) }}
+{% else %}
+<fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+    {% if not field.flags.required and not disabled_optional_text %}
+
+    <p class="fieldset-label">(ไม่บังคับ) </p>
+    {% endif %}
+  </legend>
+  <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
+    {% if prefix %}
+    {{ prefix_icon }}
+    {% endif %}
+    {{ field(
+      placeholder=placeholder,
+      readonly=readonly,
+      type="number" if (field.type == "FloatField" or field.type == "IntergerField") else None,
+      step="any" if (field.type == "FloatField" or field.type == "IntergerField") else None,
+      min=min if (field.type == "FloatField" or field.type == "IntergerField") and min is not none else None,
+      max=max if (field.type == "FloatField" or field.type == "IntergerField") and max is not none else None,
+      **kwargs
+      ) }}
+    {% if suffix %}
+    {{ suffix_icon }}
+    {% endif %}
+  </label>
+
+  <span class="fieldset-label text-error">
+    {% for error in field.errors %}
+
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% elif 'Number must be between' in error %}
+    กรุณากรอกค่าระหว่าง {{ min }} ถึง {{ max }}
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </span>
+</fieldset>
+{% endif %}
+{% endmacro %}
+
+{% macro render_field(field) %}
+{{ base_render(field, **kwargs)}}
+{% endmacro %}
+
+{% macro render_select_field(
+field,
+type="select",
+class_="",
+placeholder="",
+prefix_icon="",
+suffix_icon="",
+top_left_label="",
+top_right_label="",
+bottom_left_label="",
+bottom_right_label="",
+disabled=False,
+disabled_optional_text=False,
+readonly=False) %}
+{% set style = "select flex items-center gap-2 w-full" %}
+
+{% if field.errors | count > 0 %}
+{% set style = style + " " + "%s-error" | format(type) %}
+{% endif %}
+
+{% if class_ %}
+{% set style = style + " " + class_ %}
+{% endif %}
+
+<fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  {% if readonly %}
+  {{ field(placeholder=placeholder, class_=style + " input-readonly", disabled="disabled", **kwargs) }}
+  {# เพิ่ม hidden field เพื่อให้ค่าสามารถส่งไปกับ form ได้ #}
+  <input type="hidden" name="{{ field.name }}" value="{{ field.data }}">
+  {% else %}
+  {{ field( class_=style, **kwargs) }}
+  {% endif %}
+  <span class="validator-hint">
+    {% for error in field.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </span>
+</fieldset>
+{% endmacro %}
+
+
+{% macro render_toggle_field(field) %}
+{{ render_select_field(field, top_left_label=field.label, type="toggle", **kwargs)}}
+{% endmacro %}
+
+{% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
+calendar_id='calendar',
+readonly=False) %}
+{% set style = "input flex items-center gap-2 w-full" %}
+{% if field.errors | count > 0 %}
+{% set style = style + " input-error" %}
+{% endif %}
+{% if class_ != "" %}
+{% set style = style + " " + class_ %}
+{% endif %}
+
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+
+  <div class="relative w-full">
+    <input type="hidden" id="{{ field.id }}" name="{{ field.name }}" class="w-full cursor-pointer input validator"
+      autocomplete="off" placeholder="{{ field.label.text }}" {% if field.data %}
+      value="{{ field.data|format_date('%Y-%m-%d') if field.data else ''}}" {% endif %} {% if disabled %} disabled {%
+      endif %} {% if readonly %} readonly {% endif %}>
+
+    <button type="button" id="cally-{{ field.id }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}" {%
+      if disabled %} disabled {% endif %}>
+      <div class="flex items-center justify-between w-full">
+        <span id="cally-data-{{ field.id }}">
+          {{ field.placeholder if field.placeholder else 'กรุณาเลือกวันที่' }}
+        </span>
+        <i class="ph ph-size ph-calendar-blank"></i>
+      </div>
+    </button>
+
+    <div id="cally-popover-{{ field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box" {% if
+      readonly or disabled %} hidden {% endif %}>
+      <calendar-date class="cally" onchange="{
+                  const callyData = document.getElementById('cally-data-{{ field.id }}');
+                  callyData.innerText = new Date(this.value).toLocaleDateString('en-GB')
+                  document.getElementById('{{ field.id }}').value = this.value
+                  const valueChangeEvent = new Event('change', { bubbles: true });
+                  document.getElementById('cally-popover-{{ field.id }}').classList.add('hidden')
+                  callyData.dispatchEvent(valueChangeEvent);
+              }" value="{{ field.data.strftime('%Y-%m-%d') if field.data else ''}}">
+        <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
+        <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
+        <calendar-month></calendar-month>
+      </calendar-date>
     </div>
   </div>
-</div>
-{%- endmacro %}
 
+  <p class="validator-hint">
+    {% for error in field.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
 
-{% macro render_select(field) -%}
-{{ render_field(field, class_='ui dropdown') }}
-{%- endmacro %}
+<script>
+  initDatePicker("cally-{{ field.id }}", "cally-popover-{{ field.id }}", "{{ field.id }}", "cally-data-{{ field.id }}");
+</script>
+{% endmacro %}
 
+{% macro date_range_field(start_field, end_field, class_="", placeholder="", prefix_icon="", suffix_icon="",
+disabled=False,
+readonly=False) %}
+{% set style = "input flex items-center gap-2 w-full" %}
+{% if start_field.errors | count > 0 %}
+{% set style = style + " input-error" %}
+{% endif %}
+{% if class_ != "" %}
+{% set style = style + " " + class_ %}
+{% endif %}
+<fieldset class="fieldset w-full" id="field-{{ start_field.id }}">
+  <legend class="fieldset-legend">
+    {{ start_field.label.text }} - {{ end_field.label.text }}
+    {% if start_field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
 
-{% macro render_multiple_select(field) -%}
-{{ render_field(field, class_='ui fluid dropdown') }}
-{%- endmacro %}
+  <div class="relative w-full">
+    <input type="hidden" id="{{ start_field.id }}" name="{{ start_field.name }}" {% if start_field.data %}
+      value="{{ start_field.data|format_date('%Y-%m-%d') }}" {%endif %}>
+    <input type="hidden" id="{{ end_field.id }}" name="{{ end_field.name }}" {% if end_field.data %}
+      value="{{ end_field.data|format_date('%Y-%m-%d') }}" {%endif %}>
 
-{% macro render_search_multiple_select(field) -%}
-{{ render_field(field, class_='ui fluid search dropdown') }}
-{%- endmacro %}
+    {% set start_date = start_field.data.strftime('%Y-%m-%d') if start_field.data else '' %}
+    {% set end_date = end_field.data.strftime('%Y-%m-%d') if end_field.data else '' %}
 
-{% macro render_calendar(field, calendar_id='calendar') -%}
-<div class="field">
-  <div class="ui calendar" id="{{ calendar_id }}">
-    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
-    <div class="ui input left icon">
-      <i class="calendar icon"></i>
-      {{ field(autocomplete='off') }}
+    <button type="button" popovertarget="cally-popover-{{ start_field.id }}" id="cally-{{ start_field.id }}"
+      class="{{ style }}" {% if disabled %} disabled {% endif %}>
+      <div class="flex items-center justify-between w-full">
+        <span id="cally-data-{{ start_field.id }}">
+          {{ start_field.placeholder if start_field.placeholder else 'กรุณาเลือกวันที่' }}
+        </span>
+        <i class="ph ph-size ph-calendar-dots"></i>
+      </div>
+    </button>
+    <div id="cally-popover-{{ start_field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
+      {% if readonly or disabled %} hidden {% endif %}>
+      <calendar-range months="2" class="cally" onchange="{
+                  const [start_date, end_date] = this.value.split('/');
+                  const callyData = document.getElementById('cally-data-{{ start_field.id }}');
+                  callyData.innerText = `${new Date(start_date).toLocaleDateString('en-GB')} - ${new Date(end_date).toLocaleDateString('en-GB')}`                
+                  document.getElementById('{{ start_field.id }}').value = start_date;
+                  document.getElementById('{{ end_field.id }}').value = end_date;
+                  document.getElementById('cally-popover-{{ start_field.id }}').classList.add('hidden')
+                  const valueChangeEvent = new Event('change', { bubbles: true });
+                  callyData.dispatchEvent(valueChangeEvent);
+              }" value="{{ start_date }}/{{ end_date }}">
+        <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
+        <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
+        <div class="flex flex-col lg:flex-row">
+          <calendar-month></calendar-month>
+          <calendar-month offset="1"></calendar-month>
+        </div>
+      </calendar-range>
     </div>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; margin:5px;">ยืนยัน</button>
+    </calendar-range>
   </div>
-</div>
-{%- endmacro %}
+  <p class="validator-hint">
+    {% for error in end_field.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  initDateRange("cally-{{ start_field.id }}", "cally-popover-{{ start_field.id }}", "{{ start_field.id }}", "{{ end_field.id }}", "cally-data-{{ start_field.id }}");
+</script>
+{% endmacro %}
 
-{% macro render_calendar_default(field, calendar_id='calendar') -%}
-<div class="field">
-  <div class="ui calendar" id="{{ calendar_id }}">
-    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
-    <div class="ui input left icon">
-      <i class="calendar icon"></i>
-      {{ field(autocomplete='off',) }}
-    </div>
+{% macro render_text_area_field(field) %}
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+  </legend>
+  <textarea class="w-full h-24 textarea" name="{{ field.name }}" id="{{ field.id }}"
+    placeholder="กรอก{{ field.label.text }}ที่นี่">{{ field.data if field.data else field.default if field.default else "" }}</textarea>
+  <div class="fieldset-label">
+    <p class="validator-hint">
+      {% for error in field.errors %}
+      {% if 'This field is required' in error %}
+      กรุณากรอกข้อมูล
+      {% else %}
+      {{ error }}
+      {% endif %}
+      {% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </p>
   </div>
-</div>
-{%- endmacro %}
+</fieldset>
+{% endmacro %}
 
-{% macro render_select_clearable(field) -%}
-<div class="field">
-  <div class="ui">
-    <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
-    {{ field(class="ui search dropdown clearable selection") }}
+{% macro render_multiple_select_field(field, id_prefix='') %}
+{% set list_of_tuples = field.choices %}
+{% set list_of_lists = list_of_tuples | map('list') | list %}
+<script type="application/json" id="{{ id_prefix }}options" data-field-name="{{ field.name }}">
+{{ list_of_lists | tojson }}
+</script>
+<script type="application/json" id="{{ id_prefix }}selectedData">
+{{ field.data | tojson if field.data else '[]' }}
+</script>
+<fieldset class="fieldset" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="relative w-full  max-w-full min-w-full" id="{{ id_prefix }}multiSelectContainer">
+    {{ field(class="hidden", id=id_prefix + field.name) }}
+    <div id="{{ id_prefix }}multiSelectBox"
+      class="input input-bordered w-full disabled:bg-base-200 items-center textarea overflow-x-auto"
+      style=" overflow-y: auto;">
+      <div class="flex flex-wrap gap-2 w-fit" id="{{ id_prefix }}selectedItems" style="max-height: 100px;"></div>
+      <input type="text" id="{{ id_prefix }}searchInput" placeholder="" autocomplete="off"
+        class="focus:outline-none flex-1 min-w-0 h-full" />
+    </div>
+    <ul id="{{ id_prefix }}dropdown"
+      class="absolute z-10 mt-2 bg-white border rounded shadow-lg overflow-y-auto max-h-52 w-full hidden"></ul>
   </div>
-</div>
-{%- endmacro %}
+  <div class="fieldset-label">
+    <p class="validator-hint">
+      {% for error in field.errors %}
+      {% if 'This field is required' in error %}
+      กรุณากรอกข้อมูล
+      {% else %}
+      {{ error }}
+      {% endif %}
+      {% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </p>
+  </div>
+</fieldset>
+{% endmacro %}
 
-{% macro render_select_clearable_row(field) -%}
-<div class="field">
-  <label style="font-weight: bold; padding-right: 10px;">{{ field.label }}</label>
-  <div class="ui input">
-    {{ field(class="ui search dropdown clearable selection") }}
-  </div>
-</div>
-{%- endmacro %}
+{% macro render_search_select_field(field, id_prefix='', disabled_optional_text=True, readonly=False, disabled=False,
+placeholder="") %}
+{% set list_of_tuples = field.choices %}
+{% set field_id = id_prefix + field.id %}
+{% set selected_value = field.data if field.data else "" %}
+{% set unique_choices = {} %}
+{% if field.choices %}
+{% for value, label in field.choices %}
+{% set _ = unique_choices.update({value: label}) %}
+{% endfor %}
+{% endif %}
+{% if not placeholder %}
+{% set placeholder = "ค้นหา" + field.label.text %}
+{% endif %}
 
-{% macro render_default_search_item(form) -%}
-<div class="ui secondary menu">
-  {{form.hidden_tag()}}
-  <p style="margin-left:auto;">
-  <div class="field">
-    <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
-    <div class="ui input">
-      {{ form.item(class="ui search dropdown clearable selection") }}
-    </div>
-  </div>
-  </p>
-  <p style="margin-left:10px;">
-  <div class="field">
-    <label style="font-weight: bold; padding-right: 10px;">{{ form.categories.label }}</label>
-    <div class="ui input">
-      {{ form.categories(class="ui search dropdown clearable selection") }}
-    </div>
-  </div>
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-  </p>
-</div>
-{%- endmacro %}
+<fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  <legend class="fieldset-legend" onclick="document.getElementById('{{ field_id }}-input').focus();">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+    {% if not field.flags.required and not disabled_optional_text %}
+    <p class="fieldset-label">(ไม่บังคับ)</p>
+    {% endif %}
+  </legend>
 
-{% macro render_default_search_order(form) -%}
-<div class="ui secondary menu">
-  {{form.hidden_tag()}}
-  <p style="margin-left:auto;">
-  <div class="field">
-    <label style="font-weight: bold; padding-right: 10px;">{{ form.item.label }}</label>
-    <div class="ui input">
-      {{ form.item(class="ui search dropdown clearable selection") }}
-    </div>
-  </div>
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-  </p>
-</div>
-{%- endmacro %}
+  <div class="relative w-full dropdown {% if readonly %}input-readonly{% endif %}" {% if readonly %}readonly{% endif %}>
+    {% if prefix %}
+    {{ prefix }}
+    {% endif %}
 
-{% macro render_default_search_user(form) -%}
-<div class="ui secondary menu">
-  {{form.hidden_tag()}}
-  <p style="margin-left:auto;">
-  <div class="field">
-    <label style="font-weight: bold; padding-right: 10px;">{{ form.user.label }}</label>
-    <div class="ui input">
-      {{ form.user(class="ui search dropdown clearable selection") }}
-    </div>
+    <input type="text" id="{{ field_id }}-input" tabindex="0" role="button" placeholder="{{ placeholder }}"
+      class="w-full select gap-2 items-center flex validator {% if readonly %}input-readonly{% endif %} {% if field.errors %}select-error{% endif %}"
+      autocomplete="off" oninput="updateHiddenValue('{{ field_id }}'); filterDropdown('{{ field_id }}')"
+      onfocus="showDropdown('{{ field_id }}')" onblur="validateInputValue('{{ field_id }}')"
+      value="{{ unique_choices.get(selected_value) if unique_choices.get(selected_value) else selected_value }}" {% if
+      disabled %}disabled{% endif %} {% if readonly %}readonly{% endif %} {% if field.flags.required %}required="true"
+      {% endif %}>
+
+    <input class="hidden" id="{{ field_id }}" name="{{ field.name }}" value="{{ selected_value }}">
+
+    <ul id="{{ field_id }}-dropdown" tabindex="0"
+      class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
+      readonly or disabled %}hidden{% endif %}>
+      {% for value, label in unique_choices.items() %}
+      <li>
+        <p class="break-words" data-value="{{ value }}"
+          onclick="selectDropdownValue('{{ field_id }}', '{{ value }}', '{{ label }}')">
+          {{ label }}
+        </p>
+      </li>
+      {% endfor %}
+    </ul>
   </div>
+
+  <p class="validator-hint text-error">
+    {% for error in field.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
   </p>
-  <p style="margin-left:10px;">
-  <div class="field">
-    <label style="font-weight: bold; padding-right: 10px;">{{ form.role.label }}</label>
-    <div class="ui input">
-      {{ form.role(class="ui search dropdown clearable selection") }}
-    </div>
+</fieldset>
+
+<script>
+  function filterDropdown(fieldId) {
+    let input = document.getElementById(fieldId + "-input");
+    let filter = input.value.toLowerCase();
+    let dropdown = document.getElementById(fieldId + "-dropdown");
+    let items = dropdown.getElementsByTagName("li");
+
+    let hasMatch = false;
+    for (let i = 0; i < items.length; i++) {
+      let textValue = items[i].textContent || items[i].innerText;
+      if (textValue.toLowerCase().indexOf(filter) > -1) {
+        items[i].style.display = "";
+        hasMatch = true;
+      } else {
+        items[i].style.display = "none";
+      }
+    }
+
+    dropdown.style.display = hasMatch ? "block" : "none";
+  }
+
+  function showDropdown(fieldId) {
+    let dropdown = document.getElementById(fieldId + "-dropdown");
+    dropdown.style.display = "block";
+  }
+
+  // Function สำหรับเลือกค่าจาก Dropdown
+  function selectDropdownValue(fieldId, value, label) {
+    let input = document.getElementById(fieldId + "-input");
+    let hiddenInput = document.getElementById(fieldId);
+
+    input.value = label;  // แสดงชื่อใน input
+    hiddenInput.value = value;  // ส่งค่าที่เลือกไปที่ input hidden
+
+    input.setCustomValidity("");
+    input.reportValidity();
+
+    let dropdown = document.getElementById(fieldId + "-dropdown");
+    dropdown.style.display = "none";  // ซ่อน dropdown หลังจากเลือกค่า
+  }
+
+  function updateHiddenValue(fieldId) {
+    let input = document.getElementById(fieldId + "-input");
+    let hiddenInput = document.getElementById(fieldId);
+
+    hiddenInput.value = input.value;
+
+    // ✅ ล้างข้อความ validation ตอนพิมพ์
+    input.setCustomValidity("");
+  }
+
+  // ฟังก์ชัน validate สำหรับตรวจสอบว่า label ที่พิมพ์ใน input มีอยู่ใน unique_choices หรือไม่
+  function validateInputValue(fieldId) {
+    let input = document.getElementById(fieldId + "-input");
+    let hiddenInput = document.getElementById(fieldId);
+    let valueEntered = input.value.trim();
+
+    let dropdown = document.getElementById(fieldId + "-dropdown");
+    let items = dropdown.getElementsByTagName("li");
+
+    let isValid = false;
+    for (let i = 0; i < items.length; i++) {
+      let label = (items[i].textContent || items[i].innerText).trim();
+      if (label === valueEntered) {
+        isValid = true;
+        hiddenInput.value = items[i].querySelector('p').getAttribute("data-value"); // อัปเดต value ด้วย
+        break;
+      }
+    }
+
+    if (!isValid && valueEntered !== "") {
+      input.setCustomValidity("กรุณาเลือกค่าที่ถูกต้องจากรายการ");
+
+      // ✅ แสดงเฉพาะถ้าไม่ได้ focus อยู่ (เช่น blur แล้ว)
+      if (document.activeElement !== input) {
+        input.reportValidity();
+      }
+    } else {
+      input.setCustomValidity(""); // ล้าง error เมื่อถูกต้องหรือยังพิมพ์
+    }
+  }
+
+
+  document.addEventListener("click", function (event) {
+    let dropdowns = document.querySelectorAll(".dropdown-content");
+    dropdowns.forEach(dropdown => {
+      if (!dropdown.parentElement.contains(event.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+  });
+</script>
+{% endmacro %}
+
+
+
+{% macro file_input(form, style=None, optionals={}) %}
+{% set default_style = "w-full bg-primary/5 rounded border-primary border-dotted border-2 px-4 flex flex-col
+items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-100" %}
+{% set style_ = style if style else default_style %}
+{% set style_ = style_ + " input-error" if form.errors else style_ %}
+
+<div class="form-control w-full" id="{{ form.id }}_dropzone">
+  <label class="label">
+    <span class="label-text">
+      <label class="fieldset fieldset-legend">{{ form.label.text }}</label>
+      {% if form.flags.required %}<span class="label-text-alt text-red-600">*</span>{% endif %}
+      <p class="text-gray-500">
+        {% for validator in form.validators %}
+        {% if validator.upload_set %}
+        รองรับเฉพาะไฟล์ {{ ", ".join(validator.upload_set) }} เท่านั้น
+        {% endif %}
+        {% endfor %}
+      </p>
+    </span>
+  </label>
+
+  <div class="relative h-48 border-slate-50">
+    {{ form(class="absolute hidden left-1/2 mt-2 z-[1] transform -translate-x-1/2",
+      onchange="handleUploadedImage(this);", **optionals) }}
+
+    <label for="{{ form.id }}" class='z-[10] top-0 bottom-0 absolute {{ style_ }}'>
+      <div class="flex flex-col gap-2 items-center">
+        <p class="btn btn-default bg-black text-white px-10">เลือกไฟล์</p>
+        <p class="text-gray-500">หรือ ลากและวางไฟล์ที่นี่</p>
+
+        <div class="flex text-sm items-center gap-2 hidden bg-primary/5 p-2 rounded-box" id="{{ form.id }}_label">
+          <span class="text-primary icon-[mdi--file-image]" style="width: 1.25em; height: 1.25em;"></span>
+          <span class="text-primary font-bold" id="{{ form.id }}_filename"></span>
+        </div>
+      </div>
+    </label>
   </div>
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.start_date, calendar_id="start_date")}}
-  </p>
-  <p style="margin-left:10px;">
-    {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
-  </p>
-  <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
-  </p>
 </div>
-{%- endmacro %}
+
+<script type="text/javascript">
+  const dropzone = document.getElementById('{{ form.id }}_dropzone');
+
+  dropzone.addEventListener('dragenter', (event) => {
+    event.preventDefault();
+    dropzone.classList.add('active');
+  });
+
+  dropzone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+  });
+
+  dropzone.addEventListener('dragleave', (event) => {
+    dropzone.classList.remove('active');
+  });
+
+  dropzone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dropzone.classList.remove('active');
+    let files = event.dataTransfer.files;
+    if (files.length > 0) {
+      handleDroppedFiles(files, "{{ form.id }}");
+    }
+  });
+
+  function handleUploadedImage(form) {
+    document.getElementById(form.id + "_label").style.display = "flex";
+    document.getElementById(form.id + "_filename").innerHTML = form.files[0].name;
+  }
+
+  function handleDroppedFiles(files, form_id) {
+    document.getElementById(form_id + "_label").style.display = "flex";
+    document.getElementById(form_id + "_filename").innerHTML = files[0].name;
+    document.getElementById(form_id).files = files;
+    document.getElementById(form_id).onchange();
+  }
+</script>
+{% endmacro %}
+
+{% macro datetime_field(form, calendar_id="") %}
+<fieldset class="w-full fieldset" id="field-{{ form.id }}">
+  <label for="datetime" class="fieldset-legend">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </label>
+  <input type="datetime-local" id="{{ form.name }}" name="{{ form.name }}"
+    value="{{ form.data|format_date('%Y-%m-%dT%H:%M') if form.data else '' }}" class="w-full input pointer-events-none"
+    {% if form.flags.required %}required{% endif %} />
+  <p class="validator-hint text-error">
+    {% for error in form.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fieldset = document.getElementById('field-{{ form.id }}');
+    const input = document.getElementById('{{ form.name }}');
+
+    if (input) {
+      if (!input.value) {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+      }
+
+      fieldset.addEventListener('click', () => {
+        input.showPicker && input.showPicker(); // Modern browsers
+        input.focus(); // Fallback
+      });
+    }
+  });
+</script>
+{% endmacro %}
+
+
+
+{% macro time_field(form, calendar_id="") %}
+<fieldset class="w-full fieldset" id="field-{{ form.id }}">
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="relative w-full">
+    {{ form(class="input w-full")}}
+  </div>
+  <p class="validator-hint text-error">
+    {% for error in form.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fieldset = document.getElementById('field-{{ form.id }}');
+    const input = document.getElementById('{{ form.name }}');
+
+    if (input) {
+      if (!input.value) {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+      }
+
+      fieldset.addEventListener('click', () => {
+        input.showPicker && input.showPicker(); // Modern browsers
+        input.focus(); // Fallback
+      });
+    }
+  });
+</script>
+{% endmacro %}
+
+
+
+{% macro date_field_js(form, calendar_id="") %}
+<fieldset class="w-full fieldset" id="field-{{ form.id }}">
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="relative w-full">
+    {{ form(class="input w-full")}}
+  </div>
+  <p class="validator-hint text-error">
+    {% for error in form.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fieldset = document.getElementById('field-{{ form.id }}');
+    const input = document.getElementById('{{ form.name }}');
+
+    if (input) {
+      if (!input.value) {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+      }
+
+      fieldset.addEventListener('click', () => {
+        input.showPicker && input.showPicker(); // Modern browsers
+        input.focus(); // Fallback
+      });
+    }
+  });
+</script>
+{% endmacro %}
+
+
+
+{% macro render_radio(form, label_class='', radio_class='') %}
+<fieldset class="fieldset w-full">
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+
+  {% for value, label in form.choices %}
+  <label class="label cursor-pointer {{ label_class }}">
+    <input type="radio" name="{{ form.name }}" value="{{ value }}" class="radio radio-primary" {% if value==form.data
+      %}checked{% endif %}>
+    <span class="label-text ml-2">{{ label }}</span>
+  </label>
+  {% endfor %}
+</fieldset>
+{% endmacro %}

@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}
 {{ "เพิ่มรถยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดรถยนต์" }}
@@ -18,28 +18,28 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="left menu">
-    <a class="ui labeled icon button"
-      href='{{ url_for("vehicle_lending.cars.index", organization_id=organization.id) }}'>
-      <i class="left arrow icon"></i>
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href='{{ url_for("vehicle_lending.cars.index", organization_id=organization.id) }}'>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form" enctype="multipart/form-data">
-  <div class="equal width fields">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
+  enctype="multipart/form-data">
+  <div class="flex flex-row justify-between w-full gap-2">
     {{form.csrf_token }}
-    {{render_form.InputField(form.license_plate)}}
+    {{renderer.render_field(form.license_plate)}}
   </div>
-  <div class="equal width fields">
-    {{render_form.InputField(form.description)}}
+  <div class="flex flex-row w-full gap-2">
+    {{renderer.render_text_area_field(form.description)}}
   </div>
-  <div class="equal width fields">
-    {{render_form.FileInputField(form.upload_image)}}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{renderer.file_input(form.upload_image)}}
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ยืนยัน</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-start w-full gap-2">
+      <button type="submit" class="btn btn-primary">ยืนยัน</button>
     </div>
   </div>
 </form>

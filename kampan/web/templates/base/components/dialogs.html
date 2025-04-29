@@ -1,0 +1,63 @@
+{% macro ModalPositive(
+id="modal_id",
+header="ยืนยัน",
+body="",
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect="") %}
+<dialog class="modal {{ id }}">
+  <div class=" modal-box">
+    <div class="text-2xl text-success font-bold">
+      {{ header | safe }}
+    </div>
+    <p>
+      {{ body | safe }}
+    </p>
+    <form method="dialog">
+      <div class="modal-action">
+        <button class="btn">
+          {{ cancel | safe }}
+        </button>
+        <a class="btn btn-success" href="{{ redirect }}">
+          {{ submit | safe }}
+          <i class="ph ph-check"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</dialog>
+{% endmacro%}
+
+
+
+{% macro ModalNegative(
+id="modal_id",
+header="ลบข้อมูล",
+body="",
+cancel="ยกเลิก",
+submit="ยืนยัน",
+redirect="") %}
+<dialog class="modal {{ id }}">
+  <div class=" modal-box">
+    <div class="text-2xl text-error font-bold">
+      {{ header | safe }}
+    </div>
+    <p>
+      {{ body | safe }}
+    </p>
+    <form method="dialog">
+      <div class="modal-action">
+
+        <button class="btn">
+          {{ cancel | safe }}
+        </button>
+        <a class="btn btn-error" href="{{ redirect }}">
+          {{ submit | safe }}
+          <i class="ph ph-check"></i>
+        </a>
+      </div>
+
+    </form>
+  </div>
+</dialog>
+{% endmacro%}

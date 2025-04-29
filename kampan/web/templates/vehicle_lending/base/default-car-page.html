@@ -1,153 +1,48 @@
-{% extends "/base/base-layout.html" %}
+{% extends "/base/base.html" %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
-
-{% block title %}
-{{ config.get('APP_TITLE') }} Dashboard
-{% endblock %}
-
-{% block default_head %}
-<style type="text/css">
-  .ui.main.menu {
-    display: none;
-  }
-
-  .full.height {
-    display: flex;
-    flex-direction: row;
-  }
-
-  .full.height>.toc .ui.menu {
-    border-radius: 0;
-    border-width: 0 1px 0 0;
-    margin: 0;
-    width: inherit;
-    max-height: 100vh;
-    height: 100vh;
-    overflow: auto;
-  }
-
-  .toc {
-    position: fixed;
-    z-index: 1;
-    width: 300px;
-    flex: 0 0 auto;
-    background-color: #1b1c1d;
-  }
-
-  .article {
-    flex: 1 1 auto;
-    min-width: 0px;
-    margin-left: 300px;
-  }
-
-  .footer {
-    position: relative;
-    border-top: 1px solid #DDDDDD !important;
-    box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.08) inset !important;
-    background-color: #FAFAFA !important;
-    margin-top: 30px !important;
-  }
-
-  .main-content {
-    margin: 20px !important;
-    margin-top: 20px;
-    min-height: 75vh;
-  }
-
-  .introduction {
-    margin-left: 20px !important;
-    border-bottom: 1px solid #DDDDDD;
-    padding-bottom: 10px !important;
-  }
-
-  @media only screen and (max-width: 1050px) {
-    .toc {
-      display: none !important;
-    }
-
-    .article {
-      margin-left: 0px;
-    }
-
-    .ui.main.menu {
-      display: block !important;
-    }
-
-    .introduction {
-      display: none !important;
-    }
-
-    .fixed.menu>.container {
-      width: 100% !important;
-    }
-  }
-
-  .navbarmenu {
-    padding-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-  }
-</style>
-
-<script type="text/javascript">
-  $(document).ready(function () {
-    $('.left.sidebar.menu').sidebar('attach events', '.launch.icon.item', 'show');
-    $('.launch.icon.item').removeClass('disabled');
-    $('.ui.dropdown').dropdown();
-  });
-</script>
-{% endblock default_head %}
+{% from "/base/components/dialogs.html" import ModalNegative, ModalPositive%}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block body %}
-<div class="ui vertical inverted sidebar large menu left">
-  {% include "/vehicle_lending/base/toolbar-car.html" with context %}
-</div>
+<div class="drawer 2xl:drawer-open">
+  <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
+  <div class="drawer-content bg-base-200 h-full min-h-screen">
+    <div class="flex flex-col h-full">
+      <div class="w-full navbar p-0 h-auto">
+        <div class="flex w-full flex-col items-start">
+          <div class="flex flex-row w-full justify-between bg-primary">
+            <label for="drawer-menu"
+              class="btn rounded-none border-0 bg-primary drawer-button 2xl:hidden text-white hover:bg-base-100 hover:text-black">
+              <i class="ph ph-size ph-list"></i>
+            </label>
 
-<div class="ui fixed inverted main menu">
-  <div class="ui container">
-    <a class="launch icon item">
-      <i class="content icon"></i>
-    </a>
-    <div class="item">
-      {% block dashboard_title %}Dashboard{% endblock %}
-    </div>
-  </div>
-</div>
-
-<div class="pusher">
-  <div class="full height">
-    <div class="toc">
-      <div class="ui vertical inverted large menu" style="font-size: 18px;">
-        {% include "/vehicle_lending/base/toolbar-car.html" with context %}
+          </div>
+          <div class="flex flex-col px-2 lg:px-10">
+            <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
+              <span class="text-3xl font-bold">
+                {% block dashboard_title %}{{ self.title }} {% endblock %}
+              </span>
+            </div>
+            <div class="flex py-2">
+              {% block breadcrumbs %}{% endblock %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lg:px-2 mx-2 pb-5 h-full flex flex-col justify-between">
+        <div>
+          {% block content %}
+          {% endblock content %}
+        </div>
+        <footer
+          class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 mt-4 border-t border-base-300 items-end">
+          {% include "/base/footer.html" %}
+        </footer>
       </div>
     </div>
-
-    <div class="article">
-      <header>
-        <div class="ui vertical dividing segment">
-          <div class="introduction">
-            <h1 class="ui header">
-              {{ self.dashboard_title() }}
-            </h1>
-          </div>
-        </div>
-      </header>
-
-      <main class="main-content">
-        {%- if self.dashboard_title().lower() != 'dashboard' %}
-        <div class="ui segment" style="width: 100%;">
-          <div class="ui big breadcrumb" style="width: 100%;">
-            {% block breadcrumbs %}{% endblock %}
-          </div>
-        </div>
-        {% endif -%}
-        {% block content %}{% endblock %}
-      </main>
-
-      <footer class="ui vertical footer segment">
-        {% include "/base/footer.html" %}
-      </footer>
-    </div>
   </div>
+  {% include "/vehicle_lending/base/sidebar-car.html" %}
 </div>
+
+
 {% endblock body %}

@@ -1,4 +1,4 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %} แก้ไขตำแหน่ง {% endblock %}
@@ -11,24 +11,24 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary"
       href="{{ url_for('organizations.organizaiton_users', organization_id=organization.id) }}">
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
 </div>
 <div>
-  <form class="ui form" method="POST">
+  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     {{ form.hidden_tag() }}
     {{ renderer.render_field(form.first_name) }}
     {{ renderer.render_field(form.last_name) }}
     {{ renderer.render_field(form.email) }}
-    {{ renderer.render_select(form.roles) }}
+    {{ renderer.render_multiple_select_field(form.roles) }}
     {{ renderer.render_field(form.appointment) }}
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 

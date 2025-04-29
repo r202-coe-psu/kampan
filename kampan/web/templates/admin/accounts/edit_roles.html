@@ -2,23 +2,28 @@
 {% import '/admin/base/html-renderer.html' as renderer %}
 
 {% block breadcrumbs %}
-{{ super() }}
-<i class="right angle icon divider"></i>
-<div class="active section">แก้ไขตำเเหน่งผู้ใช้งาน</div>
 {% endblock %}
 
 {% block content %}
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('admin.accounts.user_roles') }}">
+      <i class="ph ph-arrow-u-up-left"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
-  <form method="POST" class="ui big form">
+  <form method="POST" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
 
     {{ form.hidden_tag() }}
     {{ form.csrf_token }}
-    {{ renderer.render_multiple_select(form.roles) }}
+    {{ renderer.render_multiple_select_field(form.roles) }}
     {#{{ renderer.render_field(form.organization)}}
     {{ renderer.render_field(form.first_name) }}
     {{ renderer.render_field(form.last_name) }}#}
 
-    <button class="ui primary button" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary" type="submit">ยืนยันข้อมูล</button>
   </form>
 </div>
 {% endblock content %}

@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-motorcycle-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 
 {% block title %}คำขอใช้รถจักรยานยนต์{% endblock %}
@@ -11,158 +11,92 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary labeled icon button"
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มคำขอใช้รถจักรยานยนต์
     </a>
   </div>
 </div>
 
-{#}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
-  <div class="equal width fields">
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    {% if paginated_motorcycle_applications.total %}
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style"></th>
+          <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">เหตุผล</th>
+          <th class="table-style">จัดการ</th>
 
-    {{form.hidden_tag()}}
-    {{render_form.SelectField(form.item)}}
-    {{render_form.RangeDateField(form.start_date, form.end_date)}}
-  </div>
-
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
-    </div>
-  </div>
-</form>
-{#}
-{% if paginated_motorcycle_applications.total %}
-<table class="ui celled table">
-  <thead>
-    <tr>
-      <th></th>
-      <th>วันที่ต้องการใช้</th>
-      <th>เหตุผลที่ต้องการใช้</th>
-      <th>ชื่อผู้ใช้งาน</th>
-      <th>สถานะ</th>
-      <th>เหตุผล</th>
-      <th>จัดการ</th>
-
-    </tr>
-  </thead>
-  <tbody>
-    {% for motorcycle_application in paginated_motorcycle_applications.items %}
-    <tr>
-      <td> {{ loop.index }}</td>
-      <td data-label="Created Date">{{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-      <td data-label="Description">{{ motorcycle_application.description }}</td>
-      <td data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for motorcycle_application in paginated_motorcycle_applications.items %}
+        <tr>
+          <td class="table-style"> {{ loop.index }}</td>
+          <td class="table-style" data-label="Created Date">
+            {{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+          <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
 
 
 
-      {{ motorcycle_application.get_status()|safe }}
+          {{ motorcycle_application.get_status()|safe }}
 
-      <td>
-        {{ motorcycle_application.remark }}
-      </td>
-      <td>
-        {% if 'pending' in motorcycle_application.status %}
-        <a class="ui icon button primary" data-tooltip="แก้ไข"
-          href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-          <i class="edit icon"></i>
-        </a>
-        {% endif %}
-        {% if motorcycle_application.status in ['pending'] %}
-        <a class="ui icon button red " data-tooltip="ลบ" onclick="showDeleteModal('{{ motorcycle_application.id }}')">
-          <i class="trash icon"></i>
-        </a>
-        <div class="ui modal {{motorcycle_application.id}}">
-          <div class="header">
-            ลบคำขอใช้รถจักรยานยนต์
-          </div>
-          <div class="content">
-            <p>ต้องการลบคำขอใช้รถจักรยานยนต์
-              <b>{{ motorcycle_application.description }}</b>
-            </p>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
+          <td class="table-style">
+            {{ motorcycle_application.remark }}
+          </td>
+          <td class="table-style">
+            {% if 'pending' in motorcycle_application.status %}
+            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
+              href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-          </div>
-        </div>
-        {% endif %}
-        {% if 'active' in motorcycle_application.status %}
-        <a class="ui icon button primary" data-tooltip="ส่งคืน"
-          href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-          <i class="file alternate outline icon"></i>
-        </a>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{#}
-{% if paginated_motorcycle_applications.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
-    </div>
+            {% endif %}
+            {% if motorcycle_application.status in ['pending'] %}
+            <a class="btn btn-circle btn-error " data-tip="ลบ"
+              onclick="showDeleteModal('{{ motorcycle_application.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            {{ ModalNegative(
+              id=motorcycle_application.id,
+              header="ลบคำขอใช้รถจักรยานยนต์",
+              body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.description),
+              cancel="ยกเลิก",
+              submit="ยืนยัน",
+              redirect=url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id),
+              ) }}
+
+            {% endif %}
+            {% if 'active' in motorcycle_application.status %}
+            <a class="btn btn-circle btn-primary tooltip" data-tip="ส่งคืน"
+              href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-arrow-bend-left-up"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
+{#}
+{% if paginated_motorcycle_applications.pages != 1 %}
+
+{{ paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
+
 {% endif %}
 {#}
 {% else %}
-<div class="ui message"> ไม่พบข้อมูลในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
 {% endif %}
-{% endblock %}
-
-{% block additional_js %}
-<script type="text/javascript">
-
-  function showDeleteModal(motorcycle_application_id) {
-    motorcycle_application_id ? $('.ui.modal.' + motorcycle_application_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
-</script>
 {% endblock %}

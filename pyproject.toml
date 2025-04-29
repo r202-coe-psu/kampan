@@ -5,8 +5,7 @@ description = ""
 authors = ["R202"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-Flask = "^2.0.1"
+python = ">=3.12"
 Werkzeug = "^2.0.1"
 Flask-Login = "^0.6.0"
 watchdog = "^2.1.3"
@@ -24,7 +23,7 @@ pandas = "^2.2.0"
 openpyxl = "^3.1.2"
 pillow = "^11.0.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 flake8 = "^3.9.2"
 black = "^21.7b0"
 
@@ -34,5 +33,5 @@ kampan-worker = "kampan.cmd.worker:main"
 kampan-controller = "kampan.cmd.controller:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

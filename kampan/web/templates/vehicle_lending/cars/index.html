@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}รถยนต์{% endblock %}
 
@@ -10,78 +10,55 @@
 {% endblock %}
 
 {% block content %}
-<div class="ui secondary menu">
-  <div class="right menu">
-    <a class="ui primary labeled icon button"
+<div class="flex flex-row w-full justify-between">
+  <div class="flex justify-end w-full gap-2">
+    <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.cars.create_or_edit', organization_id=organization.id) }}">
-      <i class="plus icon"></i>
+      <i class="ph ph-plus"></i>
       เพิ่มรถยนต์
     </a>
   </div>
 </div>
 
-
-<div class="ui divided items">
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow">
   {% for car in cars %}
-  <div class="item">
-    <div class="image">
+  <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
+    <div class="w-32 h-32 flex-shrink-0">
       {% if not car.image %}
-      <img src="{{ url_for('static', filename='/images/image.png') }}">
+      <img class="w-full h-full object-cover rounded" src="{{ url_for('static', filename='/images/image.png') }}">
       {% else %}
-      <img
+      <img class="w-full h-full object-cover rounded"
         src="{{ url_for('vehicle_lending.cars.image', car_id=car.id, filename=car.image.filename, organization_id=organization.id) }}"
         alt="{{ car.license_plate }}">
       {% endif %}
     </div>
-    <div class="content">
-      <a class="header"> {{ car.license_plate }}</a>
-      <div class="meta">
-
-      </div>
-      <div class="description">
-        <span class="cinema">{{ car.description }}</span>
-      </div>
-
-      <div class="extra">
-
-        <a class="ui right floated red button labeled icon" onclick="showDeleteModal('{{ car.id }}')">
-          ลบ
-          <i class="trash icon"></i>
-        </a>
-
-        <a class="ui right floated primary button labeled icon"
+    <div class="flex flex-col flex-grow">
+      <a class="text-2xl font-bold">{{ car.license_plate }}</a>
+      <p class="text-gray-600">{{ car.description }}</p>
+      <div class="flex justify-end gap-2 mt-4">
+        <button class="btn btn-error" onclick="showDeleteModal('{{ car.id }}')">
+          <i class="ph ph-trash"></i> ลบ
+        </button>
+        <a class="btn btn-primary"
           href="{{ url_for('vehicle_lending.cars.create_or_edit', organization_id=organization.id, car_id=car.id) }}">
-          แก้ไข
-          <i class="edit icon"></i>
+          <i class="ph ph-pen"></i> แก้ไข
         </a>
-        <div class="ui modal {{car.id}}">
-          <div class="header">
-            ลบข้อมูลรถยนต์
-          </div>
-          <div class="content">
-            <p>ต้องการลบข้อมูลรถยนต์
-              <b>{{ car.description }}</b>
-            </p>
-          </div>
-          <div class="actions">
-            <button class="ui black deny button">
-              ยกเลิก
-            </button>
-            <a class="ui negative right labeled icon button"
-              href="{{ url_for('vehicle_lending.cars.delete', car_id=car.id) }}">
-              ยืนยัน
-              <i class="checkmark icon"></i>
-            </a>
-          </div>
-        </div>
       </div>
-
     </div>
   </div>
+  {{ ModalNegative(
+    id=car.id,
+    header="ลบข้อมูลรถยนต์",
+    body="ต้องการลบข้อมูลรถยนต์ <b> %s </b>" | format(car.description),
+    cancel="ยกเลิก",
+    submit="ยืนยัน",
+    redirect=url_for('vehicle_lending.cars.delete', car_id=car.id, organization_id=organization.id),
+    ) }}
 
   {% endfor %}
+
   {% if not cars %}
-  <div class="ui message"> ไม่พบข้อมูลในขณะนี้</div>
+  <div class="flex w-full justify-center py-6 text-xl text-gray-500">ไม่พบข้อมูลในขณะนี้</div>
   {% endif %}
 </div>
 
@@ -89,10 +66,11 @@
 
 {% block additional_js %}
 <script type="text/javascript">
-
   function showDeleteModal(item_id) {
-    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    const modal = document.querySelector(`.modal.${item_id}`);
+    if (modal) {
+      modal.classList.toggle('hidden');
+    }
   }
 </script>
 {% endblock %}

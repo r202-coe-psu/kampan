@@ -1,0 +1,252 @@
+<div class="drawer-side shadow">
+  <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
+  <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
+    <div class="py-2 border-b mb-2">
+      <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
+    </div>
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <details {% if '/summary' in request.path or '/all_report' in request.path or '/item_report_quarter' in
+        request.path or '/item_report_custom' in request.path or '/notifications' in request.path %} open {% endif %}>
+        <summary>
+          <i class="ph ph-chart-bar"></i> แดชบอร์ด
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/summary' in request.path else '' }}"
+              href="{{ url_for('dashboard.dashboard', organization_id = organization.id) }}">
+              แดชบอร์ด
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/all_report' in request.path else '' }}"
+              href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">
+              รายงานวัสดุคงเหลือ
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/item_report_quarter' in request.path else '' }}"
+              href="{{ url_for('dashboard.item_report_quarter', organization_id = organization.id) }}">
+              รายงานวัสดุคงเหลือ
+              <br> ตามช่วงไตรมาส
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/item_report_custom' in request.path else '' }}"
+              href="{{ url_for('dashboard.item_report_custom', organization_id = organization.id) }}">
+              รายงานเฉพาะวัสดุ <br> ตามช่วงที่กำหนด
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/notifications' in request.path else '' }}"
+              href="{{ url_for('notifications.index', organization_id = organization.id) }}">
+              การแจ้งเตือน
+            </a>
+          </li>
+        </ul>
+      </details>
+    </li>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <details {% if '/items/' in request.path or '/categories' in request.path or '/suppliers' in request.path
+        or '/warehouses' in request.path %} open {% endif %}>
+        <summary>
+          <i class="ph ph-cube"></i>การจัดการวัสดุ
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/items/' in request.path else '' }}"
+              href="{{ url_for('items.index', organization_id = organization.id) }}">
+              วัสดุทั้งหมด
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/categories' in request.path else '' }}"
+              href="{{ url_for('categories.index', organization_id = organization.id) }}">
+              หมวดหมู่
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/suppliers' in request.path else '' }}"
+              href="{{ url_for('suppliers.index', organization_id = organization.id) }}">
+              ร้านค้า
+
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/warehouses/' in request.path else '' }}"
+              href="{{ url_for('warehouses.index', organization_id = organization.id) }}">
+              คลังวัสดุ
+            </a>
+          </li>
+        </ul>
+      </details>
+    </li>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <details {% if '/item_registers/' in request.path or '/inventories/' in request.path %} open {% endif %}>
+        <summary>
+          <i class="ph ph-arrow-square-in"></i>
+          การนำเข้าวัสดุ
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/item_registers/' in request.path else '' }}"
+              href="{{ url_for('item_registers.index', organization_id = organization.id) }}">
+              นำเข้าวัสดุ
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/inventories/' in request.path else '' }}"
+              href="{{ url_for('inventories.index', organization_id = organization.id) }}">
+              รายการนำเข้าวัสดุ
+            </a>
+          </li>
+        </ul>
+      </details>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
+        href="{{ url_for('email_templates.index', organization_id = organization.id) }}">
+        <i class="ph ph-envelope-simple"></i>
+
+        รูปแบบอีเมล
+      </a>
+    </li>
+    {% endif %}
+    {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
+    current_user.get_current_division()) or current_user.has_roles(['admin']) %}
+    <li>
+      <details {% if '/item_orders/' in request.path or '/item_checkouts/order/' in request.path
+        or '/item_checkouts/all-checkout' in request.path or '/item_checkouts/' in request.path %} open {% endif %}>
+        <summary>
+          <i class="ph ph-list-numbers"></i> การเบิกวัสดุ
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/item_orders/' in request.path or '/item_checkouts/order/' in request.path or '/item_checkouts/all-checkout' in request.path else '' }}"
+              href="{{ url_for('item_orders.index', organization_id = organization.id) }}">
+              คำสั่งเบิกวัสดุ
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/item_checkouts/' == request.path else '' }}"
+              href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}">
+              รายการนำวัสดุออก
+            </a>
+          </li>
+        </ul>
+      </details>
+    </li>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin", "endorser", "head", "supervisor supplier") %}
+    <li>
+      <details {% if '/approve_orders' in request.path %} open {% endif %}>
+        <summary>
+          <i class="ph ph-list-checks"></i> การอนุมัติ
+        </summary>
+        <ul>
+          {% if current_user.has_organization_roles("endorser", "head") %}
+          <li>
+            <a class="{{ 'menu-active' if '/endorser' in request.path else '' }}"
+              href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">
+              หัวหน้าฝ่ายอนุมัติคำสั่งเบิก
+            </a>
+          </li>
+          {% endif %}
+          {% if current_user.has_organization_roles("supervisor supplier") %}
+          <li>
+            <a class="{{ 'menu-active' if '/supervisor_supplier' in request.path else '' }}"
+              href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id = organization.id )}}">
+              หัวหน้าเจ้าหน้าที่พัสดุ<br>อนุมัติคำสั่งเบิก
+            </a>
+          </li>
+          {% endif %}
+          {% if current_user.has_organization_roles("admin") %}
+          <li>
+            <a class="{{ 'menu-active' if '/admin' in request.path else '' }}"
+              href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">
+              พัสดุอนุมัติคำสั่งเบิก
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </details>
+    </li>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/lost_breaks/' in request.path else '' }}"
+        href="{{ url_for('lost_breaks.index', organization_id = organization.id) }}">
+        <i class="ph ph-image-broken"></i>
+        วัสดุชำรุด/สูญหาย
+      </a>
+    </li>
+    {% endif %}
+
+    {% if current_user.has_organization_roles("admin") and organization %}
+    <li>
+      <details {% if '/divisions/' in request.path or '/organizaiton_users' in request.path or '/detail' in request.path
+        %} open {% endif %}>
+        <summary>
+          <i class="ph ph-size ph-briefcase"></i> จัดการองค์กร
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/divisions/' in request.path else '' }}"
+              href="{{ url_for('divisions.index', organization_id = organization.id)}}">
+              แผนกทั้งหมด
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/organizaiton_users' in request.path else '' }}"
+              href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">
+              สมาชิกขององค์กร
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/detail' in request.path else '' }}"
+              href="{{ url_for('organizations.detail', organization_id = organization.id)}}">
+              รายละเอียดองค์กร
+            </a>
+          </li>
+        </ul>
+      </details>
+    </li>
+    {% endif %}
+    {% if organization %}
+    <li>
+      <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
+        href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026">
+        <i class="ph ph-lightbulb"></i> Smart Office
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/accounts' in request.path else '' }}"
+        href="{{ url_for('accounts.index',organization_id=organization.id) }}">
+        <i class="ph ph-size ph-house-line"></i> ข้อมูลผู้ใช้งาน
+      </a>
+    </li>
+    {% endif %}
+
+    <div class="mt-auto"></div>
+    <div class="dropdown dropdown-top dropdown-end">
+      <div class="rounded-field w-full px-2 justify-between">
+        <div class="flex items-center gap-2 justify-between">
+          <i class="ph ph-size ph-user p-2"></i>
+          <div class="flex justify-center">
+            <div class="break-all">
+              <p>{{ current_user.get_resources_fullname_th() }}</p>
+              <p>{{ current_user.email }}</p>
+            </div>
+          </div>
+          <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+            <i class="ph ph-size ph-sign-out"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </ul>
+</div>

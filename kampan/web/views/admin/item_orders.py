@@ -53,7 +53,6 @@ def order():
     items = models.Item.objects()
     form = forms.item_orders.OrderItemForm()
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/admin/item_orders/order.html",
             form=form,

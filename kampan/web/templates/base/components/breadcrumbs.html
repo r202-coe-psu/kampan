@@ -1,14 +1,16 @@
 {% macro RenderBreadcrumb(links) %}
-<div class="ui breadcrumb">
+<div class="breadcrumbs text-sm">
+  <ul>
     {% if links|length > 1 %}
     {% for name, direct_url in links %}
     {% if direct_url %}
-    <a class="section" href="{{ direct_url }}"> {{ name }}</a>
-    <i class="right angle icon divider"></i>
+    <li> <a href="{{ direct_url }}"> {{ name }}</a></li>
     {% else %}
-    <div class="active section">{{ name }}</div>
+    <li>{{ name }}</li>
     {% endif %}
     {% endfor %}
     {% endif %}
+  </ul>
+
 </div>
 {% endmacro %}

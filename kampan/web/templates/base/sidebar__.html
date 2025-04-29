@@ -1,0 +1,209 @@
+<div class="item">
+  {%- if current_user.get_image() %}
+  <a href="{{ url_for('accounts.index', organization_id = organization.id ) }}" class="ui image">
+    <img class="ui avatar image" src="{{ current_user.get_image() }}">
+  </a>
+  {% endif -%}
+  <a href="{{ url_for('accounts.index', organization_id = organization.id ) }}"><span class="white-text name">{{
+      current_user.first_name }}</span></a><br />
+  <a href="{{ url_for('accounts.index', organization_id = organization.id ) }}"><span class="white-text email">{{
+      current_user.email }}</span></a>
+</div>
+
+{% if not organization %}
+<div class="ui sidebar inverted vertical menu">
+  <a class="item" href="{{ url_for('accounts.index') }}"><i class="address book icon"></i>ข้อมูลผู้ใช้งาน</a>
+  <a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
+</div>
+{% endif %}
+
+
+{% if organization %}
+
+{% if current_user.has_organization_roles("admin") %}
+
+<!-- <div class="ui inverted item accordion ">
+  <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+    <b>แดชบอร์ด</b>
+    <i class="dropdown icon"></i>
+  </div>
+
+  <div class="content menu {{ 'active' if '/dashboard' in request.path or '/notifications' in request.path else '' }}">
+
+    <a class="item {{ 'active' if '/dashboard/summary' in request.path else '' }}"
+      href="{{ url_for('dashboard.dashboard', organization_id = organization.id) }}"><i
+        class="icon dashboard"></i>แดชบอร์ด</a>
+    {#}
+    <a class="item {{ 'active' if '/dashboard/chart' in request.path else '' }}"
+      href="{{ url_for('dashboard.dashboard_chart', organization_id = organization.id) }}">
+      <i class="chart bar icon"></i>กราฟแสดงวัสดุเข้า-ออก</a>
+    {#}
+    <a class="item {{ 'active' if '/dashboard/all_report' in request.path else '' }}"
+      href="{{ url_for('dashboard.all_report', organization_id = organization.id) }}">รายงานวัสดุคงเหลือ</a>
+
+    <a class="item {{ 'active' if '/dashboard/item_report_quarter' in request.path else '' }}"
+      href="{{ url_for('dashboard.item_report_quarter', organization_id = organization.id) }}">รายงานวัสดุคงเหลือ
+      <br> ตามช่วงไตรมาส
+    </a>
+
+    <a class="item {{ 'active' if '/dashboard/item_report_custom' in request.path else '' }}"
+      href="{{ url_for('dashboard.item_report_custom', organization_id = organization.id) }}">
+      รายงานเฉพาะวัสดุ <br> ตามช่วงที่กำหนด</a>
+
+    <a class="item {{ 'active' if '/notifications' in request.path else '' }}"
+      href="{{ url_for('notifications.index', organization_id = organization.id) }}">การแจ้งเตือน<i
+        class="bell icon"></i></a>
+
+  </div>
+</div> -->
+
+{% endif %}
+{% if current_user.has_organization_roles("admin") %}
+
+<div class="ui inverted item accordion">
+  <div class="title " style="display: flex; justify-content: space-between; align-items: center;">
+    <b>การจัดการวัสดุ</b>
+    <i class="dropdown icon"></i>
+  </div>
+  <div class="content menu {{ 'active' if '/items' in request.path or '/categories' in request.path 
+    or '/suppliers' in request.path or '/warehouses' in request.path else '' }}">
+    <a class="item {{ 'active' if '/items' in request.path else '' }}"
+      href="{{ url_for('items.index', organization_id = organization.id) }}"><i
+        class="archive icon"></i>วัสดุทั้งหมด</a>
+
+    <a class="item {{ 'active' if '/categories' in request.path else '' }}"
+      href="{{ url_for('categories.index', organization_id = organization.id) }}">
+      <i class="tags icon"></i>
+      หมวดหมู่
+    </a>
+
+    <a class="item {{ 'active' if '/suppliers' in request.path else '' }}"
+      href="{{ url_for('suppliers.index', organization_id = organization.id) }}">
+      <i class="cart arrow down icon"></i>
+      ร้านค้า
+    </a>
+
+    <a class="item {{ 'active' if '/warehouses' in request.path else '' }}"
+      href="{{ url_for('warehouses.index', organization_id = organization.id) }}">คลังวัสดุ<i
+        class="store alternate icon"></i></a>
+  </div>
+</div>
+
+{% endif %}
+{% if current_user.has_organization_roles("admin") %}
+
+<div class="ui inverted item accordion">
+  <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+    <b>การนำเข้าวัสดุ</b>
+    <i class="dropdown icon"></i>
+  </div>
+
+  <div class="content menu {{ 'active' if '/item_registers' in request.path or '/inventories' in request.path 
+   in request.path else '' }}">
+    <a class="item {{ 'active' if '/item_registers' in request.path else '' }}"
+      href="{{ url_for('item_registers.index', organization_id = organization.id) }}">นำเข้าวัสดุ<i
+        class="arrow alternate circle down icon"></i></a>
+
+    <a class="item {{ 'active' if '/inventories' in request.path else '' }}"
+      href="{{ url_for('inventories.index', organization_id = organization.id) }}">รายการนำเข้าวัสดุ<i
+        class="list alternate icon"></i></a>
+  </div>
+</div>
+
+
+<a class="item {{ 'active' if '/email_templates' in request.path else '' }}"
+  href="{{ url_for('email_templates.index', organization_id = organization.id) }}">
+  <div class="item" style="padding: 7.5px 0px;">รูปแบบอีเมล<i class="envelope icon"></i></div>
+</a>
+{% endif %}
+{% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
+current_user.get_current_division()) or current_user.has_roles(['admin']) %}
+
+<div class="ui inverted item accordion">
+  <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+    <b>การเบิกวัสดุ</b>
+    <i class="dropdown icon"></i>
+  </div>
+  <div
+    class="content menu {{ 'active' if '/item_orders' in request.path or '/item_checkouts' in request.path  else '' }}">
+    <a class="item {{ 'active' if '/item_orders' in request.path else '' }}"
+      href="{{ url_for('item_orders.index', organization_id = organization.id) }}">คำสั่งเบิกวัสดุ<i
+        class="arrow alternate circle up icon"></i></a>
+    <a class="item {{ 'active' if '/item_checkouts' in request.path  else '' }}"
+      href="{{ url_for('item_checkouts.index', organization_id = organization.id) }}">รายการนำวัสดุออก<i
+        class="file invoice icon"></i></a>
+  </div>
+</div>
+
+{% endif %}
+{% if current_user.has_organization_roles("admin", "endorser", "head", "supervisor supplier") %}
+<div class="ui inverted item accordion">
+  <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+    <b>การอนุมัติ</b>
+    <i class="dropdown icon"></i>
+  </div>
+  <div class="content menu {{ 'active' if '/approve_orders' in request.path  else '' }}">
+    {% if current_user.has_organization_roles("endorser", "head") %}
+    <a class="item {{ 'active' if '/approve_orders/endorser' in request.path  else '' }}"
+      href="{{ url_for('approve_orders.endorser_index', organization_id = organization.id )}}">หัวหน้าฝ่ายอนุมัติคำสั่งเบิก</a>
+    {% endif %}
+    {% if current_user.has_organization_roles("supervisor supplier") %}
+    <a class="item {{ 'active' if '/approve_orders/supervisor_supplier' in request.path  else '' }}"
+      href="{{ url_for('approve_orders.supervisor_supplier_index', organization_id = organization.id )}}">หัวหน้าเจ้าหน้าที่พัสดุ<br>อนุมัติคำสั่งเบิก
+    </a>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <a class="item {{ 'active' if '/approve_orders/admin' in request.path  else '' }}"
+      href="{{ url_for('approve_orders.admin_index', organization_id = organization.id )}}">พัสดุอนุมัติคำสั่งเบิก</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if current_user.has_organization_roles("admin") %}
+
+<a class="item {{ 'active' if '/lost_breaks' in request.path  else '' }}">
+  <div class="item" style="padding: 7.5px 0px;">วัสดุชำรุด/สูญหาย<i class="exclamation circle icon"></i></div>
+</a>
+{% endif %}
+
+{% if current_user.has_organization_roles("admin") and organization %}
+<div class="ui inverted item accordion">
+  <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+    <b>จัดการองค์กร</b>
+    <i class="dropdown icon"></i>
+  </div>
+  <div class="content menu {{ 'active' if '/divisions' in request.path or '/organizations' in request.path else '' }}">
+    <a class="item {{ 'active' if '/divisions' in request.path else '' }}"
+      href="{{ url_for('divisions.index', organization_id = organization.id)}}">แผนกทั้งหมด<i
+        class="sitemap icon"></i></a>
+
+    <a class="item {{ 'active' if '/organizations/' + organization.id|string + '/organizaiton_users' in request.path else '' }}"
+      href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">สมาชิกขององค์กร<i
+        class="users icon"></i></a>
+
+    <a class="item {{ 'active' if '/organizations/' + organization.id|string + '/detail' in request.path else '' }}"
+      href="{{ url_for('organizations.detail', organization_id = organization.id)}}">รายละเอียดองค์กร<i
+        class="users cog icon"></i></a>
+  </div>
+</div>
+
+{% endif %}
+{% endif %}
+
+
+{% if organization %}
+<a class="item"><i class="laptop house icon"></i>Smart Office</a>
+<a class="item {{ 'active' if '/accounts' in request.path else '' }}"
+  href="{{ url_for('accounts.index',organization_id=organization.id) }}"><i
+    class="address book icon "></i>ข้อมูลผู้ใช้งาน</a>
+<a class="item" href="{{ url_for('accounts.logout') }}"><i class="sign out icon"></i>ออกจากระบบ</a>
+{% endif %}
+
+
+
+<script type="text/javascript">
+  $(document).ready(function () {
+    $('.ui.accordion').accordion();
+  });
+</script>

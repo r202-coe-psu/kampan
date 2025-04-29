@@ -81,38 +81,43 @@ def create_or_edit(motorcycle_application_id):
     ).first()
     form = forms.vehicle_applications.MotorcycleApplicationForm()
 
-    if motorcycle_application_id:
-        motorcycle_application = (
-            models.vehicle_applications.MotorcycleApplication.objects(
-                id=motorcycle_application_id
-            ).first()
-        )
-        form = forms.vehicle_applications.MotorcycleApplicationForm(
-            obj=motorcycle_application
-        )
-
-        form.departure_date.data = motorcycle_application.departure_datetime.date()
-        form.departure_time.data = motorcycle_application.departure_datetime.time()
-    else:
-
-        date = request.args.get("date", type=str, default=None)
-        if date:
-            date = datetime.datetime.strptime(date, "%Y-%m-%d")
-            form.departure_date.data = date.date()
-            form.departure_time.data = date.time()
     form.motorcycle.choices = [
         (str(motorcycle.id), motorcycle.license_plate)
         for motorcycle in models.vehicles.Motorcycle.objects(organization=organization)
     ]
     if not form.validate_on_submit():
-        print(form.errors)
+        if motorcycle_application_id:
+            motorcycle_application = (
+                models.vehicle_applications.MotorcycleApplication.objects(
+                    id=motorcycle_application_id
+                ).first()
+            )
+            form = forms.vehicle_applications.MotorcycleApplicationForm(
+                obj=motorcycle_application
+            )
 
+            form.departure_date.data = motorcycle_application.departure_datetime.date()
+            form.departure_time.data = motorcycle_application.departure_datetime.time()
+        else:
+
+            date = request.args.get("date", type=str, default=None)
+            if date:
+                date = datetime.datetime.strptime(date, "%Y-%m-%d")
+                form.departure_date.data = date.date()
+                form.departure_time.data = date.time()
+        form.motorcycle.choices = [
+            (str(motorcycle.id), motorcycle.license_plate)
+            for motorcycle in models.vehicles.Motorcycle.objects(
+                organization=organization
+            )
+        ]
+
+        print(form.errors)
         return render_template(
             "/vehicle_lending/motorcycle_applications/create_or_edit.html",
             organization=organization,
             form=form,
         )
-
     motorcycle_application = models.vehicle_applications.MotorcycleApplication()
     if motorcycle_application_id:
         motorcycle_application = (

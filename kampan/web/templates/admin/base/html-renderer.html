@@ -28,7 +28,7 @@
   <div class="ui action input">
     <input type="text" placeholder="{{ field.label.text }}" readonly class="attach-file-{{field.name}}">
     {{ field(style="display: none;") }}
-    <div class="ui icon button attach-file-{{field.name}}">
+    <div class="btn btn-circle attach-file-{{field.name}}">
       <i class="attach icon"></i>
     </div>
   </div>
@@ -45,7 +45,7 @@
 {{ render_field(field, class_='ui fluid dropdown') }}
 {%- endmacro %}
 
-{% macro render_search_multiple_select(field) -%}
+{% macro render_multiple_select_field(field) -%}
 {{ render_field(field, class_='ui fluid search dropdown') }}
 {%- endmacro %}
 
@@ -57,7 +57,7 @@
       <i class="calendar icon"></i>
       {{ field(autocomplete='off') }}
     </div>
-    <button type="submit" class="ui primary button"
+    <button type="submit" class="btn btn-primary"
       style="height:fit-content; margin-top:auto; margin-left:15px; margin:5px;">ยืนยัน</button>
   </div>
 </div>
@@ -85,7 +85,7 @@
 {%- endmacro %}
 
 {% macro render_default_search_item(form) -%}
-<div class="ui secondary menu">
+<div class="flex flex-row w-full justify-between">
   {{form.hidden_tag()}}
   <p style="margin-left:auto;">
   <div class="field">
@@ -110,14 +110,13 @@
     {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
   </p>
   <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    <button type="submit" class="btn btn-primary">ยืนยัน</button>
   </p>
 </div>
 {%- endmacro %}
 
 {% macro render_default_search_user(form) -%}
-<div class="ui secondary menu">
+<div class="flex flex-row w-full justify-between">
   {{form.hidden_tag()}}
   <p style="margin-left:auto;">
   <div class="field">
@@ -142,8 +141,7 @@
     {{ render_calendar_default(form.end_date, calendar_id="end_date")}}
   </p>
   <p>
-    <button type="submit" class="ui primary button"
-      style="height:fit-content; margin-top:auto; margin-left:15px; ">ยืนยัน</button>
+    <button type="submit" class="btn btn-primary">ยืนยัน</button>
   </p>
 </div>
 {%- endmacro %}

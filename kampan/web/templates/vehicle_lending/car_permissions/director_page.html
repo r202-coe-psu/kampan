@@ -1,6 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 
 
 {% block title %}ผอ. อนุมัติขอใช้รถยนต์{% endblock %}
@@ -10,168 +10,169 @@
 
 {% endblock %}
 {% block content %}
-{% if paginated_car_applications.total %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    {% if paginated_car_applications.total %}
 
-<table class="ui celled table">
-  <thead>
-    <tr>
-      <th></th>
-      <th>วันที่ต้องการใช้</th>
-      <th>เหตุผลที่ต้องการใช้</th>
-      <th>ชื่อผู้ใช้งาน</th>
-      <th>สถานะ</th>
-      <th>เหตุผล</th>
-      <th>จัดการ</th>
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style"></th>
+          <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">เหตุผล</th>
+          <th class="table-style">จัดการ</th>
 
-    </tr>
-  </thead>
-  <tbody>
-    {% for car_application in paginated_car_applications.items %}
-    <tr>
-      <td> {{ loop.index }}</td>
-      <td data-label="Created Date">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}</td>
-      <td data-label="Description">{{ car_application.description }}</td>
-      <td data-label="User">{{ car_application.creator.get_name() }}</td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for car_application in paginated_car_applications.items %}
+        <tr>
+          <td class="table-style"> {{ loop.index }}</td>
+          <td class="table-style" data-label="Created Date">
+            {{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Description">{{ car_application.description }}</td>
+          <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
 
 
 
-      {{ car_application.get_status()|safe }}
+          {{ car_application.get_status()|safe }}
 
-      <td>
-        {{ car_application.remark }}
-      </td>
-      <td>
-        <!-- Approve/Deny Button -->
-        <a class="ui icon button blue {{ 'disabled' if car_application.status == 'approved' else ''}}"
-          data-tooltip="อนุมัติ / ปฏิเสธ"
-          onclick="showApprovalModal('{{ car_application.id }}', '{{ car_application.description }}')">
-          <i class="check circle icon"></i>
-        </a>
+          <td class="table-style">
+            {{ car_application.remark }}
+          </td>
+          <td class="table-style">
+            <!-- Approve/Deny Button -->
+            <a class="btn btn-circle btn-primary tooltip {{ 'disabled' if car_application.status == 'approved' else ''}}"
+              data-tip="อนุมัติ / ปฏิเสธ"
+              onclick="showApprovalModal('{{ car_application.id }}', '{{ car_application.description }}')">
+              <i class="ph ph-check"></i>
+            </a>
 
-        <!-- Approval Modal -->
-        <div class="ui modal" id="approval_modal">
-          <div class="header">
-            อนุมัติ / ปฏิเสธ คำขอใช้รถยนต์
-          </div>
-          <div class="content">
-            <p>คุณต้องการ <b>อนุมัติ</b> หรือ <b>ปฏิเสธ</b> คำขอใช้รถยนต์นี้หรือไม่?</p>
-            <div class="ui segment">
-              <h3 class="ui header">ข้อมูลคำขอใช้รถยนต์</h3>
+            <!-- Approval Modal -->
+            <dialog class="modal approval_modal_{{ car_application.id }}" id="approval_modal_{{ car_application.id }}">
+              <div class="modal-box">
+                <h3 class="font-bold text-xl text-success">อนุมัติ / ปฏิเสธ คำขอใช้รถยนต์</h3>
+                <p class="py-4">คุณต้องการ <b>อนุมัติ</b> หรือ <b>ปฏิเสธ</b> คำขอใช้รถยนต์นี้หรือไม่?</p>
+                <div class="py-4">
+                  <h4 class="font-semibold">ข้อมูลคำขอใช้รถยนต์</h4>
 
-              <!-- Request Reason -->
-              <div class="field">
-                <label><strong>เหตุผลที่ต้องการใช้:</strong></label>
-                <p>{{ car_application.request_reason or "ไม่มีข้อมูล" }}</p>
-              </div>
+                  <!-- Request Reason -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">เหตุผลที่ต้องการใช้:</label>
+                    <p>{{ car_application.request_reason or "ไม่มีข้อมูล" }}</p>
+                  </div>
 
-              <!-- Location -->
-              <div class="field">
-                <label><strong>สถานที่ต้องการจะไป:</strong></label>
-                <p>{{ car_application.location }}</p>
-              </div>
+                  <!-- Location -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">สถานที่ต้องการจะไป:</label>
+                    <p>{{ car_application.location }}</p>
+                  </div>
 
-              <!-- Departure DateTime -->
-              <div class="field">
-                <label><strong>วันเวลาออกเดินทาง:</strong></label>
-                <p>{{ car_application.departure_datetime.strftime('%Y-%m-%d %H:%M') }}</p>
-              </div>
+                  <!-- Departure DateTime -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาออกเดินทาง:</label>
+                    <p>{{ car_application.departure_datetime.strftime('%Y-%m-%d %H:%M') }}</p>
+                  </div>
 
-              {% if car_application.travel_type == "round trip" %}
+                  {% if car_application.travel_type == "round trip" %}
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาที่กลับ:</label>
+                    <p>
+                      {{ car_application.return_datetime.strftime('%Y-%m-%d %H:%M') if car_application.return_datetime else "ไม่ระบุ" }}
+                    </p>
+                  </div>
+                  {% endif %}
 
-              <div class="field">
-                <label><strong>วันเวลาที่กลับ:</strong></label>
-                <p>{{ car_application.return_datetime.strftime('%Y-%m-%d %H:%M') if car_application.return_datetime else
-                  "ไม่ระบุ" }}</p>
-              </div>
-              {% endif %}
-              <!-- Flight DateTime (if applicable) -->
-              {% if car_application.using_type == "airport transfer" %}
-              <div class="field">
-                <label><strong>วันเวลาบิน:</strong></label>
-                <p>{{ car_application.flight_datetime.strftime('%Y-%m-%d %H:%M') if car_application.flight_datetime
-                  else "ไม่ระบุ" }}</p>
-              </div>
-              {% endif %}
-              <!-- Passenger Number -->
-              <div class="field">
-                <label><strong>จำนวนผู้โดยสาร:</strong></label>
-                <p>{{ car_application.passenger_number }}</p>
-              </div>
+                  {% if car_application.using_type == "airport transfer" %}
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาบิน:</label>
+                    <p>
+                      {{ car_application.flight_datetime.strftime('%Y-%m-%d %H:%M') if car_application.flight_datetime else "ไม่ระบุ" }}
+                    </p>
+                  </div>
+                  {% endif %}
 
-              <!-- Car Information -->
-              <div class="field">
-                <label><strong>ข้อมูลรถยนต์:</strong></label>
-                <p>{{ car_application.car.license_plate if car_application.car else "ไม่มีข้อมูล" }}</p>
-              </div>
+                  <!-- Passenger Number -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">จำนวนผู้โดยสาร:</label>
+                    <p>{{ car_application.passenger_number }}</p>
+                  </div>
 
-              <!-- Division -->
-              <div class="field">
-                <label><strong>แผนก:</strong></label>
-                <p>{{ car_application.division.name if car_application.division else "ไม่มีข้อมูล" }}</p>
-              </div>
+                  <!-- Car Information -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">ข้อมูลรถยนต์:</label>
+                    <p>{{ car_application.car.license_plate if car_application.car else "ไม่มีข้อมูล" }}</p>
+                  </div>
 
-              <!-- Creator and Updater -->
-              <div class="field">
-                <label><strong>ผู้ใช้:</strong></label>
-                <p>{{ car_application.creator.get_resources_fullname_th() }}</p>
-              </div>
+                  <!-- Division -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">แผนก:</label>
+                    <p>{{ car_application.division.name if car_application.division else "ไม่มีข้อมูล" }}</p>
+                  </div>
 
-              <!-- Date Information -->
-              <div class="field">
-                <label><strong>วันที่สร้าง:</strong></label>
-                <p>{{ car_application.created_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
-              </div>
+                  <!-- Creator and Updater -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">ผู้ใช้:</label>
+                    <p>{{ car_application.creator.get_resources_fullname_th() }}</p>
+                  </div>
 
-            </div>
+                  <!-- Date Information -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันที่สร้าง:</label>
+                    <p>{{ car_application.created_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+                  </div>
+                </div>
 
-            <!-- Approval Form -->
-            <form id="approval_form" method="POST" class="ui form">
-              <input type="hidden" name="car_application_id" id="car_application_id">
-              <input type="hidden" name="organization_id" id="organization_id">
+                <!-- Approval Form -->
+                <form id="approval_form" method="POST" class="py-4">
+                  <input type="hidden" name="car_application_id" id="car_application_id">
+                  <input type="hidden" name="organization_id" id="organization_id">
 
-              <div class="equal width fields">
-                <div class="field">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">หมายเหตุ (หากปฏิเสธ):</span>
+                    </label>
+                    <input name="denied_reason" id="denied_reason" class="input input-bordered"
+                      placeholder="โปรดระบุเหตุผลหากปฏิเสธ">
+                  </div>
+                </form>
 
-                  <label>หมายเหตุ (หากปฏิเสธ):</label>
-                  <input name="denied_reason" id="denied_reason" class="ui input" placeholder="โปรดระบุเหตุผลหากปฏิเสธ">
+                <div class="modal-action">
+                  <button class="btn" onclick="approval_modal_{{car_application.id}}.close()">ยกเลิก</button>
+                  <button class="btn btn-success" onclick="submitForm('approve')">
+                    อนุมัติ
+                    <i class="ph ph-check"></i>
+                  </button>
+                  <button class="btn btn-error" onclick="submitForm('deny')">
+                    ปฏิเสธ
+                    <i class="times icon"></i>
+                  </button>
                 </div>
               </div>
-            </form>
-          </div>
-
-          <div class="actions">
-            <button class="ui black deny button">ยกเลิก</button>
-            <button class="ui positive right labeled icon button" onclick="submitForm('approve')">
-              อนุมัติ
-              <i class="checkmark icon"></i>
-            </button>
-            <button class="ui negative right labeled icon button" onclick="submitForm('deny')">
-              ปฏิเสธ
-              <i class="times icon"></i>
-            </button>
-          </div>
-        </div>
+            </dialog>
 
 
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{#}
-{% if paginated_car_applications.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_car_applications,"item_car_applications.index")}}
-    </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {#}
+    {% if paginated_car_applications.pages != 1 %}
+
+    {{ paginated.render_pagination(paginated_car_applications,"item_car_applications.index")}}
+
+    {% endif %}
+    {#}
+    {% else %}
+    <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
+    {% endif %}
   </div>
 </div>
-{% endif %}
-{#}
-{% else %}
-<div class="ui message"> ไม่พบข้อมูลในขณะนี้</div>
-{% endif %}
 {% endblock %}
 
 {% block additional_js %}
@@ -181,7 +182,7 @@
     $("#car_application_id").val(carAppId);
     $("#organization_id").val('{{ organization.id }}');
     $("#denied_reason").val(""); // Clear previous input
-    $("#approval_modal").modal("show");
+    showModal("approval_modal_" + carAppId);
   }
 
   function submitForm(action) {
@@ -197,37 +198,5 @@
     form.submit(); // Submit the form
   }
 
-</script>
-<script type="text/javascript">
-  datetime_formatter = {
-    date: "DD/MM/YYYY"
-  };
-  var calendar_setting = {
-    type: 'date',
-    monthFirst: false,
-    formatter: datetime_formatter,
-    today: false,
-    ampm: false,
-    text: {
-      days: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-      months: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤษจิกายน', 'ธันวาคม'],
-      monthsShort: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
-      today: 'วันนี้',
-      now: 'ปัจจุบัน',
-      am: 'AM',
-      pm: 'PM'
-    },
-  };
-  $('#start_date').calendar(calendar_setting);
-  $('#end_date').calendar(calendar_setting);
-
-  $(document)
-    .ready(function () {
-      $('.ui.dropdown.validate.selection')
-        .dropdown({
-          allowAdditions: true,
-          fullTextSearch: 'exact'
-        });
-    });
 </script>
 {% endblock %}

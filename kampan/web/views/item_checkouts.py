@@ -1,6 +1,5 @@
 from atexit import register
 from calendar import calendar
-from crypt import methods
 from pyexpat import model
 from typing import OrderedDict
 from flask import Blueprint, render_template, redirect, url_for, request
@@ -39,7 +38,7 @@ def index():
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
     ]
 
-    form.categories.choices = [("", "หมวดหมู่")] + [
+    form.categories.choices = [("", "หมวดหมู่ทั้งหมด")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
             organization=organization, status="active"
@@ -116,7 +115,7 @@ def catalogs(order_id):
     #     for item in items
     # ]
 
-    form.categories.choices = [("", "หมวดหมู่")] + [
+    form.categories.choices = [("", "หมวดหมู่ทั้งหมด")] + [
         (str(category.id), category.name)
         for category in models.Category.objects(
             organization=organization, status="active"
@@ -213,7 +212,7 @@ def checkout():
     if items:
         form.item.choices = [
             (
-                item.id,
+                str(item.id),
                 (
                     f"{item.barcode_id} {item.name} (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (
@@ -233,7 +232,7 @@ def checkout():
         ]
     if not form.validate_on_submit():
         if item_id:
-            form.item.data = item_id
+            form.item.data = str(item_id)
         return render_template(
             "/item_checkouts/checkout.html",
             form=form,
@@ -309,7 +308,7 @@ def edit(checkout_item_id):
     if items:
         form.item.choices = [
             (
-                item.id,
+                str(item.id),
                 (
                     f"{item.barcode_id} ({item.name}) (มีวัสดุทั้งหมด {item.get_items_quantity()})"
                     + (

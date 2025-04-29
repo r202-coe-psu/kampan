@@ -1,7 +1,7 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/forms.html' as render_form %}
-{% import '/base/pagination.html' as paginated%}
+{% import '/base/components/paginations/pagination.html' as paginated%}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb%}
 
 {% block title %}Items{% endblock %}
@@ -13,38 +13,14 @@
 {% endblock %}
 
 {% block content %}
-<div class="navbarmenu">
-  <div class="left menu">
-    <a class="ui labeled icon button"
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary"
       href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-      <i class="left arrow icon"></i>
+      <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
-</div>
-
-<div class="ui ordered steps" style="width: 100%;">
-  <a class="completed step"
-    href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
-    <div class="content">
-      <div class="title">เพิ่มคำสั่งเบิก</div>
-      <div class="description">กรอกข้อมูลคำสั่งเบิก</div>
-    </div>
-  </a>
-  <a class="active step"
-    href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">เลือกพัสดุ</div>
-      <div class="description">ทำการเลือกพัสดุที่ต้องการเบิก</div>
-    </div>
-  </a>
-  <a class="step"
-    href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
-    <div class="content">
-      <div class="title">ยืนยันการเบิกพัสดุ</div>
-      <div class="description">ตรวจสอบรายละเอียดก่อนทำการยืนยัน</div>
-    </div>
-  </a>
 </div>
 
 {% set params=dict(request.args) %}
@@ -54,19 +30,37 @@
 {% if 'page' in params %}
 {% set _dummy=params.pop('page') %}
 {% endif %}
-<form method="post" style="padding-bottom: 0.5rem;" class="ui form">
+<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="steps steps-vertical lg:steps-horizontal w-full py-6">
+    <a class="step-primary step"
+      href="{{ url_for('item_orders.edit', organization_id=organization.id, order_id=order.id) }}">
+      เพิ่มคำสั่งเบิก
+    </a>
+    <a class="step-primary step"
+      href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+      เลือกพัสดุ
+    </a>
+    <a class="step"
+      href='{{  url_for("item_checkouts.bill_checkout",organization_id=organization.id, order_id=order.id, )}}'>
+      ยืนยันการเบิกพัสดุ
+    </a>
+  </div>
   {{form.hidden_tag()}}
   <div><b>
       <span class="large text ui">ค้นหาชื่อวัสดุหรือหมวดหมู่</span>
     </b>
   </div>
-  <div class="equal width fields">
-    {{ render_form.InputField(form.item_name) }}
-    {{ render_form.SelectField(form.categories) }}
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_field(form.item_name) }}
+    {{ renderer.render_select_field(form.categories) }}
   </div>
-  <div class="ui secondary menu">
-    <div class="right menu">
-      <button type="submit" class="ui primary button">ค้นหา</button>
+  <div class="flex flex-row w-full justify-between">
+    <div class="flex justify-end w-full gap-2">
+      <a class="btn"
+        href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">ค้นหา</button>
     </div>
   </div>
 </form>
@@ -75,10 +69,10 @@
 "pending"
 %}
 {% if items %}
-<div class="ui four cards">
+<div class="grid grid-cols-1 gap-2 mt-2 lg:grid-cols-3 sm:grid-cols-2 2xl:grid-cols-4 w-full overflow-x-auto">
   {% for item in paginated_items.items %}
-  <div class="card">
-    <div class="image">
+  <div class="w-full card bg-base-100 shadow-sm {{' image-full ' if item.get_amount_items() == 0 else '' }}">
+    <figure>
       {% if not item.image %}
       <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
       {% else %}
@@ -86,46 +80,41 @@
         src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
         alt="{{ item.name }}">
       {% endif %}
-      {% if item.get_amount_items() == 0 %}
-      <div class="ui center dimmer active">
-        <div class="content">
-          <div class="center">
-            <h2 class="ui inverted header">วัสดุหมดชั่วคราว</h2>
-          </div>
+
+    </figure>
+
+    {% if item.get_amount_items() == 0 %}
+    <div class="card-body  w-full">
+      <h2 class="card-title text-center">วัสดุหมดชั่วคราว</h2>
+    </div>
+    {% endif %}
+    <div class="card-body">
+      <div class="text-2xl font-bold">{{ item.name }}</div>
+      <div class=" text-2xl font-bold">จำนวน : {{ item.get_items_quantity() }}</div>
+      <div>คำอธิบาย : {{ item.description }}</div>
+      <div>หมวดหมู่: {{ item.categories.name }}</div>
+      <div class="card-actions h-full items-end justify-center">
+        <div class="flex flex-row  w-full">
+          <a class=" btn btn-primary w-full" data-tip="แก้ไข"
+            href="{{ url_for('item_checkouts.checkout', item_id=item.id, order_id=order.id, organization_id=organization.id  ) }}">
+            <i class="ph ph-hand-pointing"></i>
+            เลือกวัสดุชิ้นนี้
+          </a>
         </div>
       </div>
-      {% endif %}
     </div>
-    <div class="content">
-      <div class="header">{{ item.name }}</div>
-      <div class="header">จำนวน : {{ item.get_items_quantity() }}</div>
-      <div class="meta">คำอธิบาย : {{ item.description }}</div>
-      <div class="meta">หมวดหมู่: {{ item.categories.name }}</div>
-    </div>
-    <div class="extra content">
-      <div class="ui three buttons" style="width: 100%;">
-        <a class="ui icon primary button" data-tooltip="แก้ไข"
-          href="{{ url_for('item_checkouts.checkout', item_id=item.id, order_id=order.id, organization_id=organization.id  ) }}">
-          <i class="hand point down outline icon"></i>
-          เลือกวัสดุชิ้นนี้
-        </a>>
-      </div>
-    </div>
+
   </div>
   {% endfor %}
 </div>
 
 {% if paginated_items.pages != 1 %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{paginated.render_pagination(paginated_items,"item_checkouts.catalogs", params)}}
-    </div>
-  </div>
-</div>
+
+{{ paginated.render_pagination(paginated_items,"item_checkouts.catalogs", params)}}
+
 {% endif %}
 {% else %}
-<div class="ui message">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
 {% endif %}
 {% endblock %}

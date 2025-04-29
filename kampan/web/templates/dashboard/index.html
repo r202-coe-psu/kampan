@@ -1,4 +1,4 @@
-{% extends '/base/default-dashboard.html' %}
+{% extends '/base/template-page-login.html' %}
 
 <head>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -12,55 +12,58 @@
 
 
 
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8; width: 300px; height: 300px;">
-      <div class "card-header">
-        <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
-        Items Checkout
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} items</h5>
-        <p class="card-text">
-          <a href="/item_orders/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
-        </p>
-      </div>
+<div class="col-6 col-sm-3">
+  <div class="card text-white bg-info mb-3" style="max-width: 18rem; --bs-bg-opacity: .8; width: 300px; height: 300px;">
+    <div class "card-header">
+      <ion-icon name="cart-outline" style="margin-right: 10px;"></ion-icon>
+      Items Checkout
     </div>
-  </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-warning mb-3" style="max-width: 18rem; --bs-bg-opacity: .7; width: 300px; height: 300px;">
-      <div class="card-header">
-        <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
-        Remain
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ item_remain }} items</h5>
-        <p class="card-text">
-          <a href="/item_registers/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-6 col-sm-3">
-    <div class="card text-white bg-primary mb-3" style="max-width: 18rem; --bs-bg-opacity: .8; width: 300px; height: 300px;">
-      <div class="card-header">
-        <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
-        Total values
-      </div>
-      <div class="card-body">
-        <h5 class="card-title" style="text-align: center;">{{ total_values }} ฿</h5>
-        <p class="card-text">
-          <a href="/item_checkouts/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
-        </p>
-      </div>
+    <div class="card-body">
+      <h5 class="card-title" style="text-align: center;">{{ checkout_quantity }} items</h5>
+      <p class="card-text">
+        <a href="/item_orders/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
+      </p>
     </div>
   </div>
 </div>
 
+<div class="col-6 col-sm-3">
+  <div class="card text-white bg-warning mb-3"
+    style="max-width: 18rem; --bs-bg-opacity: .7; width: 300px; height: 300px;">
+    <div class="card-header">
+      <ion-icon name="bag-check-outline" style="margin-right: 10px;"></ion-icon>
+      Remain
+    </div>
+    <div class="card-body">
+      <h5 class="card-title" style="text-align: center;">{{ item_remain }} items</h5>
+      <p class="card-text">
+        <a href="/item_registers/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="col-6 col-sm-3">
+  <div class="card text-white bg-primary mb-3"
+    style="max-width: 18rem; --bs-bg-opacity: .8; width: 300px; height: 300px;">
+    <div class="card-header">
+      <ion-icon name="cash-outline" style="margin-right: 10px;"></ion-icon>
+      Total values
+    </div>
+    <div class="card-body">
+      <h5 class="card-title" style="text-align: center;">{{ total_values }} ฿</h5>
+      <p class="card-text">
+        <a href="/item_checkouts/" class="text-white" style="text-decoration: none;">[ more detail ]</a>
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+
 <body>
   <div style="text-align: center; margin: 15px auto;">
-    <h1 class="shadow" style="color: #333; background-color: #93e2f1; font-size: 25px; padding: 10px 20px; display: inline-block;">
+    <h1 class="shadow"
+      style="color: #333; background-color: #93e2f1; font-size: 25px; padding: 10px 20px; display: inline-block;">
       Checkout Trend by Month
     </h1>
   </div>
@@ -71,33 +74,33 @@
         name: "Checkout",
         data: {{ checkout_trend_month }},
       }],
-      chart: {
-        height: 350,
+    chart: {
+      height: 350,
         width: 800,
-        type: 'line',
-        zoom: {
-          enabled: true
-        }
+          type: 'line',
+            zoom: {
+        enabled: true
+      }
+    },
+    dataLabels: {
+      enabled: true,
       },
-      dataLabels: {
-        enabled: true,
-      },
-      colors: ['#0dcaf0'],
+    colors: ['#0dcaf0'],
       stroke: {
-        curve: 'smooth'
-      },
-      title: {
-        text: '',
+      curve: 'smooth'
+    },
+    title: {
+      text: '',
         align: 'left',
       },
-      grid: {
-        row: {
-          colors: ['#f3f3f3', 'transparent'],
+    grid: {
+      row: {
+        colors: ['#f3f3f3', 'transparent'],
           opacity: 0.5
-        },
       },
-      xaxis: {
-        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    },
+    xaxis: {
+      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       }
     };
 
