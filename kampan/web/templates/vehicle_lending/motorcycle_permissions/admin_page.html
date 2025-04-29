@@ -10,170 +10,174 @@
 
 {% endblock %}
 {% block content %}
-{% if paginated_motorcycle_applications.total %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    {% if paginated_motorcycle_applications.total %}
 
-<table class="table-auto w-full">
-  <thead>
-    <tr>
-      <th class="table-style"></th>
-      <th class="table-style">วันที่ต้องการใช้</th>
-      <th class="table-style">เหตุผลที่ต้องการใช้</th>
-      <th class="table-style">ชื่อผู้ใช้งาน</th>
-      <th class="table-style">สถานะ</th>
-      <th class="table-style">เหตุผล</th>
-      <th class="table-style">จัดการ</th>
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style"></th>
+          <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">เหตุผล</th>
+          <th class="table-style">จัดการ</th>
 
-    </tr>
-  </thead>
-  <tbody>
-    {% for motorcycle_application in paginated_motorcycle_applications.items %}
-    <tr>
-      <td class="table-style"> {{ loop.index }}</td>
-      <td class="table-style" data-label="Created Date">
-        {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
-      </td>
-      <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
-      <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for motorcycle_application in paginated_motorcycle_applications.items %}
+        <tr>
+          <td class="table-style"> {{ loop.index }}</td>
+          <td class="table-style" data-label="Created Date">
+            {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+          <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
 
 
 
-      {{ motorcycle_application.get_status()|safe }}
+          {{ motorcycle_application.get_status()|safe }}
 
-      <td class="table-style">
-        {{ motorcycle_application.remark }}
-      </td>
-      <td class="table-style">
-        {% if motorcycle_application.status == "pending" %}
-        <!-- Approve/Deny Button -->
-        <a class="btn btn-circle blue {{ 'disabled' if motorcycle_application.status == 'approved' else ''}}"
-          data-tooltip="อนุมัติ / ปฏิเสธ"
-          onclick="showApprovalModal('{{ motorcycle_application.id }}', '{{ motorcycle_application.description }}')">
-          <i class="check circle icon"></i>
-        </a>
+          <td class="table-style">
+            {{ motorcycle_application.remark }}
+          </td>
+          <td class="table-style">
+            {% if motorcycle_application.status == "pending" %}
+            <!-- Approve/Deny Button -->
+            <a class="btn btn-circle btn-primary tooltip {{ 'disabled' if motorcycle_application.status == 'approved' else ''}}"
+              data-tip="อนุมัติ / ปฏิเสธ"
+              onclick="showApprovalModal('{{ motorcycle_application.id }}', '{{ motorcycle_application.description }}')">
+              <i class="ph ph-check"></i>
+            </a>
 
-        <!-- Approval Modal -->
-        <div class="modal" id="approval_modal">
-          <div class="text-2xl font-bold">
-            อนุมัติ / ปฏิเสธ คำขอใช้รถจักรยานยนต์
-          </div>
-          <div class=" modal-box">
-            <p>คุณต้องการ <b>อนุมัติ</b> หรือ <b>ปฏิเสธ</b> คำขอใช้รถจักรยานยนต์นี้หรือไม่?</p>
-            <div class="ui segment">
-              <h3 class="ui header">ข้อมูลคำขอใช้รถจักรยานยนต์</h3>
+            <!-- Approval Modal -->
 
-              <!-- Request Reason -->
-              <div class="field">
-                <label><strong>เหตุผลที่ต้องการใช้:</strong></label>
-                <p>{{ motorcycle_application.request_reason or "ไม่มีข้อมูล" }}</p>
-              </div>
+            <dialog class="modal approval_modal_{{ motorcycle_application.id }}"
+              id="approval_modal_{{ motorcycle_application.id }}">
+              <div class="modal-box">
+                <h3 class="font-bold text-xl text-success">อนุมัติ / ปฏิเสธ คำขอใช้รถจักรยานยนต์</h3>
+                <p class="py-4">คุณต้องการ <b>อนุมัติ</b> หรือ <b>ปฏิเสธ</b> คำขอใช้รถจักรยานยนต์นี้หรือไม่?</p>
+                <div class="py-4">
+                  <h4 class="font-semibold">ข้อมูลคำขอใช้รถจักรยานยนต์</h4>
 
-              <!-- Location -->
-              <div class="field">
-                <label><strong>สถานที่ต้องการจะไป:</strong></label>
-                <p>{{ motorcycle_application.location }}</p>
-              </div>
+                  <!-- Request Reason -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">เหตุผลที่ต้องการใช้:</label>
+                    <p>{{ motorcycle_application.request_reason or "ไม่มีข้อมูล" }}</p>
+                  </div>
 
-              <!-- Departure DateTime -->
-              <div class="field">
-                <label><strong>วันเวลาออกเดินทาง:</strong></label>
-                <p>{{ motorcycle_application.departure_datetime.strftime('%Y-%m-%d %H:%M') }}</p>
-              </div>
+                  <!-- Location -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">สถานที่ต้องการจะไป:</label>
+                    <p>{{ motorcycle_application.location }}</p>
+                  </div>
 
-              {% if motorcycle_application.travel_type == "round trip" %}
+                  <!-- Departure DateTime -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาออกเดินทาง:</label>
+                    <p>{{ motorcycle_application.departure_datetime.strftime('%Y-%m-%d %H:%M') }}</p>
+                  </div>
 
-              <div class="field">
-                <label><strong>วันเวลาที่กลับ:</strong></label>
-                <p>{{ motorcycle_application.return_datetime.strftime('%Y-%m-%d %H:%M') if
-                  motorcycle_application.return_datetime else
-                  "ไม่ระบุ" }}</p>
-              </div>
-              {% endif %}
-              <!-- Flight DateTime (if applicable) -->
-              {% if motorcycle_application.using_type == "airport transfer" %}
-              <div class="field">
-                <label><strong>วันเวลาบิน:</strong></label>
-                <p>{{ motorcycle_application.flight_datetime.strftime('%Y-%m-%d %H:%M') if
-                  motorcycle_application.flight_datetime
-                  else "ไม่ระบุ" }}</p>
-              </div>
-              {% endif %}
-              <!-- Passenger Number -->
-              <div class="field">
-                <label><strong>จำนวนผู้โดยสาร:</strong></label>
-                <p>{{ motorcycle_application.passenger_number }}</p>
-              </div>
+                  {% if motorcycle_application.travel_type == "round trip" %}
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาที่กลับ:</label>
+                    <p>
+                      {{ motorcycle_application.return_datetime.strftime('%Y-%m-%d %H:%M') if motorcycle_application.return_datetime else "ไม่ระบุ" }}
+                    </p>
+                  </div>
+                  {% endif %}
 
-              <!-- Car Information -->
-              <div class="field">
-                <label><strong>ข้อมูลรถจักรยานยนต์:</strong></label>
-                <p>{{ motorcycle_application.motorcycle.license_plate if motorcycle_application.motorcycle else
-                  "ไม่มีข้อมูล" }}</p>
-              </div>
+                  {% if motorcycle_application.using_type == "airport transfer" %}
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันเวลาบิน:</label>
+                    <p>
+                      {{ motorcycle_application.flight_datetime.strftime('%Y-%m-%d %H:%M') if motorcycle_application.flight_datetime else "ไม่ระบุ" }}
+                    </p>
+                  </div>
+                  {% endif %}
 
-              <!-- Division -->
-              <div class="field">
-                <label><strong>แผนก:</strong></label>
-                <p>{{ motorcycle_application.division.name if motorcycle_application.division else "ไม่มีข้อมูล" }}</p>
-              </div>
+                  <!-- Passenger Number -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">จำนวนผู้โดยสาร:</label>
+                    <p>{{ motorcycle_application.passenger_number }}</p>
+                  </div>
 
-              <!-- Creator and Updater -->
-              <div class="field">
-                <label><strong>ผู้ใช้:</strong></label>
-                <p>{{ motorcycle_application.creator.get_resources_fullname_th() }}</p>
-              </div>
+                  <!-- motorcycle Information -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">ข้อมูลรถจักรยานยนต์:</label>
+                    <p>
+                      {{ motorcycle_application.motorcycle.license_plate if motorcycle_application.motorcycle else "ไม่มีข้อมูล" }}
+                    </p>
+                  </div>
 
-              <!-- Date Information -->
-              <div class="field">
-                <label><strong>วันที่สร้าง:</strong></label>
-                <p>{{ motorcycle_application.created_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
-              </div>
+                  <!-- Division -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">แผนก:</label>
+                    <p>{{ motorcycle_application.division.name if motorcycle_application.division else "ไม่มีข้อมูล" }}
+                    </p>
+                  </div>
 
-            </div>
+                  <!-- Creator and Updater -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">ผู้ใช้:</label>
+                    <p>{{ motorcycle_application.creator.get_resources_fullname_th() }}</p>
+                  </div>
 
-            <!-- Approval Form -->
-            <form id="approval_form" method="POST"
-              class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-              <input type="hidden" name="motorcycle_application_id" id="motorcycle_application_id">
-              <input type="hidden" name="organization_id" id="organization_id">
+                  <!-- Date Information -->
+                  <div class="py-2 flex gap-2">
+                    <label class="font-medium">วันที่สร้าง:</label>
+                    <p>{{ motorcycle_application.created_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+                  </div>
+                </div>
 
-              <div class="flex flex-row justify-between w-full gap-2">
-                <div class="field">
+                <!-- Approval Form -->
+                <form id="approval_form" method="POST" class="py-4">
+                  <input type="hidden" name="motorcycle_application_id" id="motorcycle_application_id">
+                  <input type="hidden" name="organization_id" id="organization_id">
 
-                  <label>หมายเหตุ (หากปฏิเสธ):</label>
-                  <input name="denied_reason" id="denied_reason" class="ui input" placeholder="โปรดระบุเหตุผลหากปฏิเสธ">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text">หมายเหตุ (หากปฏิเสธ):</span>
+                    </label>
+                    <input name="denied_reason" id="denied_reason" class="input input-bordered"
+                      placeholder="โปรดระบุเหตุผลหากปฏิเสธ">
+                  </div>
+                </form>
+
+                <div class="modal-action">
+                  <button class="btn" onclick="approval_modal_{{ motorcycle_application.id }}.close()">ยกเลิก</button>
+                  <button class="btn btn-success" onclick="submitForm('approve')">
+                    อนุมัติ
+                    <i class="ph ph-check"></i>
+                  </button>
+                  <button class="btn btn-error" onclick="submitForm('deny')">
+                    ปฏิเสธ
+                    <i class="times icon"></i>
+                  </button>
                 </div>
               </div>
-            </form>
-          </div>
+            </dialog>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {#}
+    {% if paginated_motorcycle_applications.pages != 1 %}
 
-          <div class="modal-action">
-            <button class="btn">ยกเลิก</button>
-            <button class="btn btn-success" onclick="submitForm('approve')">
-              อนุมัติ
-              <i class="ph ph-check"></i>
-            </button>
-            <button class="btn-error btn" onclick="submitForm('deny')">
-              ปฏิเสธ
-              <i class="times icon"></i>
-            </button>
-          </div>
-        </div>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{#}
-{% if paginated_motorcycle_applications.pages != 1 %}
+    {{ paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
 
-{{ paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
-
-{% endif %}
-{#}
-{% else %}
-<div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
-{% endif %}
+    {% endif %}
+    {#}
+    {% else %}
+    <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block additional_js %}
@@ -184,7 +188,7 @@
     $("#motorcycle_application_id").val(motorcycleAppId);
     $("#organization_id").val('{{ organization.id }}');
     $("#denied_reason").val(""); // Clear previous input
-    $("#approval_modal").modal("show");
+    showModal("approval_modal_" + motorcycleAppId);
   }
 
   function submitForm(action) {

@@ -149,11 +149,11 @@
             <i class="ph ph-pen"></i>
             แก้ไข
           </a>
-          <a class="btn btn-success" onclick="showDeleteModal('{{ item.id }}_confirm')" data-tooltip="บันทึกข้อมูล">
+          <a class="btn btn-success" onclick="showDeleteModal('{{ item.id }}_confirm')" data-tip="บันทึกข้อมูล">
             <i class="ph ph-floppy-disk"></i>
             บันทึก
           </a>
-          <a class="btn btn-error" onclick="showDeleteModal('{{ item.id }}')" data-tooltip="ลบข้อมูล">
+          <a class="btn btn-error" onclick="showDeleteModal('{{ item.id }}')" data-tip="ลบข้อมูล">
             <i class="ph ph-trash"></i>
             ลบ
           </a>
@@ -174,7 +174,7 @@
 
         {% else %}
         <div class="grid grid-cols-3 gap-2">
-          <a class=" btn btn-primary" data-tooltip=""
+          <a class=" btn btn-primary" data-tip=""
             href="{{ url_for('items.edit_active_item', item_id=item.id, **request.args) }}">
             <i class="ph ph-pen"></i>
             แก้ไข
@@ -183,7 +183,7 @@
             <i class="ph ph-info"></i>
             ข้อมูล
           </a>
-          <a class="btn btn-error" onclick="showDeleteModal('{{ item.id }}')" data-tooltip="ลบข้อมูล">
+          <a class="btn btn-error" onclick="showDeleteModal('{{ item.id }}')" data-tip="ลบข้อมูล">
             <i class="ph ph-trash"></i>
             ลบ
           </a>

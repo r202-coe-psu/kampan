@@ -4,39 +4,32 @@
 {% block dashboard_title %} รายละเอียดองค์กร {% endblock %}
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="ph ph-caret-right"></i>
-
-
-<div class="active section">
-  รายละเอียด
-</div>
 {% endblock %}
 
 {% macro row_detail(text) -%}
 <div class="column">
-  <h3> {{ text }}</h3>
+  <h3 class="text-lg font-semibold"> {{ text }}</h3>
 </div>
 {%- endmacro %}
 
 {% block content %}
-<div class="ui container" style="width: 100%;">
-  <div class="ui segment">
-    <h2 class="ui header">ข้อมูลองค์กร <a class="btn-floating btn-large waves-effect waves-light"
-        href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}"
-        title='Edit Organization.'><i class="ph ph-pen"></i></a>
-    </h2>
-    {#
-    {% if %}
-    <img class="ui medium rounded image" src="">
-    {% endif %}
-    #}
-    <div class="ui grid two column">
-      {{ row_detail("ชื่อ :") }}
-      {{ row_detail(organization.name) }}
-      {{ row_detail("รายละเอียด :") }}
-      {{ row_detail(organization.description) }}
-    </div>
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('admin.organizations.index') }}">
+      <i class="ph ph-arrow-u-up-left"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="mb-4">
+    <h2 class="text-2xl font-bold">ข้อมูลองค์กร</h2>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    {{ row_detail("ชื่อ :") }}
+    {{ row_detail(organization.name) }}
+    {{ row_detail("รายละเอียด :") }}
+    {{ row_detail(organization.description) }}
   </div>
 </div>
 {% endblock content %}

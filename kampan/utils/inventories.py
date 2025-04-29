@@ -236,7 +236,6 @@ def validate_file(file, required_columns):
     try:
         df = pandas.read_excel(file)
     except Exception:
-        print(Exception.__dict__)
         return None, ["กรุณาอัปโหลดเอกสารโดยใช้ Excel Format 2007"]
 
     missing_columns = [col for col in required_columns if col not in df.columns]

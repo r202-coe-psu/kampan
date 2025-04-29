@@ -197,7 +197,6 @@ def checkout():
             item=item_id, order=order, status__ne="disactive"
         ).first()
     if checkout_item:
-        print(form.errors)
         return redirect(
             url_for(
                 "item_checkouts.edit",

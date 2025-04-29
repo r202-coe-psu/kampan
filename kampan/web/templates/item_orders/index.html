@@ -106,20 +106,20 @@
             <td class="table-style">
               {% if order.status == 'pending' %}
               <a class="btn-circle btn btn-primary {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-                data-tooltip="เบิกวัสดุ"
+                data-tip="เบิกวัสดุ"
                 href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
                 <i class="ph ph-list-plus"></i>
               </a>
               {% endif %}
               {% if order.status == 'pending' %}
-              <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
+              <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
                 href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
                 <i class="ph ph-pen"></i>
               </a>
               {% endif %}
 
               <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
-                data-tooltip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
+                data-tip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
                 <i class="ph ph-trash"></i>
               </a>
               <div role="dialog" class="modal {{order.id}}">

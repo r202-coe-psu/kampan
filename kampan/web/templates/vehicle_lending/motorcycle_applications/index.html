@@ -12,7 +12,7 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
+  <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
@@ -37,81 +37,74 @@
   </div>
 </form>
 {#}
-{% if paginated_motorcycle_applications.total %}
-<table class="table-auto w-full">
-  <thead>
-    <tr>
-      <th class="table-style"></th>
-      <th class="table-style">วันที่ต้องการใช้</th>
-      <th class="table-style">เหตุผลที่ต้องการใช้</th>
-      <th class="table-style">ชื่อผู้ใช้งาน</th>
-      <th class="table-style">สถานะ</th>
-      <th class="table-style">เหตุผล</th>
-      <th class="table-style">จัดการ</th>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    {% if paginated_motorcycle_applications.total %}
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style"></th>
+          <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">สถานะ</th>
+          <th class="table-style">เหตุผล</th>
+          <th class="table-style">จัดการ</th>
 
-    </tr>
-  </thead>
-  <tbody>
-    {% for motorcycle_application in paginated_motorcycle_applications.items %}
-    <tr>
-      <td class="table-style"> {{ loop.index }}</td>
-      <td class="table-style" data-label="Created Date">
-        {{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
-      </td>
-      <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
-      <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for motorcycle_application in paginated_motorcycle_applications.items %}
+        <tr>
+          <td class="table-style"> {{ loop.index }}</td>
+          <td class="table-style" data-label="Created Date">
+            {{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
+          </td>
+          <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+          <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
 
 
 
-      {{ motorcycle_application.get_status()|safe }}
+          {{ motorcycle_application.get_status()|safe }}
 
-      <td class="table-style">
-        {{ motorcycle_application.remark }}
-      </td>
-      <td class="table-style">
-        {% if 'pending' in motorcycle_application.status %}
-        <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
-          href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-          <i class="ph ph-pen"></i>
-        </a>
-        {% endif %}
-        {% if motorcycle_application.status in ['pending'] %}
-        <a class="btn btn-circle btn-error " data-tooltip="ลบ"
-          onclick="showDeleteModal('{{ motorcycle_application.id }}')">
-          <i class="ph ph-trash"></i>
-        </a>
-        <div role="dialog" class="modal {{motorcycle_application.id}}">
-          <div class="text-2xl font-bold">
-            ลบคำขอใช้รถจักรยานยนต์
-          </div>
-          <div class=" modal-box">
-            <p>ต้องการลบคำขอใช้รถจักรยานยนต์
-              <b>{{ motorcycle_application.description }}</b>
-            </p>
-          </div>
-          <div class="modal-action">
-            <button class="btn">
-              ยกเลิก
-            </button>
-            <a class="btn-error btn"
-              href="{{ url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-              ยืนยัน
-              <i class="ph ph-check"></i>
+          <td class="table-style">
+            {{ motorcycle_application.remark }}
+          </td>
+          <td class="table-style">
+            {% if 'pending' in motorcycle_application.status %}
+            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
+              href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
             </a>
-          </div>
-        </div>
-        {% endif %}
-        {% if 'active' in motorcycle_application.status %}
-        <a class="btn btn-circle btn-primary" data-tooltip="ส่งคืน"
-          href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-          <i class="file alternate outline icon"></i>
-        </a>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+            {% endif %}
+            {% if motorcycle_application.status in ['pending'] %}
+            <a class="btn btn-circle btn-error " data-tip="ลบ"
+              onclick="showDeleteModal('{{ motorcycle_application.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            {{ ModalNegative(
+              id=motorcycle_application.id,
+              header="ลบคำขอใช้รถจักรยานยนต์",
+              body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.description),
+              cancel="ยกเลิก",
+              submit="ยืนยัน",
+              redirect=url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id),
+              ) }}
+
+            {% endif %}
+            {% if 'active' in motorcycle_application.status %}
+            <a class="btn btn-circle btn-primary tooltip" data-tip="ส่งคืน"
+              href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-arrow-bend-left-up"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {#}
 {% if paginated_motorcycle_applications.pages != 1 %}
 

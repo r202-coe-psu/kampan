@@ -1,4 +1,4 @@
-{% extends '/admin/item_registers/index.html' %}
+{% extends '/admin/organizations/index.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
 
 
@@ -19,18 +19,18 @@
 
 
 {% block breadcrumbs %}
-<a class="section" href="{{ url_for('admin.organizations.index') }}">องค์กร</a>
-<i class="ph ph-caret-right"></i>
-<div class="active section">
-  {% if 'edit' in request.path %}
-  แก้ไขรายละเอียดองค์กร
-  {% else %}
-  เพิ่มองค์กร
-  {% endif %}
-</div>
+
 {% endblock %}
 
 {% block content %}
+<div class="flex flex-row justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <a class="btn  btn-primary" href="{{ url_for('admin.organizations.index') }}">
+      <i class="ph ph-arrow-u-up-left"></i>
+      ย้อนกลับ
+    </a>
+  </div>
+</div>
 <div>
   <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     {{ form.hidden_tag() }}

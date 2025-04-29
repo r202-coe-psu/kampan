@@ -20,7 +20,7 @@
           <div class="flex flex-col px-2 lg:px-10">
             <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
               <span class="text-3xl font-bold">
-                {% block dashboard_title %}{{ self.title }} {% endblock %}
+                {% block dashboard_title %} Admin {% endblock %}
               </span>
             </div>
             <div class="flex py-2">
@@ -41,7 +41,7 @@
       </div>
     </div>
   </div>
-  {% include "/vehicle_lending/base/sidebar-car.html" %}
+  {% include "/admin/base/sidebar.html" %}
 </div>
 
 

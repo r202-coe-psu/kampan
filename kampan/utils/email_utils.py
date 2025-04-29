@@ -81,6 +81,7 @@ def get_endorser_text_format(division, sender, endorser, order, endorsement_url)
         "organization_name": division.organization.name,
         "sender_name": sender.get_name(),
         "sender_email": sender.email,
+        "order_email": order.created_by.email,
         "division_name": division.name,
         "division_description": division.description,
         "order_date": order.updated_date.strftime("%d/%m/%Y %H:%M"),

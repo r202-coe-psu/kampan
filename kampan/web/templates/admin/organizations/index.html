@@ -1,6 +1,6 @@
 {% extends '/admin/base/template-page-login.html' %}
 {% import '/admin/base/html-renderer.html' as renderer %}
-{% import '/admin/base/components/paginations/pagination.html' as paginated%}
+{% import '/base/components/paginations/pagination.html' as paginated%}
 
 {% block title %}องค์กร{% endblock %}
 {% block dashboard_title %}รายชื่อองค์กร{% endblock %}
@@ -13,108 +13,94 @@
 {% endblock %}
 
 {% block content %}
-<form method="post">
-  <div class="flex flex-row w-full justify-between">
-    <p style="margin-left:auto;">
-      {{form.hidden_tag()}}
-      {{renderer.date_field(form.start_date, calendar_id="start_date")}}
-    </p>
-    <p style="margin-left:10px;">
-      {{renderer.date_field(form.end_date, calendar_id="end_date")}}
-    </p>
-    <p>
-      <button type="submit" class="btn btn-primary">ยืนยัน</button>
-    </p>
-  </div>
-  {% if organizations %}
-  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="overflow-x-auto mt-2 rounded-xl">
-      <table class="table-auto w-full">
-        <thead>
-          <tr>
-            <th class="table-style">ชื่อองค์กร</th>
-            <th class="table-style">คำอธิบาย</th>
-            <th class="table-style">วันลงทะเบียน</th>
-            <th class="table-style">รายละเอียด</th>
-            <th class="table-style">เพิ่มสมาชิก/แก้ไข/ลบข้อมูล</th>
-            <th class="table-style">สวมสิทธิ์องค์กร</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for organization in paginated_organizations.items %}
-          <tr>
-            <td class="table-style" data-label="Organization">{{ organization.name }}</td>
-            <td class="table-style" data-label="Description">{{ organization.description }}</td>
-            <td class="table-style" data-label="Registeration Date">{{ organization.created_date.strftime('%d/%m/%Y') }}
-            </td>
-            <td class="table-style" data-label="Checkin Items">
-              <a class="btn btn-primary icon"
-                href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}">
-                <i class="ph ph-list-magnifying-glass"></i>
-              </a>
-              {% if organization.get_organization_users() %}
-              <a class="btn btn-primary icon"
-                href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}">
-                <i class="users icon"></i>
-              </a>
-              {% endif %}
-            </td>
-            <td class="table-style">
-              <a class="btn btn-circle btn-primary"
-                href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
-                <i class="user plus icon"></i>
-              </a>
-              <a class="btn btn-circle btn-primary"
-                href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}">
-                <i class="ph ph-pen"></i>
-              </a>
-              <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ organization.id }}')">
-                <i class="ph ph-trash"></i>
-              </a>
-              <div role="dialog" class="modal {{organization.id}}">
-                <div class="text-2xl font-bold">
-                  ลบข้อมูลองค์กร
-                </div>
-                <div class=" modal-box">
-                  <p>ต้องการลบองค์กร<b>{{ organization.name }}</b><br />
-                    องค์กร : <b>{{ organization.name }}</b><br />
-                    {{ organization.description }}
-                  </p>
-                </div>
-                <div class="modal-action">
-                  <button class="btn">
-                    ยกเลิก
-                  </button>
-                  <a class="btn-error btn"
-                    href="{{ url_for('admin.organizations.delete', organization_id=organization.id) }}">
-                    ยืนยัน
-                    <i class="ph ph-check"></i>
-                  </a>
-                </div>
+{% if organizations %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อองค์กร</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">วันลงทะเบียน</th>
+          <th class="table-style">รายละเอียด</th>
+          <th class="table-style">เพิ่มสมาชิก/แก้ไข/ลบข้อมูล</th>
+          <th class="table-style">สวมสิทธิ์องค์กร</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for organization in paginated_organizations.items %}
+        <tr>
+          <td class="table-style" data-label="Organization">{{ organization.name }}</td>
+          <td class="table-style" data-label="Description">{{ organization.description }}</td>
+          <td class="table-style" data-label="Registeration Date">{{ organization.created_date.strftime('%d/%m/%Y') }}
+          </td>
+          <td class="table-style" data-label="Checkin Items">
+            <a class="btn btn-primary btn-circle"
+              href="{{ url_for('admin.organizations.detail', organization_id=organization.id)}}">
+              <i class="ph ph-list-magnifying-glass"></i>
+            </a>
+            {% if organization.get_organization_users() %}
+            <a class="btn btn-primary btn-circle"
+              href="{{ url_for('admin.organizations.organizaiton_users', organization_id=organization.id)}}">
+              <i class="ph ph-users-three"></i>
+            </a>
+            {% endif %}
+          </td>
+          <td class="table-style">
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('admin.organizations.add_member', organization_id=organization.id) }}">
+              <i class="ph ph-user-circle-plus"></i>
+            </a>
+            <a class="btn btn-circle btn-primary"
+              href="{{ url_for('admin.organizations.create_or_edit', organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i>
+            </a>
+            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ organization.id }}')">
+              <i class="ph ph-trash"></i>
+            </a>
+            <div role="dialog" class="modal {{organization.id}}">
+              <div class="text-2xl font-bold">
+                ลบข้อมูลองค์กร
               </div>
-            </td>
-            <td class="table-style">
-              <a class="btn btn-primary icon"
-                href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}">
-                สวมสิทธิ์
-              </a>
-            </td>
-          </tr>
+              <div class=" modal-box">
+                <p>ต้องการลบองค์กร<b>{{ organization.name }}</b><br />
+                  องค์กร : <b>{{ organization.name }}</b><br />
+                  {{ organization.description }}
+                </p>
+              </div>
+              <div class="modal-action">
+                <button class="btn">
+                  ยกเลิก
+                </button>
+                <a class="btn-error btn"
+                  href="{{ url_for('admin.organizations.delete', organization_id=organization.id) }}">
+                  ยืนยัน
+                  <i class="ph ph-check"></i>
+                </a>
+              </div>
+            </div>
+          </td>
+          <td class="table-style">
+            <a class="btn btn-primary icon"
+              href="{{ url_for('dashboard.all_report', organization_id=organization.id)}}">
+              สวมสิทธิ์
+            </a>
+          </td>
+        </tr>
 
-          {% endfor %}
-        </tbody>
-      </table>
-      {% if paginated_organizations.pages != 1 %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_organizations.pages != 1 %}
 
-      {{ paginated.render_pagination(paginated_organizations,"organizations.index") }}
+    {{ paginated.render_pagination(paginated_organizations,"organizations.index") }}
 
-      {% endif %}
-    </div>
-    {% else %}
-    <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
     {% endif %}
   </div>
-</form>
+  {% else %}
+  <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+  {% endif %}
+</div>
 {% endblock %}
 
 {% block additional_js %}

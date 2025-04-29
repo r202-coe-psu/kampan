@@ -236,8 +236,6 @@ def handle_authorized_oauth2(remote, token):
     elif "sub" in user_info:
         user = models.User.objects(subid=user_info.get("sub")).first()
 
-    # print(remote.name, user, user_info.get("username"))
-
     if not user or not user.resources:
         if remote.name == "google":
             user = create_user_google(user_info)

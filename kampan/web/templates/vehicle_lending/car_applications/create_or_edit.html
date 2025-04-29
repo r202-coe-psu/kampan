@@ -18,7 +18,7 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
       href='{{ url_for("vehicle_lending.car_applications.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
@@ -38,21 +38,27 @@
     {{ renderer.render_select_field(form.car, clearable=false) }}
     {{ renderer.render_field(form.passenger_number) }}
   </div>
-  {{ render_form.RadioField(form.travel_type) }}
-  {{ render_form.RadioField(form.using_type) }}
-
   <div class="flex flex-row justify-between w-full gap-2">
-    {{render_form.DateField(form.departure_date) }}
-    {{render_form.TimeField(form.departure_time) }}
+    {{ renderer.render_radio(form.using_type) }}
+    {{ renderer.render_radio(form.travel_type) }}
+  </div>
+
+  <!-- {{ render_form.RadioField(form.travel_type) }}
+  {{ render_form.RadioField(form.using_type) }} -->
+
+  <div class="flex flex-row w-full gap-2">
+    {{renderer.date_field(form.departure_date) }}
+    {{renderer.time_field(form.departure_time) }}
+
 
   </div>
-  <div class="flex flex-row justify-between w-full gap-2" id="return_datetime">
-    {{render_form.DateField(form.return_date) }}
-    {{render_form.TimeField(form.return_time) }}
+  <div class="flex flex-row justify-between w-full gap-2 items-end" id="return_datetime">
+    {{renderer.date_field(form.return_date) }}
+    {{renderer.time_field(form.return_time) }}
   </div>
   <div class="flex flex-row justify-between w-full gap-2" id="flight_datetime">
-    {{render_form.DateField(form.flight_date) }}
-    {{render_form.TimeField(form.flight_time) }}
+    {{renderer.date_field(form.flight_date) }}
+    {{renderer.time_field(form.flight_time) }}
   </div>
   <div class="flex flex-row w-full justify-between">
     <div class="flex justify-start w-full gap-2">

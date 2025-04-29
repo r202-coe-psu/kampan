@@ -18,7 +18,7 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href='{{ url_for("vehicle_lending.cars.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
@@ -31,11 +31,11 @@
     {{form.csrf_token }}
     {{renderer.render_field(form.license_plate)}}
   </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{renderer.render_field(form.description)}}
+  <div class="flex flex-row w-full gap-2">
+    {{renderer.render_text_area_field(form.description)}}
   </div>
   <div class="flex flex-row justify-between w-full gap-2">
-    {{render_form.FileInputField(form.upload_image)}}
+    {{renderer.file_input(form.upload_image)}}
   </div>
   <div class="flex flex-row w-full justify-between">
     <div class="flex justify-start w-full gap-2">

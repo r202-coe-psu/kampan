@@ -365,7 +365,7 @@ readonly=False) %}
 {% endmacro %}
 
 {% macro render_text_area_field(field) %}
-<fieldset class="fieldset" id="field-{{ field.id }}">
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
   <legend class="fieldset-legend">
     {{ field.label.text }}
   </legend>
@@ -709,4 +709,67 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
     }
   });
 </script>
+{% endmacro %}
+
+
+
+{% macro time_field(form, calendar_id="") %}
+<fieldset class="w-full fieldset" id="field-{{ form.id }}">
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="relative w-full">
+    {{ form(class="input w-full")}}
+  </div>
+  <p class="validator-hint text-error">
+    {% for error in form.errors %}
+    {% if 'This field is required' in error %}
+    กรุณากรอกข้อมูล
+    {% else %}
+    {{ error }}
+    {% endif %}
+    {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </p>
+</fieldset>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fieldset = document.getElementById('field-{{ form.id }}');
+    const input = document.getElementById('{{ form.name }}');
+
+    if (input) {
+      if (!input.value) {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+      }
+
+      fieldset.addEventListener('click', () => {
+        input.showPicker && input.showPicker(); // Modern browsers
+        input.focus(); // Fallback
+      });
+    }
+  });
+</script>
+{% endmacro %}
+
+
+
+{% macro render_radio(form, label_class='', radio_class='') %}
+<fieldset class="fieldset w-full">
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+    {% if form.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+
+  {% for value, label in form.choices %}
+  <label class="label cursor-pointer {{ label_class }}">
+    <input type="radio" name="{{ form.name }}" value="{{ value }}" class="radio radio-primary" {% if value==form.data
+      %}checked{% endif %}>
+    <span class="label-text ml-2">{{ label }}</span>
+  </label>
+  {% endfor %}
+</fieldset>
 {% endmacro %}

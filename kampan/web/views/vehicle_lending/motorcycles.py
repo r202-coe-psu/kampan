@@ -60,7 +60,6 @@ def create_or_edit(motorcycle_id):
     if motorcycle_id:
         motorcycle = models.vehicles.Motorcycle.objects(id=motorcycle_id).first()
     if form.upload_image.data:
-        print(form.upload_image.data)
         if motorcycle.image:
             motorcycle.image.replace(
                 form.upload_image.data,

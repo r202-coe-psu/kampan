@@ -72,25 +72,23 @@ def create_or_edit(car_application_id):
     ).first()
     form = forms.vehicle_applications.CarApplicationForm()
 
-    if car_application_id:
-        car_application = models.vehicle_applications.CarApplication.objects(
-            id=car_application_id
-        ).first()
-        form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
-
-    else:
-        date = request.args.get("date", type=str, default=None)
-        if date:
-            date = datetime.datetime.strptime(date, "%Y-%m-%d")
-            form.departure_date.data = date.date()
-            form.departure_time.data = date.time()
-
     form.car.choices = [
         (str(car.id), car.license_plate)
         for car in models.vehicles.Car.objects(organization=organization)
     ]
     if not form.validate_on_submit():
-        print(form.errors)
+        if car_application_id:
+            car_application = models.vehicle_applications.CarApplication.objects(
+                id=car_application_id
+            ).first()
+            form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
+
+        else:
+            date = request.args.get("date", type=str, default=None)
+            if date:
+                date = datetime.datetime.strptime(date, "%Y-%m-%d")
+                form.departure_date.data = date.date()
+                form.departure_time.data = date.time()
         if car_application:
             form.departure_date.data = car_application.departure_datetime.date()
             form.departure_time.data = car_application.departure_datetime.time()
@@ -100,7 +98,10 @@ def create_or_edit(car_application_id):
 
             form.flight_date.data = car_application.flight_datetime.date()
             form.flight_time.data = car_application.flight_datetime.time()
-
+        form.car.choices = [
+            (str(car.id), car.license_plate)
+            for car in models.vehicles.Car.objects(organization=organization)
+        ]
         return render_template(
             "/vehicle_lending/car_applications/create_or_edit.html",
             organization=organization,

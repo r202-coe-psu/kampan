@@ -95,7 +95,7 @@
       <div>หมวดหมู่: {{ item.categories.name }}</div>
       <div class="card-actions h-full items-end justify-center">
         <div class="flex flex-row  w-full">
-          <a class=" btn btn-primary w-full" data-tooltip="แก้ไข"
+          <a class=" btn btn-primary w-full" data-tip="แก้ไข"
             href="{{ url_for('item_checkouts.checkout', item_id=item.id, order_id=order.id, organization_id=organization.id  ) }}">
             <i class="ph ph-hand-pointing"></i>
             เลือกวัสดุชิ้นนี้

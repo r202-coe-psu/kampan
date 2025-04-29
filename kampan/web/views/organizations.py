@@ -112,7 +112,6 @@ def organizaiton_users(organization_id):
         form.user.process(data="", formdata=form.user.choices)
 
     if not form.validate_on_submit():
-        print(form.errors)
         start_date = request.args.get("start_date", default="")
         end_date = request.args.get("end_date", default="")
         user = request.args.get("user", default="")

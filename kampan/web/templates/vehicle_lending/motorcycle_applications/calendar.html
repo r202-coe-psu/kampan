@@ -12,7 +12,7 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
+  <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
@@ -20,7 +20,9 @@
     </a>
   </div>
 </div>
-<div id='calendar'></div>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div id='calendar'></div>
+</div>
 
 {% endblock %}
 

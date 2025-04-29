@@ -33,13 +33,13 @@
     {{renderer.render_field(form.license_plate)}}
   </div>
   <div class="flex flex-row justify-between w-full gap-2">
-    {{renderer.render_field(form.description)}}
+    {{renderer.render_text_area_field(form.description)}}
   </div>
   <div class="flex flex-row justify-between w-full gap-2">
     {{renderer.render_field(form.last_mileage) }}
   </div>
   <div class="flex flex-row justify-between w-full gap-2">
-    {{render_form.FileInputField(form.upload_image)}}
+    {{renderer.file_input(form.upload_image)}}
   </div>
   <div class="flex flex-row w-full justify-between">
     <div class="flex justify-start w-full gap-2">

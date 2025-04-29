@@ -18,7 +18,7 @@
 
 {% block content %}
 <div class="ui secondary" style="padding-bottom: 10px;">
-  <div class="flex justify-end w-full gap-2">
+  <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
       href='{{ url_for("vehicle_lending.motorcycle_applications.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
@@ -34,8 +34,8 @@
 
 
   <div class="flex flex-row justify-between w-full gap-2">
-    {{render_form.DateField(form.return_date) }}
-    {{render_form.TimeField(form.return_time) }}
+    {{renderer.date_field(form.return_date) }}
+    {{renderer.time_field(form.return_time) }}
   </div>
 
   <div class="flex flex-row w-full justify-between">

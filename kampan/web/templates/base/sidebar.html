@@ -1,16 +1,13 @@
-{% import "/base/components/dialogs.html" as dialog %}
 <div class="drawer-side shadow">
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
   <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
-    {% if current_user.has_organization_roles("admin") %}
-
     <div class="py-2 border-b mb-2">
       <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
-      <p class="text-center">แดชบอร์ด</p>
     </div>
+    {% if current_user.has_organization_roles("admin") %}
     <li>
       <details {% if '/summary' in request.path or '/all_report' in request.path or '/item_report_quarter' in
-        request.path or '/item_report_custom' in request.path %} open {% endif %}>
+        request.path or '/item_report_custom' in request.path or '/notifications' in request.path %} open {% endif %}>
         <summary>
           <i class="ph ph-chart-bar"></i> แดชบอร์ด
         </summary>
@@ -38,6 +35,12 @@
             <a class="{{ 'menu-active' if '/item_report_custom' in request.path else '' }}"
               href="{{ url_for('dashboard.item_report_custom', organization_id = organization.id) }}">
               รายงานเฉพาะวัสดุ <br> ตามช่วงที่กำหนด
+            </a>
+          </li>
+          <li>
+            <a class="{{ 'menu-active' if '/notifications' in request.path else '' }}"
+              href="{{ url_for('notifications.index', organization_id = organization.id) }}">
+              การแจ้งเตือน
             </a>
           </li>
         </ul>

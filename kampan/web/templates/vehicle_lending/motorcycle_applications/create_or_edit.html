@@ -39,8 +39,8 @@
   </div>
 
   <div class="flex flex-row justify-between w-full gap-2">
-    {{render_form.DateField(form.departure_date) }}
-    {{render_form.TimeField(form.departure_time) }}
+    {{renderer.date_field(form.departure_date) }}
+    {{renderer.time_field(form.departure_time) }}
   </div>
 
   <div class="flex flex-row w-full justify-between">

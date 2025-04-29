@@ -9,6 +9,7 @@
     <table class="table-auto w-full">
       <thead>
         <tr>
+          <th class="table-style"></th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">อีเมล</th>
           <th class="table-style">ตำเเหน่ง</th>
@@ -18,11 +19,12 @@
       <tbody>
         {% for user in users %}
         <tr>
+          <td class="table-style" data-label="Name">{{ loop.index }}</td>
           <td class="table-style" data-label="Name">{{ user.get_name() }}</td>
           <td class="table-style" data-label="Email">{{ user.email }}</td>
           <td class="table-style" data-label="Roles">{{ user.roles|join(', ') }}</td>
           <td class="table-style flex gap-2" data-label="Edit Roles">
-            <a class="ui green icon button" href="{{ url_for('admin.accounts.edit_roles', user_id=user.id) }}">
+            <a class="btn btn-circle btn-primary" href="{{ url_for('admin.accounts.edit_roles', user_id=user.id) }}">
               <i class="ph ph-pen"></i>
             </a>
           </td>

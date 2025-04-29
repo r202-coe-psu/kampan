@@ -52,7 +52,7 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
     departure_time = fields.TimeField(
         "เวลาออกเดินทาง",
-        format="%I:%M %p",
+        # format="%I:%M %p",
         validators=[validators.InputRequired()],
     )
 
@@ -62,7 +62,7 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
     return_time = fields.TimeField(
         "เวลากลับ",
-        format="%I:%M %p",
+        # format="%I:%M %p",
         validators=[validators.Optional()],
     )
 
@@ -72,7 +72,7 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
     flight_time = fields.TimeField(
         "เวลาไฟล์ทบิน",
-        format="%I:%M %p",
+        # format="%I:%M %p",
         validators=[validators.Optional()],
     )
 
@@ -112,7 +112,7 @@ class MotorcycleApplicationForm(BaseMotorcycleApplicationForm):
     )
     departure_time = fields.TimeField(
         "เวลาออกเดินทาง",
-        format="%I:%M %p",
+        # format="%I:%M %p",
         validators=[validators.InputRequired()],
     )
 
@@ -154,6 +154,6 @@ class ReturnMotorcycleApplicationForm(BaseReturnMotorcycleApplicationForm):
     )
     return_time = fields.TimeField(
         "เวลากลับ",
-        format="%I:%M %p",
+        # format="%I:%M %p",
         validators=[validators.InputRequired()],
     )

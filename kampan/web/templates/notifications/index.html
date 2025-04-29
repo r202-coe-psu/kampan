@@ -4,108 +4,74 @@
 {% block title %}แจ้งเตือนวัสดุคงเหลือ{% endblock %}
 {% block dashboard_title %}การแจ้งเตือน{% endblock %}
 {% block breadcrumbs %}
-<div style="display: flex; justify-content: space-between; align-items: center;">
-  <a style="font-size: 100%; color: black;">
-    แจ้งเตือนวัสดุคงเหลือ
-  </a>
-  <span>
-    <p>จำนวนข้อความแจ้งเตือน: <span style="color: rgb(69, 197, 236); padding-left: 5px;">
-        <b>{{ notifications|length}}</b></span></p>
-  </span>
-</div>
 {% endblock %}
 
 
 {% block content %}
+<div class="flex justify-start items-center pl-4 text-xl">
+  <a class="text-black">
+    แจ้งเตือนวัสดุคงเหลือ
+  </a>
+  <span>
+    <p>จำนวนข้อความแจ้งเตือน: <span class="text-blue-500 ">
+        <b>{{ notifications|length }}</b></span></p>
+  </span>
+</div>
 {% if notifications %}
-<div class="grid grid-cols-4 gap-2">
+<div class="grid grid-cols-1 gap-4 mt-2 lg:grid-cols-3 sm:grid-cols-2 2xl:grid-cols-4 w-full overflow-x-auto">
   {% for item in paginated_notifications.items %}
-  <div class="card" style="width: 100%; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);">
-    <div class="modal-box" style="flex: 2; background-color: rgb(255, 192, 192);">
-      <div class="text-2xl font-bold" style=" font-size: 1.5rem;">
-        <div style="padding-right: 5px;">{{ item.name }}</div>
+  <div class="card w-full shadow-lg rounded-lg p-4 hover:bg-gray-100">
+    <div class="bg-red-200 p-4 rounded-lg h-full flex flex-col justify-between">
+      <div class="text-2xl font-bold mb-2">
+        {{ item.name }}
       </div>
-      <div class="description" style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="details">
-          <span style="color: red; font-weight: bold;">จำนวนคงเหลือ: {{ item.get_amount_pieces() }}/{{ item.minimum }}
-            {{
-            item.piece_unit }}</span><br>
-          <span>ราคาวัสดุ (ชิ้นละ) : {{ item.get_last_price() if item.get_last_price() else "-" }}</span><br>
+      <div class="flex justify-between items-center">
+        <div class="text-sm">
+          <p class="text-red-500 font-bold">จำนวนคงเหลือ: {{ item.get_amount_pieces() }}/{{ item.minimum }}
+            {{ item.piece_unit }}
+          </p>
+          <p>ราคาวัสดุ (ชิ้นละ): {{ item.get_last_price() if item.get_last_price() else "-" }}</p>
         </div>
-        <span>
-          <a class="fluid ui orange button"
+        <div class="flex space-x-2">
+          <a class="btn btn-warning"
             href="{{ url_for('items.detail', item_id=item.id, organization_id=organization.id) }}">
-            ดูรายละเอียด
+            <i class="ph-info ph"></i>
           </a>
-          {#}
-          <a class="btn btn-circle" style="color: white; background-color: red;"
-            onclick="showDeleteModal('{{ item.id }}')">
-            <i class="trash slash icon small" style="font-size: 10px;"></i>
-          </a>
-          {#}
-          <div role="dialog" class="modal {{item.id}}">
-            <div class="text-2xl font-bold">
-              ยกเลิกการแจ้งเตือน
-            </div>
-            <div class=" modal-box">
-              <p>ต้องการยกเลิกการแจ้งเตือนของวัสดุ
-                <b>{{ item.name }}</b>
-              </p>
-            </div>
-            <div class="modal-action">
-              <button class="btn">
-                ยกเลิก
-              </button>
-              <a class="btn-error btn"
-                href="{{ url_for('notifications.set_status', item_id=item.id, organization_id=organization.id) }}">
-                ยืนยัน
-                <i class="ph ph-check"></i>
-              </a>
-            </div>
-          </div>
-        </span>
+          <button class="btn btn-error" onclick="showDeleteModal('{{ item.id }}')">
+            <i class="ph-trash ph"></i>
+          </button>
+          {{ ModalNegative(
+            id=item.id,
+            header="ยกเลิกการแจ้งเตือน",
+            body="ต้องการยกเลิกการแจ้งเตือนของวัสดุ <b> %s </b>" | format(item.name),
+            cancel="ยกเลิก",
+            submit="ยืนยัน",
+            redirect=url_for('notifications.set_status', item_id=item.id, organization_id=organization.id),
+            ) }}
+        </div>
       </div>
     </div>
   </div>
   {% endfor %}
-
 </div>
 {% set params=dict(request.args) %}
 {% if 'page' in params %}
 {% set _dummy=params.pop('page') %}
 {% endif %}
 {% if paginated_notifications %}
-<div class="ui grid">
-  <div class="column row">
-    <div class="center aligned column">
-      {{ paginated.render_pagination(paginated_notifications, "notifications.index", params) }}
-    </div>
-  </div>
+<div class="flex justify-center mt-4">
+  {{ paginated.render_pagination(paginated_notifications, "notifications.index", params) }}
 </div>
 {% endif %}
 {% else %}
-<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+<div class="flex justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
 {% endif %}
-<style>
-  .card {
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 10px;
-    transition: background-color 0.3s;
-  }
-
-  .card:hover {
-    background-color: #f7f7f7;
-  }
-</style>
 {% endblock %}
 
 {% block additional_js %}
 <script type="text/javascript">
-
   function showDeleteModal(item_id) {
-    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
+    item_id ? document.querySelector('.modal.' + item_id).classList.add('show') : document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('show'));
   }
 </script>
 {% endblock %}

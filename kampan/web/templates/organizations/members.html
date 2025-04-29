@@ -78,7 +78,7 @@
           <td class="table-style" data-label="Email">{{ org_user.display_email() }}</td>
           <td class="table-style" data-label="Email">
             {% if org_user.appointment|length >= 30 %}
-            <span data-tooltip="{{ org_user.appointment }}">
+            <span data-tip="{{ org_user.appointment }}">
               {{ org_user.display_appointment() }}
             </span>
             {% else %}
@@ -91,11 +91,11 @@
         org_user.created_date else "-"}}
           </td>
           <td class="table-style">
-            <a class="btn btn-circle btn-primary" data-tooltip="แก้ไข"
+            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
               href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
               <i class="ph ph-pen"></i>
             </a>
-            <a class="btn btn-circle btn-error" data-tooltip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
+            <a class="btn btn-circle btn-error" data-tip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
               <i class="ph ph-trash"></i>
             </a>
 
