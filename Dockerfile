@@ -27,6 +27,8 @@ RUN npm install --prefix kampan/web/static
 COPY . /app
 ENV KAMPAN_SETTINGS=/app/kampan-production.cfg
 
+RUN npm --prefix app/web/static run tw:minify
+RUN npm install --prefix app/web/static
 # For brython
 # RUN cd /app/kampan/web/static/brython; \
 #     for i in $(ls -d */); \
