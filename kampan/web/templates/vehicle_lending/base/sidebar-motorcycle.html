@@ -16,13 +16,13 @@
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/motorcycle_applications' in request.path and '/vehicle_lending/motorcycle_applications/calendar' not in request.path else '' }}"
         href="{{ url_for('vehicle_lending.motorcycle_applications.index', organization_id=organization.id ) }}">
-        <i class="ph ph-hand-arrow-up"></i> การขอใช้รถยนต์
+        <i class="ph ph-hand-arrow-up"></i> การขอใช้รถจักรยานยนต์
       </a>
     </li>
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/motorcycle_applications/calendar' in request.path else '' }}"
         href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id ) }}">
-        <i class="ph ph-calendar-blank"></i> ปฏิทินการขอใช้รถยนต์
+        <i class="ph ph-calendar-blank"></i> ปฏิทินการขอใช้รถจักรยานยนต์
       </a>
     </li>
 
