@@ -166,13 +166,7 @@
         {% endfor %}
       </tbody>
     </table>
-    {#}
-    {% if paginated_motorcycle_applications.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_motorcycle_applications,"item_motorcycle_applications.index")}}
-
-    {% endif %}
-    {#}
     {% else %}
     <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
     {% endif %}

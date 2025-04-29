@@ -136,7 +136,7 @@
     </table>
     {% if paginated_lost_break_items.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index")}}
+    {{ paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index", request.args)}}
 
     {% endif %}
   </div>

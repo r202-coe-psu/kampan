@@ -73,7 +73,7 @@
   </table>
   {% if paginated_item_positions.pages != 1 %}
 
-  {{ paginated.render_pagination(paginated_item_positions,"item_positions.index")}}
+  {{ paginated.render_pagination(paginated_item_positions,"item_positions.index", request.args)}}
 
   {% endif %}
 </div>

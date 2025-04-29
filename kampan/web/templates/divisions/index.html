@@ -110,7 +110,7 @@
     {% endif %}
     {% if paginated_divisions.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_divisions,"item_orders.index")}}
+    {{ paginated.render_pagination(paginated_divisions,"item_orders.index", request.args)}}
 
     {% endif %}
   </div>

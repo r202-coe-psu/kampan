@@ -5,6 +5,8 @@ from flask_login import current_user
 from flask import send_file
 from kampan import models
 from mongoengine import Q
+from kampan.repositories.dashboards import DashboardRepository
+import re
 
 REPORT_HEADER = [
     "ลำดับ",
@@ -159,140 +161,42 @@ def get_all_report(
     return response
 
 
-def get_item_report(start_date, end_date, organization):
+def get_item_report(start_date, end_date, organization, item_id=None):
     items = models.Item.objects(organization=organization, status="active").order_by(
         "name"
     )
+    if item_id:
+        items = models.Item.objects(id=item_id).order_by("name")
 
     today = datetime.datetime.now()
     excel_output = BytesIO()
     with pandas.ExcelWriter(excel_output) as writer:
         workbook = writer.book
         for item in items:
-            item_snapshot = (
-                models.ItemSnapshot.objects(
-                    Q(created_date__gte=start_date)
-                    & Q(created_date__lt=end_date + datetime.timedelta(days=1))
-                    & Q(status="active")
-                    & Q(item=item)
-                    & Q(organization=organization)
-                )
-                .order_by("created_date")
-                .first()
-            )
-            inventories = models.Inventory.objects(
-                Q(created_date__gte=start_date)
-                & Q(created_date__lt=end_date + datetime.timedelta(days=1))
-                & Q(status="active")
-                & Q(item=item)
-                & Q(organization=organization)
-            )
-            item_checkouts = models.CheckoutItem.objects(
-                Q(created_date__gte=start_date)
-                & Q(created_date__lt=end_date + datetime.timedelta(days=1))
-                & Q(item=item)
-                & Q(status="active")
-                & Q(organization=organization)
-            )
-            lost_break_items = models.LostBreakItem.objects(
-                Q(created_date__gte=start_date)
-                & Q(created_date__lt=end_date + datetime.timedelta(days=1))
-                & Q(status="active")
-                & Q(item=item)
-                & Q(organization=organization)
+            reports = DashboardRepository.get_item_report(
+                start_date=start_date,
+                end_date=end_date,
+                item_id=item.id,
+                organization_id=organization.id,
             )
 
-            data = (
-                ([item_snapshot] if item_snapshot else [])
-                + list(item_checkouts)
-                + list(inventories)
-                + list(lost_break_items)
-            )
-
-            data = sorted(data, key=lambda el: el["created_date"])
-            list_data = []
-            amount_item = 0
-            for row in data:
-                if row._cls == "ItemSnapshot":
-                    amount_item = (
-                        row.amount_pieces
-                        if row.item.item_format == "one to many"
-                        else row.amount
-                    )
-                elif row._cls == "CheckoutItem":
-                    amount_item -= row.quantity
-                elif row._cls == "Inventory":
-                    amount_item += row.quantity
-                elif row._cls == "LostBreakItem":
-                    amount_item -= row.quantity
-
-                list_data.append((row, amount_item))
-            count = 0
-            loop_index = []
-            date = []
-            operation = []
-            supplier = []
-            amount = []
-            unit = []
-            price = []
-            all_price = []
-            remain = []
-            for row, amount_item in list_data:
-                count += 1
-                loop_index.append(count)
-                date.append(row.created_date.strftime("%d/%m/%Y"))
-                remain.append(amount_item)
-                unit.append(
-                    row.item.piece_unit
-                    if row.item.item_format == "one to many"
-                    else row.item.set_unit
-                )
-                if row._cls == "ItemSnapshot":
-                    operation.append("ยกยอด")
-                    supplier.append("")
-                    amount.append(
-                        row.amount_pieces
-                        if row.item.item_format == "one to many"
-                        else row.amount
-                    )
-                    price.append(
-                        row.last_price_per_piece if row.last_price_per_piece else "-"
-                    )
-                    all_price.append(
-                        row.remaining_balance if row.remaining_balance else "-"
-                    )
-                elif row._cls == "CheckoutItem":
-                    operation.append(f"เบิกโดย {row.user.get_name()}")
-                    supplier.append("")
-                    amount.append(f"-{row.quantity}")
-                    price.append(row.item.get_last_price_per_piece())
-                    all_price.append(f"-{row.get_all_price()}")
-                elif row._cls == "Inventory":
-                    operation.append(f"เติมวัสดุ")
-                    supplier.append(row.registration.supplier.get_supplier_name())
-                    amount.append(row.quantity)
-                    price.append(row.item.get_last_price_per_piece())
-                    all_price.append(f"{row.get_all_price()}")
-                elif row._cls == "LostBreakItem":
-                    operation.append(f"ชำรุด {row.description}")
-                    supplier.append("")
-                    amount.append(f"-{row.quantity}")
-                    price.append(row.item.get_last_price_per_piece())
-                    all_price.append(f"-{row.get_all_price()}")
             dataframe_item = {
-                "ลำดับ": loop_index,
-                "วันที่": date,
-                "การดำเนินการ": operation,
-                "ร้าน": supplier,
-                "หน่วยนับ": unit,
-                "ราคาต่อหน่วย": price,
-                "เป็นเงิน": all_price,
-                "คงเหลือ": remain,
+                "ลำดับ": [i for i in range(1, len(reports) + 1)],
+                "วันที่": [i["created_date"] for i in reports],
+                "การดำเนินการ": [
+                    str(i["description"]).replace("<br>", "") for i in reports
+                ],
+                "ร้าน": [i["warehouse"] for i in reports],
+                "หน่วยนับ": [i["unit"] for i in reports],
+                "ราคาต่อหน่วย": [i["price"] for i in reports],
+                "เป็นเงิน": [i["total"] for i in reports],
+                "คงเหลือ": [i["remain"] for i in reports],
             }
             df = pandas.DataFrame(dataframe_item)
+            name = re.sub(r"[\\\/\?\*\[\]\:]", "", item.name)
             df.to_excel(
                 writer,
-                sheet_name=f"{item.name}",
+                sheet_name=name,
                 index=False,
             )
 
@@ -301,10 +205,15 @@ def get_item_report(start_date, end_date, organization):
     excel_output.seek(0)
     start = f"{start_date.day}-{start_date.month}-{start_date.year}"
     end = f"{end_date.day}-{end_date.month}-{end_date.year}"
+    download_name = f"item-report-{start}-to-{end}.xlsx"
+    if item_id:
+        item = models.Item.objects(id=item_id).first()
+        name = re.sub(r"[\\\/\?\*\[\]\:]", "", item.name)
+        download_name = f"item-report-{name}-{start}-to-{end}.xlsx"
     response = send_file(
         excel_output,
         as_attachment=True,
-        download_name=f"item-report-{start}-to-{end}.xlsx",
+        download_name=download_name,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     return response
