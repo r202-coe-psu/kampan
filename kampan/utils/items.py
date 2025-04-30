@@ -278,7 +278,30 @@ def process_delete_items_file(file, organization, user):
             item.status = "disactive"
             item.last_updated_by = user
             item.save()
-
+        inventory_items = models.Inventory.objects(
+            item=item, status="active", organization=item.organization
+        )
+        for inventory_item in inventory_items:
+            inventory_item.status = "disactive"
+            inventory_item.save()
+        item_snapshots = models.ItemSnapshot.objects(
+            item=item, status="active", organization=item.organization
+        )
+        for item_snapshot in item_snapshots:
+            item_snapshot.status = "disactive"
+            item_snapshot.save()
+        checkouts = models.CheckoutItem.objects(
+            item=item, status="active", organization=item.organization
+        )
+        for checkout in checkouts:
+            checkout.status = "disactive"
+            checkout.save()
+        lost_items = models.LostBreakItem.objects(
+            item=item, status="active", organization=item.organization
+        )
+        for lost_item in lost_items:
+            lost_item.status = "disactive"
+            lost_item.save()
     return True
 
 
