@@ -71,8 +71,9 @@ def index():
         inventories = list(inventories)
 
     page = request.args.get("page", default=1, type=int)
-    if form.start_date.data or form.end_date.data:
+    if form.validate_on_submit():
         page = 1
+
     paginated_inventories = Pagination(inventories, page=page, per_page=30)
     return render_template(
         "/inventories/index.html",
