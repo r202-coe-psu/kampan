@@ -143,7 +143,7 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin", "endorser", "head", "supervisor supplier") %}
     <li>
-      <details {% if '/approve_orders' in request.path %} open {% endif %}>
+      <details {% if '/approve_orders' in request.path or '/approve_page' in request.path %} open {% endif %}>
         <summary>
           <i class="ph ph-list-checks"></i> การอนุมัติ
         </summary>
@@ -163,6 +163,12 @@
               หัวหน้าเจ้าหน้าที่พัสดุ<br>อนุมัติคำสั่งเบิก
             </a>
           </li>
+          <li>
+            <a class="{{ 'menu-active' if '/approve_page' in request.path else '' }}"
+              href="{{ url_for('lost_breaks.supervisor_supplier_approve_page', organization_id = organization.id )}}">
+              หัวหน้าเจ้าหน้าที่พัสดุอนุมัติ<br>วัสดุชำรุด/สูญหาย/แก้ไข
+            </a>
+          </li>
           {% endif %}
           {% if current_user.has_organization_roles("admin") %}
           <li>
@@ -178,7 +184,7 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <a class="{{ 'menu-active' if '/lost_breaks/' in request.path else '' }}"
+      <a class="{{ 'menu-active' if '/lost_breaks/' in request.path and '/approve_page' not in request.path  else '' }}"
         href="{{ url_for('lost_breaks.index', organization_id = organization.id) }}">
         <i class="ph ph-image-broken"></i>
         วัสดุชำรุด/สูญหาย/แก้ไข

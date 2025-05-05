@@ -36,6 +36,9 @@ class WorkerServer:
         logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.DEBUG)
 
     def run(self):
+        # logging.getLogger("pymongo").setLevel(logging.WARNING)
+        # logging.getLogger("pymongo.monitoring").setLevel(logging.WARNING)
+
         with Connection(self.conn):
             worker = KampanWorker(list(map(Queue, listen)), settings=self.settings)
             worker.work()

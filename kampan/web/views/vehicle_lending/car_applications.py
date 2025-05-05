@@ -4,9 +4,8 @@ from flask import (
     redirect,
     url_for,
     request,
-    send_file,
-    abort,
     jsonify,
+    current_app,
 )
 from flask_login import login_required, current_user
 import mongoengine as me
@@ -14,7 +13,8 @@ from flask_mongoengine import Pagination
 import datetime
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
+from ... import redis_rq
 
 module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
@@ -89,6 +89,21 @@ def create_or_edit(car_application_id):
                 date = datetime.datetime.strptime(date, "%Y-%m-%d")
                 form.departure_date.data = date.date()
                 form.departure_time.data = date.time()
+                form.return_date.data = date.date()
+                form.return_time.data = date.time()
+
+                form.flight_date.data = date.date()
+                form.flight_time.data = date.time()
+            else:
+                date = datetime.datetime.now()
+                form.departure_date.data = date.date()
+                form.departure_time.data = date.time()
+                form.return_date.data = date.date()
+                form.return_time.data = date.time()
+
+                form.flight_date.data = date.date()
+                form.flight_time.data = date.time()
+
         if car_application:
             form.departure_date.data = car_application.departure_datetime.date()
             form.departure_time.data = car_application.departure_datetime.time()
@@ -102,6 +117,7 @@ def create_or_edit(car_application_id):
             (str(car.id), car.license_plate)
             for car in models.vehicles.Car.objects(organization=organization)
         ]
+        print(form.errors)
         return render_template(
             "/vehicle_lending/car_applications/create_or_edit.html",
             organization=organization,
@@ -142,9 +158,32 @@ def create_or_edit(car_application_id):
     car_application.division = current_user.get_current_division()
     if not car_application_id:
         car_application.creator = current_user
+    division = None
+    member = models.OrganizationUserRole.objects(
+        user=current_user,
+        organization=organization,
+        status__ne="disactive",
+    ).first()
+    if member:
+        division = member.division
+
+    car_application.division = division
     car_application.updater = current_user
     car_application.updated_date = datetime.datetime.now()
     car_application.save()
+
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_car_application_to_endorser,
+        args=(
+            car_application,
+            current_user._get_current_object(),
+            current_app.config,
+            car_application.status,
+        ),
+        job_id=f"send_email_car_application_to_endorser_{car_application.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "vehicle_lending.car_applications.index", organization_id=organization_id

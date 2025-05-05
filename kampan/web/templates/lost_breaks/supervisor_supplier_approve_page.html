@@ -10,33 +10,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-row w-full justify-between">
-  <div class="flex justify-end w-full gap-2">
-    <a class="btn btn-primary" href="{{ url_for('lost_breaks.add', organization_id=organization.id) }}">
-      <i class="ph ph-plus"></i>
-      เพิ่มวัสดุชำรุด/สูญหาย
-    </a>
-  </div>
-</div>
-<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex flex-row justify-between w-full gap-2">
-
-    {{ form.hidden_tag() }}
-    {{ renderer.render_field(form.name) }}
-    {{ renderer.date_range_field(form.start_date, form.end_date)}}
-
-  </div>
-
-  <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-end w-full gap-2">
-      <a class="btn" href='{{  url_for("lost_breaks.index", organization_id=organization.id) }}'>
-        ล้างการค้นหา
-      </a>
-      <button type="submit" class="btn btn-primary">ค้นหา</button>
-    </div>
-  </div>
-</form>
-
 {% if lost_break_items %}
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="overflow-x-auto mt-2 rounded-xl">
@@ -55,7 +28,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in paginated_lost_break_items.items %}
+        {% for item in lost_break_items %}
         <tr>
           <td class="table-style" data-label="Image" class="center aligned">
             <div>
@@ -82,38 +55,29 @@
             </span>
           </td>
           <td class="table-style">
-            {% if item.status != "active" and item.status != "denied" %}
-
-            <a class="btn btn-circle btn-primary"
-              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
-            {% endif %}
-
-            {% if item.status != "active" %}
-            <a class="btn btn-circle btn-error" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
-              <i class="ph ph-trash"></i>
-            </a>
-            {{ ModalNegative(
-                id=item.id,
-                header="ลบข้อมูลวัสดุชำรุด หรือ สูญหาย",
-                body="ต้องการลบข้อมูลวัสดุชำรุด หรือ สูญหาย <b> %s</b>" | format(item.item.name),
-              cancel="ยกเลิก",
-              submit="ยืนยัน",
-              redirect= url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id)
-              
-              ) }}
-            {% endif %}
+            <button class="btn btn-circle btn-primary" onclick="modal_{{ item.id }}.showModal()">
+              <i class="ph ph-check"></i>
+            </button>
+            <dialog class="modal" id="modal_{{ item.id }}">
+              <div class="modal-box">
+                <h3 class="text-lg font-bold">อนุมัติ/ปฏิเสธ ของวัสดุชำรุด/สูญหาย/แก้ไข</h3>
+                <p class="py-4">{{ item.description }}</p>
+                <div class="modal-action">
+                  <form method="dialog">
+                    <button class="btn">ปิด</button>
+                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='denied', organization_id=organization_id )}}"
+                      class="btn btn-error">ปฏิเสธ</a>
+                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='approve', organization_id=organization_id )}}"
+                      class="btn btn-success">อนุมัติ</a>
+                  </form>
+                </div>
+              </div>
+            </dialog>
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    {% if paginated_lost_break_items.pages != 1 %}
-
-    {{ paginated.render_pagination(paginated_lost_break_items,"lost_breaks.index", request.args)}}
-
-    {% endif %}
   </div>
 </div>
 {% else %}
@@ -122,12 +86,6 @@
 {% endblock %}
 
 {% block additional_js %}
-<script type="text/javascript">
 
-  function showDeleteModal(item_id) {
-    item_id ? $('.ui.modal.' + item_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
 
 {% endblock %}

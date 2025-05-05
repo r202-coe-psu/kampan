@@ -191,6 +191,12 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)
 
+    def get_director(self):
+        division = models.Division.objects(name="ฝ่ายบริหาร").first()
+        endorsers = division.get_header()
+        user_ids = [endorser.user.id for endorser in endorsers]
+        return models.User.objects(id__in=user_ids)
+
 
 class Logo(me.Document):
     meta = {"collection": "logos"}

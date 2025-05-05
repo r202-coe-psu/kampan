@@ -21,6 +21,7 @@ BaseCarApplicationForm = model_form(
         "departure_datetime",
         "return_datetime",
         "flight_datetime",
+        "division",
     ],
     field_args={
         "request_reason": {"label": "เหตุผลที่ต้องการใช้"},

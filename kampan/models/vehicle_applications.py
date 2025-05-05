@@ -76,6 +76,7 @@ class CarApplication(VehicleApplication, me.Document):
     passenger_number = me.IntField(min_value=0, required=True, default=0)
 
     car = me.ReferenceField("Car", dbref=True, required=True)
+    division = me.ReferenceField("Division", dbref=True)
 
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
 
