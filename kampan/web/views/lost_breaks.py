@@ -121,11 +121,11 @@ def add():
         lost_break_item.organization = organization
 
         if inventory.remain >= quantity:
-            inventory.remain -= quantity
+            inventory.remain += quantity
             lost_break_item.quantity = quantity
             quantity = 0
         else:
-            quantity -= inventory.remain
+            quantity += inventory.remain
             lost_break_item.quantity = inventory.remain
             inventory.remain = 0
 
@@ -182,7 +182,7 @@ def edit(lost_break_item_id):
         return_inventory = models.Inventory.objects(
             id=lost_break_item.lost_from.id
         ).first()
-        return_inventory.remain += lost_break_item.quantity
+        return_inventory.remain -= lost_break_item.quantity
         return_inventory.save()
     item = models.Item.objects(id=form.item.data).first()
 
@@ -206,11 +206,11 @@ def edit(lost_break_item_id):
         lost_break_item.organization = organization
 
         if inventory.remain >= quantity:
-            inventory.remain -= quantity
+            inventory.remain += quantity
             lost_break_item.quantity = quantity
             quantity = 0
         else:
-            quantity -= inventory.remain
+            quantity += inventory.remain
             lost_break_item.quantity = inventory.remain
             inventory.remain = 0
 
@@ -238,7 +238,7 @@ def delete(lost_break_item_id):
         return_inventory = models.Inventory.objects(
             id=lost_break_item.lost_from.id
         ).first()
-        return_inventory.remain += lost_break_item.quantity
+        return_inventory.remain -= lost_break_item.quantity
         return_inventory.save()
     lost_break_item.status = "disactive"
     lost_break_item.save()
