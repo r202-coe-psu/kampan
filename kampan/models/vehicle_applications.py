@@ -85,13 +85,16 @@ class CarApplication(VehicleApplication, me.Document):
             "denied by director": "text-error",
             "denied by admin": "text-error",
             "approved": "text-green-500",
-            "pending on director": "text-orange-500",
-            "pending on admin": "text-orange-500",
-            "pending on header": "text-orange-500",
+            "pending on director": "text-primary",
+            "pending on admin": "text-primary",
+            "pending on header": "text-primary",
             "disactive": "text-error",
-            "active": "text-primary",
+            "active": "text-green-500",
         }
         return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'
+
+    def get_reason(self):
+        return self.approved_reason if self.status == "active" else self.denied_reason
 
 
 class MotorcycleApplication(VehicleApplication, me.Document):
@@ -111,3 +114,25 @@ class MotorcycleApplication(VehicleApplication, me.Document):
             "active": "text-primary",
         }
         return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'
+
+    def get_changed_mileage(self):
+        last_motorcycle_application = (
+            MotorcycleApplication.objects(
+                status="returned",
+                created_date__lt=self.created_date,
+                motorcycle=self.motorcycle,
+            )
+            .order_by("-created_date")
+            .first()
+        )
+        if not last_motorcycle_application or self.status != "returned":
+            return "-"
+        last_mileage = last_motorcycle_application.last_mileage
+        return self.last_mileage - last_mileage
+
+    def get_reason(self):
+        return (
+            self.approved_reason
+            if self.status == "active" or self.status == "returned"
+            else self.denied_reason
+        )

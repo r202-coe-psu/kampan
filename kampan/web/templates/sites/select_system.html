@@ -13,13 +13,13 @@
     <!-- {% if current_user.email in ["6510110693@email.psu.ac.th", "yanisa.suwa@psu.ac.th", "jennipich.y@psu.ac.th"] %} -->
 
     <!-- ระบบการขอใช้รถยนต์ -->
-    <a href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}"
+    <a href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id ) }}"
       class="btn rounded-4xl text-2xl py-16 bg-sky-400 hover:bg-sky-500 text-white shadow-lg transition-transform transform hover:scale-105 text-center">
       <b>ระบบการขอใช้รถยนต์</b>
     </a>
 
     <!-- ระบบการขอใช้รถจักรยานยนต์ -->
-    <a href="{{ url_for('vehicle_lending.motorcycle_applications.index', organization_id=organization.id ) }}"
+    <a href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id ) }}"
       class="btn rounded-4xl text-2xl py-16 bg-green-500 hover:bg-green-600 text-white shadow-lg transition-transform transform hover:scale-105 text-center">
       <b>ระบบการขอใช้รถจักรยานยนต์</b>
     </a>

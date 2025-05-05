@@ -15,7 +15,7 @@
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("วัสดุชำรุด หรือ สูญหาย", url_for("lost_breaks.index", organization_id=organization.id)),
+("วัสดุชำรุด/สูญหาย/แก้ไข", url_for("lost_breaks.index", organization_id=organization.id)),
 ('แก้ไขข้อมูล' if 'edit' in request.path else 'เพิ่มข้อมูล', "")]) }}
 {% endblock %}
 

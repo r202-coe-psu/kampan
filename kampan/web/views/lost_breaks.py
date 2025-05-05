@@ -88,7 +88,7 @@ def add():
     items = models.Item.objects(status="active")
     if items:
         item_choices = [
-            (item.id, f"{item.barcode_id} ({item.name})")
+            (str(item.id), f"{item.barcode_id} ({item.name})")
             for item in items
             if item.get_items_quantity() != 0
         ]
@@ -155,7 +155,7 @@ def edit(lost_break_item_id):
     items = models.Item.objects(status="active")
     if items:
         item_choices = [
-            (item.id, f"{item.barcode_id} ({item.name})")
+            (str(item.id), f"{item.barcode_id} ({item.name})")
             for item in items
             if item.get_items_quantity() != 0
         ]
@@ -171,6 +171,8 @@ def edit(lost_break_item_id):
             data=lost_break_item.item.id,
         )
     if not form.validate_on_submit():
+        if lost_break_item:
+            form.piece.data = lost_break_item.quantity
         return render_template(
             "/lost_breaks/add.html",
             form=form,

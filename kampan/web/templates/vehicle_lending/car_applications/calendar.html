@@ -12,6 +12,15 @@
 
 {% block content %}
 <div class="flex flex-row w-full justify-between">
+  <div class="flex justify-start w-full gap-2">
+    <div class="dropdown dropdown-start">
+      <div tabindex="0" role="button" class="btn btn-soft btn-primary">แสดงความหมายของสี</div>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+        <div><span class="text-green-500 font-semibold">● สีเขียว:</span> อนุมัติสำเร็จ</div>
+        <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติ</div>
+      </ul>
+    </div>
+  </div>
   <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
@@ -50,8 +59,6 @@
 
     const car_applications = await initDivisions('{{ organization.id }}');
 
-    console.log("Car applications loaded:", car_applications);
-
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
       locale: 'th',
@@ -65,7 +72,7 @@
         list: 'รายการ'    // Rename "List" view
       },
       eventClick: function (info) {
-        alert('การใช้งาน: ' + info.event.title);
+        alert('การใช้งาน: ' + info.event.extendedProps.description);
 
         info.el.style.borderColor = 'black';
       },

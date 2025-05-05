@@ -30,7 +30,7 @@ def admin_page():
     motorcycle_applications = models.vehicle_applications.MotorcycleApplication.objects(
         organization=organization,
         status__nin=["disactive"],
-    )
+    ).order_by("-created_date")
     paginated_motorcycle_applications = Pagination(
         motorcycle_applications, page=1, per_page=50
     )

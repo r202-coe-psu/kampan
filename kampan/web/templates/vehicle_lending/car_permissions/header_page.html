@@ -21,9 +21,12 @@
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">สถานะ</th>
-          <th class="table-style">เหตุผล</th>
+          <th class="table-style">เหตุผลในการ
+            <br>อนุมัติ/ไม่อนุมัติ
+          </th>
           <th class="table-style">จัดการ</th>
 
         </tr>
@@ -35,7 +38,9 @@
           <td class="table-style" data-label="Created Date">
             {{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
-          <td class="table-style" data-label="Description">{{ car_application.description }}</td>
+          <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
+          <td class="table-style">{{ car_application.location }}</td>
+
           <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
 
 
@@ -43,13 +48,13 @@
           {{ car_application.get_status()|safe }}
 
           <td class="table-style">
-            {{ car_application.remark }}
+            {{ car_application.get_reason() }}
           </td>
           <td class="table-style">
             <!-- Approve/Deny Button -->
             <a class="btn btn-circle btn-primary tooltip {{ 'disabled' if car_application.status == 'approved' else ''}}"
               data-tip="อนุมัติ / ปฏิเสธ"
-              onclick="showApprovalModal('{{ car_application.id }}', '{{ car_application.description }}')">
+              onclick="showApprovalModal('{{ car_application.id }}', '{{ car_application.request_reason }}')">
               <i class="ph ph-check"></i>
             </a>
 

@@ -33,7 +33,7 @@ def index():
     ).first()
     motorcycle_applications = models.vehicle_applications.MotorcycleApplication.objects(
         organization=organization
-    )
+    ).order_by("-created_date")
     paginated_motorcycle_applications = Pagination(
         motorcycle_applications, page=1, per_page=50
     )
@@ -103,6 +103,10 @@ def create_or_edit(motorcycle_application_id):
             date = request.args.get("date", type=str, default=None)
             if date:
                 date = datetime.datetime.strptime(date, "%Y-%m-%d")
+                form.departure_date.data = date.date()
+                form.departure_time.data = date.time()
+            else:
+                date = datetime.datetime.now()
                 form.departure_date.data = date.date()
                 form.departure_time.data = date.time()
         form.motorcycle.choices = [
@@ -258,7 +262,14 @@ def get_motorcycle_applications():
 
         data = {
             "id": str(motorcycle_application.id),
-            "title": motorcycle_application.request_reason,
+            "title": motorcycle_application.motorcycle.license_plate
+            + " : "
+            + motorcycle_application.location,
+            "description": motorcycle_application.motorcycle.license_plate
+            + " : "
+            + motorcycle_application.request_reason
+            + " : "
+            + motorcycle_application.location,
             "start": start,
             "end": end,
             "color": color_of_event[motorcycle_application.status],

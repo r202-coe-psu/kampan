@@ -721,7 +721,7 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
     {% endif %}
   </legend>
   <div class="relative w-full">
-    {{ form(class="input w-full")}}
+    {{ form(class="input w-full", type="time-local")}}
   </div>
   <p class="validator-hint text-error">
     {% for error in form.errors %}

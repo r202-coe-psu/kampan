@@ -30,9 +30,12 @@
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">สถานะ</th>
-          <th class="table-style">เหตุผล</th>
+          <th class="table-style">เหตุผลในการ
+            <br>อนุมัติ/ไม่อนุมัติ
+          </th>
           <th class="table-style">จัดการ</th>
 
         </tr>
@@ -44,15 +47,16 @@
           <td class="table-style" data-label="Created Date">
             {{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
-          <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+          <td class="table-style" data-label="Description">{{ motorcycle_application.request_reason }}</td>
+          <td class="table-style">{{ motorcycle_application.location }}</td>
+
           <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
 
 
 
           {{ motorcycle_application.get_status()|safe }}
-
           <td class="table-style">
-            {{ motorcycle_application.remark }}
+            {{ motorcycle_application.get_reason() }}
           </td>
           <td class="table-style">
             {% if 'pending' in motorcycle_application.status %}
@@ -69,7 +73,7 @@
             {{ ModalNegative(
               id=motorcycle_application.id,
               header="ลบคำขอใช้รถจักรยานยนต์",
-              body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.description),
+              body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.request_reason),
               cancel="ยกเลิก",
               submit="ยืนยัน",
               redirect=url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id),

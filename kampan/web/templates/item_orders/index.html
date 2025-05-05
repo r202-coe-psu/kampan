@@ -110,14 +110,13 @@
                 href="{{ url_for('item_checkouts.catalogs', order_id=order.id, organization_id=organization.id) }}">
                 <i class="ph ph-list-plus"></i>
               </a>
-              {% endif %}
-              {% if order.status == 'pending' %}
+
               <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
                 href="{{ url_for('item_orders.edit', order_id=order.id, organization_id=organization.id) }}">
                 <i class="ph ph-pen"></i>
               </a>
               {% endif %}
-
+              {% if order.status != 'approved' %}
               <a class="btn btn-circle btn-error {{ 'disabled' if order.approval_status == 'approved' else ''}}"
                 data-tip="ลบ" onclick="showDeleteModal('{{ order.id }}')">
                 <i class="ph ph-trash"></i>
@@ -142,6 +141,8 @@
                 </div>
 
               </div>
+              {% endif %}
+
             </td>
           </tr>
           {% endfor %}
