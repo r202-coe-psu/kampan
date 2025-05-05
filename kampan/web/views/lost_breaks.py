@@ -1,11 +1,12 @@
 from calendar import calendar
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, current_app
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 import mongoengine as me
 import datetime
+from .. import redis_rq
 
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
@@ -17,7 +18,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    lost_break_items = models.LostBreakItem.objects(status="active")
+    lost_break_items = models.LostBreakItem.objects(status__ne="disactive").order_by(
+        "-created_date"
+    )
     form = forms.lost_break.SearchLostBreakForm()
     if not form.validate_on_submit():
         start_date = request.args.get("start_date")
@@ -134,7 +137,13 @@ def add():
 
         if quantity <= 0:
             break
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_lost_break,
+        args=(lost_break_item, current_user._get_current_object(), current_app.config),
+        job_id=f"send_email_lost_break_{lost_break_item.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "lost_breaks.index",
@@ -219,7 +228,13 @@ def edit(lost_break_item_id):
 
         if quantity <= 0:
             break
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_lost_break,
+        args=(lost_break_item, current_user._get_current_object(), current_app.config),
+        job_id=f"send_email_lost_break_{lost_break_item.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "lost_breaks.index",
@@ -246,6 +261,47 @@ def delete(lost_break_item_id):
     return redirect(
         url_for(
             "lost_breaks.index",
+            organization_id=organization_id,
+        )
+    )
+
+
+@module.route("/approve_page")
+@acl.organization_roles_required("admin", "endorser", "supervisor supplier")
+def supervisor_supplier_approve_page():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    lost_break_items = models.LostBreakItem.objects(status="pending")
+    return render_template(
+        "/lost_breaks/supervisor_supplier_approve_page.html",
+        lost_break_items=lost_break_items,
+        organization=organization,
+    )
+
+
+@module.route("/<lost_break_item_id>/decide/<decide_choice>")
+@acl.organization_roles_required("admin", "endorser", "supervisor supplier")
+def decide(lost_break_item_id, decide_choice):
+    organization_id = request.args.get("organization_id")
+
+    lost_break_item = models.LostBreakItem.objects(id=lost_break_item_id).first()
+    if decide_choice == "approve":
+        lost_break_item.status = "active"
+    elif decide_choice == "denied":
+        lost_break_item.status = "denied"
+        if lost_break_item.quantity != 0:
+            return_inventory = models.Inventory.objects(
+                id=lost_break_item.lost_from.id
+            ).first()
+            return_inventory.remain -= lost_break_item.quantity
+            return_inventory.save()
+    lost_break_item.save()
+
+    return redirect(
+        url_for(
+            "lost_breaks.supervisor_supplier_approve_page",
             organization_id=organization_id,
         )
     )

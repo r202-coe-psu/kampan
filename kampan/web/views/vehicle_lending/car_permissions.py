@@ -6,6 +6,7 @@ from flask import (
     request,
     send_file,
     abort,
+    current_app,
 )
 from flask_login import login_required, current_user
 import mongoengine as me
@@ -13,7 +14,8 @@ from flask_mongoengine import Pagination
 import datetime
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
+from ... import redis_rq
 
 module = Blueprint("car_permissions", __name__, url_prefix="/car_permissions")
 
@@ -26,7 +28,9 @@ def header_page():
         id=organization_id, status="active"
     ).first()
     car_applications = models.vehicle_applications.CarApplication.objects(
-        organization=organization, status="pending on header"
+        organization=organization,
+        status="pending on header",
+        division=current_user.get_current_division(),
     )
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
 
@@ -52,7 +56,18 @@ def header_approve():
     ).first()
     car_application.status = "pending on admin"
     car_application.save()
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_car_application_to_endorser,
+        args=(
+            car_application,
+            current_user._get_current_object(),
+            current_app.config,
+            car_application.status,
+        ),
+        job_id=f"send_email_car_application_to_endorser_{car_application.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "vehicle_lending.car_permissions.header_page",
@@ -119,7 +134,18 @@ def director_approve():
     ).first()
     car_application.status = "pending on admin"
     car_application.save()
-
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_car_application_to_endorser,
+        args=(
+            car_application,
+            current_user._get_current_object(),
+            current_app.config,
+            car_application.status,
+        ),
+        job_id=f"send_email_car_application_to_endorser_{car_application.id}",
+        timeout=600,
+        job_timeout=600,
+    )
     return redirect(
         url_for(
             "vehicle_lending.car_permissions.director_page",
