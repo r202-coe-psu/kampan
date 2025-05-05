@@ -3,8 +3,8 @@
 {% import 'base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated%}
 
-{% block title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
-{% block dashboard_title %}วัสดุชำรุด หรือ สูญหาย{% endblock %}
+{% block title %}วัสดุชำรุด/สูญหาย/แก้ไข{% endblock %}
+{% block dashboard_title %}วัสดุชำรุด/สูญหาย/แก้ไข{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -50,14 +50,12 @@
           <th class="table-style">คลังวัสดุ</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">วันที่วัสดุชำรุดหรือสูญหาย</th>
+          <th class="table-style">สถานะ</th>
           <th class="table-style">แก้ไข/ลบข้อมูล</th>
         </tr>
       </thead>
       <tbody>
         {% for item in paginated_lost_break_items.items %}
-
-        <!-- {% if calendar_select %} -->
-        <!-- {% if check_in_time(item.created_date,calendar_select,calendar_end) %}
         <tr>
           <td class="table-style" data-label="Image" class="center aligned">
             <div>
@@ -78,38 +76,10 @@
           <td class="table-style" data-label="Registeration Date">
             {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
-          <td class="table-style">
-            <a class="btn btn-circle btn-primary"
-              href="{{ url_for('lost_breaks.edit', lost_break_item_id=item.id, organization_id=organization.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
-            <a class="btn btn-circle btn-error"
-              href="{{ url_for('lost_breaks.delete', lost_break_item_id=item.id, organization_id=organization.id) }}">
-              <i class="ph ph-trash"></i>
-            </a>
-          </td>
-        </tr>
-        {% endif %}
-        {% else %} -->
-        <tr>
-          <td class="table-style" data-label="Image" class="center aligned">
-            <div>
-              {% if not item.item.image %}
-              <img src=" {{ url_for('static', filename='/images/image.png' ) }}" width="70">
-              {% else %}
-              <img
-                src="{{ url_for('items.image', item_id=item.item.id, filename=item.item.image.filename, organization_id=organization.id) }}"
-                width="70">
-              {% endif %}
-            </div>
-          </td>
-          <td class="table-style" data-label="Item">{{ item.item.name}}</td>
-          <td class="table-style" data-label="Description">{{ item.description }}</td>
-          <td class="table-style" data-label="Quantity">{{ item.quantity }}</td>
-          <td class="table-style" data-label="Warehouse">{{ item.warehouse.name }}</td>
-          <td class="table-style" data-label="User">{{ item.user.first_name }} {{ item.user.last_name }}</td>
-          <td class="table-style" data-label="Registeration Date">
-            {{ item.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+          <td class="table-style " data-label="Warehouse">
+            <span class="{{ item.get_color_status() }}">
+              {{ item.get_status_display() }}
+            </span>
           </td>
           <td class="table-style">
             <a class="btn btn-circle btn-primary"
@@ -130,7 +100,6 @@
               ) }}
           </td>
         </tr>
-        <!-- {% endif %} -->
         {% endfor %}
       </tbody>
     </table>

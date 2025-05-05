@@ -92,9 +92,9 @@ class DashboardRepository:
             data = {
                 "type": "lost_break",
                 "created_date": lost_break.created_date,
-                "description": "วัสดุชำรุด/สูญหาย: " + str(lost_break.description),
+                "description": "วัสดุชำรุด/สูญหาย/แก้ไข: " + str(lost_break.description),
                 "warehouse": "",
-                "quantity": -lost_break.quantity,
+                "quantity": lost_break.quantity,
                 "unit": (
                     lost_break.item.piece_unit
                     if lost_break.item.item_format == "one to many"
