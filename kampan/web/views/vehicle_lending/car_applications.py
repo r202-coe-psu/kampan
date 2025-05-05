@@ -201,7 +201,14 @@ def get_car_applications():
 
         data = {
             "id": str(car_application.id),
-            "title": car_application.request_reason,
+            "title": car_application.car.license_plate
+            + " : "
+            + car_application.location,
+            "description": car_application.car.license_plate
+            + " : "
+            + car_application.request_reason
+            + " : "
+            + car_application.location,
             "start": start,
             "end": end,
             "color": color_of_event[car_application.status],

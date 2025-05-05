@@ -162,7 +162,7 @@ def admin_page():
     car_applications = models.vehicle_applications.CarApplication.objects(
         organization=organization,
         status__in=["pending on admin", "denied by admin", "active"],
-    )
+    ).order_by("-created_date")
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
 
     return render_template(

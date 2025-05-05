@@ -20,9 +20,13 @@
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
+          <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">สถานะ</th>
-          <th class="table-style">เหตุผล</th>
+          <th class="table-style">เลขไมล์ที่เปลี่ยนไป</th>
+          <th class="table-style">เหตุผลในการ
+            <br>อนุมัติ/ไม่อนุมัติ
+          </th>
           <th class="table-style">จัดการ</th>
 
         </tr>
@@ -34,22 +38,23 @@
           <td class="table-style" data-label="Created Date">
             {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
-          <td class="table-style" data-label="Description">{{ motorcycle_application.description }}</td>
+          <td class="table-style" data-label="Description">{{ motorcycle_application.request_reason }}</td>
+          <td class="table-style">{{ motorcycle_application.location }}</td>
           <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
-
-
-
           {{ motorcycle_application.get_status()|safe }}
+          <td class="table-style">
+            {{ motorcycle_application.get_changed_mileage() }}
+          </td>
 
           <td class="table-style">
-            {{ motorcycle_application.remark }}
+            {{ motorcycle_application.get_reason() }}
           </td>
           <td class="table-style">
             {% if motorcycle_application.status == "pending" %}
             <!-- Approve/Deny Button -->
             <a class="btn btn-circle btn-primary tooltip {{ 'disabled' if motorcycle_application.status == 'approved' else ''}}"
               data-tip="อนุมัติ / ปฏิเสธ"
-              onclick="showApprovalModal('{{ motorcycle_application.id }}', '{{ motorcycle_application.description }}')">
+              onclick="showApprovalModal('{{ motorcycle_application.id }}', '{{ motorcycle_application.request_reason }}')">
               <i class="ph ph-check"></i>
             </a>
 
