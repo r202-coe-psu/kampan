@@ -46,7 +46,9 @@
         <tr>
           <td class="table-style"> {{ loop.index }}</td>
           <td class="table-style" data-label="Created Date">
-            {{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
+            <span class=" text-wrap">
+              {{ car_application.get_departure_datetime() }}
+            </span>
           </td>
           <td class="table-style"> {{ car_application.car.license_plate }}</td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
