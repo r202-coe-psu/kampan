@@ -272,16 +272,8 @@ def get_motorcycle_applications():
         time = motorcycle_application.departure_datetime.strftime("%H:%M")
         data = {
             "id": str(motorcycle_application.id),
-            "title": time
-            + " น. : "
-            + motorcycle_application.motorcycle.license_plate
-            + " : "
-            + motorcycle_application.location,
-            "description": motorcycle_application.motorcycle.license_plate
-            + " : "
-            + motorcycle_application.request_reason
-            + " : "
-            + motorcycle_application.location,
+            "title": f"{time} น. : {motorcycle_application.motorcycle.license_plate} : {motorcycle_application.location}",
+            "description": f"ป้ายทะเบียน : {motorcycle_application.motorcycle.license_plate}\nเหตุผล : {motorcycle_application.request_reason}\nสถานที่ที่ต้องการจะไป : {motorcycle_application.location}",
             "start": start,
             "end": end,
             "color": color_of_event[motorcycle_application.status],
