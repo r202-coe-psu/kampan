@@ -34,6 +34,7 @@
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">สถานะ</th>
+          <th class="table-style">เวลาส่งคืน</th>
           <th class="table-style">เหตุผลในการ
             <br>อนุมัติ/ไม่อนุมัติ
           </th>
@@ -53,10 +54,10 @@
           <td class="table-style">{{ motorcycle_application.location }}</td>
 
           <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
-
-
-
           {{ motorcycle_application.get_status()|safe }}
+          <td class="table-style">
+            {{ motorcycle_application.return_datetime.strftime('%d/%m/%Y %H:%M:%S') if  motorcycle_application.status == "returned" else "" }}
+          </td>
           <td class="table-style">
             {{ motorcycle_application.get_reason() }}
           </td>
