@@ -117,19 +117,19 @@ class MotorcycleApplication(VehicleApplication, me.Document):
         return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'
 
     def get_changed_mileage(self):
-        last_motorcycle_application = (
-            MotorcycleApplication.objects(
-                status="returned",
-                created_date__lt=self.created_date,
-                motorcycle=self.motorcycle,
-            )
-            .order_by("-created_date")
-            .first()
-        )
-        if not last_motorcycle_application or self.status != "returned":
-            return "-"
-        last_mileage = last_motorcycle_application.last_mileage
-        return self.last_mileage - last_mileage
+        # last_motorcycle_application = (
+        #     MotorcycleApplication.objects(
+        #         status="returned",
+        #         created_date__lt=self.created_date,
+        #         motorcycle=self.motorcycle,
+        #     )
+        #     .order_by("-created_date")
+        #     .first()
+        # )
+        # if not last_motorcycle_application or self.status != "returned":
+        #     return "-"
+        # last_mileage = last_motorcycle_application.last_mileage
+        return self.last_mileage
 
     def get_reason(self):
         return (

@@ -31,9 +31,19 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    motorcycle_applications = models.vehicle_applications.MotorcycleApplication.objects(
-        organization=organization
-    ).order_by("-created_date")
+    if current_user.has_organization_roles("admin", "supervisor supplier"):
+
+        motorcycle_applications = (
+            models.vehicle_applications.MotorcycleApplication.objects(
+                organization=organization
+            ).order_by("-created_date")
+        )
+    else:
+        motorcycle_applications = (
+            models.vehicle_applications.MotorcycleApplication.objects(
+                organization=organization, creator=current_user
+            ).order_by("-created_date")
+        )
     paginated_motorcycle_applications = Pagination(
         motorcycle_applications, page=1, per_page=50
     )
@@ -246,7 +256,7 @@ def get_motorcycle_applications():
             "returned",
             "active",
         ]
-    )
+    ).order_by("-status")
 
     color_of_event = {
         "active": "blue",
@@ -259,10 +269,12 @@ def get_motorcycle_applications():
         end = (
             motorcycle_application.departure_datetime + datetime.timedelta(days=1)
         ).strftime("%Y-%m-%d")
-
+        time = motorcycle_application.departure_datetime.strftime("%H:%M")
         data = {
             "id": str(motorcycle_application.id),
-            "title": motorcycle_application.motorcycle.license_plate
+            "title": time
+            + " น. : "
+            + motorcycle_application.motorcycle.license_plate
             + " : "
             + motorcycle_application.location,
             "description": motorcycle_application.motorcycle.license_plate

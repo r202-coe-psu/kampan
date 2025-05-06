@@ -28,9 +28,14 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    car_applications = models.vehicle_applications.CarApplication.objects(
-        organization=organization
-    )
+    if current_user.has_organization_roles("admin", "supervisor supplier"):
+        car_applications = models.vehicle_applications.CarApplication.objects(
+            organization=organization
+        )
+    else:
+        car_applications = models.vehicle_applications.CarApplication.objects(
+            organization=organization, creator=current_user
+        )
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
     return render_template(
         "/vehicle_lending/car_applications/index.html",

@@ -20,6 +20,7 @@
         <tr>
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">ป้ายทะเบียนรถ</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
@@ -38,6 +39,7 @@
           <td class="table-style" data-label="Created Date">
             {{ car_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
+          <td class="table-style"> {{ car_application.car.license_plate }}</td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
           <td class="table-style">{{ car_application.location }}</td>
 

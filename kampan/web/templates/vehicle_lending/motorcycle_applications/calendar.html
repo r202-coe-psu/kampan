@@ -13,13 +13,10 @@
 {% block content %}
 <div class="flex flex-row w-full justify-between">
   <div class="flex justify-start w-full gap-2">
-    <div class="dropdown dropdown-start">
-      <div tabindex="0" role="button" class="btn btn-soft btn-primary">แสดงความหมายของสี</div>
-      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-        <div><span class="text-green-500 font-semibold">● สีเขียว:</span> ส่งคืนสำเร็จ</div>
-        <div><span class="text-blue-500 font-semibold">● สีน้ำเงิน:</span> อนุมัติสำเร็จ</div>
-        <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติ</div>
-      </ul>
+    <div class="flex flex-col">
+      <div><span class="text-green-500 font-semibold">● สีเขียว:</span> ส่งคืนสำเร็จ</div>
+      <div><span class="text-blue-500 font-semibold">● สีน้ำเงิน:</span> อนุมัติสำเร็จ</div>
+      <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติ</div>
     </div>
   </div>
   <div class="flex justify-end w-full gap-2">

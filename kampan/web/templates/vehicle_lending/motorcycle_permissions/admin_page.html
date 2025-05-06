@@ -19,11 +19,13 @@
         <tr>
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style">ป้ายทะเบียนรถ</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">สถานะ</th>
-          <th class="table-style">เลขไมล์ที่เปลี่ยนไป</th>
+          <th class="table-style">เลขไมล์ที่บันทึก</th>
+          <th class="table-style">เวลาส่งคืน</th>
           <th class="table-style">เหตุผลในการ
             <br>อนุมัติ/ไม่อนุมัติ
           </th>
@@ -38,6 +40,7 @@
           <td class="table-style" data-label="Created Date">
             {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
+          <td class="table-style"> {{ motorcycle_application.motorcycle.license_plate }}</td>
           <td class="table-style" data-label="Description">{{ motorcycle_application.request_reason }}</td>
           <td class="table-style">{{ motorcycle_application.location }}</td>
           <td class="table-style" data-label="User">{{ motorcycle_application.creator.get_name() }}</td>
@@ -45,7 +48,9 @@
           <td class="table-style">
             {{ motorcycle_application.get_changed_mileage() }}
           </td>
-
+          <td class="table-style">
+            {{ motorcycle_application.return_datetime.strftime('%d/%m/%Y %H:%M:%S') if  motorcycle_application.status == "returned" else "" }}
+          </td>
           <td class="table-style">
             {{ motorcycle_application.get_reason() }}
           </td>
