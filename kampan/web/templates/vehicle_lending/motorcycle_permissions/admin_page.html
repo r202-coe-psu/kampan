@@ -38,7 +38,7 @@
         <tr>
           <td class="table-style"> {{ loop.index }}</td>
           <td class="table-style" data-label="Created Date">
-            {{ motorcycle_application.created_date.strftime('%d/%m/%Y %H:%M:%S') }}
+            {{ motorcycle_application.departure_datetime.strftime('%d/%m/%Y %H:%M:%S') }}
           </td>
           <td class="table-style"> {{ motorcycle_application.motorcycle.license_plate }}</td>
           <td class="table-style" data-label="Description">{{ motorcycle_application.request_reason }}</td>
