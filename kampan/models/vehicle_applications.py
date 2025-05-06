@@ -97,6 +97,13 @@ class CarApplication(VehicleApplication, me.Document):
     def get_reason(self):
         return self.approved_reason if self.status == "active" else self.denied_reason
 
+    def get_departure_datetime(self):
+        if self.travel_type == "one way":
+            text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น."
+        else:
+            text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. - {self.return_datetime.strftime('%d/%m/%Y %H:%M')} น."
+        return text
+
 
 class MotorcycleApplication(VehicleApplication, me.Document):
     meta = {"collection": "motorcycle_applications"}
