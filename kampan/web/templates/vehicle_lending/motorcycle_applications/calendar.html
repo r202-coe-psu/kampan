@@ -30,7 +30,17 @@
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div id='calendar'></div>
 </div>
+<style>
+  .fc-view-harness {
+    display: block !important;
+    z-index: 0 !important;
+  }
 
+  .fc-view-harness-active {
+    display: block !important;
+    z-index: 0 !important;
+  }
+</style>
 {% endblock %}
 
 {% block additional_js %}
