@@ -97,8 +97,9 @@ def create_or_edit(car_application_id):
                 form.return_date.data = date.date()
                 form.return_time.data = date.time()
 
-                form.flight_date.data = date.date()
                 form.flight_time.data = date.time()
+                form.flight_return_time.data = date.time()
+
             else:
                 date = datetime.datetime.now()
                 form.departure_date.data = date.date()
@@ -106,8 +107,8 @@ def create_or_edit(car_application_id):
                 form.return_date.data = date.date()
                 form.return_time.data = date.time()
 
-                form.flight_date.data = date.date()
                 form.flight_time.data = date.time()
+                form.flight_return_time.data = date.time()
 
         if car_application:
             form.departure_date.data = car_application.departure_datetime.date()
@@ -116,8 +117,9 @@ def create_or_edit(car_application_id):
             form.return_date.data = car_application.return_datetime.date()
             form.return_time.data = car_application.return_datetime.time()
 
-            form.flight_date.data = car_application.flight_datetime.date()
             form.flight_time.data = car_application.flight_datetime.time()
+            form.flight_return_time.data = car_application.flight_return_datetime.time()
+
         form.car.choices = [
             (str(car.id), car.license_plate)
             for car in models.vehicles.Car.objects(organization=organization)
@@ -156,8 +158,12 @@ def create_or_edit(car_application_id):
         car_application.status = "pending on director"
     if form.using_type.data == "airport transfer":
         car_application.flight_datetime = datetime.datetime.combine(
-            form.flight_date.data, form.flight_time.data
+            form.departure_date.data, form.flight_time.data
         )
+        if form.travel_type.data != "one way":
+            car_application.flight_return_datetime = datetime.datetime.combine(
+                form.return_date.data, form.flight_return_time.data
+            )
 
     car_application.organization = current_user.get_current_organization()
     car_application.division = current_user.get_current_division()
@@ -246,7 +252,7 @@ def get_car_applications():
         data = {
             "id": str(car_application.id),
             "title": f"{time} น. : {car_application.car.license_plate} : {car_application.location}",
-            "description": f"ป้ายทะเบียน : {car_application.car.license_plate}\nเหตุผล : {car_application.request_reason}\nสถานที่ที่ต้องการจะไป : {car_application.location}",
+            "description": f"เวลาที่ใช้ : {car_application.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. \nป้ายทะเบียน : {car_application.car.license_plate}\nเหตุผล : {car_application.request_reason}\nสถานที่ที่ต้องการจะไป : {car_application.location}",
             "start": start,
             "end": end,
             "color": color_of_event[car_application.status],

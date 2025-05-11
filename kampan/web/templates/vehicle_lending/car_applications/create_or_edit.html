@@ -57,8 +57,12 @@
     {{renderer.time_field(form.return_time) }}
   </div>
   <div class="flex flex-row justify-between w-full gap-2" id="flight_datetime">
-    {{renderer.date_field_js(form.flight_date) }}
+    {{renderer.render_field(form.flight_number) }}
     {{renderer.time_field(form.flight_time) }}
+  </div>
+  <div class="flex flex-row justify-between w-full gap-2" id="flight_return_field">
+    {{renderer.render_field(form.flight_return_number) }}
+    {{renderer.time_field(form.flight_return_time) }}
   </div>
   <div class="flex flex-row w-full justify-between">
     <div class="flex justify-start w-full gap-2">
@@ -77,7 +81,6 @@
       let travelType = $("input[name='travel_type']:checked").val();
       let return_dateField = $("#return_date");
       let return_timeField = $("#return_time");
-      console.log(return_date.required);
 
       if (travelType === "one way") {
         $("#return_datetime").hide();
@@ -99,25 +102,41 @@
   $(document).ready(function () {
 
     function toggleFlightDate() {
+      let travelType = $("input[name='travel_type']:checked").val();
       let usingType = $("input[name='using_type']:checked").val();
-      console.log(usingType);
 
-      let flight_dateField = $("#flight_date");
+      let flight_numberField = $("#flight_number");
       let flight_timeField = $("#flight_time");
-      console.log(flight_timeField);
+
+      let flight_numberReturnField = $("#flight_return_number");
+      let flight_timeReturnField = $("#flight_return_time");
 
       if (usingType === "airport transfer") {
         $("#flight_datetime").show();
-        flight_dateField.prop("required", true);
+        flight_numberField.prop("required", true);
         flight_timeField.prop("required", true);
+
       } else {
         $("#flight_datetime").hide();
-        flight_dateField.prop("required", false);
+        flight_numberField.prop("required", false);
         flight_timeField.prop("required", false);
+
+      }
+
+      if ((travelType === "round trip") && (usingType === "airport transfer")) {
+        $("#flight_return_field").show();
+        flight_numberReturnField.prop("required", true);
+        flight_timeReturnField.prop("required", true);
+
+      } else {
+        $("#flight_return_field").hide();
+        flight_numberReturnField.prop("required", false);
+        flight_timeReturnField.prop("required", false);
       }
     }
 
     $("input[name='using_type']").change(toggleFlightDate);
+    $("input[name='travel_type']").change(toggleFlightDate);
 
     toggleFlightDate();
   });

@@ -71,7 +71,13 @@ class CarApplication(VehicleApplication, me.Document):
         default="one way", choices=TRAVEL_TYPE
     )  # ประเภทการเดินทาง
 
-    flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบิน
+    flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป
+    flight_return_datetime = me.DateTimeField(
+        default=datetime.datetime.now
+    )  # วันเวลาบินกลับ
+
+    flight_number = me.StringField(max_length=128, default="")
+    flight_return_number = me.StringField(max_length=128, default="")
 
     passenger_number = me.IntField(min_value=0, required=True, default=0)
 
@@ -101,7 +107,10 @@ class CarApplication(VehicleApplication, me.Document):
         if self.travel_type == "one way":
             text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น."
         else:
-            text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. - {self.return_datetime.strftime('%d/%m/%Y %H:%M')} น."
+            if self.departure_datetime.date() != self.return_datetime.date():
+                text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. - {self.return_datetime.strftime('%d/%m/%Y %H:%M')} น."
+            else:
+                text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. - {self.return_datetime.strftime('%H:%M')} น."
         return text
 
 
