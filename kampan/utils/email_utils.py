@@ -473,7 +473,7 @@ def send_email_car_application_to_endorser(
     email_template = organization.get_default_email_template("car_application")
 
     if not email_template:
-        logger.debug(f"There are no email template for {division.name}")
+        logger.debug(f"There are no email template")
         return False
 
     if not endorsers:

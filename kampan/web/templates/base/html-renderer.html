@@ -715,7 +715,7 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
 
 {% macro time_field(form, calendar_id="") %}
 <fieldset class="w-full fieldset" id="field-{{ form.id }}">
-  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }}
+  <legend for="datetime" class="fieldset-legend w-fit">{{ form.label.text }} <b>** กรุณากรอกในรูปแบบ 00:00 </b>
     {% if form.flags.required %}
     <span class="text-error">*</span>
     {% endif %}

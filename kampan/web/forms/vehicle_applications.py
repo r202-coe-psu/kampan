@@ -21,6 +21,7 @@ BaseCarApplicationForm = model_form(
         "departure_datetime",
         "return_datetime",
         "flight_datetime",
+        "flight_return_datetime",
         "division",
     ],
     field_args={
@@ -31,6 +32,8 @@ BaseCarApplicationForm = model_form(
         # "using_type": {"label": "ประเภทการใช้รถ"},
         # "travel_type": {"label": "ประเภทการเดินทาง"},
         "passenger_number": {"label": "จำนวนผู้โดยสาร"},
+        "flight_number": {"label": "หมายเลขเที่ยวบินไป"},
+        "flight_return_number": {"label": "หมายเลขเที่ยวบินกลับ"},
     },
 )
 
@@ -67,12 +70,12 @@ class CarApplicationForm(BaseCarApplicationForm):
         validators=[validators.Optional()],
     )
 
-    flight_date = fields.DateField(
-        "วันไฟล์ทบิน",
+    flight_return_time = fields.TimeField(
+        "เวลาไฟล์ทบินกลับ",
         validators=[validators.Optional()],
     )
     flight_time = fields.TimeField(
-        "เวลาไฟล์ทบิน",
+        "เวลาไฟล์ทบินไป",
         # format="%I:%M %p",
         validators=[validators.Optional()],
     )
