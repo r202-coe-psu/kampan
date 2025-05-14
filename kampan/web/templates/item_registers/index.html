@@ -84,7 +84,6 @@
               href="{{ url_for('item_registers.edit', item_register_id=item.id, organization_id=organization.id) }}">
               <i class="ph ph-pen"></i>
             </a>
-            {% endif %}
             <a class="btn btn-circle btn-error" style="color: white;" onclick="showDeleteModal('{{ item.id }}')">
               <i class="ph ph-trash"></i>
             </a>
@@ -97,6 +96,8 @@
               submit="ยืนยัน",
               redirect=url_for('item_registers.delete', item_register_id=item.id, organization_id=organization.id),
             ) }}
+            {% endif %}
+
           </td>
         </tr>
 
