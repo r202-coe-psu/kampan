@@ -53,10 +53,11 @@ def organization_roles_required(*roles):
                     if request.view_args
                     else request.args.get("organization_id")
                 )
-            try:
-                organization_id = request.view_args["organization_id"]
-            except:
-                organization_id = request.args.get("organization_id")
+            if not organization_id:
+                try:
+                    organization_id = request.view_args["organization_id"]
+                except:
+                    organization_id = request.args.get("organization_id")
 
             if not organization_id:
                 raise Forbidden()  # ไม่เจอ organization_id
