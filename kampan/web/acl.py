@@ -39,30 +39,39 @@ def organization_roles_required(*roles):
         def wrapped(*args, **kwargs):
             if not current_user.is_authenticated:
                 raise Forbidden()
-            # bypass admin to access any organization
+
+            # bypass admin
             if "admin" in current_user.roles:
                 return func(*args, **kwargs)
 
+            # พยายามดึง organization_id จาก URL หรือ query string
+            organization_id = None
+
+            if not organization_id:
+                organization_id = (
+                    request.view_args.get("organization_id")
+                    if request.view_args
+                    else request.args.get("organization_id")
+                )
             try:
                 organization_id = request.view_args["organization_id"]
             except:
                 organization_id = request.args.get("organization_id")
+
+            if not organization_id:
+                raise Forbidden()  # ไม่เจอ organization_id
+
             try:
-                list_roles = list(roles)
                 organization = models.Organization.objects.get(id=organization_id)
+            except models.Organization.DoesNotExist:
+                raise Forbidden()  # ไม่มีองค์กรนี้ในระบบ
 
-                for role in list_roles:
-                    if role in current_user.get_current_organization_roles():
-                        return func(*args, **kwargs)
+            user_roles = current_user.get_current_organization_roles()
 
-                raise Forbidden()
-            except:
-
-                organization_roles = None
-                raise Forbidden()
-            if organization_roles:
+            if any(role in user_roles for role in roles):
                 return func(*args, **kwargs)
-            raise Forbidden()
+
+            raise Forbidden()  # ไม่มี role ตรงกับที่กำหนด
 
         return wrapped
 
@@ -78,7 +87,6 @@ def load_user(user_id):
 @login_manager.unauthorized_handler
 def unauthorized_callback():
     if request.method == "GET":
-        response = redirect(login_url("accounts.login", request.url))
-        return response
+        return redirect(url_for("accounts.login", next=request.url))
 
     return redirect(url_for("accounts.login"))

@@ -72,7 +72,6 @@ def register():
     item_register = models.RegistrationItem()
 
     if not form.validate_on_submit():
-
         return render_template(
             "/item_registers/register.html",
             form=form,
@@ -117,8 +116,13 @@ def edit(item_register_id):
     ).first()
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
     form = forms.item_registers.ItemRegisterationForm(obj=item_register)
-
+    form.supplier.choices = [
+        (str(supplier.id), supplier.get_supplier_name())
+        for supplier in models.Supplier.objects(status="active")
+    ]
     if not form.validate_on_submit():
+        if item_register:
+            form.supplier.data = str(item_register.supplier.id)
         return render_template(
             "/item_registers/register.html",
             form=form,
@@ -140,6 +144,8 @@ def edit(item_register_id):
             )
 
     form.populate_obj(item_register)
+    item_register.supplier = models.Supplier.objects(id=form.supplier.data).first()
+    item_register.status = "pending"
     item_register.organization = organization
     item_register.save()
 
