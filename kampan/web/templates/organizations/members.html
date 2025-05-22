@@ -40,8 +40,8 @@
 
 <form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex flex-row justify-between w-full gap-2">
-    {{ form.csrf_token }}
-    {{ renderer.render_select_field(form.user) }}
+    {{form.hidden_tag()}}
+    {{ renderer.render_search_select_field(form.user) }}
     {{ renderer.render_select_field(form.role) }}
     {{ renderer.date_range_field(form.start_date, form.end_date)}}
   </div>

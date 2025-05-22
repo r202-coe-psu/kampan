@@ -101,9 +101,8 @@ def organizaiton_users(organization_id):
     form = forms.organizations.SearchUserForm()
     org_users = organization.get_organization_users()
     if org_users:
-        [
-            form.user.choices.append((org_user.id, f"{org_user.display_fullname()}"))
-            for org_user in org_users
+        form.user.choices = [("", "")] + [
+            (str(u.id), f"{u.display_fullname()}") for u in org_users
         ]
     if form.user.data:
         form.user.data = form.user.data

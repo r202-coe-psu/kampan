@@ -89,7 +89,7 @@ class SearchUserForm(FlaskForm):
     )
     user = fields.SelectField(
         "สมาชิก",
-        choices=[("", "ทั้งหมด")],
+        choices=[("", "")],
         validate_choice=False,
         validators=None,
         render_kw={"placeholder": "user"},
