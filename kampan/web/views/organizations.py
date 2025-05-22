@@ -69,23 +69,22 @@ def add_member(organization_id):
             form=form,
             organization=organization,
         )
+    user_id = form.members.data
+    user = models.User.objects(id=user_id).first()
+    if not user.get_current_organization():
+        user.user_setting.current_organization = organization
+        user.save()
 
-    for user_id in form.members.data:
-        user = models.User.objects(id=user_id).first()
-        if not user.get_current_organization():
-            user.user_setting.current_organization = organization
-            user.save()
-
-        org_user = models.OrganizationUserRole(
-            organization=organization,
-            user=user,
-            roles=form.roles.data,
-            added_by=current_user._get_current_object(),
-            last_modifier=current_user._get_current_object(),
-            last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-            created_date=datetime.datetime.now(),
-        )
-        org_user.save()
+    org_user = models.OrganizationUserRole(
+        organization=organization,
+        user=user,
+        roles=form.roles.data,
+        added_by=current_user._get_current_object(),
+        last_modifier=current_user._get_current_object(),
+        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+        created_date=datetime.datetime.now(),
+    )
+    org_user.save()
 
     return redirect(
         url_for(
