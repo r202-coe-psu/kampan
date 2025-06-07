@@ -47,7 +47,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', async function () {
 
-    async function initDivisions(organizationId = '') {
+    async function initUrl(organizationId = '') {
       const url = organizationId
         ? "{{ url_for('vehicle_lending.car_applications.get_car_applications', organization_id='ORGANIZATION_ID') }}"
           .replace('ORGANIZATION_ID', organizationId)
@@ -64,7 +64,7 @@
       }
     }
 
-    const car_applications = await initDivisions('{{ organization.id }}');
+    const car_applications = await initUrl('{{ organization.id }}');
 
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -83,16 +83,17 @@
 
         info.el.style.borderColor = 'black';
       },
-
+      {% if current_user.get_current_division() %}
       dateClick: function (info) {
-        const selectedDate = info.dateStr;
-        const url = "{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
+    const selectedDate = info.dateStr;
+    const url = "{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
 
-        window.location.href = url;
-      }
+    window.location.href = url;
+  }
+      {% endif %}
     });
 
-    calendar.render();
+  calendar.render();
 
   });
 

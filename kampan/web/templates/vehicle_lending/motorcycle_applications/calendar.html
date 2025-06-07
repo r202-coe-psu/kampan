@@ -85,16 +85,18 @@
 
         info.el.style.borderColor = 'black';
       },
-
+      {% if current_user.get_current_division() %}
       dateClick: function (info) {
-        const selectedDate = info.dateStr;
-        const url = "{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
+    const selectedDate = info.dateStr;
+    const url = "{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
 
-        window.location.href = url;
-      }
+    window.location.href = url;
+  }
+      {% endif %}
+
     });
 
-    calendar.render();
+  calendar.render();
 
   });
 
