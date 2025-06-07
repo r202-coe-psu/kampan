@@ -503,7 +503,7 @@ def send_email_car_application_to_endorser(
     logger.debug("################ Ready to send email to endorsers ################")
     for endorser in endorsers:
         text_format = get_car_application_text_format(
-            division, user, endorser, car_application, endorsement_url
+            division, user, endorser.user, car_application, endorsement_url
         )
 
         email_subject = template_subject.render(text_format)
