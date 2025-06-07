@@ -54,3 +54,13 @@ class Division(me.Document):
             roles__in=["head"],
             division=self,
         ).order_by("-first_name")
+
+    def get_user_endorsers(self):
+        endorsers = models.OrganizationUserRole.objects(
+            organization=self.organization,
+            status="active",
+            roles__in=["endorser", "head"],
+            division=self,
+        ).order_by("-first_name")
+        user_ids = [endorser.user.id for endorser in endorsers]
+        return models.User.objects(id__in=user_ids)
