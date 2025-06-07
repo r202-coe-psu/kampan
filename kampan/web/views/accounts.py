@@ -133,14 +133,12 @@ def profile(user_id):
 def index():
     organization_id = request.args.get("organization_id")
     organization = None
-
+    errors = request.args.get("errors")
     if not organization:
-        organization_user_role = (
-            models.OrganizationUserRole.objects(
-                user=current_user,
-                status__ne="disactive",
-            ).first()
-        )
+        organization_user_role = models.OrganizationUserRole.objects(
+            user=current_user,
+            status__ne="disactive",
+        ).first()
         if organization_user_role:
             organization = organization_user_role.organization
             organization_id = organization.id
@@ -153,12 +151,14 @@ def index():
             "/accounts/index.html",
             user=current_user,
             organization=organization,
+            errors=errors,
         )
     if not organization and "admin" not in current_user.roles:
         return render_template(
             "/accounts/index.html",
             user=current_user,
             organization=organization,
+            errors=errors,
         )
 
     if "admin" in current_user.roles and organization_id:
@@ -169,6 +169,7 @@ def index():
         "/accounts/index.html",
         user=current_user,
         organization=organization,
+        errors=errors,
     )
 
 

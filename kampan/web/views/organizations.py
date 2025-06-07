@@ -260,7 +260,7 @@ def upload_member_file(organization_id):
     ).first()
 
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         return render_template(

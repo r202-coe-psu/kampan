@@ -13,6 +13,7 @@
     </li>
     {% endif %}
     {% if organization %}
+    {% if current_user.get_current_division() %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_applications' in request.path and '/vehicle_lending/car_applications/calendar' not in request.path else '' }}"
         href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}">
@@ -25,6 +26,7 @@
         <i class="ph ph-calendar-blank"></i> ปฏิทินการขอใช้รถยนต์
       </a>
     </li>
+    {% endif %}
     {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/header_page' in request.path else '' }}"

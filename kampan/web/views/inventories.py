@@ -257,7 +257,7 @@ def upload_file_inventory_info(item_register_id):
     item_register = models.RegistrationItem.objects.get(id=item_register_id)
 
     upload_completed = False
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         return render_template(

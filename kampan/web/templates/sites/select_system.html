@@ -9,6 +9,7 @@
       class="btn rounded-4xl text-2xl py-16 bg-orange-400 hover:bg-orange-500 text-white shadow-lg transition-transform transform hover:scale-105 text-center">
       <b>ระบบเบิกวัสดุ</b>
     </a>
+    {% if current_user.get_current_division() %}
 
     <a href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id ) }}"
       class="btn rounded-4xl text-2xl py-16 bg-sky-400 hover:bg-sky-500 text-white shadow-lg transition-transform transform hover:scale-105 text-center">
@@ -19,6 +20,7 @@
       class="btn rounded-4xl text-2xl py-16 bg-green-500 hover:bg-green-600 text-white shadow-lg transition-transform transform hover:scale-105 text-center">
       <b>ระบบการขอใช้รถจักรยานยนต์</b>
     </a>
+    {% endif %}
   </div>
 </div>
 {% endblock content %}

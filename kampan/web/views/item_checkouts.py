@@ -377,7 +377,7 @@ def upload_file(order_id):
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
     order = models.OrderItem.objects(id=order_id).first()
 
     if not form.validate_on_submit():

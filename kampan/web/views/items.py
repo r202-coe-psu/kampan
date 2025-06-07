@@ -100,7 +100,7 @@ def upload_file():
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         return render_template(
@@ -147,7 +147,7 @@ def upload_edit():
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         return render_template(
@@ -195,7 +195,7 @@ def upload_delete():
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         return render_template(
@@ -255,7 +255,7 @@ def upload_compare_file():
         ("active", "บันทึกแล้ว"),
     ]
 
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
 
     if not form.validate_on_submit():
         if not form.categories.data:

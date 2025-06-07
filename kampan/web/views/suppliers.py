@@ -40,7 +40,7 @@ def upload_file():
         id=organization_id, status="active"
     ).first()
     form = forms.items.UploadFileForm()
-    errors = request.args.get("errors")
+    errors = request.args.getlist("errors")
     upload_errors = {
         "headers": "ลงทะเบียนวัสดุ",
         "errors": errors,

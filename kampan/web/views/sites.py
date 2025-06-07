@@ -26,6 +26,15 @@ def select_system():
     if not organization:
         organization = current_user.get_current_organization()
     if organization:
+        if not current_user.get_current_division():
+            return redirect(
+                url_for(
+                    "accounts.index",
+                    organization_id=organization.id,
+                    errors="กรุณาติดตต่อผู้ดูแลระบบเพื่อตั้งต่าแผนก (Please contact the administrator to select a division.)",
+                )
+            )
+
         return render_template("sites/select_system.html", organization=organization)
 
     if "admin" in current_user.roles:
