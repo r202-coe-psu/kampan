@@ -62,7 +62,10 @@ def add_member(organization_id):
         form.members.choices = [
             (str(u.id), u.get_name()) for u in models.User.objects()
         ]
-
+    form.division.choices = [
+        (str(d.id), d.name)
+        for d in models.Division.objects(organization=organization, status="active")
+    ]
     if not form.validate_on_submit():
         return render_template(
             "/organizations/add_member.html",
@@ -79,6 +82,9 @@ def add_member(organization_id):
         organization=organization,
         user=user,
         roles=form.roles.data,
+        division=models.Division.objects(
+            id=form.division.data, status="active"
+        ).first(),
         added_by=current_user._get_current_object(),
         last_modifier=current_user._get_current_object(),
         last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),

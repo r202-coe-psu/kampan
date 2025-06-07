@@ -70,6 +70,10 @@
             division_user.created_date else "-"}}
           </td>
           <td class="table-style">
+            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
+              href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=division_user.id) }}">
+              <i class="ph ph-pen"></i>
+            </a>
             <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
               <i class="ph ph-trash"></i>
             </a>

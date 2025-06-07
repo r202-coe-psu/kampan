@@ -47,6 +47,7 @@ class User(me.Document, UserMixin):
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
+    last_login_date = me.DateTimeField()
 
     user_setting = me.EmbeddedDocumentField("UserSetting", default=UserSetting)
     metadata = me.DictField()

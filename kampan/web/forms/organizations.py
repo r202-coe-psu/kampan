@@ -65,6 +65,10 @@ class OrgnaizationAddMemberForm(OrganizationRoleEditForm):
     members = fields.SelectField(
         "เลือกสมาชิก",
     )
+    division = fields.SelectField(
+        "แผนก",
+        validators=[validators.InputRequired()],
+    )
 
 
 class AdminOrganizationEditForm(BaseOrganizationForm):

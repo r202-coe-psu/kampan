@@ -250,6 +250,7 @@ def handle_authorized_oauth2(remote, token):
 
     login_user(user)
     user.resources[remote.name] = user_info
+    user.last_login_date = datetime.datetime.now()
     user.save()
 
     member = models.OrganizationUserRole.objects(
