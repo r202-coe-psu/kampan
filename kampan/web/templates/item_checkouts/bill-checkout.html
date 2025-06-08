@@ -62,7 +62,8 @@ redirect=url_for('email_templates.force_send_email', order_id=order.id, organiza
       href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
       เลือกพัสดุ
     </a>
-    <div class="{{'step-primary' if order.status == 'pending' else 'completed'}} step">
+    <div
+      class="{{'step-primary' if order.status == 'pending' or order.approval_status == 'approved' else 'completed'}} step">
       ยืนยันการเบิกพัสดุ
     </div>
   </div>
