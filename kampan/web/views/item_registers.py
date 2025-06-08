@@ -21,7 +21,11 @@ def index():
     ).order_by("-created_date")
     form = forms.item_orders.SearchStartEndDateForm()
     form.item.label.text = "สถานะ"
-    form.item.choices += [("pending", "รอดำเนินการ"), ("active", "ยืนยัน")]
+    form.item.choices = [
+        ("", "ทังหมด"),
+        ("pending", "รอดำเนินการ"),
+        ("active", "ยืนยัน"),
+    ]
     if form.start_date.data == None and form.end_date.data != None:
         item_registers = item_registers.filter(
             created_date__lt=form.end_date.data,
