@@ -31,11 +31,11 @@ def index():
     if current_user.has_organization_roles("admin", "supervisor supplier"):
         car_applications = models.vehicle_applications.CarApplication.objects(
             organization=organization
-        )
+        ).order_by("-created_date")
     else:
         car_applications = models.vehicle_applications.CarApplication.objects(
             organization=organization, creator=current_user
-        )
+        ).order_by("-created_date")
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
     return render_template(
         "/vehicle_lending/car_applications/index.html",
