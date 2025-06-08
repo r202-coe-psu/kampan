@@ -88,7 +88,7 @@ redirect=url_for('email_templates.force_send_email', order_id=order.id, organiza
           {#<th class="table-style">ราคา (ชิ้นละ)</th>#}
           {% if order.approval_status != 'approved' and order.approval_status != "denied" and order.status == "pending"
           %}
-          {% if order.created_by == current_user %}
+          {% if order.created_by == current_user or current_user.has_roles(['admin']) %}
           <th class="table-style">แก้ไข/ลบข้อมูล</th>
           {% endif %}
           {% endif %}
