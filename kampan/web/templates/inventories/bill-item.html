@@ -30,17 +30,9 @@
         <li>
           <a
             href="{{ url_for('inventories.register', item_register_id=item_register.id, organization_id=organization.id) }}">
-            <span class="text-success">
+            <span class="text-primary">
               <i class="check icon"></i>
               นำเข้าวัสดุทีละรายการ
-            </span>
-          </a>
-        </li>
-        <li>
-          <a onclick="showModal('{{ item_register.id }}')">
-            <span class="text-success">
-              <i class="check icon"></i>
-              ยืนยันการนำเข้าวัสดุ
             </span>
           </a>
         </li>
@@ -58,6 +50,14 @@
             <span class="text-primary">
               <i class="file download icon"></i>
               ดาวน์โหลดรูปแบบนำเข้าวัสดุ
+            </span>
+          </a>
+        </li>
+        <li>
+          <a onclick="showModal('{{ item_register.id }}')">
+            <span class="text-success">
+              <i class="check icon"></i>
+              ยืนยันการนำเข้าวัสดุ
             </span>
           </a>
         </li>
