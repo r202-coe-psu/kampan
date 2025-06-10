@@ -91,6 +91,7 @@ def get_endorser_text_format(division, sender, endorser, order, endorsement_url)
         "division_description": division.description,
         "order_date": order.updated_date.strftime("%d/%m/%Y %H:%M"),
         "order_creator": order.created_by.get_name(),
+        "order_creator_email": order.created_by.email,
         "sent_item_datetime": (
             order.sent_item_date.strftime("%d/%m/%Y %H:%M")
             if order.sent_item_date
@@ -362,6 +363,7 @@ def get_send_email_lost_break_text_format(
         "supervisor_supplier_name": endorser.get_name(),
         "lost_break_item_date": lost_break_item.updated_date.strftime("%d/%m/%Y %H:%M"),
         "lost_break_item_creator": lost_break_item.created_by.get_name(),
+        "lost_break_item_email": lost_break_item.created_by.get_name(),
         "lost_break_item_objective": lost_break_item.description,
         "lost_break_item_name": lost_break_item.item.name,
         "lost_break_item_quantity": lost_break_item.quantity,
