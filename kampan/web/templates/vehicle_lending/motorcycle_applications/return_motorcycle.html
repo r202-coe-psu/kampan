@@ -3,17 +3,17 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}
-{{ "เพิ่มการขอใช้รถจักรยานยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถจักรยานยนต์" }}
+{{ "ส่งคืนรถจักรยานยนต์" }}
 {% endblock %}
 
 {% block dashboard_title %}
-{{ "เพิ่มการขอใช้รถจักรยานยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถจักรยานยนต์"}}
+{{ "ส่งคืนรถจักรยานยนต์"}}
 {% endblock %}
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
 ("การขอใช้รถจักรยานยนต์", url_for('vehicle_lending.motorcycle_applications.index', organization_id=organization.id) ),
-( "เพิ่มการขอใช้รถจักรยานยนต์" if "edit" not in request.path else "แก้ไขรายละเอียดการขอใช้รถจักรยานยนต์", "")]) }}
+( "ส่งคืนรถจักรยานยนต์", "")]) }}
 {% endblock %}
 
 {% block content %}

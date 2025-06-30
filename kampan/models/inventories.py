@@ -40,7 +40,9 @@ class Inventory(me.Document):
             return "ไม่พบบิล"
 
     def get_all_price(self):
-        return self.price * self.quantity
+        if self.item.item_format == "one to one":
+            return self.get_price_per_piece() * self.quantity
+        return self.price * self.set_
 
     def get_all_quantity(self):
         return self.item.piece_per_set * self.quantity
