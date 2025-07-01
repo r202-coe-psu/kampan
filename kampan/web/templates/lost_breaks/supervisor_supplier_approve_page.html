@@ -65,9 +65,9 @@
                 <div class="modal-action">
                   <form method="dialog">
                     <button class="btn">ปิด</button>
-                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='denied', organization_id=organization_id )}}"
+                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='denied', organization_id=organization.id )}}"
                       class="btn btn-error">ปฏิเสธ</a>
-                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='approve', organization_id=organization_id )}}"
+                    <a href="{{ url_for('lost_breaks.decide', lost_break_item_id=item.id, decide_choice='approve', organization_id=organization.id )}}"
                       class="btn btn-success">อนุมัติ</a>
                   </form>
                 </div>
