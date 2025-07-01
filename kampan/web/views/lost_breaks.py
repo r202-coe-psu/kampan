@@ -207,7 +207,7 @@ def edit(lost_break_item_id):
         )
     inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
-        lost_break_item.user = current_user._get_current_object()
+        # lost_break_item.user = current_user._get_current_object()
         lost_break_item.item = item
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
