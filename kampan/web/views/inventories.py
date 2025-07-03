@@ -111,6 +111,7 @@ def register():
     inventory = models.Inventory()
     form.populate_obj(inventory)
     inventory.item = models.Item.objects(id=form.item.data).first()
+    inventory.quantity = form.set_.data * inventory.item.piece_per_set
     inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
     inventory.created_by = current_user._get_current_object()
     inventory.status = "pending"
@@ -172,6 +173,7 @@ def edit(inventory_id):
 
     inventory.item = models.Item.objects(id=form.item.data).first()
     inventory.warehouse = models.Warehouse.objects(id=form.warehouse.data).first()
+    inventory.quantity = form.set_.data * inventory.item.piece_per_set
     inventory.created_by = current_user._get_current_object()
     inventory.status = "pending"
     inventory.registration = item_register
