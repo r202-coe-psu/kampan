@@ -16,8 +16,7 @@ class ItemSnapshot:
 
         item_snapshot = models.items.ItemSnapshot(
             item=item,
-            amount=item.get_amount_items(),
-            amount_pieces=item.get_amount_pieces(),
+            amount=item.get_amount_pieces(),
             organization=item.organization,
         )
 

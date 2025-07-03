@@ -73,22 +73,18 @@ def get_all_report(
                     [
                         count,
                         v.item.name,
-                        (
-                            v.amount_pieces
-                            if v.item.item_format == "one to many"
-                            else v.amount
-                        ),
+                        (v.amount),
                         (
                             v.item.piece_unit
                             if v.item.item_format == "one to many"
                             else v.item.set_unit
                         ),
                         v.last_price_per_piece if v.last_price_per_piece else "-",
-                        v.remaining_balance if v.remaining_balance else "-",
+                        v.get_all_price() if v.get_all_price() else "-",
                     ]
                 )
-                if v.remaining_balance:
-                    all_remaining_balance += v.remaining_balance
+                if v.get_all_price():
+                    all_remaining_balance += v.get_all_price()
                 count += 1
     data.append(["", "", "", "", "ยอดเงินคงเหลือ", all_remaining_balance])
     description_data = {}
@@ -102,10 +98,10 @@ def get_all_report(
         description_data[REPORT_HEADER[0]].append(count)
         description_data[REPORT_HEADER[1]].append(item_snapshot.item.name)
         description_data[REPORT_HEADER[2]].append(item_snapshot.item.categories.name)
-        description_data[REPORT_HEADER[3]].append(item_snapshot.amount)
+        description_data[REPORT_HEADER[3]].append(item_snapshot.get_amount())
         description_data[REPORT_HEADER[4]].append(item_snapshot.item.set_unit)
         description_data[REPORT_HEADER[5]].append(
-            item_snapshot.get_amount_pieces()
+            item_snapshot.get_pieces()
             if item_snapshot.item.item_format == "one to many"
             else ""
         )
@@ -127,7 +123,7 @@ def get_all_report(
             else ""
         )
         description_data[REPORT_HEADER[9]].append(
-            item_snapshot.remaining_balance if item_snapshot.remaining_balance else ""
+            item_snapshot.get_all_price() if item_snapshot.get_all_price() else ""
         )
         count += 1
     df = pandas.DataFrame(data)

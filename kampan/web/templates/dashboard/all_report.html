@@ -63,16 +63,16 @@
           <td class="table-style">{{ loop.index }}</td>
           <td class="table-style">{{ item_snapshot.item.name }}</td>
           <td class="table-style">{{ item_snapshot.item.categories.name }}</td>
-          <td class="table-style">{{ item_snapshot.amount }}</td>
+          <td class="table-style">{{ item_snapshot.get_amount() }}</td>
           <td class="table-style">{{ item_snapshot.item.set_unit }}</td>
-          <td class="table-style">{{ (item_snapshot.get_amount_pieces()) if
+          <td class="table-style">{{ (item_snapshot.get_pieces()) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
           <td class="table-style">{{ (item_snapshot.item.piece_unit) if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
           <td class="table-style">{{ item_snapshot.last_price if item_snapshot.last_price else "-" }} </td>
           <td class="table-style">{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
-          <td class="table-style">{{ item_snapshot.remaining_balance if item_snapshot.remaining_balance else "-" }}</td>
+          <td class="table-style">{{ item_snapshot.get_all_price() if item_snapshot.get_all_price() else "-" }}</td>
         </tr>
         {% endfor %}
       </tbody>

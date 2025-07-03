@@ -94,6 +94,7 @@ class Item(me.Document):
         inventories = models.Inventory.objects(item=self, status="active")
         if inventories:
             return inventories.order_by("-created_date").first().price
+        return 0
 
     def get_last_price_per_piece(self):
         value = self.get_last_price()
@@ -147,7 +148,6 @@ class ItemSnapshot(me.Document):
 
     item = me.ReferenceField("Item", dbref=True)
     amount = me.IntField()
-    amount_pieces = me.IntField()
     last_price = me.DecimalField()
     last_price_per_piece = me.DecimalField()
 
@@ -160,7 +160,22 @@ class ItemSnapshot(me.Document):
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
     def get_amount_pieces(self):
-        return self.amount_pieces % self.item.piece_per_set
+        return self.amount
+
+    def get_amount(self):
+        if self.item.item_format == "one to many":
+            return self.amount // self.item.piece_per_set
+        return self.amount
+
+    def get_pieces(self):
+        if self.item.item_format == "one to many":
+            return self.amount % self.item.piece_per_set
+        return 0
+
+    def get_all_price(self):
+        if self.item.item_format == "one to one":
+            return self.last_price_per_piece * self.amount
+        return self.last_price_per_piece * self.amount
 
     def update_data(self):
         date = self.created_date - datetime.timedelta(days=1)
@@ -285,7 +300,6 @@ class ItemSnapshot(me.Document):
             ).order_by("-created_date")
             if last_snap:
                 self.amount = last_snap.amount
-                self.amount_pieces = last_snap.amount_pieces
                 self.last_price_per_piece = last_snap.last_price_per_piece
                 self.last_price = last_snap.last_price
                 self.remaining_balance = last_snap.remaining_balance
@@ -293,8 +307,7 @@ class ItemSnapshot(me.Document):
         else:
 
             self.amount = total
-            self.amount_pieces = total * self.item.piece_per_set
             self.last_price_per_piece = reports[-1]["price"]
-            self.last_price = reports[-1]["total"]
+            self.last_price = self.item.get_last_price()
             self.remaining_balance = int(str(total * int(reports[-1]["price"])))
             self.save()

@@ -117,6 +117,7 @@ def all_report():
                 Q(created_date__gte=start_date + datetime.timedelta(days=1))
                 & Q(created_date__lt=end_date + datetime.timedelta(days=2))
                 & Q(organization=organization)
+                & Q(status="active")
             )
 
             latest_snapshots = {}
@@ -200,6 +201,7 @@ def download_all_report():
             Q(created_date__gte=start_date + datetime.timedelta(days=1))
             & Q(created_date__lt=end_date + datetime.timedelta(days=2))
             & Q(organization=organization)
+            & Q(status="active")
         ).order_by("item.name")
         latest_snapshots = {}
 
@@ -278,11 +280,7 @@ def calculate_amount_item(data):
     list_data = []
     for row in data:
         if row._cls == "ItemSnapshot":
-            amount_item = (
-                row.amount_pieces
-                if row.item.item_format == "one to many"
-                else row.amount
-            )
+            amount_item = row.amount
         elif row._cls == "CheckoutItem":
             amount_item -= row.quantity
         elif row._cls == "Inventory":

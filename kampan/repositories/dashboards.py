@@ -127,7 +127,7 @@ class DashboardRepository:
                     else snapshot.item.set_unit
                 ),
                 "price": snapshot.last_price_per_piece,
-                "total": snapshot.last_price,
+                "total": snapshot.get_all_price(),
                 "remain": 0,
                 "id": str(snapshot.id),
             }
