@@ -18,5 +18,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         me.connect(db="kampandb", host=sys.argv[1])
     else:
-        me.connect(db="kampandb")
+        # me.connect(db="kampandb")
+        me.connect(host="mongodb://mongodb:27017/kampandb")
     update_snapshot()
