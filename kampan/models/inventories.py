@@ -45,7 +45,7 @@ class Inventory(me.Document):
         return self.price * self.set_
 
     def get_all_quantity(self):
-        return self.item.piece_per_set * self.quantity
+        return self.quantity
 
     def get_price_per_piece(self):
         return round(self.price / self.item.piece_per_set, 2)
