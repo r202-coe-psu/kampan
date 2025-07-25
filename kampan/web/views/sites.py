@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 from .. import models
 
@@ -25,6 +25,9 @@ def select_system():
 
     if not organization:
         organization = current_user.get_current_organization()
+    organization_id = request.args.get("organization_id")
+    if organization_id:
+        organization = models.Organization.objects(id=organization_id).first()
     if organization:
         if not current_user.get_current_division():
             return redirect(
