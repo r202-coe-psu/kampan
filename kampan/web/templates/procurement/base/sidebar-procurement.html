@@ -5,6 +5,14 @@
       <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
     </div>
     {% if organization %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
+        href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}">
+        <i class="ph ph-shopping-cart"></i>ครุภัณฑ์
+      </a>
+    </li>
+    {% endif %}
     <li>
       <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
         href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026">
@@ -18,22 +26,15 @@
       </a>
     </li>
     {% endif %}
-
-    <div class="mt-auto"></div>
-    <div class="dropdown dropdown-top dropdown-end">
-      <div class="rounded-field w-full px-2 justify-between">
-        <div class="flex items-center gap-2 justify-between">
-          <i class="ph ph-size ph-user p-2"></i>
-          <div class="flex justify-center">
-            <div class="break-all">
-              <p>{{ current_user.get_resources_fullname_th() }}</p>
-              <p>{{ current_user.email }}</p>
-            </div>
-          </div>
-          <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
-            <i class="ph ph-size ph-sign-out"></i>
-          </a>
+    <div class="mt-auto p-3">
+      <div class="flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate">{{ current_user.get_resources_fullname_th() }}</p>
+          <p class="text-xs text-base-content/60 truncate">{{ current_user.email }}</p>
         </div>
+        <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+          <i class="ph ph-size ph-sign-out"></i>
+        </a>
       </div>
     </div>
   </ul>

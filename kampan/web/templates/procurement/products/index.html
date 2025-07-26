@@ -2,11 +2,283 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}ระบบขอซื้อขอจ้าง{% endblock %}
-{% block dashboard_title %}ระบบขอซื้อขอจ้าง{% endblock %}
+{% block dashboard_title %}ครุภัณฑ์{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
 
 {% block content %}
+{# Mock data for demonstration #}
+{% set procurement_items = [
+{
+'id': 1,
+'pr_number': 'PR-001',
+'equipment_code': 'AC-12345',
+'name': 'เครื่องปรับอากาศ',
+'type': 'ครุภัณฑ์',
+'type_badge': 'badge-warning',
+'start_date': '01/01/2023',
+'end_date': '31/12/2023',
+'period': '12 เดือน',
+'amount': 50000,
+'payment_status': 'overdue',
+'payment_installment': 'งวด 2/4',
+'payment_due_date': '25 ม.ค.',
+'company': 'บริษัท เย็นสบาย จำกัด'
+},
+{
+'id': 2,
+'pr_number': 'PR-002',
+'equipment_code': '-',
+'name': 'บริการทำความสะอาด',
+'type': 'จ้างเหมาบริการ',
+'type_badge': 'badge-info',
+'start_date': '01/02/2023',
+'end_date': '31/07/2023',
+'period': '6 เดือน',
+'amount': 30000,
+'payment_status': 'paid',
+'payment_installment': 'ชำระครบ',
+'payment_due_date': '31 ต.ค.',
+'company': 'บริษัท สะอาดเอี่ยม จำกัด'
+},
+{
+'id': 3,
+'pr_number': 'PR-003',
+'equipment_code': '-',
+'name': 'ซอฟต์แวร์บัญชี',
+'type': 'ซอฟต์แวร์',
+'type_badge': 'badge-secondary',
+'start_date': '01/03/2023',
+'end_date': '28/02/2024',
+'period': '12 เดือน',
+'amount': 100000,
+'payment_status': 'upcoming',
+'payment_installment': 'งวด 1/3',
+'payment_due_date': '28 ม.ค.',
+'company': 'บริษัท ซอฟต์แวร์ไทย จำกัด'
+}
+] %}
 
+<div class="container mx-auto px-4 py-6">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center rounded-xl">
+            <div class="flex-1">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">ตารางรายการขอซื้อขอจ้าง</h1>
+                <p class="text-sm text-gray-600 mb-1">แสดงรายการขอซื้อขอจ้างทั้งหมดในระบบ</p>
+            </div>
+            <div class="flex gap-3">
+                <button class="btn btn-primary btn-sm shadow-lg">
+                    <i class="ph ph-plus text-sm"></i>
+                    เพิ่มรายการใหม่
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <!-- Total Items Card -->
+        <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+            <div class="card-body p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">รายการทั้งหมด</p>
+                        <p class="text-3xl font-bold">3</p>
+                        <p class="text-blue-100 text-xs">รายการในระบบ</p>
+                    </div>
+                    <div class="bg-white/20 rounded-full p-3">
+                        <i class="ph ph-list text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Amount Card -->
+        <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg">
+            <div class="card-body p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">มูลค่ารวม</p>
+                        <p class="text-3xl font-bold">฿180K</p>
+                        <p class="text-green-100 text-xs">ของทุกรายการ</p>
+                    </div>
+                    <div class="bg-white/20 rounded-full p-3">
+                        <i class="ph ph-currency-circle-dollar text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Period Card -->
+        <div class="card bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg">
+            <div class="card-body p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-pink-100 text-sm font-medium">ระยะเวลาเฉลี่ย</p>
+                        <p class="text-3xl font-bold">10</p>
+                        <p class="text-pink-100 text-xs">เดือน</p>
+                    </div>
+                    <div class="bg-white/20 rounded-full p-3">
+                        <i class="ph ph-clock text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Urgent Payments Card -->
+        <div class="card bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg">
+            <div class="card-body p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">ครบกำหนดชำระ</p>
+                        <p class="text-3xl font-bold">2</p>
+                        <p class="text-orange-100 text-xs">รายการในสัปดาห์นี้</p>
+                    </div>
+                    <div class="bg-white/20 rounded-full p-3">
+                        <i class="ph ph-warning text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body p-0">
+            <div class="overflow-x-auto">
+                <table class="table w-full">
+                    <thead class="bg-base-200/50">
+                        <tr class="border-none">
+                            <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
+                            <th class="font-semibold text-base-content text-sm">เลขที่เบิกจ่าย</th>
+                            <th class="font-semibold text-base-content text-sm">ชื่อรายการ</th>
+                            <th class="font-semibold text-base-content text-sm">ประเภท</th>
+                            <th class="font-semibold text-base-content text-sm text-center">วันที่เริ่มต้น</th>
+                            <th class="font-semibold text-base-content text-sm text-center">วันที่สิ้นสุด</th>
+                            <th class="font-semibold text-base-content text-sm text-center">ระยะเวลา</th>
+                            <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center">การจ่ายเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center">ผู้รับเอง</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in procurement_items %}
+                        <tr class="hover:bg-base-50">
+
+                            <!-- Row Number -->
+                            <td class="text-center py-4">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
+                                    {{ item.id }}
+                                </div>
+                            </td>
+
+                            <!-- PR Number -->
+                            <td class="py-4">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-primary text-base">{{ item.pr_number }}</span>
+                                    <span class="text-xs text-base-content/60">รหัสครุภัณฑ์: {{ item.equipment_code
+                                        }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Name -->
+                            <td class="py-4">
+                                <div class="font-medium text-base-content text-sm">{{ item.name }}</div>
+                            </td>
+
+                            <!-- Type -->
+                            <td class="py-4">
+                                <div class="badge {{ item.type_badge }} badge-sm font-medium text-xs px-3 py-1">
+                                    {{ item.type }}
+                                </div>
+                            </td>
+
+                            <!-- Start Date -->
+                            <td class="text-center py-4">
+                                <div class="text-sm font-medium">{{ item.start_date }}</div>
+                            </td>
+
+                            <!-- End Date -->
+                            <td class="text-center py-4">
+                                <div class="text-sm font-medium">{{ item.end_date }}</div>
+                            </td>
+
+                            <!-- Period -->
+                            <td class="text-center py-4">
+                                <div class="badge badge-info badge-sm font-medium text-xs">{{ item.period }}</div>
+                            </td>
+
+                            <!-- Amount -->
+                            <td class="text-center py-4">
+                                <div class="text-lg font-bold text-success">฿{{ "{:,}".format(item.amount) }}</div>
+                            </td>
+
+                            <!-- Payment Status -->
+                            <td class="text-center py-4">
+                                {% if item.payment_status == 'overdue' %}
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="badge badge-error badge-sm text-white font-medium">
+                                        <i class="ph ph-warning-circle text-xs mr-1"></i>
+                                        {{ item.payment_installment }}
+                                    </div>
+                                    <div class="text-xs text-error font-medium">ครบกำหนด {{ item.payment_due_date }}
+                                    </div>
+                                </div>
+                                {% elif item.payment_status == 'upcoming' %}
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="badge badge-warning badge-sm text-white font-medium">
+                                        <i class="ph ph-clock text-xs mr-1"></i>
+                                        {{ item.payment_installment }}
+                                    </div>
+                                    <div class="text-xs text-warning font-medium">ครบกำหนด {{ item.payment_due_date }}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="badge badge-success badge-sm text-white font-medium">
+                                        <i class="ph ph-check-circle text-xs mr-1"></i>
+                                        {{ item.payment_installment }}
+                                    </div>
+                                    <div class="text-xs text-success font-medium">{{ item.payment_due_date }}</div>
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Company -->
+                            <td class="text-center py-4">
+                                <div class="text-sm font-medium text-base-content">{{ item.company }}</div>
+                                <div class="text-xs text-base-content/60">บริษัท เย็นสบาย จำกัด</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Status Legend -->
+    <div class="mt-6 flex justify-center">
+        <div class="flex flex-wrap gap-6 text-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-red-500 rounded"></div>
+                <span class="font-medium">เลยกำหนด</span>
+                <span class="text-base-content/60">เลยกำหนดชำระแล้ว</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-orange-500 rounded"></div>
+                <span class="font-medium">ใกล้ครบกำหนด</span>
+                <span class="text-base-content/60">ครบกำหนดใน 7 วัน</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-green-500 rounded"></div>
+                <span class="font-medium">ชำระครบ</span>
+                <span class="text-base-content/60">ชำระเงินครบถ้วนแล้ว</span>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
