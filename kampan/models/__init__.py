@@ -15,8 +15,10 @@ from .item_orders import OrderEmail, OrderItem
 from .item_registers import RegistrationItem
 from .lost_break_items import LostBreakItem
 from .categories import Category
+from .procurement import Procurement
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
+
 
 db = MongoEngine()
 
