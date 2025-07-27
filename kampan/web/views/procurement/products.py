@@ -88,6 +88,7 @@ def index():
         selected_payment_status=payment_status,
         category_choices=category_choices,
         payment_status_choices=payment_status_choices,
+        today=datetime.date.today(),
     )
 
 
@@ -118,4 +119,38 @@ def create():
     procurement.save()
     return redirect(
         url_for("procurement.products.index", organization_id=organization.id)
+    )
+
+
+@module.route("/<procurement_id>/set_paid", methods=["POST"])
+@login_required
+@acl.organization_roles_required("admin")
+def set_paid(procurement_id):
+    procurement = models.Procurement.objects(id=procurement_id).first()
+    if procurement is None:
+        abort(404)
+
+    # หา index ของงวดถัดไปที่ต้องจ่าย
+    next_period_index = procurement.get_next_payment_index()
+
+    # บันทึกประวัติการจ่ายเงิน
+    procurement.add_payment_record(
+        period_index=next_period_index, paid_by=current_user._get_current_object()
+    )
+
+    # อัปเดต paid_period_index ให้เป็นงวดที่เพิ่งจ่าย
+    procurement.paid_period_index = next_period_index
+
+    # ถ้าจ่ายครบทุกงวดแล้ว ให้เปลี่ยน status เป็น paid
+    if procurement.paid_period_index >= procurement.period - 1:
+        procurement.payment_status = "paid"
+
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+
+    return redirect(
+        url_for(
+            "procurement.products.index",
+            organization_id=request.args.get("organization_id"),
+        )
     )

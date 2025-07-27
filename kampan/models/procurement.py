@@ -16,6 +16,14 @@ PAYEMENT_STATUS_CHOICES = [
 ]
 
 
+class PaymentRecord(me.EmbeddedDocument):
+    """Record for each payment period"""
+
+    period_index = me.IntField(required=True)
+    paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
+    paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
+
+
 class Procurement(me.Document):
     meta = {"collection": "procurements"}
 
@@ -40,6 +48,10 @@ class Procurement(me.Document):
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
+    paid_period_index = me.IntField(default=-1)  # เปลี่ยนกลับเป็น -1
+    payment_records = me.ListField(
+        me.EmbeddedDocumentField(PaymentRecord)
+    )  # ประวัติการจ่ายเงิน
 
     @classmethod
     def generate_product_number(cls):
@@ -67,3 +79,83 @@ class Procurement(me.Document):
         if not self.product_number:
             self.product_number = self.generate_product_number()
         return super().save(*args, **kwargs)
+
+    def get_payment_due_dates(self):
+        """
+        Return a list of due dates (datetime.date) for each payment period.
+        """
+        if (
+            not self.start_date
+            or not self.end_date
+            or not self.period
+            or self.period < 1
+        ):
+            return []
+
+        start = (
+            self.start_date.date()
+            if hasattr(self.start_date, "date")
+            else self.start_date
+        )
+        end = self.end_date.date() if hasattr(self.end_date, "date") else self.end_date
+
+        total_days = (end - start).days
+        if total_days < 1:
+            return []
+
+        period_days = total_days // self.period
+        due_dates = []
+        for i in range(1, self.period + 1):
+            due_date = start + datetime.timedelta(days=period_days * i)
+            # อย่าให้เกิน end_date
+            if due_date > end:
+                due_date = end
+            due_dates.append(due_date)
+        return due_dates
+
+    def get_next_payment_index(self):
+        """
+        Return the index (0-based) of the next unpaid period.
+        """
+        if self.payment_status == "paid":
+            return self.period  # หมายถึงจ่ายครบทุกงวดแล้ว
+        return (self.paid_period_index or -1) + 1
+
+    def get_current_payment_status(self, today=None):
+        """
+        Return payment status string: 'unpaid', 'upcoming', 'overdue', or 'paid'
+        - ดูเฉพาะงวดถัดไปที่ยังไม่จ่าย
+        """
+        if today is None:
+            today = datetime.date.today()
+        due_dates = self.get_payment_due_dates()
+        if self.payment_status == "paid":
+            return "paid"
+        if not due_dates:
+            return "unpaid"
+        next_idx = self.get_next_payment_index()
+        if next_idx >= len(due_dates):
+            return "paid"
+        due_date = due_dates[next_idx]
+        if today > due_date:
+            return "overdue"
+        elif today <= due_date <= today + datetime.timedelta(days=7):
+            return "upcoming"
+        else:
+            return "unpaid"
+
+    def add_payment_record(self, period_index, paid_by):
+        """Add payment record for specific period"""
+        payment_record = PaymentRecord(
+            period_index=period_index,
+            paid_date=datetime.datetime.now(),
+            paid_by=paid_by,
+        )
+        self.payment_records.append(payment_record)
+
+    def get_payment_record_for_period(self):
+        """Get payment record for specific period"""
+        for record in self.payment_records:
+            if record.period_index == (self.paid_period_index or -1) + 1:
+                return record
+        return None

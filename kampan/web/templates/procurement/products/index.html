@@ -159,15 +159,16 @@
                     <thead class="bg-base-200/50">
                         <tr class="border-none">
                             <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
-                            <th class="font-semibold text-base-content text-sm">เลขที่เบิกจ่าย</th>
+                            <th class="font-semibold text-base-content text-sm w-36">เลขที่เบิกจ่าย</th>
                             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-                            <th class="font-semibold text-base-content text-sm w-36">ประเภท</th>
+                            <th class="font-semibold text-base-content text-sm w-48">ประเภท</th>
                             <th class="font-semibold text-base-content text-sm text-center">วันที่เริ่มต้น</th>
                             <th class="font-semibold text-base-content text-sm text-center">วันที่สิ้นสุด</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-36">ระยะเวลา</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
                             <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
                             <th class="font-semibold text-base-content text-sm text-center w-64">ผู้รับเอง</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -238,58 +239,97 @@
 
                             <!-- Payment Status -->
                             <td class="text-center py-4">
+                                {% set due_dates = item.get_payment_due_dates() %}
+                                {% set status = item.get_current_payment_status(today) %}
+                                {% set next_idx = item.get_next_payment_index() %}
+                                {% set paid_count = item.payment_records|length %}
                                 {% set badge_class = {
                                 'overdue': 'badge-error',
                                 'upcoming': 'badge-warning',
                                 'paid': 'badge-success'
-                                }.get(item.payment_status, 'bg-gray-500') %}
+                                }.get(status, 'bg-gray-500') %}
                                 <div class="flex flex-col items-center">
-                                    <div class="badge {{ badge_class }} text-white font-medium">
-                                        งวด 0/{{ item.period }}
+                                    <div class="badge {{ badge_class }} text-white font-medium mb-1">
+                                        งวด {{ paid_count }}/{{ item.period }}
                                     </div>
+                                    {% if next_idx < due_dates|length %} <div
+                                        class="badge badge-outline font-medium text-xs mt-1">
+                                        ชำระก่อน {{ due_dates[next_idx].strftime('%d/%m/%Y') }}
                                 </div>
-                            </td>
-
-                            <!-- Company -->
-                            <td class="text-center py-4">
-                                <div class="text-sm font-medium text-base-content">{{ item.company }}</div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                {% endif %}
+                                {% if item.payment_records %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/%Y %H:%M') }}
+                                </div>
+                                {% endif %}
             </div>
+            </td>
+
+            <!-- Company -->
+            <td class="text-center py-4">
+                <div class="text-sm font-medium text-base-content">{{ item.company }}</div>
+            </td>
+
+            <td class="text-center py-4">
+                {% set due_dates = item.get_payment_due_dates() %}
+                {% set status = item.get_current_payment_status(today) %}
+                {% set next_idx = item.get_next_payment_index() %}
+                {% set paid_count = item.payment_records|length %}
+                {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <form
+                    method="post"
+                    action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization_id=organization.id) }}"
+                    class="mt-2">
+                    <div class="tooltip tooltip-left" data-tip="ยืนยันชำระงวดที่ {{ next_idx + 1 }}">
+                        <button type="submit"
+                            class="btn btn-circle btn-success btn-sm shadow-md hover:shadow-lg transition-all duration-200">
+                            <i class="ph ph-check text-lg"></i>
+                        </button>
+                    </div>
+                    </form>
+                    {% else %}
+                    <div class="tooltip tooltip-left" data-tip="ชำระครบทุกงวดแล้ว">
+                        <button type="button" disabled class="btn btn-circle btn-disabled btn-sm">
+                            <i class="ph ph-check text-lg"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+            </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <!-- Payment Status Legend -->
-    <div class="mt-6 flex justify-center">
-        <div class="flex flex-wrap gap-6 text-sm">
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-red-500 rounded"></div>
-                <span class="font-medium">เลยกำหนด</span>
-                <span class="text-base-content/60">เลยกำหนดชำระแล้ว</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-orange-500 rounded"></div>
-                <span class="font-medium">ใกล้ครบกำหนด</span>
-                <span class="text-base-content/60">ครบกำหนดใน 7 วัน</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-green-500 rounded"></div>
-                <span class="font-medium">ชำระครบ</span>
-                <span class="text-base-content/60">ชำระเงินครบถ้วนแล้ว</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-gray-500 rounded"></div>
-                <span class="font-medium">ยังไม่ชำระ</span>
-                <span class="text-base-content/60">ยังไม่ชำระเงิน</span>
-            </div>
+<!-- Payment Status Legend -->
+<div class="mt-6 flex justify-center">
+    <div class="flex flex-wrap gap-6 text-sm">
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-red-500 rounded"></div>
+            <span class="font-medium">เลยกำหนด</span>
+            <span class="text-base-content/60">เลยกำหนดชำระแล้ว</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-orange-500 rounded"></div>
+            <span class="font-medium">ใกล้ครบกำหนด</span>
+            <span class="text-base-content/60">ครบกำหนดใน 7 วัน</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-green-500 rounded"></div>
+            <span class="font-medium">ชำระครบ</span>
+            <span class="text-base-content/60">ชำระเงินครบถ้วนแล้ว</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-gray-500 rounded"></div>
+            <span class="font-medium">ยังไม่ชำระ</span>
+            <span class="text-base-content/60">ยังไม่ชำระเงิน</span>
         </div>
     </div>
+</div>
 </div>
 {% endblock content %}
