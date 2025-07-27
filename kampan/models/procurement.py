@@ -129,13 +129,19 @@ class Procurement(me.Document):
         if today is None:
             today = datetime.date.today()
         due_dates = self.get_payment_due_dates()
-        if self.payment_status == "paid":
+
+        # ถ้าจ่ายครบทุกงวดแล้ว
+        if len(self.payment_records) >= self.period:
             return "paid"
+
         if not due_dates:
             return "unpaid"
-        next_idx = self.get_next_payment_index()
+
+        # หางวดถัดไปที่ยังไม่จ่าย
+        next_idx = len(self.payment_records)
         if next_idx >= len(due_dates):
             return "paid"
+
         due_date = due_dates[next_idx]
         if today > due_date:
             return "overdue"

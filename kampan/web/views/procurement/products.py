@@ -131,7 +131,7 @@ def set_paid(procurement_id):
         abort(404)
 
     # หา index ของงวดถัดไปที่ต้องจ่าย
-    next_period_index = procurement.get_next_payment_index()
+    next_period_index = len(procurement.payment_records)
 
     # บันทึกประวัติการจ่ายเงิน
     procurement.add_payment_record(
@@ -142,7 +142,7 @@ def set_paid(procurement_id):
     procurement.paid_period_index = next_period_index
 
     # ถ้าจ่ายครบทุกงวดแล้ว ให้เปลี่ยน status เป็น paid
-    if procurement.paid_period_index >= procurement.period - 1:
+    if len(procurement.payment_records) >= procurement.period:
         procurement.payment_status = "paid"
 
     procurement.last_updated_by = current_user._get_current_object()
