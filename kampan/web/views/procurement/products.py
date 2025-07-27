@@ -52,7 +52,21 @@ def index():
         id=organization_id, status="active"
     ).first()
 
-    procurements = models.Procurement.objects()
+    # --- Filter only ---
+    category = request.args.get("category", "")
+    payment_status = request.args.get("payment_status", "")
+
+    query = {}
+    if category:
+        query["category"] = category
+    if payment_status:
+        query["payment_status"] = payment_status
+
+    procurements = (
+        models.Procurement.objects(__raw__=query)
+        if query
+        else models.Procurement.objects()
+    )
 
     # Add duration_months and duration_days to each procurement for display
     procurement_list = []
@@ -62,10 +76,18 @@ def index():
         p.duration_days = days
         procurement_list.append(p)
 
+    # For filter dropdowns
+    category_choices = models.procurement.CATEGORY_CHOICES
+    payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
+
     return render_template(
         "/procurement/products/index.html",
         organization=organization,
         procurements=procurement_list,
+        selected_category=category,
+        selected_payment_status=payment_status,
+        category_choices=category_choices,
+        payment_status_choices=payment_status_choices,
     )
 
 
