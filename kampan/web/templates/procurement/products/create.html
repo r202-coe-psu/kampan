@@ -87,8 +87,7 @@
                         <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if user.id|string in
                             form.responsible_by.data or user in form.responsible_by.data %}checked{% endif %}>
                         <span>
-                            {{ form.label_modifier(user) if form.label_modifier else user.first_name ~ ' ' ~
-                            user.last_name }}
+                            {{ form.label_modifier(user) if form.label_modifier else user.get_name() }}
                         </span>
                     </label>
                     {% endfor %}
