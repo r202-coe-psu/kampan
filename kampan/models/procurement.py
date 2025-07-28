@@ -56,6 +56,7 @@ class Procurement(me.Document):
     company = me.StringField(max_length=255, required=True)
     payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
     tor_year = me.ReferenceField(ToRYear, dbref=True)
+    responsible_by = me.ListField(me.ReferenceField("User", dbref=True))
 
     # Audit fields
     last_updated_by = me.ReferenceField("User", dbref=True)

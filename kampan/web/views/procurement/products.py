@@ -47,10 +47,7 @@ def calculate_months_days(start_date, end_date):
 @module.route("", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def index():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = current_user.user_setting.current_organization
 
     # --- Filter only ---
     category = request.args.get("category", "")
@@ -98,16 +95,14 @@ def index():
 @login_required
 @acl.organization_roles_required("admin")
 def create():
-    organization_id = request.args.get("organization_id")
-    tor_year_id = request.args.get("tor_year_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-
     form = forms.procurement.ProcurementForm()
+    organization = current_user.user_setting.current_organization
+    tor_year_id = request.args.get("tor_year_id")
+
+    members = models.User.objects(user_setting=organization.id)
 
     if not form.validate_on_submit():
-        print("Form validation failed:", form.errors)
+        form.responsible_by.label_modifier = lambda u: f"{u.first_name} {u.last_name}"
         return render_template(
             "/procurement/products/create.html",
             form=form,
@@ -130,19 +125,15 @@ def create():
         procurement.tor_year = tor_year
 
     procurement.save()
-    return redirect(
-        url_for("procurement.products.index", organization_id=organization.id)
-    )
+    return redirect(url_for("procurement.products.index", organization=organization))
 
 
 @module.route("/<procurement_id>/set_paid", methods=["POST"])
 @login_required
 @acl.organization_roles_required("admin")
 def set_paid(procurement_id):
-    organization_id = request.args.get("organization_id")
+    organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=procurement_id).first()
-    if procurement is None:
-        abort(404)
 
     # หา index ของงวดถัดไปที่ต้องจ่าย
     next_period_index = len(procurement.payment_records)
@@ -166,6 +157,6 @@ def set_paid(procurement_id):
     return redirect(
         url_for(
             "procurement.products.index",
-            organization_id=organization_id,
+            organization=organization,
         )
     )

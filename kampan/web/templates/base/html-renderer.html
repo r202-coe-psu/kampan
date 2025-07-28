@@ -131,14 +131,14 @@ max=None
     {{ prefix_icon }}
     {% endif %}
     {{ field(
-      placeholder=placeholder,
-      readonly=readonly,
-      type="number" if (field.type == "FloatField" or field.type == "IntergerField") else None,
-      step="any" if (field.type == "FloatField" or field.type == "IntergerField") else None,
-      min=min if (field.type == "FloatField" or field.type == "IntergerField") and min is not none else None,
-      max=max if (field.type == "FloatField" or field.type == "IntergerField") and max is not none else None,
-      **kwargs
-      ) }}
+    placeholder=placeholder,
+    readonly=readonly,
+    type="number" if (field.type == "FloatField" or field.type == "IntergerField") else None,
+    step="any" if (field.type == "FloatField" or field.type == "IntergerField") else None,
+    min=min if (field.type == "FloatField" or field.type == "IntergerField") and min is not none else None,
+    max=max if (field.type == "FloatField" or field.type == "IntergerField") and max is not none else None,
+    **kwargs
+    ) }}
     {% if suffix %}
     {{ suffix_icon }}
     {% endif %}
@@ -615,7 +615,7 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
 
   <div class="relative h-48 border-slate-50">
     {{ form(class="absolute hidden left-1/2 mt-2 z-[1] transform -translate-x-1/2",
-      onchange="handleUploadedImage(this);", **optionals) }}
+    onchange="handleUploadedImage(this);", **optionals) }}
 
     <label for="{{ form.id }}" class='z-[10] top-0 bottom-0 absolute {{ style_ }}'>
       <div class="flex flex-col gap-2 items-center">

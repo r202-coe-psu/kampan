@@ -292,7 +292,7 @@
                 {% set paid_count = item.payment_records|length %}
                 {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <form
                     method="post"
-                    action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization_id=organization.id) }}"
+                    action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}"
                     class="mt-2">
                     <div class="tooltip tooltip-left" data-tip="ยืนยันชำระงวดที่ {{ next_idx + 1 }}">
                         <button type="submit"

@@ -21,10 +21,7 @@ module = Blueprint("tor_years", __name__, url_prefix="/tor_years")
 @module.route("/")
 @login_required
 def index():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = current_user.user_setting.current_organization
 
     if current_user.has_roles(["admin"]):
         tor_years = models.ToRYear.objects()
@@ -45,10 +42,7 @@ def index():
 @acl.roles_required("admin")
 def create_or_edit(tor_year_id):
     form = forms.procurement.ToRYearForm()
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = current_user.user_setting.current_organization
 
     tor_year = None
 
@@ -76,18 +70,13 @@ def create_or_edit(tor_year_id):
     tor_year.last_updated_by = current_user._get_current_object()
     tor_year.save()
 
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("procurement.tor_years.index", organization=organization))
 
 
 @module.route("/<tor_year_id>/copy", methods=["GET", "POST"])
 @acl.roles_required("admin")
 def copy_tor_year(tor_year_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = current_user.user_setting.current_organization
     # ดึง ToRYear ต้นฉบับ
     tor_year = models.ToRYear.objects.get(id=tor_year_id)
     # สร้างฟอร์มใหม่
@@ -119,7 +108,7 @@ def copy_tor_year(tor_year_id):
         new_tor_year.last_updated_by = current_user._get_current_object()
         new_tor_year.save()
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("procurement.tor_years.index", organization=organization)
         )
 
     return render_template(
@@ -132,18 +121,16 @@ def copy_tor_year(tor_year_id):
 @module.route("/<tor_year_id>/set_default", methods=["POST"])
 @login_required
 def set_default_tor_year(tor_year_id):
-    organization_id = request.args.get("organization_id")
+    organization = current_user.user_setting.current_organization
     user = current_user._get_current_object()
     if not user.user_setting:
         user.user_setting = models.users.UserSetting(
             current_organization=models.Organization.objects(
-                id=organization_id
+                id=organization.id
             ).first(),
             tor_year=models.ToRYear.objects(id=tor_year_id).first(),
         )
     else:
         user.user_setting.tor_year = models.ToRYear.objects(id=tor_year_id).first()
     user.save()
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization_id)
-    )
+    return redirect(url_for("procurement.tor_years.index", organization=organization))
