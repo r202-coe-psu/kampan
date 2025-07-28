@@ -14,7 +14,22 @@
         <div class="flex flex-col md:flex-row md:justify-between md:items-center rounded-xl">
             <div class="flex-1">
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">ตารางรายการขอซื้อขอจ้าง</h1>
-                <p class="text-sm text-gray-600 mb-1">แสดงรายการขอซื้อขอจ้างทั้งหมดในระบบ</p>
+                <p class="text-sm text-gray-600 mb-1">
+                    แสดงรายการขอซื้อขอจ้างทั้งหมดในระบบ
+                    {% if selected_tor_year %}
+                    <span class="ml-2 badge badge-info">
+                        ปีงบประมาณ: {{ selected_tor_year.year }}
+                        ({{ selected_tor_year.started_date.strftime('%d/%m/%Y') }} - {{
+                        selected_tor_year.ended_date.strftime('%d/%m/%Y') }})
+                    </span>
+                    {% elif current_user.user_setting and current_user.user_setting.tor_year %}
+                    <span class="ml-2 badge badge-info">
+                        ปีงบประมาณ: {{ current_user.user_setting.tor_year.year }}
+                        ({{ current_user.user_setting.tor_year.started_date.strftime('%d/%m/%Y') }} - {{
+                        current_user.user_setting.tor_year.ended_date.strftime('%d/%m/%Y') }})
+                    </span>
+                    {% endif %}
+                </p>
             </div>
             <div class="flex gap-3">
                 <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"

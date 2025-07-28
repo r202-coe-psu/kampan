@@ -16,12 +16,27 @@ PAYEMENT_STATUS_CHOICES = [
 ]
 
 
+class ToRYear(me.Document):
+    year = me.StringField(requred=True, max_length=100)
+    started_date = me.DateTimeField(required=True)
+    ended_date = me.DateTimeField(required=True)
+
+    created_by = me.ReferenceField("User", dbref=True, required=True)
+    last_updated_by = me.ReferenceField("User", dbref=True, required=True)
+
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+    meta = {"collection": "tor_years"}
+
+
 class PaymentRecord(me.EmbeddedDocument):
     """Record for each payment period"""
 
     period_index = me.IntField(required=True)
     paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
+    due_date = me.DateTimeField(required=True)  # วันที่ครบกำหนดของงวดนี้
 
 
 class Procurement(me.Document):
@@ -40,6 +55,7 @@ class Procurement(me.Document):
     # References
     company = me.StringField(max_length=255, required=True)
     payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
+    tor_year = me.ReferenceField(ToRYear, dbref=True)
 
     # Audit fields
     last_updated_by = me.ReferenceField("User", dbref=True)
@@ -54,13 +70,17 @@ class Procurement(me.Document):
     )  # ประวัติการจ่ายเงิน
 
     @classmethod
-    def generate_product_number(cls):
-        """Generate product number in format มอ 011/YY-N using current Thai Buddhist year"""
-        current_year = datetime.datetime.now().year
-        thai_year = str(current_year + 543)[-2:]  # Get last 2 digits of Thai year
+    def generate_product_number(cls, tor_year=None):
+        """
+        Generate product number in format มอ 011/YY-N using ToRYear.year (last 2 digits of Buddhist year)
+        """
         prefix = "มอ 011"
+        if tor_year and tor_year.year:
+            thai_year = str(tor_year.year)[-2:]
+        else:
+            current_year = datetime.datetime.now().year
+            thai_year = str(current_year + 543)[-2:]
 
-        # Find the last procurement for the current Thai year
         last_procurement = (
             cls.objects(product_number__startswith=f"{prefix}/{thai_year}-")
             .order_by("-product_number")
@@ -77,7 +97,9 @@ class Procurement(me.Document):
     def save(self, *args, **kwargs):
         """Override save to auto-generate product_number"""
         if not self.product_number:
-            self.product_number = self.generate_product_number()
+            # ใช้ tor_year ถ้ามี
+            tor_year = getattr(self, "tor_year", None)
+            self.product_number = self.generate_product_number(tor_year=tor_year)
         return super().save(*args, **kwargs)
 
     def get_payment_due_dates(self):
@@ -152,10 +174,17 @@ class Procurement(me.Document):
 
     def add_payment_record(self, period_index, paid_by):
         """Add payment record for specific period"""
+        due_dates = self.get_payment_due_dates()
+        due_date = None
+        if 0 <= period_index < len(due_dates):
+            due_date = datetime.datetime.combine(
+                due_dates[period_index], datetime.time.min
+            )
         payment_record = PaymentRecord(
             period_index=period_index,
             paid_date=datetime.datetime.now(),
             paid_by=paid_by,
+            due_date=due_date,
         )
         self.payment_records.append(payment_record)
 

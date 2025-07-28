@@ -43,14 +43,14 @@
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="start_date">{{ form.start_date.label }}</label>
-                {{ form.start_date(class_="input input-bordered w-full", type="date") }}
+                {{ form.start_date(class_="input input-bordered w-full", type="date", id="start_date") }}
                 {% if form.start_date.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.start_date.errors[0] }}</p>
                 {% endif %}
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="end_date">{{ form.end_date.label }}</label>
-                {{ form.end_date(class_="input input-bordered w-full", type="date") }}
+                {{ form.end_date(class_="input input-bordered w-full", type="date", id="end_date") }}
                 {% if form.end_date.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.end_date.errors[0] }}</p>
                 {% endif %}
@@ -95,5 +95,25 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const startDate = document.getElementById('start_date');
+        const endDate = document.getElementById('end_date');
+
+        function validateDates() {
+            if (startDate.value && endDate.value) {
+                if (new Date(endDate.value) < new Date(startDate.value)) {
+                    endDate.setCustomValidity('วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น');
+                } else {
+                    endDate.setCustomValidity('');
+                }
+            }
+        }
+
+        startDate.addEventListener('change', validateDates);
+        endDate.addEventListener('change', validateDates);
+    });
+</script>
 
 {% endblock %}

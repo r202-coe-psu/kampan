@@ -1,0 +1,43 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}เพิ่มปีงบประมาณ/ToR{% endblock %}
+{% block dashboard_title %}เพิ่มปีงบประมาณ/ToR{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-lg mx-auto card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-bold mb-4">เพิ่มปีงบประมาณ/ToR</h2>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="mb-4">
+                    {{ form.year.label(class="block font-medium mb-1") }}
+                    {{ form.year(class_="input input-bordered w-full") }}
+                    {% for error in form.year.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="mb-4">
+                    {{ form.started_date.label(class="block font-medium mb-1") }}
+                    {{ form.started_date(class_="input input-bordered w-full", type="date") }}
+                    {% for error in form.started_date.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="mb-4">
+                    {{ form.ended_date.label(class="block font-medium mb-1") }}
+                    {{ form.ended_date(class_="input input-bordered w-full", type="date") }}
+                    {% for error in form.ended_date.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <a href="{{ url_for('procurement.tor_years.index', organization_id=organization.id) }}"
+                        class="btn">ยกเลิก</a>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

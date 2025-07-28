@@ -1,10 +1,10 @@
 from flask_wtf import FlaskForm
 from flask_mongoengine.wtf import model_form
-from wtforms import fields, validators
-from kampan.models.procurement import Procurement
+from wtforms import fields, validators, ValidationError
+from kampan import models
 
 BaseProcurementForm = model_form(
-    Procurement,
+    models.Procurement,
     FlaskForm,
     exclude=[
         "product_number",
@@ -33,3 +33,30 @@ class ProcurementForm(BaseProcurementForm):
         "วันที่สิ้นสุด",
         validators=[validators.Optional()],
     )
+
+    def validate_end_date(self, field):
+        if self.start_date.data and field.data:
+            if field.data < self.start_date.data:
+                raise ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
+
+
+BaseToRYearForm = model_form(
+    models.ToRYear,
+    FlaskForm,
+    exclude=[
+        "created_by",
+        "last_updated_by",
+        "created_date",
+        "updated_date",
+        "status",
+    ],
+    field_args={
+        "year": {"label": "ปีงบประมาณ"},
+        "started_date": {"label": "วันเริ่มต้นปี", "format": "%Y-%m-%d"},
+        "ended_date": {"label": "วันสิ้นสุดปี", "format": "%Y-%m-%d"},
+    },
+)
+
+
+class ToRYearForm(BaseToRYearForm):
+    pass

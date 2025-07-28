@@ -63,9 +63,11 @@ def index():
         query["payment_status"] = payment_status
 
     procurements = (
-        models.Procurement.objects(__raw__=query)
+        models.Procurement.objects(
+            __raw__=query, tor_year=current_user.user_setting.tor_year
+        )
         if query
-        else models.Procurement.objects()
+        else models.Procurement.objects(tor_year=current_user.user_setting.tor_year)
     )
 
     # Add duration_months and duration_days to each procurement for display
@@ -97,6 +99,7 @@ def index():
 @acl.organization_roles_required("admin")
 def create():
     organization_id = request.args.get("organization_id")
+    tor_year_id = request.args.get("tor_year_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
@@ -116,6 +119,16 @@ def create():
 
     procurement.created_by = current_user._get_current_object()
     procurement.last_updated_by = current_user._get_current_object()
+
+    # เก็บ ToRYear
+    tor_year = None
+    if tor_year_id:
+        tor_year = models.ToRYear.objects(id=tor_year_id).first()
+    elif current_user.user_setting and current_user.user_setting.tor_year:
+        tor_year = current_user.user_setting.tor_year
+    if tor_year:
+        procurement.tor_year = tor_year
+
     procurement.save()
     return redirect(
         url_for("procurement.products.index", organization_id=organization.id)
@@ -126,6 +139,7 @@ def create():
 @login_required
 @acl.organization_roles_required("admin")
 def set_paid(procurement_id):
+    organization_id = request.args.get("organization_id")
     procurement = models.Procurement.objects(id=procurement_id).first()
     if procurement is None:
         abort(404)
@@ -135,7 +149,8 @@ def set_paid(procurement_id):
 
     # บันทึกประวัติการจ่ายเงิน
     procurement.add_payment_record(
-        period_index=next_period_index, paid_by=current_user._get_current_object()
+        period_index=next_period_index,
+        paid_by=current_user._get_current_object(),
     )
 
     # อัปเดต paid_period_index ให้เป็นงวดที่เพิ่งจ่าย
@@ -151,6 +166,6 @@ def set_paid(procurement_id):
     return redirect(
         url_for(
             "procurement.products.index",
-            organization_id=request.args.get("organization_id"),
+            organization_id=organization_id,
         )
     )
