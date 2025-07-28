@@ -76,6 +76,27 @@
                 <p class="text-red-500 text-xs mt-1">{{ form.company.errors[0] }}</p>
                 {% endif %}
             </div>
+            <div class="md:col-span-2">
+                <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label
+                    }}</label>
+                <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
+                    class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
+                <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
+                    {% for user in form.responsible_by.queryset %}
+                    <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
+                        <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if user.id|string in
+                            form.responsible_by.data or user in form.responsible_by.data %}checked{% endif %}>
+                        <span>
+                            {{ form.label_modifier(user) if form.label_modifier else user.first_name ~ ' ' ~
+                            user.last_name }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.responsible_by.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Submit Button -->
@@ -114,6 +135,17 @@
         startDate.addEventListener('change', validateDates);
         endDate.addEventListener('change', validateDates);
     });
+
+    function filterResponsibleBy() {
+        const input = document.getElementById('responsible_by_search');
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById('responsible_by_list');
+        const labels = list.getElementsByTagName('label');
+        for (let i = 0; i < labels.length; i++) {
+            const text = labels[i].innerText.toLowerCase();
+            labels[i].style.display = text.includes(filter) ? '' : 'none';
+        }
+    }
 </script>
 
 {% endblock %}

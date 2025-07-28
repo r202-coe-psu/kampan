@@ -98,8 +98,8 @@ def create():
     form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
     tor_year_id = request.args.get("tor_year_id")
-
-    members = models.User.objects(user_setting=organization.id)
+    members = models.User.objects()
+    form.responsible_by.queryset = members
 
     if not form.validate_on_submit():
         form.responsible_by.label_modifier = lambda u: f"{u.first_name} {u.last_name}"
