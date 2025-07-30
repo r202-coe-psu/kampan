@@ -25,10 +25,19 @@
                     </thead>
                     <tbody>
                         {% for y in tor_years %}
-                        <tr>
-                            <td>{{ y.year }}</td>
-                            <td>{{ y.started_date.strftime('%d/%m/%Y') if y.started_date else '-' }}</td>
-                            <td>{{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}</td>
+                        {% set is_default = current_user.user_setting and current_user.user_setting.tor_year and
+                        current_user.user_setting.tor_year.id == y.id %}
+                        <tr
+                            class="{% if is_default %}bg-green-50 border-green-200{% else %}hover:bg-base-50{% endif %}">
+                            <td class="{% if is_default %}font-semibold text-green-800{% endif %}">
+                                {{ y.year }}
+                            </td>
+                            <td class="{% if is_default %}text-green-700{% endif %}">
+                                {{ y.started_date.strftime('%d/%m/%Y') if y.started_date else '-' }}
+                            </td>
+                            <td class="{% if is_default %}text-green-700{% endif %}">
+                                {{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}
+                            </td>
                             <td class="text-center">
                                 <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
                                     class="btn btn-sm btn-warning mr-2">แก้ไข</a>
@@ -39,9 +48,8 @@
                                 <form method="post"
                                     action="{{ url_for('procurement.tor_years.set_default_tor_year', tor_year_id=y.id, organization_id=organization.id) }}">
                                     <button type="submit"
-                                        class="btn btn-xs {% if current_user.user_setting and current_user.user_setting.tor_year and current_user.user_setting.tor_year.id == y.id %}btn-success{% else %}btn-outline{% endif %}">
-                                        {% if current_user.user_setting and current_user.user_setting.tor_year and
-                                        current_user.user_setting.tor_year.id == y.id %}
+                                        class="btn btn-xs {% if is_default %}btn-success{% else %}btn-outline{% endif %}">
+                                        {% if is_default %}
                                         ใช้งานอยู่
                                         {% else %}
                                         ตั้งเป็นค่าเริ่มต้น
