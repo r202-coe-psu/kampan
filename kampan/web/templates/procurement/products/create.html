@@ -80,14 +80,16 @@
                 <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label
                     }}</label>
                 <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                    class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
+                    class="input input-bordered w-full mb-2" oninput="filterResponsibleBy()">
                 <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
-                    {% for user in form.responsible_by.queryset %}
+                    {% for user_role in form.responsible_by.queryset %}
                     <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
-                        <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if user.id|string in
-                            form.responsible_by.data or user in form.responsible_by.data %}checked{% endif %}>
+                        <input type="checkbox" name="responsible_by" value="{{ user_role.id }}" {% if
+                            user_role.id|string in form.responsible_by.data or user_role in form.responsible_by.data
+                            %}checked{% endif %}>
                         <span>
-                            {{ form.label_modifier(user) if form.label_modifier else user.get_name() }}
+                            {{ form.label_modifier(user_role) if form.label_modifier else user_role.display_fullname()
+                            }}
                         </span>
                     </label>
                     {% endfor %}

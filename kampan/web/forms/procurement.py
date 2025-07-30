@@ -20,10 +20,7 @@ BaseProcurementForm = model_form(
         "amount": {"label": "จำนวนเงิน"},
         "period": {"label": "จำนวนงวด"},
         "company": {"label": "บริษัท"},
-        "responsible_by": {
-            "label": "ผู้รับผิดชอบ",
-            "label_modifier": lambda u: "u.first_name u.lastname",
-        },
+        "responsible_by": {"label": "ผู้รับผิดชอบ"},
     },
 )
 

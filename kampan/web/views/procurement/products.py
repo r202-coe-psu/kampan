@@ -69,10 +69,27 @@ def index():
 
     # Add duration_months and duration_days to each procurement for display
     procurement_list = []
+    unpaid_payments_count = 0
+    today = datetime.date.today()
+
     for p in procurements:
         months, days = calculate_months_days(p.start_date, p.end_date)
         p.duration_months = months
         p.duration_days = days
+
+        # Check if payment is due within a week for urgent payments count
+        status = p.get_current_payment_status(today)
+        if status == "upcoming":
+            due_dates = p.get_payment_due_dates()
+            next_idx = p.get_next_payment_index()
+            if next_idx < len(due_dates):
+                next_due_date = due_dates[next_idx]
+                if hasattr(next_due_date, "date"):
+                    next_due_date = next_due_date.date()
+                days_until_due = (next_due_date - today).days
+                if 0 <= days_until_due <= 7:  # Due within a week
+                    unpaid_payments_count += 1
+
         procurement_list.append(p)
 
     # For filter dropdowns
@@ -87,7 +104,8 @@ def index():
         selected_payment_status=payment_status,
         category_choices=category_choices,
         payment_status_choices=payment_status_choices,
-        today=datetime.date.today(),
+        today=today,
+        unpaid_payments_count=unpaid_payments_count,
     )
 
 
@@ -98,11 +116,10 @@ def create():
     form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
     tor_year_id = request.args.get("tor_year_id")
-    members = models.User.objects()
-    form.responsible_by.queryset = members
+    members = organization.get_organization_users()
+    # form.responsible_by.queryset = members
 
     if not form.validate_on_submit():
-        form.responsible_by.label_modifier = lambda u: f"{u.first_name} {u.last_name}"
         return render_template(
             "/procurement/products/create.html",
             form=form,

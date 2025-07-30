@@ -189,17 +189,13 @@
                             <div class="flex justify-between">
                                 <span class="font-medium">{{ item.company }}</span>
                             </div>
+                            <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
                             <div class="flex flex-col gap-1">
-                                <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
                                 {% if item.responsible_by %}
                                 <div class="flex flex-wrap gap-1">
                                     {% for u in item.responsible_by %}
                                     <span class="font-medium text-primary">
-                                        {% if u.thai_first_name or u.thai_last_name %}
-                                        {{ u.thai_first_name }} {{ u.thai_last_name }}
-                                        {% else %}
-                                        {{ u.get_name() }}
-                                        {% endif %}
+                                        {{ u.display_name() }}
                                     </span>
                                     {% endfor %}
                                 </div>
@@ -273,7 +269,7 @@
             <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
             <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
             <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
-            <th class="font-semibold text-base-content text-sm text-center w-64">ผู้รับเอง</th>
+            <th class="font-semibold text-base-content text-sm text-center w-64">ผู้รับผิดชอบ</th>
             <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
         </tr>
     </thead>
@@ -371,18 +367,19 @@
             </td>
 
             <!-- Company -->
-            <td class="text-center py-4">
+            <td class="py-4">
                 <div class="flex flex-col">
-                    <span class="font-bold text">{{ item.company }}</span>
-                    <span class="text-xs text-base-content/60">ผู้รับผิดชอบ:
+                    <span class="font-bold text py-1">{{ item.company }}</span>
+                    <span class="text-xs text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
+                    <ul class="text-xs text-base-content/70 list-disc list-inside">
                         {% if item.responsible_by %}
                         {% for u in item.responsible_by %}
-                        {{ u.get_name() }}{% if not loop.last %}, {% endif %}
+                        <li>{{ u.display_name() }}</li>
                         {% endfor %}
                         {% else %}
-                        -
+                        <li>-</li>
                         {% endif %}
-                    </span>
+                    </ul>
                 </div>
             </td>
 

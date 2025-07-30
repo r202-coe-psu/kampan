@@ -56,7 +56,7 @@ class Procurement(me.Document):
     company = me.StringField(max_length=255, required=True)
     payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
     tor_year = me.ReferenceField(ToRYear, dbref=True)
-    responsible_by = me.ListField(me.ReferenceField("User", dbref=True))
+    responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
 
     # Audit fields
     last_updated_by = me.ReferenceField("User", dbref=True)
@@ -73,32 +73,37 @@ class Procurement(me.Document):
     @classmethod
     def generate_product_number(cls, tor_year=None):
         """
-        Generate product number in format มอ 011/YY-N using ToRYear.year (last 2 digits of Buddhist year)
+        Generate product number in format มอ 011/YY-N using the last 2 digits of ToRYear.year.
         """
+        import datetime
+
         prefix = "มอ 011"
         if tor_year and tor_year.year:
-            thai_year = str(tor_year.year)[-2:]
+            thai_year = str(tor_year.year)[-2:]  # Use last 2 digits of the ToR year
         else:
             current_year = datetime.datetime.now().year
-            thai_year = str(current_year + 543)[-2:]
+            thai_year = str(current_year + 543)[-2:]  # Default to current Buddhist year
 
-        last_procurement = (
-            cls.objects(product_number__startswith=f"{prefix}/{thai_year}-")
-            .order_by("-product_number")
-            .first()
-        )
+        # Query all matching product numbers in that year
+        year_prefix = f"{prefix}/{thai_year}-"
+        matching_products = cls.objects(product_number__startswith=year_prefix)
 
-        new_number = (
-            int(last_procurement.product_number.split("-")[-1]) + 1
-            if last_procurement
-            else 1
-        )
+        # Extract number after the dash and convert to int
+        last_number = 0
+        for item in matching_products:
+            try:
+                number_part = int(item.product_number.split("-")[-1])
+                if number_part > last_number:
+                    last_number = number_part
+            except (ValueError, IndexError):
+                continue
+
+        new_number = last_number + 1
         return f"{prefix}/{thai_year}-{new_number}"
 
     def save(self, *args, **kwargs):
         """Override save to auto-generate product_number"""
         if not self.product_number:
-            # ใช้ tor_year ถ้ามี
             tor_year = getattr(self, "tor_year", None)
             self.product_number = self.generate_product_number(tor_year=tor_year)
         return super().save(*args, **kwargs)
@@ -191,6 +196,10 @@ class Procurement(me.Document):
 
     def get_payment_record_for_period(self):
         """Get payment record for specific period"""
+        for record in self.payment_records:
+            if record.period_index == (self.paid_period_index or -1) + 1:
+                return record
+        return None
         for record in self.payment_records:
             if record.period_index == (self.paid_period_index or -1) + 1:
                 return record
