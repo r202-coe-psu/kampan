@@ -1,4 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% import 'procurement/macros/table.html' as table_macros %}
 
 {% block title %}ปีงบประมาณ{% endblock %}
 {% block dashboard_title %}ปีงบประมาณ{% endblock %}
@@ -13,58 +14,7 @@
     <div class="card bg-base-100 shadow-xl border border-base-200">
         <div class="card-body p-0">
             <div class="overflow-x-auto">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th>ปีงบประมาณ</th>
-                            <th>วันเริ่มต้น</th>
-                            <th>วันสิ้นสุด</th>
-                            <th class="text-center">Tools</th>
-                            <th class="text-center">Setting</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for y in tor_years %}
-                        {% set is_default = current_user.user_setting and current_user.user_setting.tor_year and
-                        current_user.user_setting.tor_year.id == y.id %}
-                        <tr
-                            class="{% if is_default %}bg-green-50 border-green-200{% else %}hover:bg-base-50{% endif %}">
-                            <td class="{% if is_default %}font-semibold text-green-800{% endif %}">
-                                {{ y.year }}
-                            </td>
-                            <td class="{% if is_default %}text-green-700{% endif %}">
-                                {{ y.started_date.strftime('%d/%m/%Y') if y.started_date else '-' }}
-                            </td>
-                            <td class="{% if is_default %}text-green-700{% endif %}">
-                                {{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}
-                            </td>
-                            <td class="text-center">
-                                <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
-                                    class="btn btn-sm btn-warning mr-2">แก้ไข</a>
-                                <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
-                                    class="btn btn-sm btn-info">คัดลอกปีถัดไป</a>
-                            </td>
-                            <td class="text-center">
-                                <form method="post"
-                                    action="{{ url_for('procurement.tor_years.set_default_tor_year', tor_year_id=y.id, organization_id=organization.id) }}">
-                                    <button type="submit"
-                                        class="btn btn-xs {% if is_default %}btn-success{% else %}btn-outline{% endif %}">
-                                        {% if is_default %}
-                                        ใช้งานอยู่
-                                        {% else %}
-                                        ตั้งเป็นค่าเริ่มต้น
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center text-gray-400 py-8">ไม่มีข้อมูลปีงบประมาณ</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                {{ table_macros.render_tor_years_table(tor_years, current_user, organization) }}
             </div>
         </div>
     </div>
