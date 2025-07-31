@@ -135,7 +135,7 @@ def create():
     # เก็บ ToRYear
     tor_year = None
     if tor_year_id:
-        tor_year = models.ToRYear.objects(id=tor_year_id).first()
+        tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
     elif current_user.user_setting and current_user.user_setting.tor_year:
         tor_year = current_user.user_setting.tor_year
     if tor_year:

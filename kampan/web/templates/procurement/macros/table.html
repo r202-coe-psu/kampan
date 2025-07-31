@@ -1,4 +1,5 @@
 {% macro render_tor_years_table(tor_years, current_user, organization) %}
+{% from '/base/components/dialogs.html' import ModalNegative %}
 <table class="table w-full">
     <thead>
         <tr>
@@ -27,7 +28,12 @@
                 <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
                     class="btn btn-sm btn-warning mr-2">แก้ไข</a>
                 <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
-                    class="btn btn-sm btn-info">คัดลอกปีถัดไป</a>
+                    class="btn btn-sm btn-info mr-2">คัดลอกปีถัดไป</a>
+                {% if not is_default %}
+                <button class="btn btn-sm btn-error" onclick="showDeleteModal('{{ y.id }}')">
+                    <i class="ph ph-trash"></i> ลบ
+                </button>
+                {% endif %}
             </td>
             <td class="text-center">
                 <form method="post"
@@ -43,6 +49,14 @@
                 </form>
             </td>
         </tr>
+        {{ ModalNegative(
+            id=y.id,
+            header="ลบปีงบประมาณ",
+            body="คุณต้องการลบปีงบประมาณ " + y.year + " หรือไม่?<br><small class='text-warning'>หมายเหตุ: การลบจะซ่อนข้อมูลโดยไม่ลบออกจากระบบอย่างถาวร</small>",
+            cancel="ยกเลิก",
+            submit="ยืนยันลบ",
+            redirect=url_for('procurement.tor_years.delete', tor_year_id=y.id, organization_id=organization.id)
+        ) }}
         {% else %}
         <tr>
             <td colspan="5" class="text-center text-gray-400 py-8">ไม่มีข้อมูลปีงบประมาณ</td>
@@ -50,6 +64,15 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script type="text/javascript">
+function showDeleteModal(tor_year_id) {
+    const modal = document.querySelector('.modal.' + tor_year_id);
+    if (modal) {
+        modal.showModal();
+    }
+}
+</script>
 {% endmacro %}
 
 {% macro render_products_table(procurements, current_user, organization, today) %}

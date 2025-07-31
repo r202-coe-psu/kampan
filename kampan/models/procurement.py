@@ -23,7 +23,7 @@ class ToRYear(me.Document):
 
     created_by = me.ReferenceField("User", dbref=True, required=True)
     last_updated_by = me.ReferenceField("User", dbref=True, required=True)
-
+    status = me.StringField(required=True, default="active")
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 

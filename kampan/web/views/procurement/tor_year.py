@@ -24,10 +24,10 @@ def index():
     organization = current_user.user_setting.current_organization
 
     if current_user.has_roles(["admin"]):
-        tor_years = models.ToRYear.objects()
+        tor_years = models.ToRYear.objects(status="active")
     else:
         tor_years = models.ToRYear.objects(
-            created_by=current_user._get_current_object(),
+            created_by=current_user._get_current_object(), status="active"
         )
 
     return render_template(
@@ -47,7 +47,11 @@ def create_or_edit(tor_year_id):
     tor_year = None
 
     if tor_year_id:
-        tor_year = models.ToRYear.objects.get(id=tor_year_id)
+        tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
+        if not tor_year:
+            return redirect(
+                url_for("procurement.tor_years.index", organization_id=organization.id)
+            )
         form = forms.procurement.ToRYearForm(obj=tor_year)
     else:
         if request.method == "GET":
@@ -70,7 +74,9 @@ def create_or_edit(tor_year_id):
     tor_year.last_updated_by = current_user._get_current_object()
     tor_year.save()
 
-    return redirect(url_for("procurement.tor_years.index", organization=organization))
+    return redirect(
+        url_for("procurement.tor_years.index", organization_id=organization.id)
+    )
 
 
 @module.route("/<tor_year_id>/copy", methods=["GET", "POST"])
@@ -78,7 +84,11 @@ def create_or_edit(tor_year_id):
 def copy_tor_year(tor_year_id):
     organization = current_user.user_setting.current_organization
     # ดึง ToRYear ต้นฉบับ
-    tor_year = models.ToRYear.objects.get(id=tor_year_id)
+    tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
+    if not tor_year:
+        return redirect(
+            url_for("procurement.tor_years.index", organization_id=organization.id)
+        )
     # สร้างฟอร์มใหม่
     form = forms.procurement.ToRYearForm()
 
@@ -108,7 +118,7 @@ def copy_tor_year(tor_year_id):
         new_tor_year.last_updated_by = current_user._get_current_object()
         new_tor_year.save()
         return redirect(
-            url_for("procurement.tor_years.index", organization=organization)
+            url_for("procurement.tor_years.index", organization_id=organization.id)
         )
 
     return render_template(
@@ -118,19 +128,54 @@ def copy_tor_year(tor_year_id):
     )
 
 
+@module.route("/<tor_year_id>/delete")
+@acl.organization_roles_required("admin")
+def delete(tor_year_id):
+    organization = current_user.user_setting.current_organization
+    tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
+    if not tor_year:
+        return redirect(
+            url_for("procurement.tor_years.index", organization_id=organization.id)
+        )
+
+    if (
+        current_user.user_setting
+        and current_user.user_setting.tor_year
+        and current_user.user_setting.tor_year.id == tor_year.id
+    ):
+        return redirect(
+            url_for("procurement.tor_years.index", organization_id=organization.id)
+        )
+
+    tor_year.status = "disactive"
+    tor_year.last_updated_by = current_user._get_current_object()
+    tor_year.save()
+    return redirect(
+        url_for("procurement.tor_years.index", organization_id=organization.id)
+    )
+
+
 @module.route("/<tor_year_id>/set_default", methods=["POST"])
 @login_required
 def set_default_tor_year(tor_year_id):
     organization = current_user.user_setting.current_organization
     user = current_user._get_current_object()
+    tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
+    if not tor_year:
+        return redirect(
+            url_for("procurement.tor_years.index", organization_id=organization.id)
+        )
+
     if not user.user_setting:
         user.user_setting = models.users.UserSetting(
             current_organization=models.Organization.objects(
                 id=organization.id
             ).first(),
-            tor_year=models.ToRYear.objects(id=tor_year_id).first(),
+            tor_year=tor_year,
         )
     else:
-        user.user_setting.tor_year = models.ToRYear.objects(id=tor_year_id).first()
+        user.user_setting.tor_year = tor_year
     user.save()
-    return redirect(url_for("procurement.tor_years.index", organization=organization))
+    return redirect(
+        url_for("procurement.tor_years.index", organization_id=organization.id)
+    )
