@@ -5,6 +5,21 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
+    {% if existing_disactive_year %}
+    <div class="max-w-lg mx-auto mb-4">
+        <div class="alert alert-warning">
+            <i class="ph ph-warning-circle"></i>
+            <div>
+                <h3 class="font-bold">พบปีงบประมาณที่ถูกลบไว้</h3>
+                <div class="text-sm">
+                    พบปีงบประมาณ <span class="font-bold">{{ existing_disactive_year.year }}</span> 
+                    ที่เคยถูกลบไว้แล้วในระบบ หากต้องการกู้คืนให้ไปที่เมนูจัดการปีงบประมาณ
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="max-w-lg mx-auto card bg-base-100 shadow-xl border border-base-200">
         <div class="card-body">
             <h2 class="text-xl font-bold mb-4">เพิ่มปีงบประมาณ/ToR</h2>
