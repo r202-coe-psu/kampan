@@ -25,27 +25,42 @@
                 {{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}
             </td>
             <td class="text-center">
-                <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
-                    class="btn btn-sm btn-warning mr-2">แก้ไข</a>
-                <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
-                    class="btn btn-sm btn-info mr-2">คัดลอกปีถัดไป</a>
-                {% if not is_default %}
-                <button class="btn btn-sm btn-error" onclick="showDeleteModal('{{ y.id }}')">
-                    <i class="ph ph-trash"></i> ลบ
-                </button>
-                {% endif %}
+                <div class="flex justify-center gap-2">
+                    <div class="tooltip" data-tip="แก้ไขปีงบประมาณ">
+                        <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
+                            class="btn btn-circle btn-sm btn-outline border-orange-400 text-orange-600 hover:bg-orange-100 hover:border-orange-600">
+                            <i class="ph ph-pencil text-lg"></i>
+                        </a>
+                    </div>
+                    <div class="tooltip" data-tip="คัดลอกไปปีถัดไป">
+                        <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
+                            class="btn btn-circle btn-sm btn-outline border-blue-400 text-blue-600 hover:bg-blue-100 hover:border-blue-600">
+                            <i class="ph ph-copy text-lg"></i>
+                        </a>
+                    </div>
+                    {% if not is_default %}
+                    <div class="tooltip" data-tip="ลบปีงบประมาณ">
+                        <button class="btn btn-circle btn-sm btn-outline border-red-400 text-red-600 hover:bg-red-100 hover:border-red-600" 
+                                onclick="showDeleteModal('{{ y.id }}')">
+                            <i class="ph ph-trash text-lg"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
             </td>
             <td class="text-center">
                 <form method="post"
                     action="{{ url_for('procurement.tor_years.set_default_tor_year', tor_year_id=y.id, organization_id=organization.id) }}">
-                    <button type="submit"
-                        class="btn btn-xs {% if is_default %}btn-success{% else %}btn-outline{% endif %}">
-                        {% if is_default %}
-                        ใช้งานอยู่
-                        {% else %}
-                        ตั้งเป็นค่าเริ่มต้น
-                        {% endif %}
-                    </button>
+                    <div class="tooltip" data-tip="{% if is_default %}ปีงบประมาณที่ใช้งานอยู่{% else %}ตั้งเป็นปีงบประมาณเริ่มต้น{% endif %}">
+                        <button type="submit"
+                            class="btn btn-circle btn-sm {% if is_default %}btn-success{% else %}btn-outline border-green-400 text-green-600 hover:bg-green-100 hover:border-green-600{% endif %}">
+                            {% if is_default %}
+                            <i class="ph ph-check-circle text-lg"></i>
+                            {% else %}
+                            <i class="ph ph-circle text-lg"></i>
+                            {% endif %}
+                        </button>
+                    </div>
                 </form>
             </td>
         </tr>
