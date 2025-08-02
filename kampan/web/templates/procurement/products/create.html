@@ -43,31 +43,43 @@
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="start_date">{{ form.start_date.label }}</label>
-                {{ form.start_date(class_="input input-bordered w-full", type="date", id="start_date") }}
+                <div class="relative">
+                    {{ form.start_date(class_="input input-bordered w-full", type="date", id="start_date", style="position: absolute; opacity: 0;") }}
+                    <input type="text" id="start_date_display" placeholder="dd/mm/yyyy" 
+                           class="input input-bordered w-full" readonly 
+                           onclick="document.getElementById('start_date').showPicker()">
+                </div>
                 {% if form.start_date.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.start_date.errors[0] }}</p>
                 {% endif %}
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="end_date">{{ form.end_date.label }}</label>
-                {{ form.end_date(class_="input input-bordered w-full", type="date", id="end_date") }}
+                <div class="relative">
+                    {{ form.end_date(class_="input input-bordered w-full", type="date", id="end_date", style="position: absolute; opacity: 0;") }}
+                    <input type="text" id="end_date_display" placeholder="dd/mm/yyyy" 
+                           class="input input-bordered w-full" readonly 
+                           onclick="document.getElementById('end_date').showPicker()">
+                </div>
                 {% if form.end_date.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.end_date.errors[0] }}</p>
                 {% endif %}
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="amount">{{ form.amount.label }}</label>
-                {{ form.amount(class_="input input-bordered w-full", step="0.01", min="1") }}
+                {{ form.amount(class_="input input-bordered w-full", step="0.01", min="0", id="amount") }}
                 {% if form.amount.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.amount.errors[0] }}</p>
                 {% endif %}
+                <p id="amount_error" class="text-red-500 text-xs mt-1" style="display:none;">จำนวนเงินต้องมากกว่าหรือเท่ากับ 0</p>
             </div>
             <div>
                 <label class="block text-gray-700 font-medium mb-1" for="period">{{ form.period.label }}</label>
-                {{ form.period(class_="input input-bordered w-full", min="1") }}
+                {{ form.period(class_="input input-bordered w-full", min="1", id="period") }}
                 {% if form.period.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ form.period.errors[0] }}</p>
                 {% endif %}
+                <p id="period_error" class="text-red-500 text-xs mt-1" style="display:none;">จำนวนงวดต้องมากกว่า 0</p>
             </div>
             <div class="md:col-span-2">
                 <label class="block text-gray-700 font-medium mb-1" for="company">{{ form.company.label }}</label>
@@ -106,7 +118,7 @@
                 class="btn px-5 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold shadow">
                 ยกเลิก
             </a>
-            <button type="submit"
+            <button type="submit" id="submit_btn"
                 class="btn btn-primary px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow">
                 <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2"
                     viewBox="0 0 24 24">
@@ -122,6 +134,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         const startDate = document.getElementById('start_date');
         const endDate = document.getElementById('end_date');
+        const amount = document.getElementById('amount');
+        const period = document.getElementById('period');
+        const form = document.querySelector('form');
+        const submitBtn = document.getElementById('submit_btn');
 
         function validateDates() {
             if (startDate.value && endDate.value) {
@@ -133,8 +149,124 @@
             }
         }
 
-        startDate.addEventListener('change', validateDates);
-        endDate.addEventListener('change', validateDates);
+        function formatDateDisplay() {
+            // Format start date display
+            if (startDate.value) {
+                const startDateObj = new Date(startDate.value);
+                const startDisplayElement = document.getElementById('start_date_display');
+                if (startDisplayElement) {
+                    startDisplayElement.value = formatDateToDDMMYYYY(startDateObj);
+                }
+            } else {
+                const startDisplayElement = document.getElementById('start_date_display');
+                if (startDisplayElement) {
+                    startDisplayElement.value = '';
+                }
+            }
+
+            // Format end date display
+            if (endDate.value) {
+                const endDateObj = new Date(endDate.value);
+                const endDisplayElement = document.getElementById('end_date_display');
+                if (endDisplayElement) {
+                    endDisplayElement.value = formatDateToDDMMYYYY(endDateObj);
+                }
+            } else {
+                const endDisplayElement = document.getElementById('end_date_display');
+                if (endDisplayElement) {
+                    endDisplayElement.value = '';
+                }
+            }
+        }
+
+        function formatDateToDDMMYYYY(dateObj) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function validateAmount() {
+            const amountError = document.getElementById('amount_error');
+            const value = parseFloat(amount.value);
+            
+            if (amount.value !== '' && (isNaN(value) || value < 0)) {
+                amount.setCustomValidity('จำนวนเงินต้องมากกว่าหรือเท่ากับ 0');
+                amountError.style.display = 'block';
+                amount.classList.add('input-error');
+                return false;
+            } else {
+                amount.setCustomValidity('');
+                amountError.style.display = 'none';
+                amount.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validatePeriod() {
+            const periodError = document.getElementById('period_error');
+            const value = parseInt(period.value);
+            
+            if (period.value !== '' && (isNaN(value) || value < 1)) {
+                period.setCustomValidity('จำนวนงวดต้องมากกว่า 0');
+                periodError.style.display = 'block';
+                period.classList.add('input-error');
+                return false;
+            } else {
+                period.setCustomValidity('');
+                periodError.style.display = 'none';
+                period.classList.remove('input-error');
+                return true;
+            }
+        }
+
+        function validateForm() {
+            const isAmountValid = validateAmount();
+            const isPeriodValid = validatePeriod();
+            validateDates();
+            
+            return isAmountValid && isPeriodValid;
+        }
+
+        // Event listeners
+        startDate.addEventListener('change', function() {
+            validateDates();
+            formatDateDisplay();
+        });
+        endDate.addEventListener('change', function() {
+            validateDates();
+            formatDateDisplay();
+        });
+        amount.addEventListener('input', validateAmount);
+        amount.addEventListener('blur', validateAmount);
+        period.addEventListener('input', validatePeriod);
+        period.addEventListener('blur', validatePeriod);
+
+        // Initialize date display on page load
+        formatDateDisplay();
+
+        // Form submission validation
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                
+                // Show alert for better user feedback
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
+                toast.innerHTML = `
+                    <i class="ph ph-warning-circle"></i>
+                    <span>กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง</span>
+                `;
+                document.body.appendChild(toast);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            }
+        });
     });
 
     function filterResponsibleBy() {
@@ -148,5 +280,12 @@
         }
     }
 </script>
+
+<style>
+    .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+</style>
 
 {% endblock %}

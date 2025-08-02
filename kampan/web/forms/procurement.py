@@ -40,6 +40,14 @@ class ProcurementForm(BaseProcurementForm):
             if field.data < self.start_date.data:
                 raise ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
 
+    def validate_amount(self, field):
+        if field.data is not None and field.data < 0:
+            raise ValidationError("จำนวนเงินต้องมากกว่าหรือเท่ากับ 0")
+
+    def validate_period(self, field):
+        if field.data is not None and field.data < 1:
+            raise ValidationError("จำนวนงวดต้องมากกว่า 0")
+
 
 BaseToRYearForm = model_form(
     models.ToRYear,

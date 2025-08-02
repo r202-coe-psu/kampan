@@ -6,6 +6,7 @@ CATEGORY_CHOICES = [
     ("software", "ซอฟต์แวร์"),
     ("product", "ครุภัณฑ์"),
     ("service", "จ้างเหมาบริการ"),
+    ("other", "อื่นๆ"),
 ]
 
 PAYEMENT_STATUS_CHOICES = [
