@@ -122,7 +122,7 @@ def create():
     organization = current_user.user_setting.current_organization
     tor_year_id = request.args.get("tor_year_id")
     members = organization.get_organization_users()
-    # form.responsible_by.queryset = members
+    form.responsible_by.queryset = members
 
     if not form.validate_on_submit():
         return render_template(

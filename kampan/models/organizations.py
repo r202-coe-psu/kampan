@@ -62,6 +62,11 @@ class OrganizationUserRole(me.Document):
     def display_name(self):
         return self.first_name + " " + self.last_name
 
+    def display_user_fullname(self):
+        if self.user:
+            return self.user.get_resources_fullname_th()
+        return self.first_name + " " + self.last_name
+
     def display_email(self):
         if self.user:
             return self.user.email
