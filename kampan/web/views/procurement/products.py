@@ -13,7 +13,12 @@ from flask_mongoengine import Pagination
 import datetime
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
+
+import pandas as pd
+from io import BytesIO
+
+from ... import redis_rq
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
@@ -176,4 +181,144 @@ def set_paid(procurement_id):
             "procurement.products.index",
             organization=organization,
         )
+    )
+
+
+@module.route("/<organization_id>/upload", methods=["GET", "POST"])
+@login_required
+@acl.organization_roles_required("admin")
+def upload(organization_id):
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    form = forms.procurement.FileForm()
+    errors = request.args.getlist("errors")
+
+    template_columns = [
+        "ปังบประมาณ",
+        "ชื่อรายการ",
+        "รหัสครุภัณฑ์",
+        "วันที่เริ่มต้น",
+        "วันที่สิ้นสุด",
+        "ระยะเวลา (เดือน)",
+        "จำนวน (งวด)",
+        "ประเภท",
+        "ชื่อผู้รับผิดชอบ",
+        "จำนวนเงิน",
+        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์",
+        "หมายเหตุ",
+    ]
+
+    if request.method == "POST" and form.validate_on_submit():
+        if form.document_upload.data:
+            if not errors:
+                file_storage = form.document_upload.data
+                if isinstance(file_storage, list):
+                    file_storage = file_storage[0]
+                file_storage.seek(0)
+                file_bytes = file_storage.read()
+                try:
+                    df = pd.read_excel(BytesIO(file_bytes))
+                    file_columns = list(df.columns)
+                    missing_cols = [
+                        col for col in template_columns if col not in file_columns
+                    ]
+                    if missing_cols:
+                        errors.append(
+                            f"ไฟล์ที่อัปโหลดไม่มี column เหล่านี้: {', '.join(missing_cols)}"
+                        )
+                        return render_template(
+                            "/procurement/products/upload_procurement.html",
+                            form=form,
+                            organization=organization,
+                            errors=errors,
+                        )
+                    job = redis_rq.redis_queue.queue.enqueue(
+                        utils.procurements.upload_procurement_excel,
+                        args=[
+                            file_bytes,
+                            current_user.id,
+                        ],
+                        timeout=600,
+                        job_timeout=600,
+                    )
+                    print("=====> submit", job.get_id())
+                    return redirect(
+                        url_for(
+                            "procurement.products.index",
+                            organization_id=organization_id,
+                        )
+                    )
+                except Exception as e:
+                    errors.append(f"เกิดข้อผิดพลาดในการอ่านไฟล์: {e}")
+                    return render_template(
+                        "/procurement/products/upload_procurement.html",
+                        form=form,
+                        organization=organization,
+                        errors=errors,
+                    )
+        else:
+            errors.append("ไม่พบไฟล์ กรุณาเลือกไฟล์ก่อนอัปโหลด")
+    return render_template(
+        "/procurement/products/upload_procurement.html",
+        form=form,
+        organization=organization,
+        errors=errors,
+    )
+
+
+@module.route("/<organization_id>/download_template")
+@login_required
+@acl.organization_roles_required("admin")
+def download_template(organization_id):
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    # สร้างข้อมูลตัวอย่างสำหรับแม่แบบ
+    template_data = {
+        "ปังบประมาณ": ["25xx"],
+        "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],
+        "รหัสครุภัณฑ์": ["CC/www-x-yy/zz"],
+        "วันที่เริ่มต้น": ["14 พฤศจิกายน 2567"],
+        "วันที่สิ้นสุด": ["14 พฤศจิกายน 2568"],
+        "ระยะเวลา (เดือน)": [12],
+        "จำนวน (งวด)": [1],
+        "ประเภท": ["จ้างเหมาบริการ"],
+        "ชื่อผู้รับผิดชอบ": ["นายสมชาย ใจดี"],
+        "จำนวนเงิน": [50000],
+        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์": ["บริษัท เทคโนโลยี จำกัด"],
+        "หมายเหตุ": ["สำหรับใช้ในสำนักงาน"],
+    }
+
+    # สร้าง DataFrame และ Excel file (Excel 2007 format)
+    df = pd.DataFrame(template_data)
+    output = BytesIO()
+
+    # ใช้ openpyxl engine สำหรับ Excel 2007+ format
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="แม่แบบข้อมูล", index=False)
+
+        # ปรับขนาดคอลัมน์
+        worksheet = writer.sheets["แม่แบบข้อมูล"]
+        for column in worksheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[column_letter].width = adjusted_width
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=f"Template_{organization.name}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

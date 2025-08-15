@@ -1,4 +1,4 @@
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
 from wtforms import fields, validators, ValidationError
 from kampan import models
@@ -69,3 +69,12 @@ BaseToRYearForm = model_form(
 
 class ToRYearForm(BaseToRYearForm):
     pass
+
+
+class FileForm(FlaskForm):
+    document_upload = file.MultipleFileField(
+        "Upload File Type (.xls, xlsx)",
+        validators=[
+            file.FileAllowed(["xls", "xlsx"], "Only .xls and .xlsx files are allowed!"),
+        ],
+    )

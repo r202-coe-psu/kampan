@@ -1,0 +1,92 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}อัปโหลดไฟล์รายการขอซื้อขอจ้าง{% endblock %}
+{% block dashboard_title %}อัปโหลดไฟล์รายการขอซื้อขอจ้าง{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10">
+    <div class="max-w-8xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">อัปโหลดไฟล์รายการขอซื้อขอจ้าง</h1>
+            <p class="text-gray-600">นำเข้าข้อมูลจากไฟล์ Excel หรือ CSV เพื่อเพิ่มรายการขอซื้อขอจ้างหลายรายการพร้อมกัน
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Upload Form -->
+            <div class="card bg-base-100 shadow-xl border border-base-200">
+                <div class="card-body">
+                    <h2 class="card-title text-xl mb-4">
+                        <i class="ph ph-upload-simple text-primary"></i>
+                        เลือกไฟล์
+                    </h2>
+
+                    {% if errors %}
+                    <div class="alert alert-error mb-4">
+                        <i class="ph ph-warning-circle"></i>
+                        <div>
+                            <h3 class="font-bold">พบข้อผิดพลาด!</h3>
+                            <div class="list-disc ml-4 mt-2">
+                                {% for error in errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <div class="form-control mb-6">
+                            <label class="label">
+                                <span class="label-text font-medium">เลือกไฟล์ข้อมูล</span>
+                            </label>
+                            {{ form.document_upload(class="file-input file-input-bordered file-input-primary w-full") }}
+                            <label class="label">
+                                <span class="label-text-alt text-gray-500">รองรับไฟล์ .xlsx, .xls, .csv, .ods
+                                    (ขนาดไม่เกิน 10MB)</span>
+                            </label>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="submit" class="btn btn-primary flex-1">
+                                <i class="ph ph-upload-simple"></i>
+                                อัปโหลดและนำเข้าข้อมูล
+                            </button>
+                            <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
+                                class="btn btn-error">
+                                <i class="ph ph-x"></i>
+                                ยกเลิก
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="space-y-6">
+
+                <!-- Download Template -->
+                <div class="card bg-yellow-50 border border-yellow-200">
+                    <div class="card-body">
+                        <h3 class="card-title text-lg text-yellow-800">
+                            <i class="ph ph-download text-yellow-600"></i>
+                            ดาวน์โหลดแม่แบบ
+                        </h3>
+                        <p class="text-sm text-yellow-700 mb-4">
+                            หากไม่แน่ใจเกี่ยวกับรูปแบบไฟล์ สามารถดาวน์โหลดแม่แบบได้ (Excel Format 2007 หรือใหม่กว่า)
+                        </p>
+                        <a href="{{ url_for('procurement.products.download_template', organization_id=organization.id) }}"
+                            class="btn btn-outline btn-warning btn-sm">
+                            <i class="ph ph-file-arrow-down"></i>
+                            ดาวน์โหลดแม่แบบ Excel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
