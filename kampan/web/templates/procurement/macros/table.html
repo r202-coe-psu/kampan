@@ -365,7 +365,8 @@
                     {% set category_badge = {
                     'ซอฟต์แวร์': 'badge-primary',
                     'ครุภัณฑ์': 'badge-warning',
-                    'จ้างเหมาบริการ': 'badge-accent'
+                    'จ้างเหมาบริการ': 'badge-accent',
+                    'อื่นๆ': 'badge-neutral'
                     }.get(item.get_category_display(), 'badge-secondary') %}
                     <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
                         {{ item.get_category_display() }}
