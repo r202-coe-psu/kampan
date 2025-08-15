@@ -17,19 +17,26 @@
                 <p class="text-sm text-gray-600 mb-1">
                     แสดงรายการขอซื้อขอจ้างทั้งหมดในระบบ
                     {% if selected_tor_year %}
-                    <span class="ml-2 badge badge-info">
+                    <span class="ml-2 font-bold text-lg">
                         ปีงบประมาณ: {{ selected_tor_year.year }}
                         ({{ selected_tor_year.started_date.strftime('%d/%m/%Y') }} - {{
                         selected_tor_year.ended_date.strftime('%d/%m/%Y') }})
                     </span>
                     {% elif current_user.user_setting and current_user.user_setting.tor_year %}
-                    <span class="ml-2 badge badge-info">
+                    <span class="ml-2 font-bold text-lg">
                         ปีงบประมาณ: {{ current_user.user_setting.tor_year.year }}
                         ({{ current_user.user_setting.tor_year.started_date.strftime('%d/%m/%Y') }} - {{
                         current_user.user_setting.tor_year.ended_date.strftime('%d/%m/%Y') }})
                     </span>
                     {% endif %}
                 </p>
+            </div>
+            <div class="flex gap-3 p-2">
+                <a href="{{ url_for('procurement.products.upload', organization_id=organization.id) }}"
+                    class="btn btn-success btn-sm shadow-lg">
+                    <i class="ph ph-upload-simple text-sm"></i>
+                    อัปโหลดไฟล์
+                </a>
             </div>
             <div class="flex gap-3">
                 <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"

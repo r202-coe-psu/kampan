@@ -40,8 +40,9 @@
                     </div>
                     {% if not is_default %}
                     <div class="tooltip" data-tip="ลบปีงบประมาณ">
-                        <button class="btn btn-circle btn-sm btn-outline border-red-400 text-red-600 hover:bg-red-100 hover:border-red-600" 
-                                onclick="showDeleteModal('{{ y.id }}')">
+                        <button
+                            class="btn btn-circle btn-sm btn-outline border-red-400 text-red-600 hover:bg-red-100 hover:border-red-600"
+                            onclick="showDeleteModal('{{ y.id }}')">
                             <i class="ph ph-trash text-lg"></i>
                         </button>
                     </div>
@@ -51,7 +52,8 @@
             <td class="text-center">
                 <form method="post"
                     action="{{ url_for('procurement.tor_years.set_default_tor_year', tor_year_id=y.id, organization_id=organization.id) }}">
-                    <div class="tooltip" data-tip="{% if is_default %}ปีงบประมาณที่ใช้งานอยู่{% else %}ตั้งเป็นปีงบประมาณเริ่มต้น{% endif %}">
+                    <div class="tooltip"
+                        data-tip="{% if is_default %}ปีงบประมาณที่ใช้งานอยู่{% else %}ตั้งเป็นปีงบประมาณเริ่มต้น{% endif %}">
                         <button type="submit"
                             class="btn btn-circle btn-sm {% if is_default %}btn-success{% else %}btn-outline border-green-400 text-green-600 hover:bg-green-100 hover:border-green-600{% endif %}">
                             {% if is_default %}
@@ -65,12 +67,13 @@
             </td>
         </tr>
         {{ ModalNegative(
-            id=y.id,
-            header="ลบปีงบประมาณ",
-            body="คุณต้องการลบปีงบประมาณ " + y.year + " หรือไม่?<br><small class='text-warning'>หมายเหตุ: การลบจะซ่อนข้อมูลโดยไม่ลบออกจากระบบอย่างถาวร</small>",
-            cancel="ยกเลิก",
-            submit="ยืนยันลบ",
-            redirect=url_for('procurement.tor_years.delete', tor_year_id=y.id, organization_id=organization.id)
+        id=y.id,
+        header="ลบปีงบประมาณ",
+        body="คุณต้องการลบปีงบประมาณ " + y.year + " หรือไม่?<br><small class='text-warning'>หมายเหตุ:
+            การลบจะซ่อนข้อมูลโดยไม่ลบออกจากระบบอย่างถาวร</small>",
+        cancel="ยกเลิก",
+        submit="ยืนยันลบ",
+        redirect=url_for('procurement.tor_years.delete', tor_year_id=y.id, organization_id=organization.id)
         ) }}
         {% else %}
         <tr>
@@ -81,12 +84,12 @@
 </table>
 
 <script type="text/javascript">
-function showDeleteModal(tor_year_id) {
-    const modal = document.querySelector('.modal.' + tor_year_id);
-    if (modal) {
-        modal.showModal();
+    function showDeleteModal(tor_year_id) {
+        const modal = document.querySelector('.modal.' + tor_year_id);
+        if (modal) {
+            modal.showModal();
+        }
     }
-}
 </script>
 {% endmacro %}
 
@@ -299,15 +302,14 @@ function showDeleteModal(tor_year_id) {
     <thead class="bg-base-200/50">
         <tr class="border-none">
             <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
-            <th class="font-semibold text-base-content text-sm w-36">เลขที่เบิกจ่าย</th>
+            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-            <th class="font-semibold text-base-content text-sm w-48">ประเภท</th>
-            <th class="font-semibold text-base-content text-sm text-center">วันที่เริ่มต้น</th>
-            <th class="font-semibold text-base-content text-sm text-center">วันที่สิ้นสุด</th>
+            <th class="font-semibold text-base-content text-sm text-center">ช่วงเวลา</th>
+            <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
             <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
             <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
             <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
-            <th class="font-semibold text-base-content text-sm text-center w-64">ผู้รับผิดชอบ</th>
+            <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
             <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
         </tr>
     </thead>
@@ -327,45 +329,53 @@ function showDeleteModal(tor_year_id) {
             <td class="py-4">
                 <div class="flex flex-col">
                     <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
-                    <span class="text-xs text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
+                    <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
                         }}</span>
                 </div>
             </td>
 
             <!-- Name -->
             <td class="py-4">
-                <div class="font-medium text-base-content text-sm">{{ item.name }}</div>
+                <div class="font-medium text-base-content text-base">{{ item.name }}</div>
             </td>
+
+            <!-- Range Date -->
+            <td class="text-center py-4">
+                <div class="flex flex-col items-center">
+                    {% if item.start_date and item.end_date %}
+                    <span class="font-bold text-base text-primary">
+                        {{ item.start_date.strftime('%d/%m/%Y') }}
+                    </span>
+                    <span class="text-base text-gray-400">
+                        to
+                    </span>
+                    <span class="font-bold text-base text-error">
+                        {{ item.end_date.strftime('%d/%m/%Y') }}
+                    </span>
+                    {% else %}
+                    <span class="text-gray-400">-</span>
+                    {% endif %}
+                </div>
+            </td>
+
 
             <!-- Type -->
             <td class="items-center py-4">
-                {% set category_badge = {
-                'ซอฟต์แวร์': 'badge-primary',
-                'ครุภัณฑ์': 'badge-warning',
-                'จ้างเหมาบริการ': 'badge-accent'
-                }.get(item.get_category_display(), 'badge-secondary') %}
-                <div class="badge {{ category_badge }} font-medium text-xs px-3 py-1">
-                    {{ item.get_category_display() }}
-                </div>
-            </td>
-
-            <!-- Start Date -->
-            <td class="text-center py-4">
-                <div class="text-sm font-medium">
-                    {{ item.start_date.strftime('%d/%m/%Y') if item.start_date else '-' }}
-                </div>
-            </td>
-
-            <!-- End Date -->
-            <td class="text-center py-4">
-                <div class="text-sm font-medium">
-                    {{ item.end_date.strftime('%d/%m/%Y') if item.end_date else '-' }}
+                <div class="flex flex-col items-center">
+                    {% set category_badge = {
+                    'ซอฟต์แวร์': 'badge-primary',
+                    'ครุภัณฑ์': 'badge-warning',
+                    'จ้างเหมาบริการ': 'badge-accent'
+                    }.get(item.get_category_display(), 'badge-secondary') %}
+                    <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
+                        {{ item.get_category_display() }}
+                    </div>
                 </div>
             </td>
 
             <!-- Period -->
             <td class="text-center py-4">
-                <div class="badge badge-info font-medium text-xs">
+                <div class="font-bold text-base text-warning">
                     {% if item.duration_months is not none and item.duration_days is not none %}
                     {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
                     {% endif %}
@@ -392,12 +402,12 @@ function showDeleteModal(tor_year_id) {
                     <div class="badge {{ badge_class }} text-white font-medium mb-1">
                         งวด {{ paid_count }}/{{ item.period }}
                     </div>
-                    {% if next_idx < due_dates|length %} <div class="badge badge-outline font-medium text-xs mt-1">
+                    {% if next_idx < due_dates|length %} <div class="badge badge-outline font-medium text-s mt-1">
                         ชำระก่อน {{ due_dates[next_idx].strftime('%d/%m/%Y') }}
                 </div>
                 {% endif %}
                 {% if item.payment_records %}
-                <div class="text-xs text-gray-500 mt-1">
+                <div class="text-s text-gray-500 mt-1">
                     จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/%Y %H:%M') }}
                 </div>
                 {% endif %}
@@ -407,9 +417,9 @@ function showDeleteModal(tor_year_id) {
             <!-- Company -->
             <td class="py-4">
                 <div class="flex flex-col">
-                    <span class="font-bold text py-1">{{ item.company }}</span>
-                    <span class="text-xs text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
-                    <ul class="text-xs text-base-content/70 list-disc list-inside">
+                    <span class="font-bold text-base py-1">{{ item.company }}</span>
+                    <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
+                    <ul class="text-s text-base-content/70 list-disc list-inside">
                         {% if item.responsible_by %}
                         {% for u in item.responsible_by %}
                         <li>{{ u.display_name() }}</li>
