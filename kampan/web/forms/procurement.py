@@ -12,6 +12,9 @@ BaseProcurementForm = model_form(
         "updated_date",
         "created_by",
         "last_updated_by",
+        "image",
+        "start_date",
+        "end_date",
     ],
     field_args={
         "name": {"label": "ชื่อรายการ"},
@@ -47,6 +50,13 @@ class ProcurementForm(BaseProcurementForm):
     def validate_period(self, field):
         if field.data is not None and field.data < 1:
             raise ValidationError("จำนวนงวดต้องมากกว่า 0")
+
+    image = fields.FileField(
+        "รูปภาพ",
+        validators=[
+            file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
+        ],
+    )
 
 
 BaseToRYearForm = model_form(

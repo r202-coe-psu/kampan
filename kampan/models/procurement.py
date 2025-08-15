@@ -44,6 +44,7 @@ class Procurement(me.Document):
     meta = {"collection": "procurements"}
 
     # Core fields
+    image = me.ImageField()
     product_number = me.StringField(max_length=50, unique=True, required=True)
     asset_code = me.StringField(max_length=50, required=True)
     name = me.StringField(max_length=255, required=True)

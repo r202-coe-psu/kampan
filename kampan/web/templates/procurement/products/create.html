@@ -7,124 +7,232 @@
 {% block content %}
 
 <div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-8">
-    <div class="flex items-center mb-6">
-        <h1 class="text-xl md:text-2xl font-bold text-gray-800">เพิ่มรายการขอซื้อขอจ้างใหม่</h1>
+    <div class="flex items-center mb-8">
+        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+            <i class="ph ph-plus text-2xl text-primary"></i>
+        </div>
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">เพิ่มรายการขอซื้อขอจ้างใหม่</h1>
+            <p class="text-gray-500 text-sm">กรอกข้อมูลรายการที่ต้องการขอซื้อขอจ้าง</p>
+        </div>
     </div>
-    <form method="POST" action="" class="space-y-5">
+
+    <form method="POST" action="" enctype="multipart/form-data" class="space-y-8">
         {{ form.hidden_tag() }}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div class="md:col-span-2">
-                <div class="flex flex-col md:flex-row md:space-x-4">
-                    <div class="flex-1 mb-4 md:mb-0">
-                        <label class="block text-gray-700 font-medium mb-1" for="name">{{ form.name.label }}</label>
-                        {{ form.name(class_="input input-bordered w-full") }}
-                        {% if form.name.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.name.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="flex-1 mb-4 md:mb-0">
-                        <label class="block text-gray-700 font-medium mb-1" for="asset_code">{{ form.asset_code.label
-                            }}</label>
-                        {{ form.asset_code(class_="input input-bordered w-full") }}
-                        {% if form.asset_code.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.asset_code.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-gray-700 font-medium mb-1" for="category">{{ form.category.label
-                            }}</label>
-                        {{ form.category(class_="select select-bordered w-full") }}
-                        {% if form.category.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.category.errors[0] }}</p>
-                        {% endif %}
-                    </div>
+        <!-- Basic Information Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
+                ข้อมูลพื้นฐาน
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-2" for="name">{{ form.name.label }}</label>
+                    {{ form.name(class_="input input-bordered w-full focus:input-primary") }}
+                    {% if form.name.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.name.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="category">{{ form.category.label }}</label>
+                    {{ form.category(class_="select select-bordered w-full focus:select-primary") }}
+                    {% if form.category.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.category.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="lg:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-2" for="asset_code">{{ form.asset_code.label
+                        }}</label>
+                    {{ form.asset_code(class_="input input-bordered w-full focus:input-primary") }}
+                    {% if form.asset_code.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.asset_code.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="company">{{ form.company.label }}</label>
+                    {{ form.company(class_="input input-bordered w-full focus:input-primary") }}
+                    {% if form.company.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.company.errors[0] }}
+                    </p>
+                    {% endif %}
                 </div>
             </div>
-            <div>
-                <label class="block text-gray-700 font-medium mb-1" for="start_date">{{ form.start_date.label }}</label>
-                <div class="relative">
-                    {{ form.start_date(class_="input input-bordered w-full", type="date", id="start_date", style="position: absolute; opacity: 0;") }}
-                    <input type="text" id="start_date_display" placeholder="dd/mm/yyyy" 
-                           class="input input-bordered w-full" readonly 
-                           onclick="document.getElementById('start_date').showPicker()">
+        </div>
+
+        <!-- Date and Financial Information Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-calendar-check text-xl text-green-600 mr-2"></i>
+                ข้อมูลระยะเวลาและการเงิน
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="start_date">{{ form.start_date.label
+                        }}</label>
+                    <div class="relative">
+                        {{ form.start_date(class_="input input-bordered w-full focus:input-primary", type="date",
+                        id="start_date", style="position: absolute; opacity: 0;") }}
+                        <input type="text" id="start_date_display" placeholder="dd/mm/yyyy"
+                            class="input input-bordered w-full focus:input-primary" readonly
+                            onclick="document.getElementById('start_date').showPicker()">
+                        <i
+                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    {% if form.start_date.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.start_date.errors[0] }}
+                    </p>
+                    {% endif %}
                 </div>
-                {% if form.start_date.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.start_date.errors[0] }}</p>
-                {% endif %}
-            </div>
-            <div>
-                <label class="block text-gray-700 font-medium mb-1" for="end_date">{{ form.end_date.label }}</label>
-                <div class="relative">
-                    {{ form.end_date(class_="input input-bordered w-full", type="date", id="end_date", style="position: absolute; opacity: 0;") }}
-                    <input type="text" id="end_date_display" placeholder="dd/mm/yyyy" 
-                           class="input input-bordered w-full" readonly 
-                           onclick="document.getElementById('end_date').showPicker()">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="end_date">{{ form.end_date.label }}</label>
+                    <div class="relative">
+                        {{ form.end_date(class_="input input-bordered w-full focus:input-primary", type="date",
+                        id="end_date", style="position: absolute; opacity: 0;") }}
+                        <input type="text" id="end_date_display" placeholder="dd/mm/yyyy"
+                            class="input input-bordered w-full focus:input-primary" readonly
+                            onclick="document.getElementById('end_date').showPicker()">
+                        <i
+                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    {% if form.end_date.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.end_date.errors[0] }}
+                    </p>
+                    {% endif %}
                 </div>
-                {% if form.end_date.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.end_date.errors[0] }}</p>
-                {% endif %}
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="amount">{{ form.amount.label }}</label>
+                    <div class="relative">
+                        {{ form.amount(class_="input input-bordered w-full focus:input-primary pl-8", step="0.01",
+                        min="0", id="amount") }}
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
+                    </div>
+                    {% if form.amount.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.amount.errors[0] }}
+                    </p>
+                    {% endif %}
+                    <p id="amount_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
+                        <i class="ph ph-warning text-sm mr-1"></i>จำนวนเงินต้องมากกว่าหรือเท่ากับ 0
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="period">{{ form.period.label }}</label>
+                    <div class="relative">
+                        {{ form.period(class_="input input-bordered w-full focus:input-primary", min="1", id="period")
+                        }}
+                        <span
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">งวด</span>
+                    </div>
+                    {% if form.period.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.period.errors[0] }}
+                    </p>
+                    {% endif %}
+                    <p id="period_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
+                        <i class="ph ph-warning text-sm mr-1"></i>จำนวนงวดต้องมากกว่า 0
+                    </p>
+                </div>
             </div>
+        </div>
+
+        <!-- Responsible Person Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-users text-xl text-purple-600 mr-2"></i>
+                ผู้รับผิดชอบ
+            </h2>
             <div>
-                <label class="block text-gray-700 font-medium mb-1" for="amount">{{ form.amount.label }}</label>
-                {{ form.amount(class_="input input-bordered w-full", step="0.01", min="0", id="amount") }}
-                {% if form.amount.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.amount.errors[0] }}</p>
-                {% endif %}
-                <p id="amount_error" class="text-red-500 text-xs mt-1" style="display:none;">จำนวนเงินต้องมากกว่าหรือเท่ากับ 0</p>
-            </div>
-            <div>
-                <label class="block text-gray-700 font-medium mb-1" for="period">{{ form.period.label }}</label>
-                {{ form.period(class_="input input-bordered w-full", min="1", id="period") }}
-                {% if form.period.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.period.errors[0] }}</p>
-                {% endif %}
-                <p id="period_error" class="text-red-500 text-xs mt-1" style="display:none;">จำนวนงวดต้องมากกว่า 0</p>
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-gray-700 font-medium mb-1" for="company">{{ form.company.label }}</label>
-                {{ form.company(class_="input input-bordered w-full") }}
-                {% if form.company.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.company.errors[0] }}</p>
-                {% endif %}
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label
+                <label class="block text-gray-700 font-medium mb-2" for="responsible_by">{{ form.responsible_by.label
                     }}</label>
-                <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                    class="input input-bordered w-full mb-2" oninput="filterResponsibleBy()">
-                <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
+                <div class="relative mb-3">
+                    <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
+                        class="input input-bordered w-full focus:input-primary pl-10" oninput="filterResponsibleBy()">
+                    <i
+                        class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div id="responsible_by_list"
+                    class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
                     {% for user_role in form.responsible_by.queryset %}
-                    <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
-                        <input type="checkbox" name="responsible_by" value="{{ user_role.id }}" {% if
-                            user_role.id|string in form.responsible_by.data or user_role in form.responsible_by.data
-                            %}checked{% endif %}>
-                        <span>
-                            {{ form.label_modifier(user_role) if form.label_modifier else user_role.display_fullname()
-                            }}
-                        </span>
+                    <label
+                        class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="responsible_by" value="{{ user_role.id }}"
+                            class="checkbox checkbox-primary checkbox-sm" {% if user_role.id|string in
+                            form.responsible_by.data or user_role in form.responsible_by.data %}checked{% endif %}>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <i class="ph ph-user text-primary text-sm"></i>
+                            </div>
+                            <span class="text-gray-700">
+                                {{ form.label_modifier(user_role) if form.label_modifier else
+                                user_role.display_fullname() }}
+                            </span>
+                        </div>
                     </label>
                     {% endfor %}
                 </div>
                 {% if form.responsible_by.errors %}
-                <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
+                <p class="text-red-500 text-xs mt-2 flex items-center">
+                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.responsible_by.errors[0] }}
+                </p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Submit Button -->
-        <div class="flex justify-end space-x-2">
+        <!-- Image Upload Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-image text-xl text-orange-600 mr-2"></i>
+                รูปภาพประกอบ
+            </h2>
+            <div class="space-y-3">
+                <label class="block text-gray-700 font-medium mb-2" for="image">
+                    อัปโหลดรูปภาพ
+                </label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="image"
+                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-500">
+                                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">PNG, JPG หรือ JPEG (ขนาดไม่เกิน 5MB)</p>
+                        </div>
+                        {{ form.image(class_="hidden", id="image") }}
+                    </label>
+                </div>
+                {% if form.image.errors %}
+                <p class="text-red-500 text-xs mt-2 flex items-center">
+                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.image.errors[0] }}
+                </p>
+                {% endif %}
+                <div id="image_preview" class="hidden mt-4">
+                    <img id="preview_img" src="" alt="ตัวอย่างรูปภาพ" class="max-w-xs rounded-lg shadow-md">
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <a href="{{ url_for('procurement.products.index', organization=organization.id) }}"
-                class="btn px-5 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold shadow">
+                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
+                <i class="ph ph-x mr-2"></i>
                 ยกเลิก
             </a>
             <button type="submit" id="submit_btn"
-                class="btn btn-primary px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow">
-                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                บันทึก
+                class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+                <i class="ph ph-check mr-2"></i>
+                บันทึกรายการ
             </button>
         </div>
     </form>
@@ -189,7 +297,7 @@
         function validateAmount() {
             const amountError = document.getElementById('amount_error');
             const value = parseFloat(amount.value);
-            
+
             if (amount.value !== '' && (isNaN(value) || value < 0)) {
                 amount.setCustomValidity('จำนวนเงินต้องมากกว่าหรือเท่ากับ 0');
                 amountError.style.display = 'block';
@@ -206,7 +314,7 @@
         function validatePeriod() {
             const periodError = document.getElementById('period_error');
             const value = parseInt(period.value);
-            
+
             if (period.value !== '' && (isNaN(value) || value < 1)) {
                 period.setCustomValidity('จำนวนงวดต้องมากกว่า 0');
                 periodError.style.display = 'block';
@@ -224,16 +332,16 @@
             const isAmountValid = validateAmount();
             const isPeriodValid = validatePeriod();
             validateDates();
-            
+
             return isAmountValid && isPeriodValid;
         }
 
         // Event listeners
-        startDate.addEventListener('change', function() {
+        startDate.addEventListener('change', function () {
             validateDates();
             formatDateDisplay();
         });
-        endDate.addEventListener('change', function() {
+        endDate.addEventListener('change', function () {
             validateDates();
             formatDateDisplay();
         });
@@ -246,10 +354,10 @@
         formatDateDisplay();
 
         // Form submission validation
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
             if (!validateForm()) {
                 e.preventDefault();
-                
+
                 // Show alert for better user feedback
                 const toast = document.createElement('div');
                 toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
@@ -258,13 +366,32 @@
                     <span>กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง</span>
                 `;
                 document.body.appendChild(toast);
-                
+
                 // Remove toast after 3 seconds
                 setTimeout(() => {
                     if (toast.parentNode) {
                         toast.parentNode.removeChild(toast);
                     }
                 }, 3000);
+            }
+        });
+
+        // Image preview functionality
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('image_preview');
+        const previewImg = document.getElementById('preview_img');
+
+        imageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.add('hidden');
             }
         });
     });
@@ -285,6 +412,11 @@
     .input-error {
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+
+    .checkbox:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
     }
 </style>
 

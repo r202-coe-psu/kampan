@@ -113,20 +113,29 @@
         } %}
 
         <div
-            class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-6 -m-6 mb-6 rounded-t-lg">
-            <h3 class="font-bold text-xl flex items-center gap-2">
-                <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-2xl"></i>
-                รายละเอียดรายการขอซื้อขอจ้าง
-                {% if payment_status == 'paid' %}
-                <span class="badge badge-success badge-sm ml-2">ชำระครบแล้ว</span>
-                {% elif payment_status == 'overdue' %}
-                <span class="badge badge-error badge-sm ml-2">เลยกำหนด</span>
-                {% elif payment_status == 'upcoming' %}
-                <span class="badge badge-warning badge-sm ml-2">ใกล้ครบกำหนด</span>
-                {% endif %}
-            </h3>
-            <p class="text-white/80 text-sm mt-1">เลขที่เบิกจ่าย: {{ item.product_number }}</p>
-            <p class="text-white/80 text-sm mt-1">รหัสครุภัณฑ์: {{ item.asset_code }}</p>
+            class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-6 -m-6 mb-6 rounded-t-lg flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+                <h3 class="font-bold text-xl flex items-center gap-2">
+                    <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-2xl"></i>
+                    รายละเอียดรายการขอซื้อขอจ้าง
+                    {% if payment_status == 'paid' %}
+                    <span class="badge badge-success badge-lg ml-2">ชำระครบแล้ว</span>
+                    {% elif payment_status == 'overdue' %}
+                    <span class="badge badge-error badge-lg ml-2">เลยกำหนด</span>
+                    {% elif payment_status == 'upcoming' %}
+                    <span class="badge badge-warning badge-lg ml-2">ใกล้ครบกำหนด</span>
+                    {% endif %}
+                </h3>
+                <p class="text-white/80 text-xl mt-1">เลขที่เบิกจ่าย: {{ item.product_number }}</p>
+                <p class="text-white/80 text-xl mt-1">รหัสครุภัณฑ์: {{ item.asset_code }}</p>
+            </div>
+            <form method="dialog" class="mt-2 md:mt-0">
+                <button
+                    class="btn btn-primary btn-lg bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white">
+                    <i class="ph ph-x mr-1"></i>
+                    ปิด
+                </button>
+            </form>
         </div>
 
 
@@ -134,6 +143,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Image Card (show if image exists) -->
+                {% if item.image %}
+                <div class="md:col-span-2 card bg-base-100 border border-base-200 shadow-sm">
+                    <img src="{{ url_for('procurement.products.image', procurement_id=item.id, filename=item.image.filename if item.image.filename else 'image') }}"
+                        alt="รูปภาพประกอบ" class="rounded-lg w-full h-auto object-cover max-h-80 shadow-md mx-auto">
+                </div>
+                {% endif %}
                 <!-- Basic Information Card -->
                 <div class="card bg-base-100 border border-base-200 shadow-sm">
                     <div class="card-body p-4">
@@ -284,16 +300,6 @@
                 </div>
                 {% endif %}
             </div>
-        </div>
-
-        <!-- Modal Actions -->
-        <div class="modal-action mt-6">
-            <form method="dialog">
-                <button class="btn btn-primary">
-                    <i class="ph ph-x mr-1"></i>
-                    ปิด
-                </button>
-            </form>
         </div>
     </div>
 </dialog>

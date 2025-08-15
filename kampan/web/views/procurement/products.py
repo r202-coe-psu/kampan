@@ -146,6 +146,21 @@ def create():
     if tor_year:
         procurement.tor_year = tor_year
 
+    # Save image if uploaded
+    if form.image.data:
+        if procurement.image:
+            procurement.image.replace(
+                form.image.data,
+                filename=form.image.data.filename,
+                content_type=form.image.data.content_type,
+            )
+        else:
+            procurement.image.put(
+                form.image.data,
+                filename=form.image.data.filename,
+                content_type=form.image.data.content_type,
+            )
+
     procurement.save()
     return redirect(url_for("procurement.products.index", organization=organization))
 
@@ -322,3 +337,22 @@ def download_template(organization_id):
         download_name=f"Template_{organization.name}.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+@module.route("/<procurement_id>/picture/<filename>")
+def image(procurement_id, filename):
+    procurement = models.Procurement.objects.get(id=procurement_id)
+
+    if (
+        not procurement
+        or not procurement.image
+        or procurement.image.filename != filename
+    ):
+        return abort(403)
+
+    response = send_file(
+        procurement.image,
+        download_name=procurement.image.filename,
+        mimetype=procurement.image.content_type,
+    )
+    return response
