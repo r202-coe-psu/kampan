@@ -33,7 +33,7 @@ class WorkerServer:
         redis_url = settings.get("REDIS_URL", "redis://localhost:6379")
         self.conn = redis.from_url(redis_url)
 
-        logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.DEBUG)
+        # logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.DEBUG)
 
     def run(self):
         # logging.getLogger("pymongo").setLevel(logging.WARNING)
