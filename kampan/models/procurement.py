@@ -124,32 +124,38 @@ class Procurement(me.Document):
 
         start = (
             self.start_date.date()
-            if hasattr(self.start_date, "date")
+            if isinstance(self.start_date, datetime.date)
             else self.start_date
         )
-        end = self.end_date.date() if hasattr(self.end_date, "date") else self.end_date
+        end = (
+            self.end_date.date()
+            if isinstance(self.end_date, datetime.date)
+            else self.end_date
+        )
 
-        total_days = (end - start).days
-        if total_days < 1:
-            return []
+        total_days = (end - start).days + 1  # รวมวันสุดท้าย
+        days_per_period = total_days // self.period
+        remainder = total_days % self.period
 
-        period_days = total_days // self.period
         due_dates = []
-        for i in range(1, self.period + 1):
-            due_date = start + datetime.timedelta(days=period_days * i)
-            # อย่าให้เกิน end_date
-            if due_date > end:
-                due_date = end
-            due_dates.append(due_date)
+        current_start = start
+        for i in range(self.period):
+            days_this_period = days_per_period + (1 if i < remainder else 0)
+            current_end = current_start + datetime.timedelta(days=days_this_period - 1)
+            # ป้องกันเกิน end_date
+            if current_end > end:
+                current_end = end
+            due_dates.append(current_end)
+            current_start = current_end + datetime.timedelta(days=1)
         return due_dates
 
     def get_next_payment_index(self):
         """
         Return the index (0-based) of the next unpaid period.
         """
-        if self.payment_status == "paid":
-            return self.period  # หมายถึงจ่ายครบทุกงวดแล้ว
-        return (self.paid_period_index or -1) + 1
+        if len(self.payment_records) >= self.period:
+            return self.period
+        return len(self.payment_records)
 
     def get_current_payment_status(self, today=None):
         """
@@ -175,7 +181,7 @@ class Procurement(me.Document):
         due_date = due_dates[next_idx]
         if today > due_date:
             return "overdue"
-        elif today <= due_date <= today + datetime.timedelta(days=7):
+        elif 0 <= (due_date - today).days <= 7:
             return "upcoming"
         else:
             return "unpaid"
@@ -198,10 +204,6 @@ class Procurement(me.Document):
 
     def get_payment_record_for_period(self):
         """Get payment record for specific period"""
-        for record in self.payment_records:
-            if record.period_index == (self.paid_period_index or -1) + 1:
-                return record
-        return None
         for record in self.payment_records:
             if record.period_index == (self.paid_period_index or -1) + 1:
                 return record
