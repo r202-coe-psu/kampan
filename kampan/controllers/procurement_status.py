@@ -14,6 +14,8 @@ class ProcurementStatusUpdater:
         today = datetime.date.today()
         updated = 0
         for p in models.Procurement.objects():
+            if p.payment_status == "paid":
+                continue
             old_status = p.payment_status
             new_status = p.get_current_payment_status(today)
             if old_status != new_status:
@@ -41,5 +43,6 @@ class ProcurementStatusUpdater:
         if old_status != new_status:
             procurement.payment_status = new_status
             procurement.save()
-        else:
-            logger.debug(f"No status change for procurement id {procurement_id}")
+            logger.debug(
+                f"Updated procurement id {procurement_id} status from {old_status} to {new_status}"
+            )
