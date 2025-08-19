@@ -198,5 +198,74 @@
             </div>
         </div>
     </div>
+    {% if paginated_procurements.pages > 1 %}
+    <div class="mt-8">
+        <!-- Pagination Info -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+            <div class="text-sm text-gray-500 pb-3">
+                หน้า {{ paginated_procurements.page }} จาก {{ paginated_procurements.pages }}
+            </div>
+            <!-- Pagination Controls -->
+            <div class="flex justify-center">
+                <div class="join">
+                    {% set page = paginated_procurements.page %}
+                    {% set pages = paginated_procurements.pages %}
+                    {% set window = 2 %}
+
+                    <!-- First Page -->
+                    <a class="join-item btn btn-sm {% if page <= 1 %}btn-disabled{% else %}btn-outline{% endif %}"
+                        href="{{ url_for('procurement.products.index', page=1, category=selected_category, payment_status=selected_payment_status) if page > 1 else '#' }}">
+                        <i class="ph ph-caret-double-left"></i>
+                    </a>
+
+                    <!-- Previous Page -->
+                    <a class="join-item btn btn-sm {% if page <= 1 %}btn-disabled{% else %}btn-outline{% endif %}"
+                        href="{{ url_for('procurement.products.index', page=page-1, category=selected_category, payment_status=selected_payment_status) if page > 1 else '#' }}">
+                        <i class="ph ph-caret-left"></i>
+                        <span class="hidden sm:inline ml-1">ก่อนหน้า</span>
+                    </a>
+
+                    <!-- Page Numbers -->
+                    {% set start_page = page - window if page - window > 1 else 1 %}
+                    {% set end_page = page + window if page + window < pages else pages %} {% if start_page> 1 %}
+                        <span class="join-item btn btn-sm btn-disabled">...</span>
+                        {% endif %}
+
+                        {% for p in range(start_page, end_page + 1) %}
+                        {% if p == page %}
+                        <span class="join-item btn btn-sm btn-primary">{{ p }}</span>
+                        {% else %}
+                        <a class="join-item btn btn-sm btn-outline"
+                            href="{{ url_for('procurement.products.index', page=p, category=selected_category, payment_status=selected_payment_status) }}">
+                            {{ p }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if end_page < pages %} <span class="join-item btn btn-sm btn-disabled">...</span>
+                            {% endif %}
+
+                            <!-- Next Page -->
+                            <a class="join-item btn btn-sm {% if page >= pages %}btn-disabled{% else %}btn-outline{% endif %}"
+                                href="{{ url_for('procurement.products.index', page=page+1, category=selected_category, payment_status=selected_payment_status) if page < pages else '#' }}">
+                                <span class="hidden sm:inline mr-1">ถัดไป</span>
+                                <i class="ph ph-caret-right"></i>
+                            </a>
+
+                            <!-- Last Page -->
+                            <a class="join-item btn btn-sm {% if page >= pages %}btn-disabled{% else %}btn-outline{% endif %}"
+                                href="{{ url_for('procurement.products.index', page=pages, category=selected_category, payment_status=selected_payment_status) if page < pages else '#' }}">
+                                <i class="ph ph-caret-double-right"></i>
+                            </a>
+                </div>
+            </div>
+            <div class="text-sm text-gray-600 mb-2 sm:mb-0 pt-3">
+                แสดง {{ (paginated_procurements.page-1)*paginated_procurements.per_page + 1 }} -
+                {{ (paginated_procurements.page-1)*paginated_procurements.per_page + procurements|length }}
+                จากทั้งหมด {{ paginated_procurements.total }} รายการ
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock content %}

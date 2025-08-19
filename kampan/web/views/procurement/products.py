@@ -8,6 +8,7 @@ from flask import (
     abort,
 )
 from flask_login import login_required, current_user
+from flask_mongoengine import Pagination
 import datetime
 import pandas as pd
 from io import BytesIO
@@ -40,66 +41,50 @@ def calculate_months_days(start_date, end_date):
     return months, days
 
 
-def enrich_procurements(procurements, today):
-    """Add duration and unpaid payment count."""
-    procurement_list = []
-    unpaid_payments_count = 0
-    for p in procurements:
-        months, days = calculate_months_days(p.start_date, p.end_date)
-        p.duration_months = months
-        p.duration_days = days
-
-        status = p.get_current_payment_status(today)
-        if status == "upcoming":
-            due_dates = p.get_payment_due_dates()
-            next_idx = p.get_next_payment_index()
-            if next_idx < len(due_dates):
-                next_due_date = due_dates[next_idx]
-                next_due_date = (
-                    next_due_date.date()
-                    if hasattr(next_due_date, "date")
-                    else next_due_date
-                )
-                days_until_due = (next_due_date - today).days
-                if 0 <= days_until_due <= 7:
-                    unpaid_payments_count += 1
-        procurement_list.append(p)
-    return procurement_list, unpaid_payments_count
-
-
 @module.route("", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def index():
     organization = current_user.user_setting.current_organization
+    today = datetime.date.today()
+    tor_year = getattr(current_user.user_setting, "tor_year", None)
+
+    # เพิ่ม filter category และ payment_status
     category = request.args.get("category", "")
     payment_status = request.args.get("payment_status", "")
+
     query = {}
+    if tor_year:
+        query["tor_year"] = tor_year
     if category:
         query["category"] = category
     if payment_status:
         query["payment_status"] = payment_status
 
-    if query:
-        procurements = models.Procurement.objects(
-            __raw__=query, tor_year=current_user.user_setting.tor_year
-        )
-    else:
-        procurements = models.Procurement.objects(
-            tor_year=current_user.user_setting.tor_year
-        )
-    today = datetime.date.today()
-    procurement_list, unpaid_payments_count = enrich_procurements(procurements, today)
+    procurement_qs = models.Procurement.objects(**query)
+
+    # enrich: คำนวณเดือนและวันลงในแต่ละ procurement (เฉพาะหน้า)
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+    paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
+
+    for p in paginated_procurements.items:
+        months, days = calculate_months_days(p.start_date, p.end_date)
+        p.duration_months = months
+        p.duration_days = days
+
+    category_choices = models.procurement.CATEGORY_CHOICES
+    payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
 
     return render_template(
         "/procurement/products/index.html",
         organization=organization,
-        procurements=procurement_list,
+        procurements=paginated_procurements.items,
+        paginated_procurements=paginated_procurements,
+        today=today,
         selected_category=category,
         selected_payment_status=payment_status,
-        category_choices=models.procurement.CATEGORY_CHOICES,
-        payment_status_choices=models.procurement.PAYEMENT_STATUS_CHOICES,
-        today=today,
-        unpaid_payments_count=unpaid_payments_count,
+        category_choices=category_choices,
+        payment_status_choices=payment_status_choices,
     )
 
 
