@@ -307,10 +307,10 @@
 <table class="table w-full">
     <thead class="bg-base-200/50">
         <tr class="border-none">
-            <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
-            <th class="font-semibold text-base-content text-sm w-32">เลขที่เบิกจ่าย</th>
+            <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
+            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-            <th class="font-semibold text-base-content text-sm text-center">ช่วงเวลา</th>
+            <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
             <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
             <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
             <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
@@ -324,12 +324,12 @@
         <tr class="hover:bg-base-50">
 
             <!-- Row Number -->
-            <td class="text-center py-4">
+            <!-- <td class="text-center py-4">
                 <div
                     class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
                     {{ loop.index }}
                 </div>
-            </td>
+            </td> -->
 
             <!-- PR Number -->
             <td class="py-4">
@@ -471,6 +471,12 @@
                         </button>
                     </div>
                     {% endif %}
+                    <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
+                        <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
+                            class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
+                            <i class="ph ph-pencil-simple text-lg"></i>
+                        </a>
+                    </div>
             </td>
         </tr>
         {% else %}

@@ -88,3 +88,12 @@ class FileForm(FlaskForm):
             file.FileAllowed(["xls", "xlsx"], "Only .xls and .xlsx files are allowed!"),
         ],
     )
+
+
+class EditImageForm(FlaskForm):
+    image = fields.FileField(
+        "รูปภาพใหม่",
+        validators=[
+            file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
+        ],
+    )

@@ -9,13 +9,13 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-import datetime
-import pandas as pd
 from io import BytesIO
-
 from kampan.web import forms, acl
 from kampan import models, utils
 from ... import redis_rq
+
+import datetime
+import pandas as pd
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
@@ -289,3 +289,40 @@ def image(procurement_id, filename):
         download_name=procurement.image.filename,
         mimetype=procurement.image.content_type,
     )
+
+
+@module.route("/<procurement_id>/edit_image", methods=["GET", "POST"])
+@login_required
+@acl.organization_roles_required("admin")
+def edit_image(procurement_id):
+    procurement = models.Procurement.objects(id=procurement_id).first()
+    if not procurement:
+        abort(404)
+    organization = current_user.user_setting.current_organization
+
+    form = forms.procurement.EditImageForm(obj=procurement)
+    if not form.validate_on_submit():
+        return render_template(
+            "/procurement/products/edit_image.html",
+            form=form,
+            procurement=procurement,
+            organization=organization,
+        )
+
+    # Save new image if uploaded
+    if form.image.data:
+        if procurement.image:
+            procurement.image.replace(
+                form.image.data,
+                filename=form.image.data.filename,
+                content_type=form.image.data.content_type,
+            )
+        else:
+            procurement.image.put(
+                form.image.data,
+                filename=form.image.data.filename,
+                content_type=form.image.data.content_type,
+            )
+        procurement.last_updated_by = current_user._get_current_object()
+        procurement.save()
+    return redirect(url_for("procurement.products.index", organization=organization))

@@ -1,0 +1,38 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}แก้ไขรูปภาพรายการขอซื้อขอจ้าง{% endblock %}
+{% block dashboard_title %}แก้ไขรูปภาพ{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-xl">
+    <div class="card bg-base-100 shadow-xl border border-base-200">
+        <div class="card-body">
+            <h2 class="text-2xl font-bold mb-4 text-primary">แก้ไขรูปภาพรายการ</h2>
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รูปภาพใหม่</label>
+                    {{ form.image(class="file-input file-input-bordered w-full") }}
+                    {% if form.image.errors %}
+                    <div class="text-error mt-1 text-sm">
+                        {{ form.image.errors[0] }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% if procurement.image %}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รูปภาพปัจจุบัน</label>
+                    <img src="{{ url_for('procurement.products.image', procurement_id=procurement.id, filename=procurement.image.filename) }}"
+                        alt="รูปภาพปัจจุบัน" class="rounded-lg w-full max-h-64 object-contain border">
+                </div>
+                {% endif %}
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                    <a href="{{ url_for('procurement.products.index', organization=organization.id) }}"
+                        class="btn btn-ghost">ยกเลิก</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
