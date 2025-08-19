@@ -74,6 +74,7 @@ def index():
 
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
+    total_amount_all = procurement_qs.sum("amount")
 
     return render_template(
         "/procurement/products/index.html",
@@ -85,6 +86,7 @@ def index():
         selected_payment_status=payment_status,
         category_choices=category_choices,
         payment_status_choices=payment_status_choices,
+        total_amount_all=total_amount_all,
     )
 
 
