@@ -224,8 +224,12 @@ def upload(organization_id):
             job_timeout=600,
         )
         print("=====> submit", job.get_id())
-        return redirect(
-            url_for("procurement.products.index", organization_id=organization_id)
+        return render_template(
+            "/procurement/products/upload_procurement.html",
+            form=form,
+            organization=organization,
+            errors=errors,
+            upload_success=True,
         )
 
     return render_template(
