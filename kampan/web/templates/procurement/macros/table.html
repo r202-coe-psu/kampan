@@ -303,6 +303,36 @@
         </div>
     </div>
 </dialog>
+
+<!-- Payment Confirmation Modal -->
+{% set due_dates = item.get_payment_due_dates() %}
+{% set status = item.get_current_payment_status(today) %}
+{% set next_idx = item.get_next_payment_index() %}
+{% set paid_count = item.payment_records|length %}
+{% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %}
+<dialog class="modal payment_{{ item.id }}">
+    <div class="modal-box">
+        <div class="text-2xl text-success font-bold">
+            ยืนยันการชำระเงิน
+        </div>
+        <p class="py-4">
+            คุณต้องการยืนยันการชำระเงินงวดที่ {{ paid_count + 1 }} สำหรับรายการ "{{ item.name }}" หรือไม่?<br>
+            <small class='text-warning'>หมายเหตุ: การยืนยันจะบันทึกข้อมูลการชำระเงินในระบบ</small>
+        </p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn">ยกเลิก</button>
+            </form>
+            <form method="post" action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}">
+                <button type="submit" class="btn btn-success">
+                    ยืนยันชำระ
+                    <i class="ph ph-check"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</dialog>
+{% endif %}
 {% endfor %}
 <table class="table w-full">
     <thead class="bg-base-200/50">
@@ -452,18 +482,15 @@
                 {% set status = item.get_current_payment_status(today) %}
                 {% set next_idx = item.get_next_payment_index() %}
                 {% set paid_count = item.payment_records|length %}
-                {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <form
-                    method="post"
-                    action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}"
-                    class="mt-2">
-                    <div class="tooltip tooltip-left" data-tip="ยืนยันชำระงวดที่ {{ next_idx + 1 }}">
-                        <button type="submit"
-                            class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition">
-                            <i class="ph ph-check text-lg"></i>
-                        </button>
-                    </div>
-                    </form>
-                    {% else %}
+                {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %}
+                <div class="tooltip tooltip-left mt-2" data-tip="ยืนยันชำระงวดที่ {{ paid_count + 1 }}">
+                    <button type="button"
+                        class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition"
+                        onclick="showPaymentModal('{{ item.id }}')">
+                        <i class="ph ph-check text-lg"></i>
+                    </button>
+                </div>
+                {% else %}
                     <div class="tooltip tooltip-left" data-tip="ชำระครบทุกงวดแล้ว">
                         <button type="button" disabled
                             class="btn btn-outline btn-disabled btn-sm rounded-full border-gray-300 text-gray-400 mt-2">
@@ -486,4 +513,13 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script type="text/javascript">
+function showPaymentModal(item_id) {
+    const modal = document.querySelector('.modal.payment_' + item_id);
+    if (modal) {
+        modal.showModal();
+    }
+}
+</script>
 {% endmacro %}
