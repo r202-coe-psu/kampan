@@ -251,7 +251,7 @@
                                 {% if item.responsible_by %}
                                 <div class="flex flex-wrap gap-1">
                                     {% for u in item.responsible_by %}
-                                    <span class="font-medium text-primary">
+                                    <span class="font-medium text-primary inline-block max-w-full truncate">
                                         {{ u.display_user_fullname() }}
                                     </span>
                                     {% endfor %}
@@ -459,7 +459,7 @@
                     <div class="flex flex-wrap gap-1 py-1">
                         {% if item.responsible_by %}
                         {% for u in item.responsible_by %}
-                        <span class="badge badge-outline badge-primary font-medium">
+                        <span class="badge badge-outline badge-primary font-medium truncate">
                             {{ u.display_user_fullname() }}
                         </span>
                         {% endfor %}

@@ -51,6 +51,7 @@ def index():
     # เพิ่ม filter category และ payment_status
     category = request.args.get("category", "")
     payment_status = request.args.get("payment_status", "")
+    upload_success = request.args.get("upload_success", "")
 
     query = {}
     if tor_year:
@@ -87,6 +88,7 @@ def index():
         category_choices=category_choices,
         payment_status_choices=payment_status_choices,
         total_amount_all=total_amount_all,
+        upload_success=upload_success,
     )
 
 
@@ -224,12 +226,12 @@ def upload(organization_id):
             job_timeout=600,
         )
         print("=====> submit", job.get_id())
-        return render_template(
-            "/procurement/products/upload_procurement.html",
-            form=form,
-            organization=organization,
-            errors=errors,
-            upload_success=True,
+        return redirect(
+            url_for(
+                "procurement.products.index",
+                organization_id=organization_id,
+                upload_success=1,
+            )
         )
 
     return render_template(
