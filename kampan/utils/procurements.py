@@ -1,5 +1,5 @@
 import pandas as pd
-import locale
+import re
 from io import BytesIO
 from datetime import datetime
 from kampan.models.procurement import Procurement, ToRYear
@@ -34,19 +34,43 @@ def upload_procurement_excel(file_bytes, user_id):
 
     # แปลงวันที่
     def parse_date(val):
-        if pd.isnull(val):
-            return None
         if isinstance(val, str):
-            try:
-                locale.setlocale(locale.LC_TIME, "th_TH.utf8")
-                try:
-                    return datetime.strptime(val, "%d %B %Y")
-                except Exception:
-                    return pd.to_datetime(val, errors="coerce")
-            except Exception:
-                return pd.to_datetime(val, errors="coerce")
+            val = val.strip()
+            th_to_en_month = {
+                "มกราคม": "January",
+                "กุมภาพันธ์": "February",
+                "มีนาคม": "March",
+                "เมษายน": "April",
+                "พฤษภาคม": "May",
+                "มิถุนายน": "June",
+                "กรกฎาคม": "July",
+                "สิงหาคม": "August",
+                "กันยายน": "September",
+                "ตุลาคม": "October",
+                "พฤศจิกายน": "November",
+                "ธันวาคม": "December",
+            }
+            m = re.match(r"(\d{1,2})\s+([ก-๙]+)\s+(\d{4})", val)
+            if m:
+                day = m.group(1)
+                th_month = m.group(2)
+                year = int(m.group(3)) - 543
+                en_month = th_to_en_month.get(th_month)
+                if en_month:
+                    date_str = f"{day} {en_month} {year}"
+                    try:
+                        from datetime import datetime
 
-        return pd.to_datetime(val, errors="coerce")
+                        dt = datetime.strptime(date_str, "%d %B %Y")
+                        return dt
+                    except Exception:
+                        pass
+            try:
+                return pd.to_datetime(val, errors="coerce")
+            except Exception:
+                return None
+        else:
+            return pd.to_datetime(val, errors="coerce")
 
     user = User.objects(id=user_id).first()
 
@@ -100,6 +124,7 @@ def upload_procurement_excel(file_bytes, user_id):
                 try:
                     if model_field in ["start_date", "end_date"]:
                         value = parse_date(value)
+                        print(f"Parsed date for {model_field}: {value}")
                     if model_field == "amount":
                         value = float(value) if pd.notnull(value) else 0
                     if model_field == "period":
