@@ -84,7 +84,7 @@ def upload_procurement_excel(file_bytes, user_id):
         "ประเภท",
         "ชื่อผู้รับผิดชอบ",
         "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์",
-        "ปังบประมาณ",
+        "ปีงบประมาณ",
     ]
 
     for idx, row in df.iterrows():
@@ -101,7 +101,7 @@ def upload_procurement_excel(file_bytes, user_id):
         data = {}
         try:
             # --- ดึงปีงบประมาณจาก column ---
-            tor_year_value = row.get("ปังบประมาณ")
+            tor_year_value = row.get("ปีงบประมาณ")
             tor_year_obj = None
             if pd.notnull(tor_year_value):
                 tor_year_str = str(int(tor_year_value))
