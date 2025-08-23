@@ -124,7 +124,6 @@ def upload_procurement_excel(file_bytes, user_id):
                 try:
                     if model_field in ["start_date", "end_date"]:
                         value = parse_date(value)
-                        print(f"Parsed date for {model_field}: {value}")
                     if model_field == "amount":
                         value = float(value) if pd.notnull(value) else 0
                     if model_field == "period":
