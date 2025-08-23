@@ -163,7 +163,7 @@
                         <div class="w-3 h-3 bg-orange-500 rounded"></div>
                         <div>
                             <div class="font-bold text-orange-700 text-lg">
-                                {{ procurements|selectattr('payment_status', 'equalto', 'due_soon')|list|length }}
+                                {{ procurements|selectattr('payment_status', 'equalto', 'upcoming')|list|length }}
                             </div>
                             <div class="text-xs text-orange-700">ใกล้ครบกำหนด</div>
                         </div>
@@ -256,7 +256,7 @@
         document.body.appendChild(toast);
 
         // Remove toast after 4 seconds and clean URL
-        setTimeout(function() {
+        setTimeout(function () {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
                 removeUploadParam();
@@ -272,7 +272,7 @@
     }
 
     // Show toast when page loads
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         showUploadSuccessToast();
     });
 </script>
