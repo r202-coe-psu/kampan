@@ -14,6 +14,8 @@ class ControllerServer:
         self.settings = settings
         self.running = False
         self.item_queue = asyncio.Queue(maxsize=1000)
+        # separate queue for procurement tasks so item processors don't consume them by mistake
+        self.procurement_queue = asyncio.Queue(maxsize=1000)
         self.quarter = 0
         self.item_snapshot = item_snapshot.ItemSnapshot(self.settings)
         self.procurement_status_updater = procurement_status.ProcurementStatusUpdater(
@@ -23,8 +25,12 @@ class ControllerServer:
     async def handle_command(self, msg):
         raw_data = msg.data.decode()
         data = json.loads(raw_data)
-        if data["action"] == "process":
-            await self.item_queue.put(data)
+        if data.get("action") == "process":
+            # route to correct queue based on type
+            if data.get("type") == "procurement":
+                await self.procurement_queue.put(data)
+            else:
+                await self.item_queue.put(data)
 
     async def check_items_daily(self):
         time_check = self.settings["DAIRY_TIME_TO_SNAP_ITEM"]
@@ -79,6 +85,8 @@ class ControllerServer:
         time_check = self.settings["DAIRY_TIME_TO_UPDATE_STATUS_PROCUREMENT"]
         hour, minute = time_check.split(":")
         process_time = datetime.time(int(hour), int(minute), 0)
+        procurements = models.Procurement.objects()
+
         while self.running:
             try:
                 logger.debug("Start checking procurement status daily")
@@ -97,22 +105,17 @@ class ControllerServer:
                     )
                     await asyncio.sleep(time_to_check)
 
-                procurements = models.Procurement.objects()
+                procurements = models.Procurement.objects(payment_status="unpaid")
                 for procurement in procurements:
                     data = {
                         "action": "process",
                         "type": "procurement",
-                        "item_id": str(procurement.id),
+                        "procurement_id": str(procurement.id),
                     }
-                    await self.item_queue.put(data)
+                    await self.procurement_queue.put(data)
                     await asyncio.sleep(0.01)
 
                 self.quarter += 1
-
-                logger.info(
-                    "Processed all procurement ids for today. Waiting for next round."
-                )
-
             except Exception as e:
                 logger.error(f"Error in check_procurement_status_daily: {e}")
 
@@ -120,7 +123,7 @@ class ControllerServer:
         logger.debug("start process procurement queue")
 
         while self.running:
-            data = await self.item_queue.get()
+            data = await self.procurement_queue.get()
             if data["type"] == "procurement":
                 await self.procurement_status_updater.process_data(data)
 
