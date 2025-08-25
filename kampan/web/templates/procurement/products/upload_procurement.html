@@ -62,7 +62,7 @@
                                         </div>
                                     </div>
                                     <h3 class="text-lg font-semibold text-gray-800 mb-2">วางไฟล์ที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
-                                    <p class="text-sm text-gray-500 mb-4">รองรับไฟล์ .xlsx, .xls, .csv, .ods</p>
+                                    <p class="text-sm text-gray-500 mb-4">รองรับไฟล์ .xlsx</p>
                                     <div class="flex justify-center">
                                         <span class="btn btn-primary btn-sm">
                                             <i class="ph ph-folder-open"></i>
@@ -263,13 +263,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate file type
             const allowedTypes = [
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-                'application/vnd.ms-excel', // .xls
-                'text/csv', // .csv
-                'application/vnd.oasis.opendocument.spreadsheet' // .ods
+                
             ];
             
             if (!allowedTypes.includes(file.type)) {
-                alert('กรุณาเลือกไฟล์ประเภท Excel (.xlsx, .xls), CSV หรือ ODS เท่านั้น');
+                alert('กรุณาเลือกไฟล์ประเภท Excel (.xlsx)  เท่านั้น');
                 return;
             }
 
