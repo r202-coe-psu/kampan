@@ -331,9 +331,38 @@
         function validateForm() {
             const isAmountValid = validateAmount();
             const isPeriodValid = validatePeriod();
+            const imageInput = document.getElementById('image');
+            const isImageValid = imageInput.files.length > 0;
+            
+            // Clear any HTML5 validation message on image input
+            imageInput.setCustomValidity('');
+            
             validateDates();
 
-            return isAmountValid && isPeriodValid;
+            if (!isImageValid) {
+                // Show image error message
+                const imageError = document.getElementById('image_error') || createImageError();
+                imageError.style.display = 'block';
+            } else {
+                // Hide image error message if exists
+                const imageError = document.getElementById('image_error');
+                if (imageError) {
+                    imageError.style.display = 'none';
+                }
+            }
+
+            return isAmountValid && isPeriodValid && isImageValid;
+        }
+
+        function createImageError() {
+            const imageError = document.createElement('p');
+            imageError.id = 'image_error';
+            imageError.className = 'text-red-500 text-xs mt-2 flex items-center';
+            imageError.innerHTML = '<i class="ph ph-warning text-sm mr-1"></i>กรุณาเลือกรูปภาพ';
+            
+            const imageSection = document.querySelector('.space-y-3');
+            imageSection.appendChild(imageError);
+            return imageError;
         }
 
         // Event listeners
@@ -380,10 +409,15 @@
 
         // Form submission validation
         form.addEventListener('submit', function (e) {
-            if (!validateForm()) {
+            console.log('Form submitted');
+            const isFormValid = validateForm();
+            console.log('Form valid:', isFormValid);
+            
+            if (!isFormValid) {
                 e.preventDefault();
+                console.log('Form validation failed, preventing submission');
 
-                // Show alert for better user feedback
+                // Show general validation error toast
                 const toast = document.createElement('div');
                 toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
                 toast.innerHTML = `
@@ -398,6 +432,8 @@
                         toast.parentNode.removeChild(toast);
                     }
                 }, 3000);
+            } else {
+                console.log('Form is valid, allowing submission');
             }
         });
 
@@ -415,6 +451,12 @@
                     imagePreview.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
+                
+                // Hide image error message if exists
+                const imageError = document.getElementById('image_error');
+                if (imageError) {
+                    imageError.style.display = 'none';
+                }
             } else {
                 imagePreview.classList.add('hidden');
             }
@@ -440,7 +482,7 @@
     }
 
     .checkbox:checked {
-    background-color: #3b82f6 !important;   /* ฟ้า */
+    background-color: #3b82f6 !important;
     border-color: #3b82f6 !important;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.00016 10.8002L3.20016 8.00016L2.26683 8.9335L6.00016 12.6668L14.0002 4.66683L13.0668 3.7335L6.00016 10.8002Z'/%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
@@ -471,7 +513,6 @@
     #responsible_by_list label {
         cursor: pointer;
         user-select: none;
-        transition: all 0.2s ease-in-out;
         border: 1px solid transparent !important;
         margin-bottom: 2px;
     }
