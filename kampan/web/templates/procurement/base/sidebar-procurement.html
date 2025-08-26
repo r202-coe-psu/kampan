@@ -18,6 +18,12 @@
         <i class="ph ph-calendar-blank"></i> ปีงบประมาณ
       </a>
     </li>
+    <li>
+      <a class="{{ 'menu-active' if '/mas' in request.path else '' }}"
+        href="{{ url_for('procurement.mas.index', organization_id=organization.id) }}">
+        <i class="ph ph-chart-bar"></i> ระบบ MAS
+      </a>
+    </li>
     {% endif %}
     <li>
       <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"

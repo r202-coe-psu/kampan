@@ -1,0 +1,44 @@
+{% extends "/base/base.html" %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block body %}
+<div class="drawer 2xl:drawer-open">
+  <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
+  <div class="drawer-content bg-base-200 h-full min-h-screen">
+    <div class="flex flex-col h-full">
+      <div class="w-full navbar p-0 h-auto">
+        <div class="flex w-full flex-col items-start">
+          <div class="flex flex-row w-full justify-between bg-blue-500 pt-2">
+            <label for="drawer-menu"
+              class="btn rounded-none border-0 bg-blue-500 drawer-button 2xl:hidden text-white hover:bg-base-100 hover:text-black">
+              <i class="ph ph-size ph-list"></i>
+            </label>
+          </div>
+          <div class="flex flex-col px-2 lg:px-10">
+            <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
+              <span class="text-3xl font-bold">
+                {% block dashboard_title %}ระบบ MAS (Management Accounting System){% endblock %}
+              </span>
+            </div>
+            <div class="flex py-2">
+              {% block breadcrumbs %}{% endblock %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lg:px-2 mx-2 pb-5 h-full flex flex-col justify-between">
+        <div>
+          {% block content %}
+          {% endblock content %}
+        </div>
+        <footer
+          class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 mt-4 border-t border-base-300 items-end">
+          {% include "/base/footer.html" %}
+        </footer>
+      </div>
+    </div>
+  </div>
+  {% include "/mas/base/sidebar-mas.html" %}
+</div>
+
+{% endblock body %}

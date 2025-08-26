@@ -97,3 +97,42 @@ class EditImageForm(FlaskForm):
             file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
         ],
     )
+
+
+BaseMASProjectForm = model_form(
+    models.MASProject,
+    FlaskForm,
+    exclude=[
+        "created_date",
+        "updated_date",
+        "created_by",
+        "last_updated_by",
+        "status",
+    ],
+    field_args={
+        "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
+        "project_name": {"label": "ชื่อโครงการ/รายการ"},
+        "expense_category": {"label": "หมวดรายจ่าย"},
+        "expense_subcategory": {"label": "หมวดรายจ่ายย่อย"},
+        "amount": {"label": "จำนวนเงิน (Amount)"},
+        "budget": {"label": "ประมาณจ่าย (Budget)"},
+        "actual_payment": {"label": "จ่ายจริง (Actual Payment)"},
+        "fiscal_year": {"label": "ปีงบประมาณ"},
+    },
+)
+
+
+class MASProjectForm(BaseMASProjectForm):
+    """Form for creating and editing MAS projects"""
+
+    def validate_amount(self, field):
+        if field.data is not None and field.data < 0:
+            raise ValidationError("จำนวนเงินต้องมากกว่าหรือเท่ากับ 0")
+
+    def validate_budget(self, field):
+        if field.data is not None and field.data < 0:
+            raise ValidationError("งบประมาณต้องมากกว่าหรือเท่ากับ 0")
+
+    def validate_actual_payment(self, field):
+        if field.data is not None and field.data < 0:
+            raise ValidationError("จำนวนเงินที่จ่ายจริงต้องมากกว่าหรือเท่ากับ 0")

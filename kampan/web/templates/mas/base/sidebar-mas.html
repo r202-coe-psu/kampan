@@ -1,0 +1,71 @@
+<div class="drawer-side shadow">
+  <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
+  <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
+    <div class="py-2 border-b mb-2">
+      <h1 class="text-tns-black font-bold text-3xl text-center">MAS SYSTEM</h1>
+    </div>
+    {% if organization %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/mas/projects' in request.path and '/dashboard' not in request.path else '' }}"
+        href="{{ url_for('mas.projects.index', organization_id=organization.id ) }}">
+        <i class="ph ph-folder-open"></i>โครงการ MAS
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/mas/projects/dashboard' in request.path else '' }}"
+        href="{{ url_for('mas.projects.dashboard', organization_id=organization.id) }}">
+        <i class="ph ph-chart-pie"></i> Dashboard
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/mas/projects/create' in request.path else '' }}"
+        href="{{ url_for('mas.projects.create', organization_id=organization.id) }}">
+        <i class="ph ph-plus-circle"></i> เพิ่มโครงการใหม่
+      </a>
+    </li>
+    {% endif %}
+    
+    <!-- Expense Categories Quick Links -->
+    <div class="divider text-xs uppercase text-base-content/60">หมวดรายจ่าย</div>
+    <li>
+      <a href="{{ url_for('mas.projects.index', organization_id=organization.id, expense_category='personnel') }}">
+        <i class="ph ph-users"></i> บุคลากร
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('mas.projects.index', organization_id=organization.id, expense_category='equipment') }}">
+        <i class="ph ph-desktop"></i> ครุภัณฑ์
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('mas.projects.index', organization_id=organization.id, expense_category='services') }}">
+        <i class="ph ph-handshake"></i> จ้างเหมาบริการ
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('mas.projects.index', organization_id=organization.id, expense_category='utilities') }}">
+        <i class="ph ph-lightning"></i> สาธารณูปโภค
+      </a>
+    </li>
+    
+    <li>
+      <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
+        href="{{ url_for('site.select_system', organization_id=organization.id) }}">
+        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      </a>
+    </li>
+    {% endif %}
+    <div class="mt-auto p-3">
+      <div class="flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate">{{ current_user.get_resources_fullname_th() }}</p>
+          <p class="text-xs text-base-content/60 truncate">{{ current_user.email }}</p>
+        </div>
+        <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+          <i class="ph ph-size ph-sign-out"></i>
+        </a>
+      </div>
+    </div>
+  </ul>
+</div>
