@@ -54,7 +54,7 @@
     </table>
     {% if paginated_orders.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_orders,"approve_orders.index", request.args)}}
+    {{ paginated.render_pagination(paginated_orders,"approve_orders.supervisor_supplier_index", request.args)}}
 
     {% endif %}
     {% else %}

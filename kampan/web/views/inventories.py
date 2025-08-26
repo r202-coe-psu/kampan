@@ -21,7 +21,7 @@ module = Blueprint("inventories", __name__, url_prefix="/inventories")
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -85,7 +85,7 @@ def index():
 
 
 @module.route("/register", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def register():
     organization_id = request.args.get("organization_id")
     item_register_id = request.args.get("item_register_id")
@@ -130,7 +130,7 @@ def register():
 
 
 @module.route("/<inventory_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def edit(inventory_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -191,7 +191,7 @@ def edit(inventory_id):
 
 
 @module.route("/<inventory_id>/delete")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def delete(inventory_id):
     organization_id = request.args.get("organization_id")
 
@@ -209,7 +209,7 @@ def delete(inventory_id):
 
 
 @module.route("/all-item", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def bill_item():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -231,7 +231,7 @@ def bill_item():
 
 
 @module.route("/<inventory_id>/file")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def bill(inventory_id):
     inventory = models.Inventory.objects.get(id=inventory_id)
     registration_item = models.RegistrationItem.objects(
@@ -249,7 +249,7 @@ def bill(inventory_id):
 
 
 @module.route("item_register/<item_register_id>/upload_file", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def upload_file_inventory_info(item_register_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -314,7 +314,7 @@ def upload_file_inventory_info(item_register_id):
 
 
 @module.route("/download_template_inventory_file")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin")
 def download_template_inventory_file():
     response = utils.inventories.get_template_inventory_file()
     return response
