@@ -50,13 +50,12 @@
             </a>
           </td>
         </tr>
-
         {% endfor %}
       </tbody>
     </table>
     {% if paginated_orders.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_orders,"approve_orders.index", request.args)}}
+    {{ paginated.render_pagination(paginated_orders,"approve_orders.admin_index", request.args)}}
 
     {% endif %}
     {% else %}
