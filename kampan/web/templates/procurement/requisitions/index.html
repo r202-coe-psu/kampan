@@ -5,10 +5,39 @@
 
 {% block content %}
 <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-    <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-        <i class="ph ph-warning text-yellow-500"></i>
-        ครุภัณฑ์ที่ใกล้หมดอายุใน 7 วัน
-    </h2>
+    <div class="mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2 mb-2 md:mb-0">
+                <i class="ph ph-warning text-yellow-500"></i>
+                ครุภัณฑ์ที่ใกล้หมดอายุใน 7 วัน
+            </h2>
+            <!-- Filter Form -->
+            <form method="get" class="flex flex-col md:flex-row md:items-center gap-4">
+                {% if organization %}
+                <input type="hidden" name="organization_id" value="{{ organization.id }}">
+                {% endif %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-0 md:sr-only">ประเภท</label>
+                    <select name="category" class="select select-bordered w-full md:w-44 bg-white">
+                        <option value="">ทุกประเภท</option>
+                        {% for value, label in category_choices %}
+                        <option value="{{ value }}" {% if selected_category==value %}selected{% endif %}>{{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <button type="submit" class="btn btn-primary px-6">
+                        <i class="ph ph-funnel mr-1"></i> กรองข้อมูล
+                    </button>
+                    {% if selected_category or selected_payment_status %}
+                    <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                        class="btn btn-outline px-6">ล้าง</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="overflow-x-auto">
         <table class="table w-full">
             <thead class="bg-base-200/50">
@@ -91,15 +120,17 @@
                         {% endif %}
                     </td>
                     <!-- PR Number -->
-                    <td class=py-2">
-                        <div class=" flex flex-col">
+                    <td class="py-2">
+                        <div class="flex flex-col">
                             <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
-                            <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code }}</span>
+                            <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
+                                }}</span>
                         </div>
                     </td>
                     <!-- Name -->
-                    <td class=py-2">
-                        <div class=" font-medium text-base-content text-base">{{ item.name }}
+                    <td class="py-2">
+                        <div class="flex flex-col">
+                            <span class="font-medium text-base-content text-base">{{ item.name }}</span>
                         </div>
                     </td>
                     <!-- Range Date -->
@@ -146,7 +177,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
+                    <td colspan="11" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
                 </tr>
                 {% endfor %}
             </tbody>

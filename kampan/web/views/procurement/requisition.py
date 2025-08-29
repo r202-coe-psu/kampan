@@ -27,15 +27,23 @@ def index():
     tor_year = getattr(current_user.user_setting, "tor_year", None)
     next_7 = today + datetime.timedelta(days=7)
 
+    category = request.args.get("category", "")
+
     query = {}
     if tor_year:
         query["tor_year"] = tor_year
+    if category:
+        query["category"] = category
 
     procurements = models.Procurement.objects(
         **query, end_date__gte=today, end_date__lte=next_7
     ).order_by("end_date")
+
+    category_choices = models.procurement.CATEGORY_CHOICES
     return render_template(
         "procurement/requisitions/index.html",
         procurements=procurements,
         organization=organization,
+        category_choices=category_choices,
+        selected_category=category,
     )
