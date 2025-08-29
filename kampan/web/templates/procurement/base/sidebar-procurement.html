@@ -20,7 +20,8 @@
         </summary>
         <ul>
           <li style="padding-top: 0.5rem;">
-            <a class="{{ 'menu-active' if '/procurement/requisition' in request.path else '' }}">
+            <a class="{{ 'menu-active' if '/procurement/requisitions' in request.path else '' }}"
+              href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
               <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
             </a>
           </li>

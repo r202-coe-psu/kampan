@@ -1,0 +1,156 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}รายการครุภัณฑ์ใกล้หมดอายุ{% endblock %}
+{% block dashboard_title %}รายการครุภัณฑ์ใกล้หมดอายุใน 7 วัน{% endblock %}
+
+{% block content %}
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+        <i class="ph ph-warning text-yellow-500"></i>
+        ครุภัณฑ์ที่ใกล้หมดอายุใน 7 วัน
+    </h2>
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead class="bg-base-200/50">
+                <tr class="border-none">
+                    <th class="font-semibold text-base-content text-sm">ลำดับ</th>
+                    <th class="font-semibold text-base-content text-sm text-center w-32">Countdown</th>
+                    <th class="font-semibold text-base-content text-sm w-64">เลขที่เบิกจ่าย</th>
+                    <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
+                    <th class="font-semibold text-base-content text-sm text-center w-32">วันที่เริ่มต้น</th>
+                    <th class="font-semibold text-base-content text-sm text-center w-32">วันที่สิ้นสุด</th>
+                    <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
+                    <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
+                    <th class="font-semibold text-base-content text-sm text-center">Tools</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in procurements %}
+                <tr class="hover:bg-base-50">
+                    <!-- Row Number -->
+                    <td class="text-center py-2">
+                        <div
+                            class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
+                            {{ loop.index }}
+                        </div>
+                    </td>
+
+                    <!-- Countdown -->
+                    <td class="text-center py-2">
+                        {% if item.end_date %}
+                        <div class="flex gap-1 justify-center" id="countdown-{{ item.id }}"></div>
+                        <script>
+                            (function () {
+                                var endDate = new Date("{{ item.end_date.strftime('%Y-%m-%dT00:00:00') }}Z");
+                                var container = document.getElementById("countdown-{{ item.id }}");
+                                function pad(n) { return n < 10 ? '0' + n : n; }
+                                function updateCountdown() {
+                                    var now = new Date();
+                                    var diff = endDate - now;
+                                    if (diff < 0) {
+                                        container.innerHTML = '<span class="text-red-500 font-bold">หมดอายุแล้ว</span>';
+                                        return;
+                                    }
+                                    var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                    var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                                    var mins = Math.floor((diff / (1000 * 60)) % 60);
+                                    var secs = Math.floor((diff / 1000) % 60);
+                                    container.innerHTML = `
+                                      <div class="flex flex-col items-center">
+                                        <span class="countdown font-mono text-2xl font-medium">
+                                          <span style="--value:${days};" aria-live="polite" aria-label="${days}">${pad(days)}</span>
+                                        </span>
+                                        <span class="text-xs">days</span>
+                                      </div>
+                                      <div class="flex flex-col items-center">
+                                        <span class="countdown font-mono text-2xl font-medium">
+                                          <span style="--value:${hours};" aria-live="polite" aria-label="${hours}">${pad(hours)}</span>
+                                        </span>
+                                        <span class="text-xs">hours</span>
+                                      </div>
+                                      <div class="flex flex-col items-center">
+                                        <span class="countdown font-mono text-2xl font-medium">
+                                          <span style="--value:${mins};" aria-live="polite" aria-label="${mins}">${pad(mins)}</span>
+                                        </span>
+                                        <span class="text-xs">min</span>
+                                      </div>
+                                      <div class="flex flex-col items-center">
+                                        <span class="countdown font-mono text-2xl font-medium">
+                                          <span style="--value:${secs};" aria-live="polite" aria-label="${secs}">${pad(secs)}</span>
+                                        </span>
+                                        <span class="text-xs">sec</span>
+                                      </div>
+                                    `;
+                                    setTimeout(updateCountdown, 1000);
+                                }
+                                updateCountdown();
+                            })();
+                        </script>
+                        {% else %}
+                        <span>-</span>
+                        {% endif %}
+                    </td>
+                    <!-- PR Number -->
+                    <td class=py-2">
+                        <div class=" flex flex-col">
+                            <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
+                            <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code }}</span>
+                        </div>
+                    </td>
+                    <!-- Name -->
+                    <td class=py-2">
+                        <div class=" font-medium text-base-content text-base">{{ item.name }}
+                        </div>
+                    </td>
+                    <!-- Range Date -->
+                    <td class="text-center py-2">
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-base text-primary">
+                                {{ item.start_date.strftime('%d/%m/%Y') }}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="text-center py-2">
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-base text-error">
+                                {{ item.end_date.strftime('%d/%m/%Y') }}
+                            </span>
+                        </div>
+                    </td>
+                    <!-- Type -->
+                    <td class="items-center py-2">
+                        <div class="flex flex-col items-center">
+                            {% set category_badge = {
+                            'ซอฟต์แวร์': 'badge-primary',
+                            'ครุภัณฑ์': 'badge-warning',
+                            'จ้างเหมาบริการ': 'badge-accent',
+                            'อื่นๆ': 'badge-neutral'
+                            }.get(item.get_category_display(), 'badge-secondary') %}
+                            <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
+                                {{ item.get_category_display() }}
+                            </div>
+                        </div>
+                    </td>
+                    <!-- Amount -->
+                    <td class="text-center py-2">
+                        <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
+                    </td>
+                    <td class="text-center py-2">
+                        <div class="items-center tooltip tooltip-left" data-tip="ต่ออายุ">
+                            <button type="button"
+                                class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition">
+                                <i class="ph ph-check text-lg"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
