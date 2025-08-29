@@ -18,3 +18,4 @@ from . import dashboard
 from . import vehicles
 from . import vehicle_applications
 from . import procurement
+from . import mas

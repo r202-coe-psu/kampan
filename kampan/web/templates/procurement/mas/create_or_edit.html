@@ -1,0 +1,142 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+
+{% block title %}{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS{% endblock %}
+{% block dashboard_title %}{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS{% endblock %}
+
+{% block content %}
+<div class="card bg-white shadow-xl rounded-xl p-6 md:p-10">
+    <div class="flex items-center mb-8 gap-4">
+        <div class="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center">
+            <i class="ph ph-folder-open text-3xl text-primary"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ 'แก้ไข' if mas else 'เพิ่ม' }}โครงการ MAS</h1>
+            <p class="text-gray-500 text-sm">กรอกข้อมูลโครงการ Management Accounting System</p>
+        </div>
+    </div>
+
+    <form method="POST" action="" class="space-y-8">
+        {{ form.hidden_tag() }}
+
+        <!-- Section: ข้อมูลพื้นฐาน -->
+        <div class="card bg-gray-50 border border-gray-200 rounded-lg p-6 mb-2">
+            <h2 class="text-lg font-semibold text-blue-700 mb-4 flex items-center gap-2">
+                <i class="ph ph-info text-xl"></i> ข้อมูลพื้นฐาน
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="mas_code">{{ form.mas_code.label
+                        }}</label>
+                    {{ form.mas_code(class_="input input-bordered w-full", placeholder="0.0EU310108.N28.66") }}
+                    {% if form.mas_code.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.mas_code.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="main_category">{{
+                        form.main_category.label }}</label>
+                    {{ form.main_category(class_="input input-bordered w-full", placeholder="ครุภัณฑ์") }}
+                    {% if form.main_category.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.main_category.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="sub_category">{{
+                        form.sub_category.label }}</label>
+                    {{ form.sub_category(class_="input input-bordered w-full", placeholder="คอมพิวเตอร์") }}
+                    {% if form.sub_category.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.sub_category.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="name">{{ form.name.label }}</label>
+                    {{ form.name(class_="input input-bordered w-full", placeholder="ชื่อรายการ") }}
+                    {% if form.name.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.name.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-1" for="item_description">{{
+                        form.item_description.label }}</label>
+                    {{ form.item_description(class_="textarea textarea-bordered w-full",
+                    placeholder="รายละเอียดรายการ") }}
+                    {% if form.item_description.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.item_description.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: ข้อมูลทางการเงิน -->
+        <div class="card bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-purple-700 mb-4 flex items-center gap-2">
+                <i class="ph ph-currency-circle-dollar text-xl"></i> ข้อมูลทางการเงิน
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="amount">{{ form.amount.label }}</label>
+                    <div class="relative">
+                        {{ form.amount(class_="input input-bordered w-full pl-8", step="0.01", min="0",
+                        placeholder="จำนวนเงิน") }}
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
+                    </div>
+                    {% if form.amount.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.amount.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="budget">{{ form.budget.label }}</label>
+                    <div class="relative">
+                        {{ form.budget(class_="input input-bordered w-full pl-8", step="0.01", min="0",
+                        placeholder="ประมาณจ่าย") }}
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
+                    </div>
+                    {% if form.budget.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.budget.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="actual_cost">{{ form.actual_cost.label
+                        }}</label>
+                    <div class="relative">
+                        {{ form.actual_cost(class_="input input-bordered w-full pl-8", step="0.01", min="0",
+                        placeholder="จ่ายจริง") }}
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
+                    </div>
+                    {% if form.actual_cost.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.actual_cost.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ปุ่ม -->
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
+            <a href="{{ url_for('procurement.mas.index') }}"
+                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100">
+                <i class="ph ph-x mr-2"></i> ยกเลิก
+            </a>
+            <button type="submit" class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg">
+                <i class="ph ph-check mr-2"></i> บันทึกโครงการ
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

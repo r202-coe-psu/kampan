@@ -525,139 +525,151 @@
     </script>
     {% endmacro %}
 
-    {% macro render_mas_table(projects, organization, total_budget, total_actual, total_remaining) %}
-    <div class="w-full bg-white shadow-lg rounded-xl overflow-hidden">
-        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+    {% macro render_mas_table(mas, organization, budget) %}
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+        <div class="border-b border-gray-200 p-6">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="ph ph-folder-open text-blue-600"></i>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center mr-4">
+                        <i class="ph ph-folder-open text-blue-700"></i>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900">รายการโครงการ MAS</h2>
-                        <p class="text-sm text-gray-500">{{ projects|length }} โครงการทั้งหมด</p>
+                        <h2 class="text-lg font-bold text-gray-800">รายการโครงการ MAS</h2>
+                        <p class="text-sm text-gray-500">แสดง {{ mas|length }} รายการ</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <select class="select select-bordered select-sm" onchange="sortTable(this.value)">
+                <div>
+                    <select class="select select-bordered select-sm border-gray-300 text-gray-700 bg-white"
+                        onchange="sortTable(this.value)">
                         <option value="">เรียงตาม</option>
                         <option value="mas_code">รหัส MAS</option>
-                        <option value="project_name">ชื่อโครงการ</option>
-                        <option value="budget">ประมาณจ่าย</option>
-                        <option value="actual_payment">จ่ายจริง</option>
+                        <option value="name">ชื่อโครงการ</option>
+                        <option value="budget">งบประมาณ</option>
+                        <option value="actual_cost">จ่ายจริง</option>
                     </select>
                 </div>
             </div>
         </div>
 
         <div class="overflow-x-auto">
-            <table class="table w-full" id="projectsTable">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="font-semibold text-gray-700">รหัส MAS</th>
-                        <th class="font-semibold text-gray-700">โครงการ</th>
-                        <th class="font-semibold text-gray-700">หมวดรายจ่าย</th>
-                        <th class="font-semibold text-gray-700 text-right">งบประมาณ</th>
-                        <th class="font-semibold text-gray-700 text-right">จ่ายจริง</th>
-                        <th class="font-semibold text-gray-700 text-center">การดำเนินการ</th>
+            <table class="table w-full">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-700">
+                        <th class="font-semibold">รหัส MAS</th>
+                        <th class="font-semibold">รายการ</th>
+                        <th class="font-semibold">หมวดรายจ่าย</th>
+                        <th class="font-semibold text-right">จำนวนเงิน</th>
+                        <th class="font-semibold text-right">ประมาณจ่าย</th>
+                        <th class="font-semibold text-right">จ่ายจริง</th>
+                        <th class="font-semibold text-center">การดำเนินการ</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for project in projects %}
-                    {% set usage_percent = ((project.actual_payment or 0) / (project.budget or 1) * 100) %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td>
-                            <div class="font-mono text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-md inline-block">
+                    {% for project in mas %}
+                    {% set usage_percent = ((project.actual_cost or 0) / (project.budget or 1) * 100) %}
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="py-4">
+                            <span
+                                class="inline-block bg-blue-50 text-blue-800 font-mono text-sm py-1 px-2 rounded border border-blue-100">
                                 {{ project.mas_code }}
-                            </div>
+                            </span>
                         </td>
                         <td>
-                            <div class="flex items-start space-x-3">
-                                <div
-                                    class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="ph ph-folder text-indigo-600"></i>
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 mr-3">
+                                    <div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center">
+                                        <i class="ph ph-file-text text-gray-600"></i>
+                                    </div>
                                 </div>
-                                <div class="min-w-0">
-                                    <div class="font-medium text-gray-900 line-clamp-2">{{ project.project_name }}</div>
-                                    {% if project.expense_subcategory %}
-                                    <div class="text-xs text-gray-500 mt-1">{{ project.expense_subcategory }}</div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ project.name }}</p>
+                                    {% if project.item_description %}
+                                    <p class="text-sm text-gray-500 truncate max-w-xs">{{ project.item_description[:50]
+                                        }}{{ '...' if project.item_description|length > 50 }}</p>
                                     {% endif %}
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <span class="badge badge-outline badge-sm">{{ project.expense_category }}</span>
-                        </td>
-                        <td class="text-right">
-                            ฿{{ "{:,.2f}".format(project.budget or 0) }}
-                        </td>
-                        <td class="text-right">
-                            <div
-                                class="{{ 'text-error' if (project.actual_payment or 0) > (project.budget or 0) else 'text-success' }} font-medium">
-                                ฿{{ "{:,.2f}".format(project.actual_payment or 0) }}
-                            </div>
-                            {% if project.budget and project.budget > 0 %}
-                            <div class="text-xs text-gray-500">{{ "{:.1f}".format(usage_percent) }}% ของงบ</div>
-                            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                            <div class="space-y-1">
                                 <div
-                                    class="h-1.5 rounded-full {% if usage_percent >= 100 %}bg-red-500{% elif usage_percent >= 80 %}bg-yellow-500{% elif usage_percent >= 50 %}bg-blue-500{% else %}bg-emerald-500{% endif %}">
+                                    class="bg-gray-100 text-gray-800 text-xs py-1 px-2 rounded-md inline-flex items-center">
+                                    <i class="ph ph-tag-simple mr-1"></i>
+                                    {{ project.main_category }}
                                 </div>
                             </div>
-                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.amount or 0) }}</span>
+                        </td>
+                        <td class="text-right">
+                            <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.budget or 0) }}</span>
+                        </td>
+                        <td class="text-right">
+                            <span
+                                class="font-medium {{ 'text-red-700' if (project.actual_cost or 0) > (project.budget or 0) else 'text-gray-900' }}">
+                                ฿{{ "{:,.2f}".format(project.actual_cost or 0) }}
+                            </span>
                         </td>
                         <td class="text-center">
-                            <ul class="menu menu-horizontal bg-base-200 rounded-box">
-                                <!-- edit -->
-                                <a href="{{ url_for('procurement.mas.edit', organization_id=organization.id, mas_project_id=project.id) }}"
-                                    class="btn btn-ghost btn-xs tooltip" data-tip="แก้ไข">
-                                    <i class="ph ph-pencil-simple text-yellow-600"></i>
+                            <div class="flex justify-center space-x-2">
+                                <a href="{{ url_for('procurement.mas.create_or_edit', mas_id=project.id) }}"
+                                    class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
+                                    <i class="ph ph-pencil-simple"></i>
                                 </a>
-
-                                <!-- delete open modal -->
-                                <button type="button" class="btn btn-ghost btn-xs text-red-600 tooltip"
-                                    data-tip="ลบโครงการ"
+                                <button type="button"
+                                    class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
                                     onclick="document.getElementById('delete-mas-{{ project.id }}').showModal()">
                                     <i class="ph ph-trash"></i>
                                 </button>
-                            </ul>
-                        </td>
+                            </div>
 
-                        <!-- per-project delete confirmation modal (show MAS code, copy and clearer buttons) -->
-                        <dialog id="delete-mas-{{ project.id }}" class="modal">
-                            <div class="modal-box">
-                                <h3 class="font-bold text-lg">ยืนยันการลบโครงการ</h3>
-
-                                <div class="mt-3 mb-4">
-                                    <div class="text-sm text-gray-600">รหัส MAS</div>
-                                    <div class="flex items-center justify-between mt-1">
-                                        <div class="font-mono font-semibold text-lg">{{ project.mas_code }}</div>
+                            <!-- Delete Confirmation Modal -->
+                            <dialog id="delete-mas-{{ project.id }}" class="modal">
+                                <div class="modal-box bg-white rounded-lg shadow-xl border border-gray-200 p-0">
+                                    <div class="p-6 border-b border-gray-200">
+                                        <h3 class="text-lg font-bold text-gray-800">ยืนยันการลบโครงการ</h3>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
+                                            <p class="text-sm text-gray-500 mb-1">รหัส MAS</p>
+                                            <p class="font-mono font-medium text-gray-900">{{ project.mas_code }}</p>
+                                        </div>
+                                        <p class="text-gray-700 mb-2">คุณแน่ใจหรือไม่ที่จะลบโครงการ:</p>
+                                        <p class="font-medium text-gray-900 mb-4">{{ project.name }}</p>
+                                        <div class="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800">
+                                            <i class="ph ph-warning mr-2"></i>
+                                            <span class="text-sm">การลบจะเปลี่ยนสถานะโครงการเป็น "ปิดบัญชี"
+                                                ไม่ได้ลบออกจากฐานข้อมูล</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50">
+                                        <button type="button"
+                                            class="btn bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                            onclick="document.getElementById('delete-mas-{{ project.id }}').close()">
+                                            ยกเลิก
+                                        </button>
+                                        <form method="POST"
+                                            action="{{ url_for('procurement.mas.delete', mas_id=project.id) }}">
+                                            <button type="submit"
+                                                class="btn bg-red-600 hover:bg-red-700 text-white border-none">
+                                                ยืนยันลบ
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-
-                                <p class="py-2">
-                                    คุณแน่ใจหรือไม่ที่จะลบโครงการ
-                                    <strong>{{ project.project_name }}</strong>?
-                                    <br><small class="text-warning">หมายเหตุ: การลบจะซ่อนข้อมูล
-                                        ไม่ได้ลบออกจากระบบอย่างถาวร</small>
-                                </p>
-                                <div class="modal-action">
-                                    <button type="button" class="btn"
-                                        onclick="document.getElementById('delete-mas-{{ project.id }}').close()">ยกเลิก</button>
-                                    <form method="POST"
-                                        action="{{ url_for('procurement.mas.delete', organization_id=organization.id, mas_project_id=project.id) }}">
-                                        <button type="submit" class="btn btn-error">ยืนยันลบ</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </dialog>
+                            </dialog>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="text-center py-16 text-gray-400">
+                        <td colspan="7" class="text-center py-16">
                             <div class="flex flex-col items-center">
-                                <i class="ph ph-folder-dashed text-4xl mb-4"></i>
-                                <div class="font-medium">ไม่พบโครงการ MAS</div>
-                                <div class="text-sm text-gray-500 mt-2">สร้างโครงการแรกเพื่อเริ่มต้น</div>
+                                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                    <i class="ph ph-file-x text-4xl text-gray-400"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-700 mb-1">ไม่พบข้อมูลโครงการ</h3>
+                                <p class="text-gray-500">กรุณาเพิ่มโครงการใหม่เพื่อเริ่มต้นใช้งานระบบ</p>
                             </div>
                         </td>
                     </tr>
@@ -666,84 +678,15 @@
             </table>
         </div>
 
-        {% if projects|length > 0 %}
-        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-            <div class="flex items-center justify-between text-sm text-gray-500">
-                <div>แสดง {{ projects|length }} รายการ</div>
-                <div>งบประมาณรวม: ฿{{ "{:,.0f}".format(total_budget or 0) }} | จ่ายจริง: ฿{{
-                    "{:,.0f}".format(total_actual or 0) }}</div>
+        <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="font-medium">แสดงทั้งหมด:</span> {{ mas|length }} รายการ
+                </div>
+                <div>
+                    <span class="font-medium">งบประมาณรวม:</span> ฿{{ "{:,.2f}".format(budget or 0) }}
+                </div>
             </div>
         </div>
-        {% endif %}
     </div>
-
-    <script>
-        function handleProjectAction(action, projectId) {
-            if (action === 'duplicate') {
-                alert('ทำสำเนาโครงการ (ยังไม่รองรับ): ' + projectId);
-                return;
-            }
-            if (action === 'export') {
-                alert('ส่งออกข้อมูล (ยังไม่รองรับ): ' + projectId);
-                return;
-            }
-            if (action === 'report') {
-                const url = '{{ url_for("procurement.mas.view", organization_id=organization.id, mas_project_id="__ID__") }}'.replace('__ID__', projectId);
-                window.open(url, '_blank');
-                return;
-            }
-        }
-
-        function sortTable(sortBy) {
-            if (!sortBy) return;
-            const table = document.getElementById('projectsTable');
-            if (!table) return;
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            rows.sort((a, b) => {
-                let aVal, bVal;
-                switch (sortBy) {
-                    case 'mas_code':
-                        aVal = a.cells[0].textContent.trim();
-                        bVal = b.cells[0].textContent.trim();
-                        return aVal.localeCompare(bVal);
-                    case 'project_name':
-                        aVal = a.cells[1].textContent.trim();
-                        bVal = b.cells[1].textContent.trim();
-                        return aVal.localeCompare(bVal);
-                    case 'budget':
-                        aVal = parseFloat(a.cells[3].textContent.replace(/[฿,]/g, '')) || 0;
-                        bVal = parseFloat(b.cells[3].textContent.replace(/[฿,]/g, '')) || 0;
-                        return bVal - aVal;
-                    case 'actual_payment':
-                        aVal = parseFloat(a.cells[4].textContent.replace(/[฿,]/g, '')) || 0;
-                        bVal = parseFloat(b.cells[4].textContent.replace(/[฿,]/g, '')) || 0;
-                        return bVal - aVal;
-                }
-            });
-            rows.forEach(r => tbody.appendChild(r));
-        }
-    </script>
-    <!-- add helper JS (single place near end of file is fine) -->
-    <script type="text/javascript">
-        function copyMasCode(id, code) {
-            if (!navigator.clipboard) {
-                // fallback
-                const ta = document.createElement('textarea');
-                ta.value = code;
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand('copy'); alert('คัดลอกรหัส MAS: ' + code); }
-                catch (e) { alert('ไม่สามารถคัดลอกได้'); }
-                ta.remove();
-                return;
-            }
-            navigator.clipboard.writeText(code).then(function () {
-                // minimal feedback
-                alert('คัดลอกรหัส MAS: ' + code);
-            }, function () {
-                alert('ไม่สามารถคัดลอกได้');
-            });
-        }
-    </script>
     {% endmacro %}

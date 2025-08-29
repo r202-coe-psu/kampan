@@ -3,88 +3,84 @@
 {% from '/procurement/macros/table.html' import render_mas_table %}
 
 {% block title %}ระบบ MAS{% endblock %}
-{% block dashboard_title %}ระบบ MAS{% endblock %}
+{% block dashboard_title %}ระบบบริหารจัดการงบประมาณ (MAS){% endblock %}
 
 {% block content %}
-
-<!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <div class="stats shadow bg-white">
-        <div class="stat">
-            <div class="stat-figure text-success">
-                <i class="ph ph-wallet text-3xl"></i>
-            </div>
-            <div class="stat-title">งบประมาณรวม</div>
-            <div class="stat-value text-success">{{ "{:,.2f}".format(total_budget or 0) }}</div>
-            <div class="stat-desc">บาท</div>
+<!-- Header Section -->
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">ระบบบริหารจัดการงบประมาณ</h1>
+            <p class="text-gray-600 mt-1">Management Accounting System (MAS)</p>
         </div>
-    </div>
-
-    <div class="stats shadow bg-white">
-        <div class="stat">
-            <div class="stat-figure text-warning">
-                <i class="ph ph-credit-card text-3xl"></i>
-            </div>
-            <div class="stat-title">จ่ายจริง</div>
-            <div class="stat-value text-warning">{{ "{:,.2f}".format(total_actual or 0) }}</div>
-            <div class="stat-desc">บาท</div>
-        </div>
-    </div>
-
-    <div class="stats shadow bg-white">
-        <div class="stat">
-            <div class="stat-figure text-info">
-                <i class="ph ph-piggy-bank text-3xl"></i>
-            </div>
-            <div class="stat-title">คงเหลือ</div>
-            <div class="stat-value text-info">{{ "{:,.2f}".format(total_remaining or 0) }}</div>
-            <div class="stat-desc">บาท</div>
+        <div class="mt-4 md:mt-0">
+            <a href="{{ url_for('procurement.mas.create_or_edit', organization_id=organization.id) }}"
+                class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+                <i class="ph ph-plus mr-2"></i>
+                เพิ่มโครงการใหม่
+            </a>
         </div>
     </div>
 </div>
 
-<!-- Filters and Add Button -->
-<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-            <i class="ph ph-funnel text-xl text-blue-600 mr-2"></i>
-            ตัวกรอง
-        </h2>
-        <a href="{{ url_for('procurement.mas.create', organization_id=organization.id) }}" class="btn btn-primary">
-            <i class="ph ph-plus mr-2"></i>
-            เพิ่มโครงการใหม่
-        </a>
+<!-- Summary Cards in a more formal style -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <!-- Amount Card -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 uppercase font-medium">งบประมาณรวมทั้งหมด</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(amount or 0) }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
+                <i class="ph ph-wallet text-2xl text-blue-700"></i>
+            </div>
+        </div>
     </div>
 
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-            <label class="block text-gray-700 font-medium mb-2">ปีงบประมาณ</label>
-            <select name="fiscal_year" class="select select-bordered w-full">
-                <option value="">ทั้งหมด</option>
-                {% for year in fiscal_years %}
-                <option value="{{ year }}" {{ 'selected' if year==current_fiscal_year else '' }}>
-                    {{ year }}
-                </option>
-                {% endfor %}
-            </select>
+    <!-- Budget Card -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 uppercase font-medium">งบประมาณรวม</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(budget or 0) }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
+                <i class="ph ph-wallet text-2xl text-blue-700"></i>
+            </div>
         </div>
+    </div>
 
-        <div>
-            <label class="block text-gray-700 font-medium mb-2">หมวดรายจ่าย</label>
-            <input type="text" name="expense_category" value="{{ current_expense_category }}"
-                class="input input-bordered w-full" placeholder="ค้นหาหมวดรายจ่าย">
+    <!-- Actual Cost Card -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 uppercase font-medium">จ่ายจริง</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(actual_cost or 0) }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center">
+                <i class="ph ph-credit-card text-2xl text-amber-700"></i>
+            </div>
         </div>
+    </div>
 
-        <div class="flex items-end">
-            <button type="submit" class="btn btn-outline w-full">
-                <i class="ph ph-magnifying-glass mr-2"></i>
-                ค้นหา
-            </button>
+    <!-- Remaining Budget Card -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 uppercase font-medium">คงเหลือ</p>
+                <h3 class="text-2xl font-bold text-{{ 'red-700' if remain < 0 else 'gray-800' }} mt-1">฿{{
+                    "{:,.2f}".format(remain or 0) }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center">
+                <i class="ph ph-piggy-bank text-2xl text-teal-700"></i>
+            </div>
         </div>
-    </form>
+    </div>
 </div>
 
-<!-- Projects Table (moved to macro) -->
-{{ render_mas_table(projects, organization, total_budget, total_actual, total_remaining) }}
-
+<!-- MAS Table with formal styling -->
+<div class="mt-6">
+    {{ render_mas_table(mas, organization, budget) }}
+</div>
 {% endblock %}
