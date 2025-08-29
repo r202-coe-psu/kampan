@@ -309,8 +309,8 @@
 {% set status = item.get_current_payment_status(today) %}
 {% set next_idx = item.get_next_payment_index() %}
 {% set paid_count = item.payment_records|length %}
-{% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %}
-<dialog class="modal payment_{{ item.id }}">
+{% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <dialog
+    class="modal payment_{{ item.id }}">
     <div class="modal-box">
         <div class="text-2xl text-success font-bold">
             ยืนยันการชำระเงิน
@@ -323,7 +323,8 @@
             <form method="dialog">
                 <button class="btn">ยกเลิก</button>
             </form>
-            <form method="post" action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}">
+            <form method="post"
+                action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}">
                 <button type="submit" class="btn btn-success">
                     ยืนยันชำระ
                     <i class="ph ph-check"></i>
@@ -331,195 +332,418 @@
             </form>
         </div>
     </div>
-</dialog>
-{% endif %}
-{% endfor %}
-<table class="table w-full">
-    <thead class="bg-base-200/50">
-        <tr class="border-none">
-            <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
-            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
-            <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-            <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
-            <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
-            <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
-            <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
-            <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
-            <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
-            <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for item in procurements %}
-        <tr class="hover:bg-base-50">
+    </dialog>
+    {% endif %}
+    {% endfor %}
+    <table class="table w-full">
+        <thead class="bg-base-200/50">
+            <tr class="border-none">
+                <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
+                <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+                <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
+                <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
+                <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
+                <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
+                <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
+                <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
+                <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
+                <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in procurements %}
+            <tr class="hover:bg-base-50">
 
-            <!-- Row Number -->
-            <!-- <td class="text-center py-4">
-                <div
-                    class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
-                    {{ loop.index }}
-                </div>
-            </td> -->
+                <!-- Row Number -->
+                <!-- <td class="text-center py-4">
+            <div
+                class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
+                {{ loop.index }}
+            </div>
+        </td> -->
 
-            <!-- PR Number -->
-            <td class="py-4">
-                <div class="flex flex-col">
-                    <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
-                    <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
-                        }}</span>
-                </div>
-            </td>
-
-            <!-- Name -->
-            <td class="py-4">
-                <div class="font-medium text-base-content text-base">{{ item.name }}</div>
-            </td>
-
-            <!-- Range Date -->
-            <td class="text-center py-4">
-                <div class="flex flex-col items-center">
-                    {% if item.start_date and item.end_date %}
-                    <span class="font-bold text-base text-primary">
-                        {{ item.start_date.strftime('%d/%m/%Y') }}
-                    </span>
-                    <span class="text-base text-gray-400">
-                        to
-                    </span>
-                    <span class="font-bold text-base text-error">
-                        {{ item.end_date.strftime('%d/%m/%Y') }}
-                    </span>
-                    {% else %}
-                    <span class="text-gray-400">-</span>
-                    {% endif %}
-                </div>
-            </td>
-
-
-            <!-- Type -->
-            <td class="items-center py-4">
-                <div class="flex flex-col items-center">
-                    {% set category_badge = {
-                    'ซอฟต์แวร์': 'badge-primary',
-                    'ครุภัณฑ์': 'badge-warning',
-                    'จ้างเหมาบริการ': 'badge-accent',
-                    'อื่นๆ': 'badge-neutral'
-                    }.get(item.get_category_display(), 'badge-secondary') %}
-                    <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
-                        {{ item.get_category_display() }}
+                <!-- PR Number -->
+                <td class="py-4">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
+                        <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
+                            }}</span>
                     </div>
-                </div>
-            </td>
+                </td>
 
-            <!-- Period -->
-            <td class="text-center py-4">
-                <div class="font-bold text-base text-warning">
-                    {% if item.duration_months is not none and item.duration_days is not none %}
-                    {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-                    {% endif %}
-                </div>
-            </td>
+                <!-- Name -->
+                <td class="py-4">
+                    <div class="font-medium text-base-content text-base">{{ item.name }}</div>
+                </td>
 
-            <!-- Amount -->
-            <td class="text-center py-4">
-                <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
-            </td>
-
-            <!-- Payment Status -->
-            <td class="text-center py-4">
-                {% set due_dates = item.get_payment_due_dates() %}
-                {% set status = item.get_current_payment_status(today) %}
-                {% set next_idx = item.get_next_payment_index() %}
-                {% set paid_count = item.payment_records|length %}
-                {% set badge_class = {
-                'overdue': 'badge-error',
-                'upcoming': 'badge-warning',
-                'paid': 'badge-success'
-                }.get(status, 'bg-gray-500') %}
-                <div class="flex flex-col items-center">
-                    <div class="badge {{ badge_class }} text-white font-medium mb-1">
-                        งวด {{ paid_count }}/{{ item.period }}
-                    </div>
-                    {% if next_idx < due_dates|length %} <div class="badge badge-outline font-medium text-s mt-1">
-                        ชำระก่อน {{ due_dates[next_idx].strftime('%d/%m/%Y') }}
-                </div>
-                {% endif %}
-                {% if item.payment_records %}
-                <div class="text-s text-gray-500 mt-1">
-                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/%Y %H:%M') }}
-                </div>
-                {% endif %}
-                </div>
-            </td>
-
-            <!-- Company -->
-            <td class="py-4">
-                <div class="flex flex-col">
-                    <span class="font-bold text-base py-1">{{ item.company }}</span>
-                    <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
-                    <div class="flex flex-wrap gap-1 py-1">
-                        {% if item.responsible_by %}
-                        {% for u in item.responsible_by %}
-                        <span class="badge badge-outline badge-primary font-medium truncate">
-                            {{ u.display_user_fullname() }}
+                <!-- Range Date -->
+                <td class="text-center py-4">
+                    <div class="flex flex-col items-center">
+                        {% if item.start_date and item.end_date %}
+                        <span class="font-bold text-base text-primary">
+                            {{ item.start_date.strftime('%d/%m/%Y') }}
                         </span>
-                        {% endfor %}
+                        <span class="text-base text-gray-400">
+                            to
+                        </span>
+                        <span class="font-bold text-base text-error">
+                            {{ item.end_date.strftime('%d/%m/%Y') }}
+                        </span>
                         {% else %}
                         <span class="text-gray-400">-</span>
                         {% endif %}
                     </div>
-                </div>
-            </td>
+                </td>
 
-            <td class="text-center py-4">
-                <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดรายการ">
-                    <button type="button"
-                        class="btn btn-outline btn-sm rounded-full border-blue-500 text-blue-600 hover:bg-blue-100 hover:border-blue-700 transition"
-                        onclick="document.getElementById('modal-{{ item.id }}').showModal();">
-                        <i class="ph ph-magnifying-glass text-lg"></i>
-                    </button>
-                </div>
-                {% set due_dates = item.get_payment_due_dates() %}
-                {% set status = item.get_current_payment_status(today) %}
-                {% set next_idx = item.get_next_payment_index() %}
-                {% set paid_count = item.payment_records|length %}
-                {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %}
-                <div class="tooltip tooltip-left mt-2" data-tip="ยืนยันชำระงวดที่ {{ paid_count + 1 }}">
-                    <button type="button"
-                        class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition"
-                        onclick="showPaymentModal('{{ item.id }}')">
-                        <i class="ph ph-check text-lg"></i>
-                    </button>
-                </div>
-                {% else %}
-                    <div class="tooltip tooltip-left" data-tip="ชำระครบทุกงวดแล้ว">
-                        <button type="button" disabled
-                            class="btn btn-outline btn-disabled btn-sm rounded-full border-gray-300 text-gray-400 mt-2">
-                            <i class="ph ph-check text-lg"></i>
-                        </button>
+
+                <!-- Type -->
+                <td class="items-center py-4">
+                    <div class="flex flex-col items-center">
+                        {% set category_badge = {
+                        'ซอฟต์แวร์': 'badge-primary',
+                        'ครุภัณฑ์': 'badge-warning',
+                        'จ้างเหมาบริการ': 'badge-accent',
+                        'อื่นๆ': 'badge-neutral'
+                        }.get(item.get_category_display(), 'badge-secondary') %}
+                        <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
+                            {{ item.get_category_display() }}
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Period -->
+                <td class="text-center py-4">
+                    <div class="font-bold text-base text-warning">
+                        {% if item.duration_months is not none and item.duration_days is not none %}
+                        {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
+                        {% endif %}
+                    </div>
+                </td>
+
+                <!-- Amount -->
+                <td class="text-center py-4">
+                    <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
+                </td>
+
+                <!-- Payment Status -->
+                <td class="text-center py-4">
+                    {% set due_dates = item.get_payment_due_dates() %}
+                    {% set status = item.get_current_payment_status(today) %}
+                    {% set next_idx = item.get_next_payment_index() %}
+                    {% set paid_count = item.payment_records|length %}
+                    {% set badge_class = {
+                    'overdue': 'badge-error',
+                    'upcoming': 'badge-warning',
+                    'paid': 'badge-success'
+                    }.get(status, 'bg-gray-500') %}
+                    <div class="flex flex-col items-center">
+                        <div class="badge {{ badge_class }} text-white font-medium mb-1">
+                            งวด {{ paid_count }}/{{ item.period }}
+                        </div>
+                        {% if next_idx < due_dates|length %} <div class="badge badge-outline font-medium text-s mt-1">
+                            ชำระก่อน {{ due_dates[next_idx].strftime('%d/%m/%Y') }}
                     </div>
                     {% endif %}
-                    <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
-                        <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
-                            class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
-                            <i class="ph ph-pencil-simple text-lg"></i>
-                        </a>
+                    {% if item.payment_records %}
+                    <div class="text-s text-gray-500 mt-1">
+                        จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/%Y %H:%M') }}
                     </div>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+                    {% endif %}
+                    </div>
+                </td>
 
-<script type="text/javascript">
-function showPaymentModal(item_id) {
-    const modal = document.querySelector('.modal.payment_' + item_id);
-    if (modal) {
-        modal.showModal();
-    }
-}
-</script>
-{% endmacro %}
+                <!-- Company -->
+                <td class="py-4">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-base py-1">{{ item.company }}</span>
+                        <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
+                        <div class="flex flex-wrap gap-1 py-1">
+                            {% if item.responsible_by %}
+                            {% for u in item.responsible_by %}
+                            <span class="badge badge-outline badge-primary font-medium truncate">
+                                {{ u.display_user_fullname() }}
+                            </span>
+                            {% endfor %}
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+
+                <td class="text-center py-4">
+                    <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดรายการ">
+                        <button type="button"
+                            class="btn btn-outline btn-sm rounded-full border-blue-500 text-blue-600 hover:bg-blue-100 hover:border-blue-700 transition"
+                            onclick="document.getElementById('modal-{{ item.id }}').showModal();">
+                            <i class="ph ph-magnifying-glass text-lg"></i>
+                        </button>
+                    </div>
+                    {% set due_dates = item.get_payment_due_dates() %}
+                    {% set status = item.get_current_payment_status(today) %}
+                    {% set next_idx = item.get_next_payment_index() %}
+                    {% set paid_count = item.payment_records|length %}
+                    {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <div
+                        class="tooltip tooltip-left mt-2" data-tip="ยืนยันชำระงวดที่ {{ paid_count + 1 }}">
+                        <button type="button"
+                            class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition"
+                            onclick="showPaymentModal('{{ item.id }}')">
+                            <i class="ph ph-check text-lg"></i>
+                        </button>
+                        </div>
+                        {% else %}
+                        <div class="tooltip tooltip-left" data-tip="ชำระครบทุกงวดแล้ว">
+                            <button type="button" disabled
+                                class="btn btn-outline btn-disabled btn-sm rounded-full border-gray-300 text-gray-400 mt-2">
+                                <i class="ph ph-check text-lg"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                        <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
+                            <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
+                                class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
+                                <i class="ph ph-pencil-simple text-lg"></i>
+                            </a>
+                        </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script type="text/javascript">
+        function showPaymentModal(item_id) {
+            const modal = document.querySelector('.modal.payment_' + item_id);
+            if (modal) {
+                modal.showModal();
+            }
+        }
+    </script>
+    {% endmacro %}
+
+    {% macro render_mas_table(projects, organization, total_budget, total_actual, total_remaining) %}
+    <div class="w-full bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="ph ph-folder-open text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">รายการโครงการ MAS</h2>
+                        <p class="text-sm text-gray-500">{{ projects|length }} โครงการทั้งหมด</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select class="select select-bordered select-sm" onchange="sortTable(this.value)">
+                        <option value="">เรียงตาม</option>
+                        <option value="mas_code">รหัส MAS</option>
+                        <option value="project_name">ชื่อโครงการ</option>
+                        <option value="budget">ประมาณจ่าย</option>
+                        <option value="actual_payment">จ่ายจริง</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table w-full" id="projectsTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="font-semibold text-gray-700">รหัส MAS</th>
+                        <th class="font-semibold text-gray-700">โครงการ</th>
+                        <th class="font-semibold text-gray-700">หมวดรายจ่าย</th>
+                        <th class="font-semibold text-gray-700 text-right">งบประมาณ</th>
+                        <th class="font-semibold text-gray-700 text-right">จ่ายจริง</th>
+                        <th class="font-semibold text-gray-700 text-center">การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    {% set usage_percent = ((project.actual_payment or 0) / (project.budget or 1) * 100) %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td>
+                            <div class="font-mono text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-md inline-block">
+                                {{ project.mas_code }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex items-start space-x-3">
+                                <div
+                                    class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="ph ph-folder text-indigo-600"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-medium text-gray-900 line-clamp-2">{{ project.project_name }}</div>
+                                    {% if project.expense_subcategory %}
+                                    <div class="text-xs text-gray-500 mt-1">{{ project.expense_subcategory }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-outline badge-sm">{{ project.expense_category }}</span>
+                        </td>
+                        <td class="text-right">
+                            ฿{{ "{:,.2f}".format(project.budget or 0) }}
+                        </td>
+                        <td class="text-right">
+                            <div
+                                class="{{ 'text-error' if (project.actual_payment or 0) > (project.budget or 0) else 'text-success' }} font-medium">
+                                ฿{{ "{:,.2f}".format(project.actual_payment or 0) }}
+                            </div>
+                            {% if project.budget and project.budget > 0 %}
+                            <div class="text-xs text-gray-500">{{ "{:.1f}".format(usage_percent) }}% ของงบ</div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                <div
+                                    class="h-1.5 rounded-full {% if usage_percent >= 100 %}bg-red-500{% elif usage_percent >= 80 %}bg-yellow-500{% elif usage_percent >= 50 %}bg-blue-500{% else %}bg-emerald-500{% endif %}">
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <ul class="menu menu-horizontal bg-base-200 rounded-box">
+                                <!-- edit -->
+                                <a href="{{ url_for('procurement.mas.edit', organization_id=organization.id, mas_project_id=project.id) }}"
+                                    class="btn btn-ghost btn-xs tooltip" data-tip="แก้ไข">
+                                    <i class="ph ph-pencil-simple text-yellow-600"></i>
+                                </a>
+
+                                <!-- delete open modal -->
+                                <button type="button" class="btn btn-ghost btn-xs text-red-600 tooltip"
+                                    data-tip="ลบโครงการ"
+                                    onclick="document.getElementById('delete-mas-{{ project.id }}').showModal()">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </ul>
+                        </td>
+
+                        <!-- per-project delete confirmation modal (show MAS code, copy and clearer buttons) -->
+                        <dialog id="delete-mas-{{ project.id }}" class="modal">
+                            <div class="modal-box">
+                                <h3 class="font-bold text-lg">ยืนยันการลบโครงการ</h3>
+
+                                <div class="mt-3 mb-4">
+                                    <div class="text-sm text-gray-600">รหัส MAS</div>
+                                    <div class="flex items-center justify-between mt-1">
+                                        <div class="font-mono font-semibold text-lg">{{ project.mas_code }}</div>
+                                    </div>
+                                </div>
+
+                                <p class="py-2">
+                                    คุณแน่ใจหรือไม่ที่จะลบโครงการ
+                                    <strong>{{ project.project_name }}</strong>?
+                                    <br><small class="text-warning">หมายเหตุ: การลบจะซ่อนข้อมูล
+                                        ไม่ได้ลบออกจากระบบอย่างถาวร</small>
+                                </p>
+                                <div class="modal-action">
+                                    <button type="button" class="btn"
+                                        onclick="document.getElementById('delete-mas-{{ project.id }}').close()">ยกเลิก</button>
+                                    <form method="POST"
+                                        action="{{ url_for('procurement.mas.delete', organization_id=organization.id, mas_project_id=project.id) }}">
+                                        <button type="submit" class="btn btn-error">ยืนยันลบ</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </dialog>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-16 text-gray-400">
+                            <div class="flex flex-col items-center">
+                                <i class="ph ph-folder-dashed text-4xl mb-4"></i>
+                                <div class="font-medium">ไม่พบโครงการ MAS</div>
+                                <div class="text-sm text-gray-500 mt-2">สร้างโครงการแรกเพื่อเริ่มต้น</div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if projects|length > 0 %}
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+            <div class="flex items-center justify-between text-sm text-gray-500">
+                <div>แสดง {{ projects|length }} รายการ</div>
+                <div>งบประมาณรวม: ฿{{ "{:,.0f}".format(total_budget or 0) }} | จ่ายจริง: ฿{{
+                    "{:,.0f}".format(total_actual or 0) }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function handleProjectAction(action, projectId) {
+            if (action === 'duplicate') {
+                alert('ทำสำเนาโครงการ (ยังไม่รองรับ): ' + projectId);
+                return;
+            }
+            if (action === 'export') {
+                alert('ส่งออกข้อมูล (ยังไม่รองรับ): ' + projectId);
+                return;
+            }
+            if (action === 'report') {
+                const url = '{{ url_for("procurement.mas.view", organization_id=organization.id, mas_project_id="__ID__") }}'.replace('__ID__', projectId);
+                window.open(url, '_blank');
+                return;
+            }
+        }
+
+        function sortTable(sortBy) {
+            if (!sortBy) return;
+            const table = document.getElementById('projectsTable');
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                let aVal, bVal;
+                switch (sortBy) {
+                    case 'mas_code':
+                        aVal = a.cells[0].textContent.trim();
+                        bVal = b.cells[0].textContent.trim();
+                        return aVal.localeCompare(bVal);
+                    case 'project_name':
+                        aVal = a.cells[1].textContent.trim();
+                        bVal = b.cells[1].textContent.trim();
+                        return aVal.localeCompare(bVal);
+                    case 'budget':
+                        aVal = parseFloat(a.cells[3].textContent.replace(/[฿,]/g, '')) || 0;
+                        bVal = parseFloat(b.cells[3].textContent.replace(/[฿,]/g, '')) || 0;
+                        return bVal - aVal;
+                    case 'actual_payment':
+                        aVal = parseFloat(a.cells[4].textContent.replace(/[฿,]/g, '')) || 0;
+                        bVal = parseFloat(b.cells[4].textContent.replace(/[฿,]/g, '')) || 0;
+                        return bVal - aVal;
+                }
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        }
+    </script>
+    <!-- add helper JS (single place near end of file is fine) -->
+    <script type="text/javascript">
+        function copyMasCode(id, code) {
+            if (!navigator.clipboard) {
+                // fallback
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); alert('คัดลอกรหัส MAS: ' + code); }
+                catch (e) { alert('ไม่สามารถคัดลอกได้'); }
+                ta.remove();
+                return;
+            }
+            navigator.clipboard.writeText(code).then(function () {
+                // minimal feedback
+                alert('คัดลอกรหัส MAS: ' + code);
+            }, function () {
+                alert('ไม่สามารถคัดลอกได้');
+            });
+        }
+    </script>
+    {% endmacro %}

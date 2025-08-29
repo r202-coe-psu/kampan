@@ -1,5 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
+{% from '/procurement/macros/table.html' import render_mas_table %}
 
 {% block title %}ระบบ MAS{% endblock %}
 {% block dashboard_title %}ระบบ MAS{% endblock %}
@@ -18,7 +19,7 @@
             <div class="stat-desc">บาท</div>
         </div>
     </div>
-    
+
     <div class="stats shadow bg-white">
         <div class="stat">
             <div class="stat-figure text-warning">
@@ -29,7 +30,7 @@
             <div class="stat-desc">บาท</div>
         </div>
     </div>
-    
+
     <div class="stats shadow bg-white">
         <div class="stat">
             <div class="stat-figure text-info">
@@ -49,32 +50,31 @@
             <i class="ph ph-funnel text-xl text-blue-600 mr-2"></i>
             ตัวกรอง
         </h2>
-        <a href="{{ url_for('procurement.mas.create', organization_id=organization.id) }}" 
-           class="btn btn-primary">
+        <a href="{{ url_for('procurement.mas.create', organization_id=organization.id) }}" class="btn btn-primary">
             <i class="ph ph-plus mr-2"></i>
             เพิ่มโครงการใหม่
         </a>
     </div>
-    
+
     <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label class="block text-gray-700 font-medium mb-2">ปีงบประมาณ</label>
             <select name="fiscal_year" class="select select-bordered w-full">
                 <option value="">ทั้งหมด</option>
                 {% for year in fiscal_years %}
-                <option value="{{ year }}" {{ 'selected' if year == current_fiscal_year else '' }}>
+                <option value="{{ year }}" {{ 'selected' if year==current_fiscal_year else '' }}>
                     {{ year }}
                 </option>
                 {% endfor %}
             </select>
         </div>
-        
+
         <div>
             <label class="block text-gray-700 font-medium mb-2">หมวดรายจ่าย</label>
-            <input type="text" name="expense_category" value="{{ current_expense_category }}" 
-                   class="input input-bordered w-full" placeholder="ค้นหาหมวดรายจ่าย">
+            <input type="text" name="expense_category" value="{{ current_expense_category }}"
+                class="input input-bordered w-full" placeholder="ค้นหาหมวดรายจ่าย">
         </div>
-        
+
         <div class="flex items-end">
             <button type="submit" class="btn btn-outline w-full">
                 <i class="ph ph-magnifying-glass mr-2"></i>
@@ -84,106 +84,7 @@
     </form>
 </div>
 
-<!-- Projects Table -->
-<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-            <i class="ph ph-folder-open text-xl text-blue-600 mr-2"></i>
-            รายการโครงการ MAS ({{ projects|length }} รายการ)
-        </h2>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="table table-zebra w-full">
-            <thead>
-                <tr>
-                    <th>รหัส MAS</th>
-                    <th>หมวดรายจ่าย</th>
-                    <th>หมวดย่อย</th>
-                    <th>รายการ</th>
-                    <th class="text-right">จำนวนเงิน</th>
-                    <th class="text-right">ประมาณจ่าย</th>
-                    <th class="text-right">จ่ายจริง</th>
-                    <th class="text-center">รายละเอียด</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr class="hover">
-                    <td>
-                        <div class="font-mono text-sm">{{ project.mas_code }}</div>
-                    </td>
-                    <td>
-                        <div class="badge badge-outline">{{ project.expense_category }}</div>
-                    </td>
-                    <td>
-                        <div class="text-sm text-gray-600">{{ project.expense_subcategory or '-' }}</div>
-                    </td>
-                    <td>
-                        <div class="font-medium">{{ project.project_name[:50] }}{% if project.project_name|length > 50 %}...{% endif %}</div>
-                    </td>
-                    <td class="text-right">
-                        <div class="font-medium">{{ "{:,.2f}".format(project.amount or 0) }}</div>
-                    </td>
-                    <td class="text-right">
-                        <div class="font-medium">{{ "{:,.2f}".format(project.budget or 0) }}</div>
-                    </td>
-                    <td class="text-right">
-                        <div class="font-medium {% if (project.actual_payment or 0) > (project.budget or 0) %}text-error{% else %}text-success{% endif %}">
-                            {{ "{:,.2f}".format(project.actual_payment or 0) }}
-                        </div>
-                        {% if project.budget and project.budget > 0 %}
-                        <div class="text-xs text-gray-500">
-                            ({{ "{:.1f}".format(((project.actual_payment or 0) / project.budget * 100)) }}%)
-                        </div>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <div class="dropdown dropdown-end">
-                            <label tabindex="0" class="btn btn-ghost btn-sm">
-                                <i class="ph ph-dots-three-vertical"></i>
-                            </label>
-                            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                                <li>
-                                    <a href="{{ url_for('procurement.mas.view', organization_id=organization.id, mas_project_id=project.id) }}">
-                                        <i class="ph ph-eye"></i> ดูรายละเอียด
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{{ url_for('procurement.mas.edit', organization_id=organization.id, mas_project_id=project.id) }}">
-                                        <i class="ph ph-pencil"></i> แก้ไข
-                                    </a>
-                                </li>
-                                <li>
-                                    <form method="POST" action="{{ url_for('procurement.mas.delete', organization_id=organization.id, mas_project_id=project.id) }}" 
-                                          onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบโครงการนี้?')">
-                                        <button type="submit" class="text-error w-full text-left">
-                                            <i class="ph ph-trash"></i> ลบ
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="8" class="text-center py-8">
-                        <div class="flex flex-col items-center">
-                            <i class="ph ph-folder-dashed text-6xl text-gray-300 mb-4"></i>
-                            <p class="text-gray-500">ไม่พบโครงการ MAS</p>
-                            <a href="{{ url_for('procurement.mas.create', organization_id=organization.id) }}" 
-                               class="btn btn-primary mt-4">
-                                <i class="ph ph-plus mr-2"></i>
-                                เพิ่มโครงการแรก
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<!-- Projects Table (moved to macro) -->
+{{ render_mas_table(projects, organization, total_budget, total_actual, total_remaining) }}
 
 {% endblock %}
