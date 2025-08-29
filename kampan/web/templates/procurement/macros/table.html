@@ -25,29 +25,34 @@
                 {{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}
             </td>
             <td class="text-center">
-                <div class="flex justify-center gap-2">
-                    <div class="tooltip" data-tip="แก้ไขปีงบประมาณ">
-                        <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
-                            class="btn btn-circle btn-sm btn-outline border-orange-400 text-orange-600 hover:bg-orange-100 hover:border-orange-600">
-                            <i class="ph ph-pencil text-lg"></i>
-                        </a>
-                    </div>
-                    <div class="tooltip" data-tip="คัดลอกไปปีถัดไป">
-                        <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
-                            class="btn btn-circle btn-sm btn-outline border-blue-400 text-blue-600 hover:bg-blue-100 hover:border-blue-600">
-                            <i class="ph ph-copy text-lg"></i>
-                        </a>
-                    </div>
+                <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 gap-0.5">
+                    <li>
+                        <div class="tooltip tooltip-top" data-tip="แก้ไขปีงบประมาณ">
+                            <a href="{{ url_for('procurement.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
+                                class="btn btn-ghost btn-xs btn-square hover:bg-blue-100">
+                                <i class="ph ph-pencil-simple-line text-base text-blue-600"></i>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="tooltip tooltip-top" data-tip="คัดลอกไปปีถัดไป">
+                            <a href="{{ url_for('procurement.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
+                                class="btn btn-ghost btn-xs btn-square hover:bg-indigo-100">
+                                <i class="ph ph-clipboard-text text-base text-indigo-600"></i>
+                            </a>
+                        </div>
+                    </li>
                     {% if not is_default %}
-                    <div class="tooltip" data-tip="ลบปีงบประมาณ">
-                        <button
-                            class="btn btn-circle btn-sm btn-outline border-red-400 text-red-600 hover:bg-red-100 hover:border-red-600"
-                            onclick="showDeleteModal('{{ y.id }}')">
-                            <i class="ph ph-trash text-lg"></i>
-                        </button>
-                    </div>
+                    <li>
+                        <div class="tooltip tooltip-top" data-tip="ลบปีงบประมาณ">
+                            <button onclick="showDeleteModal('{{ y.id }}')"
+                                class="btn btn-ghost btn-xs btn-square hover:bg-red-100">
+                                <i class="ph ph-trash text-base text-red-600"></i>
+                            </button>
+                        </div>
+                    </li>
                     {% endif %}
-                </div>
+                </ul>
             </td>
             <td class="text-center">
                 <form method="post"
