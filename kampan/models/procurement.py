@@ -51,7 +51,7 @@ class Procurement(me.Document):
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
     start_date = me.DateTimeField(required=True)
     end_date = me.DateTimeField(required=True)
-    amount = me.FloatField(required=True, min_value=0)
+    amount = me.DecimalField(required=True, min_value=0, precision=2)
     period = me.IntField(required=True, min_value=1)
 
     # References
