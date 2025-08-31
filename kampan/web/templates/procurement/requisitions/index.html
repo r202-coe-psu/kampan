@@ -1,5 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/procurement/macros/table.html' as table_macros %}
 
 {% block title %}รายการครุภัณฑ์ใกล้หมดอายุ{% endblock %}
 {% block dashboard_title %}รายการครุภัณฑ์ใกล้หมดอายุใน 7 วัน{% endblock %}
@@ -37,8 +38,20 @@
     </div>
 
     <!-- Cards Grid -->
+    {% set active_items = procurements | selectattr('status', 'equalto', 'active') | list %}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {% for item in procurements %}
+        {% if active_items|length == 0 %}
+        <div class="col-span-full text-center py-16">
+            <div class="flex flex-col items-center">
+                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <i class="ph ph-calendar-x text-4xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-700 mb-1">ยังไม่มีรายการที่ใกล้หมดอายุ</h3>
+                <p class="text-gray-500">ไม่พบรายการที่อยู่ในสถานะ "active" ในขณะนี้</p>
+            </div>
+        </div>
+        {% else %}
+        {% for item in active_items %}
         <div
             class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
             <!-- Card Header -->
@@ -154,17 +167,18 @@
             <div class="bg-gray-50 px-4 py-3 border-t">
                 <div class="flex gap-2">
                     <button type="button"
-                        class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md renew-btn text-sm">
-                        <i class="ph ph-check mr-2"></i>
+                        class="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
+                        <i class="ph ph-check"></i>
                     </button>
-                    <button type="button"
-                        class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md not-renew-btn text-sm">
-                        <i class="ph ph-x mr-2"></i>
-                    </button>
+                    <a href="{{ url_for('procurement.requisitions.delete', requisition_procurement_id=item.id) }}"
+                        class="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
+                        <i class="ph ph-x"></i>
+                    </a>
                 </div>
             </div>
         </div>
         {% endfor %}
+        {% endif %}
     </div>
 
     <!-- Pagination -->
@@ -181,123 +195,13 @@
     </div>
     {% endif %}
 
-    <!-- Empty State -->
-    {% if procurements|length == 0 %}
-    <div class="text-center py-16">
-        <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-            <i class="ph ph-calendar-x text-4xl text-gray-400"></i>
-        </div>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">ไม่มีครุภัณฑ์ที่ใกล้หมดอายุ</h3>
-        <p class="text-gray-500">ไม่พบรายการที่ต้องดำเนินการในขณะนี้</p>
-    </div>
-    {% endif %}
-
     <!-- Status Sections -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-12">
-        <!-- Renewed Items -->
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div class="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-6 py-4">
-                <h3 class="text-lg font-bold flex items-center gap-3">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="ph ph-check-circle text-lg"></i>
-                    </div>
-                    รายการที่ต่ออายุแล้ว
-                </h3>
-            </div>
-            <div class="p-6" id="renewed-cards">
-                <div class="text-center py-12 text-gray-400">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <i class="ph ph-check-circle text-2xl text-emerald-500"></i>
-                    </div>
-                    <h4 class="text-lg font-medium mb-2">ยังไม่มีรายการ</h4>
-                    <p class="text-sm">รายการที่ดำเนินการต่ออายุจะแสดงที่นี่</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Not Renewed Items -->
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div class="bg-gradient-to-r from-rose-500 to-red-500 text-white px-6 py-4">
-                <h3 class="text-lg font-bold flex items-center gap-3">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="ph ph-x-circle text-lg"></i>
-                    </div>
-                    รายการที่ไม่ต่ออายุ
-                </h3>
-            </div>
-            <div class="p-6" id="not-renewed-cards">
-                <div class="text-center py-12 text-gray-400">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-rose-100 rounded-full flex items-center justify-center">
-                        <i class="ph ph-x-circle text-2xl text-rose-500"></i>
-                    </div>
-                    <h4 class="text-lg font-medium mb-2">ยังไม่มีรายการ</h4>
-                    <p class="text-sm">รายการที่ไม่ดำเนินการต่ออายุจะแสดงที่นี่</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% set disactive_items = paginated_procurements.items | selectattr('status', 'equalto', 'disactive') | list %}
+    {{ table_macros.render_non_renewal_items_table(disactive_items) }}
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Enhanced move card function with animation
-        function moveCard(itemId, targetContainerId) {
-            var card = document.querySelector('#pending-cards [data-item-id="' + itemId + '"]');
-            if (!card) return;
-
-            // Add animation class
-            card.style.transition = 'all 0.5s ease';
-            card.style.transform = 'scale(0.8)';
-            card.style.opacity = '0.5';
-
-            setTimeout(() => {
-                // Remove action buttons and add status
-                var actions = card.querySelector('.flex.gap-3.mt-6');
-                if (actions) {
-                    actions.innerHTML = '<div class="text-center py-2"><span class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium">ดำเนินการแล้ว</span></div>';
-                }
-
-                // Reset animation and move
-                card.style.transform = 'scale(1)';
-                card.style.opacity = '1';
-
-                var targetContainer = document.querySelector('#' + targetContainerId);
-                var placeholder = targetContainer.querySelector('.text-center.py-12');
-                if (placeholder) {
-                    placeholder.remove();
-                }
-
-                // Create mini version for status section
-                var miniCard = document.createElement('div');
-                miniCard.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow';
-                miniCard.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="font-medium text-gray-800">${card.querySelector('h3').textContent}</div>
-                            <div class="text-sm text-gray-500">${card.querySelector('.font-bold.text-blue-600').textContent}</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-bold text-green-600">${card.querySelector('.text-2xl.font-bold').textContent}</div>
-                        </div>
-                    </div>
-                `;
-
-                targetContainer.appendChild(miniCard);
-                card.remove();
-            }, 500);
-        }
-
-        document.querySelectorAll('.renew-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                moveCard(this.dataset.itemId, 'renewed-cards');
-            });
-        });
-        document.querySelectorAll('.not-renew-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                moveCard(this.dataset.itemId, 'not-renewed-cards');
-            });
-        });
-
         // Enhanced countdown with better visuals (alternative: loop in JS, not Jinja)
         var countdownItems = document.querySelectorAll('[id^="countdown-"]');
         countdownItems.forEach(function (container) {

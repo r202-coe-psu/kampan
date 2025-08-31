@@ -55,3 +55,24 @@ def index():
         category_choices=category_choices,
         selected_category=category,
     )
+
+
+@module.route("/<requisition_procurement_id>/delete")
+@acl.organization_roles_required("admin")
+def delete(requisition_procurement_id):
+    organization = current_user.user_setting.current_organization
+    procurement = models.Procurement.objects(
+        id=requisition_procurement_id, status="active"
+    ).first()
+
+    if not procurement:
+        return redirect(
+            url_for("procurement.requisitions.index", organization_id=organization.id)
+        )
+
+    procurement.status = "disactive"
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+    return redirect(
+        url_for("procurement.requisitions.index", organization_id=organization.id)
+    )

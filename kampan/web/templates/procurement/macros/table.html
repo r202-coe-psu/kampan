@@ -695,3 +695,113 @@
         </div>
     </div>
     {% endmacro %}
+
+    {% macro render_non_renewal_items_table(disactive_items) %}
+    <div class="mt-12">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-rose-600 flex items-center gap-3">
+                <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                    <i class="ph ph-x-circle text-rose-600 text-lg"></i>
+                </div>
+                รายการที่ไม่ต่ออายุ
+            </h3>
+            <div class="bg-rose-50 border border-rose-200 rounded-full px-4 py-2">
+                <span class="text-rose-700 font-semibold text-sm">{{ disactive_items|length }} รายการ</span>
+            </div>
+        </div>
+
+        {% if disactive_items|length == 0 %}
+        <!-- Enhanced Empty State -->
+        <div
+            class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl border-2 border-dashed border-rose-200 p-12 text-center">
+            <div class="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="ph ph-check-circle text-rose-400 text-3xl"></i>
+            </div>
+            <h4 class="text-lg font-semibold text-rose-700 mb-2">ยังไม่มีรายการที่ไม่ต่ออายุ</h4>
+            <p class="text-rose-600">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
+        </div>
+        {% else %}
+        <!-- Enhanced Table Layout -->
+        <div class="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-rose-200">
+                    <thead class="bg-gradient-to-r">
+                        <tr>
+                            <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
+                            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+                            <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-48">วันที่สิ้นสุด</th>
+                            <th class="font-semibold text-base-content text-sm text-center">บริษัท</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-64">จำนวนเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-72">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for item in disactive_items %}
+                        <tr class="hover:bg-rose-50 transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div
+                                    class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                    {{ loop.index }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-900">{{ item.product_number }}</div>
+                                <div class="text-xs text-gray-500 flex items-center gap-1">
+                                    <i class="ph ph-barcode"></i>{{ item.asset_code }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
+                                    title="{{ item.name }}">
+                                    {{ item.name }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% set category_badge = {
+                                'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
+                                'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
+                                'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
+                                'อื่นๆ': 'bg-gray-50 text-gray-700 border border-gray-200'
+                                }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
+                                <span
+                                    class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
+                                    {{ item.get_category_display() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="ph ph-calendar-x text-rose-500"></i>
+                                    <span class="text-sm font-medium text-rose-700">
+                                        {{ item.end_date.strftime('%d/%m/%Y') if item.end_date }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="ph ph-buildings text-gray-400"></i>
+                                    <span class="text-sm text-gray-900">{{ item.company }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <div class="text-lg font-bold text-rose-600">
+                                    ฿{{ "{:,.2f}".format(item.amount) }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span
+                                    class="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-medium">
+                                    <i class="ph ph-clock text-rose-500"></i>
+                                    ไม่ต่ออายุ
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endmacro %}

@@ -53,6 +53,7 @@ class Procurement(me.Document):
     end_date = me.DateTimeField(required=True)
     amount = me.DecimalField(required=True, min_value=0, precision=2)
     period = me.IntField(required=True, min_value=1)
+    status = me.StringField(default="active")
 
     # References
     company = me.StringField(max_length=255, required=True)

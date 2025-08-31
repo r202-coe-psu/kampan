@@ -15,6 +15,7 @@ BaseProcurementForm = model_form(
         "image",
         "start_date",
         "end_date",
+        "status",
     ],
     field_args={
         "name": {"label": "ชื่อรายการ"},

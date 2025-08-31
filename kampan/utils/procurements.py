@@ -179,6 +179,7 @@ def upload_procurement_excel(file_bytes, user_id):
                 tor_year=tor_year_obj,
                 created_by=user,
                 last_updated_by=user,
+                status="active",  # <-- set status to active on upload
             )
             procurement.save()
             print(f"Saved procurement: {procurement.product_number}")
