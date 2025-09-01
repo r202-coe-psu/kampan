@@ -347,11 +347,12 @@
                 <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
                 <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
                 <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
-                <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
-                <th class="font-semibold text-base-content text-sm text-center w-48">ระยะเวลา</th>
+                <th class="font-semibold text-base-content text-sm text-center w-64">ประเภท</th>
+                <th class="font-semibold text-base-content text-sm text-center w-64">ระยะเวลา</th>
                 <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
-                <th class="font-semibold text-base-content text-sm text-center w-64">การจ่ายเงิน</th>
+                <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
                 <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
+                <th class="font-semibold text-base-content text-sm text-center w-32">สถานะการต่ออายุ</th>
                 <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
             </tr>
         </thead>
@@ -474,6 +475,19 @@
                             {% endif %}
                         </div>
                     </div>
+                </td>
+
+                <!-- Renewal Status -->
+                <td class="text-center py-4">
+                    {% if item.status == "pending" %}
+                    <span class="badge badge-warning">รอต่ออายุ</span>
+                    {% elif item.status == "disactive" %}
+                    <span class="badge badge-error">หยุดต่ออายุ</span>
+                    {% elif item.status == "active" %}
+                    <span class="badge badge-success">กำลังใช้งาน</span>
+                    {% else %}
+                    <span class="badge badge-secondary">-</span>
+                    {% endif %}
                 </td>
 
                 <td class="text-center py-4">

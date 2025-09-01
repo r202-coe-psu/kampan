@@ -13,7 +13,7 @@ class ProcurementStatusUpdater:
     async def process_data(self, data={}):
         logger.debug("Start Process Procurement Data ")
 
-        procurement_id = data.get("procurement_id") or data.get("item_id")
+        procurement_id = data.get("procurement_id")
         if not procurement_id:
             return
 
@@ -29,3 +29,14 @@ class ProcurementStatusUpdater:
         if old_status != new_status:
             procurement.payment_status = new_status
             procurement.save()
+
+        if procurement.end_date:
+            end_date = (
+                procurement.end_date.date()
+                if hasattr(procurement.end_date, "date")
+                else procurement.end_date
+            )
+            if end_date <= today + datetime.timedelta(days=7):
+                if procurement.status != "pending":
+                    procurement.status = "pending"
+                    procurement.save()
