@@ -105,7 +105,7 @@ class ControllerServer:
                     )
                     await asyncio.sleep(time_to_check)
 
-                procurements = models.Procurement.objects(payment_status="unpaid")
+                procurements = models.Procurement.objects(payment_status__ne="paid")
                 for procurement in procurements:
                     data = {
                         "action": "process",
