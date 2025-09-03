@@ -20,10 +20,31 @@
         </summary>
         <ul>
           <li style="padding-top: 0.5rem;">
-            <a class="{{ 'menu-active' if '/procurement/requisitions' in request.path else '' }}"
-              href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
-              <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
-            </a>
+            <details {% if '/procurement/requisitions' in request.path %}open{% endif %}>
+              <summary>
+                <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
+              </summary>
+              <ul>
+                <li>
+                  <a class="{{ 'menu-active' if '/procurement/requisitions' in request.path and '/renewal_requested' not in request.path else '' }}"
+                    href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
+                    <i class="ph ph-list"></i> รายการขอซื้อขอจ้าง
+                  </a>
+                </li>
+                <li>
+                  <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
+                    href="{{ url_for('procurement.requisitions.list_renewal_requested', organization_id=organization.id ) }}">
+                    <i class="ph ph-arrow-clockwise"></i> รายการขอต่ออายุ
+                  </a>
+                </li>
+                <li>
+                  <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path else '' }}"
+                    href="{{ url_for('procurement.requisitions.list_non_renewal', organization_id=organization.id ) }}">
+                    <i class="ph ph-x-circle"></i> รายการไม่ต่ออายุ
+                  </a>
+                </li>
+              </ul>
+            </details>
           </li>
           <li style="padding-top: 0.5rem;">
             <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"

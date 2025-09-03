@@ -480,7 +480,7 @@
                 <!-- Renewal Status -->
                 <td class="text-center py-4">
                     {% if item.status == "pending" %}
-                    <span class="badge badge-warning">รอต่ออายุ</span>
+                    <span class="badge badge-warning">รอตรวจสอบ</span>
                     {% elif item.status == "disactive" %}
                     <span class="badge badge-error">หยุดต่ออายุ</span>
                     {% elif item.status == "active" %}
@@ -898,7 +898,7 @@
                                 <div class="flex items-center gap-2">
                                     <i class="ph ph-calendar-x text-blue-500"></i>
                                     <span class="text-sm font-medium text-blue-700">
-                                        {{ item.end_date.strftime('%d/%m/%Y') if item.end_date }}
+                                        {{ item.start_date.strftime('%d/%m/%Y') if item.start_date }}
                                     </span>
                                 </div>
                             </td>
