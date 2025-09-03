@@ -51,7 +51,11 @@
             </div>
             <div
                 style="border: 2px solid #333; border-radius: 6px; padding: 12px; margin: 0 8px; text-align: right; margin-top: 2rem;">
-                <p style="margin: 2;">เลขที่ ........................</p>
+                <p style="margin: 2;">เลขที่ ........................
+                    <span style="position: absolute; left: 42rem; white-space: nowrap;">
+                        {{ requisitions.requisition_code }}
+                    </span>
+                </p>
                 <p style="margin: 2;">วันที่รับ .............................</p>
                 <p style="margin: 2;">
                     <span>
@@ -95,21 +99,24 @@
         <div style="text-align: right;">
             <span>ข้าพเจ้า</span>
             <span style="position: relative;">
-                นาย/นาง/นางสาว .................................................................
-                <span style="position: absolute; left: 10rem; top: -0.5rem; white-space: nowrap;">
-
+                นาย/นาง/นางสาว .................................................
+                <span style="position: absolute; left: 10rem; top: -0.4rem; white-space: nowrap;">
+                    {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                    requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                    {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
                 </span>
             </span>
             <span style="position: relative;">
-                ฝ่าย .................
-                <span style="position: absolute; right: 2.5rem; top: -0.5rem; white-space: nowrap;">
-
+                ฝ่าย .................................
+                <span style="position: absolute; left: 2.5rem; top: -0.4rem; white-space: nowrap;">
+                    {{ requisitions.purchaser.division.name[4:] if
+                    requisitions.purchaser.division.name.startswith('ฝ่าย') else requisitions.purchaser.division.name }}
                 </span>
             </span>
             <span style="position: relative;">
                 โทร .................
                 <span style="position: absolute; right: 1.5rem; white-space: nowrap;">
-
+                    {{ requisitions.phone if requisitions.phone else '' }}
                 </span>
             </span>
         </div>
@@ -117,17 +124,17 @@
             <span>มีความต้องการ</span>
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if procurement.category=="software" %}checked{% endif %}>
+                    if requisitions.category=="software" %}checked{% endif %}>
                 <span style="vertical-align: middle;">ซื้อวัสดุ</span>
             </span>
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if procurement.category=="product" %}checked{% endif %}>
+                    if requisitions.category=="product" %}checked{% endif %}>
                 <span style="vertical-align: middle;">ซื้อครุภัณฑ์</span>
             </span>
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if procurement.category=="service" %}checked{% endif %}>
+                    if requisitions.category=="service" %}checked{% endif %}>
                 <span style="vertical-align: middle;">จ้างเหมา</span>
             </span>
             <span>
@@ -139,19 +146,19 @@
             <span style="position: relative;">
                 <span
                     style="position: absolute; left: 15; top: -0.5rem; white-space: normal; max-width: 350px; overflow-wrap: break-word; line-height: 1.6;">
-                    {{ procurement.name }}
+                    {{ requisitions.product_name }}
                 </span>
                 ................................................................................
             </span>
             <span style="position: relative;">
                 <span style="position: absolute; left: 5rem; white-space: nowrap;">
-                    {{ procurement.quantity if procurement.quantity is defined and procurement.quantity else 1 }}
+                    {{ requisitions.quantity if requisitions.quantity is defined and requisitions.quantity else 1 }}
                 </span>
                 จำนวน ..............
             </span>
             <span style="position: relative;">
                 <span style="position: absolute; left: 7rem; white-space: nowrap;">
-                    {{ "{:,.2f}".format(procurement.amount) }}
+                    {{ "{:,.2f}".format(requisitions.amount) }}
                 </span>
                 ราคาประมาณ ......................
             </span>
@@ -226,8 +233,7 @@
         <div style="text-align: right;">
             <span style="position: relative;">
                 <span style="position: absolute; left: 10rem; white-space: nowrap;">
-                    {{ "{:,.2f}".format(procurements|sum(attribute='amount')) if procurements is defined else
-                    "{:,.2f}".format(procurement.amount) }}
+                    {{ "{:,.2f}".format(requisitions.amount) }}
                 </span>
                 รวมเป็นเงินประมาณ ......................
             </span>
@@ -235,15 +241,34 @@
         </div>
     </div>
     <div>
-        <span>เหตุผลที่ต้องการใช้</span>
+        <span>เหตุผลที่ต้องการใช้
+            <span
+                style="position: absolute; left: 10rem; white-space: normal; max-width: 550px; overflow-wrap: break-word; line-height: 1.2;">
+                {{ requisitions.reason }}
+            </span>
+        </span>
         <span>...................................................................................................................................</span>
         <span>...............................................................................................................................................................</span>
     </div>
     <div>
         <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
-        <span>........</span>
-        <span>เดือน .......................</span>
-        <span>พ.ศ. ..............</span>
+        <span>........
+            <span style="position: absolute; left: 30.5rem;">
+                {{ requisitions.start_date.day if requisitions.start_date }}
+            </span>
+        </span>
+        <span>เดือน .......................
+            <span style="position: absolute; left: 36rem; top: 28.7rem">
+                {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+                "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.start_date.month-1] if requisitions.start_date
+                }}
+            </span>
+        </span>
+        <span>พ.ศ. ..............
+            <span style="position: absolute; left: 46rem;">
+                {{ requisitions.start_date.year + 543 if requisitions.start_date }}
+            </span>
+        </span>
     </div>
     <div style="text-align: center;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
     <div style="text-align: right; margin-top: 0.5rem;">

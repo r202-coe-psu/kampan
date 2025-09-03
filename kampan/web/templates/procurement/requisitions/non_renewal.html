@@ -16,11 +16,5 @@
 {% block content %}
 <div class="container mx-auto px-4 py-6">
     {{ table_macros.render_non_renewal_items_table(items) }}
-
-    {% if paginated_procurements.pages > 1 %}
-    <div class="mt-8 flex justify-center">
-        {{ paginated.render_pagination(paginated_procurements, "procurement.requisitions.non_renewal", params) }}
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

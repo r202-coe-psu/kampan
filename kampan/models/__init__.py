@@ -17,6 +17,7 @@ from .lost_break_items import LostBreakItem
 from .categories import Category
 from .procurement import Procurement, ToRYear, PaymentRecord
 from .mas import MAS
+from .requisitions import Requisition
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
 

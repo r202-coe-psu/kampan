@@ -1,0 +1,502 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}สร้างรายการขอจัดซื้อ{% endblock %}
+{% block dashboard_title %}สร้างรายการขอจัดซื้อ{% endblock %}
+
+{% block content %}
+<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-8">
+    <div class="flex items-center mb-8">
+        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+            <i class="ph ph-plus text-2xl text-primary"></i>
+        </div>
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">สร้างรายการขอจัดซื้อ</h1>
+            <p class="text-gray-500 text-sm">กรอกข้อมูลสำหรับการขอจัดซื้อของคุณ</p>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-8">
+        {{ form.hidden_tag() }}
+
+        <!-- Preview Code Section -->
+        {% if preview_code %}
+        <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-400">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
+                รหัสรายการขอจัดซื้อ
+            </h2>
+            <div class="bg-white px-4 py-3 rounded-lg border font-mono text-lg text-blue-900">
+                {{ preview_code }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Contact Information Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-phone text-xl text-green-600 mr-2"></i>
+                ข้อมูลการติดต่อและงบประมาณ
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="phone">{{ form.phone.label }}</label>
+                    <div class="relative">
+                        {{ form.phone(class_="input input-bordered w-full focus:input-primary pl-10", id="phone",
+                        placeholder="เช่น 081-234-5678") }}
+                        <i class="ph ph-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    {% if form.phone.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.phone.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="fund">{{ form.fund.label }}</label>
+                    <div>
+                        <div class="relative mb-3">
+                            <input type="text" id="fund_search" placeholder="ค้นหาแหล่งงบประมาณ..."
+                                class="input input-bordered w-full focus:input-primary pl-10"
+                                oninput="filterFundList()">
+                            <i
+                                class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+
+                        <div id="fund_list"
+                            class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
+                            {% for fund in form.fund.queryset %}
+                            <label
+                                class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
+                                <input type="radio" name="{{ form.fund.name }}" value="{{ fund.id }}"
+                                    class="radio radio-primary radio-sm" {% if form.fund.data and
+                                    (form.fund.data|string)==(fund.id|string) or form.fund.data==fund %}checked{% endif
+                                    %}>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="ph ph-currency-circle-dollar text-primary text-sm"></i>
+                                    </div>
+                                    <span class="text-gray-700">
+                                        {{ form.label_modifier(fund) if form.label_modifier else (fund.name if fund.name
+                                        is defined else fund) }}
+                                    </span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if form.fund.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.fund.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- New purchaser block -->
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="purchaser">{{ form.purchaser.label
+                        }}</label>
+                    <div>
+                        <div class="relative mb-3">
+                            <input type="text" id="purchaser_search" placeholder="ค้นหา purchaser..."
+                                class="input input-bordered w-full focus:input-primary pl-10"
+                                oninput="filterPurchaserList()">
+                            <i
+                                class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+
+                        <div id="purchaser_list"
+                            class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
+                            {% for user in form.purchaser.queryset %}
+                            <label
+                                class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
+                                <input type="radio" name="{{ form.purchaser.name }}" value="{{ user.id }}"
+                                    class="radio radio-primary radio-sm" {% if form.purchaser.data and
+                                    ((form.purchaser.data|string)==(user.id|string) or form.purchaser.data==user)
+                                    %}checked{% endif %}>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="ph ph-user text-primary text-sm"></i>
+                                    </div>
+                                    <span class="text-gray-700">
+                                        {{ form.label_modifier(user) if form.label_modifier else
+                                        (user.display_fullname() if user.display_fullname is defined else user) }}
+                                    </span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if form.purchaser.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.purchaser.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Details Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-package text-xl text-yellow-600 mr-2"></i>
+                รายละเอียดสินค้า/บริการ
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="product_name">{{ form.product_name.label
+                        }}</label>
+                    {{ form.product_name(class_="input input-bordered w-full", id="product_name",
+                    placeholder="ชื่อสินค้า/บริการ") }}
+                    {% if form.product_name.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.product_name.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="quantity">{{ form.quantity.label }}</label>
+                    {{ form.quantity(class_="input input-bordered w-full", id="quantity", min="1", type="number",
+                    placeholder="จำนวน") }}
+                    {% if form.quantity.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.quantity.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="category">{{ form.category.label }}</label>
+                    {{ form.category(class_="select select-bordered w-full", id="category") }}
+                    {% if form.category.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.category.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="amount">{{ form.amount.label }}</label>
+                    {{ form.amount(class_="input input-bordered w-full", id="amount", min="0", step="0.01",
+                    type="number", placeholder="จำนวนเงิน") }}
+                    {% if form.amount.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.amount.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="company">{{ form.company.label }}</label>
+                    {{ form.company(class_="input input-bordered w-full", id="company", placeholder="ชื่อบริษัท") }}
+                    {% if form.company.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.company.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Reason and Date Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-calendar-check text-xl text-purple-600 mr-2"></i>
+                รายละเอียดและระยะเวลา
+            </h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Reason Field -->
+                <div class="lg:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-2" for="reason">{{ form.reason.label
+                        }}</label>
+                    <div class="relative">
+                        {{ form.reason(class_="textarea textarea-bordered w-full focus:textarea-primary
+                        resize-none", id="reason", placeholder="โปรดระบุเหตุผลในการขอจัดซื้อ...") }}
+                        <i class="ph ph-note absolute top-3 right-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    {% if form.reason.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.reason.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Start Date Field -->
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="start_date">{{ form.start_date.label.text
+                        }}</label>
+                    <div class="relative">
+                        {{ form.start_date(class_="input input-bordered w-full focus:input-primary", type="date",
+                        id="start_date", style="position: absolute; opacity: 0;") }}
+                        <input type="text" id="start_date_display" placeholder="dd/mm/yyyy"
+                            class="input input-bordered w-full focus:input-primary" readonly
+                            onclick="document.getElementById('start_date').showPicker()">
+                        <i
+                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    {% if form.start_date.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.start_date.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Upload Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-file-pdf text-xl text-red-600 mr-2"></i>
+                เอกสารแนบ
+            </h2>
+            <div class="space-y-3">
+                <label class="block text-gray-700 font-medium mb-2" for="tor_document">
+                    {{ form.tor_document.label.text }}
+                </label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="tor_document"
+                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-500">
+                                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ PDF เท่านั้น (ขนาดไม่เกิน 10MB)</p>
+                        </div>
+                        {{ form.tor_document(class_="hidden", accept=".pdf", id="tor_document") }}
+                    </label>
+                </div>
+                {% if form.tor_document.errors %}
+                <p class="text-red-500 text-xs mt-2 flex items-center">
+                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.tor_document.errors[0] }}
+                </p>
+                {% endif %}
+                <div id="document_preview" class="hidden mt-4">
+                    <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <i class="ph ph-file-pdf text-2xl text-red-600 mr-3"></i>
+                        <div class="flex-1">
+                            <p id="document_name" class="text-sm font-medium text-gray-700"></p>
+                            <p class="text-xs text-gray-500">ไฟล์ PDF พร้อมสำหรับอัปโหลด</p>
+                        </div>
+                        <button type="button" onclick="clearDocument()" class="text-red-500 hover:text-red-700">
+                            <i class="ph ph-x text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}"
+                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
+                <i class="ph ph-x mr-2"></i>
+                ยกเลิก
+            </a>
+            <button type="submit" id="submit_btn"
+                class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
+                <i class="ph ph-check mr-2"></i>
+                บันทึกรายการ
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const startDate = document.getElementById('start_date');
+        const documentInput = document.getElementById('tor_document');
+        const documentPreview = document.getElementById('document_preview');
+        const documentName = document.getElementById('document_name');
+
+        // Date formatting functions
+        function formatDateDisplay() {
+            if (startDate.value) {
+                const startDateObj = new Date(startDate.value);
+                const startDisplayElement = document.getElementById('start_date_display');
+                if (startDisplayElement) {
+                    startDisplayElement.value = formatDateToDDMMYYYY(startDateObj);
+                }
+            } else {
+                const startDisplayElement = document.getElementById('start_date_display');
+                if (startDisplayElement) {
+                    startDisplayElement.value = '';
+                }
+            }
+        }
+
+        function formatDateToDDMMYYYY(dateObj) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Date change event listener
+        startDate.addEventListener('change', function () {
+            formatDateDisplay();
+        });
+
+        // Initialize date display on page load
+        formatDateDisplay();
+
+        // Document upload functionality
+        documentInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                documentName.textContent = file.name;
+                documentPreview.classList.remove('hidden');
+
+                // Update the upload area to show success state
+                const uploadArea = documentInput.parentElement;
+                uploadArea.innerHTML = `
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                    <i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i>
+                    <p class="text-sm text-green-600 font-semibold">
+                        ไฟล์ถูกเลือกแล้ว
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">${file.name}</p>
+                </div>
+            `;
+            } else {
+                documentPreview.classList.add('hidden');
+            }
+        });
+
+        // Phone number: allow only digits, max 10 digits, log if more than 10
+        const phoneInput = document.getElementById('phone');
+        phoneInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                console.log('ห้ามกรอกเกิน 10 หลัก');
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+
+        // Fund list interactions (search + clickable rows)
+        const fundSearch = document.getElementById('fund_search');
+        const fundList = document.getElementById('fund_list');
+        if (fundList) {
+            const fundLabels = fundList.querySelectorAll('label');
+            fundLabels.forEach(label => {
+                label.addEventListener('click', function (e) {
+                    if (e.target.type === 'radio') return;
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        // Purchaser list interactions (search + clickable rows)
+        const purchaserSearch = document.getElementById('purchaser_search');
+        const purchaserList = document.getElementById('purchaser_list');
+        if (purchaserList) {
+            const purchaserLabels = purchaserList.querySelectorAll('label');
+            purchaserLabels.forEach(label => {
+                label.addEventListener('click', function (e) {
+                    if (e.target.type === 'radio') return;
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function (e) {
+            const phone = phoneInput.value.trim();
+            const fund = document.getElementById('fund').value.trim();
+            const reason = document.getElementById('reason').value.trim();
+            const startDateValue = startDate.value;
+
+            let isValid = true;
+            let errorMessage = '';
+
+            if (!phone) {
+                isValid = false;
+                errorMessage = 'กรุณากรอกหมายเลขโทรศัพท์';
+            } else if (!fund) {
+                isValid = false;
+                errorMessage = 'กรุณากรอกแหล่งงบประมาณ';
+            } else if (!reason) {
+                isValid = false;
+                errorMessage = 'กรุณากรอกเหตุผลในการขอจัดซื้อ';
+            } else if (!startDateValue) {
+                isValid = false;
+                errorMessage = 'กรุณาเลือกวันที่เริ่มต้น';
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+
+                // Show error toast
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
+                toast.innerHTML = `
+                <i class="ph ph-warning-circle"></i>
+                <span>${errorMessage}</span>
+            `;
+                document.body.appendChild(toast);
+
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            }
+        });
+    });
+
+    // Filter function for funds (matches RESPONSIBLE_BY behaviour)
+    function filterFundList() {
+        const input = document.getElementById('fund_search');
+        if (!input) return;
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById('fund_list');
+        if (!list) return;
+        const labels = list.getElementsByTagName('label');
+        for (let i = 0; i < labels.length; i++) {
+            const text = labels[i].innerText.toLowerCase();
+            labels[i].style.display = text.includes(filter) ? '' : 'none';
+        }
+    }
+
+    // Filter function for purchaser list
+    function filterPurchaserList() {
+        const input = document.getElementById('purchaser_search');
+        if (!input) return;
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById('purchaser_list');
+        if (!list) return;
+        const labels = list.getElementsByTagName('label');
+        for (let i = 0; i < labels.length; i++) {
+            const text = labels[i].innerText.toLowerCase();
+            labels[i].style.display = text.includes(filter) ? '' : 'none';
+        }
+    }
+
+    function clearDocument() {
+        const documentInput = document.getElementById('tor_document');
+        const documentPreview = document.getElementById('document_preview');
+
+        documentInput.value = '';
+        documentPreview.classList.add('hidden');
+
+        // Reset upload area
+        const uploadArea = documentInput.parentElement;
+        uploadArea.innerHTML = `
+        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+            <p class="text-sm text-gray-500">
+                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
+            </p>
+            <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ PDF เท่านั้น (ขนาดไม่เกิน 10MB)</p>
+        </div>
+    `;
+    }
+</script>
+{% endblock %}

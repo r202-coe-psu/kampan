@@ -27,10 +27,4 @@ BaseMASForm = model_form(
 
 
 class MASForm(BaseMASForm):
-    def validate_mas_code(self, field):
-        form_id = getattr(self, "id", None)
-        q = models.MAS.objects(mas_code=field.data)
-        if form_id:
-            q = q.filter(id__ne=form_id.data)
-        if q.first():
-            raise ValidationError("รหัส MAS นี้ถูกใช้ไปแล้ว กรุณาใช้รหัสอื่น")
+    pass

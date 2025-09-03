@@ -11,7 +11,7 @@ STATUS_CHOICES = [
 class MAS(me.Document):
     meta = {"collection": "mas"}
 
-    mas_code = me.StringField(required=True, unique=True, max_length=50)
+    mas_code = me.StringField(required=True, max_length=50)
     main_category = me.StringField(required=True, max_length=100)
     sub_category = me.StringField(required=True, max_length=100)
     name = me.StringField(required=True, max_length=200)

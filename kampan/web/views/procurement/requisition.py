@@ -78,34 +78,21 @@ def non_renewal(requisition_procurement_id):
 def list_non_renewal():
     organization = current_user.user_setting.current_organization
     category = request.args.get("category", "")
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=10, type=int)
 
     query = {"status": "disactive"}
     tor_year = getattr(current_user.user_setting, "tor_year", None)
     if tor_year:
         query["tor_year"] = tor_year
-    if category:
-        query["category"] = category
 
     procurements = models.Procurement.objects(**query).order_by("-end_date")
-    paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
     category_choices = models.procurement.CATEGORY_CHOICES
-
-    params = dict(request.args)
-    if "page" in params:
-        params.pop("page")
-    if "organization_id" not in params:
-        params["organization_id"] = organization.id
 
     return render_template(
         "procurement/requisitions/non_renewal.html",
-        items=paginated_procurements.items,
-        paginated_procurements=paginated_procurements,
+        items=procurements,
         organization=organization,
         category_choices=category_choices,
         selected_category=category,
-        params=params,
     )
 
 
@@ -119,6 +106,41 @@ def renewal_requested(requisition_procurement_id):
         return redirect(
             url_for("procurement.requisitions.index", organization_id=organization.id)
         )
+
+    # สร้างรหัส requisition_code ใหม่
+    now = datetime.datetime.now()
+    buddhist_year = now.year + 543
+    prefix = f"{buddhist_year}-"
+    last = (
+        models.Requisition.objects(requisition_code__startswith=prefix)
+        .order_by("-requisition_code")
+        .first()
+    )
+    if last and last.requisition_code:
+        last_number = int(last.requisition_code.split("-")[1])
+        next_number = last_number + 1
+    else:
+        next_number = 1
+    requisition_code = f"{buddhist_year}-{next_number:04d}"
+
+    # สร้าง Requisition ใหม่
+    requisition = models.Requisition(
+        requisition_code=requisition_code,
+        purchaser=procurement.responsible_by[0] if procurement.responsible_by else None,
+        phone=None,
+        reason=f"Renewal requested for procurement {procurement.name}",
+        start_date=procurement.end_date,
+        product_name=procurement.name,
+        category=procurement.category,
+        amount=procurement.amount,
+        company=procurement.company,
+        fund=None,
+        quantity=1,
+        created_by=current_user._get_current_object(),
+        last_updated_by=current_user._get_current_object(),
+    )
+
+    requisition.save()
 
     procurement.status = "renewal-requested"
     procurement.last_updated_by = current_user._get_current_object()
@@ -134,34 +156,13 @@ def renewal_requested(requisition_procurement_id):
 def list_renewal_requested():
     organization = current_user.user_setting.current_organization
     category = request.args.get("category", "")
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=10, type=int)
-
-    query = {"status": "renewal-requested"}
-    tor_year = getattr(current_user.user_setting, "tor_year", None)
-    if tor_year:
-        query["tor_year"] = tor_year
-    if category:
-        query["category"] = category
-
-    procurements = models.Procurement.objects(**query).order_by("-end_date")
-    paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
-    category_choices = models.procurement.CATEGORY_CHOICES
-
-    params = dict(request.args)
-    if "page" in params:
-        params.pop("page")
-    if "organization_id" not in params:
-        params["organization_id"] = organization.id
+    requisitions = models.Requisition.objects().order_by("requisition_code")
 
     return render_template(
         "procurement/requisitions/renewal_requested.html",
-        items=paginated_procurements.items,
-        paginated_procurements=paginated_procurements,
+        requisitions=requisitions,
         organization=organization,
-        category_choices=category_choices,
         selected_category=category,
-        params=params,
     )
 
 
@@ -169,12 +170,78 @@ def list_renewal_requested():
 @login_required
 @acl.organization_roles_required("admin")
 def document(requisition_procurement_id):
-    procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-    if not procurement:
+    requisition = models.Requisition.objects(id=requisition_procurement_id).first()
+    if not requisition:
         abort(404)
 
     return render_template(
         "procurement/requisitions/document.html",
-        procurement=procurement,
+        requisitions=requisition,
         datetime=datetime,
+    )
+
+
+@module.route("/create", methods=["GET", "POST"])
+@login_required
+@acl.organization_roles_required("admin")
+def create():
+    form = forms.requisitions.RequisitionForm()
+    organization = current_user.user_setting.current_organization
+    members = organization.get_organization_users()
+    funds = models.MAS.objects()
+    form.purchaser.queryset = members
+    form.fund.queryset = funds
+    now = datetime.datetime.now()
+
+    preview_code = None
+    buddhist_year = now.year + 543
+    prefix = f"{buddhist_year}-"
+    last = (
+        models.Requisition.objects(requisition_code__startswith=prefix)
+        .order_by("-requisition_code")
+        .first()
+    )
+    if last and last.requisition_code:
+        last_number = int(last.requisition_code.split("-")[1])
+        next_number = last_number + 1
+    else:
+        next_number = 1
+    preview_code = f"{buddhist_year}-{next_number:04d}"
+
+    if not form.validate_on_submit():
+        print(form.errors)
+        return render_template(
+            "/procurement/requisitions/create.html",
+            form=form,
+            organization=organization,
+            preview_code=preview_code,
+        )
+
+    requisition = models.Requisition()
+    form.populate_obj(requisition)
+    requisition.created_by = requisition.last_updated_by = (
+        current_user._get_current_object()
+    )
+
+    if form.tor_document.data:
+        if requisition.tor_document:
+            requisition.tor_document.replace(
+                form.tor_document.data,
+                filename=form.tor_document.data.filename,
+                content_type=form.tor_document.data.content_type,
+            )
+        else:
+            requisition.tor_document.put(
+                form.tor_document.data,
+                filename=form.tor_document.data.filename,
+                content_type=form.tor_document.data.content_type,
+            )
+
+    requisition.save()
+    return redirect(
+        url_for("procurement.requisitions.index", organization_id=organization.id)
+    )
+    requisition.save()
+    return redirect(
+        url_for("procurement.requisitions.index", organization_id=organization.id)
     )

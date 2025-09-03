@@ -852,10 +852,11 @@
                     <thead class="bg-gradient-to-r">
                         <tr>
                             <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
-                            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+                            <th class="font-semibold text-base-content text-sm w-48">เลขที่</th>
                             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-48">วันที่สิ้นสุด</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-48">วันที่ต้องการใช้งาน
+                            </th>
                             <th class="font-semibold text-base-content text-sm text-center">บริษัท</th>
                             <th class="font-semibold text-base-content text-sm text-center w-64">จำนวนเงิน</th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">เอกสาร</th>
@@ -871,15 +872,14 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900">{{ item.product_number }}</div>
-                                <div class="text-xs text-gray-500 flex items-center gap-1">
-                                    <i class="ph ph-barcode"></i>{{ item.asset_code }}
+                                <div class="text-ms flex items-center gap-1">
+                                    <i class="ph ph-barcode"></i>{{ item.requisition_code }}
                                 </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
                                     title="{{ item.name }}">
-                                    {{ item.name }}
+                                    {{ item.product_name }}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
