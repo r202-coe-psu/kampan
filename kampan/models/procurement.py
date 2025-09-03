@@ -16,6 +16,13 @@ PAYEMENT_STATUS_CHOICES = [
     ("upcoming", "ใกล้ครบกำหนด"),
 ]
 
+RENEWAL_STATUS_CHOICES = [
+    ("pending", "รอดำเนินการ"),
+    ("renewal-requested", "ยื่นขอต่ออายุ"),
+    ("disactive", "ไม่อนุมัติ"),
+    ("active", "จัดซื้อเรียบร้อย"),
+]
+
 
 class ToRYear(me.Document):
     year = me.StringField(requred=True, max_length=100)
@@ -53,7 +60,9 @@ class Procurement(me.Document):
     end_date = me.DateTimeField(required=True)
     amount = me.DecimalField(required=True, min_value=0, precision=2)
     period = me.IntField(required=True, min_value=1)
-    status = me.StringField(default="active")
+    quantity = me.IntField(min_value=1, default=1)
+    # status: สถานะการต่ออายุ (renewal process)
+    status = me.StringField(choices=RENEWAL_STATUS_CHOICES, default="active")
 
     # References
     company = me.StringField(max_length=255, required=True)

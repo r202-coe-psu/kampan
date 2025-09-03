@@ -3,23 +3,23 @@
 {% import '/procurement/macros/table.html' as table_macros %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 
-{% block title %}รายการที่ไม่ต่ออายุแล้ว{% endblock %}
-{% block dashboard_title %}รายการครุภัณฑ์ที่ไม่ต่ออายุแล้ว{% endblock %}
+{% block title %}รายการที่ขอต่ออายุแล้ว{% endblock %}
+{% block dashboard_title %}รายการครุภัณฑ์ที่ขอต่ออายุแล้ว{% endblock %}
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
 ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisitions.index', organization_id=organization.id)),
-("รายการที่ไม่ต่ออายุแล้ว", None)
+("รายการที่ขอต่ออายุแล้ว", None)
 ]) }}
 {% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
-    {{ table_macros.render_non_renewal_items_table(items) }}
+    {{ table_macros.render_renewal_requested_items_table(items) }}
 
     {% if paginated_procurements.pages > 1 %}
     <div class="mt-8 flex justify-center">
-        {{ paginated.render_pagination(paginated_procurements, "procurement.requisitions.non_renewal", params) }}
+        {{ paginated.render_pagination(paginated_procurements, "procurement.requisitions.renewal_requested", params) }}
     </div>
     {% endif %}
 </div>

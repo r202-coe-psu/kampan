@@ -1,0 +1,444 @@
+{% block header %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบแจ้งขอซื้อ/จ้างวัสดุ</title>
+    <style>
+        body,
+        th,
+        td {
+            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
+        }
+
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            background: #fff;
+            font-size: 18px;
+        }
+
+        div {
+            margin-top: 0.2rem;
+            vertical-align: middle;
+            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
+        }
+
+        span {
+            vertical-align: middle;
+            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
+        }
+    </style>
+</head>
+{% endblock header %}
+
+
+{% block content %}
+{% set now = now or datetime.datetime.now() %}
+
+<body>
+    <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.2fr; align-items: center; margin-top: -1rem">
+            <div></div>
+            <div>
+                <p style="text-align: center;">ใบแจ้งขอซื้อ/จ้างวัสดุ</p>
+            </div>
+            <div
+                style="border: 2px solid #333; border-radius: 6px; padding: 12px; margin: 0 8px; text-align: right; margin-top: 2rem;">
+                <p style="margin: 2;">เลขที่ ........................</p>
+                <p style="margin: 2;">วันที่รับ .............................</p>
+                <p style="margin: 2;">
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">E-mail</span>
+                    </span>
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">sharepoint</span>
+                    </span>
+                </p>
+            </div>
+        </div>
+        <div style="text-align: right; position: relative;">
+            <span style="margin: 2; display: inline-block; position: relative;">
+                วันที่ ........
+                <span style="position: absolute; right: 0.7rem;">
+                    {{ now.day }}
+                </span>
+            </span>
+            <span style="margin: 2; display: inline-block; position: relative;">
+                เดือน .........................
+                <span style="position: absolute; right: 2rem; top: -0.2rem;">
+                    {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+                    "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][now.month-1] }}
+                </span>
+            </span>
+            <span style="margin: 2; display: inline-block; position: relative;">
+                พ.ศ. ...............
+                <span style="position: absolute; right: 1.5rem;">
+                    {{ now.year + 543 }}
+                </span>
+            </span>
+        </div>
+        <div>
+            <span>เรียน</span>
+            <span>ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</span>
+        </div>
+        <div style="text-align: right;">
+            <span>ข้าพเจ้า</span>
+            <span style="position: relative;">
+                นาย/นาง/นางสาว .................................................................
+                <span style="position: absolute; left: 10rem; top: -0.5rem; white-space: nowrap;">
+
+                </span>
+            </span>
+            <span style="position: relative;">
+                ฝ่าย .................
+                <span style="position: absolute; right: 2.5rem; top: -0.5rem; white-space: nowrap;">
+
+                </span>
+            </span>
+            <span style="position: relative;">
+                โทร .................
+                <span style="position: absolute; right: 1.5rem; white-space: nowrap;">
+
+                </span>
+            </span>
+        </div>
+        <div>
+            <span>มีความต้องการ</span>
+            <span>
+                <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
+                    if procurement.category=="software" %}checked{% endif %}>
+                <span style="vertical-align: middle;">ซื้อวัสดุ</span>
+            </span>
+            <span>
+                <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
+                    if procurement.category=="product" %}checked{% endif %}>
+                <span style="vertical-align: middle;">ซื้อครุภัณฑ์</span>
+            </span>
+            <span>
+                <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
+                    if procurement.category=="service" %}checked{% endif %}>
+                <span style="vertical-align: middle;">จ้างเหมา</span>
+            </span>
+            <span>
+                ดังรายการต่อไปนี้
+            </span>
+        </div>
+        <div>
+            <span>1</span>
+            <span style="position: relative;">
+                <span
+                    style="position: absolute; left: 15; top: -0.5rem; white-space: normal; max-width: 350px; overflow-wrap: break-word; line-height: 1.6;">
+                    {{ procurement.name }}
+                </span>
+                ................................................................................
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 5rem; white-space: nowrap;">
+                    {{ procurement.quantity if procurement.quantity is defined and procurement.quantity else 1 }}
+                </span>
+                จำนวน ..............
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 7rem; white-space: nowrap;">
+                    {{ "{:,.2f}".format(procurement.amount) }}
+                </span>
+                ราคาประมาณ ......................
+            </span>
+            <span>บาท</span>
+        </div>
+        <div>
+            <span>2</span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
+
+                </span>
+                ................................................................................
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 4rem; white-space: nowrap;">
+
+                </span>
+                จำนวน ..............
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 7rem; white-space: nowrap;">
+
+                </span>
+                ราคาประมาณ ......................
+            </span>
+            <span>บาท</span>
+        </div>
+        <div>
+            <span>3</span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
+
+                </span>
+                ................................................................................
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 4rem; white-space: nowrap;">
+
+                </span>
+                จำนวน ..............
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 7rem; white-space: nowrap;">
+
+                </span>
+                ราคาประมาณ ......................
+            </span>
+            <span>บาท</span>
+        </div>
+        <div>
+            <span>4</span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
+
+                </span>
+                ................................................................................
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 4rem; white-space: nowrap;">
+
+                </span>
+                จำนวน ..............
+            </span>
+            <span style="position: relative;">
+                <span style="position: absolute; left: 7rem; white-space: nowrap;">
+
+                </span>
+                ราคาประมาณ ......................
+            </span>
+            <span>บาท</span>
+        </div>
+        <div style="text-align: right;">
+            <span style="position: relative;">
+                <span style="position: absolute; left: 10rem; white-space: nowrap;">
+                    {{ "{:,.2f}".format(procurements|sum(attribute='amount')) if procurements is defined else
+                    "{:,.2f}".format(procurement.amount) }}
+                </span>
+                รวมเป็นเงินประมาณ ......................
+            </span>
+            <span>บาท</span>
+        </div>
+    </div>
+    <div>
+        <span>เหตุผลที่ต้องการใช้</span>
+        <span>...................................................................................................................................</span>
+        <span>...............................................................................................................................................................</span>
+    </div>
+    <div>
+        <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
+        <span>........</span>
+        <span>เดือน .......................</span>
+        <span>พ.ศ. ..............</span>
+    </div>
+    <div style="text-align: center;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+    <div style="text-align: right; margin-top: 0.5rem;">
+        <span>(ลงชื่อ)</span>
+        <span>...................................</span>
+        <span>ผู้ใช้บริการ</span>
+    </div>
+    <div style="text-align: right; margin-top: 0.5rem;">
+        <span>(ลงชื่อ)</span>
+        <span>..................................</span>
+        <span>หัวหน้าฝ่าย</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr;">
+        <div style="text-align: left; margin-top: -1.4rem;">
+            <p><b>คณะกรรมการตรวจรับ</b></p>
+            <p style="font-size: 15px; margin-top: -1rem">(วงเงินไม่เกิน 100,000.- บาท กรรมการตรวจรับ 1 คน)</p>
+            <div style="margin-top: -1rem;">
+                <span>1</span>
+                <span>........................................</span>
+                <span>ประธานกรรมการ</span>
+            </div>
+            <div>
+                <span>2</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+            <div>
+                <span>3</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+        </div>
+        <div style="text-align: left; margin-left: 3rem;">
+            <p><b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b></p>
+            <div style="margin-top: -1rem;">
+                <span>1</span>
+                <span>........................................</span>
+                <span>ประธานกรรมการ</span>
+            </div>
+            <div>
+                <span>2</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+            <div>
+                <span>3</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; margin-top: -2rem;">
+        <div style="text-align: left;">
+            <p><b>คณะกรรมการจัดซื้อ</b><span> (วงเงินมากกว่า 500,000.- บาท)</span></p>
+            <div style="margin-top: -1rem;">
+                <span>1</span>
+                <span>........................................</span>
+                <span>ประธานกรรมการ</span>
+            </div>
+            <div>
+                <span>2</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+            <div>
+                <span>3</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+        </div>
+        <div style="text-align: left; margin-left: 3rem;">
+            <p><b>คณะกรรมการราคากลาง</b></p>
+            <div style="margin-top: -1rem;">
+                <span>1</span>
+                <span>........................................</span>
+                <span>ประธานกรรมการ</span>
+            </div>
+            <div>
+                <span>2</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+            <div>
+                <span>3</span>
+                <span>........................................</span>
+                <span>กรรมการ</span>
+            </div>
+        </div>
+    </div>
+    <table
+        style="width: 100%; min-width: 100%; max-width: 100%; height: 240px; table-layout: fixed; border-collapse: collapse; margin: 1rem 0 0 0;">
+        <tr>
+            <td style="border: 1px solid #333; border-left: none; padding: 8px; vertical-align: top;">
+                <p>(สำหรับเจ้าหน้าที่วัสดุ)</p>
+                <p style="margin-top: -1rem;">
+                    <span>แหล่งเงินที่ใช้</span>
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">เงินรายได้</span>
+                        <span>......................................</span>
+                    </span>
+                </p>
+                <p style="margin-top: -0.5rem;">
+                    <span style="margin-left: 5.4rem;">
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">เงินงบประมาณ</span>
+                        <span>..............................</span>
+                    </span>
+                </p>
+                <p style="margin-top: -0.5rem;">
+                    <span style="margin-left: 5.4rem;">
+                        <span style="vertical-align: middle;">...................</span>
+                        <span style="margin-left: 2rem;">........../........./...........</span>
+                    </span>
+                </p>
+            </td>
+            <td style="border: 1px solid #333; border-right: none;padding: 8px; vertical-align: top;">
+                <p>ได้รับทราบผลพิจารณาแล้ว</p>
+                <p style="margin-top: -0.5rem; text-align: right;">
+                    <span>...............................</span>
+                    <span>ผู้ใช้บริการ</span>
+                </p>
+                <p style="text-align: right; margin-top: -0.5rem;">.............../.............../...............</p>
+            </td>
+        </tr>
+        <tr>
+            <td
+                style="border: 1px solid #333; border-left: none; border-bottom: none; padding: 8px; vertical-align: top;">
+                <p>
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">อนุมัติ</span>
+                    </span>
+                </p>
+                <p style="margin-top: -1rem;">
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">ไม่อนุมัติ เพราะ</span>
+                        <span>..................................................</span>
+                    </span>
+                </p>
+                <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">
+                    <span>...................................</span>
+                    <span>ผู้อนุมัติ</span>
+                </p>
+                <p style="text-align: right; margin-top: -0.5rem; margin-right: 1.5rem;">
+                    .............../.............../...............</p>
+            </td>
+            <td
+                style="border: 1px solid #333; border-right: none; border-bottom: none; padding: 8px; vertical-align: top;">
+                <p>
+                    <span>จัดซื้อเรียบร้อยแล้ว</span>
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">ทันเวลา</span>
+                    </span>
+                    <span>
+                        <input type="checkbox"
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                        <span style="vertical-align: middle;">ไม่ทันเวลา</span>
+                    </span>
+                </p>
+                <p style="margin-top: -1rem;">
+                    <span>เนื่องจาก</span>
+                    <span>.......................................................................</span>
+                </p>
+                <p style="margin-top: -1rem;">
+                    <span>เบิกจ่าย มอ. 011/</span>
+                    <span>................</span>
+                    <span>วันที่อนุมัติเบิกจ่าย</span>
+                    <span>...............</span>
+                </p>
+                <p style="margin-top: -1rem;">
+                    <span>ร้าน</span>
+                    <span>.......................................</span>
+                    <span>จำนวนเงิน</span>
+                    <span>.......................</span>
+                </p>
+                <p style="margin-top: -1rem;">
+                    <span>ตรวจรับวันที่</span>
+                    <span>.............../.............../...............</span>
+                </p>
+            </td>
+        </tr>
+    </table>
+    <script>
+        window.onload = function () {
+            window.print();
+        };
+    </script>
+</body>
+
+{% endblock content %}

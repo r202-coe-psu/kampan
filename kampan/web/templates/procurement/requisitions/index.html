@@ -22,16 +22,17 @@
                 </div>
                 <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-1 w-60 p-2 shadow-sm">
                     <li>
-                        <a href="{{ url_for('procurement.requisitions.non_renewal') }}"
-                            class="flex items-center gap-2 text-rose-700">
-                            <i class="ph ph-table"></i>
-                            ดูรายการที่ไม่ต่ออายุแล้ว
+                        <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}"
+                            class="flex items-center gap-2 text-emerald-700">
+                            <i class="ph ph-check-circle"></i>
+                            ดูรายการที่ขอต่ออายุแล้ว
                         </a>
                     </li>
                     <li>
-                        <a class="flex items-center gap-2 text-emerald-700">
-                            <i class="ph ph-check-circle"></i>
-                            ดูรายการที่ต่ออายุแล้ว
+                        <a href="{{ url_for('procurement.requisitions.list_non_renewal') }}"
+                            class="flex items-center gap-2 text-rose-700">
+                            <i class="ph ph-table"></i>
+                            ดูรายการที่ไม่ต่ออายุแล้ว
                         </a>
                     </li>
                 </ul>
@@ -197,11 +198,11 @@
             <!-- Card Footer -->
             <div class="bg-gray-50 px-4 py-3 border-t">
                 <div class="flex gap-2">
-                    <button type="button"
+                    <a href="{{ url_for('procurement.requisitions.renewal_requested', requisition_procurement_id=item.id) }}"
                         class="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
                         <i class="ph ph-check"></i>
                         ต่ออายุ
-                    </button>
+                    </a>
                     <button onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
                         class="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
                         <i class="ph ph-x"></i>
@@ -227,7 +228,7 @@
                     <form method="dialog">
                         <button class="btn btn-outline">ยกเลิก</button>
                     </form>
-                    <a href="{{ url_for('procurement.requisitions.delete', requisition_procurement_id=item.id) }}"
+                    <a href="{{ url_for('procurement.requisitions.non_renewal', requisition_procurement_id=item.id) }}"
                         class="btn btn-error text-white">
                         <i class="ph ph-x mr-1"></i>ไม่ต่ออายุ
                     </a>

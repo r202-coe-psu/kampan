@@ -53,9 +53,9 @@ def index():
     )
 
 
-@module.route("/<requisition_procurement_id>/delete")
+@module.route("/<requisition_procurement_id>/non-renewal")
 @acl.organization_roles_required("admin")
-def delete(requisition_procurement_id):
+def non_renewal(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=requisition_procurement_id).first()
 
@@ -75,7 +75,7 @@ def delete(requisition_procurement_id):
 @module.route("/non-renewal")
 @login_required
 @acl.organization_roles_required("admin")
-def non_renewal():
+def list_non_renewal():
     organization = current_user.user_setting.current_organization
     category = request.args.get("category", "")
     page = request.args.get("page", default=1, type=int)
@@ -100,10 +100,81 @@ def non_renewal():
 
     return render_template(
         "procurement/requisitions/non_renewal.html",
-        disactive_items=paginated_procurements.items,
+        items=paginated_procurements.items,
         paginated_procurements=paginated_procurements,
         organization=organization,
         category_choices=category_choices,
         selected_category=category,
         params=params,
+    )
+
+
+@module.route("/<requisition_procurement_id>/renewal-requested")
+@acl.organization_roles_required("admin")
+def renewal_requested(requisition_procurement_id):
+    organization = current_user.user_setting.current_organization
+    procurement = models.Procurement.objects(id=requisition_procurement_id).first()
+
+    if not procurement:
+        return redirect(
+            url_for("procurement.requisitions.index", organization_id=organization.id)
+        )
+
+    procurement.status = "renewal-requested"
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+    return redirect(
+        url_for("procurement.requisitions.index", organization_id=organization.id)
+    )
+
+
+@module.route("/renewal_requested")
+@login_required
+@acl.organization_roles_required("admin")
+def list_renewal_requested():
+    organization = current_user.user_setting.current_organization
+    category = request.args.get("category", "")
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+
+    query = {"status": "renewal-requested"}
+    tor_year = getattr(current_user.user_setting, "tor_year", None)
+    if tor_year:
+        query["tor_year"] = tor_year
+    if category:
+        query["category"] = category
+
+    procurements = models.Procurement.objects(**query).order_by("-end_date")
+    paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
+    category_choices = models.procurement.CATEGORY_CHOICES
+
+    params = dict(request.args)
+    if "page" in params:
+        params.pop("page")
+    if "organization_id" not in params:
+        params["organization_id"] = organization.id
+
+    return render_template(
+        "procurement/requisitions/renewal_requested.html",
+        items=paginated_procurements.items,
+        paginated_procurements=paginated_procurements,
+        organization=organization,
+        category_choices=category_choices,
+        selected_category=category,
+        params=params,
+    )
+
+
+@module.route("/<requisition_procurement_id>/document")
+@login_required
+@acl.organization_roles_required("admin")
+def document(requisition_procurement_id):
+    procurement = models.Procurement.objects(id=requisition_procurement_id).first()
+    if not procurement:
+        abort(404)
+
+    return render_template(
+        "procurement/requisitions/document.html",
+        procurement=procurement,
+        datetime=datetime,
     )
