@@ -182,18 +182,26 @@ def document(requisition_procurement_id):
 
 
 @module.route("/create", methods=["GET", "POST"])
+@module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
 @acl.organization_roles_required("admin")
-def create():
-    form = forms.requisitions.RequisitionForm()
+def create_or_edit(requisition_procurement_id=None):
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
     funds = models.MAS.objects()
+
+    # If editing, get the existing requisition, else None
+    requisition = (
+        models.Requisition.objects(id=requisition_procurement_id).first()
+        if requisition_procurement_id
+        else None
+    )
+
+    form = forms.requisitions.RequisitionForm(obj=requisition)
     form.purchaser.queryset = members
     form.fund.queryset = funds
-    now = datetime.datetime.now()
 
-    preview_code = None
+    now = datetime.datetime.now()
     buddhist_year = now.year + 543
     prefix = f"{buddhist_year}-"
     last = (
@@ -206,22 +214,28 @@ def create():
         next_number = last_number + 1
     else:
         next_number = 1
-    preview_code = f"{buddhist_year}-{next_number:04d}"
+
+    if requisition:
+        preview_code = requisition.requisition_code
+    else:
+        preview_code = f"{buddhist_year}-{next_number:04d}"
 
     if not form.validate_on_submit():
         print(form.errors)
         return render_template(
-            "/procurement/requisitions/create.html",
+            "/procurement/requisitions/create_or_edit.html",
             form=form,
             organization=organization,
             preview_code=preview_code,
         )
 
-    requisition = models.Requisition()
+    # If creating, instantiate new object, else update existing
+    if not requisition:
+        requisition = models.Requisition()
+        requisition.created_by = current_user._get_current_object()
+
     form.populate_obj(requisition)
-    requisition.created_by = requisition.last_updated_by = (
-        current_user._get_current_object()
-    )
+    requisition.last_updated_by = current_user._get_current_object()
 
     if form.tor_document.data:
         if requisition.tor_document:
@@ -237,10 +251,6 @@ def create():
                 content_type=form.tor_document.data.content_type,
             )
 
-    requisition.save()
-    return redirect(
-        url_for("procurement.requisitions.index", organization_id=organization.id)
-    )
     requisition.save()
     return redirect(
         url_for("procurement.requisitions.index", organization_id=organization.id)

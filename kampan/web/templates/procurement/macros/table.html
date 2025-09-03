@@ -851,38 +851,32 @@
                 <table class="min-w-full divide-y divide-blue-200">
                     <thead class="bg-gradient-to-r">
                         <tr>
-                            <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
-                            <th class="font-semibold text-base-content text-sm w-48">เลขที่</th>
-                            <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-48">วันที่ต้องการใช้งาน
+                            <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
+                            <th class="font-semibold text-base-content text-sm w-64">ชื่อรายการ</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">ประเภท</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
                             </th>
-                            <th class="font-semibold text-base-content text-sm text-center">บริษัท</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-64">จำนวนเงิน</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">เอกสาร</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-40">บริษัท</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-20">แก้ไข</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         {% for item in renewal_requested_items %}
                         <tr class="hover:bg-blue-50 transition-colors duration-200">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                    class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
-                                    {{ loop.index }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-ms flex items-center gap-1">
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <div class="text-ms flex items-center gap-1 justify-center">
                                     <i class="ph ph-barcode"></i>{{ item.requisition_code }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-3">
                                 <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
                                     title="{{ item.name }}">
                                     {{ item.product_name }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
                                 {% set category_badge = {
                                 'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
                                 'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
@@ -894,30 +888,36 @@
                                     {{ item.get_category_display() }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <div class="flex items-center gap-2 justify-center">
                                     <i class="ph ph-calendar-x text-blue-500"></i>
                                     <span class="text-sm font-medium text-blue-700">
                                         {{ item.start_date.strftime('%d/%m/%Y') if item.start_date }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <div class="flex items-center gap-2 justify-center">
                                     <i class="ph ph-buildings text-gray-400"></i>
                                     <span class="text-sm text-gray-900">{{ item.company }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <td class="px-4 py-3 whitespace-nowrap text-right">
                                 <div class="text-lg font-bold text-blue-600">
                                     ฿{{ "{:,.2f}".format(item.amount) }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <a href="{{ url_for('procurement.requisitions.document', requisition_procurement_id=item.id) }}"
                                     class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
                                     target="_blank">
                                     <i class="ph ph-file-arrow-down"></i> ดูเอกสาร
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
+                                    class="btn btn-outline btn-sm text-yellow-700 border-yellow-300 hover:bg-yellow-50">
+                                    <i class="ph ph-pencil-simple-line"></i> แก้ไข
                                 </a>
                             </td>
                         </tr>
