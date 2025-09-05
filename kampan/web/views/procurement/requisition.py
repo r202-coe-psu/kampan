@@ -253,5 +253,8 @@ def create_or_edit(requisition_procurement_id=None):
 
     requisition.save()
     return redirect(
-        url_for("procurement.requisitions.index", organization_id=organization.id)
+        url_for(
+            "procurement.requisitions.list_renewal_requested",
+            organization_id=organization.id,
+        )
     )
