@@ -14,6 +14,25 @@ from wtforms import (
 from kampan import models
 from flask_wtf.file import FileField, FileAllowed
 
+from wtforms import Form
+from kampan.models.procurement import CATEGORY_CHOICES
+from wtforms import SelectField
+
+
+class RequisitionItemForm(Form):
+    product_name = StringField("ชื่อสินค้า", [validators.DataRequired()])
+    quantity = IntegerField(
+        "จำนวน", [validators.DataRequired(), validators.NumberRange(min=1)]
+    )
+    category = SelectField(
+        "หมวดหมู่",
+        choices=CATEGORY_CHOICES,
+        validators=[validators.DataRequired()],
+    )
+    amount = DecimalField("จำนวนเงิน", [validators.DataRequired()])
+    company = StringField("บริษัท", [validators.DataRequired()])
+
+
 BaseRequisitionForm = model_form(
     models.Requisition,
     FlaskForm,
@@ -23,15 +42,11 @@ BaseRequisitionForm = model_form(
         "updated_date",
         "created_by",
         "last_updated_by",
+        "items",  # exclude items, we'll add manually
     ],
     field_args={
         "phone": {"label": "เบอร์โทรศัพท์"},
         "purchaser": {"label": "ผู้ขอซื้อ"},
-        "product_name": {"label": "ชื่อสินค้า"},
-        "category": {"label": "หมวดหมู่"},
-        "amount": {"label": "จำนวนเงิน"},
-        "company": {"label": "บริษัท"},
-        "quantity": {"label": "จำนวน"},
         "reason": {"label": "เหตุผล"},
         "start_date": {"label": "วันที่ต้องการใช้งาน"},
         "fund": {"label": "แหล่งงบประมาณ"},
@@ -47,4 +62,10 @@ class RequisitionForm(BaseRequisitionForm):
     tor_document = fields.FileField(
         "ไฟล์ ToR (PDF เท่านั้น)",
         validators=[FileAllowed(["pdf"], "PDF only")],
+    )
+    # enforce min 1 and max 4 items at the form level
+    items = FieldList(
+        FormField(RequisitionItemForm),
+        min_entries=1,
+        validators=[validators.Length(min=1, max=4)],
     )

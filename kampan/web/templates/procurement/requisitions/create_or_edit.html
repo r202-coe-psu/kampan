@@ -136,62 +136,62 @@
             </div>
         </div>
 
-        <!-- Product Details Section -->
+        <!-- Product/Service Items Section -->
         <div class="bg-gray-50 rounded-lg p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-package text-xl text-yellow-600 mr-2"></i>
-                รายละเอียดสินค้า/บริการ
+                <i class="ph ph-list text-xl text-blue-600 mr-2"></i>
+                รายการสินค้า/บริการ
             </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="product_name">{{ form.product_name.label
-                        }}</label>
-                    {{ form.product_name(class_="input input-bordered w-full", id="product_name",
-                    placeholder="ชื่อสินค้า/บริการ") }}
-                    {% if form.product_name.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.product_name.errors[0] }}
-                    </p>
-                    {% endif %}
+            <div id="items-list">
+                {% for item_form in form.items %}
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 item-row">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.product_name.label }}</label>
+                        {{ item_form.product_name(class_="input input-bordered w-full") }}
+                        {% if item_form.product_name.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ item_form.product_name.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.quantity.label }}</label>
+                        {{ item_form.quantity(class_="input input-bordered w-full") }}
+                        {% if item_form.quantity.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ item_form.quantity.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.category.label }}</label>
+                        {{ item_form.category(class_="select select-bordered w-full") }}
+                        {% if item_form.category.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ item_form.category.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.amount.label }}</label>
+                        {{ item_form.amount(class_="input input-bordered w-full") }}
+                        {% if item_form.amount.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ item_form.amount.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.company.label }}</label>
+                        {{ item_form.company(class_="input input-bordered w-full") }}
+                        {% if item_form.company.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ item_form.company.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center justify-end mt-2">
+                        <button type="button" class="btn btn-error btn-xs remove-item-btn">
+                            <i class="ph ph-minus"></i> ลบ
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="quantity">{{ form.quantity.label }}</label>
-                    {{ form.quantity(class_="input input-bordered w-full", id="quantity", min="1", type="number",
-                    placeholder="จำนวน") }}
-                    {% if form.quantity.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.quantity.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="category">{{ form.category.label }}</label>
-                    {{ form.category(class_="select select-bordered w-full", id="category") }}
-                    {% if form.category.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.category.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="amount">{{ form.amount.label }}</label>
-                    {{ form.amount(class_="input input-bordered w-full", id="amount", min="0", step="0.01",
-                    type="number", placeholder="จำนวนเงิน") }}
-                    {% if form.amount.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.amount.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="company">{{ form.company.label }}</label>
-                    {{ form.company(class_="input input-bordered w-full", id="company", placeholder="ชื่อบริษัท") }}
-                    {% if form.company.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.company.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
+                {% endfor %}
+            </div>
+            <div class="flex justify-end">
+                <button type="button" class="btn btn-success btn-sm mt-2" id="add-item-btn">
+                    <i class="ph ph-plus"></i> เพิ่มรายการสินค้า/บริการ
+                </button>
             </div>
         </div>
 
@@ -388,6 +388,28 @@
         });
     });
 
+    // Reindex item-row inputs/selects/labels to items-{index}-... so WTForms receives distinct names
+    function reindexItemRows() {
+        const rows = document.querySelectorAll('.item-row');
+        rows.forEach((row, idx) => {
+            // update inputs/selects/textarea name and id
+            const controls = row.querySelectorAll('input, select, textarea');
+            controls.forEach(c => {
+                if (c.name) c.name = c.name.replace(/items-\d+-/, `items-${idx}-`);
+                if (c.id) c.id = c.id.replace(/items-\d+-/, `items-${idx}-`);
+                // clear cloned values for new rows (but keep originals on first row)
+                if (idx === rows.length - 1 && c.tagName.toLowerCase() !== 'input') {
+                    // noop (keeps behavior conservative)
+                }
+            });
+            // update labels' for attributes
+            const labels = row.querySelectorAll('label');
+            labels.forEach(lbl => {
+                if (lbl.htmlFor) lbl.htmlFor = lbl.htmlFor.replace(/items-\d+-/, `items-${idx}-`);
+            });
+        });
+    }
+
     // Filter function for funds (matches RESPONSIBLE_BY behaviour)
     function filterFundList() {
         const input = document.getElementById('fund_search');
@@ -415,6 +437,61 @@
             labels[i].style.display = text.includes(filter) ? '' : 'none';
         }
     }
+
+    document.getElementById('add-item-btn').addEventListener('click', function () {
+        const itemsList = document.getElementById('items-list');
+        const itemRows = itemsList.querySelectorAll('.item-row');
+        // Prevent adding more than 4
+        if (itemRows.length >= 4) {
+            var toast = document.createElement('div');
+            toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
+            toast.innerHTML = `<i class="ph ph-warning-circle"></i><span>ไม่สามารถเพิ่มเกิน 4 รายการได้</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 2500);
+            return;
+        }
+        if (itemRows.length === 0) return;
+        // Clone the last item row
+        const lastRow = itemRows[itemRows.length - 1];
+        const newRow = lastRow.cloneNode(true);
+        // Clear all input/select/textarea values in the new row and uncheck radios/checkboxes
+        newRow.querySelectorAll('input, select, textarea').forEach(function (el) {
+            const t = el.type ? el.type.toLowerCase() : el.tagName.toLowerCase();
+            if (t === 'checkbox' || t === 'radio') {
+                el.checked = false;
+            } else if (el.tagName.toLowerCase() === 'select') {
+                el.selectedIndex = 0;
+            } else {
+                el.value = '';
+            }
+        });
+        // Append and reindex so names/ids are unique for WTForms
+        itemsList.appendChild(newRow);
+        reindexItemRows();
+        updateRemoveButtons();
+    });
+
+    function updateRemoveButtons() {
+        var removeBtns = document.querySelectorAll('.remove-item-btn');
+        removeBtns.forEach(function (btn) {
+            btn.onclick = function () {
+                var row = btn.closest('.item-row');
+                // Prevent removing the last remaining row
+                if (document.querySelectorAll('.item-row').length > 1) {
+                    row.remove();
+                    // reindex names/ids after removal
+                    reindexItemRows();
+                }
+            };
+        });
+    }
+
+    // Initial setup for remove buttons
+    updateRemoveButtons();
+    // Ensure inputs are correctly indexed on page load (useful when server rendered >1)
+    reindexItemRows();
 </script>
 {% endblock %}
 {% block additional_js %}

@@ -130,12 +130,16 @@ def renewal_requested(requisition_procurement_id):
         phone=None,
         reason=f"Renewal requested for procurement {procurement.name}",
         start_date=procurement.end_date,
-        product_name=procurement.name,
-        category=procurement.category,
-        amount=procurement.amount,
-        company=procurement.company,
+        items=[
+            models.RequisitionItem(
+                product_name=procurement.name,
+                category=procurement.category,
+                amount=procurement.amount,
+                company=procurement.company,
+                quantity=1,
+            )
+        ],
         fund=None,
-        quantity=1,
         created_by=current_user._get_current_object(),
         last_updated_by=current_user._get_current_object(),
     )
@@ -190,16 +194,35 @@ def create_or_edit(requisition_procurement_id=None):
     members = organization.get_organization_users()
     funds = models.MAS.objects()
 
-    # If editing, get the existing requisition, else None
     requisition = (
         models.Requisition.objects(id=requisition_procurement_id).first()
         if requisition_procurement_id
         else None
     )
 
+    # Count submitted items for POST
+    if request.method == "POST":
+        item_keys = [
+            key
+            for key in request.form.keys()
+            if key.startswith("items-") and key.endswith("-product_name")
+        ]
+        item_count = len(item_keys)
+    elif requisition and requisition.items:
+        item_count = len(requisition.items)
+    else:
+        item_count = 1
+
+    # Clamp to the allowed range [1,4] to match model/form constraints
+    if item_count < 1:
+        item_count = 1
+    if item_count > 4:
+        item_count = 4
+
     form = forms.requisitions.RequisitionForm(obj=requisition)
     form.purchaser.queryset = members
     form.fund.queryset = funds
+    form.items.min_entries = item_count
 
     now = datetime.datetime.now()
     buddhist_year = now.year + 543
@@ -234,8 +257,19 @@ def create_or_edit(requisition_procurement_id=None):
         requisition = models.Requisition()
         requisition.created_by = current_user._get_current_object()
 
-    form.populate_obj(requisition)
     requisition.last_updated_by = current_user._get_current_object()
+    requisition.items = [
+        models.RequisitionItem(
+            product_name=item_form.product_name.data,
+            quantity=item_form.quantity.data,
+            category=item_form.category.data,
+            amount=item_form.amount.data,
+            company=item_form.company.data,
+        )
+        for item_form in form.items
+    ]
+
+    form.populate_obj(requisition)
 
     if form.tor_document.data:
         if requisition.tor_document:

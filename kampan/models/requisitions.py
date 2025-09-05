@@ -4,6 +4,14 @@ import mongoengine as me
 from kampan.models.procurement import CATEGORY_CHOICES
 
 
+class RequisitionItem(me.EmbeddedDocument):
+    product_name = me.StringField(max_length=100, required=True)
+    quantity = me.IntField(min_value=1, required=True)
+    category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
+    amount = me.DecimalField(required=True, min_value=0, precision=2)
+    company = me.StringField(max_length=255, required=True)
+
+
 class Requisition(me.Document):
     meta = {"collection": "requisitions"}
 
@@ -14,11 +22,10 @@ class Requisition(me.Document):
     start_date = me.DateTimeField(required=True)
     tor_document = me.FileField(collection_name="tor_documents")
 
-    product_name = me.StringField(max_length=100, required=True)
-    quantity = me.IntField(min_value=1, required=True)
-    category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
-    amount = me.DecimalField(required=True, min_value=0, precision=2)
-    company = me.StringField(max_length=255, required=True)
+    # require at least 1 item and allow at most 4 items
+    items = me.EmbeddedDocumentListField(
+        RequisitionItem, required=True, min_length=1, max_length=4
+    )
 
     fund = me.ReferenceField("MAS", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
@@ -33,7 +40,7 @@ class Requisition(me.Document):
             # ใช้ปี พ.ศ.
             now = datetime.datetime.now()
             buddhist_year = now.year + 543
-            # หาเลขรันนิ่งล่าสุดของปีนี้
+            # หาเลขรันนิ้งล่าสุดของปีนี้
             prefix = f"{buddhist_year}-"
             last = (
                 Requisition.objects(requisition_code__startswith=prefix)
@@ -47,3 +54,9 @@ class Requisition(me.Document):
                 next_number = 1
             self.requisition_code = f"{buddhist_year}-{next_number:04d}"
         return super().save(*args, **kwargs)
+
+    def get_category_display(self):
+        # Return the display of the first item's category, or "-"
+        if self.items and len(self.items) > 0:
+            return self.items[0].get_category_display()
+        return "-"
