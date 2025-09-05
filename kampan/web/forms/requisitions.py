@@ -44,10 +44,7 @@ class RequisitionForm(BaseRequisitionForm):
         "วันที่เริ่มต้น",
         validators=[validators.Optional()],
     )
-    tor_document = FileField(
+    tor_document = fields.FileField(
         "ไฟล์ ToR (PDF เท่านั้น)",
-        validators=[
-            FileAllowed(["pdf"], "อนุญาตเฉพาะไฟล์ PDF เท่านั้น"),
-            validators.Optional(),
-        ],
+        validators=[FileAllowed(["pdf"], "PDF only")],
     )

@@ -12,7 +12,7 @@ class Requisition(me.Document):
     phone = me.IntField()
     reason = me.StringField(max_length=255)
     start_date = me.DateTimeField(required=True)
-    tor_document = me.FileField()
+    tor_document = me.FileField(collection_name="tor_documents")
 
     product_name = me.StringField(max_length=100, required=True)
     quantity = me.IntField(min_value=1, required=True)

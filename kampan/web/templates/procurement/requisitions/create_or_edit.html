@@ -242,45 +242,7 @@
 
         <!-- Document Upload Section -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-file-pdf text-xl text-red-600 mr-2"></i>
-                เอกสารแนบ
-            </h2>
-            <div class="space-y-3">
-                <label class="block text-gray-700 font-medium mb-2" for="tor_document">
-                    {{ form.tor_document.label.text }}
-                </label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="tor_document"
-                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-500">
-                                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
-                            </p>
-                            <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ PDF เท่านั้น (ขนาดไม่เกิน 10MB)</p>
-                        </div>
-                        {{ form.tor_document(class_="hidden", accept=".pdf", id="tor_document") }}
-                    </label>
-                </div>
-                {% if form.tor_document.errors %}
-                <p class="text-red-500 text-xs mt-2 flex items-center">
-                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.tor_document.errors[0] }}
-                </p>
-                {% endif %}
-                <div id="document_preview" class="hidden mt-4">
-                    <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <i class="ph ph-file-pdf text-2xl text-red-600 mr-3"></i>
-                        <div class="flex-1">
-                            <p id="document_name" class="text-sm font-medium text-gray-700"></p>
-                            <p class="text-xs text-gray-500">ไฟล์ PDF พร้อมสำหรับอัปโหลด</p>
-                        </div>
-                        <button type="button" onclick="clearDocument()" class="text-red-500 hover:text-red-700">
-                            <i class="ph ph-x text-lg"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            {{ renderer.file_input(form.tor_document)}}
         </div>
 
         <!-- Submit Buttons -->
@@ -302,9 +264,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const startDate = document.getElementById('start_date');
-        const documentInput = document.getElementById('tor_document');
-        const documentPreview = document.getElementById('document_preview');
-        const documentName = document.getElementById('document_name');
 
         // Date formatting functions
         function formatDateDisplay() {
@@ -336,29 +295,6 @@
 
         // Initialize date display on page load
         formatDateDisplay();
-
-        // Document upload functionality
-        documentInput.addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (file) {
-                documentName.textContent = file.name;
-                documentPreview.classList.remove('hidden');
-
-                // Update the upload area to show success state
-                const uploadArea = documentInput.parentElement;
-                uploadArea.innerHTML = `
-                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                    <i class="ph ph-check-circle text-3xl text-green-500 mb-2"></i>
-                    <p class="text-sm text-green-600 font-semibold">
-                        ไฟล์ถูกเลือกแล้ว
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">${file.name}</p>
-                </div>
-            `;
-            } else {
-                documentPreview.classList.add('hidden');
-            }
-        });
 
         // Phone number: allow only digits, max 10 digits, log if more than 10
         const phoneInput = document.getElementById('phone');
@@ -479,25 +415,19 @@
             labels[i].style.display = text.includes(filter) ? '' : 'none';
         }
     }
-
-    function clearDocument() {
-        const documentInput = document.getElementById('tor_document');
-        const documentPreview = document.getElementById('document_preview');
-
-        documentInput.value = '';
-        documentPreview.classList.add('hidden');
-
-        // Reset upload area
-        const uploadArea = documentInput.parentElement;
-        uploadArea.innerHTML = `
-        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-            <p class="text-sm text-gray-500">
-                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
-            </p>
-            <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ PDF เท่านั้น (ขนาดไม่เกิน 10MB)</p>
-        </div>
-    `;
-    }
 </script>
 {% endblock %}
+{% block additional_js %}
+<script type="text/javascript">
+    $(".attach-file-{{ form.tor_document.name }}").click(function () {
+        $("#{{ form.tor_document.name }}").click();
+    });
+
+    $('#{{ form.tor_document.name }}')
+        .on('change', function (e) {
+            var name = e.target.files[0].name;
+            $('.attach-file-{{ form.tor_document.name }}', $(e.target).parent()).val(name);
+        });
+</script>
+
+{% endblock additional_js %}
