@@ -428,13 +428,7 @@
 
                 <!-- Amount -->
                 <td class="text-center py-4">
-                    <div class="text-lg font-bold text-success">
-                        {% if item.amount is defined and item.amount is not none %}
-                        ฿{{ "{:,.2f}".format(item.amount) }}
-                        {% else %}
-                        -
-                        {% endif %}
-                    </div>
+                    <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
                 </td>
 
                 <!-- Payment Status -->
