@@ -428,7 +428,13 @@
 
                 <!-- Amount -->
                 <td class="text-center py-4">
-                    <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
+                    <div class="text-lg font-bold text-success">
+                        {% if item.amount is defined and item.amount is not none %}
+                        ฿{{ "{:,.2f}".format(item.amount) }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
                 </td>
 
                 <!-- Payment Status -->
@@ -820,6 +826,7 @@
     </div>
     {% endmacro %}
 
+    {# filepath: Untitled #}
     {% macro render_renewal_requested_items_table(renewal_requested_items) %}
     <div class="mt-12">
         <div class="flex items-center justify-between mb-6">
@@ -835,17 +842,8 @@
         </div>
 
         {% if renewal_requested_items|length == 0 %}
-        <!-- Enhanced Empty State -->
-        <div
-            class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border-2 border-dashed border-blue-200 p-12 text-center">
-            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="ph ph-check-circle text-blue-400 text-3xl"></i>
-            </div>
-            <h4 class="text-lg font-semibold text-blue-700 mb-2">ยังไม่มีรายการที่ขอต่ออายุ</h4>
-            <p class="text-blue-600">ยังไม่มีการขอต่ออายุในระบบ</p>
-        </div>
+        <!-- ...existing empty state code... -->
         {% else %}
-        <!-- Enhanced Table Layout -->
         <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-blue-200">
@@ -853,7 +851,7 @@
                         <tr>
                             <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
                             <th class="font-semibold text-base-content text-sm w-64">ชื่อรายการ</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">ประเภท</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
                             </th>
                             <th class="font-semibold text-base-content text-sm text-center w-40">บริษัท</th>
@@ -872,20 +870,14 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
-                                    title="{{ item.name }}">
-                                    {{ item.product_name }}
+                                    title="{{ item.items[0].product_name if item.items }}">
+                                    {{ item.items[0].product_name if item.items else '-' }}
                                 </div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
-                                {% set category_badge = {
-                                'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
-                                'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
-                                'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
-                                'อื่นๆ': 'bg-gray-50 text-gray-700 border border-gray-200'
-                                }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
                                 <span
-                                    class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
-                                    {{ item.get_category_display() }}
+                                    class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    {{ item.items|length }} รายการ
                                 </span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
@@ -899,12 +891,14 @@
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <div class="flex items-center gap-2 justify-left">
                                     <i class="ph ph-buildings text-gray-400"></i>
-                                    <span class="text-sm text-gray-900">{{ item.company }}</span>
+                                    <span class="text-sm text-gray-900">
+                                        {{ item.items[0].company if item.items else '-' }}
+                                    </span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right">
                                 <div class="text-lg font-bold text-blue-600">
-                                    ฿{{ "{:,.2f}".format(item.amount) }}
+                                    ฿{{ "{:,.2f}".format(item.items[0].amount) if item.items else '0.00' }}
                                 </div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
@@ -919,6 +913,37 @@
                                     class="btn btn-outline btn-sm text-yellow-700 border-yellow-300 hover:bg-yellow-50">
                                     <i class="ph ph-pencil-simple-line"></i> แก้ไข
                                 </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8" class="bg-blue-50 px-4 py-2">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-blue-100">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center text-xs font-semibold py-2">ชื่อรายการ</th>
+                                                <th class="text-center text-xs font-semibold py-2">ประเภท</th>
+                                                <th class="text-center text-xs font-semibold py-2">จำนวน</th>
+                                                <th class="text-center text-xs font-semibold py-2">บริษัท</th>
+                                                <th class="text-center text-xs font-semibold py-2">จำนวนเงิน</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for subitem in item.items %}
+                                            <tr>
+                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.product_name }}
+                                                </td>
+                                                <td class="text-sm px-2 py-1 text-center">{{
+                                                    subitem.get_category_display() }}</td>
+                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.quantity }}</td>
+                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.company }}</td>
+                                                <td class="text-sm px-2 py-1 text-right">฿{{
+                                                    "{:,.2f}".format(subitem.amount) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

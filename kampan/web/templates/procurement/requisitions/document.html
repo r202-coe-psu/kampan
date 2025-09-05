@@ -122,118 +122,62 @@
         </div>
         <div>
             <span>มีความต้องการ</span>
+            {% set categories = requisitions.items | map(attribute='category') | list %}
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if requisitions.category=="software" %}checked{% endif %}>
+                    if 'software' in categories %}checked{% endif %}>
                 <span style="vertical-align: middle;">ซื้อวัสดุ</span>
             </span>
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if requisitions.category=="product" %}checked{% endif %}>
+                    if 'product' in categories %}checked{% endif %}>
                 <span style="vertical-align: middle;">ซื้อครุภัณฑ์</span>
             </span>
             <span>
                 <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                    if requisitions.category=="service" %}checked{% endif %}>
+                    if 'service' in categories %}checked{% endif %}>
                 <span style="vertical-align: middle;">จ้างเหมา</span>
             </span>
             <span>
                 ดังรายการต่อไปนี้
             </span>
         </div>
+        {% set sorted_items = requisitions.items|sort(attribute='product_name') %}
+        {% for i in range(4) %}
         <div>
-            <span>1</span>
+            <span>{{ i+1 }}</span>
             <span style="position: relative;">
                 <span
                     style="position: absolute; left: 15; top: -0.5rem; white-space: normal; max-width: 350px; overflow-wrap: break-word; line-height: 1.6;">
-                    {{ requisitions.product_name }}
+                    {% if sorted_items and sorted_items|length > i %}
+                    {{ sorted_items[i].product_name }}
+                    {% endif %}
                 </span>
                 ................................................................................
             </span>
             <span style="position: relative;">
                 <span style="position: absolute; left: 5rem; white-space: nowrap;">
-                    {{ requisitions.quantity if requisitions.quantity is defined and requisitions.quantity else 1 }}
+                    {% if sorted_items and sorted_items|length > i %}
+                    {{ sorted_items[i].quantity }}
+                    {% endif %}
                 </span>
                 จำนวน ..............
             </span>
             <span style="position: relative;">
                 <span style="position: absolute; left: 7rem; white-space: nowrap;">
-                    {{ "{:,.2f}".format(requisitions.amount) }}
+                    {% if sorted_items and sorted_items|length > i %}
+                    {{ "{:,.2f}".format(sorted_items[i].amount) }}
+                    {% endif %}
                 </span>
                 ราคาประมาณ ......................
             </span>
             <span>บาท</span>
         </div>
-        <div>
-            <span>2</span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
-
-                </span>
-                ................................................................................
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 4rem; white-space: nowrap;">
-
-                </span>
-                จำนวน ..............
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 7rem; white-space: nowrap;">
-
-                </span>
-                ราคาประมาณ ......................
-            </span>
-            <span>บาท</span>
-        </div>
-        <div>
-            <span>3</span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
-
-                </span>
-                ................................................................................
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 4rem; white-space: nowrap;">
-
-                </span>
-                จำนวน ..............
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 7rem; white-space: nowrap;">
-
-                </span>
-                ราคาประมาณ ......................
-            </span>
-            <span>บาท</span>
-        </div>
-        <div>
-            <span>4</span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 15; top: -0.5rem; white-space: nowrap;">
-
-                </span>
-                ................................................................................
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 4rem; white-space: nowrap;">
-
-                </span>
-                จำนวน ..............
-            </span>
-            <span style="position: relative;">
-                <span style="position: absolute; left: 7rem; white-space: nowrap;">
-
-                </span>
-                ราคาประมาณ ......................
-            </span>
-            <span>บาท</span>
-        </div>
+        {% endfor %}
         <div style="text-align: right;">
             <span style="position: relative;">
                 <span style="position: absolute; left: 10rem; white-space: nowrap;">
-                    {{ "{:,.2f}".format(requisitions.amount) }}
+                    {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
                 </span>
                 รวมเป็นเงินประมาณ ......................
             </span>
