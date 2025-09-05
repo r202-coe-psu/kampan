@@ -6,6 +6,7 @@ from flask import (
     request,
     send_file,
     abort,
+    Response,
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
@@ -272,17 +273,20 @@ def create_or_edit(requisition_procurement_id=None):
     form.populate_obj(requisition)
 
     if form.tor_document.data:
+        tor_file = form.tor_document.data
+        if hasattr(tor_file, "seek"):
+            tor_file.seek(0)
         if requisition.tor_document:
             requisition.tor_document.replace(
-                form.tor_document.data,
-                filename=form.tor_document.data.filename,
-                content_type=form.tor_document.data.content_type,
+                tor_file,
+                filename=tor_file.filename,
+                content_type=tor_file.content_type,
             )
         else:
             requisition.tor_document.put(
-                form.tor_document.data,
-                filename=form.tor_document.data.filename,
-                content_type=form.tor_document.data.content_type,
+                tor_file,
+                filename=tor_file.filename,
+                content_type=tor_file.content_type,
             )
 
     requisition.save()
@@ -292,3 +296,23 @@ def create_or_edit(requisition_procurement_id=None):
             organization_id=organization.id,
         )
     )
+
+
+@module.route("/<requisition_procurement_id>/download/<filename>")
+@login_required
+@acl.organization_roles_required("admin")
+def download(requisition_procurement_id, filename):
+    response = Response()
+    response.status_code = 404
+
+    document = models.Requisition.objects(id=requisition_procurement_id).first()
+
+    if document:
+        if document.tor_document:
+            response = send_file(
+                document.tor_document,
+                download_name=document.tor_document.filename,
+                mimetype=document.tor_document.content_type,
+            )
+
+    return response

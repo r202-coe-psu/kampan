@@ -844,12 +844,11 @@
                     <thead class="bg-gradient-to-r">
                         <tr>
                             <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
-                            <th class="font-semibold text-base-content text-sm w-64">ชื่อรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
                             </th>
-                            <th class="font-semibold text-base-content text-sm text-center w-40">บริษัท</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงิน</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">เอกสาร ToR</th>
                             <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
                             <th class="font-semibold text-base-content text-sm text-center w-20">แก้ไข</th>
                         </tr>
@@ -860,12 +859,6 @@
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <div class="text-ms flex items-center gap-1 justify-center">
                                     <i class="ph ph-barcode"></i>{{ item.requisition_code }}
-                                </div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
-                                    title="{{ item.items[0].product_name if item.items }}">
-                                    {{ item.items[0].product_name if item.items else '-' }}
                                 </div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
@@ -882,18 +875,22 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                <div class="flex items-center gap-2 justify-left">
-                                    <i class="ph ph-buildings text-gray-400"></i>
-                                    <span class="text-sm text-gray-900">
-                                        {{ item.items[0].company if item.items else '-' }}
-                                    </span>
-                                </div>
-                            </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right">
                                 <div class="text-lg font-bold text-blue-600">
-                                    ฿{{ "{:,.2f}".format(item.items[0].amount) if item.items else '0.00' }}
+                                    ฿{{ "{:,.2f}".format(item.items | map(attribute='amount') | sum) if item.items else
+                                    '0.00' }}
                                 </div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                {% if item.tor_document %}
+                                <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
+                                    class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                                    target="_blank">
+                                    <i class="ph ph-file-arrow-down"></i> ดูเอกสาร ToR
+                                </a>
+                                {% else %}
+                                <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>
+                                {% endif %}
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <a href="{{ url_for('procurement.requisitions.document', requisition_procurement_id=item.id) }}"
