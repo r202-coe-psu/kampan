@@ -201,24 +201,17 @@ def create_or_edit(requisition_procurement_id=None):
         else None
     )
 
-    # Count submitted items for POST
+    # Determine item count for form rendering
     if request.method == "POST":
-        item_keys = [
-            key
+        item_count = sum(
+            1
             for key in request.form.keys()
             if key.startswith("items-") and key.endswith("-product_name")
-        ]
-        item_count = len(item_keys)
+        )
     elif requisition and requisition.items:
         item_count = len(requisition.items)
     else:
         item_count = 1
-
-    # Clamp to the allowed range [1,4] to match model/form constraints
-    if item_count < 1:
-        item_count = 1
-    if item_count > 4:
-        item_count = 4
 
     form = forms.requisitions.RequisitionForm(obj=requisition)
     form.purchaser.queryset = members
@@ -233,19 +226,18 @@ def create_or_edit(requisition_procurement_id=None):
         .order_by("-requisition_code")
         .first()
     )
-    if last and last.requisition_code:
-        last_number = int(last.requisition_code.split("-")[1])
-        next_number = last_number + 1
-    else:
-        next_number = 1
-
-    if requisition:
-        preview_code = requisition.requisition_code
-    else:
-        preview_code = f"{buddhist_year}-{next_number:04d}"
+    next_number = (
+        int(last.requisition_code.split("-")[1]) + 1
+        if last and last.requisition_code
+        else 1
+    )
+    preview_code = (
+        requisition.requisition_code
+        if requisition
+        else f"{buddhist_year}-{next_number:04d}"
+    )
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "/procurement/requisitions/create_or_edit.html",
             form=form,
@@ -253,7 +245,6 @@ def create_or_edit(requisition_procurement_id=None):
             preview_code=preview_code,
         )
 
-    # If creating, instantiate new object, else update existing
     if not requisition:
         requisition = models.Requisition()
         requisition.created_by = current_user._get_current_object()
@@ -271,11 +262,10 @@ def create_or_edit(requisition_procurement_id=None):
     ]
 
     form.populate_obj(requisition)
+    tor_file = form.tor_document.data
 
-    if form.tor_document.data:
-        tor_file = form.tor_document.data
-        if hasattr(tor_file, "seek"):
-            tor_file.seek(0)
+    if tor_file:
+        tor_file.seek(0)
         if requisition.tor_document:
             requisition.tor_document.replace(
                 tor_file,
@@ -299,20 +289,20 @@ def create_or_edit(requisition_procurement_id=None):
 
 
 @module.route("/<requisition_procurement_id>/download/<filename>")
-@login_required
-@acl.organization_roles_required("admin")
 def download(requisition_procurement_id, filename):
-    response = Response()
-    response.status_code = 404
-
     document = models.Requisition.objects(id=requisition_procurement_id).first()
 
-    if document:
-        if document.tor_document:
-            response = send_file(
-                document.tor_document,
-                download_name=document.tor_document.filename,
-                mimetype=document.tor_document.content_type,
-            )
+    if (
+        not document
+        or not document.tor_document
+        or document.tor_document.filename != filename
+    ):
+        return abort(403)
+
+    response = send_file(
+        document.tor_document,
+        download_name=document.tor_document.filename,
+        mimetype=document.tor_document.content_type,
+    )
 
     return response

@@ -138,59 +138,103 @@
 
         <!-- Product/Service Items Section -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <h2 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
                 <i class="ph ph-list text-xl text-blue-600 mr-2"></i>
                 รายการสินค้า/บริการ
             </h2>
-            <div id="items-list">
+            <div id="items-list" class="space-y-4">
                 {% for item_form in form.items %}
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 item-row">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.product_name.label }}</label>
-                        {{ item_form.product_name(class_="input input-bordered w-full") }}
-                        {% if item_form.product_name.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ item_form.product_name.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.quantity.label }}</label>
-                        {{ item_form.quantity(class_="input input-bordered w-full") }}
-                        {% if item_form.quantity.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ item_form.quantity.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.category.label }}</label>
-                        {{ item_form.category(class_="select select-bordered w-full") }}
-                        {% if item_form.category.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ item_form.category.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.amount.label }}</label>
-                        {{ item_form.amount(class_="input input-bordered w-full") }}
-                        {% if item_form.amount.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ item_form.amount.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">{{ item_form.company.label }}</label>
-                        {{ item_form.company(class_="input input-bordered w-full") }}
-                        {% if item_form.company.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ item_form.company.errors[0] }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="flex items-center justify-end mt-2">
-                        <button type="button" class="btn btn-error btn-xs remove-item-btn">
-                            <i class="ph ph-minus"></i> ลบ
+                <div
+                    class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow item-row">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-md font-medium text-gray-700 flex items-center">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full mr-2">
+                                รายการที่ {{ loop.index }}
+                            </span>
+                        </h3>
+                        <button type="button" class="btn btn-error btn-sm remove-item-btn">
+                            <i class="ph ph-trash text-sm mr-1"></i> ลบรายการ
                         </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2">
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="ph ph-package text-blue-500 mr-1"></i>
+                                {{ item_form.product_name.label }}
+                            </label>
+                            {{ item_form.product_name(class_="input input-bordered w-full focus:input-primary",
+                            placeholder="ระบุชื่อสินค้าหรือบริการ") }}
+                            {% if item_form.product_name.errors %}
+                            <p class="text-red-500 text-xs mt-1 flex items-center">
+                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.product_name.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="ph ph-hash text-green-500 mr-1"></i>
+                                {{ item_form.quantity.label }}
+                            </label>
+                            {{ item_form.quantity(class_="input input-bordered w-full focus:input-primary",
+                            placeholder="จำนวน") }}
+                            {% if item_form.quantity.errors %}
+                            <p class="text-red-500 text-xs mt-1 flex items-center">
+                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.quantity.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="ph ph-tag text-purple-500 mr-1"></i>
+                                {{ item_form.category.label }}
+                            </label>
+                            {{ item_form.category(class_="select select-bordered w-full focus:select-primary") }}
+                            {% if item_form.category.errors %}
+                            <p class="text-red-500 text-xs mt-1 flex items-center">
+                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.category.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="ph ph-currency-circle-dollar text-yellow-500 mr-1"></i>
+                                {{ item_form.amount.label }}
+                            </label>
+                            {{ item_form.amount(class_="input input-bordered w-full focus:input-primary",
+                            placeholder="0.00") }}
+                            {% if item_form.amount.errors %}
+                            <p class="text-red-500 text-xs mt-1 flex items-center">
+                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.amount.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="ph ph-buildings text-orange-500 mr-1"></i>
+                                {{ item_form.company.label }}
+                            </label>
+                            {{ item_form.company(class_="input input-bordered w-full focus:input-primary",
+                            placeholder="ชื่อบริษัท") }}
+                            {% if item_form.company.errors %}
+                            <p class="text-red-500 text-xs mt-1 flex items-center">
+                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.company.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            <div class="flex justify-end">
-                <button type="button" class="btn btn-success btn-sm mt-2" id="add-item-btn">
-                    <i class="ph ph-plus"></i> เพิ่มรายการสินค้า/บริการ
+
+            <div class="flex justify-center mt-6">
+                <button type="button" class="btn btn-primary btn-md" id="add-item-btn">
+                    <i class="ph ph-plus text-lg mr-2"></i>
+                    เพิ่มรายการสินค้า/บริการ
                 </button>
             </div>
         </div>
@@ -494,17 +538,3 @@
     reindexItemRows();
 </script>
 {% endblock %}
-{% block additional_js %}
-<script type="text/javascript">
-    $(".attach-file-{{ form.tor_document.name }}").click(function () {
-        $("#{{ form.tor_document.name }}").click();
-    });
-
-    $('#{{ form.tor_document.name }}')
-        .on('change', function (e) {
-            var name = e.target.files[0].name;
-            $('.attach-file-{{ form.tor_document.name }}', $(e.target).parent()).val(name);
-        });
-</script>
-
-{% endblock additional_js %}

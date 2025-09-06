@@ -42,7 +42,8 @@ BaseRequisitionForm = model_form(
         "updated_date",
         "created_by",
         "last_updated_by",
-        "items",  # exclude items, we'll add manually
+        "items",
+        "tor_document",
     ],
     field_args={
         "phone": {"label": "เบอร์โทรศัพท์"},

@@ -882,7 +882,7 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
-                                {% if item.tor_document %}
+                                {% if item.tor_document.filename %}
                                 <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
                                     class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
                                     target="_blank">
