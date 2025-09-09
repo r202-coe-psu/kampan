@@ -289,6 +289,49 @@
             {{ renderer.file_input(form.tor_document)}}
         </div>
 
+        <!-- Committee Selection Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ph ph-users text-xl text-indigo-600 mr-2"></i>
+                กรรมการที่เกี่ยวข้อง
+            </h2>
+            <div id="committees-list" class="space-y-4">
+                {% for committee_form in form.committees %}
+                <div class="committee-row bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                {{ committee_form.committee_type.label }}
+                            </label>
+                            {{ committee_form.committee_type(class_="input input-bordered w-full") }}
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                {{ committee_form.committee_position.label }}
+                            </label>
+                            {{ committee_form.committee_position(class_="input input-bordered w-full") }}
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                {{ committee_form.members.label }}
+                            </label>
+                            {{ committee_form.members(class_="select select-bordered w-full") }}
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-error btn-sm remove-committee-btn mt-2">
+                        <i class="ph ph-trash text-sm mr-1"></i> ลบกรรมการ
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex justify-center mt-6">
+                <button type="button" class="btn btn-primary btn-md" id="add-committee-btn">
+                    <i class="ph ph-plus text-lg mr-2"></i>
+                    เพิ่มกรรมการ
+                </button>
+            </div>
+        </div>
+
         <!-- Submit Buttons -->
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}"
@@ -536,5 +579,55 @@
     updateRemoveButtons();
     // Ensure inputs are correctly indexed on page load (useful when server rendered >1)
     reindexItemRows();
+
+    // Reindex committee-row inputs/selects/labels to committees-{index}-... so WTForms receives distinct names
+    function reindexCommitteeRows() {
+        const rows = document.querySelectorAll('.committee-row');
+        rows.forEach((row, idx) => {
+            const controls = row.querySelectorAll('input, select');
+            controls.forEach(c => {
+                if (c.name) c.name = c.name.replace(/committees-\d+-/, `committees-${idx}-`);
+                if (c.id) c.id = c.id.replace(/committees-\d+-/, `committees-${idx}-`);
+            });
+            const labels = row.querySelectorAll('label');
+            labels.forEach(lbl => {
+                if (lbl.htmlFor) lbl.htmlFor = lbl.htmlFor.replace(/committees-\d+-/, `committees-${idx}-`);
+            });
+        });
+    }
+
+    document.getElementById('add-committee-btn').addEventListener('click', function () {
+        const committeesList = document.getElementById('committees-list');
+        const committeeRows = committeesList.querySelectorAll('.committee-row');
+        if (committeeRows.length === 0) return;
+        const lastRow = committeeRows[committeeRows.length - 1];
+        const newRow = lastRow.cloneNode(true);
+        newRow.querySelectorAll('input, select').forEach(function (el) {
+            if (el.tagName.toLowerCase() === 'select') {
+                el.selectedIndex = 0;
+            } else {
+                el.value = '';
+            }
+        });
+        committeesList.appendChild(newRow);
+        reindexCommitteeRows();
+        updateRemoveCommitteeButtons();
+    });
+
+    function updateRemoveCommitteeButtons() {
+        var removeBtns = document.querySelectorAll('.remove-committee-btn');
+        removeBtns.forEach(function (btn) {
+            btn.onclick = function () {
+                var row = btn.closest('.committee-row');
+                if (document.querySelectorAll('.committee-row').length > 1) {
+                    row.remove();
+                    reindexCommitteeRows();
+                }
+            };
+        });
+    }
+
+    updateRemoveCommitteeButtons();
+    reindexCommitteeRows();
 </script>
 {% endblock %}

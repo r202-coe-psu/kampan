@@ -3,6 +3,23 @@ import mongoengine as me
 
 from kampan.models.procurement import CATEGORY_CHOICES
 
+COMMITTEE_TYPE_CHOICES = [
+    ("specification", "คณะกรรมการกำหนดคุณสมบัติ"),
+    ("procurement", "คณะกรรมการจัดซื้อ"),
+    ("inspection", "คณะกรรมการตรวจรับ"),
+]
+
+COMMITTEE_POSITION_CHOICES = [
+    ("chairman", "ประธานกรรมการ"),
+    ("member", "กรรมการ"),
+]
+
+
+class Committees(me.EmbeddedDocument):
+    members = me.ReferenceField("OrganizationUserRole", dbref=True)
+    committee_type = me.StringField(max_length=50, required=True)
+    committee_position = me.StringField(max_length=50, required=True)
+
 
 class RequisitionItem(me.EmbeddedDocument):
     product_name = me.StringField(max_length=100, required=True)
@@ -26,6 +43,7 @@ class Requisition(me.Document):
     items = me.EmbeddedDocumentListField(
         RequisitionItem, required=True, min_length=1, max_length=4
     )
+    committees = me.EmbeddedDocumentListField(Committees, required=True)
 
     fund = me.ReferenceField("MAS", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)

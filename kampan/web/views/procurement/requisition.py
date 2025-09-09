@@ -10,13 +10,42 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from io import BytesIO
 from kampan.web import forms, acl
 from kampan import models
 
 import datetime
 
 module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
+
+
+def generate_next_requisition_code():
+    now = datetime.datetime.now()
+    buddhist_year = now.year + 543
+    prefix = f"{buddhist_year}-"
+    last = (
+        models.Requisition.objects(requisition_code__startswith=prefix)
+        .order_by("-requisition_code")
+        .first()
+    )
+    if last and last.requisition_code:
+        last_number = int(last.requisition_code.split("-")[1])
+        next_number = last_number + 1
+    else:
+        next_number = 1
+    return f"{buddhist_year}-{next_number:04d}"
+
+
+def get_item_count_for_form(request, requisition):
+    if request.method == "POST":
+        return sum(
+            1
+            for key in request.form.keys()
+            if key.startswith("items-") and key.endswith("-product_name")
+        )
+    elif requisition and requisition.items:
+        return len(requisition.items)
+    else:
+        return 1
 
 
 @module.route("", methods=["GET", "POST"])
@@ -109,20 +138,7 @@ def renewal_requested(requisition_procurement_id):
         )
 
     # สร้างรหัส requisition_code ใหม่
-    now = datetime.datetime.now()
-    buddhist_year = now.year + 543
-    prefix = f"{buddhist_year}-"
-    last = (
-        models.Requisition.objects(requisition_code__startswith=prefix)
-        .order_by("-requisition_code")
-        .first()
-    )
-    if last and last.requisition_code:
-        last_number = int(last.requisition_code.split("-")[1])
-        next_number = last_number + 1
-    else:
-        next_number = 1
-    requisition_code = f"{buddhist_year}-{next_number:04d}"
+    requisition_code = generate_next_requisition_code()
 
     # สร้าง Requisition ใหม่
     requisition = models.Requisition(
@@ -202,39 +218,23 @@ def create_or_edit(requisition_procurement_id=None):
     )
 
     # Determine item count for form rendering
-    if request.method == "POST":
-        item_count = sum(
-            1
-            for key in request.form.keys()
-            if key.startswith("items-") and key.endswith("-product_name")
-        )
-    elif requisition and requisition.items:
-        item_count = len(requisition.items)
-    else:
-        item_count = 1
+    item_count = get_item_count_for_form(request, requisition)
 
     form = forms.requisitions.RequisitionForm(obj=requisition)
     form.purchaser.queryset = members
     form.fund.queryset = funds
     form.items.min_entries = item_count
 
-    now = datetime.datetime.now()
-    buddhist_year = now.year + 543
-    prefix = f"{buddhist_year}-"
-    last = (
-        models.Requisition.objects(requisition_code__startswith=prefix)
-        .order_by("-requisition_code")
-        .first()
-    )
-    next_number = (
-        int(last.requisition_code.split("-")[1]) + 1
-        if last and last.requisition_code
-        else 1
-    )
+    # กำหนด choices สำหรับกรรมการ (members)
+    member_choices = [(str(u.id), u.display_fullname()) for u in members]
+    for committee_form in form.committees:
+        committee_form.members.choices = member_choices
+
+    # ใช้ฟังก์ชัน generate_next_requisition_code
     preview_code = (
         requisition.requisition_code
         if requisition
-        else f"{buddhist_year}-{next_number:04d}"
+        else generate_next_requisition_code()
     )
 
     if not form.validate_on_submit():
@@ -259,6 +259,15 @@ def create_or_edit(requisition_procurement_id=None):
             company=item_form.company.data,
         )
         for item_form in form.items
+    ]
+
+    requisition.committees = [
+        models.Committees(
+            members=committee_form.members.data,
+            committee_type=committee_form.committee_type.data,
+            committee_position=committee_form.committee_position.data,
+        )
+        for committee_form in form.committees
     ]
 
     form.populate_obj(requisition)

@@ -1,3 +1,4 @@
+from bson import ObjectId
 from flask_wtf import FlaskForm
 from flask_mongoengine.wtf import model_form
 from wtforms import (
@@ -16,6 +17,10 @@ from flask_wtf.file import FileField, FileAllowed
 
 from wtforms import Form
 from kampan.models.procurement import CATEGORY_CHOICES
+from kampan.models.requisitions import (
+    COMMITTEE_TYPE_CHOICES,
+    COMMITTEE_POSITION_CHOICES,
+)
 from wtforms import SelectField
 
 
@@ -55,6 +60,22 @@ BaseRequisitionForm = model_form(
 )
 
 
+class CommitteeForm(Form):
+    members = SelectField(
+        "กรรมการ", coerce=ObjectId, validators=[validators.DataRequired()]
+    )
+    committee_type = SelectField(
+        "ประเภทกรรมการ",
+        choices=COMMITTEE_TYPE_CHOICES,
+        validators=[validators.DataRequired()],
+    )
+    committee_position = SelectField(
+        "ตำแหน่งกรรมการ",
+        choices=COMMITTEE_POSITION_CHOICES,
+        validators=[validators.DataRequired()],
+    )
+
+
 class RequisitionForm(BaseRequisitionForm):
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
@@ -69,4 +90,9 @@ class RequisitionForm(BaseRequisitionForm):
         FormField(RequisitionItemForm),
         min_entries=1,
         validators=[validators.Length(min=1, max=4)],
+    )
+    committees = FieldList(
+        FormField(CommitteeForm),
+        min_entries=1,
+        validators=[validators.Optional()],
     )
