@@ -315,20 +315,11 @@
                             <label class="block text-gray-700 font-medium mb-2">
                                 {{ committee_form.members.label }}
                             </label>
-                            {{ committee_form.members(class_="select select-bordered w-full") }}
+                            {{ committee_form.members(class_="select select-bordered w-full committee-member-select") }}
                         </div>
                     </div>
-                    <button type="button" class="btn btn-error btn-sm remove-committee-btn mt-2">
-                        <i class="ph ph-trash text-sm mr-1"></i> ลบกรรมการ
-                    </button>
                 </div>
                 {% endfor %}
-            </div>
-            <div class="flex justify-center mt-6">
-                <button type="button" class="btn btn-primary btn-md" id="add-committee-btn">
-                    <i class="ph ph-plus text-lg mr-2"></i>
-                    เพิ่มกรรมการ
-                </button>
             </div>
         </div>
 
@@ -596,38 +587,159 @@
         });
     }
 
-    document.getElementById('add-committee-btn').addEventListener('click', function () {
-        const committeesList = document.getElementById('committees-list');
-        const committeeRows = committeesList.querySelectorAll('.committee-row');
-        if (committeeRows.length === 0) return;
-        const lastRow = committeeRows[committeeRows.length - 1];
-        const newRow = lastRow.cloneNode(true);
-        newRow.querySelectorAll('input, select').forEach(function (el) {
-            if (el.tagName.toLowerCase() === 'select') {
-                el.selectedIndex = 0;
-            } else {
-                el.value = '';
-            }
-        });
-        committeesList.appendChild(newRow);
-        reindexCommitteeRows();
-        updateRemoveCommitteeButtons();
-    });
-
-    function updateRemoveCommitteeButtons() {
-        var removeBtns = document.querySelectorAll('.remove-committee-btn');
-        removeBtns.forEach(function (btn) {
-            btn.onclick = function () {
-                var row = btn.closest('.committee-row');
-                if (document.querySelectorAll('.committee-row').length > 1) {
-                    row.remove();
-                    reindexCommitteeRows();
+    // Prevent duplicate committee member selection
+    function updateCommitteeMemberSelects() {
+        const selects = document.querySelectorAll('.committee-member-select');
+        // Gather all selected values
+        const selectedValues = Array.from(selects)
+            .map(s => s.value)
+            .filter(v => v !== "");
+        selects.forEach(select => {
+            Array.from(select.options).forEach(opt => {
+                if (opt.value === "" || opt.value === select.value) {
+                    opt.disabled = false;
+                } else {
+                    // Disable if selected in another select
+                    opt.disabled = selectedValues.includes(opt.value);
                 }
-            };
+            });
         });
     }
 
-    updateRemoveCommitteeButtons();
-    reindexCommitteeRows();
+    // Attach change event to all committee member selects
+    function attachCommitteeMemberSelectEvents() {
+        const selects = document.querySelectorAll('.committee-member-select');
+        selects.forEach(select => {
+            select.addEventListener('change', updateCommitteeMemberSelects);
+        });
+    }
+
+    // Call after adding/removing committee rows
+    function refreshCommitteeMemberSelects() {
+        updateCommitteeMemberSelects();
+        attachCommitteeMemberSelectEvents();
+    }
+
+    // Committee structure rules
+    function getCommitteeStructure(totalAmount) {
+        if (totalAmount <= 100000) {
+            return [
+                { type: "specification", position: "chairman" },
+                { type: "inspection", position: "chairman" }
+            ];
+        } else if (totalAmount <= 500000) {
+            return [
+                { type: "specification", position: "chairman" },
+                { type: "specification", position: "member" },
+                { type: "specification", position: "member" },
+                { type: "inspection", position: "chairman" },
+                { type: "inspection", position: "member" },
+                { type: "inspection", position: "member" }
+            ];
+        } else {
+            return [
+                { type: "specification", position: "chairman" },
+                { type: "specification", position: "member" },
+                { type: "specification", position: "member" },
+                { type: "procurement", position: "chairman" },
+                { type: "procurement", position: "member" },
+                { type: "procurement", position: "member" },
+                { type: "inspection", position: "chairman" },
+                { type: "inspection", position: "member" },
+                { type: "inspection", position: "member" }
+            ];
+        }
+    }
+
+    // Get total amount from all item rows
+    function getTotalAmount() {
+        let total = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const amountInput = row.querySelector('input[name$="-amount"]');
+            if (amountInput && amountInput.value) {
+                total += parseFloat(amountInput.value) || 0;
+            }
+        });
+        return total;
+    }
+
+    // Render committee rows according to structure
+    function renderCommitteeRows() {
+        const committeesList = document.getElementById('committees-list');
+        if (!committeesList) return;
+        const totalAmount = getTotalAmount();
+        const structure = getCommitteeStructure(totalAmount);
+
+        // Get choices for type/position from first row (server-rendered)
+        const typeChoices = Array.from(committeesList.querySelectorAll('.committee-row:first-child select[name$="-committee_type"] option')).map(opt => ({ value: opt.value, text: opt.text }));
+        const positionChoices = Array.from(committeesList.querySelectorAll('.committee-row:first-child select[name$="-committee_position"] option')).map(opt => ({ value: opt.value, text: opt.text }));
+        const memberChoices = Array.from(committeesList.querySelectorAll('.committee-row:first-child select[name$="-members"] option')).map(opt => ({ value: opt.value, text: opt.text }));
+
+        // Remove all committee rows
+        committeesList.innerHTML = "";
+
+        structure.forEach((row, idx) => {
+            // Create row
+            const div = document.createElement('div');
+            div.className = "committee-row bg-white rounded-lg border border-gray-200 p-4 shadow-sm";
+            div.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ประเภทกรรมการ</label>
+                        <select name="committees-${idx}-committee_type" class="input input-bordered w-full">
+                            ${typeChoices.map(opt => `<option value="${opt.value}" ${opt.value === row.type ? 'selected' : ''}>${opt.text}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">ตำแหน่งกรรมการ</label>
+                        <select name="committees-${idx}-committee_position" class="input input-bordered w-full">
+                            ${positionChoices.map(opt => `<option value="${opt.value}" ${opt.value === row.position ? 'selected' : ''}>${opt.text}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">กรรมการ</label>
+                        <select name="committees-${idx}-members" class="select select-bordered w-full committee-member-select">
+                            ${memberChoices.map(opt => `<option value="${opt.value}">${opt.text}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            `;
+            committeesList.appendChild(div);
+        });
+
+        reindexCommitteeRows();
+        refreshCommitteeMemberSelects();
+    }
+
+    // Listen for changes to item amounts and re-render committees
+    function setupCommitteeAutoRender() {
+        document.querySelectorAll('.item-row input[name$="-amount"]').forEach(input => {
+            input.addEventListener('input', renderCommitteeRows);
+        });
+        // Also re-render when adding/removing items
+        document.getElementById('add-item-btn').addEventListener('click', function () {
+            setTimeout(() => {
+                document.querySelectorAll('.item-row input[name$="-amount"]').forEach(input => {
+                    input.removeEventListener('input', renderCommitteeRows);
+                    input.addEventListener('input', renderCommitteeRows);
+                });
+                renderCommitteeRows();
+            }, 100); // Wait for DOM update
+        });
+        // Remove item
+        document.querySelectorAll('.remove-item-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                setTimeout(renderCommitteeRows, 100);
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // ...existing code...
+        setupCommitteeAutoRender();
+        renderCommitteeRows();
+    });
+
+    // ...existing code...
 </script>
 {% endblock %}
