@@ -48,19 +48,6 @@ def get_item_count_for_form(request, requisition):
         return 1
 
 
-def get_committee_count_for_form(request, requisition):
-    if request.method == "POST":
-        return sum(
-            1
-            for key in request.form.keys()
-            if key.startswith("committees-") and key.endswith("-committee_type")
-        )
-    elif requisition and hasattr(requisition, "committees") and requisition.committees:
-        return len(requisition.committees)
-    else:
-        return 1
-
-
 @module.route("", methods=["GET", "POST"])
 @login_required
 @acl.organization_roles_required("admin")
@@ -245,32 +232,6 @@ def create_or_edit(requisition_procurement_id=None):
     form.purchaser.queryset = members
     form.fund.queryset = funds
     form.items.min_entries = item_count
-
-    # Ensure committee FieldList has correct length and populate from DB when editing
-    committee_count = get_committee_count_for_form(request, requisition)
-    form.committees.min_entries = committee_count
-    # add missing entries so WTForms renders correct number of subforms
-    while len(form.committees) < committee_count:
-        form.committees.append_entry()
-
-    if requisition.committees:
-        for index, committee in enumerate(requisition.committees):
-            if index >= len(form.committees):
-                break
-            committee_subform = form.committees[index]
-
-            try:
-                member_value = getattr(committee.members, "id", committee.members)
-            except Exception:
-                member_value = committee.members
-
-            try:
-                committee_subform.members.data = str(member_value)
-            except Exception:
-                committee_subform.members.data = member_value
-
-            committee_subform.committee_type.data = committee.committee_type
-            committee_subform.committee_position.data = committee.committee_position
 
     # กำหนด choices สำหรับกรรมการ (members) as ObjectId (coerce in form)
     member_choices = [(u.id, u.display_fullname()) for u in members]
