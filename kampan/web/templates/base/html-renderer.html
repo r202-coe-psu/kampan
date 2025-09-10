@@ -429,6 +429,10 @@ readonly=False) %}
 </fieldset>
 {% endmacro %}
 
+{% macro render_select(field) -%}
+{{ render_field(field, class_='ui dropdown') }}
+{%- endmacro %}
+
 {% macro render_search_select_field(field, id_prefix='', disabled_optional_text=True, readonly=False, disabled=False,
 placeholder="") %}
 {% set list_of_tuples = field.choices %}

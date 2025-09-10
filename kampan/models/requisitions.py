@@ -1,5 +1,6 @@
 import datetime
 import mongoengine as me
+from bson.objectid import ObjectId
 
 from kampan.models.procurement import CATEGORY_CHOICES
 
@@ -16,12 +17,14 @@ COMMITTEE_POSITION_CHOICES = [
 
 
 class Committees(me.EmbeddedDocument):
-    members = me.ReferenceField("OrganizationUserRole", dbref=True)
+    _id = me.ObjectIdField(required=True, default=ObjectId)
+    member = me.ReferenceField("OrganizationUserRole", dbref=True)
     committee_type = me.StringField(max_length=50, required=True)
     committee_position = me.StringField(max_length=50, required=True)
 
 
 class RequisitionItem(me.EmbeddedDocument):
+    _id = me.ObjectIdField(required=True, default=ObjectId)
     product_name = me.StringField(max_length=100, required=True)
     quantity = me.IntField(min_value=1, required=True)
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
@@ -41,9 +44,9 @@ class Requisition(me.Document):
 
     # require at least 1 item and allow at most 4 items
     items = me.EmbeddedDocumentListField(
-        RequisitionItem, required=True, min_length=1, max_length=4
+        "RequisitionItem", required=True, min_length=1, max_length=4
     )
-    committees = me.EmbeddedDocumentListField(Committees, required=True)
+    committees = me.EmbeddedDocumentListField("Committees")
 
     fund = me.ReferenceField("MAS", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)

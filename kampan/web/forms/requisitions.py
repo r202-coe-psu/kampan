@@ -1,18 +1,6 @@
-from bson import ObjectId
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
-from flask_wtf.file import FileField, FileAllowed
-from wtforms import (
-    Form,
-    StringField,
-    IntegerField,
-    DecimalField,
-    FieldList,
-    FormField,
-    SelectField,
-    validators,
-)
-from wtforms.fields import DateField
+from wtforms import fields, Form, validators
 
 from kampan import models
 from kampan.models.procurement import CATEGORY_CHOICES
@@ -31,7 +19,6 @@ BaseRequisitionForm = model_form(
         "created_by",
         "last_updated_by",
         "items",
-        "tor_document",
         "committees",
     ],
     field_args={
@@ -45,50 +32,50 @@ BaseRequisitionForm = model_form(
 
 
 class RequisitionItemForm(Form):
-    product_name = StringField("ชื่อสินค้า", [validators.DataRequired()])
-    quantity = IntegerField(
+    product_name = fields.StringField("ชื่อสินค้า", [validators.DataRequired()])
+    quantity = fields.IntegerField(
         "จำนวน", [validators.DataRequired(), validators.NumberRange(min=1)]
     )
-    category = SelectField(
+    category = fields.SelectField(
         "หมวดหมู่",
         choices=CATEGORY_CHOICES,
         validators=[validators.DataRequired()],
     )
-    amount = DecimalField("จำนวนเงิน", [validators.DataRequired()])
-    company = StringField("บริษัท", [validators.DataRequired()])
+    amount = fields.DecimalField("จำนวนเงิน", [validators.DataRequired()])
+    company = fields.StringField("บริษัท", [validators.DataRequired()])
 
 
 class CommitteeForm(Form):
-    members = SelectField(
-        "กรรมการ", coerce=ObjectId, validators=[validators.DataRequired()]
-    )
-    committee_type = SelectField(
-        "ประเภทกรรมการ",
-        choices=COMMITTEE_TYPE_CHOICES,
-        validators=[validators.DataRequired()],
-    )
-    committee_position = SelectField(
-        "ตำแหน่งกรรมการ",
-        choices=COMMITTEE_POSITION_CHOICES,
-        validators=[validators.DataRequired()],
+    member = fields.SelectField("กรรมการ", choices=[("-", "เลือกกรรมการ")])
+    committee_type = fields.SelectField("ประเภทกรรมการ", choices=COMMITTEE_TYPE_CHOICES)
+    committee_position = fields.SelectField(
+        "ตำแหน่งกรรมการ", choices=COMMITTEE_POSITION_CHOICES
     )
 
 
 class RequisitionForm(BaseRequisitionForm):
-    start_date = DateField(
+    start_date = fields.DateField(
         "วันที่เริ่มต้น",
     )
-    tor_document = FileField(
+    purchaser = fields.SelectField(
+        "ผู้ขอซื้อ",
+        choices=[("-", "เลือกผู้ขอซื้อ")],
+    )
+    fund = fields.SelectField(
+        "แหล่งงบประมาณ",
+        choices=[("-", "เลือกแหล่งงบประมาณ")],
+    )
+    tor_document = fields.FileField(
         "ไฟล์ ToR (PDF เท่านั้น)",
-        validators=[FileAllowed(["pdf"], "PDF only")],
+        validators=[
+            file.FileAllowed(
+                ["pdf"],
+                "PDF only",
+            ),
+        ],
     )
-    # enforce min 1 and max 4 items at the form level
-    items = FieldList(
-        FormField(RequisitionItemForm),
-        min_entries=1,
-        validators=[validators.Length(min=1, max=4)],
+
+    items = fields.FieldList(
+        fields.FormField(RequisitionItemForm), min_entries=1, max_entries=4
     )
-    committees = FieldList(
-        FormField(CommitteeForm),
-        min_entries=1,
-    )
+    committees = fields.FieldList(fields.FormField(CommitteeForm), min_entries=1)

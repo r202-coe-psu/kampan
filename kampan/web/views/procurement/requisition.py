@@ -157,13 +157,7 @@ def renewal_requested(requisition_procurement_id):
             )
         ],
         # ensure at least one committee entry exists so model validation passes
-        committees=[
-            models.Committees(
-                members=None,
-                committee_type="specification",
-                committee_position="chairman",
-            )
-        ],
+        committees=None,
         fund=None,
         created_by=current_user._get_current_object(),
         last_updated_by=current_user._get_current_object(),
@@ -210,54 +204,48 @@ def document(requisition_procurement_id):
     )
 
 
-@module.route("/create", methods=["GET", "POST"])
+@module.route(
+    "/create", methods=["GET", "POST"], defaults=dict(requisition_procurement_id=None)
+)
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
 @acl.organization_roles_required("admin")
-def create_or_edit(requisition_procurement_id=None):
+def create_or_edit(requisition_procurement_id):
+    form = forms.requisitions.RequisitionForm()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
     funds = models.MAS.objects()
+    requisition = None
 
-    requisition = (
-        models.Requisition.objects(id=requisition_procurement_id).first()
-        if requisition_procurement_id
-        else None
-    )
+    if requisition_procurement_id:
+        requisition = models.Requisition.objects(id=requisition_procurement_id).first()
+        form = forms.requisitions.RequisitionForm(obj=requisition)
+        if request.method == "GET":
+            for committee, committee_form in zip(
+                requisition.committees, form.committees
+            ):
+                committee_form.member.data = str(committee.member.id)
 
-    # Determine item count for form rendering
-    item_count = get_item_count_for_form(request, requisition)
-
-    form = forms.requisitions.RequisitionForm(obj=requisition)
-    form.purchaser.queryset = members
-    form.fund.queryset = funds
-    form.items.min_entries = item_count
-
-    # กำหนด choices สำหรับกรรมการ (members) as ObjectId (coerce in form)
-    member_choices = [(u.id, u.display_fullname()) for u in members]
+    form.fund.choices = [(str(fund.id), fund.name) for fund in funds]
+    member_choices = [(str(member.id), member.display_fullname()) for member in members]
     for committee_form in form.committees:
-        committee_form.members.choices = member_choices
+        committee_form.member.choices.extend(member_choices)
 
-    # ใช้ฟังก์ชัน generate_next_requisition_code
-    preview_code = (
-        requisition.requisition_code
-        if requisition
-        else generate_next_requisition_code()
-    )
+    form.purchaser.choices = member_choices
 
     if not form.validate_on_submit():
         return render_template(
             "/procurement/requisitions/create_or_edit.html",
             form=form,
             organization=organization,
-            preview_code=preview_code,
         )
 
     if not requisition:
-        requisition = models.Requisition()
-        requisition.created_by = current_user._get_current_object()
+        requisition = models.Requisition(
+            created_by=current_user._get_current_object(),
+        )
 
-    requisition.last_updated_by = current_user._get_current_object()
+    # Create items from form
     requisition.items = [
         models.RequisitionItem(
             product_name=item_form.product_name.data,
@@ -269,18 +257,27 @@ def create_or_edit(requisition_procurement_id=None):
         for item_form in form.items
     ]
 
-    requisition.committees = [
-        models.Committees(
-            members=committee_form.members.data,
-            committee_type=committee_form.committee_type.data,
-            committee_position=committee_form.committee_position.data,
-        )
-        for committee_form in form.committees
-    ]
+    # Create committees from form
+    requisition.committees = []
+    for committee_form in form.committees:
+        if committee_form.member.data != "-":
+            member_obj = models.OrganizationUserRole.objects(
+                id=committee_form.member.data
+            ).first()
+            committee = models.requisitions.Committees(
+                member=member_obj,
+                committee_type=committee_form.committee_type.data,
+                committee_position=committee_form.committee_position.data,
+            )
+            requisition.committees.append(committee)
 
+    # Populate other fields
+    del form.committees
+    del form.items
     form.populate_obj(requisition)
-    tor_file = form.tor_document.data
 
+    # Handle ToR file
+    tor_file = form.tor_document.data
     if tor_file:
         tor_file.seek(0)
         if requisition.tor_document:
@@ -291,11 +288,17 @@ def create_or_edit(requisition_procurement_id=None):
             )
         else:
             requisition.tor_document.put(
-                tor_file,
-                filename=tor_file.filename,
-                content_type=tor_file.content_type,
+                tor_file, filename=tor_file.filename, content_type=tor_file.content_type
             )
+    # Convert SelectField id to document instance for ReferenceField
+    if form.purchaser.data and form.purchaser.data != "-":
+        requisition.purchaser = models.OrganizationUserRole.objects(
+            id=form.purchaser.data
+        ).first()
+    if form.fund.data and form.fund.data != "-":
+        requisition.fund = models.MAS.objects(id=form.fund.data).first()
 
+    requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
     return redirect(
         url_for(

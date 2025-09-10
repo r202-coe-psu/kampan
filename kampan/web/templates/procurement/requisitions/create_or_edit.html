@@ -1,13 +1,17 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block dashboard_title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 
 {% block content %}
-<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-8">
-    <div class="flex items-center mb-8">
+<div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
+    <div class="flex items-center mb-6">
         <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-            <i class="ph ph-plus text-2xl text-primary"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
         </div>
         <div>
             <h1 class="text-xl md:text-2xl font-bold text-gray-800">{{ 'แก้ไข' if form._obj else 'สร้าง'
@@ -16,326 +20,111 @@
         </div>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" class="space-y-8">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
         {{ form.hidden_tag() }}
 
-        <!-- Preview Code Section -->
-        {% if preview_code %}
-        <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-400">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
-                รหัสรายการขอจัดซื้อ
-            </h2>
-            <div class="bg-white px-4 py-3 rounded-lg border font-mono text-lg text-blue-900">
-                {{ preview_code }}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Contact Information Section -->
+        <!-- Basic Information -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-phone text-xl text-green-600 mr-2"></i>
-                ข้อมูลการติดต่อและงบประมาณ
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="phone">{{ form.phone.label }}</label>
-                    <div class="relative">
-                        {{ form.phone(class_="input input-bordered w-full focus:input-primary pl-10", id="phone",
-                        placeholder="เช่น 081-234-5678") }}
-                        <i class="ph ph-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    </div>
-                    {% if form.phone.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.phone.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="fund">{{ form.fund.label }}</label>
-                    <div>
-                        <div class="relative mb-3">
-                            <input type="text" id="fund_search" placeholder="ค้นหาแหล่งงบประมาณ..."
-                                class="input input-bordered w-full focus:input-primary pl-10"
-                                oninput="filterFundList()">
-                            <i
-                                class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        </div>
-
-                        <div id="fund_list"
-                            class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
-                            {% for fund in form.fund.queryset %}
-                            <label
-                                class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
-                                <input type="radio" name="{{ form.fund.name }}" value="{{ fund.id }}"
-                                    class="radio radio-primary radio-sm" {% if form.fund.data and
-                                    (form.fund.data|string)==(fund.id|string) or form.fund.data==fund %}checked{% endif
-                                    %}>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                        <i class="ph ph-currency-circle-dollar text-primary text-sm"></i>
-                                    </div>
-                                    <span class="text-gray-700">
-                                        {{ form.label_modifier(fund) if form.label_modifier else (fund.name if fund.name
-                                        is defined else fund) }}
-                                    </span>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% if form.fund.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.fund.errors[0] }}
-                    </p>
-                    {% endif %}
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลพื้นฐาน</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.purchaser.label.text }}</span>
+                    </label>
+                    {{ form.purchaser(class="select select-bordered w-full") }}
                 </div>
 
-                <!-- New purchaser block -->
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="purchaser">{{ form.purchaser.label
-                        }}</label>
-                    <div>
-                        <div class="relative mb-3">
-                            <input type="text" id="purchaser_search" placeholder="ค้นหา purchaser..."
-                                class="input input-bordered w-full focus:input-primary pl-10"
-                                oninput="filterPurchaserList()">
-                            <i
-                                class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        </div>
-
-                        <div id="purchaser_list"
-                            class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
-                            {% for user in form.purchaser.queryset %}
-                            <label
-                                class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
-                                <input type="radio" name="{{ form.purchaser.name }}" value="{{ user.id }}"
-                                    class="radio radio-primary radio-sm" {% if form.purchaser.data and
-                                    ((form.purchaser.data|string)==(user.id|string) or form.purchaser.data==user)
-                                    %}checked{% endif %}>
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                        <i class="ph ph-user text-primary text-sm"></i>
-                                    </div>
-                                    <span class="text-gray-700">
-                                        {{ form.label_modifier(user) if form.label_modifier else
-                                        (user.display_fullname() if user.display_fullname is defined else user) }}
-                                    </span>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% if form.purchaser.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.purchaser.errors[0] }}
-                    </p>
-                    {% endif %}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.phone.label.text }}</span>
+                    </label>
+                    {{ form.phone(class="input input-bordered w-full", placeholder="เบอร์โทรศัพท์") }}
                 </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.start_date.label.text }}</span>
+                    </label>
+                    {{ form.start_date(class="input input-bordered w-full", type="date") }}
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.fund.label.text }}</span>
+                    </label>
+                    {{ form.fund(class="select select-bordered w-full") }}
+                </div>
+            </div>
+
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text font-medium">{{ form.reason.label.text }}</span>
+                </label>
+                {{ form.reason(class="textarea textarea-bordered w-full", placeholder="ระบุเหตุผลในการขอจัดซื้อ") }}
+            </div>
+
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text font-medium">{{ form.tor_document.label.text }}</span>
+                </label>
+                {{ form.tor_document(class="file-input file-input-bordered w-full") }}
             </div>
         </div>
 
-        <!-- Product/Service Items Section -->
+        <!-- Items Section -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
-                <i class="ph ph-list text-xl text-blue-600 mr-2"></i>
-                รายการสินค้า/บริการ
-            </h2>
-            <div id="items-list" class="space-y-4">
-                {% for item_form in form.items %}
-                <div
-                    class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow item-row">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-md font-medium text-gray-700 flex items-center">
-                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full mr-2">
-                                รายการที่ {{ loop.index }}
-                            </span>
-                        </h3>
-                        <button type="button" class="btn btn-error btn-sm remove-item-btn">
-                            <i class="ph ph-trash text-sm mr-1"></i> ลบรายการ
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="lg:col-span-2">
-                            <label class="block text-gray-700 font-medium mb-2">
-                                <i class="ph ph-package text-blue-500 mr-1"></i>
-                                {{ item_form.product_name.label }}
-                            </label>
-                            {{ item_form.product_name(class_="input input-bordered w-full focus:input-primary",
-                            placeholder="ระบุชื่อสินค้าหรือบริการ") }}
-                            {% if item_form.product_name.errors %}
-                            <p class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.product_name.errors[0] }}
-                            </p>
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                <i class="ph ph-hash text-green-500 mr-1"></i>
-                                {{ item_form.quantity.label }}
-                            </label>
-                            {{ item_form.quantity(class_="input input-bordered w-full focus:input-primary",
-                            placeholder="จำนวน") }}
-                            {% if item_form.quantity.errors %}
-                            <p class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.quantity.errors[0] }}
-                            </p>
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                <i class="ph ph-tag text-purple-500 mr-1"></i>
-                                {{ item_form.category.label }}
-                            </label>
-                            {{ item_form.category(class_="select select-bordered w-full focus:select-primary") }}
-                            {% if item_form.category.errors %}
-                            <p class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.category.errors[0] }}
-                            </p>
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                <i class="ph ph-currency-circle-dollar text-yellow-500 mr-1"></i>
-                                {{ item_form.amount.label }}
-                            </label>
-                            {{ item_form.amount(class_="input input-bordered w-full focus:input-primary",
-                            placeholder="0.00") }}
-                            {% if item_form.amount.errors %}
-                            <p class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.amount.errors[0] }}
-                            </p>
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                <i class="ph ph-buildings text-orange-500 mr-1"></i>
-                                {{ item_form.company.label }}
-                            </label>
-                            {{ item_form.company(class_="input input-bordered w-full focus:input-primary",
-                            placeholder="ชื่อบริษัท") }}
-                            {% if item_form.company.errors %}
-                            <p class="text-red-500 text-xs mt-1 flex items-center">
-                                <i class="ph ph-warning text-sm mr-1"></i>{{ item_form.company.errors[0] }}
-                            </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="flex justify-center mt-6">
-                <button type="button" class="btn btn-primary btn-md" id="add-item-btn">
-                    <i class="ph ph-plus text-lg mr-2"></i>
-                    เพิ่มรายการสินค้า/บริการ
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">รายการสินค้า</h2>
+                <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    เพิ่มรายการ
                 </button>
             </div>
-        </div>
 
-        <!-- Reason and Date Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-calendar-check text-xl text-purple-600 mr-2"></i>
-                รายละเอียดและระยะเวลา
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Reason Field -->
-                <div class="lg:col-span-2">
-                    <label class="block text-gray-700 font-medium mb-2" for="reason">{{ form.reason.label
-                        }}</label>
-                    <div class="relative">
-                        {{ form.reason(class_="textarea textarea-bordered w-full focus:textarea-primary
-                        resize-none", id="reason", placeholder="โปรดระบุเหตุผลในการขอจัดซื้อ...") }}
-                        <i class="ph ph-note absolute top-3 right-3 text-gray-400 pointer-events-none"></i>
+            <div id="items-container" class="space-y-4">
+                {% for item_form in form.items.entries %}
+                <div class="bg-white p-4 rounded-lg border item-row">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
+                        {% if loop.index > 1 %}
+                        <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+                        {% endif %}
                     </div>
-                    {% if form.reason.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.reason.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-
-                <!-- Start Date Field -->
-                <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="start_date">{{ form.start_date.label.text
-                        }}</label>
-                    <div class="relative">
-                        {{ form.start_date(class_="input input-bordered w-full focus:input-primary", type="date",
-                        id="start_date", style="position: absolute; opacity: 0;") }}
-                        <input type="text" id="start_date_display" placeholder="dd/mm/yyyy"
-                            class="input input-bordered w-full focus:input-primary" readonly
-                            onclick="document.getElementById('start_date').showPicker()">
-                        <i
-                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                    </div>
-                    {% if form.start_date.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.start_date.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Document Upload Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            {{ renderer.file_input(form.tor_document)}}
-        </div>
-
-        <!-- Committee Selection Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-users text-xl text-indigo-600 mr-2"></i>
-                กรรมการที่เกี่ยวข้อง
-            </h2>
-            <div class="flex justify-end mb-3">
-                <button type="button" id="add-committee-btn" class="btn btn-primary btn-sm"><i
-                        class="ph ph-plus mr-1"></i> เพิ่มกรรมการ</button>
-            </div>
-            <div id="committees-list" class="space-y-4">
-                {% for committee_form in form.committees %}
-                <div class="committee-row bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</div>
-                        <button type="button" class="btn btn-error btn-sm remove-committee-btn"><i
-                                class="ph ph-trash mr-1"></i> ลบ</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                {{ committee_form.committee_type.label }}
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.product_name.label.text }}</span>
                             </label>
-                            {{ committee_form.committee_type(class_="input input-bordered w-full") }}
+                            {{ item_form.product_name(class="input input-bordered input-sm w-full") }}
                         </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                {{ committee_form.committee_position.label }}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.quantity.label.text }}</span>
                             </label>
-                            {{ committee_form.committee_position(class_="input input-bordered w-full") }}
+                            {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1")
+                            }}
                         </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">
-                                {{ committee_form.members.label }}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.category.label.text }}</span>
                             </label>
-                            <select name="{{ committee_form.members.name }}"
-                                class="select select-bordered w-full committee-member-select">
-                                <option value="">-- เลือก --</option>
-                                {% for user in form.purchaser.queryset %}
-                                <option value="{{ user.id }}" {% if committee_form.members.data and
-                                    ((committee_form.members.data|string)==(user.id|string) or
-                                    committee_form.members.data==user) %}selected{% endif %}>
-                                    {{ form.label_modifier(user) if form.label_modifier else (user.display_fullname() if
-                                    user.display_fullname is defined else user) }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                            {{ item_form.category(class="select select-bordered select-sm w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.amount.label.text }}</span>
+                            </label>
+                            {{ item_form.amount(class="input input-bordered input-sm w-full", type="number",
+                            step="0.01") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.company.label.text }}</span>
+                            </label>
+                            {{ item_form.company(class="input input-bordered input-sm w-full") }}
                         </div>
                     </div>
                 </div>
@@ -343,343 +132,329 @@
             </div>
         </div>
 
-        <!-- Submit Buttons -->
+        <!-- Committee Section -->
+        <div class="bg-gray-50 rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">คณะกรรมการ</h2>
+                <button type="button" id="add-committee-btn" class="btn btn-primary btn-sm gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    เพิ่มกรรมการ
+                </button>
+            </div>
+
+            <div id="committees-container" class="space-y-4">
+                {% for committee_form in form.committees.entries %}
+                <div class="bg-white p-4 rounded-lg border committee-row">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
+                        {% if loop.index > 1 %}
+                        <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+                        {% endif %}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
+                            </label>
+                            {{ committee_form.member(class="select select-bordered select-sm w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ committee_form.committee_type.label.text }}</span>
+                            </label>
+                            {{ committee_form.committee_type(class="select select-bordered select-sm w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ committee_form.committee_position.label.text
+                                    }}</span>
+                            </label>
+                            {{ committee_form.committee_position(class="select select-bordered select-sm w-full") }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Submit Button -->
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}"
-                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
-                <i class="ph ph-x mr-2"></i>
-                ยกเลิก
-            </a>
-            <button type="submit" id="submit_btn"
-                class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
-                <i class="ph ph-check mr-2"></i>
+            <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}" class="btn btn-ghost">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
                 {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
             </button>
         </div>
     </form>
 </div>
+{% endblock %}
 
-<script>
+{% block additional_js %}
+<script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
-        const startDate = document.getElementById('start_date');
+        let itemIndex = {{ form.items.entries| length |default (1)
+    }};
+    let committeeIndex = {{ form.committees.entries| length |default (1) }};
 
-        // Date formatting functions
-        function formatDateDisplay() {
-            if (startDate.value) {
-                const startDateObj = new Date(startDate.value);
-                const startDisplayElement = document.getElementById('start_date_display');
-                if (startDisplayElement) {
-                    startDisplayElement.value = formatDateToDDMMYYYY(startDateObj);
-                }
-            } else {
-                const startDisplayElement = document.getElementById('start_date_display');
-                if (startDisplayElement) {
-                    startDisplayElement.value = '';
-                }
-            }
-        }
+    // Category choices for new items
+    const categoryChoices = [
+        ['', 'เลือกหมวดหมู่'],
+        {% if form.items and form.items[0] and form.items[0].category.choices %}
+    {% for value, label in form.items[0].category.choices %}
+    ['{{ value }}', '{{ label }}'],
+        {% endfor %}
+    {% endif %}
+        ];
 
-        function formatDateToDDMMYYYY(dateObj) {
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
+    // Committee type choices for new committees
+    const committeeTypeChoices = [
+        ['', 'เลือกประเภท'],
+        {% if form.committees and form.committees[0] and form.committees[0].committee_type.choices %}
+    {% for value, label in form.committees[0].committee_type.choices %}
+    ['{{ value }}', '{{ label }}'],
+        {% endfor %}
+    {% endif %}
+        ];
 
-        // Date change event listener
-        startDate.addEventListener('change', function () {
-            formatDateDisplay();
-        });
+    // Committee position choices for new committees
+    const committeePositionChoices = [
+        ['', 'เลือกตำแหน่ง'],
+        {% if form.committees and form.committees[0] and form.committees[0].committee_position.choices %}
+    {% for value, label in form.committees[0].committee_position.choices %}
+    ['{{ value }}', '{{ label }}'],
+        {% endfor %}
+    {% endif %}
+        ];
 
-        // Initialize date display on page load
-        formatDateDisplay();
+    // Member choices for new committees
+    const memberChoices = [
+        ['-', 'เลือกกรรมการ'],
+        {% if form.committees and form.committees[0] and form.committees[0].member.choices %}
+    {% for value, label in form.committees[0].member.choices %}
+    ['{{ value }}', '{{ label }}'],
+        {% endfor %}
+    {% endif %}
+        ];
 
-        // Phone number: allow only digits, max 10 digits, log if more than 10
-        const phoneInput = document.getElementById('phone');
-        phoneInput.addEventListener('input', function (e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 10) {
-                console.log('ห้ามกรอกเกิน 10 หลัก');
-                value = value.slice(0, 10);
-            }
-            e.target.value = value;
-        });
-
-        // Fund list interactions (search + clickable rows)
-        const fundSearch = document.getElementById('fund_search');
-        const fundList = document.getElementById('fund_list');
-        if (fundList) {
-            const fundLabels = fundList.querySelectorAll('label');
-            fundLabels.forEach(label => {
-                label.addEventListener('click', function (e) {
-                    if (e.target.type === 'radio') return;
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                        radio.dispatchEvent(new Event('change'));
-                    }
-                });
-            });
-        }
-
-        // Purchaser list interactions (search + clickable rows)
-        const purchaserSearch = document.getElementById('purchaser_search');
-        const purchaserList = document.getElementById('purchaser_list');
-        if (purchaserList) {
-            const purchaserLabels = purchaserList.querySelectorAll('label');
-            purchaserLabels.forEach(label => {
-                label.addEventListener('click', function (e) {
-                    if (e.target.type === 'radio') return;
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                        radio.dispatchEvent(new Event('change'));
-                    }
-                });
-            });
-        }
-
-        // Form validation
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function (e) {
-            const phone = phoneInput.value.trim();
-            const fund = document.getElementById('fund').value.trim();
-            const reason = document.getElementById('reason').value.trim();
-            const startDateValue = startDate.value;
-
-            let isValid = true;
-            let errorMessage = '';
-
-            if (!phone) {
-                isValid = false;
-                errorMessage = 'กรุณากรอกหมายเลขโทรศัพท์';
-            } else if (!fund) {
-                isValid = false;
-                errorMessage = 'กรุณากรอกแหล่งงบประมาณ';
-            } else if (!reason) {
-                isValid = false;
-                errorMessage = 'กรุณากรอกเหตุผลในการขอจัดซื้อ';
-            } else if (!startDateValue) {
-                isValid = false;
-                errorMessage = 'กรุณาเลือกวันที่เริ่มต้น';
-            }
-
-            if (!isValid) {
-                e.preventDefault();
-
-                // Show error toast
-                const toast = document.createElement('div');
-                toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
-                toast.innerHTML = `
-                <i class="ph ph-warning-circle"></i>
-                <span>${errorMessage}</span>
-            `;
-                document.body.appendChild(toast);
-
-                // Remove toast after 3 seconds
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 3000);
-            }
-        });
-    });
-
-    // Reindex item-row inputs/selects/labels to items-{index}-... so WTForms receives distinct names
-    function reindexItemRows() {
-        const rows = document.querySelectorAll('.item-row');
-        rows.forEach((row, idx) => {
-            // update inputs/selects/textarea name and id
-            const controls = row.querySelectorAll('input, select, textarea');
-            controls.forEach(c => {
-                if (c.name) c.name = c.name.replace(/items-\d+-/, `items-${idx}-`);
-                if (c.id) c.id = c.id.replace(/items-\d+-/, `items-${idx}-`);
-                // clear cloned values for new rows (but keep originals on first row)
-                if (idx === rows.length - 1 && c.tagName.toLowerCase() !== 'input') {
-                    // noop (keeps behavior conservative)
-                }
-            });
-            // update labels' for attributes
-            const labels = row.querySelectorAll('label');
-            labels.forEach(lbl => {
-                if (lbl.htmlFor) lbl.htmlFor = lbl.htmlFor.replace(/items-\d+-/, `items-${idx}-`);
-            });
-        });
-    }
-
-    // Filter function for funds (matches RESPONSIBLE_BY behaviour)
-    function filterFundList() {
-        const input = document.getElementById('fund_search');
-        if (!input) return;
-        const filter = input.value.toLowerCase();
-        const list = document.getElementById('fund_list');
-        if (!list) return;
-        const labels = list.getElementsByTagName('label');
-        for (let i = 0; i < labels.length; i++) {
-            const text = labels[i].innerText.toLowerCase();
-            labels[i].style.display = text.includes(filter) ? '' : 'none';
-        }
-    }
-
-    // Filter function for purchaser list
-    function filterPurchaserList() {
-        const input = document.getElementById('purchaser_search');
-        if (!input) return;
-        const filter = input.value.toLowerCase();
-        const list = document.getElementById('purchaser_list');
-        if (!list) return;
-        const labels = list.getElementsByTagName('label');
-        for (let i = 0; i < labels.length; i++) {
-            const text = labels[i].innerText.toLowerCase();
-            labels[i].style.display = text.includes(filter) ? '' : 'none';
-        }
-    }
-
-    document.getElementById('add-item-btn').addEventListener('click', function () {
-        const itemsList = document.getElementById('items-list');
-        const itemRows = itemsList.querySelectorAll('.item-row');
-        // Prevent adding more than 4
-        if (itemRows.length >= 4) {
-            var toast = document.createElement('div');
-            toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
-            toast.innerHTML = `<i class="ph ph-warning-circle"></i><span>ไม่สามารถเพิ่มเกิน 4 รายการได้</span>`;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 2500);
+    // Add new item function
+    function addNewItem() {
+        if (itemIndex >= 4) {
+            alert('สามารถเพิ่มสินค้าได้สูงสุด 4 รายการ');
             return;
         }
-        if (itemRows.length === 0) return;
-        // Clone the last item row
-        const lastRow = itemRows[itemRows.length - 1];
-        const newRow = lastRow.cloneNode(true);
-        // Clear all input/select/textarea values in the new row and uncheck radios/checkboxes
-        newRow.querySelectorAll('input, select, textarea').forEach(function (el) {
-            const t = el.type ? el.type.toLowerCase() : el.tagName.toLowerCase();
-            if (t === 'checkbox' || t === 'radio') {
-                el.checked = false;
-            } else if (el.tagName.toLowerCase() === 'select') {
-                el.selectedIndex = 0;
-            } else {
-                el.value = '';
+
+        const itemsContainer = document.getElementById('items-container');
+        const newItemDiv = document.createElement('div');
+        newItemDiv.className = 'bg-white p-4 rounded-lg border item-row';
+
+        let categoryOptionsHtml = '';
+        categoryChoices.forEach(choice => {
+            categoryOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
+        });
+
+        newItemDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-medium text-gray-700">รายการที่ ${itemIndex + 1}</span>
+                    <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">ชื่อสินค้า</span>
+                        </label>
+                        <input type="text" name="items-${itemIndex}-product_name" class="input input-bordered input-sm w-full" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">จำนวน</span>
+                        </label>
+                        <input type="number" name="items-${itemIndex}-quantity" class="input input-bordered input-sm w-full" min="1" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">หมวดหมู่</span>
+                        </label>
+                        <select name="items-${itemIndex}-category" class="select select-bordered select-sm w-full" required>
+                            ${categoryOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">จำนวนเงิน</span>
+                        </label>
+                        <input type="number" name="items-${itemIndex}-amount" class="input input-bordered input-sm w-full" step="0.01" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">บริษัท</span>
+                        </label>
+                        <input type="text" name="items-${itemIndex}-company" class="input input-bordered input-sm w-full" required>
+                    </div>
+                </div>
+            `;
+
+        itemsContainer.appendChild(newItemDiv);
+        itemIndex++;
+        updateAddItemButton();
+    }
+
+    // Update committee member selections to prevent duplicates
+    function updateCommitteeMemberSelections() {
+        const allSelects = document.querySelectorAll('select[name*="committees"][name*="member"]');
+        const selectedValues = [];
+
+        // Collect all selected values
+        allSelects.forEach(select => {
+            if (select.value && select.value !== '-') {
+                selectedValues.push(select.value);
             }
         });
-        // Append and reindex so names/ids are unique for WTForms
-        itemsList.appendChild(newRow);
-        reindexItemRows();
-        updateRemoveButtons();
-    });
 
-    function updateRemoveButtons() {
-        var removeBtns = document.querySelectorAll('.remove-item-btn');
-        removeBtns.forEach(function (btn) {
-            btn.onclick = function () {
-                var row = btn.closest('.item-row');
-                // Prevent removing the last remaining row
-                if (document.querySelectorAll('.item-row').length > 1) {
-                    row.remove();
-                    // reindex names/ids after removal
-                    reindexItemRows();
-                }
-            };
-        });
-    }
-
-    // Initial setup for remove buttons
-    updateRemoveButtons();
-    // Ensure inputs are correctly indexed on page load (useful when server rendered >1)
-    reindexItemRows();
-
-    // Reindex committee-row inputs/selects/labels to committees-{index}-... so WTForms receives distinct names
-    function reindexCommitteeRows() {
-        const rows = document.querySelectorAll('.committee-row');
-        rows.forEach((row, idx) => {
-            const controls = row.querySelectorAll('input, select');
-            controls.forEach(c => {
-                if (c.name) c.name = c.name.replace(/committees-\d+-/, `committees-${idx}-`);
-                if (c.id) c.id = c.id.replace(/committees-\d+-/, `committees-${idx}-`);
-            });
-            const labels = row.querySelectorAll('label');
-            labels.forEach(lbl => {
-                if (lbl.htmlFor) lbl.htmlFor = lbl.htmlFor.replace(/committees-\d+-/, `committees-${idx}-`);
-            });
-        });
-    }
-
-    // Prevent duplicate committee member selection
-    function updateCommitteeMemberSelects() {
-        const selects = document.querySelectorAll('.committee-member-select');
-        // Gather all selected values
-        const selectedValues = Array.from(selects)
-            .map(s => s.value)
-            .filter(v => v !== "");
-        selects.forEach(select => {
-            Array.from(select.options).forEach(opt => {
-                if (opt.value === "" || opt.value === select.value) {
-                    opt.disabled = false;
+        // Update each select to disable already selected options
+        allSelects.forEach(select => {
+            const currentValue = select.value;
+            Array.from(select.options).forEach(option => {
+                if (option.value === '-' || option.value === '') {
+                    option.disabled = false;
+                } else if (option.value === currentValue) {
+                    option.disabled = false;
                 } else {
-                    // Disable if selected in another select
-                    opt.disabled = selectedValues.includes(opt.value);
+                    option.disabled = selectedValues.includes(option.value);
                 }
             });
         });
     }
 
-    // Attach change event to all committee member selects
-    function attachCommitteeMemberSelectEvents() {
-        const selects = document.querySelectorAll('.committee-member-select');
-        selects.forEach(select => {
-            select.addEventListener('change', updateCommitteeMemberSelects);
+    // Add new committee function
+    function addNewCommittee() {
+        const committeesContainer = document.getElementById('committees-container');
+        const newCommitteeDiv = document.createElement('div');
+        newCommitteeDiv.className = 'bg-white p-4 rounded-lg border committee-row';
+
+        let memberOptionsHtml = '';
+        memberChoices.forEach(choice => {
+            memberOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
+        });
+
+        let committeeTypeOptionsHtml = '';
+        committeeTypeChoices.forEach(choice => {
+            committeeTypeOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
+        });
+
+        let committeePositionOptionsHtml = '';
+        committeePositionChoices.forEach(choice => {
+            committeePositionOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
+        });
+
+        newCommitteeDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-medium text-gray-700">กรรมการที่ ${committeeIndex + 1}</span>
+                    <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">กรรมการ</span>
+                        </label>
+                        <select name="committees-${committeeIndex}-member" class="select select-bordered select-sm w-full committee-member-select">
+                            ${memberOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">ประเภทกรรมการ</span>
+                        </label>
+                        <select name="committees-${committeeIndex}-committee_type" class="select select-bordered select-sm w-full">
+                            ${committeeTypeOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">ตำแหน่งกรรมการ</span>
+                        </label>
+                        <select name="committees-${committeeIndex}-committee_position" class="select select-bordered select-sm w-full">
+                            ${committeePositionOptionsHtml}
+                        </select>
+                    </div>
+                </div>
+            `;
+
+        committeesContainer.appendChild(newCommitteeDiv);
+        committeeIndex++;
+
+        // Add event listener to the new select
+        const newSelect = newCommitteeDiv.querySelector('.committee-member-select');
+        newSelect.addEventListener('change', updateCommitteeMemberSelections);
+
+        // Update all selections
+        updateCommitteeMemberSelections();
+    }
+
+    // Update add item button state
+    function updateAddItemButton() {
+        const addItemBtn = document.getElementById('add-item-btn');
+        if (itemIndex >= 4) {
+            addItemBtn.disabled = true;
+            addItemBtn.classList.add('btn-disabled');
+        } else {
+            addItemBtn.disabled = false;
+            addItemBtn.classList.remove('btn-disabled');
+        }
+    }
+
+    // Update item numbers
+    function updateItemNumbers() {
+        const itemRows = document.querySelectorAll('.item-row');
+        itemRows.forEach((row, index) => {
+            const title = row.querySelector('span');
+            if (title) title.textContent = `รายการที่ ${index + 1}`;
         });
     }
 
-    // Call after adding/removing committee rows
-    function refreshCommitteeMemberSelects() {
-        updateCommitteeMemberSelects();
-        attachCommitteeMemberSelectEvents();
+    // Update committee numbers
+    function updateCommitteeNumbers() {
+        const committeeRows = document.querySelectorAll('.committee-row');
+        committeeRows.forEach((row, index) => {
+            const title = row.querySelector('span');
+            if (title) title.textContent = `กรรมการที่ ${index + 1}`;
+        });
     }
 
-    // Manual add/remove for committee rows (clone last row)
-    document.getElementById('add-committee-btn').addEventListener('click', function () {
-        const list = document.getElementById('committees-list');
-        const rows = list.querySelectorAll('.committee-row');
-        if (rows.length === 0) return; // nothing to clone
-        const last = rows[rows.length - 1];
-        const clone = last.cloneNode(true);
-        // clear select values in clone
-        clone.querySelectorAll('select').forEach(el => {
-            if (el.classList.contains('committee-member-select')) {
-                // keep empty selection
-                el.selectedIndex = 0;
-            } else {
-                el.selectedIndex = 0;
-            }
-        });
-        list.appendChild(clone);
-        reindexCommitteeRows();
-        refreshCommitteeMemberSelects();
-        updateCommitteeRemoveButtons();
+    // Event listeners
+    document.getElementById('add-item-btn').addEventListener('click', addNewItem);
+    document.getElementById('add-committee-btn').addEventListener('click', addNewCommittee);
+
+    // Remove item event delegation
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-item-btn')) {
+            e.preventDefault();
+            const itemRow = e.target.closest('.item-row');
+            itemRow.remove();
+            itemIndex--;
+            updateItemNumbers();
+            updateAddItemButton();
+        }
     });
 
-    function updateCommitteeRemoveButtons() {
-        const btns = document.querySelectorAll('.remove-committee-btn');
-        btns.forEach(btn => {
-            btn.onclick = function () {
-                const row = btn.closest('.committee-row');
-                if (document.querySelectorAll('.committee-row').length > 1) {
-                    row.remove();
-                    reindexCommitteeRows();
-                }
-            };
-        });
-    }
+    // Remove committee event delegation
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-committee-btn')) {
+            e.preventDefault();
+            const committeeRow = e.target.closest('.committee-row');
+            committeeRow.remove();
+            committeeIndex--;
+            updateCommitteeNumbers();
+        }
+    });
 
-    // Initial committee setup on page load
-    document.addEventListener('DOMContentLoaded', function () {
-        updateCommitteeRemoveButtons();
-        reindexCommitteeRows();
-        refreshCommitteeMemberSelects();
+    // Initial setup
+    updateAddItemButton();
     });
 </script>
 {% endblock %}
