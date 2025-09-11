@@ -28,7 +28,7 @@ class RequisitionItem(me.EmbeddedDocument):
     product_name = me.StringField(max_length=100, required=True)
     quantity = me.IntField(min_value=1, required=True)
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
-    amount = me.DecimalField(required=True, min_value=0, precision=2)
+    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
     company = me.StringField(max_length=255, required=True)
 
 

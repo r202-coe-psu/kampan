@@ -41,7 +41,13 @@ class RequisitionItemForm(Form):
         choices=CATEGORY_CHOICES,
         validators=[validators.DataRequired()],
     )
-    amount = fields.DecimalField("จำนวนเงิน", [validators.DataRequired()])
+    amount = fields.DecimalField(
+        "จำนวนเงิน",
+        [
+            validators.DataRequired(),
+            validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),
+        ],
+    )
     company = fields.StringField("บริษัท", [validators.DataRequired()])
 
 
