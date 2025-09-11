@@ -78,7 +78,7 @@
             การลบจะซ่อนข้อมูลโดยไม่ลบออกจากระบบอย่างถาวร</small>",
         cancel="ยกเลิก",
         submit="ยืนยันลบ",
-        redirect=url_for('procurement.tor_years.delete', tor_year_id=y.id, organization_id=organization.id)
+        redirect=url_for('admin.tor_years.delete', tor_year_id=y.id, organization_id=organization.id)
         ) }}
         {% else %}
         <tr>

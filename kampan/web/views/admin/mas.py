@@ -64,7 +64,7 @@ def create_or_edit(mas_id=None):
     mas.last_updated_by = current_user._get_current_object()
     mas.save()
 
-    return redirect(url_for("procurement.mas.index", organization=organization))
+    return redirect(url_for("admin.mas.index", organization=organization))
 
 
 @module.route("/<mas_id>/delete", methods=["GET", "POST"])
@@ -76,4 +76,4 @@ def delete(mas_id):
         mas.status = "closed"
         mas.save()
 
-    return redirect(url_for("procurement.mas.index", organization=organization))
+    return redirect(url_for("admin.mas.index", organization=organization))
