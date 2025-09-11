@@ -5,13 +5,15 @@
       <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
     </div>
     {% if organization %}
-    {% if current_user.has_organization_roles("admin") %}
+    {% if 'admin' in current_user.roles %}
     <li>
       <a class="{{ 'menu-active' if '/tor_years' in request.path else '' }}"
-        href="{{ url_for('procurement.tor_years.index', organization_id=organization.id) }}">
+        href="{{ url_for('admin.tor_years.index', organization_id=organization.id) }}">
         <i class="ph ph-calendar"></i> ปีงบประมาณ
       </a>
     </li>
+    {% endif %}
+    {% if 'admin' in current_user.roles or 'staff' in current_user.roles %}
     <li>
       <details {% if '/procurement/products' in request.path or '/procurement/setting_email' in request.path %}open{%
         endif %}>
@@ -52,14 +54,17 @@
               <i class="ph ph-shopping-cart"></i> จัดการครุภัณฑ์
             </a>
           </li>
+          {% if 'admin' in current_user.roles %}
           <li style="padding-top: 0.5rem;">
             <a class="{{ 'menu-active' if '/procurement/setting_email' in request.path else '' }}">
               <i class="ph ph-envelope-simple-open"></i>ตั้งค่าอีเมล
             </a>
           </li>
+          {% endif %}
         </ul>
       </details>
     </li>
+    {% if 'admin' in current_user.roles %}
     <li>
       <details {% if '/tor_years' in request.path or '/mas' in request.path %}open{% endif %}>
         <summary>
@@ -68,13 +73,14 @@
         <ul>
           <li style="padding-top: 0.5rem;">
             <a class="{{ 'menu-active' if '/mas' in request.path else '' }}"
-              href="{{ url_for('procurement.mas.index', organization_id=organization.id) }}">
+              href="{{ url_for('admin.mas.index', organization_id=organization.id) }}">
               <i class="ph ph-money-wavy"></i> แหล่งเงิน
             </a>
           </li>
         </ul>
       </details>
     </li>
+    {% endif %}
     {% endif %}
     <li>
       <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"

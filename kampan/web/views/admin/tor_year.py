@@ -20,6 +20,7 @@ module = Blueprint("tor_years", __name__, url_prefix="/tor_years")
 
 @module.route("/")
 @login_required
+@acl.roles_required("admin")
 def index():
     organization = current_user.user_setting.current_organization
 
@@ -39,6 +40,7 @@ def index():
 
 @module.route("/create", methods=["GET", "POST"], defaults=dict(tor_year_id=None))
 @module.route("/<tor_year_id>/edit", methods=["GET", "POST"])
+@login_required
 @acl.roles_required("admin")
 def create_or_edit(tor_year_id):
     form = forms.procurement.ToRYearForm()
@@ -80,6 +82,7 @@ def create_or_edit(tor_year_id):
 
 
 @module.route("/<tor_year_id>/copy", methods=["GET", "POST"])
+@login_required
 @acl.roles_required("admin")
 def copy_tor_year(tor_year_id):
     organization = current_user.user_setting.current_organization
@@ -156,6 +159,7 @@ def copy_tor_year(tor_year_id):
 
 
 @module.route("/<existing_year_id>/restore", methods=["POST"])
+@login_required
 @acl.roles_required("admin")
 def restore_tor_year(existing_year_id):
     organization = current_user.user_setting.current_organization
@@ -172,6 +176,7 @@ def restore_tor_year(existing_year_id):
 
 
 @module.route("/<tor_year_id>/force_copy", methods=["POST"])
+@login_required
 @acl.roles_required("admin")
 def force_copy_tor_year(tor_year_id):
     organization = current_user.user_setting.current_organization
@@ -233,7 +238,8 @@ def force_copy_tor_year(tor_year_id):
 
 
 @module.route("/<tor_year_id>/delete")
-@acl.organization_roles_required("admin")
+@login_required
+@acl.roles_required("admin")
 def delete(tor_year_id):
     organization = current_user.user_setting.current_organization
     tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
@@ -261,6 +267,7 @@ def delete(tor_year_id):
 
 @module.route("/<tor_year_id>/set_default", methods=["POST"])
 @login_required
+@acl.roles_required("admin")
 def set_default_tor_year(tor_year_id):
     organization = current_user.user_setting.current_organization
     user = current_user._get_current_object()

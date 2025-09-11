@@ -12,7 +12,7 @@
             <div>
                 <h3 class="font-bold text-lg">พบปีงบประมาณที่ถูกลบไว้แล้ว</h3>
                 <div class="text-sm">
-                    พบปีงบประมาณ <span class="font-bold">{{ existing_year.year }}</span> 
+                    พบปีงบประมาณ <span class="font-bold">{{ existing_year.year }}</span>
                     ที่เคยถูกลบไว้แล้วในระบบ
                 </div>
             </div>
@@ -36,7 +36,8 @@
                     </div>
                     <div>
                         <label class="font-medium text-sm text-base-content/70">วันเริ่มต้น:</label>
-                        <p>{{ existing_year.started_date.strftime('%d/%m/%Y') if existing_year.started_date else '-' }}</p>
+                        <p>{{ existing_year.started_date.strftime('%d/%m/%Y') if existing_year.started_date else '-' }}
+                        </p>
                     </div>
                     <div>
                         <label class="font-medium text-sm text-base-content/70">วันสิ้นสุด:</label>
@@ -44,11 +45,13 @@
                     </div>
                     <div>
                         <label class="font-medium text-sm text-base-content/70">สร้างโดย:</label>
-                        <p>{{ existing_year.created_by.get_resources_fullname_th() if existing_year.created_by else '-' }}</p>
+                        <p>{{ existing_year.created_by.get_resources_fullname_th() if existing_year.created_by else '-'
+                            }}</p>
                     </div>
                     <div>
                         <label class="font-medium text-sm text-base-content/70">วันที่สร้าง:</label>
-                        <p>{{ existing_year.created_date.strftime('%d/%m/%Y %H:%M') if existing_year.created_date else '-' }}</p>
+                        <p>{{ existing_year.created_date.strftime('%d/%m/%Y %H:%M') if existing_year.created_date else
+                            '-' }}</p>
                     </div>
                 </div>
             </div>
@@ -76,7 +79,8 @@
                             <p class="text-sm text-base-content/70 mb-4">
                                 เปิดใช้งานปีงบประมาณ {{ existing_year.year }} ที่เคยถูกลบไว้
                             </p>
-                            <form method="post" action="{{ url_for('procurement.tor_years.restore_tor_year', existing_year_id=existing_year.id, organization_id=organization.id) }}">
+                            <form method="post"
+                                action="{{ url_for('admin.tor_years.restore_tor_year', existing_year_id=existing_year.id, organization_id=organization.id) }}">
                                 <button type="submit" class="btn btn-success btn-sm w-full">
                                     <i class="ph ph-check"></i>
                                     กู้คืนข้อมูล
@@ -93,9 +97,11 @@
                             </div>
                             <h3 class="font-bold text-primary">สร้างใหม่ทับข้อมูลเดิม</h3>
                             <p class="text-sm text-base-content/70 mb-4">
-                                อัพเดทข้อมูลปีงบประมาณ {{ existing_year.year }} ด้วยข้อมูลใหม่จากปี {{ source_tor_year.year }}
+                                อัพเดทข้อมูลปีงบประมาณ {{ existing_year.year }} ด้วยข้อมูลใหม่จากปี {{
+                                source_tor_year.year }}
                             </p>
-                            <form method="post" action="{{ url_for('procurement.tor_years.force_copy_tor_year', tor_year_id=source_tor_year.id, organization_id=organization.id) }}">
+                            <form method="post"
+                                action="{{ url_for('admin.tor_years.force_copy_tor_year', tor_year_id=source_tor_year.id, organization_id=organization.id) }}">
                                 <button type="submit" class="btn btn-primary btn-sm w-full">
                                     <i class="ph ph-plus"></i>
                                     สร้างใหม่
@@ -107,8 +113,8 @@
 
                 <!-- Cancel Option -->
                 <div class="flex justify-center mt-6">
-                    <a href="{{ url_for('procurement.tor_years.index', organization_id=organization.id) }}" 
-                       class="btn btn-outline">
+                    <a href="{{ url_for('admin.tor_years.index', organization_id=organization.id) }}"
+                        class="btn btn-outline">
                         <i class="ph ph-x"></i>
                         ยกเลิก
                     </a>

@@ -19,6 +19,7 @@ module = Blueprint("mas", __name__, url_prefix="/mas")
 
 @module.route("/")
 @login_required
+@acl.roles_required("admin")
 def index():
     organization = current_user.user_setting.current_organization
     mas = models.MAS.objects(status="active")

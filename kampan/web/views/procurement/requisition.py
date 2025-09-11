@@ -35,22 +35,8 @@ def generate_next_requisition_code():
     return f"{buddhist_year}-{next_number:04d}"
 
 
-def get_item_count_for_form(request, requisition):
-    if request.method == "POST":
-        return sum(
-            1
-            for key in request.form.keys()
-            if key.startswith("items-") and key.endswith("-product_name")
-        )
-    elif requisition and requisition.items:
-        return len(requisition.items)
-    else:
-        return 1
-
-
 @module.route("", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
 def index():
     organization = current_user.user_setting.current_organization
     tor_year = getattr(current_user.user_setting, "tor_year", None)
@@ -64,9 +50,13 @@ def index():
         query["category"] = category
 
     # Filter only items expiring within 7 days and status pending
-    procurements = models.Procurement.objects(**query, status="pending").order_by(
-        "end_date"
-    )
+    procurements = models.Procurement.objects(**query, status="pending")
+    # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
+    if "admin" not in current_user.roles:
+        procurements = procurements.filter(
+            responsible_by=current_user._get_current_object()
+        )
+    procurements = procurements.order_by("end_date")
 
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=8, type=int)
@@ -84,7 +74,7 @@ def index():
 
 
 @module.route("/<requisition_procurement_id>/non-renewal")
-@acl.organization_roles_required("admin")
+@login_required
 def non_renewal(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=requisition_procurement_id).first()
@@ -104,7 +94,6 @@ def non_renewal(requisition_procurement_id):
 
 @module.route("/non-renewal")
 @login_required
-@acl.organization_roles_required("admin")
 def list_non_renewal():
     organization = current_user.user_setting.current_organization
     category = request.args.get("category", "")
@@ -114,7 +103,12 @@ def list_non_renewal():
     if tor_year:
         query["tor_year"] = tor_year
 
-    procurements = models.Procurement.objects(**query).order_by("-end_date")
+    procurements = models.Procurement.objects(**query)
+    if "admin" not in current_user.roles:
+        procurements = procurements.filter(
+            responsible_by=current_user._get_current_object()
+        )
+    procurements = procurements.order_by("-end_date")
     category_choices = models.procurement.CATEGORY_CHOICES
 
     return render_template(
@@ -127,7 +121,7 @@ def list_non_renewal():
 
 
 @module.route("/<requisition_procurement_id>/renewal-requested")
-@acl.organization_roles_required("admin")
+@login_required
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=requisition_procurement_id).first()
@@ -175,11 +169,15 @@ def renewal_requested(requisition_procurement_id):
 
 @module.route("/renewal_requested")
 @login_required
-@acl.organization_roles_required("admin")
 def list_renewal_requested():
     organization = current_user.user_setting.current_organization
     category = request.args.get("category", "")
-    requisitions = models.Requisition.objects().order_by("requisition_code")
+    requisitions = models.Requisition.objects()
+    if "admin" not in current_user.roles:
+        requisitions = requisitions.filter(
+            created_by=current_user._get_current_object()
+        )
+    requisitions = requisitions.order_by("requisition_code")
 
     return render_template(
         "procurement/requisitions/renewal_requested.html",
@@ -191,7 +189,6 @@ def list_renewal_requested():
 
 @module.route("/<requisition_procurement_id>/document")
 @login_required
-@acl.organization_roles_required("admin")
 def document(requisition_procurement_id):
     requisition = models.Requisition.objects(id=requisition_procurement_id).first()
     if not requisition:
@@ -222,7 +219,6 @@ def document(requisition_procurement_id):
 )
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
 def create_or_edit(requisition_procurement_id):
     form = forms.requisitions.RequisitionForm()
     organization = current_user.user_setting.current_organization
@@ -322,6 +318,7 @@ def create_or_edit(requisition_procurement_id):
 
 
 @module.route("/<requisition_procurement_id>/download/<filename>")
+@login_required
 def download(requisition_procurement_id, filename):
     document = models.Requisition.objects(id=requisition_procurement_id).first()
 

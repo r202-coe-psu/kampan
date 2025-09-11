@@ -42,7 +42,7 @@ def calculate_months_days(start_date, end_date):
 
 
 @module.route("", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required("admin", "staff")
 def index():
     organization = current_user.user_setting.current_organization
     today = datetime.date.today()
@@ -62,7 +62,11 @@ def index():
         query["payment_status"] = payment_status
 
     procurement_qs = models.Procurement.objects(**query)
-
+    # ถ้า user เป็น staff (แต่ไม่ใช่ admin) ให้ filter เฉพาะที่ responsible_by เป็น user
+    if "staff" in current_user.roles and "admin" not in current_user.roles:
+        procurement_qs = procurement_qs.filter(
+            responsible_by=current_user._get_current_object()
+        )
     # enrich: คำนวณเดือนและวันลงในแต่ละ procurement (เฉพาะหน้า)
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
