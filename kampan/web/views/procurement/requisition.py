@@ -52,11 +52,15 @@ def index():
     # Filter only items expiring within 7 days and status pending
     procurements = models.Procurement.objects(**query, status="pending")
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    if "admin" not in current_user.roles:
-        procurements = procurements.filter(
-            responsible_by=current_user._get_current_object()
-        )
-    procurements = procurements.order_by("end_date")
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object()
+    ).first()
+    if (
+        org_user_role
+        and "staff" in current_user.roles
+        and "admin" not in current_user.roles
+    ):
+        procurements = procurements.filter(responsible_by=org_user_role)
 
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=8, type=int)
@@ -104,10 +108,15 @@ def list_non_renewal():
         query["tor_year"] = tor_year
 
     procurements = models.Procurement.objects(**query)
-    if "admin" not in current_user.roles:
-        procurements = procurements.filter(
-            responsible_by=current_user._get_current_object()
-        )
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object()
+    ).first()
+    if (
+        org_user_role
+        and "staff" in current_user.roles
+        and "admin" not in current_user.roles
+    ):
+        procurements = procurements.filter(responsible_by=org_user_role)
     procurements = procurements.order_by("-end_date")
     category_choices = models.procurement.CATEGORY_CHOICES
 

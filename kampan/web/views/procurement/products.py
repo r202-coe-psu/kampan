@@ -42,7 +42,6 @@ def calculate_months_days(start_date, end_date):
 
 
 @module.route("", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "staff")
 def index():
     organization = current_user.user_setting.current_organization
     today = datetime.date.today()
@@ -63,10 +62,15 @@ def index():
 
     procurement_qs = models.Procurement.objects(**query)
     # ถ้า user เป็น staff (แต่ไม่ใช่ admin) ให้ filter เฉพาะที่ responsible_by เป็น user
-    if "staff" in current_user.roles and "admin" not in current_user.roles:
-        procurement_qs = procurement_qs.filter(
-            responsible_by=current_user._get_current_object()
-        )
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object()
+    ).first()
+    if (
+        org_user_role
+        and "staff" in current_user.roles
+        and "admin" not in current_user.roles
+    ):
+        procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
     # enrich: คำนวณเดือนและวันลงในแต่ละ procurement (เฉพาะหน้า)
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
@@ -149,7 +153,6 @@ def create():
 
 @module.route("/<procurement_id>/set_paid", methods=["POST"])
 @login_required
-@acl.organization_roles_required("admin")
 def set_paid(procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=procurement_id).first()
@@ -303,7 +306,6 @@ def image(procurement_id, filename):
 
 @module.route("/<procurement_id>/edit_image", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
 def edit_image(procurement_id):
     procurement = models.Procurement.objects(id=procurement_id).first()
     if not procurement:
