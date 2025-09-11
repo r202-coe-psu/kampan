@@ -231,17 +231,62 @@
             <p style="font-size: 15px; margin-top: -1rem">(วงเงินไม่เกิน 100,000.- บาท กรรมการตรวจรับ 1 คน)</p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 39.8rem; white-space: nowrap;">
+                        {%- set chairman = inspection_committees | selectattr('committee_position', 'equalto',
+                        'chairman') | list -%}
+                        {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                        {%- set fullname = chairman[0].member.display_fullname() -%}
+                        {%- elif chairman and chairman[0].member -%}
+                        {%- set fullname = chairman[0].member|string -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>ประธานกรรมการ</span>
             </div>
             <div>
                 <span>2</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 41.6rem; white-space: nowrap;">
+                        {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 0 -%}
+                        {%- set member = members[0].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
             <div>
                 <span>3</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 43.5rem; white-space: nowrap;">
+                        {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 1 -%}
+                        {%- set member = members[1].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
         </div>
@@ -249,17 +294,62 @@
             <p><b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top: 39.8rem; white-space: nowrap;">
+                        {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
+                        'chairman') | list -%}
+                        {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                        {%- set fullname = chairman[0].member.display_fullname() -%}
+                        {%- elif chairman and chairman[0].member -%}
+                        {%- set fullname = chairman[0].member|string -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>ประธานกรรมการ</span>
             </div>
             <div>
                 <span>2</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top: 41.6rem; white-space: nowrap;">
+                        {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 0 -%}
+                        {%- set member = members[0].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
             <div>
                 <span>3</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top: 43.7rem; white-space: nowrap;">
+                        {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 1 -%}
+                        {%- set member = members[1].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
         </div>
@@ -269,17 +359,62 @@
             <p><b>คณะกรรมการจัดซื้อ</b><span> (วงเงินมากกว่า 500,000.- บาท)</span></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 48.2rem; white-space: nowrap;">
+                        {%- set chairman = procurement_committees | selectattr('committee_position', 'equalto',
+                        'chairman') | list -%}
+                        {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                        {%- set fullname = chairman[0].member.display_fullname() -%}
+                        {%- elif chairman and chairman[0].member -%}
+                        {%- set fullname = chairman[0].member|string -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>ประธานกรรมการ</span>
             </div>
             <div>
                 <span>2</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 50rem; white-space: nowrap;">
+                        {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 0 -%}
+                        {%- set member = members[0].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
             <div>
                 <span>3</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 2rem; top: 51.8rem; white-space: nowrap;">
+                        {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 1 -%}
+                        {%- set member = members[1].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
         </div>

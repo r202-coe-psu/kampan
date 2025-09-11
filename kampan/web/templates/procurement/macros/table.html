@@ -893,11 +893,12 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
-                                <a href="{{ url_for('procurement.requisitions.document', requisition_procurement_id=item.id) }}"
-                                    class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                                    target="_blank">
+                                {% set document_url = url_for('procurement.requisitions.document',
+                                requisition_procurement_id=item.id) %}
+                                <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                                    onclick="printDocument('{{ document_url }}')">
                                     <i class="ph ph-file-arrow-down"></i> ดูเอกสาร
-                                </a>
+                                </button>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
@@ -944,4 +945,20 @@
         </div>
         {% endif %}
     </div>
+    <script>
+        function printDocument(url) {
+            // สร้าง iframe แบบ dynamic
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+            iframe.onload = function () {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                setTimeout(function () {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            };
+        }
+    </script>
     {% endmacro %}

@@ -197,9 +197,22 @@ def document(requisition_procurement_id):
     if not requisition:
         abort(404)
 
+    # แยก committee ตาม type
+    committees_by_type = {
+        "specification": [],
+        "procurement": [],
+        "inspection": [],
+    }
+    for committee in requisition.committees:
+        if committee.committee_type in committees_by_type:
+            committees_by_type[committee.committee_type].append(committee)
+
     return render_template(
         "procurement/requisitions/document.html",
         requisitions=requisition,
+        specification_committees=committees_by_type["specification"],
+        procurement_committees=committees_by_type["procurement"],
+        inspection_committees=committees_by_type["inspection"],
         datetime=datetime,
     )
 
