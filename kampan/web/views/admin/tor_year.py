@@ -52,7 +52,7 @@ def create_or_edit(tor_year_id):
         tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
         if not tor_year:
             return redirect(
-                url_for("procurement.tor_years.index", organization_id=organization.id)
+                url_for("admin.tor_years.index", organization_id=organization.id)
             )
         form = forms.procurement.ToRYearForm(obj=tor_year)
     else:
@@ -76,9 +76,7 @@ def create_or_edit(tor_year_id):
     tor_year.last_updated_by = current_user._get_current_object()
     tor_year.save()
 
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("admin.tor_years.index", organization_id=organization.id))
 
 
 @module.route("/<tor_year_id>/copy", methods=["GET", "POST"])
@@ -90,7 +88,7 @@ def copy_tor_year(tor_year_id):
     tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
     if not tor_year:
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     # สร้างฟอร์มใหม่
@@ -147,7 +145,7 @@ def copy_tor_year(tor_year_id):
         new_tor_year.last_updated_by = current_user._get_current_object()
         new_tor_year.save()
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     return render_template(
@@ -170,9 +168,7 @@ def restore_tor_year(existing_year_id):
         existing_year.status = "active"
         existing_year.last_updated_by = current_user._get_current_object()
         existing_year.save()
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("admin.tor_years.index", organization_id=organization.id))
 
 
 @module.route("/<tor_year_id>/force_copy", methods=["POST"])
@@ -184,7 +180,7 @@ def force_copy_tor_year(tor_year_id):
     tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
     if not tor_year:
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     # กำหนดค่า default: ปี+1, วันเดือนเดิมแต่ปี+1
@@ -232,9 +228,7 @@ def force_copy_tor_year(tor_year_id):
         new_tor_year.last_updated_by = current_user._get_current_object()
         new_tor_year.save()
 
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("admin.tor_years.index", organization_id=organization.id))
 
 
 @module.route("/<tor_year_id>/delete")
@@ -245,7 +239,7 @@ def delete(tor_year_id):
     tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
     if not tor_year:
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     if (
@@ -254,15 +248,13 @@ def delete(tor_year_id):
         and current_user.user_setting.tor_year.id == tor_year.id
     ):
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     tor_year.status = "disactive"
     tor_year.last_updated_by = current_user._get_current_object()
     tor_year.save()
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("admin.tor_years.index", organization_id=organization.id))
 
 
 @module.route("/<tor_year_id>/set_default", methods=["POST"])
@@ -274,7 +266,7 @@ def set_default_tor_year(tor_year_id):
     tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
     if not tor_year:
         return redirect(
-            url_for("procurement.tor_years.index", organization_id=organization.id)
+            url_for("admin.tor_years.index", organization_id=organization.id)
         )
 
     if not user.user_setting:
@@ -287,6 +279,4 @@ def set_default_tor_year(tor_year_id):
     else:
         user.user_setting.tor_year = tor_year
     user.save()
-    return redirect(
-        url_for("procurement.tor_years.index", organization_id=organization.id)
-    )
+    return redirect(url_for("admin.tor_years.index", organization_id=organization.id))
