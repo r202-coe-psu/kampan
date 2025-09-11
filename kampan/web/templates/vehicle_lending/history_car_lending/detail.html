@@ -1,0 +1,36 @@
+{% set modal_header = "รายละเอียด" %}
+
+<dialog class="modal modal-open" id="{{ modal_id }}">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">{{ modal_header }}</h3>
+    <form method="post">
+      <div>
+        <span class="font-semibold">ผู้ขอใช้:</span>
+        <span>{{ car_application.creator.get_name() }}</span>
+      </div>
+      <div>
+        <span class="font-semibold">ลักษณะงาน:</span>
+        <span>{{ car_application.request_reason }}</span>
+      </div>
+      <div>
+        <span class="font-semibold">สถานที่ไป:</span>
+        <span>{{ car_application.location }}</span>
+      </div>
+      <div>
+        <span class="font-semibold">รถยนต์:</span>
+        <span>{{ car_application.car.license_plate }}</span>
+      </div>
+      <div>
+        <span class="font-semibold">ออกเดินทางเวลา:</span>
+        <span>{{ car_application.departure_datetime|format_thai_datetime_short_month }}</span>
+      </div>
+      <div class="modal-action justify-end">
+        <button type="button" class="btn"
+          onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+          ปิด
+        </button>
+
+      </div>
+    </form>
+  </div>
+</dialog>

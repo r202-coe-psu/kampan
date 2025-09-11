@@ -1,0 +1,23 @@
+{% set modal_header = "ส่งออกข้อมูลใบขอใช้รถ" %}
+{% import '/base/html-renderer.html' as renderer %}
+
+<dialog class="modal modal-open" id="{{ modal_id }}">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">{{ modal_header }}</h3>
+    <form method="post"
+      action="{{ url_for('vehicle_lending.history_car_lending.export_car_applications', organization_id=organization.id) }}">
+      {{ form.hidden_tag() }}
+      <p>กำหนดช่วงวันที่จากวันที่ออกเดินทาง</p>
+      {{ renderer.date_field_js(form.start_date) }}
+      {{ renderer.date_field_js(form.end_date) }}
+
+      <div class="modal-action justify-end">
+        <button type="button" class="btn"
+          onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+          ปิด
+        </button>
+        <button type="submit" class="btn btn-primary">ดาวน์โหลด</button>
+      </div>
+    </form>
+  </div>
+</dialog>

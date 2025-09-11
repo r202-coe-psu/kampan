@@ -12,6 +12,7 @@ ORGANIZATION_ROLES = [
     ("head", "หัวหน้าฝ่าย"),
     ("supervisor supplier", "หัวหน้าฝ่ายบริหารจัดการ"),
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
+    ("driver", "พนักงานขับรถ"),
 ]
 
 ORGANIZATION_USER_ROLE_STATUS = [

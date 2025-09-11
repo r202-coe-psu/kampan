@@ -61,6 +61,7 @@ def register_blueprint(app):
     app.add_template_filter(template_filters.static_url)
     app.add_template_filter(template_filters.format_date)
     app.add_template_filter(template_filters.format_number)
+    app.add_template_filter(template_filters.format_thai_datetime_short_month)
     app.add_template_filter(add_date_url)
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)

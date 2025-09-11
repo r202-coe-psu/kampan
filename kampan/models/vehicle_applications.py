@@ -85,6 +85,7 @@ class CarApplication(VehicleApplication, me.Document):
     division = me.ReferenceField("Division", dbref=True)
 
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
+    last_mileage = me.IntField(min_value=0, default=0)
 
     def get_status(self):
         key_color = {

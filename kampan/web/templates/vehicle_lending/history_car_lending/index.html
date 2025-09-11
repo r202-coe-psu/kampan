@@ -1,0 +1,85 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}ประวัติการใช้รถยนต์{% endblock %}
+
+{% block dashboard_title %}ประวัติการใช้รถยนต์{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div id="edit-modal"></div>
+<div class="flex justify-end w-full gap-2">
+  <a class="btn btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+    hx-get="{{ url_for('vehicle_lending.history_car_lending.export_car_applications', organization_id=organization.id) }}">
+    <i class="ph ph-file"></i>
+    ส่งออกข้อมูลใบขอใช้รถ
+  </a>
+</div>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style"></th>
+          <th class="table-style">วันที่ออกเดินทาง</th>
+          <th class="table-style">ผู้ขอใช้</th>
+          <th class="table-style">ลักษณะงาน</th>
+          <th class="table-style">สถานที่ไป</th>
+          <th class="table-style">กลับถึงเวลา</th>
+          <th class="table-style">เลขไมล์</th>
+          <th class="table-style">จัดการ</th>
+        </tr>
+
+      </thead>
+      <tbody>
+        {% for car_application in paginated_car_applications.items %}
+        <tr>
+          <td class="table-style">
+            {{ paginated_car_applications.total - ((paginated_car_applications.page -1) * paginated_car_applications.per_page) - loop.index0 }}
+          </td>
+          <td class="table-style">
+            {{ car_application.departure_datetime|format_thai_datetime_short_month }}
+          </td>
+          <td class="table-style">
+            {{ car_application.creator.get_name() }}
+          </td>
+          <td class="table-style text-wrap" style="max-width: 200px;">
+            {{ car_application.request_reason }}
+          </td>
+          <td class="table-style">
+            {{ car_application.location }}
+          </td>
+          <td class="table-style">
+            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else "" }}
+          </td>
+          <td class="table-style">
+            {{ car_application.last_mileage }}
+          </td>
+          <td class="table-style gap-2">
+            <div class="flex flex-wrap flex-row gap-2">
+              <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+                hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
+                รายละเอียด
+              </button>
+              <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+                hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
+                แก้ไข
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_car_applications.pages != 1 %}
+    {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.history_car_lending.index", request.args)}}
+    {% endif %}
+    {% if not paginated_car_applications.total %}
+    <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

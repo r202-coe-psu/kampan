@@ -81,6 +81,36 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
 
 
+class ReturnCarApplicationForm(FlaskForm):
+    last_mileage = fields.IntegerField(
+        "เลขไมล์สุดท้าย",
+        validators=[validators.InputRequired()],
+        widget=widgets.NumberInput(),
+    )
+    return_date = fields.DateField(
+        "วันกลับ",
+        validators=[validators.InputRequired()],
+    )
+    return_time = fields.TimeField(
+        "เวลากลับ",
+        # format="%I:%M %p",
+        validators=[validators.InputRequired()],
+    )
+
+
+class DateRangeForm(FlaskForm):
+    start_date = fields.DateField(
+        "จากวันที่",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "เลือกวันที่"},
+    )
+    end_date = fields.DateField(
+        "ถึงวันที่",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "เลือกวันที่"},
+    )
+
+
 BaseMotorcycleApplicationForm = model_form(
     models.vehicle_applications.MotorcycleApplication,
     FlaskForm,

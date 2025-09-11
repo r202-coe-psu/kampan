@@ -13,6 +13,14 @@
     </li>
     {% endif %}
     {% if organization %}
+    {% if current_user.has_organization_roles("admin", "driver") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/history_car_lending' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id ) }}">
+        <i class="ph ph-clock"></i> ประวัติการใช้รถยนต์
+      </a>
+    </li>
+    {% endif %}
     {% if current_user.get_current_division() %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_applications' in request.path and '/vehicle_lending/car_applications/calendar' not in request.path else '' }}"
