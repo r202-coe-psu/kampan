@@ -56,8 +56,8 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("accounts.index"))
 
-    if "next" in request.args:
-        session["next"] = request.args.get("next", None)
+    # if "next" in request.args:
+    #     session["next"] = request.args.get("next", None)
 
     return render_template("/accounts/login.html")
 

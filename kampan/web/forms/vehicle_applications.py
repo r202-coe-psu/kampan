@@ -83,7 +83,7 @@ class CarApplicationForm(BaseCarApplicationForm):
 
 class ReturnCarApplicationForm(FlaskForm):
     last_mileage = fields.IntegerField(
-        "เลขไมล์สุดท้าย",
+        "เลขไมล์หลังกลับ",
         validators=[validators.InputRequired()],
         widget=widgets.NumberInput(),
     )

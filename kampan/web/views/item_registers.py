@@ -10,7 +10,7 @@ module = Blueprint("item_registers", __name__, url_prefix="/item_registers")
 
 
 @module.route("/", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "endorser")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -62,7 +62,7 @@ def index():
     "/register",
     methods=["GET", "POST"],
 )
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "endorser")
 def register():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -112,7 +112,7 @@ def register():
 
 
 @module.route("/<item_register_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "endorser")
 def edit(item_register_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -162,7 +162,7 @@ def edit(item_register_id):
 
 
 @module.route("/<item_register_id>/confirm_item_register")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "endorser")
 def confirm_item_register(item_register_id):
     organization_id = request.args.get("organization_id")
     item_register = models.RegistrationItem.objects().get(id=item_register_id)
@@ -185,7 +185,7 @@ def confirm_item_register(item_register_id):
 
 
 @module.route("/<item_register_id>/delete_item_registers")
-@acl.organization_roles_required("admin", "endorser", "staff")
+@acl.organization_roles_required("admin", "endorser")
 def delete(item_register_id):
     organization_id = request.args.get("organization_id")
 

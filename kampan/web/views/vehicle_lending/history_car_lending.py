@@ -142,7 +142,7 @@ def export_car_applications():
 
         car_applications = models.vehicle_applications.CarApplication.objects(
             query
-        ).order_by("-departure_datetime")
+        ).order_by("departure_datetime")
 
     # แปลงเป็น list ของ dict
     data = []
@@ -161,7 +161,8 @@ def export_car_applications():
                     if car_application.return_datetime
                     else ""
                 ),
-                "เลขไมล์": car_application.last_mileage,
+                "เลขไมล์ก่อนเดินทาง": car_application.get_mile_before(),
+                "เลขไมล์หลังเดินทาง": car_application.last_mileage,
             }
         )
 

@@ -87,6 +87,21 @@ class CarApplication(VehicleApplication, me.Document):
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
     last_mileage = me.IntField(min_value=0, default=0)
 
+    def get_mile_before(self):
+        last_car_application = (
+            CarApplication.objects(
+                status="active",
+                departure_datetime__lt=self.departure_datetime,
+                car=self.car,
+            )
+            .order_by("-departure_datetime")
+            .first()
+        )
+        if not last_car_application:
+            return 0
+        last_mileage = last_car_application.last_mileage
+        return last_mileage
+
     def get_status(self):
         key_color = {
             "denied by header": "text-error",

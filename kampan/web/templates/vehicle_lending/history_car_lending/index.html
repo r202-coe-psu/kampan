@@ -20,7 +20,7 @@
 </div>
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   <div class="overflow-x-auto mt-2 rounded-xl">
-    <table class="table-auto w-full">
+    <table class="table-auto w-full max-lg:hidden">
       <thead>
         <tr>
           <th class="table-style"></th>
@@ -29,7 +29,8 @@
           <th class="table-style">ลักษณะงาน</th>
           <th class="table-style">สถานที่ไป</th>
           <th class="table-style">กลับถึงเวลา</th>
-          <th class="table-style">เลขไมล์</th>
+          <th class="table-style">เลขไมล์ก่อนเดินทางออกเดินทาง</th>
+          <th class="table-style">เลขไมล์หลังเดินทางกลับ</th>
           <th class="table-style">จัดการ</th>
         </tr>
 
@@ -56,6 +57,9 @@
             {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else "" }}
           </td>
           <td class="table-style">
+            {{ car_application.get_mile_before() }}
+          </td>
+          <td class="table-style">
             {{ car_application.last_mileage }}
           </td>
           <td class="table-style gap-2">
@@ -74,6 +78,41 @@
         {% endfor %}
       </tbody>
     </table>
+
+    <!-- Mobile Cards -->
+    <div class="space-y-4 lg:hidden">
+      {% for car_application in paginated_car_applications.items %}
+      <div class="border rounded-xl p-4 shadow bg-white">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-bold text-black">#{{ paginated_car_applications.total -
+            ((paginated_car_applications.page
+            -1) * paginated_car_applications.per_page) - loop.index0 }}</span>
+          <span
+            class="text-sm font-medium text-gray-700">{{ car_application.departure_datetime|format_thai_datetime_short_month }}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div><span class="font-semibold">ผู้ขอใช้:</span> {{ car_application.creator.get_name() }}</div>
+          <div><span class="font-semibold">ลักษณะงาน:</span> {{ car_application.request_reason }}</div>
+          <div><span class="font-semibold">สถานที่ไป:</span> {{ car_application.location }}</div>
+          <div><span class="font-semibold">กลับถึงเวลา:</span>
+            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else "-" }}
+          </div>
+          <div><span class="font-semibold">เลขไมล์ก่อนเดินทาง:</span> {{ car_application.get_mile_before() }}</div>
+          <div><span class="font-semibold">เลขไมล์หลังเดินทาง:</span> {{ car_application.last_mileage }}</div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3 justify-end">
+          <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+            hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
+            รายละเอียด
+          </button>
+          <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+            hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
+            แก้ไข
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
     {% if paginated_car_applications.pages != 1 %}
     {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.history_car_lending.index", request.args)}}
     {% endif %}
