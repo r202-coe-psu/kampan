@@ -186,7 +186,7 @@ def list_renewal_requested():
         requisitions = requisitions.filter(
             created_by=current_user._get_current_object()
         )
-    requisitions = requisitions.order_by("requisition_code")
+    requisitions = requisitions.order_by("-requisition_code")
 
     return render_template(
         "procurement/requisitions/renewal_requested.html",
