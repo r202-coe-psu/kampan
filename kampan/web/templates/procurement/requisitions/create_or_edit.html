@@ -102,16 +102,16 @@
                         </div>
                         <div class="form-control">
                             <label class="label">
+                                <span class="label-text text-xs">{{ item_form.category.label.text }}</span>
+                            </label>
+                            {{ item_form.category(class="select select-bordered select-sm w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
                                 <span class="label-text text-xs">{{ item_form.quantity.label.text }}</span>
                             </label>
                             {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1")
                             }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.category.label.text }}</span>
-                            </label>
-                            {{ item_form.category(class="select select-bordered select-sm w-full") }}
                         </div>
                         <div class="form-control">
                             <label class="label">
@@ -122,9 +122,9 @@
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.company.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.currency.label.text }}</span>
                             </label>
-                            {{ item_form.company(class="input input-bordered input-sm w-full") }}
+                            {{ item_form.currency(class="input input-bordered input-sm w-full") }}
                         </div>
                     </div>
                 </div>
@@ -266,7 +266,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">ชื่อสินค้า</span>
+                            <span class="label-text text-xs">ชื่อรายการ</span>
                         </label>
                         <input type="text" name="items-${itemIndex}-product_name" class="input input-bordered input-sm w-full" required>
                     </div>
@@ -292,9 +292,9 @@
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">บริษัท</span>
+                            <span class="label-text text-xs">หน่วยเงิน</span>
                         </label>
-                        <input type="text" name="items-${itemIndex}-company" class="input input-bordered input-sm w-full" required>
+                        <input type="text" name="items-${itemIndex}-currency" class="input input-bordered input-sm w-full" required>
                     </div>
                 </div>
             `;

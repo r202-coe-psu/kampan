@@ -844,7 +844,7 @@
                     <thead class="bg-gradient-to-r">
                         <tr>
                             <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนรายการ</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">ชื่อรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
                             </th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
@@ -916,7 +916,7 @@
                                                 <th class="text-center text-xs font-semibold py-2">ชื่อรายการ</th>
                                                 <th class="text-center text-xs font-semibold py-2">ประเภท</th>
                                                 <th class="text-center text-xs font-semibold py-2">จำนวน</th>
-                                                <th class="text-center text-xs font-semibold py-2">บริษัท</th>
+                                                <th class="text-center text-xs font-semibold py-2">หน่วยเงิน</th>
                                                 <th class="text-center text-xs font-semibold py-2">จำนวนเงิน</th>
                                             </tr>
                                         </thead>
@@ -928,7 +928,7 @@
                                                 <td class="text-sm px-2 py-1 text-center">{{
                                                     subitem.get_category_display() }}</td>
                                                 <td class="text-sm px-2 py-1 text-center">{{ subitem.quantity }}</td>
-                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.company }}</td>
+                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.currency }}</td>
                                                 <td class="text-sm px-2 py-1 text-right">฿{{
                                                     "{:,.2f}".format(subitem.amount) }}</td>
                                             </tr>

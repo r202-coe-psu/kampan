@@ -32,7 +32,7 @@ BaseRequisitionForm = model_form(
 
 
 class RequisitionItemForm(Form):
-    product_name = fields.StringField("ชื่อสินค้า", [validators.DataRequired()])
+    product_name = fields.StringField("ชื่อรายการ", [validators.DataRequired()])
     quantity = fields.IntegerField(
         "จำนวน", [validators.DataRequired(), validators.NumberRange(min=1)]
     )
@@ -48,7 +48,7 @@ class RequisitionItemForm(Form):
             validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),
         ],
     )
-    company = fields.StringField("บริษัท", [validators.DataRequired()])
+    currency = fields.StringField("หน่วยเงิน")
 
 
 class CommitteeForm(Form):

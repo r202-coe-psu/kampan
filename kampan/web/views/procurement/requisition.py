@@ -155,7 +155,7 @@ def renewal_requested(requisition_procurement_id):
                 product_name=procurement.name,
                 category=procurement.category,
                 amount=procurement.amount,
-                company=procurement.company,
+                currency=None,
                 quantity=1,
             )
         ],
@@ -270,7 +270,7 @@ def create_or_edit(requisition_procurement_id):
             quantity=item_form.quantity.data,
             category=item_form.category.data,
             amount=item_form.amount.data,
-            company=item_form.company.data,
+            currency=item_form.currency.data,
         )
         for item_form in form.items
     ]
