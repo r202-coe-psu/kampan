@@ -249,7 +249,12 @@ def create_or_edit(requisition_procurement_id):
     for committee_form in form.committees:
         committee_form.member.choices.extend(member_choices)
 
-    form.purchaser.choices = member_choices
+    filtered_member_user = [
+        (str(member.id), member.display_fullname())
+        for member in members
+        if str(getattr(member.user, "id", "")) == str(current_user.id)
+    ]
+    form.purchaser.choices = filtered_member_user
 
     if not form.validate_on_submit():
         return render_template(

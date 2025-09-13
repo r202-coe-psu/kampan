@@ -40,7 +40,6 @@
 
 
 {% block content %}
-{% set now = now or datetime.datetime.now() %}
 
 <body>
     <div class="content">
@@ -75,20 +74,20 @@
             <span style="margin: 2; display: inline-block; position: relative;">
                 วันที่ ........
                 <span style="position: absolute; right: 0.7rem;">
-                    {{ now.day }}
+                    {{ requisitions.created_date.day }}
                 </span>
             </span>
             <span style="margin: 2; display: inline-block; position: relative;">
                 เดือน .........................
                 <span style="position: absolute; right: 2rem; top: -0.2rem;">
                     {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
-                    "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][now.month-1] }}
+                    "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.created_date.month-1] }}
                 </span>
             </span>
             <span style="margin: 2; display: inline-block; position: relative;">
                 พ.ศ. ...............
                 <span style="position: absolute; right: 1.5rem;">
-                    {{ now.year + 543 }}
+                    {{ requisitions.created_date.year + 543 }}
                 </span>
             </span>
         </div>
