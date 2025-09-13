@@ -289,13 +289,14 @@ def create_or_edit(requisition_procurement_id):
             )
             requisition.committees.append(committee)
 
+    tor_file = form.tor_document.data
     # Populate other fields
     del form.committees
     del form.items
+    del form.tor_document
     form.populate_obj(requisition)
 
     # Handle ToR file
-    tor_file = form.tor_document.data
     if tor_file:
         tor_file.seek(0)
         if requisition.tor_document:
