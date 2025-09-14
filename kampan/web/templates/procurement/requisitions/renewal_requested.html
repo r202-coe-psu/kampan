@@ -3,13 +3,13 @@
 {% import '/procurement/macros/table.html' as table_macros %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 
-{% block title %}รายการที่ขอต่ออายุแล้ว{% endblock %}
-{% block dashboard_title %}รายการครุภัณฑ์ที่ขอต่ออายุแล้ว{% endblock %}
+{% block title %}รายการขอซื้อขอจ้าง{% endblock %}
+{% block dashboard_title %}รายการขอซื้อขอจ้าง{% endblock %}
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
 ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisitions.index', organization_id=organization.id)),
-("รายการที่ขอต่ออายุแล้ว", None)
+("รายการขอซื้อขอจ้าง", None)
 ]) }}
 {% endblock %}
 

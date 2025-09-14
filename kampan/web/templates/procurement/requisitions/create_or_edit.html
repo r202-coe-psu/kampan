@@ -69,17 +69,21 @@
                 </label>
                 {{ form.tor_document(class="file-input file-input-bordered w-full") }}
             </div>
+
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text font-medium">{{ form.qt_document.label.text }}</span>
+                </label>
+                {{ form.qt_document(class="file-input file-input-bordered w-full") }}
+            </div>
         </div>
 
         <!-- Items Section -->
         <div class="bg-gray-50 rounded-lg p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">รายการสินค้า</h2>
+                <h2 class="text-lg font-semibold text-gray-800">รายการขอซื้อ</h2>
                 <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <i class="ph ph-plus"></i>
                     เพิ่มรายการ
                 </button>
             </div>
@@ -137,10 +141,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-semibold text-gray-800">คณะกรรมการ</h2>
                 <button type="button" id="add-committee-btn" class="btn btn-primary btn-sm gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <i class="ph ph-plus"></i>
                     เพิ่มกรรมการ
                 </button>
             </div>
@@ -184,10 +185,7 @@
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}" class="btn btn-ghost">ยกเลิก</a>
             <button type="submit" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
+                <i class="ph ph-check"></i>
                 {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
             </button>
         </div>
@@ -198,6 +196,9 @@
 {% block additional_js %}
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
+        if ("{{ form.type.data }}" === "MA") {
+            document.getElementById('add-item-btn').style.display = 'none';
+        }
         let itemIndex = {{ form.items.entries| length |default (1)
     }};
     let committeeIndex = {{ form.committees.entries| length |default (1) }};

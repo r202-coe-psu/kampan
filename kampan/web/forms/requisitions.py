@@ -20,6 +20,7 @@ BaseRequisitionForm = model_form(
         "last_updated_by",
         "items",
         "committees",
+        "type",
     ],
     field_args={
         "phone": {"label": "เบอร์โทรศัพท์"},
@@ -60,8 +61,9 @@ class CommitteeForm(Form):
 
 
 class RequisitionForm(BaseRequisitionForm):
+    type = fields.StringField("ประเภท")
     start_date = fields.DateField(
-        "วันที่เริ่มต้น",
+        "วันที่ต้องการใช้งาน",
     )
     purchaser = fields.SelectField(
         "ผู้ขอซื้อ",
@@ -78,7 +80,16 @@ class RequisitionForm(BaseRequisitionForm):
                 ["pdf"],
                 "PDF only",
             ),
+            validators.DataRequired(),
         ],
+    )
+
+    qt_document = file.MultipleFileField(
+        "ใบเสนอราคา (PDF เท่านั้น, แนบได้ 3 ไฟล์)",
+        validators=[
+            file.FileAllowed(["pdf"], "PDF only"),
+        ],
+        render_kw={"multiple": True},
     )
 
     items = fields.FieldList(

@@ -848,14 +848,16 @@
                             <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
                             </th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-32">เอกสาร ToR</th>
+                            <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
                             <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
                             <th class="font-semibold text-base-content text-sm text-center w-20">แก้ไข</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         {% for item in renewal_requested_items %}
-                        <tr class="hover:bg-blue-50 transition-colors duration-200">
+                        <tr class="hover:bg-blue-50 transition-colors duration-200"
+                            onclick="toggleSubtable('{{ item.id }}')" id="toggle-btn-{{ item.id }}">
+                            <!-- ...existing code... -->
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <div class="text-ms flex items-center gap-1 justify-center">
                                     <i class="ph ph-barcode"></i>{{ item.requisition_code }}
@@ -901,35 +903,44 @@
                                 </button>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-center">
+                                {% set is_ma = item.type == 'MA' %}
                                 <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
-                                    class="btn btn-outline btn-sm text-yellow-700 border-yellow-300 hover:bg-yellow-50">
-                                    <i class="ph ph-pencil-simple-line"></i> แก้ไข
+                                    class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}">
+                                    {% if is_ma %}
+                                    <i class="ph ph-check text-lg"></i>
+                                    <span>ยืนยัน</span>
+                                    {% else %}
+                                    <i class="ph ph-pencil-simple-line text-lg"></i>
+                                    <span>แก้ไข</span>
+                                    {% endif %}
                                 </a>
                             </td>
                         </tr>
-                        <tr>
-                            <td colspan="8" class="bg-blue-50 px-4 py-2">
+                        <tr id="subtable-{{ item.id }}">
+                            <td colspan="8" class="bg-blue-50 px-4 py-2 p-0">
                                 <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-blue-100">
+                                    <table class="min-w-full table-sm divide-y divide-blue-100">
                                         <thead>
                                             <tr>
-                                                <th class="text-center text-xs font-semibold py-2">ชื่อรายการ</th>
-                                                <th class="text-center text-xs font-semibold py-2">ประเภท</th>
-                                                <th class="text-center text-xs font-semibold py-2">จำนวน</th>
-                                                <th class="text-center text-xs font-semibold py-2">หน่วยเงิน</th>
-                                                <th class="text-center text-xs font-semibold py-2">จำนวนเงิน</th>
+                                                <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
+                                                <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
+                                                <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
+                                                <th class="w-24 font-semibold text-xs text-center">หน่วยเงิน</th>
+                                                <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for subitem in item.items %}
-                                            <tr>
-                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.product_name }}
-                                                </td>
-                                                <td class="text-sm px-2 py-1 text-center">{{
+                                            <tr class="hover:bg-blue-50">
+                                                <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
+                                                    title="{{ subitem.product_name }}">{{ subitem.product_name }}</td>
+                                                <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
+                                                    title="{{ subitem.get_category_display() }}">{{
                                                     subitem.get_category_display() }}</td>
-                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.quantity }}</td>
-                                                <td class="text-sm px-2 py-1 text-center">{{ subitem.currency }}</td>
-                                                <td class="text-sm px-2 py-1 text-right">฿{{
+                                                <td class="w-20 text-sm text-center">{{ subitem.quantity }}</td>
+                                                <td class="w-24 text-sm text-center">{{ subitem.currency if
+                                                    subitem.currency else '' }}</td>
+                                                <td class="w-32 text-sm text-right font-bold text-blue-700">฿{{
                                                     "{:,.2f}".format(subitem.amount) }}</td>
                                             </tr>
                                             {% endfor %}
@@ -960,5 +971,28 @@
                 }, 1000);
             };
         }
+
+        function toggleSubtable(itemId) {
+            var subtable = document.getElementById('subtable-' + itemId);
+            var btn = document.getElementById('toggle-btn-' + itemId);
+            var icon = document.getElementById('toggle-icon-' + itemId);
+            if (subtable.style.display === 'none') {
+                subtable.style.display = '';
+                icon.textContent = '▼';
+            } else {
+                subtable.style.display = 'none';
+                icon.textContent = '▲';
+            }
+        }
+
+        // ซ่อน subtable ทั้งหมดเริ่มต้น
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[id^="subtable-"]').forEach(function (row) {
+                row.style.display = 'none';
+            });
+            document.querySelectorAll('[id^="toggle-icon-"]').forEach(function (icon) {
+                icon.textContent = '▲';
+            });
+        });
     </script>
     {% endmacro %}

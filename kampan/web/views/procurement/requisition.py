@@ -161,6 +161,7 @@ def renewal_requested(requisition_procurement_id):
         ],
         # ensure at least one committee entry exists so model validation passes
         committees=None,
+        type="MA",
         fund=None,
         created_by=current_user._get_current_object(),
         last_updated_by=current_user._get_current_object(),
@@ -295,10 +296,12 @@ def create_or_edit(requisition_procurement_id):
             requisition.committees.append(committee)
 
     tor_file = form.tor_document.data
+    qt_files = form.qt_document.data
     # Populate other fields
     del form.committees
     del form.items
     del form.tor_document
+    del form.qt_document
     form.populate_obj(requisition)
 
     # Handle ToR file
@@ -314,6 +317,7 @@ def create_or_edit(requisition_procurement_id):
             requisition.tor_document.put(
                 tor_file, filename=tor_file.filename, content_type=tor_file.content_type
             )
+
     # Convert SelectField id to document instance for ReferenceField
     if form.purchaser.data and form.purchaser.data != "-":
         requisition.purchaser = models.OrganizationUserRole.objects(

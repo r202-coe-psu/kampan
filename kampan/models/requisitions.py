@@ -41,6 +41,7 @@ class Requisition(me.Document):
     reason = me.StringField(max_length=255)
     start_date = me.DateTimeField(required=True)
     tor_document = me.FileField(collection_name="tor_documents")
+    qt_document = me.ListField(me.FileField(collection_name="qt_document"))
 
     # require at least 1 item and allow at most 4 items
     items = me.EmbeddedDocumentListField(
@@ -48,6 +49,7 @@ class Requisition(me.Document):
     )
     committees = me.EmbeddedDocumentListField("Committees")
 
+    type = me.StringField(max_length=50)
     fund = me.ReferenceField("MAS", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
