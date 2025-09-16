@@ -77,124 +77,113 @@ def index():
     )
 
 
+@module.route("/non-renewal", defaults={"requisition_procurement_id": None})
 @module.route("/<requisition_procurement_id>/non-renewal")
 @login_required
 def non_renewal(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-
-    if not procurement:
+    if requisition_procurement_id:
+        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
+        if not procurement:
+            return redirect(
+                url_for(
+                    "procurement.requisitions.index", organization_id=organization.id
+                )
+            )
+        procurement.status = "disactive"
+        procurement.last_updated_by = current_user._get_current_object()
+        procurement.save()
         return redirect(
             url_for("procurement.requisitions.index", organization_id=organization.id)
         )
-
-    procurement.status = "disactive"
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.save()
-    return redirect(
-        url_for("procurement.requisitions.index", organization_id=organization.id)
-    )
-
-
-@module.route("/non-renewal")
-@login_required
-def list_non_renewal():
-    organization = current_user.user_setting.current_organization
-    category = request.args.get("category", "")
-
-    query = {"status": "disactive"}
-    tor_year = getattr(current_user.user_setting, "tor_year", None)
-    if tor_year:
-        query["tor_year"] = tor_year
-
-    procurements = models.Procurement.objects(**query)
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object()
-    ).first()
-    if (
-        org_user_role
-        and "staff" in current_user.roles
-        and "admin" not in current_user.roles
-    ):
-        procurements = procurements.filter(responsible_by=org_user_role)
-    procurements = procurements.order_by("-end_date")
-    category_choices = models.procurement.CATEGORY_CHOICES
-
-    return render_template(
-        "procurement/requisitions/non_renewal.html",
-        items=procurements,
-        organization=organization,
-        category_choices=category_choices,
-        selected_category=category,
-    )
+    else:
+        category = request.args.get("category", "")
+        query = {"status": "disactive"}
+        tor_year = getattr(current_user.user_setting, "tor_year", None)
+        if tor_year:
+            query["tor_year"] = tor_year
+        procurements = models.Procurement.objects(**query)
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object()
+        ).first()
+        if (
+            org_user_role
+            and "staff" in current_user.roles
+            and "admin" not in current_user.roles
+        ):
+            procurements = procurements.filter(responsible_by=org_user_role)
+        procurements = procurements.order_by("-end_date")
+        category_choices = models.procurement.CATEGORY_CHOICES
+        return render_template(
+            "procurement/requisitions/non_renewal.html",
+            items=procurements,
+            organization=organization,
+            category_choices=category_choices,
+            selected_category=category,
+        )
 
 
+@module.route("/renewal_requested", defaults={"requisition_procurement_id": None})
 @module.route("/<requisition_procurement_id>/renewal-requested")
 @login_required
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-
-    if not procurement:
+    if requisition_procurement_id:
+        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
+        if not procurement:
+            return redirect(
+                url_for(
+                    "procurement.requisitions.index", organization_id=organization.id
+                )
+            )
+        # สร้างรหัส requisition_code ใหม่
+        requisition_code = generate_next_requisition_code()
+        # สร้าง Requisition ใหม่
+        requisition = models.Requisition(
+            requisition_code=requisition_code,
+            purchaser=(
+                procurement.responsible_by[0] if procurement.responsible_by else None
+            ),
+            phone=None,
+            reason=f"Renewal requested for procurement {procurement.name}",
+            start_date=procurement.end_date,
+            items=[
+                models.RequisitionItem(
+                    product_name=procurement.name,
+                    category=procurement.category,
+                    amount=procurement.amount,
+                    currency=None,
+                    quantity=1,
+                )
+            ],
+            # ensure at least one committee entry exists so model validation passes
+            committees=None,
+            type="MA",
+            fund=None,
+            created_by=current_user._get_current_object(),
+            last_updated_by=current_user._get_current_object(),
+        )
+        requisition.save()
+        procurement.status = "renewal-requested"
+        procurement.last_updated_by = current_user._get_current_object()
+        procurement.save()
         return redirect(
             url_for("procurement.requisitions.index", organization_id=organization.id)
         )
-
-    # สร้างรหัส requisition_code ใหม่
-    requisition_code = generate_next_requisition_code()
-
-    # สร้าง Requisition ใหม่
-    requisition = models.Requisition(
-        requisition_code=requisition_code,
-        purchaser=procurement.responsible_by[0] if procurement.responsible_by else None,
-        phone=None,
-        reason=f"Renewal requested for procurement {procurement.name}",
-        start_date=procurement.end_date,
-        items=[
-            models.RequisitionItem(
-                product_name=procurement.name,
-                category=procurement.category,
-                amount=procurement.amount,
-                currency=None,
-                quantity=1,
+    else:
+        category = request.args.get("category", "")
+        requisitions = models.Requisition.objects()
+        if "admin" not in current_user.roles:
+            requisitions = requisitions.filter(
+                created_by=current_user._get_current_object()
             )
-        ],
-        # ensure at least one committee entry exists so model validation passes
-        committees=None,
-        type="MA",
-        fund=None,
-        created_by=current_user._get_current_object(),
-        last_updated_by=current_user._get_current_object(),
-    )
-
-    requisition.save()
-
-    procurement.status = "renewal-requested"
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.save()
-    return redirect(
-        url_for("procurement.requisitions.index", organization_id=organization.id)
-    )
-
-
-@module.route("/renewal_requested")
-@login_required
-def list_renewal_requested():
-    organization = current_user.user_setting.current_organization
-    category = request.args.get("category", "")
-    requisitions = models.Requisition.objects()
-    if "admin" not in current_user.roles:
-        requisitions = requisitions.filter(
-            created_by=current_user._get_current_object()
+        requisitions = requisitions.order_by("-requisition_code")
+        return render_template(
+            "procurement/requisitions/renewal_requested.html",
+            requisitions=requisitions,
+            organization=organization,
+            selected_category=category,
         )
-    requisitions = requisitions.order_by("-requisition_code")
-
-    return render_template(
-        "procurement/requisitions/renewal_requested.html",
-        requisitions=requisitions,
-        organization=organization,
-        selected_category=category,
-    )
 
 
 @module.route("/<requisition_procurement_id>/document")
@@ -296,7 +285,7 @@ def create_or_edit(requisition_procurement_id):
             requisition.committees.append(committee)
 
     tor_file = form.tor_document.data
-    qt_files = form.qt_document.data
+    # qt_files = form.qt_document.data
     # Populate other fields
     del form.committees
     del form.items
@@ -330,7 +319,7 @@ def create_or_edit(requisition_procurement_id):
     requisition.save()
     return redirect(
         url_for(
-            "procurement.requisitions.list_renewal_requested",
+            "procurement.requisitions.renewal_requested",
             organization_id=organization.id,
         )
     )

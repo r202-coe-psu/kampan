@@ -100,9 +100,51 @@ def index():
     )
 
 
+@module.route("/<procurement_id>/set_paid", methods=["POST"])
+@login_required
+def set_paid(procurement_id):
+    organization = current_user.user_setting.current_organization
+    procurement = models.Procurement.objects(id=procurement_id).first()
+    next_period_index = len(procurement.payment_records)
+    procurement.add_payment_record(
+        period_index=next_period_index,
+        paid_by=current_user._get_current_object(),
+    )
+    procurement.paid_period_index = next_period_index
+    procurement.payment_status = procurement.get_current_payment_status(
+        datetime.date.today()
+    )
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+    return redirect(url_for("procurement.products.index", organization=organization))
+
+
+def validate_upload_file(form, errors, template_columns):
+    """Validate uploaded Excel file columns."""
+    if not form.document_upload.data:
+        errors.append("ไม่พบไฟล์ กรุณาเลือกไฟล์ก่อนอัปโหลด")
+        return None, errors
+    file_storage = form.document_upload.data
+    if isinstance(file_storage, list):
+        file_storage = file_storage[0]
+    file_storage.seek(0)
+    file_bytes = file_storage.read()
+    try:
+        df = pd.read_excel(BytesIO(file_bytes))
+        file_columns = list(df.columns)
+        missing_cols = [col for col in template_columns if col not in file_columns]
+        if missing_cols:
+            errors.append(f"ไฟล์ที่อัปโหลดไม่มี column เหล่านี้: {', '.join(missing_cols)}")
+            return None, errors
+        return file_bytes, errors
+    except Exception as e:
+        errors.append(f"เกิดข้อผิดพลาดในการอ่านไฟล์: {e}")
+        return None, errors
+
+
 @module.route("/create", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
+@acl.roles_required("admin")
 def create():
     form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
@@ -151,51 +193,9 @@ def create():
     return redirect(url_for("procurement.products.index", organization=organization))
 
 
-@module.route("/<procurement_id>/set_paid", methods=["POST"])
-@login_required
-def set_paid(procurement_id):
-    organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=procurement_id).first()
-    next_period_index = len(procurement.payment_records)
-    procurement.add_payment_record(
-        period_index=next_period_index,
-        paid_by=current_user._get_current_object(),
-    )
-    procurement.paid_period_index = next_period_index
-    procurement.payment_status = procurement.get_current_payment_status(
-        datetime.date.today()
-    )
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.save()
-    return redirect(url_for("procurement.products.index", organization=organization))
-
-
-def validate_upload_file(form, errors, template_columns):
-    """Validate uploaded Excel file columns."""
-    if not form.document_upload.data:
-        errors.append("ไม่พบไฟล์ กรุณาเลือกไฟล์ก่อนอัปโหลด")
-        return None, errors
-    file_storage = form.document_upload.data
-    if isinstance(file_storage, list):
-        file_storage = file_storage[0]
-    file_storage.seek(0)
-    file_bytes = file_storage.read()
-    try:
-        df = pd.read_excel(BytesIO(file_bytes))
-        file_columns = list(df.columns)
-        missing_cols = [col for col in template_columns if col not in file_columns]
-        if missing_cols:
-            errors.append(f"ไฟล์ที่อัปโหลดไม่มี column เหล่านี้: {', '.join(missing_cols)}")
-            return None, errors
-        return file_bytes, errors
-    except Exception as e:
-        errors.append(f"เกิดข้อผิดพลาดในการอ่านไฟล์: {e}")
-        return None, errors
-
-
 @module.route("/<organization_id>/upload", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
+@acl.roles_required("admin")
 def upload(organization_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -251,7 +251,7 @@ def upload(organization_id):
 
 @module.route("/<organization_id>/download_template")
 @login_required
-@acl.organization_roles_required("admin")
+@acl.roles_required("admin")
 def download_template(organization_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
