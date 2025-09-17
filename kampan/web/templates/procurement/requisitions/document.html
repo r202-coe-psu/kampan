@@ -234,8 +234,6 @@
                 {%- if head_approval and head_approval[-1].approver -%}
                 {{ head_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                 head_approval[-1].approver.display_fullname() else head_approval[-1].approver.display_fullname() }}
-                {%- else -%}
-                &nbsp;
                 {%- endif -%}
             </span>
             <span
@@ -447,7 +445,7 @@
             <div style="margin-top: -1rem;">
                 <span>1</span>
                 <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 47.9rem; white-space: nowrap;">
+                    <span style="position: absolute; left: 30rem; top: 48rem; white-space: nowrap;">
                         {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
                         'chairman') | list -%}
                         {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
@@ -486,7 +484,7 @@
             <div>
                 <span>3</span>
                 <span>........................................
-                    <span style="position: absolute; left: 30rem; top:51.5rem; white-space: nowrap;">
+                    <span style="position: absolute; left: 30rem; top:51.8rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 1 -%}
@@ -532,9 +530,9 @@
                         </span>
                     </span>
                 </p>
-                <p style="margin-top: -0.5rem;">
-                    <span style="margin-left: 5.4rem;">
-                        <span style="margin-left: 2rem;">
+                <p style="margin-top: -1rem;">
+                    <span style="margin-left: 14.4rem;">
+                        <span style="color: #888; font-size: 15px;">
                             {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
                             'equalto', 'admin') | list %}
                             {% if admin_approval and admin_approval[-1].timestamp %}
