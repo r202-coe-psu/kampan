@@ -32,6 +32,18 @@ class RequisitionItem(me.EmbeddedDocument):
     currency = me.StringField(max_length=10)
 
 
+class ApprovalHistory(me.EmbeddedDocument):
+    _id = me.ObjectIdField(required=True, default=ObjectId)
+    approver = me.ReferenceField("OrganizationUserRole", dbref=True)
+    approver_role = me.StringField(max_length=50)
+    action = me.StringField(
+        max_length=20,
+        choices=[("approved", "Approved"), ("rejected", "Rejected")],
+        required=True,
+    )
+    timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
 class Requisition(me.Document):
     meta = {"collection": "requisitions"}
 
@@ -48,6 +60,7 @@ class Requisition(me.Document):
         "RequisitionItem", required=True, min_length=1, max_length=4
     )
     committees = me.EmbeddedDocumentListField("Committees")
+    approval_history = me.EmbeddedDocumentListField("ApprovalHistory")
 
     type = me.StringField(max_length=50)
     fund = me.ReferenceField("MAS", dbref=True)

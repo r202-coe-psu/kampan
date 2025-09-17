@@ -99,7 +99,7 @@
             <span>ข้าพเจ้า</span>
             <span style="position: relative;">
                 นาย/นาง/นางสาว .................................................
-                <span style="position: absolute; left: 10rem; top: -0.4rem; white-space: nowrap;">
+                <span style="position: absolute; left: 8rem; top: -0.4rem; white-space: nowrap;">
                     {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                     requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
                     {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
@@ -216,12 +216,37 @@
     <div style="text-align: center;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
     <div style="text-align: right; margin-top: 0.5rem;">
         <span>(ลงชื่อ)</span>
-        <span>...................................</span>
+        <span>.................................................
+            <span style="position: absolute; left: 30rem; top:32.8rem; white-space: nowrap;">
+                {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+            </span>
+        </span>
         <span>ผู้ใช้บริการ</span>
     </div>
     <div style="text-align: right; margin-top: 0.5rem;">
         <span>(ลงชื่อ)</span>
-        <span>..................................</span>
+        <span>.................................................
+            <span style="position: absolute; left: 30rem; top:34.8rem; white-space: nowrap;">
+                {%- set head_approval = requisitions.approval_history | selectattr('approver_role', 'equalto', 'head') |
+                list -%}
+                {%- if head_approval and head_approval[-1].approver -%}
+                {{ head_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
+                head_approval[-1].approver.display_fullname() else head_approval[-1].approver.display_fullname() }}
+                {%- else -%}
+                &nbsp;
+                {%- endif -%}
+            </span>
+            <span
+                style="position: absolute; left: 30rem; top:36.5rem; white-space: nowrap; color: #888; font-size: 15px;">
+                {%- if head_approval and head_approval[-1].timestamp -%}
+                {{ head_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
+                {%- else -%}
+                &nbsp;
+                {%- endif -%}
+            </span>
+        </span>
         <span>หัวหน้าฝ่าย</span>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr;">
@@ -312,7 +337,7 @@
             <div>
                 <span>2</span>
                 <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 41.6rem; white-space: nowrap;">
+                    <span style="position: absolute; left: 30rem; top: 41.7rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 0 -%}
@@ -421,17 +446,62 @@
             <p><b>คณะกรรมการราคากลาง</b></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top: 47.9rem; white-space: nowrap;">
+                        {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
+                        'chairman') | list -%}
+                        {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                        {%- set fullname = chairman[0].member.display_fullname() -%}
+                        {%- elif chairman and chairman[0].member -%}
+                        {%- set fullname = chairman[0].member|string -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>ประธานกรรมการ</span>
             </div>
             <div>
                 <span>2</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top: 49.8rem; white-space: nowrap;">
+                        {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 0 -%}
+                        {%- set member = members[0].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
             <div>
                 <span>3</span>
-                <span>........................................</span>
+                <span>........................................
+                    <span style="position: absolute; left: 30rem; top:51.5rem; white-space: nowrap;">
+                        {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                        'member') | list -%}
+                        {%- if members and members|length > 1 -%}
+                        {%- set member = members[1].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                        {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                        {%- set fullname = member|string -%}
+                        {%- endif -%}
+                        {%- else -%}
+                        {%- set fullname = '' -%}
+                        {%- endif -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                </span>
                 <span>กรรมการ</span>
             </div>
         </div>
@@ -453,15 +523,26 @@
                 <p style="margin-top: -0.5rem;">
                     <span style="margin-left: 5.4rem;">
                         <input type="checkbox"
-                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;">
+                            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {% if
+                            requisitions.fund %}checked{% endif %}>
                         <span style="vertical-align: middle;">เงินงบประมาณ</span>
-                        <span>..............................</span>
+                        <span>..............................
+                            <span style="position: absolute; left: 14.5rem; font-size: 1rem; white-space: nowrap;">{{
+                                requisitions.fund.mas_code }}</span>
+                        </span>
                     </span>
                 </p>
                 <p style="margin-top: -0.5rem;">
                     <span style="margin-left: 5.4rem;">
-                        <span style="vertical-align: middle;">...................</span>
-                        <span style="margin-left: 2rem;">........../........./...........</span>
+                        <span style="margin-left: 2rem;">
+                            {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
+                            'equalto', 'admin') | list %}
+                            {% if admin_approval and admin_approval[-1].timestamp %}
+                            {{ admin_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                            ........../........./...........
+                            {% endif %}
+                        </span>
                     </span>
                 </p>
             </td>

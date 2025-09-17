@@ -15,6 +15,7 @@ from kampan import models
 
 import datetime
 
+
 module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 
 
@@ -178,11 +179,13 @@ def renewal_requested(requisition_procurement_id):
                 created_by=current_user._get_current_object()
             )
         requisitions = requisitions.order_by("-requisition_code")
+        mas_list = models.MAS.objects()
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=requisitions,
             organization=organization,
             selected_category=category,
+            mas_list=mas_list,
         )
 
 
@@ -222,7 +225,6 @@ def create_or_edit(requisition_procurement_id):
     form = forms.requisitions.RequisitionForm()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
-    funds = models.MAS.objects()
     requisition = None
 
     if requisition_procurement_id:
@@ -234,7 +236,6 @@ def create_or_edit(requisition_procurement_id):
             ):
                 committee_form.member.data = str(committee.member.id)
 
-    form.fund.choices = [(str(fund.id), fund.name) for fund in funds]
     member_choices = [(str(member.id), member.display_fullname()) for member in members]
     for committee_form in form.committees:
         committee_form.member.choices.extend(member_choices)
@@ -344,3 +345,49 @@ def download(requisition_procurement_id, filename):
     )
 
     return response
+
+
+@module.route("/<requisition_id>/action", methods=["POST"])
+@login_required
+@acl.roles_required("head", "admin", "supervisor support")
+def requisition_action(requisition_id):
+    approver_role = request.form.get("approver_role")
+    action = request.form.get("action")  # 'approved' or 'rejected'
+    fund_id = request.form.get("fund")
+    requisition = models.Requisition.objects(id=requisition_id).first()
+    organization = current_user.user_setting.current_organization
+    members = organization.get_organization_users()
+    member_obj = next(
+        (
+            member
+            for member in members
+            if str(getattr(member.user, "id", "")) == str(current_user.id)
+        ),
+        None,
+    )
+    if not member_obj or not requisition:
+        abort(404)
+        # If admin approves and fund is provided, set fund
+    if approver_role == "admin" and action == "approved" and fund_id:
+        mas_obj = models.MAS.objects(id=fund_id).first()
+        if mas_obj:
+            requisition.fund = mas_obj
+
+    approval = models.requisitions.ApprovalHistory(
+        approver=member_obj,
+        approver_role=approver_role,
+        action=action,
+        timestamp=datetime.datetime.now(),
+    )
+    if requisition.approval_history is None:
+        requisition.approval_history = []
+    requisition.approval_history.append(approval)
+    requisition.status = action
+    requisition.last_updated_by = current_user._get_current_object()
+    requisition.save()
+    return redirect(
+        url_for(
+            "procurement.requisitions.renewal_requested",
+            organization_id=current_user.user_setting.current_organization.id,
+        )
+    )

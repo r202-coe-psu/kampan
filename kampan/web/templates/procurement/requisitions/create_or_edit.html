@@ -47,13 +47,6 @@
                     </label>
                     {{ form.start_date(class="input input-bordered w-full", type="date") }}
                 </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.fund.label.text }}</span>
-                    </label>
-                    {{ form.fund(class="select select-bordered w-full") }}
-                </div>
             </div>
 
             <div class="form-control mt-4">
@@ -183,7 +176,7 @@
 
         <!-- Submit Button -->
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <a href="{{ url_for('procurement.requisitions.list_renewal_requested') }}" class="btn btn-ghost">ยกเลิก</a>
+            <a href="{{ url_for('procurement.requisitions.renewal_requested') }}" class="btn btn-ghost">ยกเลิก</a>
             <button type="submit" class="btn btn-primary">
                 <i class="ph ph-check"></i>
                 {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
@@ -273,17 +266,17 @@
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">จำนวน</span>
-                        </label>
-                        <input type="number" name="items-${itemIndex}-quantity" class="input input-bordered input-sm w-full" min="1" required>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
                             <span class="label-text text-xs">หมวดหมู่</span>
                         </label>
                         <select name="items-${itemIndex}-category" class="select select-bordered select-sm w-full" required>
                             ${categoryOptionsHtml}
                         </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">จำนวน</span>
+                        </label>
+                        <input type="number" name="items-${itemIndex}-quantity" class="input input-bordered input-sm w-full" min="1" required>
                     </div>
                     <div class="form-control">
                         <label class="label">

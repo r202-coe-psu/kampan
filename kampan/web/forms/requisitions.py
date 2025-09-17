@@ -27,7 +27,6 @@ BaseRequisitionForm = model_form(
         "purchaser": {"label": "ผู้ขอซื้อ"},
         "reason": {"label": "เหตุผล"},
         "start_date": {"label": "วันที่ต้องการใช้งาน"},
-        "fund": {"label": "แหล่งงบประมาณ"},
     },
 )
 
@@ -69,10 +68,6 @@ class RequisitionForm(BaseRequisitionForm):
         "ผู้ขอซื้อ",
         choices=[("-", "เลือกผู้ขอซื้อ")],
     )
-    fund = fields.SelectField(
-        "แหล่งงบประมาณ",
-        choices=[("-", "เลือกแหล่งงบประมาณ")],
-    )
     tor_document = fields.FileField(
         "ไฟล์ ToR (PDF เท่านั้น)",
         validators=[
@@ -80,7 +75,6 @@ class RequisitionForm(BaseRequisitionForm):
                 ["pdf"],
                 "PDF only",
             ),
-            validators.DataRequired(),
         ],
     )
 

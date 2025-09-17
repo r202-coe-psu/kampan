@@ -24,6 +24,6 @@
         </a>
     </div>
 
-    {{ table_macros.render_renewal_requested_items_table(requisitions) }}
+    {{ table_macros.render_renewal_requested_items_table(requisitions, current_user, mas_list) }}
 </div>
 {% endblock %}

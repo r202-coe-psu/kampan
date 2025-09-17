@@ -16,58 +16,72 @@
         current_user.user_setting.tor_year.id == y.id %}
         <tr class="{% if is_default %}bg-green-50 border-green-200{% else %}hover:bg-base-50{% endif %}">
             <td class="{% if is_default %}font-semibold text-green-800{% endif %}">
-                {{ y.year }}
-            </td>
-            <td class="{% if is_default %}text-green-700{% endif %}">
-                {{ y.started_date.strftime('%d/%m/%Y') if y.started_date else '-' }}
-            </td>
-            <td class="{% if is_default %}text-green-700{% endif %}">
-                {{ y.ended_date.strftime('%d/%m/%Y') if y.ended_date else '-' }}
-            </td>
-            <td class="text-center">
-                <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 gap-0.5">
-                    <li>
-                        <div class="tooltip tooltip-top" data-tip="แก้ไขปีงบประมาณ">
-                            <a href="{{ url_for('admin.tor_years.create_or_edit', tor_year_id=y.id, organization_id=organization.id) }}"
-                                class="btn btn-ghost btn-xs btn-square hover:bg-blue-100">
-                                <i class="ph ph-pencil-simple-line text-base text-blue-600"></i>
-                            </a>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="tooltip tooltip-top" data-tip="คัดลอกไปปีถัดไป">
-                            <a href="{{ url_for('admin.tor_years.copy_tor_year', tor_year_id=y.id, organization_id=organization.id) }}"
-                                class="btn btn-ghost btn-xs btn-square hover:bg-indigo-100">
-                                <i class="ph ph-clipboard-text text-base text-indigo-600"></i>
-                            </a>
-                        </div>
-                    </li>
-                    {% if not is_default %}
-                    <li>
-                        <div class="tooltip tooltip-top" data-tip="ลบปีงบประมาณ">
-                            <button onclick="showDeleteModal('{{ y.id }}')"
-                                class="btn btn-ghost btn-xs btn-square hover:bg-red-100">
-                                <i class="ph ph-trash text-base text-red-600"></i>
-                            </button>
-                        </div>
-                    </li>
-                    {% endif %}
-                </ul>
-            </td>
-            <td class="text-center">
-                <form method="post"
-                    action="{{ url_for('admin.tor_years.set_default_tor_year', tor_year_id=y.id, organization_id=organization.id) }}">
-                    <div class="tooltip"
-                        data-tip="{% if is_default %}ปีงบประมาณที่ใช้งานอยู่{% else %}ตั้งเป็นปีงบประมาณเริ่มต้น{% endif %}">
-                        <button type="submit"
-                            class="btn btn-circle btn-sm {% if is_default %}btn-success{% else %}btn-outline border-green-400 text-green-600 hover:bg-green-100 hover:border-green-600{% endif %}">
-                            {% if is_default %}
-                            <i class="ph ph-check-circle text-lg"></i>
-                            {% else %}
-                            <i class="ph ph-circle text-lg"></i>
-                            {% endif %}
-                        </button>
+                {% if renewal_requested_items|length == 0 %}
+                <div
+                    class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-dashed border-blue-200 p-12 text-center">
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="ph ph-check-circle text-blue-400 text-3xl"></i>
                     </div>
+                    <h4 class="text-lg font-semibold text-blue-700 mb-2">ยังไม่มีรายการที่ขอต่ออายุ</h4>
+                    <p class="text-blue-600">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
+                </div>
+                {% else %}
+                <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-blue-200">
+                            <thead class="bg-gradient-to-r">
+                                <tr>
+                                    <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่
+                                    </th>
+                                    <th class="font-semibold text-base-content text-sm text-center w-32">ชื่อรายการ</th>
+                                    <th class="font-semibold text-base-content text-sm text-center w-40">
+                                        วันที่ต้องการใช้งาน
+                                    </th>
+                                    <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม
+                                    </th>
+                                    <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
+                                    <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
+                                    {% if 'staff' in current_user.roles %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">Staff Action
+                                    </th>
+                                    {% endif %}
+                                    {% if 'head' in current_user.roles %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">Head Action
+                                    </th>
+                                    {% endif %}
+                                    {% if 'admin' in current_user.roles %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action
+                                    </th>
+                                    {% endif %}
+                                    {% if 'supervisor supplier' in current_user.roles %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor
+                                        Action</th>
+                                    {% endif %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                {% for item in renewal_requested_items %}
+                                <tr class="hover:bg-blue-50 transition-colors duration-200"
+                                    onclick="toggleSubtable('{{ item.id }}')" id="toggle-btn-{{ item.id }}">
+                                    <!-- ...existing code... -->
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                data-tip="{% if is_default %}ปีงบประมาณที่ใช้งานอยู่{% else %}ตั้งเป็นปีงบประมาณเริ่มต้น{% endif %}">
+                <button type="submit"
+                    class="btn btn-circle btn-sm {% if is_default %}btn-success{% else %}btn-outline border-green-400 text-green-600 hover:bg-green-100 hover:border-green-600{% endif %}">
+                    {% if is_default %}
+                    <i class="ph ph-check-circle text-lg"></i>
+                    {% else %}
+                    <i class="ph ph-circle text-lg"></i>
+                    {% endif %}
+                </button>
+                </div>
                 </form>
             </td>
         </tr>
@@ -821,7 +835,7 @@
     {% endmacro %}
 
     {# filepath: Untitled #}
-    {% macro render_renewal_requested_items_table(renewal_requested_items) %}
+    {% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list) %}
     <div class="mt-12">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-bold text-blue-600 flex items-center gap-3">
@@ -850,7 +864,19 @@
                             <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
                             <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
-                            <th class="font-semibold text-base-content text-sm text-center w-20">แก้ไข</th>
+                            {% if 'staff' in current_user.roles %}
+                            <th class="font-semibold text-base-content text-sm text-center w-20">Staff Action</th>
+                            {% endif %}
+                            {% if 'head' in current_user.roles %}
+                            <th class="font-semibold text-base-content text-sm text-center w-20">Head Action</th>
+                            {% endif %}
+                            {% if 'admin' in current_user.roles %}
+                            <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action</th>
+                            {% endif %}
+                            {% if 'supervisor supplier' in current_user.roles %}
+                            <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
+                            {% endif %}
+                            <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
@@ -902,6 +928,7 @@
                                     <i class="ph ph-file-arrow-down"></i> ดูเอกสาร
                                 </button>
                             </td>
+                            {% if 'staff' in current_user.roles %}
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 {% set is_ma = item.type == 'MA' %}
                                 <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
@@ -915,9 +942,171 @@
                                     {% endif %}
                                 </a>
                             </td>
+                            {% endif %}
+                            {% if 'head' in current_user.roles %}
+                            {% set already_acted = item.approval_history and item.approval_history |
+                            selectattr('approver_role', 'equalto',
+                            'head') | list | length > 0 %}
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <form method="post" style="display:inline"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                    <input type="hidden" name="approver_role" value="head">
+                                    <input type="hidden" name="action" value="approved">
+                                    <button type="submit"
+                                        class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                        {% if already_acted %}disabled{% endif %}>
+                                        <i class="ph ph-check text-lg" title="Approve"></i>
+                                    </button>
+                                </form>
+                                <form method="post" style="display:inline"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                    <input type="hidden" name="approver_role" value="head">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <button type="submit"
+                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                        {% if already_acted %}disabled{% endif %}>
+                                        <i class="ph ph-x text-lg" title="Reject"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                            {% if 'admin' in current_user.roles %}
+                            {% set already_acted = item.approval_history and item.approval_history |
+                            selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <!-- Approve Button triggers MAS modal -->
+                                <button type="button"
+                                    class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                    {% if already_acted %}disabled{% endif %}
+                                    onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
+                                    <i class="ph ph-check text-lg" title="Approve"></i>
+                                </button>
+                                <!-- Reject Button as normal -->
+                                <form method="post" style="display:inline"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                    <input type="hidden" name="approver_role" value="admin">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <button type="submit"
+                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                        {% if already_acted %}disabled{% endif %}>
+                                        <i class="ph ph-x text-lg" title="Reject"></i>
+                                    </button>
+                                </form>
+                                <!-- MAS Selection Modal -->
+                                <dialog id="modal-mas-{{ item.id }}" class="modal">
+                                    <form method="post"
+                                        action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                        class="modal-box max-w-full w-full">
+                                        <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
+                                        <input type="hidden" name="approver_role" value="admin">
+                                        <input type="hidden" name="action" value="approved">
+                                        <div class="mb-4">
+                                            <div class="form-control">
+                                                <div class="overflow-y-auto max-h-[600px]">
+                                                    <table class="table table-md w-full border">
+                                                        <thead>
+                                                            <tr class="bg-base-200">
+                                                                <th></th>
+                                                                <th>รหัส MAS</th>
+                                                                <th>ชื่อโครงการ</th>
+                                                                <th>หมวดหลัก</th>
+                                                                <th>หมวดย่อย</th>
+                                                                <th>รายละเอียด</th>
+                                                                <th>งบประมาณ</th>
+                                                                <th>ประมาณจ่าย</th>
+                                                                <th>จ่ายจริง</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for mas in mas_list %}
+                                                            <tr>
+                                                                <td>
+                                                                    <input type="radio" name="fund" value="{{ mas.id }}"
+                                                                        required>
+                                                                </td>
+                                                                <td class="font-mono text-xs">{{ mas.mas_code }}</td>
+                                                                <td class="font-semibold">{{ mas.name }}</td>
+                                                                <td>{{ mas.main_category }}</td>
+                                                                <td>{{ mas.sub_category }}</td>
+                                                                <td class="text-xs text-gray-500">{{
+                                                                    mas.item_description }}</td>
+                                                                <td class="text-right">฿{{ "{:,.2f}".format(mas.budget
+                                                                    or 0) }}</td>
+                                                                <td class="text-right">฿{{ "{:,.2f}".format(mas.amount
+                                                                    or 0) }}</td>
+                                                                <td
+                                                                    class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
+                                                                    ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}</td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-action flex gap-2 justify-end">
+                                            <button type="button" class="btn"
+                                                onclick="document.getElementById('modal-mas-{{ item.id }}').close()">ยกเลิก</button>
+                                            <button type="submit" class="btn btn-success">บันทึกและอนุมัติ</button>
+                                        </div>
+                                    </form>
+                                </dialog>
+                            </td>
+                            {% endif %}
+                            {% if 'supervisor supplier' in current_user.roles %}
+                            {% set already_acted = item.approval_history and item.approval_history |
+                            selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <form method="post" style="display:inline"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                    <input type="hidden" name="approver_role" value="supervisor supplier">
+                                    <input type="hidden" name="action" value="approved">
+                                    <button type="submit"
+                                        class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                        {% if already_acted %}disabled{% endif %}>
+                                        <i class="ph ph-check text-lg" title="Approve"></i>
+                                    </button>
+                                </form>
+                                <form method="post" style="display:inline"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                    <input type="hidden" name="approver_role" value="supervisor supplier">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <button type="submit"
+                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                        {% if already_acted %}disabled{% endif %}>
+                                        <i class="ph ph-x text-lg" title="Reject"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                            <td class="px-4 py-3 whitespace-nowrap text-center">
+                                <div class="flex gap-2 justify-center items-end">
+                                    {% set role_badges = {
+                                    'head': ['badge-primary', 'ph-user'],
+                                    'admin': ['badge-secondary', 'ph-shield'],
+                                    'supervisor supplier': ['badge-accent', 'ph-users']
+                                    } %}
+                                    {% set all_approved = true %}
+                                    {% for role, badge_info in role_badges.items() %}
+                                    {% set badge_class = badge_info[0] %}
+                                    {% set icon = badge_info[1] %}
+                                    {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
+                                    role) | list %}
+                                    {% if approvals %}
+                                    <div class="items-center">
+                                        <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
+                                            title="{{ approvals[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}">
+                                            <i class="{{ icon }}"></i>
+                                            <span class="font-semibold">{{ role|title }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
                         </tr>
                         <tr id="subtable-{{ item.id }}">
-                            <td colspan="8" class="bg-blue-50 px-4 py-2 p-0">
+                            <td colspan="11" class="bg-blue-50 px-4 py-2 p-0">
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full table-sm divide-y divide-blue-100">
                                         <thead>
