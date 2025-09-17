@@ -156,7 +156,7 @@
       <ul class="ml-2">
         <li>
           <a class="{{ 'menu-active' if '/procurement/supplier' in request.path else '' }}"
-            href="{{ url_for('procurement.supplier.index', organization_id=organization.id ) }}">
+            href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
             <i class="ph ph-users"></i> จัดการ Supplier
           </a>
         </li>

@@ -932,7 +932,8 @@
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 {% set is_ma = item.type == 'MA' %}
                                 <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
-                                    class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}">
+                                    class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
+                                    {% if item.approval_history %}disabled{% endif %}>
                                     {% if is_ma %}
                                     <i class="ph ph-check text-lg"></i>
                                     <span>ยืนยัน</span>

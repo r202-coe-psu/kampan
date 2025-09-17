@@ -174,7 +174,7 @@ def renewal_requested(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         requisitions = models.Requisition.objects()
-        if "admin" not in current_user.roles:
+        if "staff" in current_user.roles:
             requisitions = requisitions.filter(
                 created_by=current_user._get_current_object()
             )
@@ -292,6 +292,7 @@ def create_or_edit(requisition_procurement_id):
     del form.items
     del form.tor_document
     del form.qt_document
+    del form.fund
     form.populate_obj(requisition)
 
     # Handle ToR file
@@ -313,8 +314,6 @@ def create_or_edit(requisition_procurement_id):
         requisition.purchaser = models.OrganizationUserRole.objects(
             id=form.purchaser.data
         ).first()
-    if form.fund.data and form.fund.data != "-":
-        requisition.fund = models.MAS.objects(id=form.fund.data).first()
 
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
