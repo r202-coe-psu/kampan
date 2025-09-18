@@ -72,7 +72,6 @@ class HistoryCarLendingRepository:
         current_user: models.users.User = None,
         car: models.vehicles.Car = None,
     ):
-        car_applications = list(car_applications) * 3
         buffer = BytesIO()
         BASE_DIR = pathlib.Path(__file__).parent.parent
         FONT_DIR = BASE_DIR / "web" / "static" / "fonts"
