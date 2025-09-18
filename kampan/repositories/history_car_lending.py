@@ -21,6 +21,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+import datetime
+import calendar
 
 
 class HistoryCarLendingRepository:
@@ -71,6 +73,8 @@ class HistoryCarLendingRepository:
         car_applications: list[models.vehicle_applications.CarApplication],
         current_user: models.users.User = None,
         car: models.vehicles.Car = None,
+        start_date: Optional[ObjectId] = None,
+        end_date: Optional[ObjectId] = None,
     ):
         buffer = BytesIO()
         BASE_DIR = pathlib.Path(__file__).parent.parent
@@ -98,7 +102,48 @@ class HistoryCarLendingRepository:
         elements = []
 
         # หัวรายงาน
-        title = Paragraph("บันทึกการใช้รถยนต์ราชการ", styles["Title"])
+        thai_months = [
+            "",
+            "มกราคม",
+            "กุมภาพันธ์",
+            "มีนาคม",
+            "เมษายน",
+            "พฤษภาคม",
+            "มิถุนายน",
+            "กรกฎาคม",
+            "สิงหาคม",
+            "กันยายน",
+            "ตุลาคม",
+            "พฤศจิกายน",
+            "ธันวาคม",
+        ]
+
+        def format_thai_date(date: datetime.date):
+
+            return f"{date.day} {thai_months[date.month]} {date.year}"  # พ.ศ.
+
+        def format_date_range(
+            start_date: datetime.date = None, end_date: datetime.date = None
+        ):
+            if start_date and end_date:
+                # ตรวจสอบว่าเป็นวันแรก-วันสุดท้ายของเดือนหรือไม่
+                first_day = start_date.replace(day=1)
+                last_day = start_date.replace(
+                    day=calendar.monthrange(start_date.year, start_date.month)[1]
+                )
+                if start_date == first_day and end_date == last_day:
+                    return f"เดือน {thai_months[start_date.month]} ปี {start_date.year + 543}"
+                else:
+                    return f"ตั้งแต่ {format_thai_date(start_date)} ถึง {format_thai_date(end_date)}"
+            elif start_date:
+                return f"ตั้งแต่ {format_thai_date(start_date)}"
+            elif end_date:
+                return f"จนถึง {format_thai_date(end_date)}"
+            else:
+                return ""
+
+        title_name = f"บันทึกการใช้รถยนต์ {format_date_range(start_date, end_date)}"
+        title = Paragraph(title_name, styles["Title"])
         elements.append(title)
         elements.append(
             Paragraph(

@@ -166,7 +166,11 @@ def export_car_applications():
         ).order_by("departure_datetime")
     car_ = models.vehicles.Car.objects(id=form.car.data).first()
     output = HistoryCarLendingRepository.get_export_car_applications_pdf(
-        car_applications=car_applications, current_user=current_user, car=car_
+        car_applications=car_applications,
+        current_user=current_user,
+        car=car_,
+        start_date=form.start_date.data,
+        end_date=form.end_date.data,
     )
     # ส่งไฟล์ออก
     return output
