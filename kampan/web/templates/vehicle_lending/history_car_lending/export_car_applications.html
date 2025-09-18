@@ -10,6 +10,7 @@
       <p>กำหนดช่วงวันที่จากวันที่ออกเดินทาง</p>
       {{ renderer.date_field_js(form.start_date) }}
       {{ renderer.date_field_js(form.end_date) }}
+      {{ renderer.render_select_field(form.car) }}
 
       <div class="modal-action justify-end">
         <button type="button" class="btn"

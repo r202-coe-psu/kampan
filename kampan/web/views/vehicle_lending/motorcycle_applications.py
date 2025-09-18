@@ -7,6 +7,7 @@ from flask import (
     send_file,
     abort,
     jsonify,
+    current_app,
 )
 from flask_login import login_required, current_user
 import mongoengine as me
@@ -14,8 +15,9 @@ from flask_mongoengine import Pagination
 from wtforms import fields, validators, widgets
 import datetime
 
-from kampan.web import forms, acl
-from kampan import models
+from kampan.web import forms, acl, redis_rq
+from kampan import models, utils
+
 
 module = Blueprint(
     "motorcycle_applications", __name__, url_prefix="/motorcycle_applications"
@@ -281,3 +283,29 @@ def get_motorcycle_applications():
         datas.append(data)
 
     return jsonify({"motorcycle_applications": datas})
+
+
+@module.route("/<motorcycle_application_id>/send_email", methods=["GET", "POST"])
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
+def send_email(motorcycle_application_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    motorcycle_application = models.vehicle_applications.MotorcycleApplication.objects(
+        id=motorcycle_application_id
+    ).first()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.motorcycle_send_emails.force_send_email_to_admin,
+        args=(
+            motorcycle_application,
+            current_user._get_current_object(),
+            current_app.config,
+        ),
+        job_id=f"force_sent_email_head_endorser_motorcycle_application_{motorcycle_application.id}",
+        timeout=600,
+        job_timeout=600,
+    )
+    return {"status": "success", "job_id": job.id}

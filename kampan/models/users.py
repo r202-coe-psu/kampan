@@ -175,7 +175,7 @@ class User(me.Document, UserMixin):
             else:
                 fullname = self.resources["psu"]["display_name"]
         except:
-            fullname = self.get_name()
+            fullname = self.first_name + " " + self.last_name
         return fullname
 
     def get_first_name_th(self):

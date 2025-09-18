@@ -109,6 +109,7 @@ class DateRangeForm(FlaskForm):
         validators=[validators.Optional()],
         render_kw={"placeholder": "เลือกวันที่"},
     )
+    car = fields.SelectField("รถยนต์", validate_choice=True, choices=[])
 
 
 BaseMotorcycleApplicationForm = model_form(

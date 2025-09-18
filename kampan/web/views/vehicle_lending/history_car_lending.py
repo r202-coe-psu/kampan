@@ -7,17 +7,18 @@ from flask import (
     send_file,
     abort,
 )
+import calendar
 from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
 import datetime
 from uuid import uuid4
 import pandas as pd
-from io import BytesIO
 from mongoengine.queryset.visitor import Q
 
 from kampan.web import forms, acl
 from kampan import models
+from kampan.repositories.history_car_lending import HistoryCarLendingRepository
 
 module = Blueprint("history_car_lending", __name__, url_prefix="/history_car_lending")
 
@@ -119,7 +120,26 @@ def export_car_applications():
         id=organization_id, status="active"
     ).first()
     form = forms.vehicle_applications.DateRangeForm()
+    car_applications = []
     if request.method == "GET":
+        today = datetime.date.today()
+
+        # วันแรกของเดือน
+        first_day = today.replace(day=1)
+
+        # วันสุดท้ายของเดือน
+        last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+
+        # กำหนดค่าให้ form
+        form.start_date.data = first_day
+        form.end_date.data = last_day
+
+        form.car.choices = [
+            (str(car.id), car.license_plate)
+            for car in models.vehicles.Car.objects(
+                organization=organization, status="active"
+            ).order_by("license_plate")
+        ]
         return render_template(
             "/vehicle_lending/history_car_lending/export_car_applications.html",
             form=form,
@@ -139,47 +159,14 @@ def export_car_applications():
             query &= Q(departure_datetime__gte=start_date)
         if end_date:
             query &= Q(departure_datetime__lt=end_date)
-
+        if form.car.data:
+            query &= Q(car=form.car.data)
         car_applications = models.vehicle_applications.CarApplication.objects(
             query
         ).order_by("departure_datetime")
-
-    # แปลงเป็น list ของ dict
-    data = []
-    for idx, car_application in enumerate(car_applications, start=1):
-        data.append(
-            {
-                "ลำดับ": idx,
-                "วันที่ออกเดินทาง": car_application.departure_datetime.strftime(
-                    "%d-%m-%Y %H:%M"
-                ),
-                "ผู้ขอใช้": car_application.creator.get_name(),
-                "ลักษณะงาน": car_application.request_reason,
-                "สถานที่ไป": car_application.location,
-                "กลับถึงเวลา": (
-                    car_application.return_datetime.strftime("%d-%m-%Y %H:%M")
-                    if car_application.return_datetime
-                    else ""
-                ),
-                "เลขไมล์ก่อนเดินทาง": car_application.get_mile_before(),
-                "เลขไมล์หลังเดินทาง": car_application.last_mileage,
-            }
-        )
-
-    # สร้าง DataFrame
-    df = pd.DataFrame(data)
-
-    # เขียนไฟล์ excel ลง memory
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="CarApplications")
-
-    output.seek(0)
-
-    # ส่งไฟล์ออก
-    return send_file(
-        output,
-        as_attachment=True,
-        download_name="บันทึกการใช้รถยนต์.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    car_ = models.vehicles.Car.objects(id=form.car.data).first()
+    output = HistoryCarLendingRepository.get_export_car_applications_pdf(
+        car_applications=car_applications, current_user=current_user, car=car_
     )
+    # ส่งไฟล์ออก
+    return output

@@ -24,7 +24,7 @@
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   <div class="overflow-x-auto mt-2 rounded-xl">
     {% if paginated_motorcycle_applications.total %}
-    <table class="table-auto w-full">
+    <table class="table-auto w-full max-lg:hidden">
       <thead>
         <tr>
           <th class="table-style"></th>
@@ -62,18 +62,24 @@
             {{ motorcycle_application.get_reason() }}
           </td>
           <td class="table-style">
-            {% if 'pending' in motorcycle_application.status %}
-            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
-              href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
-            {% endif %}
-            {% if motorcycle_application.status in ['pending'] %}
-            <a class="btn btn-circle btn-error " data-tip="ลบ"
-              onclick="showDeleteModal('{{ motorcycle_application.id }}')">
-              <i class="ph ph-trash"></i>
-            </a>
-            {{ ModalNegative(
+            <div class="flex flex-wrap flex-row gap-2">
+              {% if 'pending' in motorcycle_application.status %}
+
+              <button class="btn btn-circle btn-primary tooltip" data-tip="ส่งอีเมลแจ้งเตือน"
+                onclick="modal_{{ motorcycle_application.id }}.showModal()">
+                <i class="ph ph-envelope"></i>
+              </button>
+              <a class="btn btn-circle btn-primary tooltip" data-tip="แก้ไข"
+                href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+                <i class="ph ph-pen"></i>
+              </a>
+              {% endif %}
+              {% if motorcycle_application.status in ['pending'] %}
+              <a class="btn btn-circle btn-error tooltip" data-tip="ลบ"
+                onclick="showDeleteModal('{{ motorcycle_application.id }}')">
+                <i class="ph ph-trash"></i>
+              </a>
+              {{ ModalNegative(
               id=motorcycle_application.id,
               header="ลบคำขอใช้รถจักรยานยนต์",
               body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.request_reason),
@@ -82,22 +88,125 @@
               redirect=url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id),
               ) }}
 
-            {% endif %}
-            {% if 'active' in motorcycle_application.status %}
-            <a class="btn btn-circle btn-primary tooltip" data-tip="ส่งคืน"
-              href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
-              <i class="ph ph-arrow-bend-left-up"></i>
-            </a>
-            {% endif %}
+              {% endif %}
+              {% if 'active' in motorcycle_application.status %}
+              <a class="btn btn-circle btn-primary tooltip" data-tip="ส่งคืน"
+                href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+                <i class="ph ph-arrow-bend-left-up"></i>
+              </a>
+              {% endif %}
+            </div>
+
+
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    <div class="space-y-4 lg:hidden">
+      {% for motorcycle_application in paginated_motorcycle_applications.items %}
+      <div class="border rounded-xl p-4 shadow bg-white">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-bold text-black">
+            #{{ paginated_motorcycle_applications.total - ((paginated_motorcycle_applications.page -1) *
+            paginated_motorcycle_applications.per_page) - loop.index0 }}
+          </span>
+          <span class="text-sm font-medium text-gray-700">
+            {{ motorcycle_application.departure_datetime|format_thai_datetime_short_month }}
+          </span>
+        </div>
+
+        <!-- Body grid -->
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div><span class="font-semibold">ผู้ขอใช้:</span> {{ motorcycle_application.creator.get_name() }}</div>
+          <div><span class="font-semibold">ลักษณะงาน:</span> {{ motorcycle_application.request_reason }}</div>
+          <div><span class="font-semibold">สถานที่ไป:</span> {{ motorcycle_application.location }}</div>
+          <div><span class="font-semibold">กลับถึงเวลา:</span>
+            {{ motorcycle_application.return_datetime|format_thai_datetime_short_month if motorcycle_application.return_datetime else "-" }}
+          </div>
+          <div><span class="font-semibold">ป้ายทะเบียนรถ:</span>
+            {{ motorcycle_application.motorcycle.license_plate if motorcycle_application.motorcycle else "-" }}
+          </div>
+          <div><span class="font-semibold">สถานะ:</span> {{ motorcycle_application.get_status()|safe }}</div>
+          <div><span class="font-semibold">เหตุผลอนุมัติ/ไม่อนุมัติ:</span> {{ motorcycle_application.get_reason() }}
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex flex-wrap gap-2 mt-3 justify-end">
+          {% if 'pending' in motorcycle_application.status %}
+          <!-- ส่งอีเมลแจ้งเตือน -->
+          <button class="btn btn-sm btn-primary"
+            onclick="modal_{{ motorcycle_application.id }}.showModal()">ส่งอีเมล</button>
+
+          <!-- แก้ไข -->
+          <a class="btn btn-sm btn-primary"
+            href="{{ url_for('vehicle_lending.motorcycle_applications.create_or_edit', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+            แก้ไข
+          </a>
+
+          <!-- ลบ -->
+          <button class="btn btn-sm btn-error" onclick="showDeleteModal('{{ motorcycle_application.id }}')">ลบ</button>
+          {{ ModalNegative(
+          id=motorcycle_application.id,
+          header="ลบคำขอใช้รถจักรยานยนต์",
+          body="ต้องการลบคำขอใช้รถจักรยานยนต์ <b> %s </b>" | format(motorcycle_application.request_reason),
+          cancel="ยกเลิก",
+          submit="ยืนยัน",
+          redirect=url_for('vehicle_lending.motorcycle_applications.delete', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id),
+        ) }}
+          {% endif %}
+
+          {% if 'active' in motorcycle_application.status %}
+          <a class="btn btn-sm btn-primary"
+            href="{{ url_for('vehicle_lending.motorcycle_applications.return_motorcycle', motorcycle_application_id=motorcycle_application.id, organization_id=organization.id) }}">
+            ส่งคืน
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% for motorcycle_application in paginated_motorcycle_applications.items %}
+    <dialog id="modal_{{ motorcycle_application.id }}" class="modal">
+      <div class="modal-box">
+        <form id="modal_form_{{ motorcycle_application.id }}">
+          <h3 class="text-lg font-bold">ส่งอีเมลแจ้งเตือน</h3>
+          <p class="py-4">ต้องการส่งอีเมลแจ้งเตือนถึงผู้อนุมัติหรือไม่?</p>
+          <div class="modal-action">
+            <button type="button" class="btn" onclick="modal_{{ motorcycle_application.id }}.close()">ยกเลิก</button>
+            <button type="button" class="btn btn-primary"
+              onclick="submitEmail('{{ motorcycle_application.id }}')">ยืนยัน</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+    {% endfor %}
   </div>
 </div>
 
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
 {% endif %}
+<script>
+  async function submitEmail(applicationId) {
+    const url = "{{ url_for('vehicle_lending.motorcycle_applications.send_email', motorcycle_application_id=0, organization_id=organization.id) }}".replace("0", applicationId);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest", "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      if (response.ok) {
+        console.log("Email sent successfully");
+        document.getElementById(`modal_${applicationId}`).close();
+      } else {
+        console.error("Error sending email", response.status);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  }
+</script>
 {% endblock %}

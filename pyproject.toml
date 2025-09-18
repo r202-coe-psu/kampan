@@ -5,7 +5,8 @@ description = ""
 authors = ["R202"]
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.11,<4"
+reportlab = "^4.4.3"
 flask = ">=3.1.0,<4.0.0"
 Werkzeug = "^3.1"
 Flask-Login = "^0.6.3"
