@@ -755,7 +755,7 @@
                 <table class="min-w-full divide-y divide-rose-200">
                     <thead class="bg-gradient-to-r">
                         <tr>
-                            <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th>
+                            <th class="text-center font-semibold text-base-content text-sm py-4 w-32">ลำดับ</th>
                             <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
                             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
@@ -848,6 +848,22 @@
                 <span class="text-blue-700 font-semibold text-sm">{{ renewal_requested_items|length }} รายการ</span>
             </div>
         </div>
+        <div class="mb-6 flex justify-center">
+            <div class="flex flex-wrap gap-6 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-pink-500 rounded"></div>
+                    <span class="font-medium">Supervisor supplier</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                    <span class="font-medium">Admin</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                    <span class="font-medium">Head</span>
+                </div>
+            </div>
+        </div>
 
         {% if renewal_requested_items|length == 0 %}
         <!-- ...existing empty state code... -->
@@ -857,6 +873,7 @@
                 <table class="min-w-full divide-y divide-blue-200">
                     <thead class="bg-gradient-to-r">
                         <tr>
+                            <th class="text-center font-semibold text-base-content text-sm py-4 w-32"></th>
                             <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
                             <th class="font-semibold text-base-content text-sm text-center w-32">ชื่อรายการ</th>
                             <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน
@@ -881,9 +898,16 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         {% for item in renewal_requested_items %}
-                        <tr class="hover:bg-blue-50 transition-colors duration-200"
-                            onclick="toggleSubtable('{{ item.id }}')" id="toggle-btn-{{ item.id }}">
-                            <!-- ...existing code... -->
+                        <tr class="hover:bg-blue-50 transition-colors duration-200" id="toggle-btn-{{ item.id }}">
+                            <!-- Add toggle icon as first cell -->
+                            <td class="px-2 py-3 whitespace-nowrap text-center ">
+                                <button class="toggle-icon-btn bg-transparent border-none cursor-pointer "
+                                    onclick="toggleSubtable('{{ item.id }}')" title="แสดง/ซ่อนรายละเอียด">
+                                    <span id="toggle-icon-{{ item.id }}" style="font-size:1.2em;"><i
+                                            class="ph ph-caret-circle-down"></i></span>
+                                </button>
+                            </td>
+                            <!-- ...existing code (move all cells right by one, update colspan below)... -->
                             <td class="px-4 py-3 whitespace-nowrap text-center">
                                 <div class="text-ms flex items-center gap-1 justify-center">
                                     <i class="ph ph-barcode"></i>{{ item.requisition_code }}
@@ -959,16 +983,36 @@
                                         <i class="ph ph-check text-lg" title="Approve"></i>
                                     </button>
                                 </form>
-                                <form method="post" style="display:inline"
-                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                    <input type="hidden" name="approver_role" value="head">
-                                    <input type="hidden" name="action" value="rejected">
-                                    <button type="submit"
-                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                        {% if already_acted %}disabled{% endif %}>
-                                        <i class="ph ph-x text-lg" title="Reject"></i>
-                                    </button>
-                                </form>
+                                <button type="button"
+                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                    {% if already_acted %}disabled{% endif %}
+                                    onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
+                                    <i class="ph ph-x text-lg" title="Reject"></i>
+                                </button>
+                                <!-- Reject Modal for Head -->
+                                <dialog id="modal-reject-head-{{ item.id }}" class="modal">
+                                    <form method="post"
+                                        action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                        class="modal-box">
+                                        <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                        <input type="hidden" name="approver_role" value="head">
+                                        <input type="hidden" name="action" value="rejected">
+                                        <div class="mb-6 flex flex-col items-center">
+                                            <label class="label mb-2 text-lg font-semibold text-error">
+                                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                            </label>
+                                            <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                maxlength="25" required style="min-width:300px;"
+                                                onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-head-{{ item.id }}').close()}" />
+                                        </div>
+                                        <div class="modal-action flex gap-2 justify-end">
+                                            <button type="button" class="btn"
+                                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">ยกเลิก</button>
+                                            <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                        </div>
+                                    </form>
+                                </dialog>
                             </td>
                             {% endif %}
                             {% if 'admin' in current_user.roles %}
@@ -982,17 +1026,37 @@
                                     onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                 </button>
-                                <!-- Reject Button as normal -->
-                                <form method="post" style="display:inline"
-                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                    <input type="hidden" name="approver_role" value="admin">
-                                    <input type="hidden" name="action" value="rejected">
-                                    <button type="submit"
-                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                        {% if already_acted %}disabled{% endif %}>
-                                        <i class="ph ph-x text-lg" title="Reject"></i>
-                                    </button>
-                                </form>
+                                <!-- Reject Button as modal -->
+                                <button type="button"
+                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                    {% if already_acted %}disabled{% endif %}
+                                    onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
+                                    <i class="ph ph-x text-lg" title="Reject"></i>
+                                </button>
+                                <!-- Reject Modal for Admin -->
+                                <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
+                                    <form method="post"
+                                        action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                        class="modal-box ">
+                                        <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                        <input type="hidden" name="approver_role" value="admin">
+                                        <input type="hidden" name="action" value="rejected">
+                                        <div class="mb-6 flex flex-col items-center">
+                                            <label class="label mb-2 text-lg font-semibold text-error">
+                                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                            </label>
+                                            <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                maxlength="25" required style="min-width:300px;"
+                                                onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
+                                        </div>
+                                        <div class="modal-action flex gap-2 justify-end">
+                                            <button type="button" class="btn"
+                                                onclick="document.getElementById('modal-reject-admin-{{ item.id }}').close()">ยกเลิก</button>
+                                            <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                        </div>
+                                    </form>
+                                </dialog>
                                 <!-- MAS Selection Modal -->
                                 <dialog id="modal-mas-{{ item.id }}" class="modal">
                                     <form method="post"
@@ -1068,20 +1132,65 @@
                                         <i class="ph ph-check text-lg" title="Approve"></i>
                                     </button>
                                 </form>
-                                <form method="post" style="display:inline"
-                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                    <input type="hidden" name="approver_role" value="supervisor supplier">
-                                    <input type="hidden" name="action" value="rejected">
-                                    <button type="submit"
-                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                        {% if already_acted %}disabled{% endif %}>
-                                        <i class="ph ph-x text-lg" title="Reject"></i>
-                                    </button>
-                                </form>
+                                <button type="button"
+                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                    {% if already_acted %}disabled{% endif %}
+                                    onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
+                                    <i class="ph ph-x text-lg" title="Reject"></i>
+                                </button>
+                                <!-- Reject Modal for Supervisor Supplier -->
+                                <dialog id="modal-reject-supervisor-{{ item.id }}" class="modal">
+                                    <form method="post"
+                                        action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                        class="modal-box">
+                                        <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                        <input type="hidden" name="approver_role" value="supervisor supplier">
+                                        <input type="hidden" name="action" value="rejected">
+                                        <div class="mb-6 flex flex-col items-center">
+                                            <label class="label mb-2 text-lg font-semibold text-error">
+                                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                            </label>
+                                            <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                maxlength="25" required style="min-width:300px;"
+                                                onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
+                                        </div>
+                                        <div class="modal-action flex gap-2 justify-end">
+                                            <button type="button" class="btn"
+                                                onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').close()">ยกเลิก</button>
+                                            <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                        </div>
+                                    </form>
+                                </dialog>
                             </td>
                             {% endif %}
                             <td class="px-4 py-3 whitespace-nowrap text-center">
-                                <div class="flex gap-2 justify-center items-end">
+                                <div class="join gap-1">
+                                    {% set role_badges = {
+                                    'head': ['badge-primary', 'ph-user'],
+                                    'admin': ['badge-secondary', 'ph-shield'],
+                                    'supervisor supplier': ['badge-accent', 'ph-users']
+                                    } %}
+
+                                    {% for role, badge_info in role_badges.items() %}
+                                    {% set badge_class = badge_info[0] %}
+                                    {% set icon = badge_info[1] %}
+                                    {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
+                                    role) | list %}
+
+                                    {% if approvals %}
+                                    {# ถ้า role นี้มีการ approve แล้ว #}
+                                    <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
+                                        title="{{ role|title }} {{ approvals[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}">
+                                    </div>
+                                    {% else %}
+                                    {# ถ้ายังไม่ approve → แสดง badge-soft เปล่า ๆ #}
+                                    <div class="badge badge-soft {{ badge_class }} badge-sm"></div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+
+                                <!-- <div class="flex gap-2 justify-center items-end">
                                     {% set role_badges = {
                                     'head': ['badge-primary', 'ph-user'],
                                     'admin': ['badge-secondary', 'ph-shield'],
@@ -1103,11 +1212,11 @@
                                     </div>
                                     {% endif %}
                                     {% endfor %}
-                                </div>
+                                </div> -->
                             </td>
                         </tr>
                         <tr id="subtable-{{ item.id }}">
-                            <td colspan="11" class="bg-blue-50 px-4 py-2 p-0">
+                            <td colspan="12" class="bg-blue-50 px-4 py-2 p-0">
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full table-sm divide-y divide-blue-100">
                                         <thead>
@@ -1164,14 +1273,13 @@
 
         function toggleSubtable(itemId) {
             var subtable = document.getElementById('subtable-' + itemId);
-            var btn = document.getElementById('toggle-btn-' + itemId);
             var icon = document.getElementById('toggle-icon-' + itemId);
             if (subtable.style.display === 'none') {
                 subtable.style.display = '';
-                icon.textContent = '▼';
+                icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
             } else {
                 subtable.style.display = 'none';
-                icon.textContent = '▲';
+                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
             }
         }
 
@@ -1181,7 +1289,7 @@
                 row.style.display = 'none';
             });
             document.querySelectorAll('[id^="toggle-icon-"]').forEach(function (icon) {
-                icon.textContent = '▲';
+                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
             });
         });
     </script>

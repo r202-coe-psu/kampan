@@ -352,6 +352,7 @@ def download(requisition_procurement_id, filename):
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
     action = request.form.get("action")  # 'approved' or 'rejected'
+    reason = request.form.get("reason")  # เหตุผลในการปฏิเสธ
     fund_id = request.form.get("fund")
     requisition = models.Requisition.objects(id=requisition_id).first()
     organization = current_user.user_setting.current_organization
@@ -376,6 +377,7 @@ def requisition_action(requisition_id):
         approver=member_obj,
         approver_role=approver_role,
         action=action,
+        reason=reason if action == "rejected" and reason else None,
         timestamp=datetime.datetime.now(),
     )
     if requisition.approval_history is None:

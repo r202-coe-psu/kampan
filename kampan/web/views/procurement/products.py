@@ -61,7 +61,7 @@ def index():
         query["payment_status"] = payment_status
 
     procurement_qs = models.Procurement.objects(**query)
-    # ถ้า user เป็น staff (แต่ไม่ใช่ admin) ให้ filter เฉพาะที่ responsible_by เป็น user
+
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
@@ -71,7 +71,7 @@ def index():
         and "admin" not in current_user.roles
     ):
         procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
-    # enrich: คำนวณเดือนและวันลงในแต่ละ procurement (เฉพาะหน้า)
+
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
     paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
@@ -83,7 +83,7 @@ def index():
 
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
-    total_amount_all = procurement_qs.sum("amount")
+    all_procurements = models.Procurement.objects()
 
     return render_template(
         "/procurement/products/index.html",
@@ -95,8 +95,8 @@ def index():
         selected_payment_status=payment_status,
         category_choices=category_choices,
         payment_status_choices=payment_status_choices,
-        total_amount_all=total_amount_all,
         upload_success=upload_success,
+        all_procurements=all_procurements,
     )
 
 

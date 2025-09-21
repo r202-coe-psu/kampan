@@ -96,100 +96,48 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <!-- Total Items Card -->
-        <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
-            <div class="card-body">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-100 text-lg font-medium">รายการทั้งหมด</p>
-                        <p class="text-4xl font-bold">{{ paginated_procurements.total }}</p>
-                        <p class="text-blue-100 text-ms">รายการในระบบ</p>
-                    </div>
-                    <div class="bg-white/20 rounded-full p-3">
-                        <i class="ph ph-list text-2xl flex flex-col"></i>
-                    </div>
-                </div>
+        <div class="card shadow-lg border-0 bg-gradient-to-br from-red-100 to-red-200 flex flex-col items-center py-6">
+            <div class="mb-2">
+                <i class="ph ph-warning-circle text-3xl text-red-500"></i>
             </div>
+            <div class="font-bold text-red-700 text-3xl mb-1">
+                {{ all_procurements|selectattr('payment_status', 'equalto', 'overdue')|list|length }}
+            </div>
+            <div class="text-base text-red-700 font-semibold mb-1">เลยกำหนด</div>
+            <div class="text-xs text-red-600">รายการที่เลยกำหนดชำระ</div>
         </div>
-
-        <!-- Total Amount All Card -->
-        <div class="card bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg">
-            <div class="card-body p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-green-100 text-lg font-medium">มูลค่ารวมทั้งหมด</p>
-                        <p class="text-4xl font-bold">
-                            ฿{{ '{:,.0f}'.format(total_amount_all) }}
-                        </p>
-                        <p class="text-green-100 text-ms">ของทุกรายการ</p>
-                    </div>
-                    <div class="bg-white/20 rounded-full p-3">
-                        <i class="ph ph-currency-circle-dollar text-2xl flex flex-col"></i>
-                    </div>
-                </div>
+        <div
+            class="card shadow-lg border-0 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center py-6">
+            <div class="mb-2">
+                <i class="ph ph-clock text-3xl text-orange-500"></i>
             </div>
+            <div class="font-bold text-orange-700 text-3xl mb-1">
+                {{ all_procurements|selectattr('payment_status', 'equalto', 'upcoming')|list|length }}
+            </div>
+            <div class="text-base text-orange-700 font-semibold mb-1">ใกล้ครบกำหนด</div>
+            <div class="text-xs text-orange-600">ครบกำหนดใน 7 วัน</div>
         </div>
-
-        <!-- Total Amount in Page Card -->
-        <div class="card bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg">
-            <div class="card-body p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-emerald-100 text-lg font-medium">มูลค่าหน้านี้</p>
-                        <p class="text-4xl font-bold">
-                            ฿{{ '{:,.0f}'.format(procurements|map(attribute='amount')|sum) }}
-                        </p>
-                        <p class="text-emerald-100 text-ms">เฉพาะรายการในหน้านี้</p>
-                    </div>
-                    <div class="bg-white/20 rounded-full p-3">
-                        <i class="ph ph-wallet text-2xl flex flex-col"></i>
-                    </div>
-                </div>
+        <div
+            class="card shadow-lg border-0 bg-gradient-to-br from-green-100 to-green-200 flex flex-col items-center py-6">
+            <div class="mb-2">
+                <i class="ph ph-check-circle text-3xl text-green-500"></i>
             </div>
+            <div class="font-bold text-green-700 text-3xl mb-1">
+                {{ all_procurements|selectattr('payment_status', 'equalto', 'paid')|list|length }}
+            </div>
+            <div class="text-base text-green-700 font-semibold mb-1">ชำระครบ</div>
+            <div class="text-xs text-green-600">ชำระเงินครบถ้วนแล้ว</div>
         </div>
-
-        <!-- Status Cards (split into 4) -->
-        <div class="card bg-base-100 shadow-lg border border-base-200">
-            <div class="card-body p-3">
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="flex items-center gap-2 bg-gradient-to-r from-red-100 to-red-200 rounded p-2">
-                        <div class="w-3 h-3 bg-red-500 rounded"></div>
-                        <div>
-                            <div class="font-bold text-red-700 text-lg">
-                                {{ procurements|selectattr('payment_status', 'equalto', 'overdue')|list|length }}
-                            </div>
-                            <div class="text-xs text-red-700">เลยกำหนด</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 bg-gradient-to-r from-white-100 to-orange-200 rounded p-2">
-                        <div class="w-3 h-3 bg-orange-500 rounded"></div>
-                        <div>
-                            <div class="font-bold text-orange-700 text-lg">
-                                {{ procurements|selectattr('payment_status', 'equalto', 'upcoming')|list|length }}
-                            </div>
-                            <div class="text-xs text-orange-700">ใกล้ครบกำหนด</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 bg-gradient-to-r from-white-100 to-green-200 rounded p-2">
-                        <div class="w-3 h-3 bg-green-500 rounded"></div>
-                        <div>
-                            <div class="font-bold text-green-700 text-lg">
-                                {{ procurements|selectattr('payment_status', 'equalto', 'paid')|list|length }}
-                            </div>
-                            <div class="text-xs text-green-700">ชำระครบ</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 bg-gradient-to-r from-white-100 to-gray-200 rounded p-2">
-                        <div class="w-3 h-3 bg-gray-500 rounded"></div>
-                        <div>
-                            <div class="font-bold text-gray-700 text-lg">
-                                {{ procurements|selectattr('payment_status', 'equalto', 'unpaid')|list|length }}
-                            </div>
-                            <div class="text-xs text-gray-700">ยังไม่ชำระ</div>
-                        </div>
-                    </div>
-                </div>
+        <div
+            class="card shadow-lg border-0 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center py-6">
+            <div class="mb-2">
+                <i class="ph ph-x-circle text-3xl text-gray-500"></i>
             </div>
+            <div class="font-bold text-gray-700 text-3xl mb-1">
+                {{ all_procurements|selectattr('payment_status', 'equalto', 'unpaid')|list|length }}
+            </div>
+            <div class="text-base text-gray-700 font-semibold mb-1">ยังไม่ชำระ</div>
+            <div class="text-xs text-gray-600">ยังไม่ชำระเงิน</div>
         </div>
     </div>
 

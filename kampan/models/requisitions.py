@@ -41,6 +41,7 @@ class ApprovalHistory(me.EmbeddedDocument):
         choices=[("approved", "Approved"), ("rejected", "Rejected")],
         required=True,
     )
+    reason = me.StringField(max_length=25)
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
