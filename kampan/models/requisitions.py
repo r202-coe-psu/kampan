@@ -42,6 +42,8 @@ class ApprovalHistory(me.EmbeddedDocument):
         required=True,
     )
     reason = me.StringField(max_length=25)
+    last_ip_address = me.StringField()
+    user_agent = me.StringField()
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 

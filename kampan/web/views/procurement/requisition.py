@@ -375,7 +375,6 @@ def requisition_action(requisition_id):
         timestamp=datetime.datetime.now(),
         last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
         user_agent=request.headers.get("User-Agent"),
-        referer=request.headers.get("Referer"),
     )
     if requisition.approval_history is None:
         requisition.approval_history = []
