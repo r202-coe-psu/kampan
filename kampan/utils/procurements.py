@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from io import BytesIO
 from datetime import datetime
-from kampan.models.procurement import Procurement, ToRYear
+from kampan.models.procurement import Procurement
 from kampan.models import OrganizationUserRole
 from kampan.models import User
 
@@ -84,7 +84,6 @@ def upload_procurement_excel(file_bytes, user_id):
         "ประเภท",
         "ชื่อผู้รับผิดชอบ",
         "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์",
-        "ปีงบประมาณ",
     ]
 
     for idx, row in df.iterrows():
@@ -100,25 +99,8 @@ def upload_procurement_excel(file_bytes, user_id):
 
         data = {}
         try:
-            # --- ดึงปีงบประมาณจาก column ---
-            tor_year_value = row.get("ปีงบประมาณ")
-            tor_year_obj = None
-            if pd.notnull(tor_year_value):
-                tor_year_str = str(int(tor_year_value))
-                tor_year_obj = ToRYear.objects(
-                    year=tor_year_str, status="active"
-                ).first()
-                if not tor_year_obj:
-                    tor_year_obj = ToRYear(
-                        year=tor_year_str,
-                        started_date=datetime(int(tor_year_str) - 1, 10, 1),
-                        ended_date=datetime(int(tor_year_str), 9, 30),
-                        created_by=user,
-                        last_updated_by=user,
-                        status="active",
-                    )
-                    tor_year_obj.save()
-
+            # --- ไม่ต้องดึงปีงบประมาณแล้ว ---
+            # for excel_col, model_field in column_map.items():
             for excel_col, model_field in column_map.items():
                 value = row.get(excel_col)
                 try:
@@ -165,18 +147,16 @@ def upload_procurement_excel(file_bytes, user_id):
                 "company": data.get("company"),
                 "category": data.get("category"),
                 "responsible_by": data.get("responsible_by"),
-                "tor_year": tor_year_obj,
             }
             if Procurement.objects(**duplicate_query).first():
                 print(f"Row {idx+1} skipped: duplicate found.")
                 continue
 
-            # สร้าง product_number ตามปีงบประมาณ
-            product_number = Procurement.generate_product_number(tor_year=tor_year_obj)
+            # สร้าง product_number แบบ simple (หรือจะใช้ logic เดิมก็ได้)
+            product_number = f"PN-{datetime.now().strftime('%Y%m%d%H%M%S')}-{idx+1}"
             procurement = Procurement(
                 **data,
                 product_number=product_number,
-                tor_year=tor_year_obj,
                 created_by=user,
                 last_updated_by=user,
                 status="active",  # <-- set status to active on upload

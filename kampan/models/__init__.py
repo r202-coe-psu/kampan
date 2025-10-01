@@ -15,7 +15,7 @@ from .item_orders import OrderEmail, OrderItem
 from .item_registers import RegistrationItem
 from .lost_break_items import LostBreakItem
 from .categories import Category
-from .procurement import Procurement, ToRYear, PaymentRecord
+from .procurement import Procurement, PaymentRecord
 from .mas import MAS
 from .requisitions import Requisition, RequisitionItem, Committees
 import kampan.models.vehicles as vehicles

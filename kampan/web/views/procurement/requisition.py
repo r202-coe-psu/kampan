@@ -40,13 +40,10 @@ def generate_next_requisition_code():
 @login_required
 def index():
     organization = current_user.user_setting.current_organization
-    tor_year = getattr(current_user.user_setting, "tor_year", None)
 
     category = request.args.get("category", "")
 
     query = {}
-    if tor_year:
-        query["tor_year"] = tor_year
     if category:
         query["category"] = category
 
@@ -100,9 +97,6 @@ def non_renewal(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         query = {"status": "disactive"}
-        tor_year = getattr(current_user.user_setting, "tor_year", None)
-        if tor_year:
-            query["tor_year"] = tor_year
         procurements = models.Procurement.objects(**query)
         org_user_role = models.OrganizationUserRole.objects(
             user=current_user._get_current_object()
@@ -367,7 +361,7 @@ def requisition_action(requisition_id):
     )
     if not member_obj or not requisition:
         abort(404)
-        # If admin approves and fund is provided, set fund
+    # If admin approves and fund is provided, set fund
     if approver_role == "admin" and action == "approved" and fund_id:
         mas_obj = models.MAS.objects(id=fund_id).first()
         if mas_obj:
@@ -379,6 +373,9 @@ def requisition_action(requisition_id):
         action=action,
         reason=reason if action == "rejected" and reason else None,
         timestamp=datetime.datetime.now(),
+        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+        user_agent=request.headers.get("User-Agent"),
+        referer=request.headers.get("Referer"),
     )
     if requisition.approval_history is None:
         requisition.approval_history = []

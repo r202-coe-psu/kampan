@@ -7,7 +7,6 @@ BaseProcurementForm = model_form(
     models.Procurement,
     FlaskForm,
     exclude=[
-        "product_number",
         "created_date",
         "updated_date",
         "created_by",
@@ -18,6 +17,7 @@ BaseProcurementForm = model_form(
         "status",
     ],
     field_args={
+        "product_number": {"label": "เลขที่สินค้า/เลขที่เอกสาร"},
         "name": {"label": "ชื่อรายการ"},
         "category": {"label": "ประเภท"},
         "asset_code": {"label": "รหัสครุภัณฑ์"},
@@ -58,28 +58,6 @@ class ProcurementForm(BaseProcurementForm):
             file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
         ],
     )
-
-
-BaseToRYearForm = model_form(
-    models.ToRYear,
-    FlaskForm,
-    exclude=[
-        "created_by",
-        "last_updated_by",
-        "created_date",
-        "updated_date",
-        "status",
-    ],
-    field_args={
-        "year": {"label": "ปีงบประมาณ"},
-        "started_date": {"label": "วันเริ่มต้นปี", "format": "%Y-%m-%d"},
-        "ended_date": {"label": "วันสิ้นสุดปี", "format": "%Y-%m-%d"},
-    },
-)
-
-
-class ToRYearForm(BaseToRYearForm):
-    pass
 
 
 class FileForm(FlaskForm):

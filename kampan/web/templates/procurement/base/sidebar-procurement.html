@@ -11,12 +11,6 @@
       <h2 class="font-bold text-lg text-tns-black">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</h2>
       <ul class="ml-2">
         <li>
-          <a class="{{ 'menu-active' if '/tor_years' in request.path else '' }}"
-            href="{{ url_for('admin.tor_years.index', organization_id=organization.id) }}">
-            <i class="ph ph-calendar"></i> ปีงบประมาณ
-          </a>
-        </li>
-        <li>
           <details {% if '/procurement/products' in request.path or '/procurement/setting_email' in request.path
             %}open{% endif %}>
             <summary>
@@ -65,7 +59,7 @@
           </details>
         </li>
         <li>
-          <details {% if '/tor_years' in request.path or '/mas' in request.path %}open{% endif %}>
+          <details {% if '/mas' in request.path %}open{% endif %}>
             <summary>
               <i class="ph ph-bank"></i> ระบบ MAS
             </summary>

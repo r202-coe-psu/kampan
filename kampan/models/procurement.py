@@ -24,24 +24,11 @@ RENEWAL_STATUS_CHOICES = [
 ]
 
 
-class ToRYear(me.Document):
-    year = me.StringField(requred=True, max_length=100)
-    started_date = me.DateTimeField(required=True)
-    ended_date = me.DateTimeField(required=True)
-
-    created_by = me.ReferenceField("User", dbref=True, required=True)
-    last_updated_by = me.ReferenceField("User", dbref=True, required=True)
-    status = me.StringField(required=True, default="active")
-    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-
-    meta = {"collection": "tor_years"}
-
-
 class PaymentRecord(me.EmbeddedDocument):
     """Record for each payment period"""
 
     period_index = me.IntField(required=True)
+    product_number = me.StringField(max_length=50, required=True)
     paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
     due_date = me.DateTimeField(required=True)  # วันที่ครบกำหนดของงวดนี้
@@ -67,7 +54,6 @@ class Procurement(me.Document):
     # References
     company = me.StringField(max_length=255, required=True)
     payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
-    tor_year = me.ReferenceField(ToRYear, dbref=True)
     responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
 
     # Audit fields
@@ -81,44 +67,6 @@ class Procurement(me.Document):
     payment_records = me.ListField(
         me.EmbeddedDocumentField(PaymentRecord)
     )  # ประวัติการจ่ายเงิน
-
-    @classmethod
-    def generate_product_number(cls, tor_year=None):
-        """
-        Generate product number in format มอ 011/YY-N using the last 2 digits of ToRYear.year.
-        """
-        import datetime
-
-        prefix = "มอ 011"
-        if tor_year and tor_year.year:
-            thai_year = str(tor_year.year)[-2:]  # Use last 2 digits of the ToR year
-        else:
-            current_year = datetime.datetime.now().year
-            thai_year = str(current_year + 543)[-2:]  # Default to current Buddhist year
-
-        # Query all matching product numbers in that year
-        year_prefix = f"{prefix}/{thai_year}-"
-        matching_products = cls.objects(product_number__startswith=year_prefix)
-
-        # Extract number after the dash and convert to int
-        last_number = 0
-        for item in matching_products:
-            try:
-                number_part = int(item.product_number.split("-")[-1])
-                if number_part > last_number:
-                    last_number = number_part
-            except (ValueError, IndexError):
-                continue
-
-        new_number = last_number + 1
-        return f"{prefix}/{thai_year}-{new_number}"
-
-    def save(self, *args, **kwargs):
-        """Override save to auto-generate product_number"""
-        if not self.product_number:
-            tor_year = getattr(self, "tor_year", None)
-            self.product_number = self.generate_product_number(tor_year=tor_year)
-        return super().save(*args, **kwargs)
 
     def get_payment_due_dates(self):
         """
@@ -196,8 +144,8 @@ class Procurement(me.Document):
         else:
             return "unpaid"
 
-    def add_payment_record(self, period_index, paid_by):
-        """Add payment record for specific period"""
+    def add_payment_record(self, period_index, paid_by, product_number=None):
+        """Add payment record for specific period, storing product_number at time of payment"""
         due_dates = self.get_payment_due_dates()
         due_date = None
         if 0 <= period_index < len(due_dates):
@@ -209,6 +157,9 @@ class Procurement(me.Document):
             paid_date=datetime.datetime.now(),
             paid_by=paid_by,
             due_date=due_date,
+            product_number=(
+                product_number if product_number is not None else self.product_number
+            ),
         )
         self.payment_records.append(payment_record)
 

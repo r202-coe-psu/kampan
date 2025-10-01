@@ -45,7 +45,6 @@ def calculate_months_days(start_date, end_date):
 def index():
     organization = current_user.user_setting.current_organization
     today = datetime.date.today()
-    tor_year = getattr(current_user.user_setting, "tor_year", None)
 
     # เพิ่ม filter category และ payment_status
     category = request.args.get("category", "")
@@ -53,8 +52,6 @@ def index():
     upload_success = request.args.get("upload_success", "")
 
     query = {}
-    if tor_year:
-        query["tor_year"] = tor_year
     if category:
         query["category"] = category
     if payment_status:
@@ -106,15 +103,24 @@ def set_paid(procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=procurement_id).first()
     next_period_index = len(procurement.payment_records)
+    new_product_number = request.form.get("product_number")
+
+    # Save old product_number in payment record before updating
     procurement.add_payment_record(
         period_index=next_period_index,
         paid_by=current_user._get_current_object(),
+        product_number=procurement.product_number,
     )
     procurement.paid_period_index = next_period_index
     procurement.payment_status = procurement.get_current_payment_status(
         datetime.date.today()
     )
     procurement.last_updated_by = current_user._get_current_object()
+
+    # Update product_number if new value is provided
+    if new_product_number:
+        procurement.product_number = new_product_number
+
     procurement.save()
     return redirect(url_for("procurement.products.index", organization=organization))
 
@@ -148,7 +154,6 @@ def validate_upload_file(form, errors, template_columns):
 def create():
     form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
-    tor_year_id = request.args.get("tor_year_id")
     members = organization.get_organization_users()
     form.responsible_by.queryset = members
 
@@ -164,15 +169,6 @@ def create():
     procurement.created_by = procurement.last_updated_by = (
         current_user._get_current_object()
     )
-
-    # Set tor_year
-    tor_year = None
-    if tor_year_id:
-        tor_year = models.ToRYear.objects(id=tor_year_id, status="active").first()
-    elif current_user.user_setting and current_user.user_setting.tor_year:
-        tor_year = current_user.user_setting.tor_year
-    if tor_year:
-        procurement.tor_year = tor_year
 
     # Save image if uploaded
     if form.image.data:
@@ -257,7 +253,6 @@ def download_template(organization_id):
         id=organization_id, status="active"
     ).first()
     template_data = {
-        "ปีงบประมาณ": ["25xx"],
         "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],
         "รหัสครุภัณฑ์": ["CC/www-x-yy/zz"],
         "วันที่เริ่มต้น": ["14 พฤศจิกายน 2567"],
