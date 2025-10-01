@@ -85,7 +85,7 @@
                 <i class="ph ph-warning-circle text-3xl text-red-500"></i>
             </div>
             <div class="font-bold text-red-700 text-3xl mb-1">
-                {{ all_procurements|selectattr('payment_status', 'equalto', 'overdue')|list|length }}
+                {{ status_count['overdue'] }}
             </div>
             <div class="text-base text-red-700 font-semibold mb-1">เลยกำหนด</div>
             <div class="text-xs text-red-600">รายการที่เลยกำหนดชำระ</div>
@@ -96,7 +96,7 @@
                 <i class="ph ph-clock text-3xl text-orange-500"></i>
             </div>
             <div class="font-bold text-orange-700 text-3xl mb-1">
-                {{ all_procurements|selectattr('payment_status', 'equalto', 'upcoming')|list|length }}
+                {{ status_count['upcoming'] }}
             </div>
             <div class="text-base text-orange-700 font-semibold mb-1">ใกล้ครบกำหนด</div>
             <div class="text-xs text-orange-600">ครบกำหนดใน 7 วัน</div>
@@ -107,7 +107,7 @@
                 <i class="ph ph-check-circle text-3xl text-green-500"></i>
             </div>
             <div class="font-bold text-green-700 text-3xl mb-1">
-                {{ all_procurements|selectattr('payment_status', 'equalto', 'paid')|list|length }}
+                {{ status_count['paid'] }}
             </div>
             <div class="text-base text-green-700 font-semibold mb-1">ชำระครบ</div>
             <div class="text-xs text-green-600">ชำระเงินครบถ้วนแล้ว</div>
@@ -118,7 +118,7 @@
                 <i class="ph ph-x-circle text-3xl text-gray-500"></i>
             </div>
             <div class="font-bold text-gray-700 text-3xl mb-1">
-                {{ all_procurements|selectattr('payment_status', 'equalto', 'unpaid')|list|length }}
+                {{ status_count['unpaid'] }}
             </div>
             <div class="text-base text-gray-700 font-semibold mb-1">ยังไม่ชำระ</div>
             <div class="text-xs text-gray-600">ยังไม่ชำระเงิน</div>

@@ -46,11 +46,12 @@ def index():
     organization = current_user.user_setting.current_organization
     today = datetime.date.today()
 
-    # เพิ่ม filter category และ payment_status
+    # Collect filters from request
     category = request.args.get("category", "")
     payment_status = request.args.get("payment_status", "")
     upload_success = request.args.get("upload_success", "")
 
+    # Build query dict
     query = {}
     if category:
         query["category"] = category
@@ -59,6 +60,7 @@ def index():
 
     procurement_qs = models.Procurement.objects(**query)
 
+    # Filter for staff role (not admin)
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
@@ -69,15 +71,32 @@ def index():
     ):
         procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
 
+    # --- Status count section ---
+    # Count all procurements for this organization/user role (not paginated, not filtered by category/payment_status)
+    base_qs = models.Procurement.objects()
+    if (
+        org_user_role
+        and "staff" in current_user.roles
+        and "admin" not in current_user.roles
+    ):
+        base_qs = base_qs.filter(responsible_by=org_user_role)
+    status_count = {}
+    for status, _ in models.procurement.PAYEMENT_STATUS_CHOICES:
+        status_count[status] = base_qs.filter(payment_status=status).count()
+    # --- End status count section ---
+
+    # Pagination
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
     paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
 
+    # Calculate durations
     for p in paginated_procurements.items:
         months, days = calculate_months_days(p.start_date, p.end_date)
         p.duration_months = months
         p.duration_days = days
 
+    # Choices for filters
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
     all_procurements = models.Procurement.objects()
@@ -94,6 +113,7 @@ def index():
         payment_status_choices=payment_status_choices,
         upload_success=upload_success,
         all_procurements=all_procurements,
+        status_count=status_count,
     )
 
 
