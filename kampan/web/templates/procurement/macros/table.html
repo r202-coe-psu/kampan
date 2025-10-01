@@ -218,34 +218,49 @@
 {% set paid_count = item.payment_records|length %}
 {% if status != 'paid' and next_idx < due_dates|length and paid_count < item.period %} <dialog
     class="modal payment_{{ item.id }}">
-    <div class="modal-box">
-        <div class="text-2xl text-success font-bold">
-            ยืนยันการชำระเงิน
+    <div class="modal-box max-w-md">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph ph-credit-card text-green-600 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">ยืนยันการชำระเงิน</h3>
+            <p class="text-gray-600">งวดที่ {{ paid_count + 1 }} จาก {{ item.period }} งวด</p>
         </div>
-        <p class="py-4">
-            คุณต้องการยืนยันการชำระเงินงวดที่ {{ paid_count + 1 }} สำหรับรายการ "{{ item.name }}" หรือไม่?<br>
-            <small class='text-warning'>หมายเหตุ: การยืนยันจะบันทึกข้อมูลการชำระเงินในระบบ</small>
-        </p>
-        <div class="modal-action">
-            <form method="dialog">
-                <button class="btn">ยกเลิก</button>
-            </form>
-            <form method="post"
-                action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}">
-                <div class="mb-4">
-                    <label for="product_number_{{ item.id }}" class="block text-gray-700 font-medium mb-2">
-                        แก้ไขเลขที่เบิกจ่าย (เพิ่มใหม่)
-                    </label>
-                    <input type="text" name="product_number" id="product_number_{{ item.id }}"
-                        class="input input-bordered w-full" placeholder="กรอกเลขที่เบิกจ่ายใหม่" />
-                    <small class="text-gray-400">* หากไม่ต้องการเพิ่มเลขใหม่ ปล่อยว่างไว้</small>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+                <i class="ph ph-info text-blue-600 text-lg mt-0.5"></i>
+                <div>
+                    <p class="font-medium text-blue-800 mb-1">รายการ: {{ item.name }}</p>
+                    <p class="text-sm text-blue-600">เลขที่เบิกจ่ายปัจจุบัน: {{ item.product_number }}</p>
                 </div>
-                <button type="submit" class="btn btn-success">
-                    ยืนยันชำระ
-                    <i class="ph ph-check"></i>
-                </button>
-            </form>
+            </div>
         </div>
+
+        <form method="post"
+            action="{{ url_for('procurement.products.set_paid', procurement_id=item.id, organization=organization.id) }}">
+            <div class="mb-6">
+                <label for="product_number_{{ item.id }}" class="block text-gray-700 font-medium mb-2">
+                    <i class="ph ph-barcode mr-1"></i>
+                    เลขที่เบิกจ่ายใหม่ (ถ้ามี)
+                </label>
+                <input type="text" name="product_number" id="product_number_{{ item.id }}"
+                    class="input input-bordered w-full" placeholder="เช่น มอ. 011/2567-0002" />
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <form method="dialog">
+                    <button class="btn btn-ghost px-6" type="button" onclick="this.closest('dialog').close()">
+                        <i class="ph ph-x mr-1"></i>
+                        ยกเลิก
+                    </button>
+                </form>
+                <button type="submit" class="btn btn-success px-6">
+                    <i class="ph ph-check mr-1"></i>
+                    ยืนยันชำระเงิน
+                </button>
+            </div>
+        </form>
     </div>
     </dialog>
     {% endif %}

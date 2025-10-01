@@ -27,7 +27,20 @@
                 ข้อมูลพื้นฐาน
             </h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="lg:col-span-2">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="product_number">{{
+                        form.product_number.label }}</label>
+                    <div class="relative">
+                        {{ form.product_number(class_="input input-bordered w-full focus:input-primary pl-10") }}
+                        <i class="ph ph-barcode absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    {% if form.product_number.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center">
+                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.product_number.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
                     <label class="block text-gray-700 font-medium mb-2" for="name">{{ form.name.label }}</label>
                     {{ form.name(class_="input input-bordered w-full focus:input-primary") }}
                     {% if form.name.errors %}
@@ -333,10 +346,10 @@
             const isPeriodValid = validatePeriod();
             const imageInput = document.getElementById('image');
             const isImageValid = imageInput.files.length > 0;
-            
+
             // Clear any HTML5 validation message on image input
             imageInput.setCustomValidity('');
-            
+
             validateDates();
 
             if (!isImageValid) {
@@ -359,7 +372,7 @@
             imageError.id = 'image_error';
             imageError.className = 'text-red-500 text-xs mt-2 flex items-center';
             imageError.innerHTML = '<i class="ph ph-warning text-sm mr-1"></i>กรุณาเลือกรูปภาพ';
-            
+
             const imageSection = document.querySelector('.space-y-3');
             imageSection.appendChild(imageError);
             return imageError;
@@ -385,7 +398,7 @@
         // Responsible person checkbox functionality
         const responsibleCheckboxes = document.querySelectorAll('input[name="responsible_by"]');
         responsibleCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
+            checkbox.addEventListener('change', function () {
                 // This ensures the checkbox state is properly updated
                 console.log('Checkbox changed:', this.value, this.checked);
             });
@@ -394,10 +407,10 @@
         // Handle label clicks for responsible person checkboxes
         const responsibleLabels = document.querySelectorAll('#responsible_by_list label');
         responsibleLabels.forEach(label => {
-            label.addEventListener('click', function(e) {
+            label.addEventListener('click', function (e) {
                 // Prevent double-triggering if clicking directly on checkbox
                 if (e.target.type === 'checkbox') return;
-                
+
                 const checkbox = this.querySelector('input[type="checkbox"]');
                 if (checkbox) {
                     checkbox.checked = !checkbox.checked;
@@ -412,7 +425,7 @@
             console.log('Form submitted');
             const isFormValid = validateForm();
             console.log('Form valid:', isFormValid);
-            
+
             if (!isFormValid) {
                 e.preventDefault();
                 console.log('Form validation failed, preventing submission');
@@ -451,7 +464,7 @@
                     imagePreview.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
-                
+
                 // Hide image error message if exists
                 const imageError = document.getElementById('image_error');
                 if (imageError) {
@@ -482,12 +495,12 @@
     }
 
     .checkbox:checked {
-    background-color: #3b82f6 !important;
-    border-color: #3b82f6 !important;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.00016 10.8002L3.20016 8.00016L2.26683 8.9335L6.00016 12.6668L14.0002 4.66683L13.0668 3.7335L6.00016 10.8002Z'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    background-size: 70% !important;
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.00016 10.8002L3.20016 8.00016L2.26683 8.9335L6.00016 12.6668L14.0002 4.66683L13.0668 3.7335L6.00016 10.8002Z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 70% !important;
     }
 
 

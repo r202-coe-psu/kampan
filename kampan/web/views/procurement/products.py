@@ -199,7 +199,7 @@ def upload(organization_id):
     form = forms.procurement.FileForm()
     errors = request.args.getlist("errors")
     template_columns = [
-        "ปีงบประมาณ",
+        "product_number",
         "ชื่อรายการ",
         "รหัสครุภัณฑ์",
         "วันที่เริ่มต้น",
@@ -253,6 +253,7 @@ def download_template(organization_id):
         id=organization_id, status="active"
     ).first()
     template_data = {
+        "product_number": ["มอ. 011/2567-0001"],
         "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],
         "รหัสครุภัณฑ์": ["CC/www-x-yy/zz"],
         "วันที่เริ่มต้น": ["14 พฤศจิกายน 2567"],

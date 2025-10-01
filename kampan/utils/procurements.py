@@ -13,6 +13,7 @@ def upload_procurement_excel(file_bytes, user_id):
 
     # กำหนด mapping ชื่อ column (Excel) -> field ใน Procurement
     column_map = {
+        "product_number": "product_number",
         "ชื่อรายการ": "name",
         "รหัสครุภัณฑ์": "asset_code",
         "วันที่เริ่มต้น": "start_date",
@@ -75,6 +76,7 @@ def upload_procurement_excel(file_bytes, user_id):
     user = User.objects(id=user_id).first()
 
     required_columns = [
+        "product_number",
         "ชื่อรายการ",
         "รหัสครุภัณฑ์",
         "วันที่เริ่มต้น",
@@ -99,8 +101,6 @@ def upload_procurement_excel(file_bytes, user_id):
 
         data = {}
         try:
-            # --- ไม่ต้องดึงปีงบประมาณแล้ว ---
-            # for excel_col, model_field in column_map.items():
             for excel_col, model_field in column_map.items():
                 value = row.get(excel_col)
                 try:
@@ -131,7 +131,7 @@ def upload_procurement_excel(file_bytes, user_id):
                                 if user_role:
                                     responsible_by_list.append(user_role)
                         data[model_field] = responsible_by_list
-                        continue  # skip the assignment below for responsible_by
+                        continue
                     data[model_field] = value
                 except Exception as field_e:
                     print(f"Row {idx+1} field '{excel_col}' error: {field_e}")
@@ -152,17 +152,17 @@ def upload_procurement_excel(file_bytes, user_id):
                 print(f"Row {idx+1} skipped: duplicate found.")
                 continue
 
-            # สร้าง product_number แบบ simple (หรือจะใช้ logic เดิมก็ได้)
-            product_number = f"PN-{datetime.now().strftime('%Y%m%d%H%M%S')}-{idx+1}"
             procurement = Procurement(
                 **data,
-                product_number=product_number,
                 created_by=user,
                 last_updated_by=user,
-                status="active",  # <-- set status to active on upload
+                status="active",
             )
             procurement.save()
             print(f"Saved procurement: {procurement.product_number}")
+        except Exception as e:
+            print(f"Row {idx+1} error: {e}")
+            continue
         except Exception as e:
             print(f"Row {idx+1} error: {e}")
             continue
