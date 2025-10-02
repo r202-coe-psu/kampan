@@ -117,34 +117,6 @@ def index():
     )
 
 
-@module.route("/<procurement_id>/set_paid", methods=["POST"])
-@login_required
-def set_paid(procurement_id):
-    organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=procurement_id).first()
-    next_period_index = len(procurement.payment_records)
-    new_product_number = request.form.get("product_number")
-
-    # Save old product_number in payment record before updating
-    procurement.add_payment_record(
-        period_index=next_period_index,
-        paid_by=current_user._get_current_object(),
-        product_number=procurement.product_number,
-    )
-    procurement.paid_period_index = next_period_index
-    procurement.payment_status = procurement.get_current_payment_status(
-        datetime.date.today()
-    )
-    procurement.last_updated_by = current_user._get_current_object()
-
-    # Update product_number if new value is provided
-    if new_product_number:
-        procurement.product_number = new_product_number
-
-    procurement.save()
-    return redirect(url_for("procurement.products.index", organization=organization))
-
-
 def validate_upload_file(form, errors, template_columns):
     """Validate uploaded Excel file columns."""
     if not form.document_upload.data:

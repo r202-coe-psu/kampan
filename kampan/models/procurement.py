@@ -29,6 +29,7 @@ class PaymentRecord(me.EmbeddedDocument):
 
     period_index = me.IntField(required=True)
     product_number = me.StringField(max_length=50, required=True)
+    amount = me.DecimalField(required=True, min_value=0, precision=2, max_value=1e12)
     paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
     due_date = me.DateTimeField(required=True)  # วันที่ครบกำหนดของงวดนี้
@@ -144,7 +145,7 @@ class Procurement(me.Document):
         else:
             return "unpaid"
 
-    def add_payment_record(self, period_index, paid_by, product_number=None):
+    def add_payment_record(self, period_index, paid_by, amount, product_number=None):
         """Add payment record for specific period, storing product_number at time of payment"""
         due_dates = self.get_payment_due_dates()
         due_date = None
@@ -157,6 +158,7 @@ class Procurement(me.Document):
             paid_date=datetime.datetime.now(),
             paid_by=paid_by,
             due_date=due_date,
+            amount=amount,
             product_number=(
                 product_number if product_number is not None else self.product_number
             ),

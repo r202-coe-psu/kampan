@@ -76,3 +76,48 @@ class EditImageForm(FlaskForm):
             file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
         ],
     )
+
+
+BasePaymentRecordForm = model_form(
+    models.PaymentRecord,
+    FlaskForm,
+    exclude=[
+        "period_index",
+        "paid_date",
+        "due_date",
+        "paid_by",
+    ],
+    field_args={
+        "product_number": {"label": "เลขที่สินค้า/เลขที่เอกสาร"},
+        "amount": {"label": "จำนวนเงิน"},
+    },
+)
+
+
+class PaymentRecordForm(BasePaymentRecordForm):
+    amount = fields.DecimalField(
+        "จำนวนเงิน",
+        places=2,
+        rounding=None,
+        validators=[
+            validators.InputRequired(),
+            validators.NumberRange(
+                min=0, max=1e12, message="จำนวนเงินต้องอยู่ระหว่าง 0 ถึง 1,000,000,000,000"
+            ),
+        ],
+    )
+
+
+class PaymentForm(FlaskForm):
+    amount = fields.DecimalField(
+        "จำนวนเงิน",
+        places=2,
+        validators=[
+            validators.InputRequired(),
+            validators.NumberRange(min=0, message="จำนวนเงินต้องมากกว่าหรือเท่ากับ 0"),
+        ],
+    )
+    product_number = fields.StringField(
+        "เลขที่สินค้า/เลขที่เอกสาร",
+        validators=[validators.Optional(), validators.Length(max=128)],
+    )

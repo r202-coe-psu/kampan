@@ -45,7 +45,7 @@
                 </details>
               </li>
               <li>
-                <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
+                <a class="{{ 'menu-active' if '/procurement/products' or '/procurement/payment' in request.path else '' }}"
                   href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}">
                   <i class="ph ph-shopping-cart"></i> จัดการ MA
                 </a>
