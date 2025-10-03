@@ -13,6 +13,8 @@ from kampan import models
 
 import datetime
 import decimal
+from flask import redirect, url_for
+from decimal import Decimal, InvalidOperation
 
 
 module = Blueprint("payment", __name__, url_prefix="/payment")
@@ -42,6 +44,33 @@ def set_paid(procurement_id):
     next_period_index = len(procurement.payment_records)
     new_product_number = request.form.get("product_number")
     amount = request.form.get("amount", type=decimal.Decimal)
+    item = models.Procurement.objects(id=procurement_id).first()
+    form_data = {"amount": amount, "product_number": new_product_number}
+    errors = {}
+    try:
+        amount = Decimal(amount or "0")
+        if amount <= 0:
+            errors["amount"] = "จำนวนเงินต้องมากกว่า 0"
+        elif amount > Decimal(item.amount):
+            errors["amount"] = "จำนวนเงินไม่สามารถเกินยอดรวมของโครงการ"
+    except (InvalidOperation, ValueError):
+        errors["amount"] = "จำนวนเงินไม่ถูกต้อง"
+
+    if any(
+        getattr(r, "product_number", None) == new_product_number
+        for r in (item.payment_records or [])
+    ):
+        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้วในโครงการนี้"
+
+    if errors:
+        return render_template(
+            "procurement/payment/index.html",
+            item=item,
+            organization=organization,
+            errors=errors,
+            form_data=form_data,
+            today=datetime.date.today(),
+        )
 
     # Save old product_number in payment record before updating
     procurement.add_payment_record(
