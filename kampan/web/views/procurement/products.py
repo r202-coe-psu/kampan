@@ -50,6 +50,7 @@ def index():
     category = request.args.get("category", "")
     payment_status = request.args.get("payment_status", "")
     upload_success = request.args.get("upload_success", "")
+    year = request.args.get("year", "")
 
     # Build query dict
     query = {}
@@ -57,6 +58,15 @@ def index():
         query["category"] = category
     if payment_status:
         query["payment_status"] = payment_status
+    if year:
+        try:
+            year_int = int(year)
+            start_of_year = datetime.datetime(year_int, 1, 1)
+            end_of_year = datetime.datetime(year_int, 12, 31, 23, 59, 59)
+            query["created_date__gte"] = start_of_year
+            query["created_date__lte"] = end_of_year
+        except (ValueError, TypeError):
+            pass
 
     procurement_qs = models.Procurement.objects(**query)
 
@@ -74,6 +84,7 @@ def index():
     # --- Status count section ---
     # Count all procurements for this organization/user role (not paginated, not filtered by category/payment_status)
     base_qs = models.Procurement.objects()
+
     if (
         org_user_role
         and "staff" in current_user.roles
@@ -97,9 +108,16 @@ def index():
         p.duration_days = days
 
     # Choices for filters
+    all_procurements = models.Procurement.objects()
+
+    # Years for filtering
+    available_years = set()
+    for p in all_procurements:
+        available_years.add(p.created_date.year)
+    available_years = sorted(list(available_years), reverse=True)
+
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
-    all_procurements = models.Procurement.objects()
 
     return render_template(
         "/procurement/products/index.html",
@@ -109,7 +127,9 @@ def index():
         today=today,
         selected_category=category,
         selected_payment_status=payment_status,
+        selected_year=year,
         category_choices=category_choices,
+        available_years=available_years,
         payment_status_choices=payment_status_choices,
         upload_success=upload_success,
         all_procurements=all_procurements,

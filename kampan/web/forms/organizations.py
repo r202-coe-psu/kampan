@@ -61,12 +61,13 @@ class OrganizationRoleEditForm(FlaskForm):
     )
 
 
-class OrgnaizationAddMemberForm(OrganizationRoleEditForm):
+class OrgnaizationAddMemberForm(FlaskForm):
     members = fields.SelectField(
         "เลือกสมาชิก",
     )
-    division = fields.SelectField(
-        "แผนก",
+    roles = fields.SelectMultipleField(
+        "ระดับผู้ใช้งาน",
+        choices=models.organizations.ORGANIZATION_ROLES,
         validators=[validators.InputRequired()],
     )
 

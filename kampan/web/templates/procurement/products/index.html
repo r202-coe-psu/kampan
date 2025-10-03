@@ -64,11 +64,22 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div>
+                        <label for="year" class="block text-sm font-medium text-gray-700 mb-1">ปี:</label>
+                        <select name="year" class="select select-bordered w-full md:w-44 bg-white">
+                            <option value="">ทุกปี</option>
+                            {% for year in available_years %}
+                            <option value="{{ year }}" {% if selected_year|string == year|string %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="flex gap-2 items-end">
                         <button type="submit" class="btn btn-primary px-6">
                             <i class="ph ph-funnel mr-1"></i> กรองข้อมูล
                         </button>
-                        {% if selected_category or selected_payment_status %}
+                        {% if selected_category or selected_payment_status or selected_year %}
                         <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
                             class="btn btn-outline px-6">ล้าง</a>
                         {% endif %}
