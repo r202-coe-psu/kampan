@@ -68,7 +68,7 @@ def index():
         except (ValueError, TypeError):
             pass
 
-    procurement_qs = models.Procurement.objects(**query)
+    procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
 
     # Filter for staff role (not admin)
     org_user_role = models.OrganizationUserRole.objects(

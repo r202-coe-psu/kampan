@@ -261,13 +261,13 @@
                 <div class="flex flex-col items-center">
                     {% if item.start_date and item.end_date %}
                     <span class="font-bold text-base text-primary">
-                        {{ item.start_date.strftime('%d/%m/%Y') }}
+                        {{ item.start_date.strftime('%d/%m/') ~ (item.start_date.year + 543) }}
                     </span>
                     <span class="text-base text-gray-400">
-                        to
+                        ถึง
                     </span>
                     <span class="font-bold text-base text-error">
-                        {{ item.end_date.strftime('%d/%m/%Y') }}
+                        {{ item.end_date.strftime('%d/%m/') ~ (item.end_date.year + 543) }}
                     </span>
                     {% else %}
                     <span class="text-gray-400">-</span>
@@ -326,7 +326,7 @@
                 {% endif %}
                 {% if item.payment_records %}
                 <div class="text-s text-gray-500 mt-1">
-                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/%Y %H:%M') }}
+                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/') ~ (item.payment_records[-1].paid_date.year + 543) }}
                 </div>
                 {% endif %}
                 </div>
