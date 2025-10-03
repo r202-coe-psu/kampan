@@ -185,7 +185,7 @@
                                     <th>วันที่จ่าย</th>
                                     <th>ผู้จ่าย</th>
                                     <th>เลขที่เบิกจ่าย</th>
-                                    <th>สถานะ</th>
+                                    <th>จํานวน</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -197,7 +197,7 @@
                                     <td class="text-xs">
                                         {{ record.product_number if record.product_number else '-' }}
                                     </td>
-                                    <td class="text-xs"><span class="badge badge-success badge-xs">จ่ายแล้ว</span></td>
+                                    <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount) }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
