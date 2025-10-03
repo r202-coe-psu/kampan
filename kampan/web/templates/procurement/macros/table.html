@@ -216,7 +216,7 @@
     <thead class="bg-base-200/50">
         <tr class="border-none">
             <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
-            <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+            <th class="font-semibold text-base-content text-sm w-48">ปีงบประมาณ</th>
             <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
             <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
             <th class="font-semibold text-base-content text-sm text-center w-64">ประเภท</th>
@@ -244,11 +244,12 @@
             <!-- PR Number -->
             <td class="py-4">
                 <div class="flex flex-col">
-                    <span class="font-bold text-primary text-base">{{ item.product_number }}</span>
+                    <span class="font-bold text-primary text-base">{{ item.created_date.year+543 }}</span>
                     <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
                         }}</span>
                 </div>
             </td>
+            
 
             <!-- Name -->
             <td class="py-4">
