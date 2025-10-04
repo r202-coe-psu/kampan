@@ -41,57 +41,75 @@ def index(procurement_id):
 def set_paid(procurement_id):
     organization = current_user.user_setting.current_organization
     procurement = models.Procurement.objects(id=procurement_id).first()
-    next_period_index = len(procurement.payment_records)
+    if not procurement:
+        abort(404)
+
+    errors, form_data = {}, {}
+
+    # --- รับค่า input ---
     new_product_number = request.form.get("product_number")
-    amount = request.form.get("amount", type=decimal.Decimal)
-    item = models.Procurement.objects(id=procurement_id).first()
-    form_data = {"amount": amount, "product_number": new_product_number}
-    errors = {}
+    amount_input = request.form.get("amount")
+    form_data["product_number"] = new_product_number
+    form_data["amount"] = amount_input
+
+    # --- ตรวจสอบจำนวนเงิน ---
     try:
-        amount = Decimal(amount or "0")
+        amount = Decimal(amount_input or "0")
         if amount <= 0:
             errors["amount"] = "จำนวนเงินต้องมากกว่า 0"
-        elif amount > Decimal(item.amount):
+        elif procurement.amount is not None and amount > procurement.amount:
             errors["amount"] = "จำนวนเงินไม่สามารถเกินยอดรวมของโครงการ"
     except (InvalidOperation, ValueError):
         errors["amount"] = "จำนวนเงินไม่ถูกต้อง"
 
-    if any(
-        getattr(r, "product_number", None) == new_product_number
-        for r in (item.payment_records or [])
-    ):
-        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้วในโครงการนี้"
+    # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ (กันชนกับตัวเอง) ---
+    existing = models.Procurement.objects(
+        product_number=new_product_number, id__ne=procurement.id
+    ).first()
+    if existing:
+        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว"
 
+    # --- ถ้ามี error แสดงผลกลับ ---
     if errors:
         return render_template(
             "procurement/payment/index.html",
-            item=item,
+            item=procurement,
             organization=organization,
             errors=errors,
             form_data=form_data,
             today=datetime.date.today(),
         )
 
-    # Save old product_number in payment record before updating
+    # --- บันทึกข้อมูลการจ่าย ---
+    next_period_index = len(procurement.payment_records)
     procurement.add_payment_record(
         period_index=next_period_index,
         paid_by=current_user._get_current_object(),
         amount=amount,
         product_number=procurement.product_number,
     )
-    # หัก amount ที่จ่ายออกจากยอดรวม
-    if procurement.amount is not None and amount is not None:
-        procurement.amount -= amount
 
+    # --- อัปเดตยอดและสถานะ ---
     procurement.paid_period_index = next_period_index
     procurement.payment_status = procurement.get_current_payment_status(
         datetime.date.today()
     )
     procurement.last_updated_by = current_user._get_current_object()
 
-    # Update product_number if new value is provided
     if new_product_number:
         procurement.product_number = new_product_number
 
-    procurement.save()
+    try:
+        procurement.save()
+    except:
+        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว"
+        return render_template(
+            "procurement/payment/index.html",
+            item=procurement,
+            organization=organization,
+            errors=errors,
+            form_data=form_data,
+            today=datetime.date.today(),
+        )
+
     return redirect(url_for("procurement.products.index", organization=organization))
