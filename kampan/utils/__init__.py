@@ -9,3 +9,4 @@ from . import organizations
 from . import item_checkouts
 from . import procurements
 from . import motorcycle_send_emails
+from . import ma_send_emails
