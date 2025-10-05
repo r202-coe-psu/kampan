@@ -114,15 +114,11 @@ def send_payment_notification_job(
                 "notif_type": notif_type,
                 "days_left": days_left.get("days_left", ""),
             }
-            logger.debug(f"send email to {person['email']}")
             email_subject = template_subject.render(context)
             email_body = template_body.render(context)
 
-            # Instead of sending email, print subject and body
-            print(f"To: {person['email']}")
-            print(f"Subject: {email_subject}")
-            print(email_body)
-            print("-" * 40)
+            logger.debug(f"send email to {person['email']}")
+            psu_smtp.send_email(person["email"], email_subject, email_body)
 
     psu_smtp.quit()
     return True
