@@ -249,7 +249,7 @@
                         }}</span>
                 </div>
             </td>
-            
+
 
             <!-- Name -->
             <td class="py-4">
@@ -326,7 +326,8 @@
                 {% endif %}
                 {% if item.payment_records %}
                 <div class="text-s text-gray-500 mt-1">
-                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/') ~ (item.payment_records[-1].paid_date.year + 543) }}
+                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime('%d/%m/') ~
+                    (item.payment_records[-1].paid_date.year + 543) }}
                 </div>
                 {% endif %}
                 </div>
@@ -577,14 +578,22 @@
     </div>
 
     {% if disactive_items|length == 0 %}
-    <!-- Enhanced Empty State -->
-    <div
-        class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl border-2 border-dashed border-rose-200 p-12 text-center">
-        <div class="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <i class="ph ph-check-circle text-rose-400 text-3xl"></i>
+    <div class="bg-gradient-to-br from-rose-50 to-red-50 rounded-2xl border-2 border-dashed border-rose-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+            <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="ph ph-check-circle text-rose-500 text-3xl"></i>
+            </div>
+            <h4 class="text-xl font-semibold text-rose-700 mb-2">
+                ยังไม่มีรายการที่ไม่ต่ออายุ
+            </h4>
+            <p class="text-rose-600 max-w-md mb-6">
+                ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ
+            </p>
+            <div class="inline-flex items-center gap-2 text-sm text-rose-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <i class="ph ph-info"></i>
+                <span>รอการดำเนินการ</span>
+            </div>
         </div>
-        <h4 class="text-lg font-semibold text-rose-700 mb-2">ยังไม่มีรายการที่ไม่ต่ออายุ</h4>
-        <p class="text-rose-600">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
     </div>
     {% else %}
     <!-- Enhanced Table Layout -->
@@ -702,7 +711,23 @@
     </div>
 
     {% if renewal_requested_items|length == 0 %}
-    <!-- ...existing empty state code... -->
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="ph ph-file-plus text-4xl text-blue-500"></i>
+            </div>
+            <h4 class="text-xl font-semibold text-blue-700 mb-2">
+                ยังไม่มีรายการที่ขอต่ออายุ
+            </h4>
+            <p class="text-blue-600 max-w-md mb-6">
+                เมื่อมีการขอต่ออายุครุภัณฑ์ รายการจะปรากฏที่นี่
+            </p>
+            <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <i class="ph ph-info"></i>
+                <span>รอการขอต่ออายุจากผู้ใช้งาน</span>
+            </div>
+        </div>
+    </div>
     {% else %}
     <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
         <div class="overflow-x-auto">

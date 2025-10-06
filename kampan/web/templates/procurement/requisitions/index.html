@@ -37,7 +37,8 @@
                         <i class="ph ph-magnifying-glass mr-2"></i>ค้นหา
                     </button>
                     {% if selected_category %}
-                    <a href="{{ url_for('procurement.requisitions.index') }}" class="btn btn-outline">
+                    <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                        class="btn btn-outline">
                         <i class="ph ph-x mr-2"></i>ล้าง
                     </a>
                     {% endif %}
@@ -47,18 +48,26 @@
     </div>
 
     <!-- Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {% if procurements|length == 0 %}
-        <div class="col-span-full text-center py-16">
-            <div class="flex flex-col items-center">
-                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <i class="ph ph-calendar-x text-4xl text-gray-400"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-700 mb-1">ยังไม่มีรายการที่ใกล้หมดอายุ</h3>
-                <p class="text-gray-500">ไม่พบรายการที่อยู่ในสถานะ "active" ในขณะนี้</p>
+    {% if procurements|length == 0 %}
+    <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="ph ph-file-plus text-4xl text-gray-500"></i>
+            </div>
+            <h4 class="text-xl font-semibold text-gray-700 mb-2">
+                ยังไม่มีรายการที่ใกล้หมดอายุ
+            </h4>
+            <p class="text-gray-600 max-w-md mb-6">
+                เมื่อมีรายการที่ใกล้หมดอายุ รายการจะปรากฏที่นี่
+            </p>
+            <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <i class="ph ph-info"></i>
+                <span>รอรายการที่ใกล้หมดอายุ</span>
             </div>
         </div>
-        {% else %}
+    </div>
+    {% else %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for item in procurements %}
         <div
             class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
@@ -78,6 +87,10 @@
                         <div class="text-xs font-medium text-gray-500 mb-1">เหลือเวลา</div>
                         <div class="countdown-pulse" id="countdown-{{ item.id }}"
                             data-end-date="{{ item.end_date.strftime('%Y-%m-%dT00:00:00Z') }}"></div>
+                        <!-- Progress bar for visual remaining time (updated by JS) -->
+                        <div class="w-28 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden mx-auto">
+                            <div id="progress-{{ item.id }}" class="h-full bg-emerald-400 w-0"></div>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -215,8 +228,8 @@
             </form>
         </dialog>
         {% endfor %}
-        {% endif %}
     </div>
+    {% endif %}
 
     <!-- Pagination -->
     {% set params = dict(request.args) %}
@@ -279,7 +292,8 @@
                     </div>
                 `;
 
-                var progress = Math.max(0, (days / 7) * 100);
+                // Calculate progress relative to a 7-day window (older logic preserved)
+                var progress = Math.max(0, Math.min(100, (days / 7) * 100));
                 if (progressBar) {
                     progressBar.style.width = progress + '%';
                     if (days <= 1) {
