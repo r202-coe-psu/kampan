@@ -33,6 +33,10 @@ def index(procurement_id):
         item=procurement,
         organization=organization,
         today=today,
+        is_last_period=procurement.is_last_period(),
+        remaining_amount=(
+            procurement.get_remaining_amount() if procurement.is_last_period() else None
+        ),
     )
 
 
@@ -82,10 +86,16 @@ def set_paid(procurement_id):
 
     # --- บันทึกข้อมูลการจ่าย ---
     next_period_index = len(procurement.payment_records)
+
+    final_amount = (
+        procurement.get_remaining_amount() if procurement.is_last_period() else amount
+    )
+    print(f"Final amount: {final_amount}")
+
     procurement.add_payment_record(
         period_index=next_period_index,
         paid_by=current_user._get_current_object(),
-        amount=amount,
+        amount=final_amount,
         product_number=procurement.product_number,
     )
 

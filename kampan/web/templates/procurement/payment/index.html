@@ -183,11 +183,13 @@
                             <label class="label" for="amount">
                                 <span class="label-text">จำนวนเงินที่จ่าย</span>
                             </label>
-                            <input type="number" step="0.01" name="amount" id="amount"
-                                class="input input-bordered w-full" required
-                                value="{{ form_data.amount if form_data is defined else '' }}">
-                            {% if errors is defined and errors.amount %}
-                            <p class="text-sm text-error mt-1">{{ errors.amount }}</p>
+                            {% if is_last_period %}
+                            <input type="number" name="amount" value="{{ remaining_amount }}" 
+                                    class="input input-bordered w-full" readonly 
+                                    title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด">
+                            {% else %}
+                            <input type="number" name="amount" 
+                                    class="input input-bordered w-full" required step="0.01">
                             {% endif %}
                         </div>
                         <div class="form-control mb-3">

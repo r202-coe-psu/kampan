@@ -116,6 +116,20 @@ class Procurement(me.Document):
             return self.period
         return len(self.payment_records)
 
+    def get_total_payment_record(self):
+        total = 0
+        for record in self.payment_records:
+            total += record.amount
+        return total
+
+    def get_remaining_amount(self):
+        total_paid = self.get_total_payment_record()
+        remaining = self.amount - total_paid
+        return remaining
+
+    def is_last_period(self):
+        return self.get_next_payment_index() == self.period - 1
+
     def get_current_payment_status(self, today=None):
         """
         Return payment status string: 'unpaid', 'upcoming', 'overdue', or 'paid'
