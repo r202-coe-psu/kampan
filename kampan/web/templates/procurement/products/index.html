@@ -69,7 +69,7 @@
                         <select name="year" class="select select-bordered w-full md:w-44 bg-white">
                             <option value="">ทุกปี</option>
                             {% for year in available_years %}
-                            <option value="{{ year }}" {% if selected_year|string == year|string %}selected{% endif %}>
+                            <option value="{{ year }}" {% if selected_year|string==year|string %}selected{% endif %}>
                                 {{ year + 543 }}
                             </option>
                             {% endfor %}
@@ -91,7 +91,8 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="card shadow-lg border-0 bg-gradient-to-br from-red-100 to-red-200 flex flex-col items-center py-6">
+        <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
+            class="card shadow-lg border-0 bg-gradient-to-br from-red-100 to-red-200 flex flex-col items-center py-6 cursor-pointer hover:scale-105 transition">
             <div class="mb-2">
                 <i class="ph ph-warning-circle text-3xl text-red-500"></i>
             </div>
@@ -100,9 +101,9 @@
             </div>
             <div class="text-base text-red-700 font-semibold mb-1">เลยกำหนด</div>
             <div class="text-xs text-red-600">รายการที่เลยกำหนดชำระ</div>
-        </div>
-        <div
-            class="card shadow-lg border-0 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center py-6">
+        </a>
+        <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
+            class="card shadow-lg border-0 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center py-6 cursor-pointer hover:scale-105 transition">
             <div class="mb-2">
                 <i class="ph ph-clock text-3xl text-orange-500"></i>
             </div>
@@ -111,9 +112,9 @@
             </div>
             <div class="text-base text-orange-700 font-semibold mb-1">ใกล้ครบกำหนด</div>
             <div class="text-xs text-orange-600">ครบกำหนดใน 7 วัน</div>
-        </div>
-        <div
-            class="card shadow-lg border-0 bg-gradient-to-br from-green-100 to-green-200 flex flex-col items-center py-6">
+        </a>
+        <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
+            class="card shadow-lg border-0 bg-gradient-to-br from-green-100 to-green-200 flex flex-col items-center py-6 cursor-pointer hover:scale-105 transition">
             <div class="mb-2">
                 <i class="ph ph-check-circle text-3xl text-green-500"></i>
             </div>
@@ -122,9 +123,9 @@
             </div>
             <div class="text-base text-green-700 font-semibold mb-1">ชำระครบ</div>
             <div class="text-xs text-green-600">ชำระเงินครบถ้วนแล้ว</div>
-        </div>
-        <div
-            class="card shadow-lg border-0 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center py-6">
+        </a>
+        <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
+            class="card shadow-lg border-0 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center py-6 cursor-pointer hover:scale-105 transition">
             <div class="mb-2">
                 <i class="ph ph-x-circle text-3xl text-gray-500"></i>
             </div>
@@ -133,7 +134,7 @@
             </div>
             <div class="text-base text-gray-700 font-semibold mb-1">ยังไม่ชำระ</div>
             <div class="text-xs text-gray-600">ยังไม่ชำระเงิน</div>
-        </div>
+        </a>
     </div>
 
 

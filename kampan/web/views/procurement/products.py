@@ -98,7 +98,7 @@ def index():
 
     # Pagination
     page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=10, type=int)
+    per_page = request.args.get("per_page", default=30, type=int)
     paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
 
     # Calculate durations
