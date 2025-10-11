@@ -36,7 +36,7 @@ class ProcurementStatusUpdater:
                 if hasattr(procurement.end_date, "date")
                 else procurement.end_date
             )
-            if end_date <= today + datetime.timedelta(days=7):
+            if end_date <= today + datetime.timedelta(days=90):
                 if procurement.status != "pending":
                     procurement.status = "pending"
                     procurement.save()
