@@ -574,7 +574,13 @@
                             style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {% if
                             supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
                         <span style="vertical-align: middle;">ไม่อนุมัติ เพราะ</span>
-                        <span>..................................................</span>
+                        <span>..................................................
+                            <span style="position: absolute; left: 9rem; top: 63.8rem; white-space: nowrap;">
+                                {%- if supervisor_approval and supervisor_approval[-1].reason -%}
+                                {{ supervisor_approval[-1].reason }}
+                                {%- endif -%}
+                            </span>
+                        </span>
                     </span>
                 </p>
                 <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">

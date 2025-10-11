@@ -44,7 +44,7 @@
 
     {% if 'admin' in current_user.roles %}
     <!-- ระบบขอซื้อขอจ้าง -->
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}"
+    <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}"
       class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
       <div class="bg-gradient-to-br from-purple-500 to-purple-600 p-6 text-center h-full flex flex-col justify-center">
         <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">

@@ -140,7 +140,7 @@
       <h2 class="font-bold text-lg text-tns-black">สำหรับหัวหน้าฝ่ายบริหารจัดการ</h2>
       <ul class="ml-2">
         <li>
-          <a class="{{ 'menu-active' if '/procurement/supplier' in request.path else '' }}"
+          <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
             href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
             <i class="ph ph-users"></i> จัดการ Supplier
           </a>
