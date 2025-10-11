@@ -86,12 +86,14 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-base-content/70">วันที่เริ่มต้น:</span>
-                                <span class="font-medium">{{ item.start_date.strftime('%d/%m/') ~ (item.start_date.year + 543) if
+                                <span class="font-medium">{{ item.start_date.strftime('%d/%m/') ~ (item.start_date.year
+                                    + 543) if
                                     item.start_date else '-' }}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-base-content/70">วันที่สิ้นสุด:</span>
-                                <span class="font-medium">{{ item.end_date.strftime('%d/%m/')  ~ (item.end_date.year + 543) if item.end_date
+                                <span class="font-medium">{{ item.end_date.strftime('%d/%m/') ~ (item.end_date.year +
+                                    543) if item.end_date
                                     else '-' }}</span>
                             </div>
                             <div class="flex justify-between">
@@ -192,7 +194,8 @@
                                 {% for record in item.payment_records %}
                                 <tr>
                                     <td class="text-xs">{{ loop.index }}</td>
-                                    <td class="text-xs">{{ record.paid_date.strftime('%d/%m/') ~ (record.paid_date.year + 543) ~ ' ' ~ record.paid_date.strftime('%H:%M') }}</td>
+                                    <td class="text-xs">{{ record.paid_date.strftime('%d/%m/') ~ (record.paid_date.year
+                                        + 543) ~ ' ' ~ record.paid_date.strftime('%H:%M') }}</td>
                                     <td class="text-xs">{{ record.paid_by.get_name() if record.paid_by else '-' }}</td>
                                     <td class="text-xs">
                                         {{ record.product_number if record.product_number else '-' }}
@@ -799,7 +802,7 @@
                             <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
                                 class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
                                 target="_blank">
-                                <i class="ph ph-file-arrow-down"></i> ดูเอกสาร ToR
+                                <i class="ph ph-file-arrow-down"></i> ดูเอกสารทั้งหมด
                             </a>
                             {% else %}
                             <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>

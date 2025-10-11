@@ -8,6 +8,8 @@ from flask import (
     abort,
     Response,
 )
+from io import BytesIO
+from PyPDF2 import PdfMerger
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
@@ -280,7 +282,7 @@ def create_or_edit(requisition_procurement_id):
             requisition.committees.append(committee)
 
     tor_file = form.tor_document.data
-    # qt_files = form.qt_document.data
+    qt_files = form.qt_document.data
     # Populate other fields
     del form.committees
     del form.items
@@ -303,6 +305,19 @@ def create_or_edit(requisition_procurement_id):
                 tor_file, filename=tor_file.filename, content_type=tor_file.content_type
             )
 
+    # Handle qt_document (ใบเสนอราคา)
+    if qt_files:
+        qt_files.seek(0)
+        if requisition.qt_document:
+            requisition.qt_document.replace(
+                qt_files,
+                filename=qt_files.filename,
+                content_type=qt_files.content_type,
+            )
+        else:
+            requisition.qt_document.put(
+                qt_files, filename=qt_files.filename, content_type=qt_files.content_type
+            )
     # Convert SelectField id to document instance for ReferenceField
     if form.purchaser.data and form.purchaser.data != "-":
         requisition.purchaser = models.OrganizationUserRole.objects(
@@ -319,25 +334,61 @@ def create_or_edit(requisition_procurement_id):
     )
 
 
-@module.route("/<requisition_procurement_id>/download/<filename>")
+# รวมไฟล์ ToR และ QT เป็น PDF เดียวแล้วดาวน์โหลดทั้งหมด
+@module.route("/<requisition_procurement_id>/download/all")
 @login_required
-def download(requisition_procurement_id, filename):
+def download(requisition_procurement_id):
     document = models.Requisition.objects(id=requisition_procurement_id).first()
+    pdf_streams = []
 
+    # ToR
     if (
-        not document
-        or not document.tor_document
-        or document.tor_document.filename != filename
+        document
+        and document.tor_document
+        and getattr(document.tor_document, "filename", None)
     ):
-        return abort(403)
+        try:
+            tor_bytes = BytesIO(document.tor_document.read())
+            pdf_streams.append(tor_bytes)
+        except Exception:
+            pass
 
-    response = send_file(
-        document.tor_document,
-        download_name=document.tor_document.filename,
-        mimetype=document.tor_document.content_type,
-    )
+    # QT (ใบเสนอราคา)
+    if document and document.qt_document:
+        qt_docs = document.qt_document
+        # รองรับทั้งลิสต์และ GridFSProxy
+        if not isinstance(qt_docs, list):
+            qt_docs = [qt_docs]
+        for qt_file in qt_docs:
+            if hasattr(qt_file, "filename") and str(qt_file.filename).lower().endswith(
+                ".pdf"
+            ):
+                try:
+                    qt_bytes = BytesIO(qt_file.read())
+                    pdf_streams.append(qt_bytes)
+                except Exception:
+                    continue
 
-    return response
+    # ไม่มีไฟล์ PDF เลย
+    if not pdf_streams:
+        return abort(404)
+
+    # รวม PDF
+    merger = PdfMerger()
+    for pdf in pdf_streams:
+        try:
+            pdf.seek(0)
+            merger.append(pdf)
+        except Exception:
+            continue
+    output = BytesIO()
+    merger.write(output)
+    merger.close()
+    output.seek(0)
+
+    filename = f"requisition_{requisition_procurement_id}_all.pdf"
+
+    return send_file(output, download_name=filename, mimetype="application/pdf")
 
 
 @module.route("/<requisition_id>/action", methods=["POST"])

@@ -78,12 +78,11 @@ class RequisitionForm(BaseRequisitionForm):
         ],
     )
 
-    qt_document = file.MultipleFileField(
-        "ใบเสนอราคา (PDF เท่านั้น, แนบได้ 3 ไฟล์)",
+    qt_document = fields.FileField(
+        "ใบเสนอราคา (PDF เท่านั้น)",
         validators=[
             file.FileAllowed(["pdf"], "PDF only"),
         ],
-        render_kw={"multiple": True},
     )
 
     items = fields.FieldList(
