@@ -1,0 +1,90 @@
+{% extends "/procurement/base/default-procurement-page.html" %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}File{% endblock %}
+
+{% block dashboard_title %}Upload File{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 space-y-6">
+    <!-- Header Section -->
+    <div class="bg-white rounded-lg p-6 text-primary-content shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="space-y-2 text-black">
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="ph ph-file-text text-3xl"></i>
+                    การจัดการไฟล์ Excel
+                </h1>
+                <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
+            </div>
+            <div class="flex gap-2">
+                <a class="btn btn-secondary btn-md"
+                    href="{{ url_for('admin.upload_files.index', page=request.args.get('page')) }}"
+                    data-tooltip="ย้อนกลับ">
+                    <i class="ph ph-arrow-left text-lg"></i>
+                    ย้อนกลับ
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- Main Content Section -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <i class="ph ph-cloud-arrow-up text-xl text-blue-600"></i>
+                {% if 'create' in request.path %}
+                อัปโหลดไฟล์ใหม่
+                {% else %}
+                แก้ไขไฟล์
+                {% endif %}
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">กรุณาเลือกหมวดหมู่และไฟล์ที่ต้องการอัปโหลด</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="editForm" class="p-6">
+            {{ form.hidden_tag() }}
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Category Selection -->
+                <div class="space-y-2">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.category.label.text }}</span>
+                    </label>
+                    {{ form.category(class="select select-bordered w-full focus:select-primary") }}
+                </div>
+
+                <!-- File Upload -->
+                <div class="space-y-2">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.document_upload.label.text }}</span>
+                    </label>
+                    {{ form.document_upload(class="file-input file-input-bordered w-full") }}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-6 mt-6 border-t border-gray-200">
+                {% if 'create' in request.path %}
+                <button type="submit"
+                    class="btn btn-success flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg">
+                    <i class="ph ph-cloud-arrow-up text-lg"></i>
+                    อัปโหลดไฟล์
+                </button>
+                {% else %}
+                <button type="submit" onclick="handleEdit(event)"
+                    class="btn btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg">
+                    <i class="ph ph-floppy-disk text-lg"></i>
+                    บันทึกการแก้ไข
+                </button>
+                {% endif %}
+
+                <a href="{{ url_for('admin.upload_files.index', page=request.args.get('page')) }}"
+                    class="btn btn-outline flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-md">
+                    <i class="ph ph-x text-lg"></i>
+                    ยกเลิก
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

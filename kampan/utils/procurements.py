@@ -5,7 +5,6 @@ from datetime import datetime
 from kampan.models.procurement import Procurement
 from kampan.models import OrganizationUserRole
 from kampan.models import User
-from kampan.models.upload_history import UploadHistory
 from flask import send_file
 
 
@@ -168,14 +167,6 @@ def upload_procurement_excel(file_bytes, user_id, filename, file_id):
         except Exception as e:
             print(f"Row {idx+1} error: {e}")
             continue
-    upload_history = UploadHistory(
-        file_name=filename,
-        file_type="mas",
-        file_id=file_id,
-        uploaded_by=user,
-        upload_date=datetime.now(),
-    )
-    upload_history.save()
 
 
 def download_procurement_template():

@@ -18,9 +18,9 @@ from .categories import Category
 from .procurement import Procurement, PaymentRecord
 from .mas import MAS
 from .requisitions import Requisition, RequisitionItem, Committees
+from .upload_files import Document
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
-from .upload_history import UploadHistory
 
 
 db = MongoEngine()

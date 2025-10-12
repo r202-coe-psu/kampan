@@ -1,0 +1,191 @@
+{% extends "/procurement/base/default-procurement-page.html" %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}File{% endblock %}
+{% block dashboard_title %}จัดการไฟล์ Excel{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 space-y-6">
+    <!-- Header Section -->
+    <div class="bg-white rounded-lg p-6 text-primary-content shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="space-y-2 text-black">
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="ph ph-file-text text-3xl"></i>
+                    การจัดการไฟล์ Excel
+                </h1>
+                <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
+            </div>
+            <div class="flex gap-2">
+                <a class="btn btn-primary btn-md"
+                    href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page')) }}"
+                    data-tooltip="อัปโหลดไฟล์ใหม่">
+                    <i class="ph ph-upload-simple text-lg"></i>
+                    อัปโหลดไฟล์
+                </a>
+            </div>
+        </div>
+    </div>
+    <div>
+        <!-- Document Table -->
+        <div class="overflow-x-auto mt-6">
+            <table class="min-w-full bg-white rounded-lg shadow-md border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-700 text-sm">
+                        <th class="py-3 px-2 font-semibold">วันที่อัปโหลด</th>
+                        <th class="py-3 px-2 font-semibold">วันที่ประมวลผล</th>
+                        <th class="py-3 px-2 font-semibold">ผู้อัปโหลด</th>
+                        <th class="py-3 px-2 font-semibold">ชื่อเอกสาร</th>
+                        <th class="py-3 px-2 font-semibold">หมวดหมู่</th>
+                        <th class="py-3 px-2 font-semibold">สถานะ</th>
+                        <th class="py-3 px-2 font-semibold">เครื่องมือ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr class="border-b last:border-none hover:bg-gray-50 text-center text-sm">
+                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.updated_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_by.first_name }} {{
+                            doc.created_by.last_name
+                            }}</td>
+                        <td class="py-2 px-2">
+                            <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename) }}"
+                                class="text-blue-600 hover:underline">
+                                {{ doc.file.filename }}
+                            </a>
+                        </td>
+                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.category }}</td>
+                        <td class="py-2 px-2">
+                            {% set status_info = {
+                            'Waiting': {'color': 'bg-gray-300', 'icon': 'ph-clock', 'tooltip': 'รอประมวลผล'},
+                            'Processing': {'color': 'bg-blue-200', 'icon': 'ph-hourglass', 'tooltip': 'กำลังประมวลผล'},
+                            'Completed': {'color': 'bg-green-200', 'icon': 'ph-check-circle', 'tooltip': 'สำเร็จ'},
+                            'Incomplete': {'color': 'bg-yellow-200', 'icon': 'ph-warning-circle', 'tooltip':
+                            'ไม่สำเร็จ'},
+                            'Failed': {'color': 'bg-red-200', 'icon': 'ph-x-circle', 'tooltip': 'ล้มเหลว'}
+                            } %}
+                            {% set status_display = doc.get_status_display() %}
+                            {% set info = status_info.get(status_display, {'color': 'bg-gray-200', 'icon':
+                            'ph-question',
+                            'tooltip': 'ไม่ทราบสถานะ'}) %}
+                            <span
+                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
+                                title="{{ info.tooltip }}">
+                                <i class="ph {{ info.icon }} text-base"></i>
+                                {{ info.tooltip }}
+                            </span>
+                        </td>
+                        <td class="py-2 px-2 whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button"
+                                    class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
+                                    title="บันทึกลงในระบบ">
+                                    <i class="ph ph-floppy-disk"></i>
+                                </button>
+                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, page=request.args.get('page')) }}"
+                                    class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md"
+                                    title="แก้ไข">
+                                    <i class="ph ph-pencil-simple"></i>
+                                </a>
+                                <!-- Delete Modal Trigger -->
+                                <button type="button"
+                                    class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
+                                    onclick="openModal('modal-{{ doc.id }}')" title="ลบ">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </div>
+                            <!-- Modal -->
+                            <div id="modal-{{ doc.id }}"
+                                class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                                <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-auto relative">
+                                    <button type="button"
+                                        class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                                        onclick="closeModal('modal-{{ doc.id }}')">
+                                        <i class="ph ph-x text-xl"></i>
+                                    </button>
+                                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                                        <i class="ph ph-trash text-red-500"></i>
+                                        ยืนยันการลบ
+                                    </div>
+                                    <div class="mb-4 text-gray-700">คุณต้องการลบ <span class="font-semibold">{{
+                                            doc.file.filename }}</span> ใช่หรือไม่?</div>
+                                    <div class="flex gap-3 justify-end">
+                                        <button type="button" class="btn"
+                                            onclick="closeModal('modal-{{ doc.id }}')">ยกเลิก</button>
+                                        <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id) }}"
+                                            class="btn btn-error flex items-center gap-1">
+                                            <i class="ph ph-trash"></i> ลบ
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <script>
+            // Modal functions
+            function openModal(id) {
+                document.getElementById(id).classList.remove('hidden');
+                document.getElementById(id).classList.add('flex');
+            }
+            function closeModal(id) {
+                document.getElementById(id).classList.remove('flex');
+                document.getElementById(id).classList.add('hidden');
+            }
+            // Alert logic
+            function setAlertStatus(status) {
+                sessionStorage.setItem('alertStatus', status);
+            }
+            function checkAlertStatus() {
+                const status = sessionStorage.getItem('alertStatus');
+                if (status) {
+                    if (status === 'Completed') {
+                        setAlertStatus('Completed');
+                        showAlertCompleted();
+                    } else if (status === 'Failed') {
+                        setAlertStatus('Failed');
+                        showAlertFailed();
+                    } else if (status === 'Incomplete') {
+                        setAlertStatus('Incomplete');
+                        showAlertIncomplete();
+                    }
+                    sessionStorage.removeItem('alertStatus');
+                }
+            }
+            function checkStatusAndShowAlert(status) {
+                if (status === 'Completed') {
+                    setAlertStatus('Completed');
+                } else if (status === 'Failed') {
+                    setAlertStatus('Failed');
+                } else if (status === 'Incomplete') {
+                    setAlertStatus('Incomplete');
+                }
+            }
+            function showAlertCompleted() {
+                const el = document.getElementById('alert-message-completed');
+                el.style.display = 'block';
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            }
+            function showAlertFailed() {
+                const el = document.getElementById('alert-message-failed');
+                el.style.display = 'block';
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            }
+            function showAlertIncomplete() {
+                const el = document.getElementById('alert-message-incomplete');
+                el.style.display = 'block';
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                checkAlertStatus();
+            });
+        </script>
+    </div>
+</div>
+{% endblock %}

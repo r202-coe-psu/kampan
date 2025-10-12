@@ -10,6 +10,12 @@
       <h2 class="font-bold text-lg text-tns-black">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</h2>
       <ul class="ml-2">
         <li>
+          <a class="{{ 'menu-active' if '/upload_files' in request.path else '' }}"
+            href="{{ url_for('admin.upload_files.index', organization_id=organization.id) }}">
+            <i class="ph ph-upload"></i> อัพโหลดไฟล์
+          </a>
+        </li>
+        <li>
           <details open>
             <summary>
               <i class="ph ph-package"></i> ครุภัณฑ์
@@ -63,13 +69,6 @@
                 </a>
               </li>
             </ul>
-        </li>
-
-        <li>
-          <a class="{{ 'menu-active' if '/procurement_files' in request.path else '' }}"
-            href="{{ url_for('admin.procurement_files.index', organization_id=organization.id) }}">
-            <i class="ph ph-upload"></i> อัพโหลดไฟล์
-          </a>
         </li>
       </ul>
     </li>
