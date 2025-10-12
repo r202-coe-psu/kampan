@@ -1,0 +1,365 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+
+{% block dashboard_title %}อัปโหลดไฟล์ Excel{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10">
+    <div class="max-w-3xl mx-auto">
+        
+        <!-- Back to index button -->
+        <div class="mb-4 flex justify-between items-center">
+            <a href="{{ url_for('admin.procurement_files.index') }}" class="btn btn-outline btn-sm">
+                <i class="ph ph-arrow-left"></i> กลับไปหน้าจัดการไฟล์
+            </a>
+            <!-- Download Template Button -->
+            <button type="button" class="btn btn-success btn-sm" onclick="showTemplateModal()">
+                <i class="ph ph-download-simple"></i> ดาวน์โหลดเทมเพลต
+            </button>
+        </div>
+
+        <!-- Section: เลือกประเภทไฟล์ที่จะอัปโหลด -->
+        <div class="card mb-8">
+            <div class="card-body">
+                <h3 class="card-title text-lg mb-3">เลือกประเภทข้อมูลที่ต้องการอัปโหลด</h3>
+                <div class="d-flex gap-3 flex-wrap">
+                    <label class="btn btn-outline-primary">
+                        <input type="radio" name="uploadType" value="mas" autocomplete="off"> MAS (แหล่งเงิน)
+                    </label>
+                    <label class="btn btn-outline-success">
+                        <input type="radio" name="uploadType" value="procurement" autocomplete="off"> Procurement (จัดซื้อจัดจ้าง)
+                    </label>
+                </div>
+                <div id="typeHelp" class="text-muted mt-2 small">
+                    กรุณาเลือกประเภทก่อนเลือกไฟล์
+                </div>
+            </div>
+        </div>
+
+        <!-- Dropzone Upload Form -->
+        <div class="card bg-base-100 shadow-xl border border-base-200">
+            <div class="card-body">
+                <h2 class="card-title text-xl mb-6">
+                    <i class="ph ph-upload-simple text-primary"></i>
+                    อัปโหลดไฟล์ข้อมูล
+                </h2>
+                <form method="post" enctype="multipart/form-data" id="uploadForm" action="{{ url_for('admin.procurement_files.upload_or_edit') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- File Type Field (hidden) - ใช้ form field จริง -->
+                    {{ form.file_type(id="typeInput", style="display: none;") }}
+
+                    <!-- Dropzone -->
+                    <div class="form-control mb-6">
+                        <div id="dropZone" class="border-2 border-dashed border-primary/30 rounded-xl p-8 text-center transition-all duration-300 cursor-not-allowed opacity-50" style="min-height: 180px; pointer-events: none;">
+                            <div id="dropContent">
+                                <div class="flex justify-center mb-4">
+                                    <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <i class="ph ph-cloud-arrow-up text-3xl text-primary"></i>
+                                    </div>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">วางไฟล์ที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
+                                <p class="text-sm text-gray-500 mb-4">รองรับไฟล์ .xlsx</p>
+                                <div class="flex justify-center">
+                                    <button type="button" id="fileBrowseBtn" class="btn btn-primary btn-sm opacity-50 cursor-not-allowed" disabled>
+                                        <i class="ph ph-folder-open"></i>
+                                        เลือกไฟล์
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- File Selected State -->
+                            <div id="fileSelected" class="hidden">
+                                <div class="flex justify-center mb-4">
+                                    <div class="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center">
+                                        <i class="ph ph-check-circle text-3xl text-success"></i>
+                                    </div>
+                                </div>
+                                <h3 class="text-lg font-semibold text-success mb-2">ไฟล์พร้อมอัปโหลด</h3>
+                                <p id="fileName" class="text-sm text-gray-600 mb-4"></p>
+                                <div class="flex justify-center gap-2">
+                                    <span class="btn btn-success btn-sm">
+                                        <i class="ph ph-check"></i>
+                                        ไฟล์ถูกเลือกแล้ว
+                                    </span>
+                                    <button type="button" id="changeFile" class="btn btn-outline btn-sm">
+                                        <i class="ph ph-arrow-clockwise"></i>
+                                        เปลี่ยนไฟล์
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Drag Over State -->
+                            <div id="dragOver" class="hidden">
+                                <div class="flex justify-center mb-4">
+                                    <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center animate-pulse">
+                                        <i class="ph ph-download-simple text-3xl text-primary"></i>
+                                    </div>
+                                </div>
+                                <h3 class="text-lg font-semibold text-primary mb-2">วางไฟล์ที่นี่</h3>
+                                <p class="text-sm text-primary/70">ปล่อยเพื่ออัปโหลดไฟล์</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden File Input - ใช้ form field จริง -->
+                        {{ form.excel_file(id="fileInput", style="display: none;", accept=".xlsx", disabled=true) }}
+                        
+                        <label class="label">
+                            <span class="label-text-alt text-gray-500">
+                                <i class="ph ph-info"></i>
+                                ขนาดไฟล์ไม่เกิน 10MB | รองรับ Excel 2007 หรือใหม่กว่า
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="submit" id="submitBtn" class="btn btn-primary flex-1" disabled>
+                            <i class="ph ph-upload-simple"></i>
+                            อัปโหลดและนำเข้าข้อมูล
+                        </button>
+                        <a href="{{ url_for('admin.procurement_files.index') }}" class="btn btn-outline">
+                            <i class="ph ph-x"></i>
+                            ยกเลิก
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Download Modal -->
+<dialog id="templateModal" class="modal">
+    <div class="modal-box w-11/12 max-w-2xl">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <i class="ph ph-download-simple text-success"></i>
+                เลือกเทมเพลตที่ต้องการดาวน์โหลด
+            </h3>
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </form>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="py-4">
+            <p class="text-gray-600 mb-6">กรุณาเลือกประเภทเทมเพลตที่ต้องการดาวน์โหลด:</p>
+            <div class="grid gap-4">
+                <!-- MAS Template Button -->
+                <a href="{{ url_for('admin.procurement_files.download_template', file_type='mas') }}" 
+                   class="btn btn-outline btn-primary btn-lg justify-start h-auto py-4"
+                   onclick="closeTemplateModal()">
+                    <div class="flex items-center w-full">
+                        <div class="mr-4">
+                            <i class="ph ph-bank text-primary text-3xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-base">เทมเพลต MAS</div>
+                            <div class="text-sm text-gray-500">สำหรับข้อมูลแหล่งเงิน</div>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Procurement Template Button -->
+                <a href="{{ url_for('admin.procurement_files.download_template', file_type='procurement') }}" 
+                   class="btn btn-outline btn-success btn-lg justify-start h-auto py-4"
+                   onclick="closeTemplateModal()">
+                    <div class="flex items-center w-full">
+                        <div class="mr-4">
+                            <i class="ph ph-shopping-cart text-success text-3xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-base">เทมเพลต Procurement</div>
+                            <div class="text-sm text-gray-500">สำหรับข้อมูลจัดซื้อจัดจ้าง</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">
+                    <i class="ph ph-x"></i> ยกเลิก
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Section: เลือกประเภท
+    const typeRadios = document.querySelectorAll('input[name="uploadType"]');
+    const fileInput = document.getElementById('fileInput');
+    const typeInput = document.getElementById('typeInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const dropZone = document.getElementById('dropZone');
+    const fileBrowseBtn = document.getElementById('fileBrowseBtn');
+
+    // DropZone Inner elements
+    const dropContent = document.getElementById('dropContent');
+    const fileSelected = document.getElementById('fileSelected');
+    const dragOver = document.getElementById('dragOver');
+    const fileName = document.getElementById('fileName');
+    const changeFileBtn = document.getElementById('changeFile');
+
+    // Disable dropZone, fileBrowseBtn, and file input by default
+    function setDropZoneDisabled(disabled) {
+        if (disabled) {
+            dropZone.classList.add('cursor-not-allowed', 'opacity-50');
+            dropZone.style.pointerEvents = 'none';
+            fileBrowseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            fileBrowseBtn.disabled = true;
+            fileInput.disabled = true;
+            submitBtn.disabled = true;
+        } else {
+            dropZone.classList.remove('cursor-not-allowed', 'opacity-50');
+            dropZone.style.pointerEvents = 'auto';
+            fileBrowseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            fileBrowseBtn.disabled = false;
+            fileInput.disabled = false;
+        }
+    }
+    setDropZoneDisabled(true);
+
+    typeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            typeInput.value = this.value;
+            setDropZoneDisabled(false);
+        });
+    });
+
+    // DropZone logic
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        if (fileInput.disabled) return;
+        handleDrop(e);
+    });
+    
+    dropZone.addEventListener('click', function() {
+        if (fileInput.disabled) return;
+        fileInput.click();
+    });
+    
+    fileBrowseBtn.addEventListener('click', function() {
+        if (fileInput.disabled) return;
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    if (changeFileBtn) {
+        changeFileBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            resetDropZone();
+            fileInput.click();
+        });
+    }
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        if (fileInput.disabled) return;
+        dropZone.classList.add('border-primary', 'bg-primary/10');
+        showState('dragOver');
+    }
+
+    function unhighlight(e) {
+        if (fileInput.disabled) return;
+        dropZone.classList.remove('border-primary', 'bg-primary/10');
+        if (fileInput.files.length === 0) {
+            showState('dropContent');
+        } else {
+            showState('fileSelected');
+        }
+    }
+
+    function handleDrop(e) {
+        if (fileInput.disabled) return;
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        handleFiles(files);
+    }
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            if (!file.name.endsWith('.xlsx')) {
+                alert('กรุณาเลือกไฟล์ประเภท Excel (.xlsx) เท่านั้น');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('ขนาดไฟล์เกิน 10MB กรุณาเลือกไฟล์ขนาดเล็กกว่า');
+                return;
+            }
+            
+            fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+            showState('fileSelected');
+            submitBtn.disabled = false;
+        }
+    }
+
+    function showState(state) {
+        dropContent.classList.add('hidden');
+        fileSelected.classList.add('hidden');
+        dragOver.classList.add('hidden');
+        document.getElementById(state).classList.remove('hidden');
+    }
+
+    function resetDropZone() {
+        showState('dropContent');
+        submitBtn.disabled = true;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+});
+
+function showTemplateModal() {
+    document.getElementById('templateModal').showModal();
+}
+
+function closeTemplateModal() {
+    document.getElementById('templateModal').close();
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('a[href*="download_template"]')) {
+        setTimeout(() => {
+            closeTemplateModal();
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

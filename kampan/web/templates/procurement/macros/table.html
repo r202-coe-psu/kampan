@@ -401,6 +401,75 @@
 </table>
 {% endmacro %}
 
+
+{% macro render_upload_table(upload_history) %}
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+    <div class="border-b border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <h4 class="font-semibold">รายการไฟล์ที่อัปโหลด</h4>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อไฟล์</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่อัปโหลด</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อัปโหลดโดย</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if upload_history %}
+                    {% for file in upload_history %}
+                    <tr class="bg-white hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ loop.index }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ file.file_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if file.file_type == 'mas' %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">เเหล่งเงิน</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ครุภัณฑ์</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ file.upload_date.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('admin.procurement_files.download', file_id=file.file_id) }}" 
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    <i class="ph ph-download"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.procurement_files.delete', file_id=file.file_id) }}" 
+                                      onsubmit="return confirm('ยืนยันการลบไฟล์?');" class="inline">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">
+                                        <i class="ph ph-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                            ไม่พบไฟล์ที่อัปโหลด
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endmacro %}
+
 {% macro render_mas_table(mas, organization, budget) %}
 <div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
     <div class="border-b border-gray-200 p-6">
@@ -565,6 +634,7 @@
     </div>
 </div>
 {% endmacro %}
+
 
 {% macro render_non_renewal_items_table(disactive_items) %}
 <div class="mt-12">

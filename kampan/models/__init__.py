@@ -20,6 +20,7 @@ from .mas import MAS
 from .requisitions import Requisition, RequisitionItem, Committees
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
+from .upload_history import UploadHistory
 
 
 db = MongoEngine()

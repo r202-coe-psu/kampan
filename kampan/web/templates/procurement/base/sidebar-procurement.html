@@ -63,7 +63,13 @@
                 </a>
               </li>
             </ul>
-          </details>
+        </li>
+
+        <li>
+          <a class="{{ 'menu-active' if '/procurement_files' in request.path else '' }}"
+            href="{{ url_for('admin.procurement_files.index', organization_id=organization.id) }}">
+            <i class="ph ph-upload"></i> อัพโหลดไฟล์
+          </a>
         </li>
       </ul>
     </li>

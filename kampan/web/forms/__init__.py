@@ -20,3 +20,4 @@ from . import vehicle_applications
 from . import procurement
 from . import mas
 from . import requisitions
+from . import upload

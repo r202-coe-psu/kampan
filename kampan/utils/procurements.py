@@ -5,9 +5,11 @@ from datetime import datetime
 from kampan.models.procurement import Procurement
 from kampan.models import OrganizationUserRole
 from kampan.models import User
+from kampan.models.upload_history import UploadHistory
+from flask import send_file
 
 
-def upload_procurement_excel(file_bytes, user_id):
+def upload_procurement_excel(file_bytes, user_id, filename, file_id):
     # อ่านไฟล์ Excel จาก bytes
     df = pd.read_excel(BytesIO(file_bytes))
 
@@ -166,3 +168,44 @@ def upload_procurement_excel(file_bytes, user_id):
         except Exception as e:
             print(f"Row {idx+1} error: {e}")
             continue
+    upload_history = UploadHistory(
+        file_name=filename,
+        file_type="mas",
+        file_id=file_id,
+        uploaded_by=user,
+        upload_date=datetime.now(),
+    )
+    upload_history.save()
+
+
+def download_procurement_template():
+    template_data = {
+        "product_number": ["มอ. 011/2567-0001"],
+        "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],
+        "รหัสครุภัณฑ์": ["CC/www-x-yy/zz"],
+        "วันที่เริ่มต้น": ["14 พฤศจิกายน 2567"],
+        "วันที่สิ้นสุด": ["14 พฤศจิกายน 2568"],
+        "ระยะเวลา (เดือน)": [12],
+        "จำนวน (งวด)": [1],
+        "ประเภท": ["จ้างเหมาบริการ"],
+        "ชื่อผู้รับผิดชอบ": ["นายสมชาย ใจดี"],
+        "จำนวนเงิน": [50000],
+        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์": ["บริษัท เทคโนโลยี จำกัด"],
+        "หมายเหตุ": ["สำหรับใช้ในสำนักงาน"],
+    }
+    df = pd.DataFrame(template_data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="แม่แบบข้อมูล", index=False)
+        worksheet = writer.sheets["แม่แบบข้อมูล"]
+        for column in worksheet.columns:
+            max_length = max((len(str(cell.value)) for cell in column), default=0)
+            column_letter = column[0].column_letter
+            worksheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="Template_Procurement.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
