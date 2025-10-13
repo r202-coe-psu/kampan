@@ -17,14 +17,6 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">ตารางรายการขอซื้อขอจ้าง</h1>
             </div>
             {% if 'admin' in current_user.roles %}
-            <div class="flex gap-3 p-2">
-                <a href="{{ url_for('procurement.products.upload', organization_id=organization.id) }}"
-                    class="btn btn-success btn-sm shadow-lg">
-                    <i class="ph ph-upload-simple text-sm"></i>
-                    อัปโหลดไฟล์
-                    <i class="ph ph-file-xls text-sm"></i>
-                </a>
-            </div>
             <div class="flex gap-3">
                 <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
                     class="btn btn-primary btn-sm shadow-lg">

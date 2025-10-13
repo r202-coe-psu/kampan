@@ -201,62 +201,6 @@ def create():
     return redirect(url_for("procurement.products.index", organization=organization))
 
 
-@module.route("/<organization_id>/upload", methods=["GET", "POST"])
-@login_required
-@acl.roles_required("admin")
-def upload(organization_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    form = forms.procurement.FileForm()
-    errors = request.args.getlist("errors")
-    template_columns = [
-        "product_number",
-        "ชื่อรายการ",
-        "รหัสครุภัณฑ์",
-        "วันที่เริ่มต้น",
-        "วันที่สิ้นสุด",
-        "ระยะเวลา (เดือน)",
-        "จำนวน (งวด)",
-        "ประเภท",
-        "ชื่อผู้รับผิดชอบ",
-        "จำนวนเงิน",
-        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์",
-        "หมายเหตุ",
-    ]
-
-    if request.method == "POST" and form.validate_on_submit():
-        file_bytes, errors = validate_upload_file(form, errors, template_columns)
-        if errors:
-            return render_template(
-                "/procurement/products/upload_procurement.html",
-                form=form,
-                organization=organization,
-                errors=errors,
-            )
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.procurements.upload_procurement_excel,
-            args=[file_bytes, current_user.id],
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> submit", job.get_id())
-        return redirect(
-            url_for(
-                "procurement.products.index",
-                organization_id=organization_id,
-                upload_success=1,
-            )
-        )
-
-    return render_template(
-        "/procurement/products/upload_procurement.html",
-        form=form,
-        organization=organization,
-        errors=errors,
-    )
-
-
 @module.route("/<organization_id>/download_template")
 @login_required
 @acl.roles_required("admin")
