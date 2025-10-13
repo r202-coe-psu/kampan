@@ -17,6 +17,36 @@
                 <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
             </div>
             <div class="flex gap-2">
+                <button type="button" class="btn btn-success btn-md" style="margin-right: 10px;"
+                    onclick="openModal('template-modal')">
+                    <i class="ph ph-file-xls text-lg"></i> ดาวน์โหลดเทมเพลต
+                </button>
+
+                <!-- Modal for template selection -->
+                <div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs mx-auto relative">
+                        <button type="button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                            onclick="closeModal('template-modal')">
+                            <i class="ph ph-x text-xl"></i>
+                        </button>
+                        <div class="font-bold text-lg mb-4 flex items-center gap-2">
+                            <i class="ph ph-file-xls text-green-500"></i>
+                            <span class="text-black">เลือกประเภทเทมเพลต</span>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <a href="{{ url_for('static', filename='data/Template_MAS.xlsx') }}" download
+                                class="btn btn-block btn-outline-success flex items-center gap-2"
+                                onclick="closeModal('template-modal')">
+                                <i class="ph ph-file-xls"></i> Template แหล่งเงิน (MAS)
+                            </a>
+                            <a href="{{ url_for('static', filename='data/Template_MA.xlsx') }}" download
+                                class="btn btn-block btn-outline-success flex items-center gap-2"
+                                onclick="closeModal('template-modal')">
+                                <i class="ph ph-file-xls"></i> Template MA (Procurement)
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 <a class="btn btn-primary btn-md"
                     href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page')) }}"
                     data-tooltip="อัปโหลดไฟล์ใหม่">
