@@ -38,8 +38,8 @@ class FileForm(BaseFileForm):
     category = fields.SelectField(
         "Category",
         choices=[
-            ("mas", "MAS(แหล่งเงิน)"),
-            ("ma", "MA(ครุภัณฑ์)"),
+            ("mas", "MAS (แหล่งเงิน)"),
+            ("ma", "MA (ครุภัณฑ์)"),
             ("unknown", "Unknown"),
         ],
         default="unknown",

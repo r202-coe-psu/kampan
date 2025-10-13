@@ -4,12 +4,14 @@ from flask import (
     redirect,
     url_for,
     send_file,
+    request,
     Response,
 )
 from flask_login import login_required, current_user
 import datetime
 
-from kampan.web import models, forms, acl
+from ... import models, forms, acl, redis_rq
+from .... import utils
 
 import pandas as pd
 from io import BytesIO
@@ -185,7 +187,7 @@ def upload_or_edit(document_id):
                         filename=file.filename,
                         content_type=file.content_type,
                     )
-                    document.status = "Waiting"
+                    document.status = "waiting"
                 else:
                     document.file.put(
                         file_stream,
@@ -230,3 +232,38 @@ def download(document_id, filename):
         )
 
     return response
+
+
+@module.route("/<document_id>/process", methods=["GET"])
+@acl.roles_required("admin")
+def processing(document_id):
+    document = models.Document.objects.get(id=document_id)
+    document.status = "waiting"
+    document.save()
+
+    category = document.category or "unknown"
+
+    print(category)
+    if category == "mas":
+        mas = models.MAS.objects(
+            status="active",
+        )
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.upload_files.save_mas_db,
+            args=(document, mas, current_user.id),
+            timeout=600,
+            job_timeout=600,
+        )
+        print("=====> MAS creation job submitted", job.get_id())
+    elif category == "ma":
+        ma = models.Procurement.objects()
+
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.upload_files.save_ma_db,
+            args=(document, ma, current_user.id),
+            timeout=600,
+            job_timeout=600,
+        )
+        print("=====> MA creation job submitted", job.get_id())
+
+    return redirect(url_for("admin.upload_files.index"))

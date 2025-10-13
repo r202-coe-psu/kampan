@@ -57,7 +57,7 @@
                                 {{ doc.file.filename }}
                             </a>
                         </td>
-                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.category }}</td>
+                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.get_category_display() }}</td>
                         <td class="py-2 px-2">
                             {% set status_info = {
                             'Waiting': {'color': 'bg-gray-300', 'icon': 'ph-clock', 'tooltip': 'รอประมวลผล'},
@@ -80,12 +80,12 @@
                         </td>
                         <td class="py-2 px-2 whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">
-                                <button type="button"
+                                <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id) }}"
                                     class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
                                     title="บันทึกลงในระบบ">
                                     <i class="ph ph-floppy-disk"></i>
-                                </button>
-                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, page=request.args.get('page')) }}"
+                                </a>
+                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id) }}"
                                     class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md"
                                     title="แก้ไข">
                                     <i class="ph ph-pencil-simple"></i>
