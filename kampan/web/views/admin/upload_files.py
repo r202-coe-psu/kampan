@@ -167,16 +167,16 @@ def upload_or_edit(document_id):
                         form.category.data = "mas"
                     elif {
                         "product_number",
-                        "asset_code",
                         "name",
-                        "category",
+                        "asset_code",
                         "start_date",
                         "end_date",
-                        "amount",
-                        "period",
                         "quantity",
-                        "company",
+                        "period",
+                        "category",
                         "responsible_by",
+                        "amount",
+                        "company",
                     }.issubset(cols):
                         form.category.data = "ma"
 

@@ -43,10 +43,9 @@ def is_missing_required(value):
 def save_mas_db(document, mas, user_id):
     print("=====> Start processing MAS document:", document.id)
     """
-    อ่านข้อมูล KPI จากไฟล์ Excel แล้วสร้าง KPI แต่ละตัวลงฐานข้อมูล
+    อ่านข้อมูล MAS จากไฟล์ Excel แล้วสร้าง MAS แต่ละตัวลงฐานข้อมูล
     """
     errors = []
-    document.status = "completed"
     processed_user = models.User.objects(id=user_id).first()
     document = models.Document.objects(id=document.id).first()
     if not document:
@@ -136,9 +135,10 @@ def save_mas_db(document, mas, user_id):
         print(f"Created MAS #{i + 1}: {mas_obj.name}")
 
     document.updated_date = datetime.datetime.now()
+    document.status = "completed"
     document.save()
     print(f"Document status: {document.status}")
-    print(f"Total MAS created: {created_count}/{len(df)}")
+    print(f"Total MASs created: {created_count}/{len(df)}")
 
     return True, errors
 
@@ -217,15 +217,15 @@ def save_ma_db(document, ma, user_id):
 
     column_map = {
         "product_number": "product_number",
-        "ชื่อรายการ": "name",
-        "รหัสครุภัณฑ์": "asset_code",
-        "วันที่เริ่มต้น": "start_date",
-        "วันที่สิ้นสุด": "end_date",
-        "จำนวนเงิน": "amount",
-        "จำนวน (งวด)": "period",
-        "ประเภท": "category",
-        "ชื่อผู้รับผิดชอบ": "responsible_by",
-        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์": "company",
+        "name": "name",
+        "asset_code": "asset_code",
+        "start_date": "start_date",
+        "end_date": "end_date",
+        "amount": "amount",
+        "period": "period",
+        "category": "category",
+        "responsible_by": "responsible_by",
+        "company": "company",
     }
     category_map = {
         "ซอฟต์แวร์": "software",
