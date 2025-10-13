@@ -42,6 +42,13 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% if documents|length == 0 %}
+                    <tr>
+                        <td colspan="7" class="py-6 text-center text-gray-400 text-base font-semibold">
+                            ยังไม่มีข้อมูล
+                        </td>
+                    </tr>
+                    {% else %}
                     {% for doc in documents %}
                     <tr class="border-b last:border-none hover:bg-gray-50 text-center text-sm">
                         <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_date.strftime('%Y-%m-%d %H:%M:%S') }}
@@ -49,8 +56,7 @@
                         <td class="py-2 px-2 whitespace-nowrap">{{ doc.updated_date.strftime('%Y-%m-%d %H:%M:%S') }}
                         </td>
                         <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_by.first_name }} {{
-                            doc.created_by.last_name
-                            }}</td>
+                            doc.created_by.last_name }}</td>
                         <td class="py-2 px-2">
                             <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename) }}"
                                 class="text-blue-600 hover:underline">
@@ -69,8 +75,7 @@
                             } %}
                             {% set status_display = doc.get_status_display() %}
                             {% set info = status_info.get(status_display, {'color': 'bg-gray-200', 'icon':
-                            'ph-question',
-                            'tooltip': 'ไม่ทราบสถานะ'}) %}
+                            'ph-question', 'tooltip': 'ไม่ทราบสถานะ'}) %}
                             <span
                                 class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
                                 title="{{ info.tooltip }}">
@@ -125,6 +130,7 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    {% endif %}
                 </tbody>
             </table>
         </div>
