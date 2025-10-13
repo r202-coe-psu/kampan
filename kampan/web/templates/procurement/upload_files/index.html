@@ -117,7 +117,8 @@
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id) }}"
                                     class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
-                                    title="บันทึกลงในระบบ">
+                                    title="บันทึกลงในระบบ" {% if doc.status !='waiting' %}aria-disabled="true"
+                                    tabindex="-1" style="pointer-events: none; opacity: 0.5;" {% endif %}>
                                     <i class="ph ph-floppy-disk"></i>
                                 </a>
                                 <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id) }}"

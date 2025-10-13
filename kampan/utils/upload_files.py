@@ -135,7 +135,12 @@ def save_mas_db(document, mas, user_id):
         print(f"Created MAS #{i + 1}: {mas_obj.name}")
 
     document.updated_date = datetime.datetime.now()
-    document.status = "completed"
+    if created_count == 0:
+        document.status = "failed"
+    elif created_count > 0:
+        document.status = "incomplete"
+    else:
+        document.status = "completed"
     document.save()
     print(f"Document status: {document.status}")
     print(f"Total MASs created: {created_count}/{len(df)}")
@@ -191,6 +196,7 @@ def save_ma_db(document, ma, user_id):
     errors = []
     processed_user = models.User.objects(id=user_id).first()
     document = models.Document.objects(id=document.id).first()
+    created_count = 0
     if not document:
         document.status = "failed"
         document.updated_date = datetime.datetime.now()
@@ -313,6 +319,7 @@ def save_ma_db(document, ma, user_id):
                 status="active",
             )
             procurement.save()
+            created_count += 1
             print(f"Saved procurement: {procurement.product_number}")
         except Exception as e:
             msg = f"Row {idx+1} error: {e}"
@@ -321,9 +328,14 @@ def save_ma_db(document, ma, user_id):
             continue
 
     document.updated_date = datetime.datetime.now()
-    document.status = "completed"
+    if created_count == 0:
+        document.status = "failed"
+    elif created_count > 0:
+        document.status = "incomplete"
+    else:
+        document.status = "completed"
     document.save()
     print(f"Document status: {document.status}")
-    print(f"Total MAs created: {len(df) - len(errors)}/{len(df)}")
+    print(f"Total MAs created: {created_count}/{len(df)}")
 
     return True
