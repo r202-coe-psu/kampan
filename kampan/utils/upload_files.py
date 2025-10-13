@@ -143,6 +143,187 @@ def save_mas_db(document, mas, user_id):
     return True, errors
 
 
-def save_ma_db(document, ma):
+def parse_date(val):
+    if isinstance(val, str):
+        val = val.strip()
+        th_to_en_month = {
+            "มกราคม": "January",
+            "กุมภาพันธ์": "February",
+            "มีนาคม": "March",
+            "เมษายน": "April",
+            "พฤษภาคม": "May",
+            "มิถุนายน": "June",
+            "กรกฎาคม": "July",
+            "สิงหาคม": "August",
+            "กันยายน": "September",
+            "ตุลาคม": "October",
+            "พฤศจิกายน": "November",
+            "ธันวาคม": "December",
+        }
+        m = re.match(r"(\d{1,2})\s+([ก-๙]+)\s+(\d{4})", val)
+        if m:
+            day = m.group(1)
+            th_month = m.group(2)
+            year = int(m.group(3)) - 543
+            en_month = th_to_en_month.get(th_month)
+            if en_month:
+                date_str = f"{day} {en_month} {year}"
+                try:
+                    from datetime import datetime
+
+                    dt = datetime.strptime(date_str, "%d %B %Y")
+                    return dt
+                except Exception:
+                    pass
+        try:
+            return pd.to_datetime(val, errors="coerce")
+        except Exception:
+            return None
+    else:
+        return pd.to_datetime(val, errors="coerce")
+
+
+def save_ma_db(document, ma, user_id):
     print("=====> Start processing MA document:", document.id)
-    return
+    """
+    อ่านข้อมูล MA จากไฟล์ Excel แล้วสร้าง MA แต่ละตัวลงฐานข้อมูล
+    """
+    errors = []
+    processed_user = models.User.objects(id=user_id).first()
+    document = models.Document.objects(id=document.id).first()
+    if not document:
+        document.status = "failed"
+        document.updated_date = datetime.datetime.now()
+        document.updated_by = processed_user
+        document.save()
+        print(f"Document {document.id} not found.")
+        return False
+
+    try:
+        document.file.seek(0)
+        file_bytes = document.file.read()
+        df = pd.read_excel(io.BytesIO(file_bytes))
+        df.columns = df.columns.str.strip()
+    except Exception as e:
+        document.status = "failed"
+        print(f"Error reading Excel in save_ma_db: {e}")
+        return False
+
+    print(f"\n==== Loaded Excel File: {len(df)} rows ====\n")
+    if not processed_user:
+        document.status = "failed"
+        print("Cannot find user.")
+        return False
+
+    column_map = {
+        "product_number": "product_number",
+        "ชื่อรายการ": "name",
+        "รหัสครุภัณฑ์": "asset_code",
+        "วันที่เริ่มต้น": "start_date",
+        "วันที่สิ้นสุด": "end_date",
+        "จำนวนเงิน": "amount",
+        "จำนวน (งวด)": "period",
+        "ประเภท": "category",
+        "ชื่อผู้รับผิดชอบ": "responsible_by",
+        "ชื่อบริษัท/ร้านค้า ผู้จำหน่ายผลิตภัณฑ์": "company",
+    }
+    category_map = {
+        "ซอฟต์แวร์": "software",
+        "ครุภัณฑ์": "product",
+        "จ้างเหมาบริการ": "service",
+        "อื่นๆ": "other",
+    }
+
+    required_columns = list(column_map.keys())
+
+    for idx, row in df.iterrows():
+        missing = False
+        for col in required_columns:
+            if pd.isnull(row.get(col)) or str(row.get(col)).strip() == "":
+                msg = f"Row {idx+1} skipped: missing required column '{col}'."
+                print(msg)
+                errors.append(msg)
+                missing = True
+                break
+        if missing:
+            continue
+
+        data = {}
+        try:
+            for excel_col, model_field in column_map.items():
+                value = row.get(excel_col)
+                try:
+                    if model_field in ["start_date", "end_date"]:
+                        value = parse_date(value)
+                    if model_field == "amount":
+                        value = (
+                            to_decimal(value) if pd.notnull(value) else Decimal("0.00")
+                        )
+                    if model_field == "period":
+                        value = int(value) if pd.notnull(value) else 1
+                    if model_field == "asset_code":
+                        value = str(value) if pd.notnull(value) else ""
+                    if model_field == "category":
+                        value = category_map.get(str(value).strip(), "other")
+                    if model_field == "responsible_by":
+                        responsible_by_list = []
+                        names = str(value).strip().splitlines()
+                        for name in names:
+                            name = name.strip()
+                            if not name:
+                                continue
+                            fullname = name.split(" ", 1)
+                            if len(fullname) == 2:
+                                first_name, last_name = fullname
+                                user_role = models.OrganizationUserRole.objects(
+                                    first_name=first_name.strip(),
+                                    last_name=last_name.strip(),
+                                ).first()
+                                if user_role:
+                                    responsible_by_list.append(user_role)
+                        data[model_field] = responsible_by_list
+                        continue
+                    data[model_field] = value
+                except Exception as field_e:
+                    msg = f"Row {idx+1} field '{excel_col}' error: {field_e}"
+                    print(msg)
+                    errors.append(msg)
+
+            duplicate_query = {
+                "name": data.get("name"),
+                "asset_code": data.get("asset_code"),
+                "start_date": data.get("start_date"),
+                "end_date": data.get("end_date"),
+                "amount": data.get("amount"),
+                "period": data.get("period"),
+                "company": data.get("company"),
+                "category": data.get("category"),
+                "responsible_by": data.get("responsible_by"),
+            }
+            if models.Procurement.objects(**duplicate_query).first():
+                msg = f"Row {idx+1} skipped: duplicate found."
+                print(msg)
+                errors.append(msg)
+                continue
+
+            procurement = models.Procurement(
+                **data,
+                created_by=processed_user,
+                last_updated_by=processed_user,
+                status="active",
+            )
+            procurement.save()
+            print(f"Saved procurement: {procurement.product_number}")
+        except Exception as e:
+            msg = f"Row {idx+1} error: {e}"
+            print(msg)
+            errors.append(msg)
+            continue
+
+    document.updated_date = datetime.datetime.now()
+    document.status = "completed"
+    document.save()
+    print(f"Document status: {document.status}")
+    print(f"Total MAs created: {len(df) - len(errors)}/{len(df)}")
+
+    return True
