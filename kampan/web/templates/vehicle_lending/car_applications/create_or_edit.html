@@ -35,6 +35,9 @@
     {{renderer.render_field(form.location)}}
   </div>
   <div class="flex flex-row justify-between w-full gap-2">
+    {{renderer.render_field(form.passenger_location)}}
+  </div>
+  <div class="flex flex-row justify-between w-full gap-2">
     {{ renderer.render_select_field(form.car, clearable=false) }}
     {{ renderer.render_field(form.passenger_number) }}
   </div>
@@ -110,16 +113,21 @@
 
       let flight_numberReturnField = $("#flight_return_number");
       let flight_timeReturnField = $("#flight_return_time");
+      let locationField = $("#location");
 
       if (usingType === "airport transfer") {
         $("#flight_datetime").show();
         flight_numberField.prop("required", true);
         flight_timeField.prop("required", true);
+        locationField.val("สนามบิน");
+
 
       } else {
         $("#flight_datetime").hide();
         flight_numberField.prop("required", false);
         flight_timeField.prop("required", false);
+        locationField.val("");
+
 
       }
 

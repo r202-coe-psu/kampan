@@ -163,6 +163,24 @@ def create_or_edit(motorcycle_application_id):
     motorcycle_application.updater = current_user
     motorcycle_application.updated_date = datetime.datetime.now()
     motorcycle_application.save()
+    if not motorcycle_application_id:
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.motorcycle_send_emails.force_send_email_to_admin,
+            args=(
+                motorcycle_application,
+                current_user._get_current_object(),
+                current_app.config,
+            ),
+            job_id=f"sent_email_head_endorser_motorcycle_application_{motorcycle_application.id}",
+            timeout=600,
+            job_timeout=600,
+        )
+        return render_template(
+            "/vehicle_lending/motorcycle_applications/create_or_edit.html",
+            organization=organization,
+            form=form,
+            status="success",
+        )
     return redirect(
         url_for(
             "vehicle_lending.motorcycle_applications.index",

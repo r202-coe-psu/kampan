@@ -71,11 +71,11 @@ class CarApplication(VehicleApplication, me.Document):
         default="one way", choices=TRAVEL_TYPE
     )  # ประเภทการเดินทาง
 
+    passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
     flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป
     flight_return_datetime = me.DateTimeField(
         default=datetime.datetime.now
     )  # วันเวลาบินกลับ
-
     flight_number = me.StringField(max_length=128, default="")
     flight_return_number = me.StringField(max_length=128, default="")
 

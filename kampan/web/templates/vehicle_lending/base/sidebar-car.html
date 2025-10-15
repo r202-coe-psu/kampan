@@ -60,12 +60,7 @@
       </a>
     </li>
     {% endif %}
-    <li>
-      <a class="{{ 'menu-active' if '/projects' in request.path else '' }}"
-        href="https://apps.powerapps.com/play/e/default-8e634e67-9d66-46d2-a529-e1b708c5d8bc/a/8dcb79a0-0a96-47db-8859-88cf5ecf61c7?tenantId=8e634e67-9d66-46d2-a529-e1b708c5d8bc&hint=379da168-d429-436b-b398-7d5f35441630&sourcetime=1730427986026">
-        <i class="ph ph-lightbulb"></i> Smart Office
-      </a>
-    </li>
+
     <li>
       <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
         href="{{ url_for('site.select_system', organization_id=organization.id) }}">

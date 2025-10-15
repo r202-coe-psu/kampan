@@ -34,6 +34,7 @@ BaseCarApplicationForm = model_form(
         "passenger_number": {"label": "จำนวนผู้โดยสาร"},
         "flight_number": {"label": "หมายเลขเที่ยวบินไป"},
         "flight_return_number": {"label": "หมายเลขเที่ยวบินกลับ"},
+        "passenger_location": {"label": "สถานที่รับผู้โดยสาร"},
     },
 )
 
