@@ -95,30 +95,34 @@ def send_payment_notification_job(
                 logger.debug(f"attendant {person['name']} email is required")
                 return False
 
-    psu_smtp = PSUSMTP(setting)
-    if not psu_smtp.login():
-        logger.debug("email cannot login")
+    try:
+        psu_smtp = PSUSMTP(setting)
+        if not psu_smtp.login():
+            logger.debug("email cannot login")
+            return False
+
+        subject_template_str = email_subject_template.get(
+            notif_type, email_subject_template["default"]
+        )
+        template_subject = Template(subject_template_str)
+        template_body = Template(email_body_template)
+
+        if text_format and text_format["responsible_by"]:
+            for person in text_format["responsible_by"]:
+                context = {
+                    **text_format,
+                    "responsible_name": person["name"],
+                    "notif_type": notif_type,
+                    "days_left": days_left.get("days_left", ""),
+                }
+                email_subject = template_subject.render(context)
+                email_body = template_body.render(context)
+
+                logger.debug(f"send email to {person['email']}")
+                psu_smtp.send_email(person["email"], email_subject, email_body)
+
+        psu_smtp.quit()
+        return True
+    except Exception as e:
+        logger.error(f"send_payment_notification_job error: {e}")
         return False
-
-    subject_template_str = email_subject_template.get(
-        notif_type, email_subject_template["default"]
-    )
-    template_subject = Template(subject_template_str)
-    template_body = Template(email_body_template)
-
-    if text_format and text_format["responsible_by"]:
-        for person in text_format["responsible_by"]:
-            context = {
-                **text_format,
-                "responsible_name": person["name"],
-                "notif_type": notif_type,
-                "days_left": days_left.get("days_left", ""),
-            }
-            email_subject = template_subject.render(context)
-            email_body = template_body.render(context)
-
-            logger.debug(f"send email to {person['email']}")
-            psu_smtp.send_email(person["email"], email_subject, email_body)
-
-    psu_smtp.quit()
-    return True
