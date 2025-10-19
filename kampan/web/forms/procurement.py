@@ -39,6 +39,18 @@ class ProcurementForm(BaseProcurementForm):
         validators=[validators.Optional()],
     )
 
+    def validate_product_number(self, field):
+        # ตรวจสอบ uniqueness ของ product_number
+        if field.data:
+
+            existing = models.Procurement.objects(product_number=field.data)
+            # ถ้าเป็นการแก้ไข (edit) จะมี id อยู่ใน form
+            form_id = getattr(self, "id", None)
+            if form_id and form_id.data:
+                existing = existing.filter(id__ne=form_id.data)
+            if existing.first():
+                raise ValidationError("เลขที่สินค้า/เลขที่เอกสารนี้ถูกใช้ไปแล้ว กรุณาใช้เลขที่อื่น")
+
     def validate_end_date(self, field):
         if self.start_date.data and field.data:
             if field.data < self.start_date.data:
@@ -56,15 +68,6 @@ class ProcurementForm(BaseProcurementForm):
         "รูปภาพ",
         validators=[
             file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
-        ],
-    )
-
-
-class FileForm(FlaskForm):
-    document_upload = file.MultipleFileField(
-        "Upload File Type (.xls, xlsx)",
-        validators=[
-            file.FileAllowed(["xls", "xlsx"], "Only .xls and .xlsx files are allowed!"),
         ],
     )
 

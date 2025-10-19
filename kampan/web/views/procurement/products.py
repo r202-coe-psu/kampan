@@ -137,29 +137,6 @@ def index():
     )
 
 
-def validate_upload_file(form, errors, template_columns):
-    """Validate uploaded Excel file columns."""
-    if not form.document_upload.data:
-        errors.append("ไม่พบไฟล์ กรุณาเลือกไฟล์ก่อนอัปโหลด")
-        return None, errors
-    file_storage = form.document_upload.data
-    if isinstance(file_storage, list):
-        file_storage = file_storage[0]
-    file_storage.seek(0)
-    file_bytes = file_storage.read()
-    try:
-        df = pd.read_excel(BytesIO(file_bytes))
-        file_columns = list(df.columns)
-        missing_cols = [col for col in template_columns if col not in file_columns]
-        if missing_cols:
-            errors.append(f"ไฟล์ที่อัปโหลดไม่มี column เหล่านี้: {', '.join(missing_cols)}")
-            return None, errors
-        return file_bytes, errors
-    except Exception as e:
-        errors.append(f"เกิดข้อผิดพลาดในการอ่านไฟล์: {e}")
-        return None, errors
-
-
 @module.route("/create", methods=["GET", "POST"])
 @login_required
 @acl.roles_required("admin")
@@ -177,24 +154,27 @@ def create():
         )
 
     procurement = models.Procurement()
+    image = form.image.data
+    del form.image
+
     form.populate_obj(procurement)
     procurement.created_by = procurement.last_updated_by = (
         current_user._get_current_object()
     )
 
     # Save image if uploaded
-    if form.image.data:
+    if image:
         if procurement.image:
             procurement.image.replace(
-                form.image.data,
-                filename=form.image.data.filename,
-                content_type=form.image.data.content_type,
+                image,
+                filename=image.filename,
+                content_type=image.content_type,
             )
         else:
             procurement.image.put(
-                form.image.data,
-                filename=form.image.data.filename,
-                content_type=form.image.data.content_type,
+                image,
+                filename=image.filename,
+                content_type=image.content_type,
             )
 
     procurement.save()

@@ -20,7 +20,6 @@
     <form method="POST" action="" enctype="multipart/form-data" class="space-y-8">
         {{ form.hidden_tag() }}
 
-        <!-- Basic Information Section -->
         <div class="bg-gray-50 rounded-lg p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
@@ -36,7 +35,7 @@
                     </div>
                     {% if form.product_number.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.product_number.errors[0] }}
+                        {{ form.product_number.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -45,7 +44,7 @@
                     {{ form.name(class_="input input-bordered w-full focus:input-primary") }}
                     {% if form.name.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.name.errors[0] }}
+                        {{ form.name.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -54,7 +53,7 @@
                     {{ form.category(class_="select select-bordered w-full focus:select-primary") }}
                     {% if form.category.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.category.errors[0] }}
+                        {{ form.category.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -64,7 +63,7 @@
                     {{ form.asset_code(class_="input input-bordered w-full focus:input-primary") }}
                     {% if form.asset_code.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.asset_code.errors[0] }}
+                        {{ form.asset_code.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -73,14 +72,13 @@
                     {{ form.company(class_="input input-bordered w-full focus:input-primary") }}
                     {% if form.company.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.company.errors[0] }}
+                        {{ form.company.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Date and Financial Information Section -->
         <div class="bg-gray-50 rounded-lg p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <i class="ph ph-calendar-check text-xl text-green-600 mr-2"></i>
@@ -91,34 +89,24 @@
                     <label class="block text-gray-700 font-medium mb-2" for="start_date">{{ form.start_date.label
                         }}</label>
                     <div class="relative">
-                        {{ form.start_date(class_="input input-bordered w-full focus:input-primary", type="date",
-                        id="start_date", style="position: absolute; opacity: 0;") }}
-                        <input type="text" id="start_date_display" placeholder="dd/mm/yyyy"
-                            class="input input-bordered w-full focus:input-primary" readonly
-                            onclick="document.getElementById('start_date').showPicker()">
-                        <i
-                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        {{ form.start_date(class_="input input-bordered w-full", type="date",
+                        id="start_date") }}
                     </div>
                     {% if form.start_date.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.start_date.errors[0] }}
+                        {{ form.start_date.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2" for="end_date">{{ form.end_date.label }}</label>
                     <div class="relative">
-                        {{ form.end_date(class_="input input-bordered w-full focus:input-primary", type="date",
-                        id="end_date", style="position: absolute; opacity: 0;") }}
-                        <input type="text" id="end_date_display" placeholder="dd/mm/yyyy"
-                            class="input input-bordered w-full focus:input-primary" readonly
-                            onclick="document.getElementById('end_date').showPicker()">
-                        <i
-                            class="ph ph-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        {{ form.end_date(class_="input input-bordered w-full", type="date",
+                        id="end_date") }}
                     </div>
                     {% if form.end_date.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.end_date.errors[0] }}
+                        {{ form.end_date.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -131,11 +119,11 @@
                     </div>
                     {% if form.amount.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.amount.errors[0] }}
+                        {{ form.amount.errors[0] }}
                     </p>
                     {% endif %}
                     <p id="amount_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
-                        <i class="ph ph-warning text-sm mr-1"></i>จำนวนเงินต้องมากกว่าหรือเท่ากับ 0
+                        จำนวนเงินต้องมากกว่าหรือเท่ากับ 0
                     </p>
                 </div>
                 <div>
@@ -148,57 +136,39 @@
                     </div>
                     {% if form.period.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center">
-                        <i class="ph ph-warning text-sm mr-1"></i>{{ form.period.errors[0] }}
+                        {{ form.period.errors[0] }}
                     </p>
                     {% endif %}
                     <p id="period_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
-                        <i class="ph ph-warning text-sm mr-1"></i>จำนวนงวดต้องมากกว่า 0
+                        จำนวนงวดต้องมากกว่า 0
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- Responsible Person Section -->
         <div class="bg-gray-50 rounded-lg p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <i class="ph ph-users text-xl text-purple-600 mr-2"></i>
                 ผู้รับผิดชอบ
             </h2>
-            <div>
-                <label class="block text-gray-700 font-medium mb-2" for="responsible_by">{{ form.responsible_by.label
-                    }}</label>
-                <div class="relative mb-3">
-                    <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                        class="input input-bordered w-full focus:input-primary pl-10" oninput="filterResponsibleBy()">
-                    <i
-                        class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                <div id="responsible_by_list"
-                    class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
-                    {% for user_role in form.responsible_by.queryset %}
-                    <label
-                        class="flex items-center space-x-3 py-2 px-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
-                        <input type="checkbox" name="responsible_by" value="{{ user_role.id }}"
-                            class="checkbox checkbox-primary checkbox-sm" {% if user_role.id|string in
-                            form.responsible_by.data or user_role in form.responsible_by.data %}checked{% endif %}>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                <i class="ph ph-user text-primary text-sm"></i>
-                            </div>
-                            <span class="text-gray-700">
-                                {{ form.label_modifier(user_role) if form.label_modifier else
-                                user_role.display_fullname() }}
-                            </span>
-                        </div>
-                    </label>
-                    {% endfor %}
-                </div>
-                {% if form.responsible_by.errors %}
-                <p class="text-red-500 text-xs mt-2 flex items-center">
-                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.responsible_by.errors[0] }}
-                </p>
-                {% endif %}
+            <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label
+                }}</label>
+            <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
+                class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
+            <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
+                {% for user in form.responsible_by.queryset %}
+                <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
+                    <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if user.id|string in
+                        form.responsible_by.data or user in form.responsible_by.data %}checked{% endif %}>
+                    <span>
+                        {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
+                    </span>
+                </label>
+                {% endfor %}
             </div>
+            {% if form.responsible_by.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
+            {% endif %}
         </div>
 
         <!-- Image Upload Section -->
@@ -226,7 +196,7 @@
                 </div>
                 {% if form.image.errors %}
                 <p class="text-red-500 text-xs mt-2 flex items-center">
-                    <i class="ph ph-warning text-sm mr-1"></i>{{ form.image.errors[0] }}
+                    {{ form.image.errors[0] }}
                 </p>
                 {% endif %}
                 <div id="image_preview" class="hidden mt-4">
@@ -235,7 +205,6 @@
             </div>
         </div>
 
-        <!-- Submit Buttons -->
         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <a href="{{ url_for('procurement.products.index', organization=organization.id) }}"
                 class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
@@ -253,203 +222,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const startDate = document.getElementById('start_date');
-        const endDate = document.getElementById('end_date');
-        const amount = document.getElementById('amount');
-        const period = document.getElementById('period');
-        const form = document.querySelector('form');
-        const submitBtn = document.getElementById('submit_btn');
-
-        function validateDates() {
-            if (startDate.value && endDate.value) {
-                if (new Date(endDate.value) < new Date(startDate.value)) {
-                    endDate.setCustomValidity('วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น');
-                } else {
-                    endDate.setCustomValidity('');
-                }
-            }
-        }
-
-        function formatDateDisplay() {
-            // Format start date display
-            if (startDate.value) {
-                const startDateObj = new Date(startDate.value);
-                const startDisplayElement = document.getElementById('start_date_display');
-                if (startDisplayElement) {
-                    startDisplayElement.value = formatDateToDDMMYYYY(startDateObj);
-                }
-            } else {
-                const startDisplayElement = document.getElementById('start_date_display');
-                if (startDisplayElement) {
-                    startDisplayElement.value = '';
-                }
-            }
-
-            // Format end date display
-            if (endDate.value) {
-                const endDateObj = new Date(endDate.value);
-                const endDisplayElement = document.getElementById('end_date_display');
-                if (endDisplayElement) {
-                    endDisplayElement.value = formatDateToDDMMYYYY(endDateObj);
-                }
-            } else {
-                const endDisplayElement = document.getElementById('end_date_display');
-                if (endDisplayElement) {
-                    endDisplayElement.value = '';
-                }
-            }
-        }
-
-        function formatDateToDDMMYYYY(dateObj) {
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        function validateAmount() {
-            const amountError = document.getElementById('amount_error');
-            const value = parseFloat(amount.value);
-
-            if (amount.value !== '' && (isNaN(value) || value < 0)) {
-                amount.setCustomValidity('จำนวนเงินต้องมากกว่าหรือเท่ากับ 0');
-                amountError.style.display = 'block';
-                amount.classList.add('input-error');
-                return false;
-            } else {
-                amount.setCustomValidity('');
-                amountError.style.display = 'none';
-                amount.classList.remove('input-error');
-                return true;
-            }
-        }
-
-        function validatePeriod() {
-            const periodError = document.getElementById('period_error');
-            const value = parseInt(period.value);
-
-            if (period.value !== '' && (isNaN(value) || value < 1)) {
-                period.setCustomValidity('จำนวนงวดต้องมากกว่า 0');
-                periodError.style.display = 'block';
-                period.classList.add('input-error');
-                return false;
-            } else {
-                period.setCustomValidity('');
-                periodError.style.display = 'none';
-                period.classList.remove('input-error');
-                return true;
-            }
-        }
-
-        function validateForm() {
-            const isAmountValid = validateAmount();
-            const isPeriodValid = validatePeriod();
-            const imageInput = document.getElementById('image');
-            const isImageValid = imageInput.files.length > 0;
-
-            // Clear any HTML5 validation message on image input
-            imageInput.setCustomValidity('');
-
-            validateDates();
-
-            if (!isImageValid) {
-                // Show image error message
-                const imageError = document.getElementById('image_error') || createImageError();
-                imageError.style.display = 'block';
-            } else {
-                // Hide image error message if exists
-                const imageError = document.getElementById('image_error');
-                if (imageError) {
-                    imageError.style.display = 'none';
-                }
-            }
-
-            return isAmountValid && isPeriodValid && isImageValid;
-        }
-
-        function createImageError() {
-            const imageError = document.createElement('p');
-            imageError.id = 'image_error';
-            imageError.className = 'text-red-500 text-xs mt-2 flex items-center';
-            imageError.innerHTML = '<i class="ph ph-warning text-sm mr-1"></i>กรุณาเลือกรูปภาพ';
-
-            const imageSection = document.querySelector('.space-y-3');
-            imageSection.appendChild(imageError);
-            return imageError;
-        }
-
-        // Event listeners
-        startDate.addEventListener('change', function () {
-            validateDates();
-            formatDateDisplay();
-        });
-        endDate.addEventListener('change', function () {
-            validateDates();
-            formatDateDisplay();
-        });
-        amount.addEventListener('input', validateAmount);
-        amount.addEventListener('blur', validateAmount);
-        period.addEventListener('input', validatePeriod);
-        period.addEventListener('blur', validatePeriod);
-
-        // Initialize date display on page load
-        formatDateDisplay();
-
-        // Responsible person checkbox functionality
-        const responsibleCheckboxes = document.querySelectorAll('input[name="responsible_by"]');
-        responsibleCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                // This ensures the checkbox state is properly updated
-                console.log('Checkbox changed:', this.value, this.checked);
-            });
-        });
-
-        // Handle label clicks for responsible person checkboxes
-        const responsibleLabels = document.querySelectorAll('#responsible_by_list label');
-        responsibleLabels.forEach(label => {
-            label.addEventListener('click', function (e) {
-                // Prevent double-triggering if clicking directly on checkbox
-                if (e.target.type === 'checkbox') return;
-
-                const checkbox = this.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    // Trigger change event for any additional handling
-                    checkbox.dispatchEvent(new Event('change'));
-                }
-            });
-        });
-
-        // Form submission validation
-        form.addEventListener('submit', function (e) {
-            console.log('Form submitted');
-            const isFormValid = validateForm();
-            console.log('Form valid:', isFormValid);
-
-            if (!isFormValid) {
-                e.preventDefault();
-                console.log('Form validation failed, preventing submission');
-
-                // Show general validation error toast
-                const toast = document.createElement('div');
-                toast.className = 'alert alert-error fixed top-4 right-4 z-50 w-auto max-w-md';
-                toast.innerHTML = `
-                    <i class="ph ph-warning-circle"></i>
-                    <span>กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง</span>
-                `;
-                document.body.appendChild(toast);
-
-                // Remove toast after 3 seconds
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 3000);
-            } else {
-                console.log('Form is valid, allowing submission');
-            }
-        });
-
         // Image preview functionality
         const imageInput = document.getElementById('image');
         const imagePreview = document.getElementById('image_preview');
@@ -488,72 +260,5 @@
     }
 </script>
 
-<style>
-    .input-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
-    }
-
-    .checkbox:checked {
-        background-color: #3b82f6 !important;
-        border-color: #3b82f6 !important;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.00016 10.8002L3.20016 8.00016L2.26683 8.9335L6.00016 12.6668L14.0002 4.66683L13.0668 3.7335L6.00016 10.8002Z'/%3E%3C/svg%3E") !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        background-size: 70% !important;
-    }
-
-
-    .checkbox:checked:hover {
-        background-color: var(--primary) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 2px white, 0 0 0 4px var(--primary) !important;
-    }
-
-    .checkbox:checked:focus {
-        background-color: var(--primary) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 2px white, 0 0 0 4px var(--primary) !important;
-    }
-
-    .checkbox:checked:active {
-        background-color: var(--primary) !important;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 2px white, 0 0 0 4px var(--primary) !important;
-    }
-
-    /* Enhanced checkbox styling for better user experience */
-    #responsible_by_list label {
-        cursor: pointer;
-        user-select: none;
-        border: 1px solid transparent !important;
-        margin-bottom: 2px;
-    }
-
-    #responsible_by_list input[type="checkbox"] {
-        cursor: pointer;
-    }
-
-    #responsible_by_list label:hover {
-        background-color: #f3f4f6 !important;
-        border-color: #d1d5db !important;
-    }
-
-    #responsible_by_list label:has(input:checked) {
-        background-color: #eff6ff !important;
-        border-color: #3b82f6 !important;
-    }
-
-    #responsible_by_list label:has(input:checked):hover {
-        background-color: #dbeafe !important;
-        border-color: #2563eb !important;
-    }
-
-    /* Make the entire row area clickable */
-    #responsible_by_list label {
-        width: 100%;
-        display: flex !important;
-    }
-</style>
 
 {% endblock %}
