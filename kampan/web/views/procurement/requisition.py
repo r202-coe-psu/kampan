@@ -7,13 +7,15 @@ from flask import (
     send_file,
     abort,
     Response,
+    current_app,
 )
 from io import BytesIO
 from PyPDF2 import PdfMerger
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
+from ... import redis_rq
 
 import datetime
 
@@ -393,7 +395,7 @@ def download(requisition_procurement_id):
 
 @module.route("/<requisition_id>/action", methods=["POST"])
 @login_required
-@acl.roles_required("head", "admin", "supervisor support")
+@acl.roles_required("head", "admin", "supervisor supplier")
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
     action = request.form.get("action")  # 'approved' or 'rejected'
@@ -430,7 +432,51 @@ def requisition_action(requisition_id):
     if requisition.approval_history is None:
         requisition.approval_history = []
     requisition.approval_history.append(approval)
-    requisition.status = action
+
+    required_roles = {"head", "admin", "supervisor supplier"}
+    approved_roles = set(
+        h.approver_role for h in requisition.approval_history if h.action == "approved"
+    )
+    rejected_roles = set(
+        h.approver_role for h in requisition.approval_history if h.action == "rejected"
+    )
+
+    # ถ้ามี role ใด reject ให้เปลี่ยนสถานะเป็น incomplete และจบการทำงานทันที
+    if rejected_roles:
+        requisition.status = "incomplete"
+        requisition.last_updated_by = current_user._get_current_object()
+        requisition.save()
+        return redirect(
+            url_for(
+                "procurement.requisitions.renewal_requested",
+                organization_id=current_user.user_setting.current_organization.id,
+            )
+        )
+
+    # ถ้าทุก role approve ครบ เปลี่ยนสถานะเป็น complete และส่ง job
+    if required_roles.issubset(approved_roles):
+        requisition.status = "complete"
+        requisition.last_updated_by = current_user._get_current_object()
+        requisition.save()
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.requisition_send_emails.requisition_send_emails,
+            args=(requisition, current_app.config),
+            timeout=600,
+            job_timeout=600,
+        )
+        print("=====> submit", job.get_id())
+        return redirect(
+            url_for(
+                "procurement.requisitions.renewal_requested",
+                organization_id=current_user.user_setting.current_organization.id,
+            )
+        )
+
+    # ถ้ามี approve แต่ยังไม่ครบทุก role ให้เปลี่ยนสถานะเป็น progress
+    if approved_roles:
+        requisition.status = "progress"
+    else:
+        requisition.status = "pending"
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
     return redirect(

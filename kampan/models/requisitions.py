@@ -15,6 +15,13 @@ COMMITTEE_POSITION_CHOICES = [
     ("member", "กรรมการ"),
 ]
 
+STATUS_CHOICES = [
+    ("pending", "Pending"),
+    ("progress", "Progress"),
+    ("incomplete", "Incomplete"),
+    ("complete", "Complete"),
+]
+
 
 class Committees(me.EmbeddedDocument):
     _id = me.ObjectIdField(required=True, default=ObjectId)
@@ -65,6 +72,7 @@ class Requisition(me.Document):
     committees = me.EmbeddedDocumentListField("Committees")
     approval_history = me.EmbeddedDocumentListField("ApprovalHistory")
 
+    status = me.StringField(default=STATUS_CHOICES[0][0])
     type = me.StringField(max_length=50)
     fund = me.ReferenceField("MAS", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)

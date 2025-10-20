@@ -415,54 +415,62 @@
             <thead>
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อไฟล์</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่อัปโหลด</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อัปโหลดโดย</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อไฟล์
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        วันที่อัปโหลด</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        อัปโหลดโดย</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ
+                    </th>
                 </tr>
             </thead>
             <tbody>
                 {% if upload_history %}
-                    {% for file in upload_history %}
-                    <tr class="bg-white hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ loop.index }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ file.file_name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            {% if file.file_type == 'mas' %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">เเหล่งเงิน</span>
-                            {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ครุภัณฑ์</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ file.upload_date.strftime('%d/%m/%Y %H:%M') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex space-x-2">
-                                <a href="{{ url_for('admin.procurement_files.download', file_id=file.file_id) }}" 
-                                   class="text-indigo-600 hover:text-indigo-900">
-                                    <i class="ph ph-download"></i>
-                                </a>
-                                <form method="POST" action="{{ url_for('admin.procurement_files.delete', file_id=file.file_id) }}" 
-                                      onsubmit="return confirm('ยืนยันการลบไฟล์?');" class="inline">
-                                    <button type="submit" class="text-red-600 hover:text-red-900">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                {% for file in upload_history %}
+                <tr class="bg-white hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ loop.index }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ file.file_name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        {% if file.file_type == 'mas' %}
+                        <span
+                            class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">เเหล่งเงิน</span>
+                        {% else %}
+                        <span
+                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ครุภัณฑ์</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ file.upload_date.strftime('%d/%m/%Y %H:%M') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('admin.procurement_files.download', file_id=file.file_id) }}"
+                                class="text-indigo-600 hover:text-indigo-900">
+                                <i class="ph ph-download"></i>
+                            </a>
+                            <form method="POST"
+                                action="{{ url_for('admin.procurement_files.delete', file_id=file.file_id) }}"
+                                onsubmit="return confirm('ยืนยันการลบไฟล์?');" class="inline">
+                                <button type="submit" class="text-red-600 hover:text-red-900">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
                 {% else %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
-                            ไม่พบไฟล์ที่อัปโหลด
-                        </td>
-                    </tr>
+                <tr>
+                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                        ไม่พบไฟล์ที่อัปโหลด
+                    </td>
+                </tr>
                 {% endif %}
             </tbody>
         </table>
@@ -827,12 +835,14 @@
                         {% if 'supervisor supplier' in current_user.roles %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
                         {% endif %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Approve Status</th>
                         <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     {% for item in renewal_requested_items %}
-                    <tr class="hover:bg-blue-50 transition-colors duration-200" id="toggle-btn-{{ item.id }}">
+                    <tr class="{% if item.status == 'incomplete' %}bg-red-50{% elif item.status == 'complete' %}bg-green-50{% endif %}"
+                        id="toggle-btn-{{ item.id }}">
                         <!-- Add toggle icon as first cell -->
                         <td class="px-2 py-3 whitespace-nowrap text-center ">
                             <button class="toggle-icon-btn bg-transparent border-none cursor-pointer "
@@ -891,7 +901,7 @@
                             {% set is_ma = item.type == 'MA' %}
                             <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
                                 class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
-                                {% if item.approval_history %}disabled{% endif %}>
+                                {% if item.approval_history or item.status=='incomplete' %}disabled{% endif %}>
                                 {% if is_ma %}
                                 <i class="ph ph-check text-lg"></i>
                                 <span>ยืนยัน</span>
@@ -913,13 +923,13 @@
                                 <input type="hidden" name="action" value="approved">
                                 <button type="submit"
                                     class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                    {% if already_acted %}disabled{% endif %}>
+                                    {% if already_acted or item.status=='incomplete' %}disabled{% endif %}>
                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                 </button>
                             </form>
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                if already_acted %}disabled{% endif %}
+                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
@@ -956,14 +966,14 @@
                             <!-- Approve Button triggers MAS modal -->
                             <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                {% if already_acted %}disabled{% endif %}
+                                {% if already_acted or item.status=='incomplete' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                                 <i class="ph ph-check text-lg" title="Approve"></i>
                             </button>
                             <!-- Reject Button as modal -->
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                if already_acted %}disabled{% endif %}
+                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
@@ -1062,13 +1072,13 @@
                                 <input type="hidden" name="action" value="approved">
                                 <button type="submit"
                                     class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                    {% if already_acted %}disabled{% endif %}>
+                                    {% if already_acted or item.status=='incomplete' %}disabled{% endif %}>
                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                 </button>
                             </form>
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                if already_acted %}disabled{% endif %}
+                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
@@ -1148,9 +1158,70 @@
                                     {% endfor %}
                                 </div> -->
                         </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if item.status == 'pending' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-clock text-yellow-500"></i>
+                                รอดำเนินการ
+                            </span>
+                            {% elif item.status == 'progress' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-arrow-clockwise text-blue-500"></i>
+                                กำลังดำเนินการ
+                            </span>
+                            {% elif item.status == 'incomplete' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
+                                onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
+                                <i class="ph ph-x-circle text-red-500"></i>
+                                ถูกปฏิเสธ
+                            </span>
+                            <!-- Modal for rejection info -->
+                            <dialog id="modal-reject-info-{{ item.id }}" class="modal">
+                                <div class="modal-box">
+                                    <h3 class="font-bold text-lg text-error mb-4 flex items-center gap-2">
+                                        <i class="ph ph-x-circle text-red-500"></i>
+                                        รายละเอียดการปฏิเสธ
+                                    </h3>
+                                    {% set rejection = item.approval_history | selectattr('action', 'equalto',
+                                    'rejected') | list | last %}
+                                    {% if rejection %}
+                                    <div class="mb-2">
+                                        <span class="font-semibold">ผู้ปฏิเสธ:</span>
+                                        <span>{{ rejection.approver.display_fullname() or rejection.approver_role or '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="font-semibold">วันที่:</span>
+                                        <span>{{ rejection.timestamp.strftime('%d/%m/%Y %H:%M') if rejection.timestamp
+                                            else '-' }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="font-semibold">เหตุผล:</span>
+                                        <span>{{ rejection.reason or '-' }}</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-gray-500">ไม่พบข้อมูลการปฏิเสธ</div>
+                                    {% endif %}
+                                    <div class="modal-action mt-4">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-reject-info-{{ item.id }}').close()">ปิด</button>
+                                    </div>
+                                </div>
+                            </dialog>
+                            {% elif item.status == 'complete' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-check-circle text-green-500"></i>
+                                สมบูรณ์
+                            </span>
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr id="subtable-{{ item.id }}">
-                        <td colspan="12" class="bg-blue-50 px-4 py-2 p-0">
+                        <td colspan="12" class="px-4 py-2 p-0">
                             <div class="overflow-x-auto">
                                 <table class="min-w-full table-sm divide-y divide-blue-100">
                                     <thead>
@@ -1164,7 +1235,7 @@
                                     </thead>
                                     <tbody>
                                         {% for subitem in item.items %}
-                                        <tr class="hover:bg-blue-50">
+                                        <tr>
                                             <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
                                                 title="{{ subitem.product_name }}">{{ subitem.product_name }}</td>
                                             <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
