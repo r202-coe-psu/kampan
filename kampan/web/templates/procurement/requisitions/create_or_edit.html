@@ -131,43 +131,49 @@
 
         <!-- Committee Section -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">คณะกรรมการ</h2>
-                <button type="button" id="add-committee-btn" class="btn btn-primary btn-sm gap-2">
-                    <i class="ph ph-plus"></i>
-                    เพิ่มกรรมการ
-                </button>
-            </div>
-
-            <div id="committees-container" class="space-y-4">
-                {% for committee_form in form.committees.entries %}
-                <div class="bg-white p-4 rounded-lg border committee-row">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">คณะกรรมการ</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% set committee_types = [
+                ("specification", "คณะกรรมการกำหนดคุณสมบัติ"),
+                ("procurement", "คณะกรรมการจัดซื้อ"),
+                ("inspection", "คณะกรรมการตรวจรับ")
+                ] %}
+                {% for type_value, type_label in committee_types %}
+                <div class="bg-white rounded-lg border p-4">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
-                        {% if loop.index > 1 %}
-                        <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
-                        {% endif %}
+                        <span class="text-base font-semibold text-gray-700">{{ type_label }}</span>
+                        <button type="button" class="btn btn-primary btn-sm gap-2 add-committee-btn"
+                            data-committee-type="{{ type_value }}">
+                            <i class="ph ph-plus"></i>
+                            เพิ่มกรรมการ
+                        </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
-                            </label>
-                            {{ committee_form.member(class="select select-bordered select-sm w-full") }}
+                    <div class="space-y-4 committees-container" id="committees-{{ type_value }}">
+                        {% for committee_form in form.committees.entries if committee_form.committee_type.data ==
+                        type_value %}
+                        <div class="bg-gray-50 p-4 rounded-lg border committee-row">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
+                                <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+                            </div>
+                            <div class="grid grid-cols-1 gap-4">
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
+                                    </label>
+                                    {{ committee_form.member(class="select select-bordered select-sm w-full") }}
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ committee_form.committee_position.label.text
+                                            }}</span>
+                                    </label>
+                                    {{ committee_form.committee_position(class="select select-bordered select-sm
+                                    w-full") }}
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ committee_form.committee_type.label.text }}</span>
-                            </label>
-                            {{ committee_form.committee_type(class="select select-bordered select-sm w-full") }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ committee_form.committee_position.label.text
-                                    }}</span>
-                            </label>
-                            {{ committee_form.committee_position(class="select select-bordered select-sm w-full") }}
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
@@ -325,20 +331,15 @@
         });
     }
 
-    // Add new committee function
-    function addNewCommittee() {
-        const committeesContainer = document.getElementById('committees-container');
+    // Add new committee function by type
+    function addNewCommittee(typeValue) {
+        const committeesContainer = document.getElementById('committees-' + typeValue);
         const newCommitteeDiv = document.createElement('div');
-        newCommitteeDiv.className = 'bg-white p-4 rounded-lg border committee-row';
+        newCommitteeDiv.className = 'bg-gray-50 p-4 rounded-lg border committee-row';
 
         let memberOptionsHtml = '';
         memberChoices.forEach(choice => {
             memberOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
-        });
-
-        let committeeTypeOptionsHtml = '';
-        committeeTypeChoices.forEach(choice => {
-            committeeTypeOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
         });
 
         let committeePositionOptionsHtml = '';
@@ -347,37 +348,30 @@
         });
 
         newCommitteeDiv.innerHTML = `
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-sm font-medium text-gray-700">กรรมการที่ ${committeeIndex + 1}</span>
-                    <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-medium text-gray-700">กรรมการที่ ${committeesContainer.children.length + 1}</span>
+                <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text text-xs">กรรมการ</span>
+                    </label>
+                    <select name="committees-${committeeIndex}-member" class="select select-bordered select-sm w-full committee-member-select">
+                        ${memberOptionsHtml}
+                    </select>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">กรรมการ</span>
-                        </label>
-                        <select name="committees-${committeeIndex}-member" class="select select-bordered select-sm w-full committee-member-select">
-                            ${memberOptionsHtml}
-                        </select>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">ประเภทกรรมการ</span>
-                        </label>
-                        <select name="committees-${committeeIndex}-committee_type" class="select select-bordered select-sm w-full">
-                            ${committeeTypeOptionsHtml}
-                        </select>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">ตำแหน่งกรรมการ</span>
-                        </label>
-                        <select name="committees-${committeeIndex}-committee_position" class="select select-bordered select-sm w-full">
-                            ${committeePositionOptionsHtml}
-                        </select>
-                    </div>
+                <input type="hidden" name="committees-${committeeIndex}-committee_type" value="${typeValue}">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text text-xs">ตำแหน่งกรรมการ</span>
+                    </label>
+                    <select name="committees-${committeeIndex}-committee_position" class="select select-bordered select-sm w-full">
+                        ${committeePositionOptionsHtml}
+                    </select>
                 </div>
-            `;
+            </div>
+        `;
 
         committeesContainer.appendChild(newCommitteeDiv);
         committeeIndex++;
@@ -422,7 +416,12 @@
 
     // Event listeners
     document.getElementById('add-item-btn').addEventListener('click', addNewItem);
-    document.getElementById('add-committee-btn').addEventListener('click', addNewCommittee);
+    document.querySelectorAll('.add-committee-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const typeValue = btn.getAttribute('data-committee-type');
+            addNewCommittee(typeValue);
+        });
+    });
 
     // Remove item event delegation
     document.addEventListener('click', function (e) {
