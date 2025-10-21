@@ -546,11 +546,28 @@
             </td>
             <td style="border: 1px solid #333; border-right: none;padding: 8px; vertical-align: top;">
                 <p>ได้รับทราบผลพิจารณาแล้ว</p>
+                {% if requisitions.status == 'complete' %}
+                <p style="margin-top: -0.5rem; text-align: right;">
+                    <span style="position: absolute; left: 37rem; top: 57rem; white-space: nowrap;">
+                        {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                        requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                        {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
+                    </span>
+                    <span>...............................</span>
+                    <span>ผู้ใช้บริการ</span>
+                </p>
+                <p style="text-align: right; margin-top: -0.5rem;">
+                    {% if requisitions.updated_date %}
+                    {{ requisitions.updated_date.strftime('%d/%m/%Y %H:%M') }}
+                    {% endif %}
+                </p>
+                {% else %}
                 <p style="margin-top: -0.5rem; text-align: right;">
                     <span>...............................</span>
                     <span>ผู้ใช้บริการ</span>
                 </p>
                 <p style="text-align: right; margin-top: -0.5rem;">.............../.............../...............</p>
+                {% endif %}
             </td>
         </tr>
         <tr>
