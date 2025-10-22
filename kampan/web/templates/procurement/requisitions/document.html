@@ -664,7 +664,7 @@
                 </p>
                 <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">
                     <span>..................................................
-                        <span style="position: absolute; right: 31.5rem; top: 61.4rem; white-space: nowrap;">
+                        <span style="position: absolute; right: 29.8rem; top: 61.4rem; white-space: nowrap;">
                             {%- if supervisor_approval and supervisor_approval[-1].approver -%}
                             {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                             supervisor_approval[-1].approver.display_fullname() else
@@ -680,7 +680,7 @@
                             {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
                             {{ supervisor_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
                             {%- else -%}
-                            <p style="text-align: right; margin-top: -0.5rem; margin-right: 1.5rem;">
+                            <p style="text-align: right ; margin-top: -0.5rem; margin-right: 1.5rem;">
                                 .............../.............../...............</p>
                             {%- endif -%}
                         </span>
