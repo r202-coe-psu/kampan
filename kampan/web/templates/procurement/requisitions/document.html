@@ -1,14 +1,38 @@
 {% block header %}
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ใบแจ้งขอซื้อ/จ้างวัสดุ</title>
     <style>
-        body,
-        th,
-        td {
-            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
+        @font-face {
+            font-family: 'TH Sarabun New';
+            src: url('{{ url_for("static", filename="fonts/THSarabunNew.ttf") }}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'TH Sarabun New';
+            src: url('{{ url_for("static", filename="fonts/THSarabunNew Bold.ttf") }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'TH Sarabun New';
+            src: url('{{ url_for("static", filename="fonts/THSarabunNew Italic.ttf") }}') format('truetype');
+            font-weight: normal;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'TH Sarabun New';
+            src: url('{{ url_for("static", filename="fonts/THSarabunNew BoldItalic.ttf") }}') format('truetype');
+            font-weight: bold;
+            font-style: italic;
+            font-display: swap;
         }
 
         @page {
@@ -22,17 +46,55 @@
             margin: 0;
             background: #fff;
             font-size: 18px;
+            font-family: 'TH Sarabun New', Arial, sans-serif;
+        }
+
+        body,
+        th,
+        td,
+        div,
+        span,
+        p,
+        input {
+            font-family: 'TH Sarabun New', Arial, sans-serif;
         }
 
         div {
             margin-top: 0.2rem;
             vertical-align: middle;
-            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
         }
 
         span {
             vertical-align: middle;
-            font-family: 'TH Sarabun New', 'Laksaman', Arial, sans-serif;
+        }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            html, body {
+                height: 100%;
+                overflow: hidden;
+            }
+
+            * {
+                -webkit-box-shadow: none !important;
+                box-shadow: none !important;
+            }
         }
     </style>
 </head>
@@ -51,7 +113,7 @@
             <div
                 style="border: 2px solid #333; border-radius: 6px; padding: 12px; margin: 0 8px; text-align: right; margin-top: 2rem;">
                 <p style="margin: 2;">เลขที่ ........................
-                    <span style="position: absolute; left: 42rem; white-space: nowrap;">
+                    <span style="position: absolute; left: 44rem; white-space: nowrap;">
                         {{ requisitions.requisition_code }}
                     </span>
                 </p>
@@ -73,20 +135,20 @@
         <div style="text-align: right; position: relative;">
             <span style="margin: 2; display: inline-block; position: relative;">
                 วันที่ ........
-                <span style="position: absolute; right: 0.7rem;">
+                <span style="position: absolute; right: 0.7rem; top: -0.1rem;">
                     {{ requisitions.created_date.day }}
                 </span>
             </span>
             <span style="margin: 2; display: inline-block; position: relative;">
                 เดือน .........................
-                <span style="position: absolute; right: 2rem; top: -0.2rem;">
+                <span style="position: absolute; right: 2rem; top: -0.1rem;">
                     {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
                     "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.created_date.month-1] }}
                 </span>
             </span>
             <span style="margin: 2; display: inline-block; position: relative;">
                 พ.ศ. ...............
-                <span style="position: absolute; right: 1.5rem;">
+                <span style="position: absolute; right: 1.2rem; top: -0.1rem;">
                     {{ requisitions.created_date.year + 543 }}
                 </span>
             </span>
@@ -99,7 +161,7 @@
             <span>ข้าพเจ้า</span>
             <span style="position: relative;">
                 นาย/นาง/นางสาว .................................................
-                <span style="position: absolute; left: 8rem; top: -0.4rem; white-space: nowrap;">
+                <span style="position: absolute; left: 6rem; top: -0.1rem; white-space: nowrap;">
                     {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                     requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
                     {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
@@ -107,14 +169,14 @@
             </span>
             <span style="position: relative;">
                 ฝ่าย .................................
-                <span style="position: absolute; left: 2.5rem; top: -0.4rem; white-space: nowrap;">
+                <span style="position: absolute; left: 2.5rem; top: -0.1rem; white-space: nowrap;">
                     {{ requisitions.purchaser.division.name[4:] if
                     requisitions.purchaser.division.name.startswith('ฝ่าย') else requisitions.purchaser.division.name }}
                 </span>
             </span>
             <span style="position: relative;">
                 โทร .................
-                <span style="position: absolute; left: 2.5rem; white-space: nowrap;">
+                <span style="position: absolute; left: 2.5rem; top: -0.1rem; white-space: nowrap;">
                     {{ requisitions.phone if requisitions.phone else '' }}
                 </span>
             </span>
@@ -147,7 +209,7 @@
             <span>{{ i+1 }}</span>
             <span style="position: relative;">
                 <span
-                    style="position: absolute; left: 15; top: -0.5rem; white-space: normal; max-width: 350px; overflow-wrap: break-word; line-height: 1.6;">
+                    style="position: absolute; left: 15; top: -0.3rem; white-space: normal; max-width: 350px; overflow-wrap: break-word; line-height: 1.6;">
                     {% if sorted_items and sorted_items|length > i %}
                     {{ sorted_items[i].product_name }}
                     {% endif %}
@@ -155,7 +217,7 @@
                 ................................................................................
             </span>
             <span style="position: relative;">
-                <span style="position: absolute; left: 5rem; white-space: nowrap;">
+                <span style="position: absolute; left: 3rem; white-space: nowrap;">
                     {% if sorted_items and sorted_items|length > i %}
                     {{ sorted_items[i].quantity }}
                     {% endif %}
@@ -163,7 +225,7 @@
                 จำนวน ..............
             </span>
             <span style="position: relative;">
-                <span style="position: absolute; left: 7rem; white-space: nowrap;">
+                <span style="position: absolute; left: 5rem; white-space: nowrap;">
                     {% if sorted_items and sorted_items|length > i %}
                     {{ "{:,.2f}".format(sorted_items[i].amount) }}
                     {% endif %}
@@ -175,10 +237,10 @@
         {% endfor %}
         <div style="text-align: right;">
             <span style="position: relative;">
-                <span style="position: absolute; left: 10rem; white-space: nowrap;">
+                <span style="position: absolute; left: 7rem; white-space: nowrap;">
                     {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
                 </span>
-                รวมเป็นเงินประมาณ ......................
+                รวมเป็นเงินประมาณ .................................
             </span>
             <span>บาท</span>
         </div>
@@ -186,29 +248,29 @@
     <div>
         <span>เหตุผลที่ต้องการใช้
             <span
-                style="position: absolute; left: 10rem; white-space: normal; max-width: 550px; overflow-wrap: break-word; line-height: 1.2;">
+                style="position: absolute; left: 7rem; white-space: normal; max-width: 550px; overflow-wrap: break-word; line-height: 1.2;">
                 {{ requisitions.reason }}
             </span>
         </span>
-        <span>...................................................................................................................................</span>
-        <span>...............................................................................................................................................................</span>
+        <span>....................................................................................................................................................................................................</span>
+        <span>...................................................................................................................................................................................................................................</span>
     </div>
     <div>
         <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
         <span>........
-            <span style="position: absolute; left: 30.5rem;">
+            <span style="position: absolute; left: 20.8rem;">
                 {{ requisitions.start_date.day if requisitions.start_date }}
             </span>
         </span>
         <span>เดือน .......................
-            <span style="position: absolute; left: 36rem; top: 28.7rem">
+            <span style="position: absolute; left: 25rem;">
                 {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
                 "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.start_date.month-1] if requisitions.start_date
                 }}
             </span>
         </span>
         <span>พ.ศ. ..............
-            <span style="position: absolute; left: 46rem;">
+            <span style="position: absolute; left: 30.5rem;">
                 {{ requisitions.start_date.year + 543 if requisitions.start_date }}
             </span>
         </span>
@@ -217,7 +279,7 @@
     <div style="text-align: right; margin-top: 0.5rem;">
         <span>(ลงชื่อ)</span>
         <span>.................................................
-            <span style="position: absolute; left: 30rem; top:32.8rem; white-space: nowrap;">
+            <span style="position: absolute; left: 37.5rem; top:30.5rem; white-space: nowrap;">
                 {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                 requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
                 {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
@@ -228,7 +290,7 @@
     <div style="text-align: right; margin-top: 0.5rem;">
         <span>(ลงชื่อ)</span>
         <span>.................................................
-            <span style="position: absolute; left: 30rem; top:34.8rem; white-space: nowrap;">
+            <span style="position: absolute; left: 37.5rem; top:32.5rem; white-space: nowrap;">
                 {%- set head_approval = requisitions.approval_history | selectattr('approver_role', 'equalto', 'head') |
                 list -%}
                 {%- if head_approval and head_approval[-1].approver -%}
@@ -237,7 +299,7 @@
                 {%- endif -%}
             </span>
             <span
-                style="position: absolute; left: 30rem; top:36.5rem; white-space: nowrap; color: #888; font-size: 15px;">
+                style="position: absolute; left: 38rem; top:33.8rem; white-space: nowrap; color: #888; font-size: 15px;">
                 {%- if head_approval and head_approval[-1].timestamp -%}
                 {{ head_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
                 {%- else -%}
@@ -253,8 +315,8 @@
             <p style="font-size: 15px; margin-top: -1rem">(วงเงินไม่เกิน 100,000.- บาท กรรมการตรวจรับ 1 คน)</p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................
-                    <span style="position: absolute; left: 2rem; top: 39.8rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 1rem; top: 36.9rem; white-space: nowrap;">
                         {%- set chairman = inspection_committees | selectattr('committee_position', 'equalto',
                         'chairman') | list -%}
                         {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
@@ -271,8 +333,8 @@
             </div>
             <div>
                 <span>2</span>
-                <span>........................................
-                    <span style="position: absolute; left: 2rem; top: 41.6rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 1rem; top: 41.6rem; white-space: nowrap;">
                         {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 0 -%}
@@ -292,7 +354,7 @@
             </div>
             <div>
                 <span>3</span>
-                <span>........................................
+                <span>....................................................
                     <span style="position: absolute; left: 2rem; top: 43.5rem; white-space: nowrap;">
                         {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
@@ -316,8 +378,8 @@
             <p><b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 39.8rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 37.3rem; white-space: nowrap;">
                         {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
                         'chairman') | list -%}
                         {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
@@ -334,8 +396,8 @@
             </div>
             <div>
                 <span>2</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 41.7rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 40.7rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 0 -%}
@@ -355,8 +417,8 @@
             </div>
             <div>
                 <span>3</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 43.7rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 39rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 1 -%}
@@ -381,8 +443,8 @@
             <p><b>คณะกรรมการจัดซื้อ</b><span> (วงเงินมากกว่า 500,000.- บาท)</span></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................
-                    <span style="position: absolute; left: 2rem; top: 48.2rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 1rem; top: 43.2rem; white-space: nowrap;">
                         {%- set chairman = procurement_committees | selectattr('committee_position', 'equalto',
                         'chairman') | list -%}
                         {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
@@ -399,8 +461,8 @@
             </div>
             <div>
                 <span>2</span>
-                <span>........................................
-                    <span style="position: absolute; left: 2rem; top: 50rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 1rem; top: 44.9rem; white-space: nowrap;">
                         {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 0 -%}
@@ -420,8 +482,8 @@
             </div>
             <div>
                 <span>3</span>
-                <span>........................................
-                    <span style="position: absolute; left: 2rem; top: 51.8rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 1rem; top: 46.6rem; white-space: nowrap;">
                         {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 1 -%}
@@ -444,8 +506,8 @@
             <p><b>คณะกรรมการราคากลาง</b></p>
             <div style="margin-top: -1rem;">
                 <span>1</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 48rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 43.2rem; white-space: nowrap;">
                         {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
                         'chairman') | list -%}
                         {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
@@ -462,8 +524,8 @@
             </div>
             <div>
                 <span>2</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top: 49.8rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 44.9rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 0 -%}
@@ -483,8 +545,8 @@
             </div>
             <div>
                 <span>3</span>
-                <span>........................................
-                    <span style="position: absolute; left: 30rem; top:51.8rem; white-space: nowrap;">
+                <span>....................................................
+                    <span style="position: absolute; left: 28.8rem; top: 46.6rem; white-space: nowrap;">
                         {%- set members = specification_committees | selectattr('committee_position', 'equalto',
                         'member') | list -%}
                         {%- if members and members|length > 1 -%}
@@ -525,13 +587,13 @@
                             requisitions.fund %}checked{% endif %}>
                         <span style="vertical-align: middle;">เงินงบประมาณ</span>
                         <span>..............................
-                            <span style="position: absolute; left: 14.5rem; font-size: 1rem; white-space: nowrap;">{{
+                            <span style="position: absolute; left: 13rem; font-size: 1rem; white-space: nowrap;">{{
                                 requisitions.fund.mas_code }}</span>
                         </span>
                     </span>
                 </p>
                 <p style="margin-top: -1rem;">
-                    <span style="margin-left: 14.4rem;">
+                    <span style="margin-left: 12rem;">
                         <span style="color: #888; font-size: 15px;">
                             {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
                             'equalto', 'admin') | list %}
@@ -548,12 +610,12 @@
                 <p>ได้รับทราบผลพิจารณาแล้ว</p>
                 {% if requisitions.status == 'complete' %}
                 <p style="margin-top: -0.5rem; text-align: right;">
-                    <span style="position: absolute; left: 37rem; top: 57rem; white-space: nowrap;">
+                    <span style="position: absolute; left: 38rem; top: 51.6rem; white-space: nowrap;">
                         {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                         requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
                         {{ fullname.split('(')[0].strip() if '(' in fullname else fullname }}
                     </span>
-                    <span>...............................</span>
+                    <span>.....................................................</span>
                     <span>ผู้ใช้บริการ</span>
                 </p>
                 <p style="text-align: right; margin-top: -0.5rem;">
@@ -601,8 +663,8 @@
                     </span>
                 </p>
                 <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">
-                    <span>...................................
-                        <span style="position: absolute; right: 31rem; top: 65.8rem; white-space: nowrap;">
+                    <span>..................................................
+                        <span style="position: absolute; right: 31.5rem; top: 61.4rem; white-space: nowrap;">
                             {%- if supervisor_approval and supervisor_approval[-1].approver -%}
                             {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                             supervisor_approval[-1].approver.display_fullname() else
@@ -613,7 +675,7 @@
                     <span>ผู้อนุมัติ</span>
                 </p>
                 <p style="margin-top: -1rem;">
-                    <span style="margin-left: 10.4rem;">
+                    <span style="margin-left: 15rem;">
                         <span style="color: #888; font-size: 15px;">
                             {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
                             {{ supervisor_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
