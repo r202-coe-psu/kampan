@@ -1177,7 +1177,7 @@
                                 class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
                                 onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
                                 <i class="ph ph-x-circle text-red-500"></i>
-                                ถูกปฏิเสธ
+                                ไม่อนุมัติ
                             </span>
                             <!-- Modal for rejection info -->
                             <dialog id="modal-reject-info-{{ item.id }}" class="modal">
@@ -1216,7 +1216,7 @@
                             <span
                                 class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                                 <i class="ph ph-check-circle text-green-500"></i>
-                                สมบูรณ์
+                                อนุมัติ
                             </span>
                             {% endif %}
                         </td>
