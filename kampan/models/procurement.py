@@ -3,10 +3,10 @@ import mongoengine as me
 from dateutil.relativedelta import relativedelta
 
 CATEGORY_CHOICES = [
-    ("software", "ซอฟต์แวร์"),
+    ("material", "วัสดุ"),
     ("product", "ครุภัณฑ์"),
     ("service", "จ้างเหมาบริการ"),
-    ("other", "อื่นๆ"),
+    ("software", "ซอฟต์แวร์"),
 ]
 
 PAYEMENT_STATUS_CHOICES = [

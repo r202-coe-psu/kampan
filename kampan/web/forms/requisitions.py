@@ -69,7 +69,7 @@ class RequisitionForm(BaseRequisitionForm):
         choices=[("-", "เลือกผู้ขอซื้อ")],
     )
     tor_document = fields.FileField(
-        "ไฟล์ ToR (PDF เท่านั้น)",
+        "ไฟล์ TOR (PDF เท่านั้น)",
         validators=[
             file.FileAllowed(
                 ["pdf"],

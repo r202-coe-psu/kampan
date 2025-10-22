@@ -47,7 +47,7 @@ CATEGORY_MAP = {
     "software": "ซอฟต์แวร์",
     "product": "ครุภัณฑ์",
     "service": "จ้างเหมาบริการ",
-    "other": "อื่นๆ",
+    "material": "วัสดุ",
 }
 
 

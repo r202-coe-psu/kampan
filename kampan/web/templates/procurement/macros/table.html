@@ -286,7 +286,7 @@
                     'ซอฟต์แวร์': 'badge-primary',
                     'ครุภัณฑ์': 'badge-warning',
                     'จ้างเหมาบริการ': 'badge-accent',
-                    'อื่นๆ': 'badge-neutral'
+                    'วัสดุ': 'badge-neutral'
                     }.get(item.get_category_display(), 'badge-secondary') %}
                     <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
                         {{ item.get_category_display() }}
@@ -719,7 +719,7 @@
                             'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
                             'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
                             'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
-                            'อื่นๆ': 'bg-gray-50 text-gray-700 border border-gray-200'
+                            'วัสดุ': 'bg-gray-50 text-gray-700 border border-gray-200'
                             }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
                             <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
                                 {{ item.get_category_display() }}

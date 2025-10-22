@@ -173,47 +173,4 @@
     {{ paginated.render_pagination(paginated_procurements, "procurement.products.index", params) }}
     {% endif %}
 </div>
-
-<!-- Upload Success Toast -->
-{% if upload_success %}
-<script>
-    // Create and show success toast
-    function showUploadSuccessToast() {
-        const toast = document.createElement('div');
-        toast.className = 'alert alert-success fixed top-4 right-4 z-50 w-auto max-w-md shadow-lg';
-        toast.innerHTML = `
-            <i class="ph ph-check-circle text-xl"></i>
-            <div>
-                <h3 class="font-bold">อัปโหลดสำเร็จ!</h3>
-                <div class="text-sm">ไฟล์ข้อมูลรายการขอซื้อขอจ้างได้รับการอัปโหลดและกำลังดำเนินการนำเข้าข้อมูล</div>
-            </div>
-            <button type="button" onclick="this.parentNode.remove(); removeUploadParam();" class="btn btn-sm btn-circle btn-ghost">
-                <i class="ph ph-x"></i>
-            </button>
-        `;
-        document.body.appendChild(toast);
-
-        // Remove toast after 4 seconds and clean URL
-        setTimeout(function () {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-                removeUploadParam();
-            }
-        }, 4000);
-    }
-
-    function removeUploadParam() {
-        // Remove the upload_success parameter from URL
-        const url = new URL(window.location);
-        url.searchParams.delete('upload_success');
-        window.history.replaceState({}, document.title, url.toString());
-    }
-
-    // Show toast when page loads
-    document.addEventListener('DOMContentLoaded', function () {
-        showUploadSuccessToast();
-    });
-</script>
-{% endif %}
-
 {% endblock content %}

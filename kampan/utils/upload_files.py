@@ -237,7 +237,7 @@ def save_ma_db(document, ma, user_id):
         "ซอฟต์แวร์": "software",
         "ครุภัณฑ์": "product",
         "จ้างเหมาบริการ": "service",
-        "อื่นๆ": "other",
+        "วัสดุ": "material",
     }
 
     required_columns = list(column_map.keys())
