@@ -172,7 +172,12 @@ def renewal_requested(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         requisitions = models.Requisition.objects()
-        if current_user.has_organization_roles("staff"):
+        # staff see only their own, others see all
+        if current_user.has_organization_roles("staff") and not (
+            current_user.has_organization_roles("admin")
+            or current_user.has_organization_roles("head")
+            or current_user.has_organization_roles("supervisor supplier")
+        ):
             requisitions = requisitions.filter(
                 created_by=current_user._get_current_object()
             )
