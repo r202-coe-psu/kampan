@@ -566,7 +566,7 @@
                     </td>
                     <td class="text-center">
                         <div class="flex justify-center space-x-2">
-                            <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id) }}"
+                            <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id, organization_id=organization.id) }}"
                                 class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
                                 <i class="ph ph-pencil-simple"></i>
                             </a>
@@ -602,7 +602,8 @@
                                         onclick="document.getElementById('delete-mas-{{ project.id }}').close()">
                                         ยกเลิก
                                     </button>
-                                    <form method="POST" action="{{ url_for('admin.mas.delete', mas_id=project.id) }}">
+                                    <form method="POST"
+                                        action="{{ url_for('admin.mas.delete', mas_id=project.id, organization_id=organization.id) }}">
                                         <button type="submit"
                                             class="btn bg-red-600 hover:bg-red-700 text-white border-none">
                                             ยืนยันลบ
@@ -823,16 +824,16 @@
                         <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
                         <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
                         <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
-                        {% if 'staff' in current_user.roles %}
+                        {% if current_user.has_organization_roles("staff") %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Staff Action</th>
                         {% endif %}
-                        {% if 'head' in current_user.roles %}
+                        {% if current_user.has_organization_roles("head") %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Head Action</th>
                         {% endif %}
-                        {% if 'admin' in current_user.roles %}
+                        {% if current_user.has_organization_roles("admin") %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action</th>
                         {% endif %}
-                        {% if 'supervisor supplier' in current_user.roles %}
+                        {% if current_user.has_organization_roles("supervisor supplier") %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
                         {% endif %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Approve Status</th>
@@ -896,7 +897,7 @@
                                 <i class="ph ph-file-arrow-down"></i> ดูเอกสาร
                             </button>
                         </td>
-                        {% if 'staff' in current_user.roles %}
+                        {% if current_user.has_organization_roles("staff") %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
                             {% set is_ma = item.type == 'MA' %}
                             <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
@@ -912,7 +913,7 @@
                             </a>
                         </td>
                         {% endif %}
-                        {% if 'head' in current_user.roles %}
+                        {% if current_user.has_organization_roles("head") %}
                         {% set already_acted = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto',
                         'head') | list | length > 0 %}
@@ -959,7 +960,7 @@
                             </dialog>
                         </td>
                         {% endif %}
-                        {% if 'admin' in current_user.roles %}
+                        {% if current_user.has_organization_roles("admin") %}
                         {% set already_acted = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
@@ -1062,7 +1063,7 @@
                             </dialog>
                         </td>
                         {% endif %}
-                        {% if 'supervisor supplier' in current_user.roles %}
+                        {% if current_user.has_organization_roles("supervisor supplier") %}
                         {% set already_acted = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">

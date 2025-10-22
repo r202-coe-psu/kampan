@@ -19,9 +19,12 @@ module = Blueprint("mas", __name__, url_prefix="/mas")
 
 @module.route("/")
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def index():
-    organization = current_user.user_setting.current_organization
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     mas = models.MAS.objects(status="active")
     total_amount = sum(m.amount or 0 for m in mas)
     total_budget = sum(m.budget or 0 for m in mas)
@@ -40,9 +43,12 @@ def index():
 
 @module.route("/create", methods=["GET", "POST"])
 @module.route("/<mas_id>/edit", methods=["GET", "POST"])
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def create_or_edit(mas_id=None):
-    organization = current_user.user_setting.current_organization
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
 
     mas = models.MAS.objects(id=mas_id).first() if mas_id else None
     form = forms.mas.MASForm(obj=mas)
@@ -64,16 +70,20 @@ def create_or_edit(mas_id=None):
     mas.last_updated_by = current_user._get_current_object()
     mas.save()
 
-    return redirect(url_for("admin.mas.index", organization=organization))
+    return redirect(url_for("admin.mas.index", organization_id=organization.id))
 
 
 @module.route("/<mas_id>/delete", methods=["GET", "POST"])
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def delete(mas_id):
-    organization = current_user.user_setting.current_organization
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
     mas = models.MAS.objects(id=mas_id).first()
     if mas:
         mas.status = "closed"
         mas.save()
 
-    return redirect(url_for("admin.mas.index", organization=organization))
+    return redirect(url_for("admin.mas.index", organization_id=organization.id))

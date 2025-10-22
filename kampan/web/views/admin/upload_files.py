@@ -21,9 +21,12 @@ module = Blueprint("upload_files", __name__, url_prefix="/upload_files")
 
 @module.route("/")
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def index():
-    organization = current_user.user_setting.current_organization
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     documents_query = models.Document.objects(status__ne="disable")
 
     return render_template(
@@ -36,11 +39,14 @@ def index():
 @module.route("/create", methods=["GET", "POST"], defaults={"document_id": None})
 @module.route("/<document_id>/edit", methods=["GET", "POST"])
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def upload_or_edit(document_id):
     document = None
     form = forms.upload_files.FileForm()
-    organization = current_user.user_setting.current_organization
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
 
     if document_id:
         document = models.Document.objects(id=document_id).first()
@@ -116,7 +122,9 @@ def upload_or_edit(document_id):
             documents.append(document)
 
         if documents:
-            return redirect(url_for("admin.upload_files.index"))
+            return redirect(
+                url_for("admin.upload_files.index", organization_id=organization.id)
+            )
 
     # Handle single file edit
     if document_id:
@@ -200,24 +208,32 @@ def upload_or_edit(document_id):
     document.category = form.category.data
     document.save()
 
-    return redirect(url_for("admin.upload_files.index"))
+    return redirect(
+        url_for("admin.upload_files.index", organization_id=organization.id)
+    )
 
 
 @module.route("/<document_id>/delete", methods=["GET", "POST"])
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def delete(document_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     document = models.Document.objects.get(id=document_id)
     if document:
         document.status = "disable"
         document.save()
 
-    return redirect(url_for("admin.upload_files.index"))
+    return redirect(
+        url_for("admin.upload_files.index", organization_id=organization.id)
+    )
 
 
 @module.route("/<document_id>/download/<filename>")
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def download(document_id, filename):
     response = Response()
     response.status_code = 404
@@ -235,8 +251,12 @@ def download(document_id, filename):
 
 
 @module.route("/<document_id>/process", methods=["GET"])
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def processing(document_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     document = models.Document.objects.get(id=document_id)
     document.status = "waiting"
     document.save()
@@ -266,4 +286,6 @@ def processing(document_id):
         )
         print("=====> MA creation job submitted", job.get_id())
 
-    return redirect(url_for("admin.upload_files.index"))
+    return redirect(
+        url_for("admin.upload_files.index", organization_id=organization.id)
+    )

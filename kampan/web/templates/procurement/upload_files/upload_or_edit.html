@@ -78,7 +78,7 @@
                 </button>
                 {% endif %}
 
-                <a href="{{ url_for('admin.upload_files.index', page=request.args.get('page')) }}"
+                <a href="{{ url_for('admin.upload_files.index', page=request.args.get('page'), organization_id=organization.id) }}"
                     class="btn btn-outline flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-md">
                     <i class="ph ph-x text-lg"></i>
                     ยกเลิก

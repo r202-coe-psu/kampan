@@ -129,7 +129,7 @@
 
         <!-- ปุ่ม -->
         <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
-            <a href="{{ url_for('admin.mas.index') }}"
+            <a href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
                 class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100">
                 <i class="ph ph-x mr-2"></i> ยกเลิก
             </a>

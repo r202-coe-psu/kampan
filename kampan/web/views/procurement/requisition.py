@@ -59,8 +59,8 @@ def index():
     ).first()
     if (
         org_user_role
-        and "staff" in current_user.roles
-        and "admin" not in current_user.roles
+        and current_user.has_organization_roles("staff")
+        and not current_user.has_organization_roles("admin")
     ):
         procurements = procurements.filter(responsible_by=org_user_role)
 
@@ -107,8 +107,8 @@ def non_renewal(requisition_procurement_id):
         ).first()
         if (
             org_user_role
-            and "staff" in current_user.roles
-            and "admin" not in current_user.roles
+            and current_user.has_organization_roles("staff")
+            and not current_user.has_organization_roles("admin")
         ):
             procurements = procurements.filter(responsible_by=org_user_role)
         procurements = procurements.order_by("-end_date")
@@ -172,7 +172,7 @@ def renewal_requested(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         requisitions = models.Requisition.objects()
-        if "staff" in current_user.roles:
+        if current_user.has_organization_roles("staff"):
             requisitions = requisitions.filter(
                 created_by=current_user._get_current_object()
             )
@@ -395,7 +395,6 @@ def download(requisition_procurement_id):
 
 @module.route("/<requisition_id>/action", methods=["POST"])
 @login_required
-@acl.roles_required("head", "admin", "supervisor supplier")
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
     action = request.form.get("action")  # 'approved' or 'rejected'

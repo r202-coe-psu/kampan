@@ -48,7 +48,7 @@
                     </div>
                 </div>
                 <a class="btn btn-primary btn-md"
-                    href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page')) }}"
+                    href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page'), organization_id=organization.id) }}"
                     data-tooltip="อัปโหลดไฟล์ใหม่">
                     <i class="ph ph-upload-simple text-lg"></i>
                     อัปโหลดไฟล์
@@ -88,7 +88,7 @@
                         <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_by.first_name }} {{
                             doc.created_by.last_name }}</td>
                         <td class="py-2 px-2">
-                            <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename) }}"
+                            <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename, organization_id=organization.id) }}"
                                 class="text-blue-600 hover:underline">
                                 {{ doc.file.filename }}
                             </a>
@@ -115,13 +115,13 @@
                         </td>
                         <td class="py-2 px-2 whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id) }}"
+                                <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id, organization_id=organization.id) }}"
                                     class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
                                     title="บันทึกลงในระบบ" {% if doc.status !='waiting' %}aria-disabled="true"
                                     tabindex="-1" style="pointer-events: none; opacity: 0.5;" {% endif %}>
                                     <i class="ph ph-floppy-disk"></i>
                                 </a>
-                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id) }}"
+                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, organization_id=organization.id) }}"
                                     class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md"
                                     title="แก้ไข">
                                     <i class="ph ph-pencil-simple"></i>
@@ -151,7 +151,7 @@
                                     <div class="flex gap-3 justify-end">
                                         <button type="button" class="btn"
                                             onclick="closeModal('modal-{{ doc.id }}')">ยกเลิก</button>
-                                        <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id) }}"
+                                        <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id, organization_id=organization.id) }}"
                                             class="btn btn-error flex items-center gap-1">
                                             <i class="ph ph-trash"></i> ลบ
                                         </a>

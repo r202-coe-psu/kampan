@@ -76,8 +76,8 @@ def index():
     ).first()
     if (
         org_user_role
-        and "staff" in current_user.roles
-        and "admin" not in current_user.roles
+        and current_user.has_organization_roles("staff")
+        and not current_user.has_organization_roles("admin")
     ):
         procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
 
@@ -87,8 +87,8 @@ def index():
 
     if (
         org_user_role
-        and "staff" in current_user.roles
-        and "admin" not in current_user.roles
+        and current_user.has_organization_roles("staff")
+        and not current_user.has_organization_roles("admin")
     ):
         base_qs = base_qs.filter(responsible_by=org_user_role)
     status_count = {}
@@ -139,7 +139,7 @@ def index():
 
 @module.route("/create", methods=["GET", "POST"])
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def create():
     form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
@@ -183,7 +183,7 @@ def create():
 
 @module.route("/<organization_id>/download_template")
 @login_required
-@acl.roles_required("admin")
+@acl.organization_roles_required("admin")
 def download_template(organization_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
