@@ -42,7 +42,7 @@
 
     {% endif %}
 
-    {% if 'admin' in current_user.roles %}
+    {% if current_user.has_organization_roles("admin") %}
     <!-- ระบบขอซื้อขอจ้าง -->
     <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}"
       class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
