@@ -57,8 +57,10 @@
             </div>
 
             <div class="form-control mt-4">
-                <label class="label">
+                <label class="label flex justify-between items-center">
                     <span class="label-text font-medium">{{ form.tor_document.label.text }}</span>
+                    <a href="{{ url_for('static', filename='data/แบบฟอร์ม TOR ขอซื้อขอจ้าง.docx') }}" target="_blank"
+                        class="link link-primary text-xs ml-2">ดาวน์โหลดตัวอย่างแบบฟอร์ม</a>
                 </label>
                 {{ form.tor_document(class="file-input file-input-bordered w-full") }}
             </div>
@@ -120,7 +122,7 @@
                             <label class="label">
                                 <span class="label-text text-xs">{{ item_form.amount.label.text }}</span>
                             </label>
-                            {{ item_form.amount(class="input input-bordered input-sm w-full", type="number", min="1") }}
+                            {{ item_form.amount(class="input input-bordered input-sm w-full") }}
                         </div>
                     </div>
                 </div>

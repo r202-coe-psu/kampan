@@ -184,14 +184,43 @@
                                 <span class="label-text">จำนวนเงินที่จ่าย</span>
                             </label>
                             {% if is_last_period %}
-                            <input type="number" name="amount" value="{{ remaining_amount }}" 
-                                    class="input input-bordered w-full" readonly 
-                                    title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด">
+                            <div class="relative">
+                                <input type="text" name="amount" value="{{ '{:,.2f}'.format(remaining_amount) }}"
+                                    class="input input-bordered w-full" readonly id="amount"
+                                    title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด" inputmode="decimal" pattern="[0-9,\.]*">
+                            </div>
                             {% else %}
-                            <input type="number" name="amount" 
-                                    class="input input-bordered w-full" required step="0.01">
+                            <div class="relative">
+                                <input type="text" name="amount" class="input input-bordered w-full" required
+                                    id="amount" inputmode="decimal" pattern="[0-9,\.]*">
+                            </div>
                             {% endif %}
                         </div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                var amountInput = document.getElementById('amount');
+                                var form = amountInput ? amountInput.form : null;
+                                if (amountInput && !amountInput.readOnly) {
+                                    amountInput.addEventListener('input', function (e) {
+                                        let value = amountInput.value.replace(/,/g, '');
+                                        if (!isNaN(value) && value !== '') {
+                                            let parts = value.split('.');
+                                            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                            amountInput.value = parts.join('.');
+                                        } else if (value === '') {
+                                            amountInput.value = '';
+                                        }
+                                    });
+                                }
+                                if (form) {
+                                    form.addEventListener('submit', function (e) {
+                                        if (amountInput) {
+                                            amountInput.value = amountInput.value.replace(/,/g, '');
+                                        }
+                                    });
+                                }
+                            });
+                        </script>
                         <div class="form-control mb-3">
                             <label class="label" for="product_number">
                                 <span class="label-text">เลขที่ใบจ่ายเงิน</span>

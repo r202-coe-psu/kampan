@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <form method="POST" action="" enctype="multipart/form-data" class="space-y-8">
+    <form method="POST" action="" enctype="multipart/form-data" class="space-y-8" id="product_form">
         {{ form.hidden_tag() }}
 
         <div class="bg-gray-50 rounded-lg p-6">
@@ -113,8 +113,9 @@
                 <div>
                     <label class="block text-gray-700 font-medium mb-2" for="amount">{{ form.amount.label }}</label>
                     <div class="relative">
-                        {{ form.amount(class_="input input-bordered w-full focus:input-primary pl-8", step="0.01",
-                        min="0", id="amount") }}
+                        <input type="text" name="amount" id="amount"
+                            class="input input-bordered w-full focus:input-primary pl-8" inputmode="decimal"
+                            pattern="[0-9,\.]*" min="0" autocomplete="off">
                         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
                     </div>
                     {% if form.amount.errors %}
@@ -125,6 +126,31 @@
                     <p id="amount_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
                         จำนวนเงินต้องมากกว่าหรือเท่ากับ 0
                     </p>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var amountInput = document.getElementById('amount');
+                            var form = document.getElementById('product_form');
+                            if (amountInput) {
+                                amountInput.addEventListener('input', function (e) {
+                                    let value = amountInput.value.replace(/,/g, '');
+                                    if (!isNaN(value) && value !== '') {
+                                        let parts = value.split('.');
+                                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                        amountInput.value = parts.join('.');
+                                    } else if (value === '') {
+                                        amountInput.value = '';
+                                    }
+                                });
+                            }
+                            if (form) {
+                                form.addEventListener('submit', function (e) {
+                                    if (amountInput) {
+                                        amountInput.value = amountInput.value.replace(/,/g, '');
+                                    }
+                                });
+                            }
+                        });
+                    </script>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2" for="period">{{ form.period.label }}</label>
