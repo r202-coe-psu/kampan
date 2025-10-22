@@ -24,7 +24,7 @@
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   <div class="overflow-x-auto mt-2 rounded-xl">
     {% if paginated_car_applications.total %}
-    <table class="table-auto w-full">
+    <table class="table-auto w-full max-lg:hidden">
       <thead>
         <tr>
           <th class="table-style"></th>
@@ -75,22 +75,63 @@
               data-tip="ลบ" onclick="showDeleteModal('{{ car_application.id }}')">
               <i class="ph ph-trash"></i>
             </a>
-
-            {{ ModalNegative(
-              id=car_application.id,
-              header="ลบคำขอใช้รถยนต์",
-              body="ต้องการลบคำขอใช้รถยนต์ <b> %s </b>" | format(car_application.request_reason),
-              cancel="ยกเลิก",
-              submit="ยืนยัน",
-              redirect=url_for('vehicle_lending.car_applications.delete', car_application_id=car_application.id, organization_id=organization.id),
-              ) }}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    <!-- Mobile Cards -->
+    <div class="space-y-4 lg:hidden">
+      {% for car_application in paginated_car_applications.items %}
+      <div class="border rounded-xl p-4 shadow bg-white">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-bold text-black">#{{ loop.index }}</span>
+          <span class="text-sm font-medium text-gray-700">{{ car_application.get_departure_datetime() }}</span>
+        </div>
+        <div class="grid grid-cols-1 gap-2 text-sm">
+          <div><span class="font-semibold">ป้ายทะเบียนรถ:</span> {{ car_application.car.license_plate }}</div>
+          <div><span class="font-semibold">เหตุผลที่ต้องการใช้:</span> {{ car_application.request_reason }}</div>
+          <div><span class="font-semibold">สถานที่ต้องการจะไป:</span> {{ car_application.location }}</div>
+          <div><span class="font-semibold">ชื่อผู้ใช้งาน:</span> {{ car_application.creator.get_name() }}</div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">สถานะ:</span>
+            {{ car_application.get_status()|safe }}
+          </div>
+          {% if car_application.get_reason() %}
+          <div><span class="font-semibold">เหตุผลในการอนุมัติ/ไม่อนุมัติ:</span> {{ car_application.get_reason() }}</div>
+          {% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3 justify-end">
+          {% if 'pending' in car_application.status %}
+          <a class="btn btn-sm btn-primary"
+            href="{{ url_for('vehicle_lending.car_applications.create_or_edit', car_application_id=car_application.id, organization_id=organization.id) }}">
+            <i class="ph ph-pen"></i>
+            แก้ไข
+          </a>
+          {% endif %}
+          <button class="btn btn-sm btn-error {{ 'disabled' if car_application.status == 'active' else ''}}"
+            onclick="showDeleteModal('{{ car_application.id }}')">
+            <i class="ph ph-trash"></i>
+            ลบ
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
+{% for car_application in paginated_car_applications.items %}
+
+{{ ModalNegative(
+  id=car_application.id,
+  header="ลบคำขอใช้รถยนต์",
+  body="ต้องการลบคำขอใช้รถยนต์ <b> %s </b>" | format(car_application.request_reason),
+  cancel="ยกเลิก",
+  submit="ยืนยัน",
+  redirect=url_for('vehicle_lending.car_applications.delete', car_application_id=car_application.id, organization_id=organization.id),
+  ) }}
+{% endfor %}
 
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>

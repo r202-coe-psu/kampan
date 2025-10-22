@@ -49,21 +49,21 @@
   <!-- {{ render_form.RadioField(form.travel_type) }}
   {{ render_form.RadioField(form.using_type) }} -->
 
-  <div class="flex flex-row w-full gap-2">
+  <div class="flex flex-col w-full gap-2 md:flex-row">
     {{renderer.date_field_js(form.departure_date) }}
     {{renderer.time_field(form.departure_time) }}
 
 
   </div>
-  <div class="flex flex-row justify-between w-full gap-2 items-end" id="return_datetime">
+  <div class="flex flex-col justify-between w-full gap-2 items-end md:flex-row" id="return_datetime">
     {{renderer.date_field_js(form.return_date) }}
     {{renderer.time_field(form.return_time) }}
   </div>
-  <div class="flex flex-row justify-between w-full gap-2" id="flight_datetime">
+  <div class="flex flex-col justify-between w-full gap-2 md:flex-row" id="flight_datetime">
     {{renderer.render_field(form.flight_number) }}
     {{renderer.time_field(form.flight_time) }}
   </div>
-  <div class="flex flex-row justify-between w-full gap-2" id="flight_return_field">
+  <div class="flex flex-col justify-between w-full gap-2 md:flex-row" id="flight_return_field">
     {{renderer.render_field(form.flight_return_number) }}
     {{renderer.time_field(form.flight_return_time) }}
   </div>

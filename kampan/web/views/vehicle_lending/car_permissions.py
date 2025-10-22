@@ -214,6 +214,18 @@ def admin_approve():
     car_application.status = "active"
     car_application.save()
 
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.send_email_to_drivers.force_send_email_to_driver,
+        args=(
+            car_application,
+            current_user._get_current_object(),
+            current_app.config,
+        ),
+        job_id=f"send_email_to_driver_{car_application.id}",
+        timeout=600,
+        job_timeout=600,
+    )
+
     return redirect(
         url_for(
             "vehicle_lending.car_permissions.admin_page",

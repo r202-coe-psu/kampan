@@ -1,8 +1,8 @@
 {% extends "/base/template-page-unlogin.html" %}
 
 {% block content %}
-<div class="flex justify-center md:py-40 h-full">
-  <div class="grid gap-4 w-full max-w-6xl px-4 py-8 grid-cols-2 lg:grid-cols-3">
+<div class="flex flex-col justify-center md:py-40 h-full">
+  <div class="grid gap-4 w-full max-w-6xl lg:px-4 py-8 grid-cols-2 lg:grid-cols-2">
     {% if current_user.has_organization_roles("admin") %}
     <!-- ระบบขอซื้อขอจ้าง -->
     <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}"

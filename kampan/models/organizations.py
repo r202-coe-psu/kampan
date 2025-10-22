@@ -206,6 +206,13 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers]
         return models.User.objects(id__in=user_ids)
 
+    def get_all_drivers(self):
+        drivers_in_org = models.OrganizationUserRole.objects(
+            organization=self, roles__in=["driver"], status="active"
+        )
+        user_ids = [driver.user.id for driver in drivers_in_org]
+        return models.User.objects(id__in=user_ids)
+
 
 class Logo(me.Document):
     meta = {"collection": "logos"}
