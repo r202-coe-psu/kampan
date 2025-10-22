@@ -21,7 +21,7 @@ BaseProcurementForm = model_form(
         "name": {"label": "ชื่อรายการ"},
         "category": {"label": "ประเภท"},
         "asset_code": {"label": "รหัสครุภัณฑ์"},
-        "amount": {"label": "จำนวนเงิน"},
+        "amount": {"label": "จำนวนเงิน(บาท)"},
         "period": {"label": "จำนวนงวด"},
         "company": {"label": "บริษัท"},
         "responsible_by": {"label": "ผู้รับผิดชอบ"},

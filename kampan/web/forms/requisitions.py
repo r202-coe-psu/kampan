@@ -42,7 +42,7 @@ class RequisitionItemForm(Form):
         validators=[validators.DataRequired()],
     )
     amount = fields.DecimalField(
-        "จำนวนเงิน",
+        "จำนวนเงิน (บาท)",
         [
             validators.DataRequired(),
             validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),

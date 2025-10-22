@@ -112,16 +112,15 @@
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.amount.label.text }}</span>
-                            </label>
-                            {{ item_form.amount(class="input input-bordered input-sm w-full", type="number",
-                            step="0.01") }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
                                 <span class="label-text text-xs">{{ item_form.currency.label.text }}</span>
                             </label>
                             {{ item_form.currency(class="input input-bordered input-sm w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-xs">{{ item_form.amount.label.text }}</span>
+                            </label>
+                            {{ item_form.amount(class="input input-bordered input-sm w-full", type="number", min="1") }}
                         </div>
                     </div>
                 </div>
@@ -318,15 +317,15 @@
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">จำนวนเงิน</span>
-                        </label>
-                        <input type="number" name="items-${itemIndex}-amount" class="input input-bordered input-sm w-full" step="0.01" required>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
                             <span class="label-text text-xs">หน่วยเงิน</span>
                         </label>
                         <input type="text" name="items-${itemIndex}-currency" class="input input-bordered input-sm w-full" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">จำนวนเงิน (บาท)</span>
+                        </label>
+                        <input type="number" name="items-${itemIndex}-amount" class="input input-bordered input-sm w-full" step="0.01" required>
                     </div>
                 </div>
             `;
@@ -336,32 +335,7 @@
         updateAddItemButton();
     }
 
-    // Update committee member selections to prevent duplicates
-    function updateCommitteeMemberSelections() {
-        const allSelects = document.querySelectorAll('select[name*="committees"][name*="member"]');
-        const selectedValues = [];
-
-        // Collect all selected values
-        allSelects.forEach(select => {
-            if (select.value && select.value !== '-') {
-                selectedValues.push(select.value);
-            }
-        });
-
-        // Update each select to disable already selected options
-        allSelects.forEach(select => {
-            const currentValue = select.value;
-            Array.from(select.options).forEach(option => {
-                if (option.value === '-' || option.value === '') {
-                    option.disabled = false;
-                } else if (option.value === currentValue) {
-                    option.disabled = false;
-                } else {
-                    option.disabled = selectedValues.includes(option.value);
-                }
-            });
-        });
-    }
+    // กรรมการสามารถเลือกซ้ำกันได้ ไม่ต้อง disable option
 
     // Add new committee function by type
     function addNewCommittee(typeValue) {
