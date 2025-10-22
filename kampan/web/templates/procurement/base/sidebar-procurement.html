@@ -16,41 +16,16 @@
           </a>
         </li>
         <li>
+        <li>
           <details open>
             <summary>
-              <i class="ph ph-package"></i> ครุภัณฑ์
+              <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
             </summary>
             <ul>
               <li>
-                <details open>
-                  <summary>
-                    <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
-                  </summary>
-                  <ul>
-                    <li>
-                      <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
-                        <i class="ph ph-list"></i>รายการขอต่ออายุ
-                      </a>
-                    </li>
-                    <li>
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-                        href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
-                        <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
-                      </a>
-                    </li>
-                    <li>
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path else '' }}"
-                        href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id ) }}">
-                        <i class="ph ph-x-circle"></i> รายการไม่ต่ออายุ
-                      </a>
-                    </li>
-                  </ul>
-                </details>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if ('/procurement/products' in request.path or '/procurement/payment' in request.path) else '' }}"
-                  href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}">
-                  <i class="ph ph-shopping-cart"></i> จัดการ MA
+                <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
+                  href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
+                  <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
                 </a>
               </li>
             </ul>
@@ -59,118 +34,149 @@
         <li>
           <details open>
             <summary>
-              <i class="ph ph-bank"></i> ระบบ MAS
+              <i class="ph ph-package"></i> จัดการ MA
             </summary>
             <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/mas' in request.path else '' }}"
-                  href="{{ url_for('admin.mas.index', organization_id=organization.id) }}">
-                  <i class="ph ph-money-wavy"></i> แหล่งเงิน
-                </a>
-              </li>
-            </ul>
-        </li>
-      </ul>
-    </li>
-    {% endif %}
-
-    {# STAFF SECTION #}
-    {% if current_user.has_organization_roles("staff") %}
-    <li>
-      <h2 class="font-bold text-lg text-tns-black">สำหรับพนักงาน</h2>
-      <ul class="ml-2">
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-package"></i> ครุภัณฑ์
-            </summary>
-            <ul>
-              <li>
-                <details open>
-                  <summary>
-                    <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
-                  </summary>
-                  <ul>
-                    <li>
-                      <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
-                        <i class="ph ph-list"></i>รายการขอต่ออายุ
-                      </a>
-                    </li>
-                    <li>
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-                        href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
-                        <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
-                      </a>
-                    </li>
-                    <li>
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path else '' }}"
-                        href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id ) }}">
-                        <i class="ph ph-x-circle"></i> รายการไม่ต่ออายุ
-                      </a>
-                    </li>
-                  </ul>
-                </details>
-              </li>
               <li>
                 <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
                   href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}">
-                  <i class="ph ph-shopping-cart"></i> จัดการ MA
+                  <i class="ph ph-shopping-cart"></i> รายการ MA
                 </a>
               </li>
             </ul>
+            <ul>
+              <li>
+                <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
+                  <i class="ph ph-list"></i>รายการ MA ขอต่ออายุ
+                </a>
+              </li>
+            </ul>
+            <ul>
+              <li>
+                <a href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id ) }}">
+                  <i class="ph ph-x-circle"></i> รายการ MA ไม่ต่ออายุ
+                </a>
+              </li>
           </details>
         </li>
-      </ul>
     </li>
-    {% endif %}
-
-    {# HEAD SECTION #}
-    {% if current_user.has_organization_roles("head") %}
     <li>
-      <h2 class="font-bold text-lg text-tns-black">สำหรับหัวหน้าฝ่าย</h2>
-      <ul class="ml-2">
-        <li>
-          <a class="{{ 'menu-active' if '/procurement/requisitions' in request.path else '' }}"
-            href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
-            <i class="ph ph-list"></i> อนุมัติรายการขอซื้อขอจ้าง
-          </a>
-        </li>
-      </ul>
+      <details open>
+        <summary>
+          <i class="ph ph-bank"></i> ระบบ MAS
+        </summary>
+        <ul>
+          <li>
+            <a class="{{ 'menu-active' if '/mas' in request.path else '' }}"
+              href="{{ url_for('admin.mas.index', organization_id=organization.id) }}">
+              <i class="ph ph-money-wavy"></i> แหล่งเงิน
+            </a>
+          </li>
+        </ul>
     </li>
-    {% endif %}
+  </ul>
+  </li>
+  {% endif %}
 
-    {# SUPERVISOR SUPPLIER SECTION #}
-    {% if current_user.has_organization_roles("supervisor supplier") %}
-    <li>
-      <h2 class="font-bold text-lg text-tns-black">สำหรับหัวหน้าฝ่ายบริหารจัดการ</h2>
-      <ul class="ml-2">
-        <li>
-          <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-            href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
-            <i class="ph ph-users"></i> จัดการ Supplier
-          </a>
-        </li>
-      </ul>
-    </li>
-    {% endif %}
+  {# STAFF SECTION #}
+  {% if current_user.has_organization_roles("staff") %}
+  <li>
+    <h2 class="font-bold text-lg text-tns-black">สำหรับพนักงาน</h2>
+    <ul class="ml-2">
+      <li>
+        <details open>
+          <summary>
+            <i class="ph ph-scroll"></i>ขอซื้อขอจ้าง
+          </summary>
+          <ul>
+            <li>
+              <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
+                href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
+                <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
+              </a>
+            </li>
+          </ul>
+        </details>
+      </li>
+      <li>
+        <details open>
+          <summary>
+            <i class="ph ph-package"></i> จัดการ MA
+          </summary>
+          <ul>
+            <li>
+              <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
+                href="{{ url_for('procurement.products.index', organization_id=organization.id ) }}">
+                <i class="ph ph-shopping-cart"></i> รายการ MA
+              </a>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id ) }}">
+                <i class="ph ph-list"></i>รายการ MA ขอต่ออายุ
+              </a>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <a href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id ) }}">
+                <i class="ph ph-x-circle"></i> รายการ MA ไม่ต่ออายุ
+              </a>
+            </li>
+        </details>
+      </li>
+    </ul>
+  </li>
+  {% endif %}
 
-    <li>
-      <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
-        href="{{ url_for('site.select_system', organization_id=organization.id) }}">
-        <i class="ph ph-swap"></i> เปลี่ยนระบบ
-      </a>
-    </li>
-    {% endif %}
-    <div class="mt-auto p-3">
-      <div class="flex items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium truncate">{{ current_user.get_resources_fullname_th() }}</p>
-          <p class="text-xs text-base-content/60 truncate">{{ current_user.email }}</p>
-        </div>
-        <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
-          <i class="ph ph-size ph-sign-out"></i>
+  {# HEAD SECTION #}
+  {% if current_user.has_organization_roles("head") %}
+  <li>
+    <h2 class="font-bold text-lg text-tns-black">สำหรับหัวหน้าฝ่าย</h2>
+    <ul class="ml-2">
+      <li>
+        <a class="{{ 'menu-active' if '/procurement/requisitions' in request.path else '' }}"
+          href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
+          <i class="ph ph-list"></i> อนุมัติรายการขอซื้อขอจ้าง
         </a>
+      </li>
+    </ul>
+  </li>
+  {% endif %}
+
+  {# SUPERVISOR SUPPLIER SECTION #}
+  {% if current_user.has_organization_roles("supervisor supplier") %}
+  <li>
+    <h2 class="font-bold text-lg text-tns-black">สำหรับหัวหน้าฝ่ายบริหารจัดการ</h2>
+    <ul class="ml-2">
+      <li>
+        <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
+          href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id ) }}">
+          <i class="ph ph-users"></i> จัดการ Supplier
+        </a>
+      </li>
+    </ul>
+  </li>
+  {% endif %}
+
+  <li>
+    <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
+      href="{{ url_for('site.select_system', organization_id=organization.id) }}">
+      <i class="ph ph-swap"></i> เปลี่ยนระบบ
+    </a>
+  </li>
+  {% endif %}
+  <div class="mt-auto p-3">
+    <div class="flex items-center gap-3">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">{{ current_user.get_resources_fullname_th() }}</p>
+        <p class="text-xs text-base-content/60 truncate">{{ current_user.email }}</p>
       </div>
+      <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+        <i class="ph ph-size ph-sign-out"></i>
+      </a>
     </div>
+  </div>
   </ul>
 </div>
