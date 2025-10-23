@@ -583,7 +583,7 @@
                             supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
                         <span style="vertical-align: middle;">ไม่อนุมัติ เพราะ</span>
                         <span>..................................................
-                            <span style="position: absolute; left: 9rem; top: 63.8rem; white-space: nowrap;">
+                            <span style="position: absolute; left: 9rem; top: 63.5rem; white-space: nowrap;">
                                 {%- if supervisor_approval and supervisor_approval[-1].reason -%}
                                 {{ supervisor_approval[-1].reason }}
                                 {%- endif -%}
@@ -593,7 +593,7 @@
                 </p>
                 <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">
                     <span>...................................
-                        <span style="position: absolute; right: 31rem; top: 65.2rem; white-space: nowrap;">
+                        <span style="position: absolute; right: 31rem; top: 65.5rem; white-space: nowrap;">
                             {%- if supervisor_approval and supervisor_approval[-1].approver -%}
                             {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                             supervisor_approval[-1].approver.display_fullname() else
