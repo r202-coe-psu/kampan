@@ -12,4 +12,4 @@ from . import ma_send_emails
 from . import upload_files
 from . import requisition_send_emails
 from . import send_email_to_drivers
-from . import head_send_emails
+from . import approved_emails

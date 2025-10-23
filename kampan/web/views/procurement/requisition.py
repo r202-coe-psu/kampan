@@ -419,14 +419,22 @@ def requisition_action(requisition_id):
     if not member_obj or not requisition:
         abort(404)
 
-    if approver_role == "head" and action == "approved":
+    if (
+        approver_role == "head" or approver_role == "supervisor supplier"
+    ) and action == "approved":
         job = redis_rq.redis_queue.queue.enqueue(
-            utils.head_send_emails.send_email_to_user_admin_committee,
-            args=(requisition, current_user.id, current_app.config, organization),
+            utils.approved_emails.send_email_approve_to_user_admin_committee,
+            args=(
+                requisition,
+                current_user.id,
+                current_app.config,
+                organization,
+                approver_role,
+            ),
             timeout=600,
             job_timeout=600,
         )
-        print("=====> Head Approve creation job submitted", job.get_id())
+        print("=====> Approved email job submitted", job.get_id())
 
     # If admin approves and fund is provided, set fund
     if approver_role == "admin" and action == "approved" and fund_id:
@@ -460,6 +468,21 @@ def requisition_action(requisition_id):
         requisition.status = "incomplete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
+
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.rejected_emails.send_email_rejected(),
+            args=(
+                requisition,
+                current_user.id,
+                current_app.config,
+                organization,
+                rejected_roles,
+            ),
+            timeout=600,
+            job_timeout=600,
+        )
+        print("=====> Reject email job submitted", job.get_id())
+
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
@@ -472,6 +495,7 @@ def requisition_action(requisition_id):
         requisition.status = "complete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
+
         job = redis_rq.redis_queue.queue.enqueue(
             utils.requisition_send_emails.requisition_send_emails,
             args=(requisition, current_app.config),

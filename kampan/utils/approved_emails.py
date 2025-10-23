@@ -6,15 +6,16 @@ from .email_utils import PSUSMTP
 logger = logging.getLogger(__name__)
 
 email_subject_template = {
-    "default": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากหัวหน้าฝ่าย",
+    "head": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากหัวหน้าฝ่าย",
+    "supervisor supplier": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากผู้บริหาร",
+    "default": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง",
 }
 
-email_body_template = """เรียน {{ purchaser_name }}
+email_body_template = """เรียน ผู้เกี่ยวข้อง
 
-    ตามที่ {{ purchaser_name }} ได้ขอซื้อ/จ้างผ่านระบ ใบขอซื้อเลขที่: {{ requisition_code }}
+    ตามที่ {{ purchaser_name }} ได้ขอซื้อ/จ้างผ่านระบu ใบขอซื้อเลขที่: {{ requisition_code }}
 
-ผลการพิจารณาจากหัวหน้าฝ่าย : อนุมัติ
-
+ผลการพิจารณาจาก{{ notif_type }} : อนุมัติ
 รายละเอียดดังนี้:
 {% for item in items %}
   รายการขอซื้อ: {{ item }}
@@ -53,9 +54,13 @@ Link: {{ document_url }}
 ด้วยความเคารพ
 งานพัสดุ
 """
+ROLES_MAP = {
+    "head": "หัวหน้าฝ่าย",
+    "supervisor supplier": "ผู้บริหาร",
+}
 
 
-def get_email_text_format(requisition, setting):
+def get_email_text_format(requisition, setting, notif_type=None):
     # Get committee members grouped by type and position
     specification_members = []
     procurement_members = []
@@ -115,30 +120,26 @@ def get_email_text_format(requisition, setting):
         "requisition_code": requisition.requisition_code,
         "purchaser_name": purchaser_name,
         "purchaser_email": purchaser_email,
-        "reason": requisition.reason,
-        "start_date": (
-            requisition.start_date.strftime("%d/%m/%Y")
-            if requisition.start_date
-            else ""
-        ),
         "items": [item.product_name for item in requisition.items],
         "specification_members": specification_members,
         "procurement_members": procurement_members,
         "inspection_members": inspection_members,
         "document_url": document_url,
+        "notif_type": ROLES_MAP.get(notif_type, "ผู้บริหาร"),
     }
     return text_format
 
 
-def send_email_to_user_admin_committee(
+def send_email_approve_to_user_admin_committee(
     requisition: models.Requisition,
     user_id,
     setting,
     organization,
+    notif_type,
 ):
-    logger.debug("use send_email_to_user_admin_committee")
+    logger.debug("use send_email_approve_to_user_admin_committee")
     all_admins = organization.get_admins()
-    text_format = get_email_text_format(requisition, setting)
+    text_format = get_email_text_format(requisition, setting, notif_type)
 
     if not text_format:
         logger.debug("No text format found")
@@ -156,7 +157,7 @@ def send_email_to_user_admin_committee(
             return False
 
         subject_template_str = email_subject_template.get(
-            "default", "แจ้งผลการพิจารณาอนุมัติรายการขอซื้อ/จ้าง"
+            notif_type, email_subject_template["default"]
         )
 
         template_subject = Template(subject_template_str)
@@ -213,5 +214,5 @@ def send_email_to_user_admin_committee(
         psu_smtp.quit()
         return True
     except Exception as e:
-        logger.error(f"send_email_to_user_admin_committee error: {e}")
+        logger.error(f"send_email_approve_to_user_admin_committee error: {e}")
         return False
