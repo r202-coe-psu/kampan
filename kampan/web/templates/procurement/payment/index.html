@@ -6,8 +6,8 @@
 
 {% block content %}
 
-<div class="container mx-auto px-2 md:px-4 lg:px-0 py-6">
-    <div class="max-w-5xl mx-auto mb-10">
+<div class="container mx-auto px-3 md:px-4 lg:px-0 py-4 md:py-6">
+    <div class="max-w-5xl mx-auto mb-8 md:mb-10">
         <!-- Header with gradient background -->
         {% set payment_status = item.get_current_payment_status(today) %}
         {% set header_colors = {
@@ -22,38 +22,38 @@
         } %}
 
         <div
-            class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-8 mb-8 rounded-2xl shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h3 class="font-bold text-2xl flex items-center gap-3">
-                    <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-3xl"></i>
-                    รายละเอียดการจ่ายเงิน
+            class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-4 md:p-8 mb-6 md:mb-8 rounded-xl md:rounded-2xl shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+            <div class="flex-1">
+                <h3 class="font-bold text-lg md:text-2xl flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                    <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-2xl md:text-3xl"></i>
+                    <span>รายละเอียดการจ่ายเงิน</span>
                     {% if payment_status == 'paid' %}
-                    <span class="badge badge-success badge-lg ml-2">จ่ายครบแล้ว</span>
+                    <span class="badge badge-success badge-sm md:badge-lg">จ่ายครบแล้ว</span>
                     {% elif payment_status == 'overdue' %}
-                    <span class="badge badge-error badge-lg ml-2">จ่ายล่าช้า</span>
+                    <span class="badge badge-error badge-sm md:badge-lg">จ่ายล่าช้า</span>
                     {% elif payment_status == 'upcoming' %}
-                    <span class="badge badge-warning badge-lg ml-2">ใกล้ถึงกำหนดจ่าย</span>
+                    <span class="badge badge-warning badge-sm md:badge-lg">ใกล้ถึงกำหนดจ่าย</span>
                     {% endif %}
                 </h3>
-                <div class="mt-2 space-y-1">
-                    <div class="flex items-center gap-2">
-                        <i class="ph ph-file-text text-lg"></i>
+                <div class="mt-2 md:mt-3 space-y-1 text-sm md:text-base">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <i class="ph ph-file-text text-base md:text-lg"></i>
                         <span class="text-white/90 font-medium">เลขที่ใบจ่ายเงิน:</span>
-                        <span class="text-white/90">{{ item.product_number }}</span>
+                        <span class="text-white/90 break-all">{{ item.product_number }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <i class="ph ph-barcode text-lg"></i>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <i class="ph ph-barcode text-base md:text-lg"></i>
                         <span class="text-white/90 font-medium">รหัสครุภัณฑ์:</span>
-                        <span class="text-white/90">{{ item.asset_code }}</span>
+                        <span class="text-white/90 break-all">{{ item.asset_code }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Content organized in cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:col-span-1">
                 <!-- Image Card (show if image exists) -->
                 {% if item.image %}
                 <div class="md:col-span-2 card bg-base-100 border border-base-200 shadow-sm">
@@ -63,19 +63,19 @@
                 {% endif %}
                 <!-- Basic Information Card -->
                 <div class="card bg-base-100 border border-base-200 shadow-sm">
-                    <div class="card-body p-4">
-                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                            <i class="ph ph-info text-xl"></i>
-                            ข้อมูลทั่วไป
+                    <div class="card-body p-3 md:p-4">
+                        <h4 class="font-bold text-base md:text-lg text-primary mb-2 md:mb-3 flex items-center gap-2">
+                            <i class="ph ph-info text-lg md:text-xl"></i>
+                            <span>ข้อมูลทั่วไป</span>
                         </h4>
-                        <div class="space-y-2 text-sm">
-                            <p class="text-base-content/70">ชื่อโครงการ</p>
-                            <div class="flex justify-between">
-                                <p class="font-medium">{{ item.name }}</p>
+                        <div class="space-y-2 text-xs md:text-sm">
+                            <p class="text-base-content/70">ชื่อรายการ</p>
+                            <div class="flex justify-between flex-wrap gap-1">
+                                <p class="font-medium break-words flex-1">{{ item.name }}</p>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <p class="text-base-content/70">ประเภท:</p>
-                                <p class="font-medium">{{ item.get_category_display() }}</p>
+                                <p class="font-medium text-right">{{ item.get_category_display() }}</p>
                             </div>
                         </div>
                     </div>
@@ -83,33 +83,23 @@
 
                 <!-- Date & Duration Card -->
                 <div class="card bg-base-100 border border-base-200 shadow-sm">
-                    <div class="card-body p-4">
-                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                            <i class="ph ph-calendar text-xl"></i>
-                            วันที่และระยะเวลาโครงการ
+                    <div class="card-body p-3 md:p-4">
+                        <h4 class="font-bold text-base md:text-lg text-primary mb-2 md:mb-3 flex items-center gap-2">
+                            <i class="ph ph-calendar text-lg md:text-xl"></i>
+                            <span>วันที่และระยะเวลา</span>
                         </h4>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
+                        <div class="space-y-2 text-xs md:text-sm">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-base-content/70">วันที่เริ่มต้น:</span>
                                 <span class="font-medium">{{ item.start_date.strftime('%d/%m/%Y') if item.start_date
                                     else '-' }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-base-content/70">วันที่สิ้นสุด:</span>
                                 <span class="font-medium">{{ item.end_date.strftime('%d/%m/%Y') if item.end_date else
                                     '-' }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-base-content/70">ระยะเวลา:</span>
-                                <span class="font-medium">
-                                    {% if item.duration_months is not none and item.duration_days is not none %}
-                                    {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </span>
-                            </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-base-content/70">จำนวนงวดที่ต้องจ่าย:</span>
                                 <span class="font-medium">{{ item.period }} งวด</span>
                             </div>
@@ -119,24 +109,25 @@
 
                 <!-- Financial Information Card -->
                 <div class="card bg-base-100 border border-base-200 shadow-sm">
-                    <div class="card-body p-4">
-                        <h4 class="font-bold text-lg text-green-700 mb-3 flex items-center gap-2">
-                            <i class="ph ph-currency-circle-dollar text-xl"></i>
-                            ข้อมูลการจ่ายเงิน
+                    <div class="card-body p-3 md:p-4">
+                        <h4 class="font-bold text-base md:text-lg text-green-700 mb-2 md:mb-3 flex items-center gap-2">
+                            <i class="ph ph-currency-circle-dollar text-lg md:text-xl"></i>
+                            <span>ข้อมูลการจ่ายเงิน</span>
                         </h4>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
+                        <div class="space-y-2 text-xs md:text-sm">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-green-600">จำนวนเงินรวม:</span>
                                 <span class="font-medium text-green-700">฿{{ "{:,.2f}".format(item.amount) }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-green-600">สถานะการจ่าย:</span>
-                                <span class="badge badge-success badge-sm">{{ item.get_current_payment_status(today)
+                                <span class="badge badge-success badge-xs md:badge-sm">{{
+                                    item.get_current_payment_status(today)
                                     }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between flex-wrap gap-1">
                                 <span class="text-green-600">จำนวนงวดที่จ่ายแล้ว:</span>
-                                <span class="font-medium">{{ item.payment_records|length }}/{{ item.period }} งวด</span>
+                                <span class="font-medium">{{ item.payment_records|length }}/{{ item.period }}</span>
                             </div>
                         </div>
                     </div>
@@ -144,22 +135,22 @@
 
                 <!-- Responsible Party Card -->
                 <div class="card bg-base-100 border border-base-200 shadow-sm">
-                    <div class="card-body p-4">
-                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                            <i class="ph ph-users text-xl"></i>
-                            ผู้รับผิดชอบโครงการ
+                    <div class="card-body p-3 md:p-4">
+                        <h4 class="font-bold text-base md:text-lg text-primary mb-2 md:mb-3 flex items-center gap-2">
+                            <i class="ph ph-users text-lg md:text-xl"></i>
+                            <span>ผู้รับผิดชอบ</span>
                         </h4>
-                        <div class="space-y-2 text-sm">
+                        <div class="space-y-2 text-xs md:text-sm">
                             <span class="text-base-content/70">บริษัท:</span>
-                            <div class="flex justify-between">
-                                <span class="font-medium">{{ item.company }}</span>
+                            <div class="flex justify-between flex-wrap gap-1">
+                                <span class="font-medium break-words flex-1">{{ item.company }}</span>
                             </div>
-                            <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
+                            <span class="text-base-content/70 mt-2">ผู้รับผิดชอบ:</span>
                             <div class="flex flex-col gap-1">
                                 {% if item.responsible_by %}
                                 <div class="flex flex-wrap gap-1">
                                     {% for u in item.responsible_by %}
-                                    <span class="font-medium text-primary inline-block max-w-full truncate">
+                                    <span class="font-medium text-primary text-xs inline-block break-all">
                                         {{ u.display_user_fullname() }}
                                     </span>
                                     {% endfor %}
@@ -173,26 +164,27 @@
 
             <div class="card bg-base-100 border border-base-200 shadow-sm">
                 <!-- Payment Form Section -->
-                {% if item.payment_records|length < item.period %} <div class="card-body p-4">
-                    <h4 class="font-bold text-lg text-green-700 mb-3 flex items-center gap-2">
-                        <i class="ph ph-currency-circle-dollar text-xl"></i>
-                        เพิ่มข้อมูลการจ่ายเงิน
+                {% if item.payment_records|length < item.period %} <div class="card-body p-3 md:p-4">
+                    <h4 class="font-bold text-base md:text-lg text-green-700 mb-2 md:mb-3 flex items-center gap-2">
+                        <i class="ph ph-currency-circle-dollar text-lg md:text-xl"></i>
+                        <span>เพิ่มข้อมูลการจ่าย</span>
                     </h4>
                     <form method="post" action="{{ url_for('procurement.payment.set_paid', procurement_id=item.id) }}">
                         <div class="form-control mb-3">
-                            <label class="label" for="amount">
-                                <span class="label-text">จำนวนเงินที่จ่าย</span>
+                            <label class="label p-1 md:p-2" for="amount">
+                                <span class="label-text text-xs md:text-sm">จำนวนเงินที่จ่าย</span>
                             </label>
                             {% if is_last_period %}
                             <div class="relative">
                                 <input type="text" name="amount" value="{{ '{:,.2f}'.format(remaining_amount) }}"
-                                    class="input input-bordered w-full" readonly id="amount"
+                                    class="input input-bordered input-sm md:input-md w-full" readonly id="amount"
                                     title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด" inputmode="decimal" pattern="[0-9,\.]*">
                             </div>
                             {% else %}
                             <div class="relative">
-                                <input type="text" name="amount" class="input input-bordered w-full" required
-                                    id="amount" inputmode="decimal" pattern="[0-9,\.]*">
+                                <input type="text" name="amount"
+                                    class="input input-bordered input-sm md:input-md w-full" required id="amount"
+                                    inputmode="decimal" pattern="[0-9,\.]*">
                             </div>
                             {% endif %}
                         </div>
@@ -222,45 +214,46 @@
                             });
                         </script>
                         <div class="form-control mb-3">
-                            <label class="label" for="product_number">
-                                <span class="label-text">เลขที่ใบจ่ายเงิน</span>
+                            <label class="label p-1 md:p-2" for="product_number">
+                                <span class="label-text text-xs md:text-sm">เลขที่ใบจ่ายเงิน</span>
                             </label>
                             <input type="text" name="product_number" id="product_number"
-                                class="input input-bordered w-full" required
+                                class="input input-bordered input-sm md:input-md w-full" required
                                 value="{{ form_data.product_number if form_data is defined else '' }}">
                             {% if errors is defined and errors.product_number %}
-                            <p class="text-sm text-error mt-1">{{ errors.product_number }}</p>
+                            <p class="text-xs text-error mt-1">{{ errors.product_number }}</p>
                             {% endif %}
                         </div>
-                        <button type="submit" class="btn btn-primary w-full">บันทึกการจ่ายเงิน</button>
+                        <button type="submit" class="btn btn-primary btn-sm md:btn-md w-full">บันทึกการจ่าย</button>
                     </form>
             </div>
             {% endif %}
             <!-- Payment History Section -->
             {% if item.payment_records %}
-            <div class="card-body p-4">
-                <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                    <i class="ph ph-clock-counter-clockwise text-xl"></i>
-                    ประวัติการจ่ายเงิน
+            <div class="card-body p-3 md:p-4 border-t">
+                <h4 class="font-bold text-base md:text-lg text-primary mb-2 md:mb-3 flex items-center gap-2">
+                    <i class="ph ph-clock-counter-clockwise text-lg md:text-xl"></i>
+                    <span>ประวัติการจ่าย</span>
                 </h4>
-                <div class="overflow-x-auto">
-                    <table class="table table-sm">
+                <div class="overflow-x-auto -mx-3 md:-mx-4 px-3 md:px-4">
+                    <table class="table table-xs md:table-sm w-full">
                         <thead>
                             <tr>
-                                <th>งวดที่</th>
-                                <th>วันที่จ่าย</th>
-                                <th>ผู้จ่าย</th>
-                                <th>เลขที่ใบจ่ายเงิน</th>
-                                <th>จํานวน</th>
+                                <th class="text-xs">งวดที่</th>
+                                <th class="text-xs">วันที่จ่าย</th>
+                                <th class="text-xs">ผู้จ่าย</th>
+                                <th class="text-xs">เลขที่ใบจ่าย</th>
+                                <th class="text-xs text-right">จํานวน</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for record in item.payment_records %}
-                            <tr>
+                            <tr class="hover">
                                 <td class="text-xs">{{ loop.index }}</td>
                                 <td class="text-xs">{{ record.paid_date.strftime('%d/%m/%Y %H:%M') }}</td>
-                                <td class="text-xs">{{ record.paid_by.get_name() if record.paid_by else '-' }}</td>
-                                <td class="text-xs">
+                                <td class="text-xs truncate max-w-xs">{{ record.paid_by.get_name() if record.paid_by
+                                    else '-' }}</td>
+                                <td class="text-xs truncate max-w-xs">
                                     {{ record.product_number if record.product_number else '-' }}
                                 </td>
                                 <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount) }}</td>
