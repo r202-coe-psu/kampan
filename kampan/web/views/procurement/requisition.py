@@ -418,6 +418,16 @@ def requisition_action(requisition_id):
     )
     if not member_obj or not requisition:
         abort(404)
+
+    if approver_role == "head" and action == "approved":
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.head_send_emails.send_email_to_user_admin_committee,
+            args=(requisition, current_user.id, current_app.config, organization),
+            timeout=600,
+            job_timeout=600,
+        )
+        print("=====> Head Approve creation job submitted", job.get_id())
+
     # If admin approves and fund is provided, set fund
     if approver_role == "admin" and action == "approved" and fund_id:
         mas_obj = models.MAS.objects(id=fund_id).first()
