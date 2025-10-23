@@ -193,7 +193,6 @@ def renewal_requested(requisition_procurement_id):
 
 
 @module.route("/<requisition_procurement_id>/document")
-@login_required
 def document(requisition_procurement_id):
     requisition = models.Requisition.objects(id=requisition_procurement_id).first()
     if not requisition:
