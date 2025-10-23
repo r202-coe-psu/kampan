@@ -13,3 +13,4 @@ from . import upload_files
 from . import requisition_send_emails
 from . import send_email_to_drivers
 from . import approved_emails
+from . import rejected_emails

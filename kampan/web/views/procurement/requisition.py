@@ -470,13 +470,13 @@ def requisition_action(requisition_id):
         requisition.save()
 
         job = redis_rq.redis_queue.queue.enqueue(
-            utils.rejected_emails.send_email_rejected(),
+            utils.rejected_emails.send_email_rejected_to_user_admin_committee,
             args=(
                 requisition,
                 current_user.id,
                 current_app.config,
                 organization,
-                rejected_roles,
+                approver_role,
             ),
             timeout=600,
             job_timeout=600,
