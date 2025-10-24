@@ -172,17 +172,30 @@ def renewal_requested(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         requisitions = models.Requisition.objects()
-        # staff see only their own, others see all
-        if current_user.has_organization_roles("staff") and not (
-            current_user.has_organization_roles("admin")
-            or current_user.has_organization_roles("head")
-            or current_user.has_organization_roles("supervisor supplier")
-        ):
+
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object()
+        ).first()
+
+        # Determine user role hierarchy
+        is_admin_or_head = current_user.has_organization_roles(
+            "admin"
+        ) or current_user.has_organization_roles("head")
+        is_supervisor = current_user.has_organization_roles("supervisor supplier")
+        is_staff = current_user.has_organization_roles("staff")
+
+        # Apply filters based on role (lowest privilege first)
+        if is_staff and not (is_admin_or_head or is_supervisor):
             requisitions = requisitions.filter(
                 created_by=current_user._get_current_object()
             )
+        elif is_supervisor and not is_admin_or_head:
+            requisitions = requisitions.filter(supervisor=org_user_role)
+        # Admin and head see all (no filter)
+
         requisitions = requisitions.order_by("-requisition_code")
         mas_list = models.MAS.objects()
+
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=requisitions,
