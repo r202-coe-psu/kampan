@@ -59,6 +59,7 @@ class Requisition(me.Document):
 
     requisition_code = me.StringField(max_length=50, unique=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True, required=True)
+    supervisor = me.ReferenceField("OrganizationUserRole", dbref=True)
     phone = me.IntField()
     reason = me.StringField(max_length=255)
     start_date = me.DateTimeField(required=True)

@@ -404,6 +404,7 @@ def requisition_action(requisition_id):
     action = request.form.get("action")  # 'approved' or 'rejected'
     reason = request.form.get("reason")  # เหตุผลในการปฏิเสธ
     fund_id = request.form.get("fund")
+    supervisor_id = request.form.get("supervisor")
     requisition = models.Requisition.objects(id=requisition_id).first()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
@@ -436,10 +437,17 @@ def requisition_action(requisition_id):
         print("=====> Approved email job submitted", job.get_id())
 
     # If admin approves and fund is provided, set fund
-    if approver_role == "admin" and action == "approved" and fund_id:
-        mas_obj = models.MAS.objects(id=fund_id).first()
-        if mas_obj:
-            requisition.fund = mas_obj
+    if approver_role == "admin" and action == "approved":
+        if fund_id:
+            mas_obj = models.MAS.objects(id=fund_id).first()
+            if mas_obj:
+                requisition.fund = mas_obj
+        if supervisor_id:
+            supervisor_obj = models.OrganizationUserRole.objects(
+                id=supervisor_id
+            ).first()
+            if supervisor_obj:
+                requisition.supervisor = supervisor_obj
 
     approval = models.requisitions.ApprovalHistory(
         approver=member_obj,

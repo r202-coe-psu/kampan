@@ -762,7 +762,7 @@
 {% endmacro %}
 
 {# filepath: Untitled #}
-{% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list) %}
+{% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization) %}
 <div class="mt-12">
     <div class="flex items-center justify-between mb-6">
         <h3 class="text-xl font-bold text-blue-600 flex items-center gap-3">
@@ -1014,6 +1014,20 @@
                                     <input type="hidden" name="approver_role" value="admin">
                                     <input type="hidden" name="action" value="approved">
                                     <div class="mb-4">
+                                        <div class="form-control mb-4">
+                                            <label for="supervisor-{{ item.id }}"
+                                                class="block font-semibold mb-2">เลือกผู้บริหาร (Supervisor
+                                                Supplier)</label>
+                                            <select name="supervisor" id="supervisor-{{ item.id }}"
+                                                class="select select-bordered w-full" required>
+                                                <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
+                                                {% for user in organization.get_organization_users() %}
+                                                {% if 'supervisor supplier' in user.roles %}
+                                                <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
                                         <div class="form-control">
                                             <div class="overflow-y-auto max-h-[600px]">
                                                 <table class="table table-md w-full border">
