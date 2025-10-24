@@ -182,26 +182,27 @@ def send_email_approve_to_user_admin_committee(
         # print(email_body)
         # print("=" * 50 + "\n")
 
-        # Also send to committee members
-        all_committee_members = (
-            text_format["specification_members"]
-            + text_format["procurement_members"]
-            + text_format["inspection_members"]
-        )
+        # Send to committee members only if not supervisor supplier
+        if notif_type != "supervisor supplier":
+            all_committee_members = (
+                text_format["specification_members"]
+                + text_format["procurement_members"]
+                + text_format["inspection_members"]
+            )
 
-        # Remove duplicates by email
-        unique_members = {}
-        for member in all_committee_members:
-            if member["email"] and member["email"] != "-":
-                unique_members[member["email"]] = member
+            # Remove duplicates by email
+            unique_members = {}
+            for member in all_committee_members:
+                if member["email"] and member["email"] != "-":
+                    unique_members[member["email"]] = member
 
-        for member_email in unique_members.items():
-            try:
-                logger.debug(f"send email to {member_email}")
-                psu_smtp.send_email(member_email, email_subject, email_body)
-            except Exception as e:
-                logger.error(f"Error sending email to {member_email}: {e}")
-                continue
+            for member_email in unique_members.items():
+                try:
+                    logger.debug(f"send email to {member_email}")
+                    psu_smtp.send_email(member_email, email_subject, email_body)
+                except Exception as e:
+                    logger.error(f"Error sending email to {member_email}: {e}")
+                    continue
 
         for admin in all_admins:
             if not admin.email:
