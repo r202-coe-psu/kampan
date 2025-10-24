@@ -13,9 +13,10 @@ email_subject_template = {
 
 email_body_template = """เรียน ผู้เกี่ยวข้อง
 
-    ตามที่ {{ purchaser_name }} ได้ขอซื้อ/จ้างผ่านระบu ใบขอซื้อเลขที่: {{ requisition_code }}
+    ตามที่ {{ purchaser_name }} ได้ขอซื้อ/จ้างผ่านระบบ ใบขอซื้อเลขที่: {{ requisition_code }}
 
 ผลการพิจารณาจาก{{ notif_type }} : อนุมัติ
+{% if notif_type == "head" %}
 รายละเอียดดังนี้:
 {% for item in items %}
   รายการขอซื้อ: {{ item }}
@@ -46,6 +47,7 @@ email_body_template = """เรียน ผู้เกี่ยวข้อง
 {% endfor %}
 {% else %}
   -
+{% endif %}
 {% endif %}
 
 ระบบขอซื้อพัสดุ 
