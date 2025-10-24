@@ -915,9 +915,9 @@
                         {% endif %}
                         {% if current_user.has_organization_roles("head") %}
                         {% set already_acted = item.approval_history and item.approval_history |
-                        selectattr('approver_role', 'equalto',
-                        'head') | list | length > 0 %}
+                        selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {# Head is always first, so only check if already acted or incomplete #}
                             <form method="post" style="display:inline"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
                                 <input type="hidden" name="approver_role" value="head">
@@ -963,18 +963,21 @@
                         {% if current_user.has_organization_roles("admin") %}
                         {% set already_acted = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
+                        {% set head_approved = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
+                        list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
                             <!-- Approve Button triggers MAS modal -->
                             <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                {% if already_acted or item.status=='incomplete' %}disabled{% endif %}
-                                onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
+                                {% if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif
+                                %} onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                                 <i class="ph ph-check text-lg" title="Approve"></i>
                             </button>
                             <!-- Reject Button as modal -->
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
@@ -1066,6 +1069,9 @@
                         {% if current_user.has_organization_roles("supervisor supplier") %}
                         {% set already_acted = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
+                        {% set admin_approved = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
+                        list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
                             <form method="post" style="display:inline"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
@@ -1073,13 +1079,15 @@
                                 <input type="hidden" name="action" value="approved">
                                 <button type="submit"
                                     class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                    {% if already_acted or item.status=='incomplete' %}disabled{% endif %}>
+                                    {% if not admin_approved or already_acted or item.status=='incomplete' %}disabled{%
+                                    endif %}>
                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                 </button>
                             </form>
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif
+                                %}
                                 onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
