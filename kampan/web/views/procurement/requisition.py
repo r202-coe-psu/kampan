@@ -521,6 +521,17 @@ def requisition_action(requisition_id):
                 organization_id=current_user.user_setting.current_organization.id,
             )
         )
+    # ถ้า approve ครบทุก role ให้เปลี่ยนสถานะเป็น complete
+    if required_roles.issubset(approved_roles):
+        requisition.status = "complete"
+        requisition.last_updated_by = current_user._get_current_object()
+        requisition.save()
+        return redirect(
+            url_for(
+                "procurement.requisitions.renewal_requested",
+                organization_id=current_user.user_setting.current_organization.id,
+            )
+        )
 
     # ถ้ามี approve แต่ยังไม่ครบทุก role ให้เปลี่ยนสถานะเป็น progress
     if approved_roles:
