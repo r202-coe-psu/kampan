@@ -182,6 +182,23 @@ class Organization(me.Document):
         user_ids = [endorser.user.id for endorser in endorsers_in_org]
         return models.User.objects(id__in=user_ids)
 
+    def get_heads(self):
+        endorsers_in_org = models.OrganizationUserRole.objects(
+            organization=self, roles__in=["head"], status="active"
+        )
+        user_ids = [endorser.user.id for endorser in endorsers_in_org]
+        return models.User.objects(id__in=user_ids)
+
+    def get_heads_by_division(self, division):
+        if not division:
+            return self.get_heads()
+
+        head_roles = models.OrganizationUserRole.objects(
+            organization=self, division=division, roles__in=["head"], status="active"
+        )
+        user_ids = [role.user.id for role in head_roles if role.user]
+        return models.User.objects(id__in=user_ids)
+
     def get_default_email_template(self, email_type):
         try:
             email_template = models.EmailTemplate.objects(

@@ -345,6 +345,18 @@ def create_or_edit(requisition_procurement_id):
 
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.send_emails_to_head.send_email_to_head,
+        args=(
+            requisition,
+            current_user.id,
+            current_app.config,
+            organization,
+        ),
+        timeout=600,
+        job_timeout=600,
+    )
+    print("=====> Header email job submitted", job.get_id())
     return redirect(
         url_for(
             "procurement.requisitions.renewal_requested",
@@ -503,26 +515,6 @@ def requisition_action(requisition_id):
         )
         print("=====> Reject email job submitted", job.get_id())
 
-        return redirect(
-            url_for(
-                "procurement.requisitions.renewal_requested",
-                organization_id=current_user.user_setting.current_organization.id,
-            )
-        )
-
-    # ถ้าทุก role approve ครบ เปลี่ยนสถานะเป็น complete และส่ง job
-    if required_roles.issubset(approved_roles):
-        requisition.status = "complete"
-        requisition.last_updated_by = current_user._get_current_object()
-        requisition.save()
-
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.requisition_send_emails.requisition_send_emails,
-            args=(requisition, current_app.config),
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> submit", job.get_id())
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
