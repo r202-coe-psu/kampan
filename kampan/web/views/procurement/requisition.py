@@ -526,6 +526,14 @@ def requisition_action(requisition_id):
         requisition.status = "complete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
+        requisition_progress = models.RequisitionProgress(
+            requisition=requisition,
+            purchaser=requisition.purchaser,
+            progress=[],
+            updated_date=datetime.datetime.now(),
+            updated_by=current_user._get_current_object(),
+        )
+        requisition_progress.save()
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
