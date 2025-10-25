@@ -43,7 +43,8 @@
 
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text font-medium">{{ form.start_date.label.text }}</span>
+                        <span class="label-text font-medium">{{ form.start_date.label.text }} <span
+                                class="text-red-500">*</span></span>
                     </label>
                     {{ form.start_date(class="input input-bordered w-full", type="date") }}
                 </div>
@@ -95,32 +96,37 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.product_name.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.product_name.label.text }} <span
+                                        class="text-red-500">*</span></span>
                             </label>
                             {{ item_form.product_name(class="input input-bordered input-sm w-full") }}
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.category.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.category.label.text }} <span
+                                        class="text-red-500">*</span></span>
                             </label>
                             {{ item_form.category(class="select select-bordered select-sm w-full") }}
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.quantity.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.quantity.label.text }} <span
+                                        class="text-red-500">*</span></span>
                             </label>
                             {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1")
                             }}
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.currency.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.currency.label.text }} <span
+                                        class="text-red-500">*</span></span>
                             </label>
                             {{ item_form.currency(class="input input-bordered input-sm w-full") }}
                         </div>
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-xs">{{ item_form.amount.label.text }}</span>
+                                <span class="label-text text-xs">{{ item_form.amount.label.text }} <span
+                                        class="text-red-500">*</span></span>
                             </label>
                             {{ item_form.amount(class="input input-bordered input-sm w-full") }}
                         </div>
@@ -132,7 +138,7 @@
 
         <!-- Committee Section -->
         <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">คณะกรรมการ</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">คณะกรรมการ<span class="text-red-500">*</span></h2>
             <div class="mb-6">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 text-sm text-gray-700">
                     <strong class="block mb-2 text-yellow-800">หมายเหตุในการเลือกกรรมการ</strong>
@@ -299,13 +305,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">ชื่อรายการ</span>
+                            <span class="label-text text-xs">ชื่อรายการ <span class="text-red-500">*</span></span>
                         </label>
                         <input type="text" name="items-${itemIndex}-product_name" class="input input-bordered input-sm w-full" required>
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">หมวดหมู่</span>
+                            <span class="label-text text-xs">หมวดหมู่ <span class="text-red-500">*</span></span>
                         </label>
                         <select name="items-${itemIndex}-category" class="select select-bordered select-sm w-full" required>
                             ${categoryOptionsHtml}
@@ -313,19 +319,19 @@
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">จำนวน</span>
+                            <span class="label-text text-xs">จำนวน <span class="text-red-500">*</span></span>
                         </label>
                         <input type="number" name="items-${itemIndex}-quantity" class="input input-bordered input-sm w-full" min="1" required>
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">หน่วยเงิน</span>
+                            <span class="label-text text-xs">หน่วยเงิน <span class="text-red-500">*</span></span>
                         </label>
                         <input type="text" name="items-${itemIndex}-currency" class="input input-bordered input-sm w-full" required>
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">จำนวนเงิน (บาท)</span>
+                            <span class="label-text text-xs">จำนวนเงิน (บาท) <span class="text-red-500">*</span></span>
                         </label>
                         <input type="number" name="items-${itemIndex}-amount" class="input input-bordered input-sm w-full" step="0.01" required>
                     </div>
