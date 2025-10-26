@@ -20,7 +20,7 @@ from ... import redis_rq
 import datetime
 
 
-module = Blueprint("requisition_progress", __name__, url_prefix="/requisition_progress")
+module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_timeline")
 
 PROGRESS_STATUS_ORDER = [
     "request_created",
@@ -55,39 +55,39 @@ def index():
     ).first()
     is_admin = current_user.has_organization_roles("admin")
     if is_admin:
-        requisition_progress = models.RequisitionProgress.objects().order_by(
+        requisition_timeline = models.RequisitionProgress.objects().order_by(
             "-updated_date"
         )
     if not is_admin:
-        requisition_progress = models.RequisitionProgress.objects(
+        requisition_timeline = models.RequisitionProgress.objects(
             purchaser=org_user_role
         ).order_by("-updated_date")
 
     return render_template(
-        "procurement/requisition_progress/index.html",
-        requisition_progress_list=requisition_progress,
+        "procurement/requisition_timeline/index.html",
+        requisition_timeline_list=requisition_timeline,
         organization=organization,
     )
 
 
-@module.route("/<requisition_progress_id>")
+@module.route("/<requisition_timeline_id>")
 @login_required
-def view(requisition_progress_id):
+def view(requisition_timeline_id):
     organization = current_user.user_setting.current_organization
     is_admin = current_user.has_organization_roles("admin")
 
-    requisition_progress = models.RequisitionProgress.objects(
-        id=requisition_progress_id
+    requisition_timeline = models.RequisitionProgress.objects(
+        id=requisition_timeline_id
     ).first()
 
     current_status = None
-    if requisition_progress.progress != []:
-        current_status = requisition_progress.progress[-1].progress_status
-    next_status = get_next_status(requisition_progress.progress)
+    if requisition_timeline.progress != []:
+        current_status = requisition_timeline.progress[-1].progress_status
+    next_status = get_next_status(requisition_timeline.progress)
 
     return render_template(
-        "procurement/requisition_progress/view.html",
-        requisition_progress=requisition_progress,
+        "procurement/requisition_timeline/view.html",
+        requisition_timeline=requisition_timeline,
         is_admin=is_admin,
         current_status=current_status,
         next_status=next_status if next_status else None,
@@ -96,22 +96,22 @@ def view(requisition_progress_id):
     )
 
 
-@module.route("/<requisition_progress_id>/edit", methods=["GET", "POST"])
+@module.route("/<requisition_timeline_id>/edit", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
-def add_progress(requisition_progress_id):
+def add_progress(requisition_timeline_id):
     organization = current_user.user_setting.current_organization
-    requisition_progress = models.RequisitionProgress.objects(
-        id=requisition_progress_id
+    requisition_timeline = models.RequisitionProgress.objects(
+        id=requisition_timeline_id
     ).first()
-    if not requisition_progress:
+    if not requisition_timeline:
         abort(404)
 
-    next_status = get_next_status(requisition_progress.progress)
+    next_status = get_next_status(requisition_timeline.progress)
     if next_status is None:
         return redirect(
             url_for(
-                "requisition_progress.view",
-                requisition_progress_id=requisition_progress.id,
+                "requisition_timeline.view",
+                requisition_timeline_id=requisition_timeline.id,
                 organization=organization,
                 error="ความคืบหน้าเสร็จสิ้นแล้ว ไม่สามารถเพิ่มขั้นตอนได้",
             )
@@ -125,15 +125,15 @@ def add_progress(requisition_progress_id):
             last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
             user_agent=request.headers.get("User-Agent"),
         )
-        requisition_progress.progress.append(new_progress)
-        requisition_progress.updated_by = current_user._get_current_object()
-        requisition_progress.updated_date = datetime.datetime.now()
-        requisition_progress.save()
+        requisition_timeline.progress.append(new_progress)
+        requisition_timeline.updated_by = current_user._get_current_object()
+        requisition_timeline.updated_date = datetime.datetime.now()
+        requisition_timeline.save()
 
         return redirect(
             url_for(
-                "requisition_progress.view",
-                requisition_progress_id=requisition_progress.id,
+                "requisition_timeline.view",
+                requisition_timeline_id=requisition_timeline.id,
                 organization=organization,
             )
         )

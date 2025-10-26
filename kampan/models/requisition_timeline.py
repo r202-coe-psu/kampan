@@ -27,7 +27,7 @@ class Progress(me.EmbeddedDocument):
 
 
 class RequisitionProgress(me.Document):
-    meta = {"collection": "requisition_progress"}
+    meta = {"collection": "requisition_timeline"}
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
