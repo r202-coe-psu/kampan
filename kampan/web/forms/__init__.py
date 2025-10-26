@@ -21,4 +21,4 @@ from . import procurement
 from . import mas
 from . import requisitions
 from . import upload_files
-from . import requisition_progress
+from . import requisition_timeline
