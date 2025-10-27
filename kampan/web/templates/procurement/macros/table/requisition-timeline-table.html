@@ -144,18 +144,17 @@
             </div>
         </div>
     {% endif %}
-{% endmacro %}
-<script>
-
-function toggleSubtable(itemId) {
-    var subtable = document.getElementById('subtable-' + itemId);
-    var icon = document.getElementById('toggle-icon-' + itemId);
-    if (subtable.style.display === 'none') {
-        subtable.style.display = '';
-        icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
-    } else {
-        subtable.style.display = 'none';
-        icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+    <script>
+    function toggleSubtable(itemId) {
+        var subtable = document.getElementById('subtable-' + itemId);
+        var icon = document.getElementById('toggle-icon-' + itemId);
+        if (subtable.style.display === 'none') {
+            subtable.style.display = '';
+            icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
+        } else {
+            subtable.style.display = 'none';
+            icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+        }
     }
-}
-</script>
+    </script>
+{% endmacro %}
