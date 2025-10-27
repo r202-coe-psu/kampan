@@ -90,7 +90,7 @@ def detail(organization_id):
 @acl.roles_required("admin")
 def add_member(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
-    form = forms.organizations.OrgnaizationAddMemberForm()
+    form = forms.organizations.OrganizationAddMemberForm()
     users_in_organization = organization.get_distinct_users()
     if users_in_organization:
         form.members.choices = [
@@ -111,7 +111,6 @@ def add_member(organization_id):
         user = models.User.objects(id=user_id).first()
         user.user_setting.current_organization = organization
         user.save()
-            
 
         org_user = models.OrganizationUserRole(
             organization=organization,

@@ -50,7 +50,7 @@ def detail(organization_id):
 @acl.organization_roles_required("admin")
 def add_member(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
-    form = forms.organizations.OrgnaizationAddMemberForm()
+    form = forms.organizations.OrganizationAddMemberForm()
     users_in_organization = organization.get_distinct_users()
     if users_in_organization:
         form.members.choices = [
@@ -85,6 +85,7 @@ def add_member(organization_id):
         division=models.Division.objects(
             id=form.division.data, status="active"
         ).first(),
+        appointment=form.appointment.data,
         added_by=current_user._get_current_object(),
         last_modifier=current_user._get_current_object(),
         last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),

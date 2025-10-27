@@ -32,9 +32,6 @@
   <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
     {{ form.hidden_tag() }}
     {{ renderer.render_select_field(form.members) }}
-    {{ renderer.render_field(form.first_name) }}
-    {{ renderer.render_field(form.last_name) }}
-    {{ renderer.render_field(form.email) }}
     {{ renderer.render_select_field(form.division) }}
     {{ renderer.render_multiple_select_field(form.roles) }}
     {{ renderer.render_field(form.appointment) }}
