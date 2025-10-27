@@ -44,49 +44,62 @@ def get_next_status(progress_list):
             return None
 
 
+# สําหรับกรอง id ของ requisition สําหรับ progress ล่าสุด
+def filtered_requisition_timeline_by_progress(requisition_timeline, progress):
+    filtered_timelines = []
+    for timeline in requisition_timeline:
+        if timeline.progress and len(timeline.progress) > 0:
+            latest_status = timeline.progress[-1].progress_status
+            if latest_status == progress:
+                filtered_timelines.append(timeline)
+    return filtered_timelines
+
+
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
+    # filter zone
     page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=8, type=int)
+    per_page = request.args.get("per_page", default=1, type=int)
     progress = request.args.get("progress", default=None, type=str)
-    if progress:
-        # query progress ล่าสุด
-        pipeline = [
-            {
-                "$addFields": {
-                    "last_progress_status": {
-                        "$arrayElemAt": ["$progress.progress_status", -1]
-                    }
-                }
-            },
-            {"$match": {"last_progress_status": progress}},
-        ]
-        query = models.RequisitionTimeLine.objects.aggregate(*pipeline)
-    else:
-        query = models.RequisitionTimeLine.objects
+
+    # query zone
+    progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = current_user.user_setting.current_organization
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
+    # query เเรกของ requisition timeline
+    requisition_timeline = models.RequisitionTimeLine.objects.order_by("-updated_date")
     is_admin = current_user.has_organization_roles("admin")
-    if is_admin:
-        requisition_timeline = query.order_by("-updated_date")
+
+    if progress:
+        # กรองโดยตรวจสอบ progress ล่าสุด
+        filtered_timelines = [
+            rt.id
+            for rt in filtered_requisition_timeline_by_progress(
+                requisition_timeline, progress
+            )
+        ]
+        # สร้าง query ใหม่จาก IDs ที่กรองแล้ว
+        requisition_timeline = models.RequisitionTimeLine.objects(
+            id__in=filtered_timelines
+        ).order_by("-updated_date")
+
+    # เช็คสิทธิ์ถ้าไม่ใช่ admin ให้กรองเฉพาะรายการของผู้ใช้คนนั้น
     if not is_admin:
-        requisition_timeline = query.filter(purchaser=org_user_role).order_by(
-            "-updated_date"
-        )
+        requisition_timeline = requisition_timeline.filter(purchaser=org_user_role)
 
     paginated_requisition_timeline = Pagination(
-        requisition_timeline, page=page, per_page=per_page
+        requisition_timeline,
+        page=page,
+        per_page=per_page,
     )
-    progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
-    print(progress_choices)
     return render_template(
         "/procurement/requisitions/requisition_timeline.html",
+        paginated_requisition_timeline=paginated_requisition_timeline,
         requisition_timeline_list=requisition_timeline,
         organization=organization,
-        paginated_requisition_timeline=paginated_requisition_timeline,
         progress_choices=progress_choices,
         is_admin=is_admin,
     )
