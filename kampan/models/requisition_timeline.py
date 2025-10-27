@@ -19,17 +19,19 @@ class Progress(me.EmbeddedDocument):
         max_length=20,
         choices=PROGRESS_STATUS_CHOICES,
     )
-    issued_by = me.ReferenceField("User")
-    issued_date = me.ReferenceField("User", dbref=True)
+    created_date = me.ReferenceField("User", dbref=True)
+    created_by = me.ReferenceField("User", dbref=True)
     last_ip_address = me.StringField()
     user_agent = me.StringField()
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
-class RequisitionProgress(me.Document):
+class RequisitionTimeLine(me.Document):
     meta = {"collection": "requisition_timeline"}
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_by = me.ReferenceField("User", dbref=True)
+    last_updated_by = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    created_by = me.ReferenceField("User", dbref=True)

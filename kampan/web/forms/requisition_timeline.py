@@ -4,8 +4,8 @@ from wtforms import fields, Form, validators
 
 from kampan import models
 
-BaseRequisitionProgressForm = model_form(
-    models.RequisitionProgress,
+BaseRequisitionTimeLineForm = model_form(
+    models.RequisitionTimeLine,
     FlaskForm,
     exclude=[
         "requisition",
@@ -16,5 +16,5 @@ BaseRequisitionProgressForm = model_form(
 )
 
 
-class RequisitionProgressForm(BaseRequisitionProgressForm):
+class RequisitionTimelineForm(BaseRequisitionTimeLineForm):
     pass

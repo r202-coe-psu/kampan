@@ -526,12 +526,14 @@ def requisition_action(requisition_id):
         requisition.status = "complete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
-        requisition_timeline = models.RequisitionProgress(
+        requisition_timeline = models.RequisitionTimeLine(
             requisition=requisition,
             purchaser=requisition.purchaser,
             progress=[],
             updated_date=datetime.datetime.now(),
-            updated_by=current_user._get_current_object(),
+            last_updated_by=current_user._get_current_object(),
+            created_date=datetime.datetime.now(),
+            created_by=current_user._get_current_object(),
         )
         requisition_timeline.save()
         return redirect(
@@ -561,22 +563,28 @@ def requisition_action(requisition_id):
 def requisition_timeline():
     organization = current_user.user_setting.current_organization
 
-    requisitions = models.Requisition.objects(status="progress").order_by("-requisition_code")
+    requisitions = models.Requisition.objects(status="complete").order_by(
+        "-requisition_code"
+    )
 
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
 
-    is_admin_or_head = current_user.has_organization_roles("admin") or current_user.has_organization_roles("head")
+    is_admin_or_head = current_user.has_organization_roles(
+        "admin"
+    ) or current_user.has_organization_roles("head")
     is_supervisor = current_user.has_organization_roles("supervisor supplier")
     is_staff = current_user.has_organization_roles("staff")
 
     if is_staff and not (is_admin_or_head or is_supervisor):
-        requisitions = requisitions.filter(created_by=current_user._get_current_object())
+        requisitions = requisitions.filter(
+            created_by=current_user._get_current_object()
+        )
     elif is_supervisor and not is_admin_or_head:
         requisitions = requisitions.filter(supervisor=org_user_role)
     # admin/head see all
-
+    print(requisitions.count())
     mas_list = models.MAS.objects()
     return render_template(
         "/procurement/requisitions/requisition_timeline.html",

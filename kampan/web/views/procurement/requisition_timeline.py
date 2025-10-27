@@ -55,11 +55,11 @@ def index():
     ).first()
     is_admin = current_user.has_organization_roles("admin")
     if is_admin:
-        requisition_timeline = models.RequisitionProgress.objects().order_by(
+        requisition_timeline = models.RequisitionTimeLine.objects().order_by(
             "-updated_date"
         )
     if not is_admin:
-        requisition_timeline = models.RequisitionProgress.objects(
+        requisition_timeline = models.RequisitionTimeLine.objects(
             purchaser=org_user_role
         ).order_by("-updated_date")
 
@@ -76,7 +76,7 @@ def view(requisition_timeline_id):
     organization = current_user.user_setting.current_organization
     is_admin = current_user.has_organization_roles("admin")
 
-    requisition_timeline = models.RequisitionProgress.objects(
+    requisition_timeline = models.RequisitionTimeLine.objects(
         id=requisition_timeline_id
     ).first()
 
@@ -100,7 +100,7 @@ def view(requisition_timeline_id):
 @acl.organization_roles_required("admin")
 def add_progress(requisition_timeline_id):
     organization = current_user.user_setting.current_organization
-    requisition_timeline = models.RequisitionProgress.objects(
+    requisition_timeline = models.RequisitionTimeLine.objects(
         id=requisition_timeline_id
     ).first()
     if not requisition_timeline:
@@ -119,14 +119,14 @@ def add_progress(requisition_timeline_id):
     if request.method == "POST":
         new_progress = models.Progress(
             progress_status=next_status,
-            issued_by=current_user._get_current_object(),
-            issued_date=datetime.datetime.now(),
-            timestamp=datetime.datetime.now(),
+            created_by=current_user._get_current_object(),
+            created_date=datetime.datetime.now(),
             last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
             user_agent=request.headers.get("User-Agent"),
+            timestamp=datetime.datetime.now(),
         )
         requisition_timeline.progress.append(new_progress)
-        requisition_timeline.updated_by = current_user._get_current_object()
+        requisition_timeline.last_updated_by = current_user._get_current_object()
         requisition_timeline.updated_date = datetime.datetime.now()
         requisition_timeline.save()
 
