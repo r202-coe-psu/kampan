@@ -16,7 +16,6 @@ from flask_mongoengine import Pagination
 from kampan.web import forms, acl
 from kampan import models, utils
 from ... import redis_rq
-
 import datetime
 
 
@@ -48,55 +47,52 @@ def get_next_status(progress_list):
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=8, type=int)
+    progress = request.args.get("progress", default=None, type=str)
+    if progress:
+        # query progress ล่าสุด
+        pipeline = [
+            {
+                "$addFields": {
+                    "last_progress_status": {
+                        "$arrayElemAt": ["$progress.progress_status", -1]
+                    }
+                }
+            },
+            {"$match": {"last_progress_status": progress}},
+        ]
+        query = models.RequisitionTimeLine.objects.aggregate(*pipeline)
+    else:
+        query = models.RequisitionTimeLine.objects
     organization = current_user.user_setting.current_organization
-
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
     is_admin = current_user.has_organization_roles("admin")
     if is_admin:
-        requisition_timeline = models.RequisitionTimeLine.objects().order_by(
+        requisition_timeline = query.order_by("-updated_date")
+    if not is_admin:
+        requisition_timeline = query.filter(purchaser=org_user_role).order_by(
             "-updated_date"
         )
-    if not is_admin:
-        requisition_timeline = models.RequisitionTimeLine.objects(
-            purchaser=org_user_role
-        ).order_by("-updated_date")
 
+    paginated_requisition_timeline = Pagination(
+        requisition_timeline, page=page, per_page=per_page
+    )
+    progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
+    print(progress_choices)
     return render_template(
-        "procurement/requisition_timeline/index.html",
+        "/procurement/requisitions/requisition_timeline.html",
         requisition_timeline_list=requisition_timeline,
         organization=organization,
-    )
-
-
-@module.route("/<requisition_timeline_id>")
-@login_required
-def view(requisition_timeline_id):
-    organization = current_user.user_setting.current_organization
-    is_admin = current_user.has_organization_roles("admin")
-
-    requisition_timeline = models.RequisitionTimeLine.objects(
-        id=requisition_timeline_id
-    ).first()
-
-    current_status = None
-    if requisition_timeline.progress != []:
-        current_status = requisition_timeline.progress[-1].progress_status
-    next_status = get_next_status(requisition_timeline.progress)
-
-    return render_template(
-        "procurement/requisition_timeline/view.html",
-        requisition_timeline=requisition_timeline,
+        paginated_requisition_timeline=paginated_requisition_timeline,
+        progress_choices=progress_choices,
         is_admin=is_admin,
-        current_status=current_status,
-        next_status=next_status if next_status else None,
-        progress_status_order=PROGRESS_STATUS_ORDER,
-        organization=organization,
     )
 
 
-@module.route("/<requisition_timeline_id>/edit", methods=["GET", "POST"])
+@module.route("/<requisition_timeline_id>/add_progress", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def add_progress(requisition_timeline_id):
     organization = current_user.user_setting.current_organization
