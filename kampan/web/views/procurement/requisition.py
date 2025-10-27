@@ -526,7 +526,7 @@ def requisition_action(requisition_id):
         requisition.status = "complete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
-        requisition_timeline = models.RequisitionTimeLine(
+        requisition_timeline = models.RequisitionTimeline(
             requisition=requisition,
             purchaser=requisition.purchaser,
             progress=[],

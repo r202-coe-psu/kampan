@@ -59,7 +59,7 @@ def filtered_requisition_timeline_by_progress(requisition_timeline, progress):
 @login_required
 def index():
     page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
     progress = request.args.get("progress", default=None, type=str)
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
@@ -68,7 +68,7 @@ def index():
         user=current_user._get_current_object()
     ).first()
     # query เเรกของ requisition timeline
-    requisition_timeline = models.RequisitionTimeLine.objects.order_by("-updated_date")
+    requisition_timeline = models.RequisitionTimeline.objects.order_by("-updated_date")
     is_admin = current_user.has_organization_roles("admin")
 
     if progress:
@@ -80,7 +80,7 @@ def index():
             )
         ]
         # สร้าง query ใหม่จาก IDs ที่กรองแล้ว
-        requisition_timeline = models.RequisitionTimeLine.objects(
+        requisition_timeline = models.RequisitionTimeline.objects(
             id__in=filtered_timelines
         ).order_by("-updated_date")
 
@@ -100,47 +100,43 @@ def index():
         organization=organization,
         progress_choices=progress_choices,
         is_admin=is_admin,
+        PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,  # Add this line
     )
 
 
 @module.route("/<requisition_timeline_id>/add_progress", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def add_progress(requisition_timeline_id):
-    organization = current_user.user_setting.current_organization
-    requisition_timeline = models.RequisitionTimeLine.objects(
-        id=requisition_timeline_id
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
     ).first()
-    if not requisition_timeline:
-        abort(404)
 
-    next_status = get_next_status(requisition_timeline.progress)
-    if next_status is None:
-        return redirect(
-            url_for(
-                "requisition_timeline.view",
-                requisition_timeline_id=requisition_timeline.id,
-                organization=organization,
-                error="ความคืบหน้าเสร็จสิ้นแล้ว ไม่สามารถเพิ่มขั้นตอนได้",
-            )
-        )
-    if request.method == "POST":
-        new_progress = models.Progress(
-            progress_status=next_status,
+    requisition_timeline = models.RequisitionTimeline.objects.get(
+        id=requisition_timeline_id
+    )
+
+    # Get progress value from form
+    new_progress_status = request.form.get("progress")
+
+    if new_progress_status:
+        # Create a new Progress embedded document
+        progress_entry = models.Progress(
+            progress_status=new_progress_status,
             created_by=current_user._get_current_object(),
-            created_date=datetime.datetime.now(),
-            last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+            last_ip_address=request.remote_addr,
             user_agent=request.headers.get("User-Agent"),
             timestamp=datetime.datetime.now(),
         )
-        requisition_timeline.progress.append(new_progress)
+        # Append to the progress list
+        requisition_timeline.progress.append(progress_entry)
         requisition_timeline.last_updated_by = current_user._get_current_object()
         requisition_timeline.updated_date = datetime.datetime.now()
         requisition_timeline.save()
 
-        return redirect(
-            url_for(
-                "requisition_timeline.view",
-                requisition_timeline_id=requisition_timeline.id,
-                organization=organization,
-            )
+    return redirect(
+        url_for(
+            "procurement.requisition_timeline.index",
+            organization_id=organization.id,
         )
+    )
