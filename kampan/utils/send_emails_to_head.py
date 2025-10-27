@@ -90,8 +90,6 @@ def send_email_to_head(
 
         email_subject = Template(email_subject_template).render(text_format)
         email_body = Template(email_body_template).render(text_format)
-        print(email_subject)
-        print(email_body)
 
         for head in all_heads:
             if not head.email:
