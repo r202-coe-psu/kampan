@@ -473,6 +473,18 @@ def requisition_action(requisition_id):
             ).first()
             if supervisor_obj:
                 requisition.supervisor = supervisor_obj
+                job = redis_rq.redis_queue.queue.enqueue(
+                    utils.send_email_to_supervisor_supplier.send_email_to_supervisor_supplier,
+                    args=(
+                        requisition,
+                        current_app.config,
+                        supervisor_obj,
+                        organization,
+                    ),
+                    timeout=600,
+                    job_timeout=600,
+                )
+                print("=====> Supervisor email job submitted", job.get_id())
 
     approval = models.requisitions.ApprovalHistory(
         approver=member_obj,
