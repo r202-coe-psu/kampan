@@ -1,178 +1,45 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/procurement/macros/table/requisition-timeline-table.html' as table_macros %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 {% block title %}รายการขอซื้อขอจ้างกำลังดำเนินการ{% endblock %}
 {% block dashboard_title %}รายการขอซื้อขอจ้าง{% endblock %}
 {% block breadcrumbs %}
     {{ RenderBreadcrumb([
-        ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisitions.index',
+        ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisition_timeline.index',
         organization_id=organization.id) ), ("รายการขอซื้อขอจ้าง", None) ]) }}
 {% endblock %}
 {% block content %}
-    <div class="container mx-auto px-4 py-6">
-        <div class="mb-4 flex justify-end"></div>
-        {% if procurements|length == 0 %}
-            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
-                <div class="flex flex-col items-center justify-center text-center">
-                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                        <i class="ph ph-file-plus text-4xl text-gray-500"></i>
+    <div class="container mx-auto px-4 py-2">
+        <div class="mt-12">
+            <div class="flex lg:flex-col items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-blue-600 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="ph ph-clipboard-text text-blue-600 text-lg"></i>
                     </div>
-                    <h4 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีรายการที่กำลังดำเนินการต่ออายุ</h4>
-                    <p class="text-gray-600 max-w-md mb-6">เมื่อมีอนุมัติรายการที่กำลังดำเนินการต่ออายุ รายการจะปรากฏที่นี่</p>
-                    <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        <i class="ph ph-info"></i>
-                        <span>รายละเอียดรายการขอซื้อขอจ้าง</span>
-                    </div>
+                    รายการกำลังดำเนินการขอต่ออายุ
+                </h3>
+                <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
+                    <span class="text-blue-700 font-semibold text-sm">{{ requisition_timeline_list|length }} รายการ</span>
                 </div>
             </div>
-        {% else %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {% for item in procurements %}
-                    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
-                        <!-- Card Header -->
-                        <div class="bg-gradient-to-r px-4 py-3 border-b">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm">
-                                        {{ loop.index + (paginated_procurements.page - 1) * paginated_procurements.per_page }}
-                                    </div>
-                                    <span class="text-xs text-gray-600">รายการที่ {{ loop.index + (paginated_procurements.page - 1)
-                                    * paginated_procurements.per_page }}</span>
-                                </div>
-                                {% if item.end_date %}
-                                    <div class="text-center">
-                                        <div class="text-xs font-medium text-gray-500 mb-1">เหลือเวลา</div>
-                                        <div class="countdown-pulse"
-                                             id="countdown-{{ item.id }}"
-                                             data-end-date="{{ item.end_date.strftime("%Y-%m-%dT00:00:00Z") }}"></div>
-                                        <!-- Progress bar for visual remaining time (updated by JS) -->
-                                        <div class="w-28 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden mx-auto">
-                                            <div id="progress-{{ item.id }}" class="h-full bg-emerald-400 w-0"></div>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            </div>
+            <div class="mb-4 flex justify-end"></div>
+            {% if requisition_timeline_list|length == 0 %}
+                <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                            <i class="ph ph-file-plus text-4xl text-gray-500"></i>
                         </div>
-                        <!-- Card Body -->
-                        <div class="p-4 space-y-4">
-                            <!-- Product Info -->
-                            <div class="bg-gray-50 rounded-lg p-3">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <i class="ph ph-tag text-blue-500 text-sm"></i>
-                                    <span class="font-semibold text-gray-800 text-sm">{{ item.product_number }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-xs text-gray-600">
-                                    <i class="ph ph-barcode"></i>
-                                    <span>{{ item.asset_code }}</span>
-                                </div>
-                            </div>
-                            <!-- Title -->
-                            <div style="min-height: 48px;">
-                                <h3 class="font-bold text-gray-800 text-lg leading-tight line-clamp-2"
-                                    title="{{ item.name }}">{{ item.name }}</h3>
-                            </div>
-                            <!-- Date Range -->
-                            <div class="bg-gradient-to-r from-emerald-50 to-rose-50 rounded-lg p-3">
-                                <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div class="text-center">
-                                        <div class="text-gray-600 mb-1 font-medium">เริ่มต้น</div>
-                                        <div class="font-bold text-emerald-700 flex items-center justify-center gap-1">
-                                            <i class="ph ph-play text-xs"></i>
-                                            {{ item.start_date.strftime("%d/%m/%Y") }}
-                                        </div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-gray-600 mb-1 font-medium">สิ้นสุด</div>
-                                        <div class="font-bold text-rose-700 flex items-center justify-center gap-1">
-                                            <i class="ph ph-stop text-xs"></i>
-                                            {{ item.end_date.strftime("%d/%m/%Y") }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Category and Amount -->
-                            <div class="flex justify-between items-center">
-                                {% set category_badge = {
-                                                                    'ซอฟต์แวร์': 'bg-blue-100 text-blue-800 border border-blue-200',
-                                                                    'ครุภัณฑ์': 'bg-amber-100 text-amber-800 border border-amber-200',
-                                                                    'จ้างเหมาบริการ': 'bg-purple-100 text-purple-800 border border-purple-200',
-                                                                    'วัสดุ': 'bg-gray-100 text-gray-800 border border-gray-200'
-                                                                }.get(item.get_category_display(), 'bg-gray-100 text-gray-800 border border-gray-200') %}
-                                <div class="px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">{{ item.get_category_display() }}</div>
-                                <div class="text-right">
-                                    <div class="text-xl font-bold text-emerald-600">฿{{ "{:,.2f}".format(item.amount) }}</div>
-                                </div>
-                            </div>
-                            <!-- Company -->
-                            <div class="border-t pt-3">
-                                <div class="flex items-center gap-2 mb-3">
-                                    <i class="ph ph-buildings text-gray-500"></i>
-                                    <span class="font-semibold text-gray-700 text-sm">{{ item.company }}</span>
-                                </div>
-                                <!-- Responsible Users -->
-                                <div>
-                                    <div class="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                                        <i class="ph ph-user"></i>
-                                        ผู้รับผิดชอบ:
-                                    </div>
-                                    <div class="flex flex-wrap gap-1">
-                                        {% if item.responsible_by %}
-                                            {% for u in item.responsible_by %}
-                                                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full border border-blue-200">
-                                                    {{ u.display_user_fullname() }}
-                                                </span>
-                                            {% endfor %}
-                                        {% else %}
-                                            <span class="text-gray-400 text-xs italic">ไม่ระบุ</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Card Footer -->
-                        <div class="bg-gray-50 px-4 py-3 border-t">
-                            <div class="flex gap-2">
-                                <a href="{{ url_for('procurement.requisitions.renewal_requested', requisition_procurement_id=item.id) }}"
-                                   class="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
-                                    <i class="ph ph-check"></i>
-                                    ต่ออายุ
-                                </a>
-                                <button onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
-                                        class="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
-                                    <i class="ph ph-x"></i>
-                                    ไม่ต่ออายุ
-                                </button>
-                            </div>
+                        <h4 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีรายการที่กำลังดำเนินการต่ออายุ</h4>
+                        <p class="text-gray-600 max-w-md mb-6">เมื่อมีอนุมัติรายการที่กำลังดำเนินการต่ออายุ รายการจะปรากฏที่นี่</p>
+                        <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                            <i class="ph ph-info"></i>
+                            <span>รายละเอียดรายการขอซื้อขอจ้าง</span>
                         </div>
                     </div>
-                    <!-- Modal for each item -->
-                    <dialog id="delete_modal_{{ item.id }}" class="modal">
-                        <div class="modal-box">
-                            <h3 class="text-lg font-bold text-red-600 mb-4">
-                                <i class="ph ph-warning mr-2"></i>ยืนยันการไม่ต่ออายุ
-                            </h3>
-                            <p class="py-2">คุณต้องการทำให้รายการนี้ไม่ต่ออายุใช่หรือไม่?</p>
-                            <div class="bg-gray-100 p-3 rounded-lg mb-4">
-                                <p class="font-semibold">{{ item.name }}</p>
-                                <p class="text-sm text-gray-600">รหัส: {{ item.product_number }}</p>
-                            </div>
-                            <p class="text-sm text-red-600 mb-4">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
-                            <div class="modal-action">
-                                <form method="dialog">
-                                    <button class="btn btn-outline">ยกเลิก</button>
-                                </form>
-                                <a href="{{ url_for('procurement.requisitions.non_renewal', requisition_procurement_id=item.id) }}"
-                                   class="btn btn-error text-white">
-                                    <i class="ph ph-x mr-1"></i>ไม่ต่ออายุ
-                                </a>
-                            </div>
-                        </div>
-                        <form method="dialog" class="modal-backdrop">
-                            <button>close</button>
-                        </form>
-                    </dialog>
-                {% endfor %}
-            </div>
-        {% endif %}
-    </div>
-{% endblock %}
+                </div>
+            {% else %}
+                {{ table_macros.requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list, current_user,  organization) }}
+            {% endif %}
+        </div>
+    {% endblock %}

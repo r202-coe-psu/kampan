@@ -1,0 +1,161 @@
+{% macro requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list, current_user,  organization) %}
+    {% if requisition_timeline_list|length == 0 %}
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12">
+            <div class="flex flex-col items-center justify-center text-center">
+                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <i class="ph ph-file-plus text-4xl text-blue-500"></i>
+                </div>
+                <h4 class="text-xl font-semibold text-blue-700 mb-2">ยังไม่มีรายการที่ขอต่ออายุ</h4>
+                <p class="text-blue-600 max-w-md mb-6">เมื่อมีการขอต่ออายุครุภัณฑ์ รายการจะปรากฏที่นี่</p>
+                <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                    <i class="ph ph-info"></i>
+                    <span>รอการขอต่ออายุจากผู้ใช้งาน</span>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-blue-200">
+                    <thead>
+                        <tr class="text-center font-semibold text-base-content text-sm bg-blue-50 ">
+                            <th class="w-[5%]"></th>
+                            <th class=" py-4 w-[15%]">เลขที่</th>
+                            <!-- <th class="w-40">วันที่ต้องการใช้งาน</th>
+                            <th class="w-32">จำนวนเงินรวม</th>
+                            <th class="w-32">แนบเอกสาร</th>
+                            <th class="w-24">เอกสาร</th>
+                            <th class="w-20">สถานะล่าสุด</th> -->
+                            <th class="">ความคืบหน้า</th>
+                            {% if current_user.has_organization_roles( "admin") %}
+                                <th class="w-[15%]">เปลี่ยนสถานะ</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for item in paginated_requisition_timeline.items %}
+                            <tr class="{% if item.requisition.status == 'incomplete' %}bg-red-50{% elif item.status == 'complete' %}bg-green-50{% endif %}"
+                                id="toggle-btn-{{ item.requisition.id }}">
+                                <td class="px-2 py-3 whitespace-nowrap text-center ">
+                                    <button class="toggle-icon-btn bg-transparent border-none cursor-pointer "
+                                            onclick="toggleSubtable('{{ item.requisition.id }}')"
+                                            title="แสดง/ซ่อนรายละเอียด">
+                                        <span id="toggle-icon-{{ item.requisition.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
+                                    </button>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <div class="text-ms flex items-center gap-1 justify-center">
+                                        <i class="ph ph-barcode mr-1"></i>{{ item.requisition.requisition_code }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <div class="text-ms flex  items-center justify-between">
+                                        <span class="flex items-center justify-baseline">สถานะปัจจุบัน :
+                                            {% if item.progress|length() == 0 %}
+                                                ยังไม่ดำเนินการต่ออายุ
+                                            {% else %}
+                                            {{ item.progress }}</span>
+                                        {% endif %}
+                                        <ul class="text-sm -z-[100] steps">
+                                            <li class="step -z-[100] step-primary">step 1</li>
+                                            <li class="step -z-[100] step-primary">step 2</li>
+                                            <li class="step -z-[100]">step 3</li>
+                                            <li class="step -z-[100]">step 4</li>
+                                            <li class="step -z-[100]">step 5</li>
+                                            <li class="step -z-[100]">step 6</li>
+                                        </ul>
+                                    </div>
+                                </td>
+                                <!--<td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <div class="flex items-center gap-2 justify-center">
+                                        <i class="ph ph-calendar text-blue-500"></i>
+                                        <div>
+                                            <span class="text-sm font-medium text-blue-700"> {{ item.requisition.start_date.strftime("%d/%m/%Y") if item.requisition.start_date }} </span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <div class="text-lg font-bold text-blue-600">
+                                        ฿{{ "{:,.2f}".format(item.requisition.items | map(attribute='amount') | sum) if item.requisition.items else '0.00' }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    {% if item.requisition.tor_document.filename %}
+                                        <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.requisition.id, filename=item.requisition.tor_document.filename) }}" class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50" target="_blank">
+                                            <i class="ph ph-file-arrow-down"></i> ดูเอกสารทั้งหมด
+                                        </a>
+                                    {% else %}
+                                        <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    {% set document_url = url_for('procurement.requisitions.document',requisition_procurement_id=item.requisition.id) %}
+                                    <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50" onclick="printDocument('{{ document_url }}')">
+                                        <i class="ph ph-file-arrow-down"></i> ดูใบขอซื้อ
+                                    </button>
+                                </td>-->
+                                {% if current_user.has_organization_roles( "admin") %}
+                                    <td class="w-[15%]">
+                                        <div class="btn btn-primary">Update</div>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                            <tr id="subtable-{{ item.requisition.id }}">
+                                <td colspan="12" class="px-4 py-2 p-0 col-2">
+                                    <ul class="steps z-[20] steps-vertical">
+                                        <li class="step step-primary">จัดทำเอกสารขอซื้อขอจ้าง และรายงานผล</li>
+                                        <li class="step step-primary">ประสานงานกับร้านค้า/บริษัท</li>
+                                        <li class="step">ยืนยันการสั่งซื้อสั่งจ้าง</li>
+                                        <li class="step">รอส่งมอบพัสดุ</li>
+                                        <li class="step">ตรวจรับพัสดุ</li>
+                                        <li class="step">เบิกจ่าย</li>
+                                    </ul>
+                                    <div></div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+<script>
+function printDocument(url) {
+// สร้าง iframe แบบ dynamic
+var iframe = document.createElement('iframe');
+iframe.style.display = 'none';
+iframe.src = url;
+document.body.appendChild(iframe);
+iframe.onload = function () {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(function () {
+        document.body.removeChild(iframe);
+    }, 1000);
+};
+}
+
+function toggleSubtable(itemId) {
+var subtable = document.getElementById('subtable-' + itemId);
+var icon = document.getElementById('toggle-icon-' + itemId);
+if (subtable.style.display === 'none') {
+    subtable.style.display = '';
+    icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
+} else {
+    subtable.style.display = 'none';
+    icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+}
+}
+
+// ซ่อน subtable ทั้งหมดเริ่มต้น
+document.addEventListener('DOMContentLoaded', function () {
+document.querySelectorAll('[id^="subtable-"]').forEach(function (row) {
+    row.style.display = 'none';
+});
+document.querySelectorAll('[id^="toggle-icon-"]').forEach(function (icon) {
+    icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+});
+});
+</script>
+{% endmacro %}

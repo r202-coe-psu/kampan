@@ -58,11 +58,9 @@ def filtered_requisition_timeline_by_progress(requisition_timeline, progress):
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
-    # filter zone
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=1, type=int)
     progress = request.args.get("progress", default=None, type=str)
-
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = current_user.user_setting.current_organization
