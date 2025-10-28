@@ -2,12 +2,10 @@
   <label for="drawer-menu"
          aria-label="close sidebar"
          class="drawer-overlay h-full"></label>
-  <aside class="items-center min-h-screen px-2 z-50 space-y-1 bg-base-100 w-[280px] flex flex-col fixed left-0 top-0 h-screen">
-    <!-- Header Section - Fixed Height -->
+  <aside class="items-center min-h-screen px-2 z-[999] space-y-1 bg-base-100 w-[280px] flex flex-col lg:static lg:z-auto fixed left-0 top-0 h-screen">
     <div class="w-full py-3 px-2 border-b flex-shrink-0">
       <h1 class="text-tns-black font-bold text-2xl text-start select-none">DIIS INVENTORY</h1>
     </div>
-    <!-- Navigation Menu - Scrollable with proper constraints -->
     <nav class="menu w-full flex-1 overflow-y-auto overflow-x-hidden">
       <div class="space-y-1 w-full">
         {% if organization %}
@@ -218,7 +216,7 @@
     <div class="w-full px-2 py-3 border-t flex-shrink-0">
       <div class="flex items-center gap-3 w-full min-w-0">
         <div class="avatar placeholder flex-shrink-0">
-          <div class="bg-base-300 p-1.5 text-center align-middle text-base-content rounded-full w-10 h-10 flex items-center justify-center">
+          <div class="bg-base-300 text-base-content rounded-full w-10 h-10 flex items-center justify-center">
             <i class="ph ph-user text-sm"></i>
           </div>
         </div>
