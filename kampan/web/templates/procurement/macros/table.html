@@ -1,1121 +1,1126 @@
 {% macro render_products_table(procurements, current_user, organization, today) %}
-    <!-- Move all modals outside of table -->
-    {% for item in procurements %}
-        <dialog id="modal-{{ item.id }}" class="modal">
-            <div class="modal-box max-w-6xl w-11/12">
-                <!-- Header with gradient background -->
-                <!-- Dynamic Header based on payment status -->
-                {% set payment_status = item.get_current_payment_status(today) %}
-                {% set header_colors = {
-                    "paid": "from-green-500 to-green-600",
-                    "upcoming": "from-orange-500 to-orange-600",
-                    "overdue": "from-red-500 to-red-600"
-                } %}
-                {% set header_icons = {"paid": "ph-check-circle", "upcoming": "ph-clock", "overdue": "ph-warning-circle"} %}
-                <div class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-6 -m-6 mb-6 rounded-t-lg flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <div>
-                        <h3 class="font-bold text-xl flex items-center gap-2">
-                            <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-2xl"></i>
-                            รายละเอียดรายการขอซื้อขอจ้าง
-                            {% if payment_status == 'paid' %}
-                                <span class="badge badge-success badge-lg ml-2">ชำระครบแล้ว</span>
-                            {% elif payment_status == 'overdue' %}
-                                <span class="badge badge-error badge-lg ml-2">เลยกำหนด</span>
-                            {% elif payment_status == 'upcoming' %}
-                                <span class="badge badge-warning badge-lg ml-2">ใกล้ครบกำหนด</span>
-                            {% endif %}
-                        </h3>
-                        <p class="text-white/80 text-xl mt-1">เลขที่เบิกจ่าย: {{ item.product_number }}</p>
-                        <p class="text-white/80 text-xl mt-1">รหัสครุภัณฑ์: {{ item.asset_code }}</p>
-                    </div>
-                    <form method="dialog" class="mt-2 md:mt-0">
-                        <button class="btn btn-primary btn-lg bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white">
-                            <i class="ph ph-x mr-1"></i>
-                            ปิด
-                        </button>
-                    </form>
+<!-- Move all modals outside of table -->
+{% for item in procurements %}
+<dialog id="modal-{{ item.id }}" class="modal">
+    <div class="modal-box max-w-6xl w-11/12">
+        <!-- Header with gradient background -->
+        <!-- Dynamic Header based on payment status -->
+        {% set payment_status = item.get_current_payment_status(today) %}
+        {% set header_colors = {
+        "paid": "from-green-500 to-green-600",
+        "upcoming": "from-orange-500 to-orange-600",
+        "overdue": "from-red-500 to-red-600"
+        } %}
+        {% set header_icons = {"paid": "ph-check-circle", "upcoming": "ph-clock", "overdue": "ph-warning-circle"} %}
+        <div
+            class="bg-gradient-to-r {{ header_colors.get(payment_status, 'from-blue-500 to-blue-600') }} text-white p-6 -m-6 mb-6 rounded-t-lg flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+                <h3 class="font-bold text-xl flex items-center gap-2">
+                    <i class="{{ header_icons.get(payment_status, 'ph-file-text') }} text-2xl"></i>
+                    รายละเอียดรายการขอซื้อขอจ้าง
+                    {% if payment_status == 'paid' %}
+                    <span class="badge badge-success badge-lg ml-2">ชำระครบแล้ว</span>
+                    {% elif payment_status == 'overdue' %}
+                    <span class="badge badge-error badge-lg ml-2">เลยกำหนด</span>
+                    {% elif payment_status == 'upcoming' %}
+                    <span class="badge badge-warning badge-lg ml-2">ใกล้ครบกำหนด</span>
+                    {% endif %}
+                </h3>
+                <p class="text-white/80 text-xl mt-1">เลขที่เบิกจ่าย: {{ item.product_number }}</p>
+                <p class="text-white/80 text-xl mt-1">รหัสครุภัณฑ์: {{ item.asset_code }}</p>
+            </div>
+            <form method="dialog" class="mt-2 md:mt-0">
+                <button
+                    class="btn btn-primary btn-lg bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white">
+                    <i class="ph ph-x mr-1"></i>
+                    ปิด
+                </button>
+            </form>
+        </div>
+        <!-- Content organized in cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Image Card (show if image exists) -->
+                {% if item.image %}
+                <div class="md:col-span-2 card bg-base-100 border border-base-200 shadow-sm">
+                    <img src="{{ url_for('procurement.products.image', procurement_id=item.id, filename=item.image.filename if item.image.filename else 'image') }}"
+                        alt="รูปภาพประกอบ" class="rounded-lg w-full h-auto object-cover max-h-80 shadow-md mx-auto">
                 </div>
-                <!-- Content organized in cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Image Card (show if image exists) -->
-                        {% if item.image %}
-                            <div class="md:col-span-2 card bg-base-100 border border-base-200 shadow-sm">
-                                <img src="{{ url_for('procurement.products.image', procurement_id=item.id, filename=item.image.filename if item.image.filename else 'image') }}"
-                                     alt="รูปภาพประกอบ"
-                                     class="rounded-lg w-full h-auto object-cover max-h-80 shadow-md mx-auto">
+                {% endif %}
+                <!-- Basic Information Card -->
+                <div class="card bg-base-100 border border-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+                            <i class="ph ph-info text-xl"></i>
+                            ข้อมูลทั่วไป
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-base-content/70">ชื่อรายการ</p>
+                            <div class="flex justify-between">
+                                <p class="font-medium">{{ item.name }}</p>
                             </div>
-                        {% endif %}
-                        <!-- Basic Information Card -->
-                        <div class="card bg-base-100 border border-base-200 shadow-sm">
-                            <div class="card-body p-4">
-                                <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                                    <i class="ph ph-info text-xl"></i>
-                                    ข้อมูลทั่วไป
-                                </h4>
-                                <div class="space-y-2 text-sm">
-                                    <p class="text-base-content/70">ชื่อรายการ</p>
-                                    <div class="flex justify-between">
-                                        <p class="font-medium">{{ item.name }}</p>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <p class="text-base-content/70">ประเภท:</p>
-                                        <p class="font-medium">
-                                            {{ item.get_category_display() 
-                                        }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Date & Duration Card -->
-                        <div class="card bg-base-100 border border-base-200 shadow-sm">
-                            <div class="card-body p-4">
-                                <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                                    <i class="ph ph-calendar text-xl"></i>
-                                    วันที่และระยะเวลา
-                                </h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-base-content/70">วันที่เริ่มต้น:</span>
-                                        <span class="font-medium">{{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year
-                                            + 543) if
-                                        item.start_date else '-' }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-base-content/70">วันที่สิ้นสุด:</span>
-                                        <span class="font-medium">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year +
-                                            543) if item.end_date
-                                        else '-' }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-base-content/70">ระยะเวลา:</span>
-                                        <span class="font-medium">
-                                            {% if item.duration_months is not none and item.duration_days is not none %}
-                                                {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-base-content/70">จำนวนงวด:</span>
-                                        <span class="font-medium">{{ item.period }} งวด</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Financial Information Card -->
-                        <div class="card bg-base-100 border border-base-200 shadow-sm">
-                            <div class="card-body p-4">
-                                <h4 class="font-bold text-lg text-green-700 mb-3 flex items-center gap-2">
-                                    <i class="ph ph-currency-circle-dollar text-xl"></i>
-                                    ข้อมูลการเงิน
-                                </h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-green-600">จำนวนเงินรวม:</span>
-                                        <span class="font-medium text-green-700">฿{{ "{:,.2f}".format(item.amount) 
-                                        }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-green-600">สถานะการจ่าย:</span>
-                                        <span class="badge badge-success badge-sm">{{ item.get_current_payment_status(today) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-green-600">งวดที่จ่ายแล้ว:</span>
-                                        <span class="font-medium">{{ item.payment_records|length }}/{{ item.period }}
-                                        งวด</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Responsible Party Card -->
-                        <div class="card bg-base-100 border border-base-200 shadow-sm">
-                            <div class="card-body p-4">
-                                <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                                    <i class="ph ph-users text-xl"></i>
-                                    ผู้รับผิดชอบ
-                                </h4>
-                                <div class="space-y-2 text-sm">
-                                    <span class="text-base-content/70">บริษัท:</span>
-                                    <div class="flex justify-between">
-                                        <span class="font-medium">{{ item.company }}</span>
-                                    </div>
-                                    <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
-                                    <div class="flex flex-col gap-1">
-                                        {% if item.responsible_by %}
-                                            <div class="flex flex-wrap gap-1">
-                                                {% for u in item.responsible_by %}
-                                                    <span class="font-medium text-primary inline-block max-w-full truncate">{{ u.display_user_fullname() }}</span>
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                            <div class="flex justify-between">
+                                <p class="text-base-content/70">ประเภท:</p>
+                                <p class="font-medium">
+                                    {{ item.get_category_display()
+                                    }}</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card bg-base-100 border border-base-200 shadow-sm">
-                        <!-- Payment History Section -->
-                        {% if item.payment_records %}
-                            <div class="card-body p-4">
-                                <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-                                    <i class="ph ph-clock-counter-clockwise text-xl"></i>
-                                    ประวัติการจ่ายเงิน
-                                </h4>
-                                <div class="overflow-x-auto">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>งวดที่</th>
-                                                <th>วันที่จ่าย</th>
-                                                <th>ผู้จ่าย</th>
-                                                <th>เลขที่เบิกจ่าย</th>
-                                                <th>จํานวน</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for record in item.payment_records %}
-                                                <tr>
-                                                    <td class="text-xs">{{ loop.index }}</td>
-                                                    <td class="text-xs">
-                                                        {{ record.paid_date.strftime("%d/%m/") ~ (record.paid_date.year
-                                                        + 543) ~ ' ' ~ record.paid_date.strftime('%H:%M') }}
-                                                    </td>
-                                                    <td class="text-xs">{{ record.paid_by.get_name() if record.paid_by else '-' }}</td>
-                                                    <td class="text-xs">{{ record.product_number if record.product_number else '-' }}</td>
-                                                    <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount) }}</td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                </div>
+                <!-- Date & Duration Card -->
+                <div class="card bg-base-100 border border-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+                            <i class="ph ph-calendar text-xl"></i>
+                            วันที่และระยะเวลา
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">วันที่เริ่มต้น:</span>
+                                <span class="font-medium">{{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year
+                                    + 543) if
+                                    item.start_date else '-' }}</span>
                             </div>
-                        {% endif %}
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">วันที่สิ้นสุด:</span>
+                                <span class="font-medium">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year +
+                                    543) if item.end_date
+                                    else '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">ระยะเวลา:</span>
+                                <span class="font-medium">
+                                    {% if item.duration_months is not none and item.duration_days is not none %}
+                                    {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-base-content/70">จำนวนงวด:</span>
+                                <span class="font-medium">{{ item.period }} งวด</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Financial Information Card -->
+                <div class="card bg-base-100 border border-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="font-bold text-lg text-green-700 mb-3 flex items-center gap-2">
+                            <i class="ph ph-currency-circle-dollar text-xl"></i>
+                            ข้อมูลการเงิน
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-green-600">จำนวนเงินรวม:</span>
+                                <span class="font-medium text-green-700">฿{{ "{:,.2f}".format(item.amount)
+                                    }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-green-600">สถานะการจ่าย:</span>
+                                <span class="badge badge-success badge-sm">{{ item.get_current_payment_status(today)
+                                    }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-green-600">งวดที่จ่ายแล้ว:</span>
+                                <span class="font-medium">{{ item.payment_records|length }}/{{ item.period }}
+                                    งวด</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Responsible Party Card -->
+                <div class="card bg-base-100 border border-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+                            <i class="ph ph-users text-xl"></i>
+                            ผู้รับผิดชอบ
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <span class="text-base-content/70">บริษัท:</span>
+                            <div class="flex justify-between">
+                                <span class="font-medium">{{ item.company }}</span>
+                            </div>
+                            <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
+                            <div class="flex flex-col gap-1">
+                                {% if item.responsible_by %}
+                                <div class="flex flex-wrap gap-1">
+                                    {% for u in item.responsible_by %}
+                                    <span class="font-medium text-primary inline-block max-w-full truncate">{{
+                                        u.display_user_fullname() }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </dialog>
-    {% endfor %}
-    <table class="table w-full">
-        <thead class="bg-base-200/50">
-            <tr class="border-none">
-                <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
-                <th class="font-semibold text-base-content text-sm w-48">ปีงบประมาณ</th>
-                <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-                <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
-                <th class="font-semibold text-base-content text-sm text-center w-64">ประเภท</th>
-                <th class="font-semibold text-base-content text-sm text-center w-64">ระยะเวลา</th>
-                <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
-                <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
-                <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
-                <th class="font-semibold text-base-content text-sm text-center w-32">สถานะการต่ออายุ</th>
-                <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if procurements %}
-                {% for item in procurements %}
-                    <tr class="hover:bg-base-50">
-                        <!-- Row Number -->
-                        <!-- <td class="text-center py-4">
+            <div class="card bg-base-100 border border-base-200 shadow-sm">
+                <!-- Payment History Section -->
+                {% if item.payment_records %}
+                <div class="card-body p-4">
+                    <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+                        <i class="ph ph-clock-counter-clockwise text-xl"></i>
+                        ประวัติการจ่ายเงิน
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>งวดที่</th>
+                                    <th>วันที่จ่าย</th>
+                                    <th>ผู้จ่าย</th>
+                                    <th>เลขที่เบิกจ่าย</th>
+                                    <th>จํานวน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in item.payment_records %}
+                                <tr>
+                                    <td class="text-xs">{{ loop.index }}</td>
+                                    <td class="text-xs">
+                                        {{ record.paid_date.strftime("%d/%m/") ~ (record.paid_date.year
+                                        + 543) ~ ' ' ~ record.paid_date.strftime('%H:%M') }}
+                                    </td>
+                                    <td class="text-xs">{{ record.paid_by.get_name() if record.paid_by else '-' }}</td>
+                                    <td class="text-xs">{{ record.product_number if record.product_number else '-' }}
+                                    </td>
+                                    <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</dialog>
+{% endfor %}
+<table class="table w-full">
+    <thead class="bg-base-200/50">
+        <tr class="border-none">
+            <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
+            <th class="font-semibold text-base-content text-sm w-48">ปีงบประมาณ</th>
+            <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
+            <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
+            <th class="font-semibold text-base-content text-sm text-center w-64">ประเภท</th>
+            <th class="font-semibold text-base-content text-sm text-center w-64">ระยะเวลา</th>
+            <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
+            <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
+            <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
+            <th class="font-semibold text-base-content text-sm text-center w-32">สถานะการต่ออายุ</th>
+            <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if procurements %}
+        {% for item in procurements %}
+        <tr class="hover:bg-base-50">
+            <!-- Row Number -->
+            <!-- <td class="text-center py-4">
             <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">
                 {{ loop.index }}
             </div>
 </td> -->
-                        <!-- PR Number -->
-                        <td class="py-4">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-primary text-base">{{ item.created_date.year+543 }}</span>
-                                <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
-                                }}</span>
-                            </div>
-                        </td>
-                        <!-- Name -->
-                        <td class="py-4">
-                            <div class="font-medium text-base-content text-base">{{ item.name }}</div>
-                        </td>
-                        <!-- Range Date -->
-                        <td class="text-center py-4">
-                            <div class="flex flex-col items-center">
-                                {% if item.start_date and item.end_date %}
-                                    <span class="font-bold text-base text-primary">
-                                        {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
-                                    </span>
-                                    <span class="text-base text-gray-400">ถึง</span>
-                                    <span class="font-bold text-base text-error">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) }}</span>
-                                {% else %}
-                                    <span class="text-gray-400">-</span>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <!-- Type -->
-                        <td class="items-center py-4">
-                            <div class="flex flex-col items-center">
-                                {% set category_badge = {
-                                                                    'ซอฟต์แวร์': 'badge-primary',
-                                                                    'ครุภัณฑ์': 'badge-warning',
-                                                                    'จ้างเหมาบริการ': 'badge-accent',
-                                                                    'วัสดุ': 'badge-neutral'
-                                                                }.get(item.get_category_display(), 'badge-secondary') %}
-                                <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">{{ item.get_category_display() }}</div>
-                            </div>
-                        </td>
-                        <!-- Period -->
-                        <td class="text-center py-4">
-                            <div class="font-bold text-base text-warning">
-                                {% if item.duration_months is not none and item.duration_days is not none %}
-                                    {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-                                {% endif %}
-                            </div>
-                        </td>
-                        <!-- Amount -->
-                        <td class="text-center py-4">
-                            <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
-                        </td>
-                        <!-- Payment Status -->
-                        <td class="text-center py-4">
-                            {% set due_dates = item.get_payment_due_dates() %}
-                            {% set status = item.get_current_payment_status(today) %}
-                            {% set next_idx = item.get_next_payment_index() %}
-                            {% set paid_count = item.payment_records|length %}
-                            {% set badge_class = {
-                                                            'overdue': 'badge-error',
-                                                            'upcoming': 'badge-warning',
-                                                            'paid': 'badge-success'
-                                                        }.get(status, 'bg-gray-500') %}
-                            <div class="flex flex-col items-center">
-                                <div class="badge {{ badge_class }} text-white font-medium mb-1">งวด {{ paid_count }}/{{ item.period }}</div>
-                                {% if next_idx < due_dates|length %}
-                                    <div class="badge badge-outline font-medium text-s mt-1">ชำระก่อน {{ due_dates[next_idx].strftime("%d/%m/%Y") }}</div>
-                                {% endif %}
-                                {% if item.payment_records %}
-                                    <div class="text-s text-gray-500 mt-1">
-                                        จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime("%d/%m/") ~
-                                        (item.payment_records[-1].paid_date.year + 543) }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <!-- Company -->
-                        <td class="py-4">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-base py-1">{{ item.company }}</span>
-                                <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
-                                <div class="flex flex-wrap gap-1 py-1">
-                                    {% if item.responsible_by %}
-                                        {% for u in item.responsible_by %}
-                                            <span class="badge badge-outline badge-primary font-medium truncate">{{ u.display_user_fullname() }}</span>
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-gray-400">-</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </td>
-                        <!-- Renewal Status -->
-                        <td class="text-center py-4">
-                            {% if item.status == "pending" %}
-                                <span class="badge badge-warning">รอตรวจสอบ</span>
-                            {% elif item.status == "disactive" %}
-                                <span class="badge badge-error">หยุดต่ออายุ</span>
-                            {% elif item.status == "active" %}
-                                <span class="badge badge-success">กำลังใช้งาน</span>
-                            {% else %}
-                                <span class="badge badge-info">ยื่นขอต่ออายุ</span>
-                            {% endif %}
-                        </td>
-                        <!-- Actions -->
-                        <td class="text-center py-4">
-                            <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดรายการ">
-                                <button type="button"
-                                        class="btn btn-outline btn-sm rounded-full border-blue-500 text-blue-600 hover:bg-blue-100 hover:border-blue-700 transition"
-                                        onclick="document.getElementById('modal-{{ item.id }}').showModal();">
-                                    <i class="ph ph-magnifying-glass text-lg"></i>
-                                </button>
-                            </div>
-                            <div class="tooltip tooltip-left" data-tip="จ่ายงวดถัดไป">
-                                <a href="{{ url_for('procurement.payment.index', procurement_id=item.id,  organization_id=organization.id) }}"
-                                   class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition mt-2">
-                                    <i class="ph ph-money-wavy"></i>
-                                </a>
-                            </div>
-                            <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
-                                <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
-                                   class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
-                                    <i class="ph ph-pencil-simple text-lg"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
+            <!-- PR Number -->
+            <td class="py-4">
+                <div class="flex flex-col">
+                    <span class="font-bold text-primary text-base">{{ item.created_date.year+543 }}</span>
+                    <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
+                        }}</span>
+                </div>
+            </td>
+            <!-- Name -->
+            <td class="py-4">
+                <div class="font-medium text-base-content text-base">{{ item.name }}</div>
+            </td>
+            <!-- Range Date -->
+            <td class="text-center py-4">
+                <div class="flex flex-col items-center">
+                    {% if item.start_date and item.end_date %}
+                    <span class="font-bold text-base text-primary">
+                        {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
+                    </span>
+                    <span class="text-base text-gray-400">ถึง</span>
+                    <span class="font-bold text-base text-error">{{ item.end_date.strftime("%d/%m/") ~
+                        (item.end_date.year + 543) }}</span>
+                    {% else %}
+                    <span class="text-gray-400">-</span>
+                    {% endif %}
+                </div>
+            </td>
+            <!-- Type -->
+            <td class="items-center py-4">
+                <div class="flex flex-col items-center">
+                    {% set category_badge = {
+                    'ซอฟต์แวร์': 'badge-primary',
+                    'ครุภัณฑ์': 'badge-warning',
+                    'จ้างเหมาบริการ': 'badge-accent',
+                    'วัสดุ': 'badge-neutral'
+                    }.get(item.get_category_display(), 'badge-secondary') %}
+                    <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">{{
+                        item.get_category_display() }}</div>
+                </div>
+            </td>
+            <!-- Period -->
+            <td class="text-center py-4">
+                <div class="font-bold text-base text-warning">
+                    {% if item.duration_months is not none and item.duration_days is not none %}
+                    {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
+                    {% endif %}
+                </div>
+            </td>
+            <!-- Amount -->
+            <td class="text-center py-4">
+                <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
+            </td>
+            <!-- Payment Status -->
+            <td class="text-center py-4">
+                {% set due_dates = item.get_payment_due_dates() %}
+                {% set status = item.get_current_payment_status(today) %}
+                {% set next_idx = item.get_next_payment_index() %}
+                {% set paid_count = item.payment_records|length %}
+                {% set badge_class = {
+                'overdue': 'badge-error',
+                'upcoming': 'badge-warning',
+                'paid': 'badge-success'
+                }.get(status, 'bg-gray-500') %}
+                <div class="flex flex-col items-center">
+                    <div class="badge {{ badge_class }} text-white font-medium mb-1">งวด {{ paid_count }}/{{ item.period
+                        }}</div>
+                    {% if next_idx < due_dates|length %} <div class="badge badge-outline font-medium text-s mt-1">
+                        ชำระก่อน {{ due_dates[next_idx].strftime("%d/%m/%Y") }}
+                </div>
+                {% endif %}
+                {% if item.payment_records %}
+                <div class="text-s text-gray-500 mt-1">
+                    จ่ายล่าสุด: {{ item.payment_records[-1].paid_date.strftime("%d/%m/") ~
+                    (item.payment_records[-1].paid_date.year + 543) }}
+                </div>
+                {% endif %}
+                </div>
+            </td>
+            <!-- Company -->
+            <td class="py-4">
+                <div class="flex flex-col">
+                    <span class="font-bold text-base py-1">{{ item.company }}</span>
+                    <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
+                    <div class="flex flex-wrap gap-1 py-1">
+                        {% if item.responsible_by %}
+                        {% for u in item.responsible_by %}
+                        <span class="badge badge-outline badge-primary font-medium truncate">{{
+                            u.display_user_fullname() }}</span>
+                        {% endfor %}
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </td>
+            <!-- Renewal Status -->
+            <td class="text-center py-4">
+                {% if item.status == "pending" %}
+                <span class="badge badge-warning">รอตรวจสอบ</span>
+                {% elif item.status == "disactive" %}
+                <span class="badge badge-error">หยุดต่ออายุ</span>
+                {% elif item.status == "active" %}
+                <span class="badge badge-success">กำลังใช้งาน</span>
+                {% else %}
+                <span class="badge badge-info">ยื่นขอต่ออายุ</span>
+                {% endif %}
+            </td>
+            <!-- Actions -->
+            <td class="text-center py-4">
+                <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดรายการ">
+                    <button type="button"
+                        class="btn btn-outline btn-sm rounded-full border-blue-500 text-blue-600 hover:bg-blue-100 hover:border-blue-700 transition"
+                        onclick="document.getElementById('modal-{{ item.id }}').showModal();">
+                        <i class="ph ph-magnifying-glass text-lg"></i>
+                    </button>
+                </div>
+                <div class="tooltip tooltip-left" data-tip="จ่ายงวดถัดไป">
+                    <a href="{{ url_for('procurement.payment.index', procurement_id=item.id,  organization_id=organization.id) }}"
+                        class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition mt-2">
+                        <i class="ph ph-money-wavy"></i>
+                    </a>
+                </div>
+                <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
+                    <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
+                        class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
+                        <i class="ph ph-pencil-simple text-lg"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="10" class="text-center py-8 text-gray-400">ไม่มีข้อมูล</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
 {% endmacro %}
 {% macro render_upload_table(upload_history) %}
-    <div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-        <div class="border-b border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <h4 class="font-semibold">รายการไฟล์ที่อัปโหลด</h4>
-            </div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="table w-full">
-                <thead>
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อไฟล์</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่อัปโหลด</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อัปโหลดโดย</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if upload_history %}
-                        {% for file in upload_history %}
-                            <tr class="bg-white hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ loop.index }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ file.file_name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    {% if file.file_type == 'mas' %}
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">เเหล่งเงิน</span>
-                                    {% else %}
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ครุภัณฑ์</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ file.upload_date.strftime("%d/%m/%Y %H:%M") }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <div class="flex space-x-2">
-                                        <a href="{{ url_for('admin.procurement_files.download', file_id=file.file_id) }}"
-                                           class="text-indigo-600 hover:text-indigo-900">
-                                            <i class="ph ph-download"></i>
-                                        </a>
-                                        <form method="POST"
-                                              action="{{ url_for('admin.procurement_files.delete', file_id=file.file_id) }}"
-                                              onsubmit="return confirm('ยืนยันการลบไฟล์?');"
-                                              class="inline">
-                                            <button type="submit" class="text-red-600 hover:text-red-900">
-                                                <i class="ph ph-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5"
-                                class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
-                                ไม่พบไฟล์ที่อัปโหลด
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+    <div class="border-b border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <h4 class="font-semibold">รายการไฟล์ที่อัปโหลด</h4>
         </div>
     </div>
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อไฟล์
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        วันที่อัปโหลด</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        อัปโหลดโดย</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if upload_history %}
+                {% for file in upload_history %}
+                <tr class="bg-white hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ loop.index }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ file.file_name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        {% if file.file_type == 'mas' %}
+                        <span
+                            class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">เเหล่งเงิน</span>
+                        {% else %}
+                        <span
+                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ครุภัณฑ์</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ file.upload_date.strftime("%d/%m/%Y
+                        %H:%M") }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('admin.procurement_files.download', file_id=file.file_id) }}"
+                                class="text-indigo-600 hover:text-indigo-900">
+                                <i class="ph ph-download"></i>
+                            </a>
+                            <form method="POST"
+                                action="{{ url_for('admin.procurement_files.delete', file_id=file.file_id) }}"
+                                onsubmit="return confirm('ยืนยันการลบไฟล์?');" class="inline">
+                                <button type="submit" class="text-red-600 hover:text-red-900">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                        ไม่พบไฟล์ที่อัปโหลด
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endmacro %}
 {% macro render_mas_table(mas, organization, budget) %}
-    <div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-        <div class="border-b border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center mr-4">
-                        <i class="ph ph-folder-open text-blue-700"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">รายการโครงการ MAS</h2>
-                        <p class="text-sm text-gray-500">แสดง {{ mas|length }} รายการ</p>
-                    </div>
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+    <div class="border-b border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center mr-4">
+                    <i class="ph ph-folder-open text-blue-700"></i>
                 </div>
                 <div>
-                    <select class="select select-bordered select-sm border-gray-300 text-gray-700 bg-white"
-                            onchange="sortTable(this.value)">
-                        <option value="">เรียงตาม</option>
-                        <option value="mas_code">รหัส MAS</option>
-                        <option value="name">ชื่อโครงการ</option>
-                        <option value="budget">งบประมาณ</option>
-                        <option value="actual_cost">จ่ายจริง</option>
-                    </select>
+                    <h2 class="text-lg font-bold text-gray-800">รายการโครงการ MAS</h2>
+                    <p class="text-sm text-gray-500">แสดง {{ mas|length }} รายการ</p>
                 </div>
             </div>
+            <div>
+                <select class="select select-bordered select-sm border-gray-300 text-gray-700 bg-white"
+                    onchange="sortTable(this.value)">
+                    <option value="">เรียงตาม</option>
+                    <option value="mas_code">รหัส MAS</option>
+                    <option value="name">ชื่อโครงการ</option>
+                    <option value="budget">งบประมาณ</option>
+                    <option value="actual_cost">จ่ายจริง</option>
+                </select>
+            </div>
         </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700">
+                    <th class="font-semibold">รหัส MAS</th>
+                    <th class="font-semibold">รายการ</th>
+                    <th class="font-semibold">หมวดรายจ่าย</th>
+                    <th class="font-semibold text-right">จำนวนเงิน</th>
+                    <th class="font-semibold text-right">ประมาณจ่าย</th>
+                    <th class="font-semibold text-right">จ่ายจริง</th>
+                    <th class="font-semibold text-center">การดำเนินการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in mas %}
+                {% set usage_percent = ((project.actual_cost or 0) / (project.budget or 1) * 100) %}
+                <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <td class="py-4">
+                        <span
+                            class="inline-block bg-blue-50 text-blue-800 font-mono text-sm py-1 px-2 rounded border border-blue-100">
+                            {{ project.mas_code }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center">
+                                    <i class="ph ph-file-text text-gray-600"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ project.name }}</p>
+                                {% if project.item_description %}
+                                <p class="text-sm text-gray-500 truncate max-w-xs">
+                                    {{ project.item_description[:50]
+                                    }}{{ '...' if project.item_description|length > 50 }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="space-y-1">
+                            <div
+                                class="bg-gray-100 text-gray-800 text-xs py-1 px-2 rounded-md inline-flex items-center">
+                                <i class="ph ph-tag-simple mr-1"></i>
+                                {{ project.main_category }}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right">
+                        <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.amount or 0) }}</span>
+                    </td>
+                    <td class="text-right">
+                        <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.budget or 0) }}</span>
+                    </td>
+                    <td class="text-right">
+                        <span
+                            class="font-medium {{ 'text-red-700' if (project.actual_cost or 0) > (project.budget or 0) else 'text-gray-900' }}">
+                            ฿{{ "{:,.2f}".format(project.actual_cost or 0) }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="flex justify-center space-x-2">
+                            <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id, organization_id=organization.id) }}"
+                                class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
+                                <i class="ph ph-pencil-simple"></i>
+                            </a>
+                            <button type="button"
+                                class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
+                                onclick="document.getElementById('delete-mas-{{ project.id }}').showModal()">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                        <!-- Delete Confirmation Modal -->
+                        <dialog id="delete-mas-{{ project.id }}" class="modal">
+                            <div class="modal-box bg-white rounded-lg shadow-xl border border-gray-200 p-0">
+                                <div class="p-6 border-b border-gray-200">
+                                    <h3 class="text-lg font-bold text-gray-800">ยืนยันการลบโครงการ</h3>
+                                </div>
+                                <div class="p-6">
+                                    <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
+                                        <p class="text-sm text-gray-500 mb-1">รหัส MAS</p>
+                                        <p class="font-mono font-medium text-gray-900">{{ project.mas_code }}</p>
+                                    </div>
+                                    <p class="text-gray-700 mb-2">คุณแน่ใจหรือไม่ที่จะลบโครงการ:</p>
+                                    <p class="font-medium text-gray-900 mb-4">{{ project.name }}</p>
+                                    <div class="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800">
+                                        <i class="ph ph-warning mr-2"></i>
+                                        <span class="text-sm">การลบจะเปลี่ยนสถานะโครงการเป็น "ปิดบัญชี"
+                                            ไม่ได้ลบออกจากฐานข้อมูล</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50">
+                                    <button type="button"
+                                        class="btn bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                                        onclick="document.getElementById('delete-mas-{{ project.id }}').close()">
+                                        ยกเลิก
+                                    </button>
+                                    <form method="POST"
+                                        action="{{ url_for('admin.mas.delete', mas_id=project.id, organization_id=organization.id) }}">
+                                        <button type="submit"
+                                            class="btn bg-red-600 hover:bg-red-700 text-white border-none">
+                                            ยืนยันลบ
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </dialog>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-16">
+                        <div class="flex flex-col items-center">
+                            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                <i class="ph ph-file-x text-4xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-1">ไม่พบข้อมูลโครงการ</h3>
+                            <p class="text-gray-500">กรุณาเพิ่มโครงการใหม่เพื่อเริ่มต้นใช้งานระบบ</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="font-medium">แสดงทั้งหมด:</span> {{ mas|length }} รายการ
+            </div>
+            <div>
+                <span class="font-medium">งบประมาณรวม:</span> ฿{{ "{:,.2f}".format(budget or 0) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+{% macro render_non_renewal_items_table(disactive_items) %}
+<div class="mt-12">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-rose-600 flex items-center gap-3">
+            <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                <i class="ph ph-x-circle text-rose-600 text-lg"></i>
+            </div>
+            รายการที่ไม่ต่ออายุ
+        </h3>
+        <div class="bg-rose-50 border border-rose-200 rounded-full px-4 py-2">
+            <span class="text-rose-700 font-semibold text-sm">{{ disactive_items|length }} รายการ</span>
+        </div>
+    </div>
+    {% if disactive_items|length == 0 %}
+    <div class="bg-gradient-to-br from-rose-50 to-red-50 rounded-2xl border-2 border-dashed border-rose-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+            <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="ph ph-check-circle text-rose-500 text-3xl"></i>
+            </div>
+            <h4 class="text-xl font-semibold text-rose-700 mb-2">ยังไม่มีรายการที่ไม่ต่ออายุ</h4>
+            <p class="text-rose-600 max-w-md mb-6">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
+            <div class="inline-flex items-center gap-2 text-sm text-rose-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <i class="ph ph-info"></i>
+                <span>รอการดำเนินการ</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Enhanced Table Layout -->
+    <div class="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="table w-full">
-                <thead>
-                    <tr class="bg-gray-50 text-gray-700">
-                        <th class="font-semibold">รหัส MAS</th>
-                        <th class="font-semibold">รายการ</th>
-                        <th class="font-semibold">หมวดรายจ่าย</th>
-                        <th class="font-semibold text-right">จำนวนเงิน</th>
-                        <th class="font-semibold text-right">ประมาณจ่าย</th>
-                        <th class="font-semibold text-right">จ่ายจริง</th>
-                        <th class="font-semibold text-center">การดำเนินการ</th>
+            <table class="min-w-full divide-y divide-rose-200">
+                <thead class="bg-gradient-to-r">
+                    <tr>
+                        <th class="text-center font-semibold text-base-content text-sm py-4 w-32">ลำดับ</th>
+                        <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+                        <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-48">วันที่สิ้นสุด</th>
+                        <th class="font-semibold text-base-content text-sm text-center">บริษัท</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-64">จำนวนเงิน</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-72">สถานะ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for project in mas %}
-                        {% set usage_percent = ((project.actual_cost or 0) / (project.budget or 1) * 100) %}
-                        <tr class="hover:bg-gray-50 border-b border-gray-100">
-                            <td class="py-4">
-                                <span class="inline-block bg-blue-50 text-blue-800 font-mono text-sm py-1 px-2 rounded border border-blue-100">
-                                    {{ project.mas_code }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 mr-3">
-                                        <div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center">
-                                            <i class="ph ph-file-text text-gray-600"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p class="font-medium text-gray-900">{{ project.name }}</p>
-                                        {% if project.item_description %}
-                                            <p class="text-sm text-gray-500 truncate max-w-xs">
-                                                {{ project.item_description[:50]
-                                                }}{{ '...' if project.item_description|length > 50 }}
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="space-y-1">
-                                    <div class="bg-gray-100 text-gray-800 text-xs py-1 px-2 rounded-md inline-flex items-center">
-                                        <i class="ph ph-tag-simple mr-1"></i>
-                                        {{ project.main_category }}
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-right">
-                                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.amount or 0) }}</span>
-                            </td>
-                            <td class="text-right">
-                                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.budget or 0) }}</span>
-                            </td>
-                            <td class="text-right">
-                                <span class="font-medium {{ 'text-red-700' if (project.actual_cost or 0) > (project.budget or 0) else 'text-gray-900' }}">
-                                    ฿{{ "{:,.2f}".format(project.actual_cost or 0) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <div class="flex justify-center space-x-2">
-                                    <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id, organization_id=organization.id) }}"
-                                       class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
-                                        <i class="ph ph-pencil-simple"></i>
-                                    </a>
-                                    <button type="button"
-                                            class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
-                                            onclick="document.getElementById('delete-mas-{{ project.id }}').showModal()">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                </div>
-                                <!-- Delete Confirmation Modal -->
-                                <dialog id="delete-mas-{{ project.id }}" class="modal">
-                                    <div class="modal-box bg-white rounded-lg shadow-xl border border-gray-200 p-0">
-                                        <div class="p-6 border-b border-gray-200">
-                                            <h3 class="text-lg font-bold text-gray-800">ยืนยันการลบโครงการ</h3>
-                                        </div>
-                                        <div class="p-6">
-                                            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-4">
-                                                <p class="text-sm text-gray-500 mb-1">รหัส MAS</p>
-                                                <p class="font-mono font-medium text-gray-900">{{ project.mas_code }}</p>
-                                            </div>
-                                            <p class="text-gray-700 mb-2">คุณแน่ใจหรือไม่ที่จะลบโครงการ:</p>
-                                            <p class="font-medium text-gray-900 mb-4">{{ project.name }}</p>
-                                            <div class="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800">
-                                                <i class="ph ph-warning mr-2"></i>
-                                                <span class="text-sm">การลบจะเปลี่ยนสถานะโครงการเป็น "ปิดบัญชี"
-                                                ไม่ได้ลบออกจากฐานข้อมูล</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50">
-                                            <button type="button"
-                                                    class="btn bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                                                    onclick="document.getElementById('delete-mas-{{ project.id }}').close()">
-                                                ยกเลิก
-                                            </button>
-                                            <form method="POST"
-                                                  action="{{ url_for('admin.mas.delete', mas_id=project.id, organization_id=organization.id) }}">
-                                                <button type="submit"
-                                                        class="btn bg-red-600 hover:bg-red-700 text-white border-none">
-                                                    ยืนยันลบ
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </dialog>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center py-16">
-                                <div class="flex flex-col items-center">
-                                    <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                                        <i class="ph ph-file-x text-4xl text-gray-400"></i>
-                                    </div>
-                                    <h3 class="text-lg font-medium text-gray-700 mb-1">ไม่พบข้อมูลโครงการ</h3>
-                                    <p class="text-gray-500">กรุณาเพิ่มโครงการใหม่เพื่อเริ่มต้นใช้งานระบบ</p>
-                                </div>
-                            </td>
-                        </tr>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for item in disactive_items %}
+                    <tr class="hover:bg-rose-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div
+                                class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                {{ loop.index }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-900">{{ item.product_number }}</div>
+                            <div class="text-xs text-gray-500 flex items-center gap-1">
+                                <i class="ph ph-barcode"></i>{{ item.asset_code }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900 max-w-xs truncate" title="{{ item.name }}">{{
+                                item.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% set category_badge = {
+                            'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
+                            'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
+                            'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
+                            'วัสดุ': 'bg-gray-50 text-gray-700 border border-gray-200'
+                            }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
+                            <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
+                                {{ item.get_category_display() }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <i class="ph ph-calendar-x text-rose-500"></i>
+                                <span class="text-sm font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/%Y") if
+                                    item.end_date }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <i class="ph ph-buildings text-gray-400"></i>
+                                <span class="text-sm text-gray-900">{{ item.company }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <div class="text-lg font-bold text-rose-600">฿{{ "{:,.2f}".format(item.amount) }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span
+                                class="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-clock text-rose-500"></i>
+                                ไม่ต่ออายุ
+                            </span>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="font-medium">แสดงทั้งหมด:</span> {{ mas|length }} รายการ
-                </div>
-                <div>
-                    <span class="font-medium">งบประมาณรวม:</span> ฿{{ "{:,.2f}".format(budget or 0) }}
-                </div>
-            </div>
-        </div>
     </div>
-{% endmacro %}
-{% macro render_non_renewal_items_table(disactive_items) %}
-    <div class="mt-12">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-rose-600 flex items-center gap-3">
-                <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-                    <i class="ph ph-x-circle text-rose-600 text-lg"></i>
-                </div>
-                รายการที่ไม่ต่ออายุ
-            </h3>
-            <div class="bg-rose-50 border border-rose-200 rounded-full px-4 py-2">
-                <span class="text-rose-700 font-semibold text-sm">{{ disactive_items|length }} รายการ</span>
-            </div>
-        </div>
-        {% if disactive_items|length == 0 %}
-            <div class="bg-gradient-to-br from-rose-50 to-red-50 rounded-2xl border-2 border-dashed border-rose-200 p-12">
-                <div class="flex flex-col items-center justify-center text-center">
-                    <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                        <i class="ph ph-check-circle text-rose-500 text-3xl"></i>
-                    </div>
-                    <h4 class="text-xl font-semibold text-rose-700 mb-2">ยังไม่มีรายการที่ไม่ต่ออายุ</h4>
-                    <p class="text-rose-600 max-w-md mb-6">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
-                    <div class="inline-flex items-center gap-2 text-sm text-rose-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        <i class="ph ph-info"></i>
-                        <span>รอการดำเนินการ</span>
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <!-- Enhanced Table Layout -->
-            <div class="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-rose-200">
-                        <thead class="bg-gradient-to-r">
-                            <tr>
-                                <th class="text-center font-semibold text-base-content text-sm py-4 w-32">ลำดับ</th>
-                                <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
-                                <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-48">วันที่สิ้นสุด</th>
-                                <th class="font-semibold text-base-content text-sm text-center">บริษัท</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-64">จำนวนเงิน</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-72">สถานะ</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            {% for item in disactive_items %}
-                                <tr class="hover:bg-rose-50 transition-colors duration-200">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-sm font-bold">
-                                            {{ loop.index }}
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-semibold text-gray-900">{{ item.product_number }}</div>
-                                        <div class="text-xs text-gray-500 flex items-center gap-1">
-                                            <i class="ph ph-barcode"></i>{{ item.asset_code }}
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
-                                             title="{{ item.name }}">{{ item.name }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        {% set category_badge = {
-                                                                                    'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
-                                                                                    'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
-                                                                                    'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
-                                                                                    'วัสดุ': 'bg-gray-50 text-gray-700 border border-gray-200'
-                                                                                }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
-                                        <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
-                                            {{ item.get_category_display() }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center gap-2">
-                                            <i class="ph ph-calendar-x text-rose-500"></i>
-                                            <span class="text-sm font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/%Y") if item.end_date }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center gap-2">
-                                            <i class="ph ph-buildings text-gray-400"></i>
-                                            <span class="text-sm text-gray-900">{{ item.company }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        <div class="text-lg font-bold text-rose-600">฿{{ "{:,.2f}".format(item.amount) }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <span class="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-medium">
-                                            <i class="ph ph-clock text-rose-500"></i>
-                                            ไม่ต่ออายุ
-                                        </span>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        {% endif %}
-    </div>
+    {% endif %}
+</div>
 {% endmacro %}
 {# filepath: Untitled #}
 {% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization) %}
-    <div class="mt-12">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-blue-600 flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="ph ph-arrow-clockwise text-blue-600 text-lg"></i>
-                </div>
-                รายการที่ขอต่ออายุ
-            </h3>
-            <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
-                <span class="text-blue-700 font-semibold text-sm">{{ renewal_requested_items|length }} รายการ</span>
+<div class="mt-12">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-blue-600 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="ph ph-arrow-clockwise text-blue-600 text-lg"></i>
+            </div>
+            รายการที่ขอต่ออายุ
+        </h3>
+        <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
+            <span class="text-blue-700 font-semibold text-sm">{{ renewal_requested_items|length }} รายการ</span>
+        </div>
+    </div>
+    <div class="mb-6 flex justify-center">
+        <div class="flex flex-wrap gap-6 text-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-pink-500 rounded"></div>
+                <span class="font-medium">Supervisor supplier</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                <span class="font-medium">Admin</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                <span class="font-medium">Head</span>
             </div>
         </div>
-        <div class="mb-6 flex justify-center">
-            <div class="flex flex-wrap gap-6 text-sm">
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-pink-500 rounded"></div>
-                    <span class="font-medium">Supervisor supplier</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span class="font-medium">Admin</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span class="font-medium">Head</span>
-                </div>
+    </div>
+    {% if renewal_requested_items|length == 0 %}
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="ph ph-file-plus text-4xl text-blue-500"></i>
+            </div>
+            <h4 class="text-xl font-semibold text-blue-700 mb-2">ยังไม่มีรายการที่ขอต่ออายุ</h4>
+            <p class="text-blue-600 max-w-md mb-6">เมื่อมีการขอต่ออายุครุภัณฑ์ รายการจะปรากฏที่นี่</p>
+            <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <i class="ph ph-info"></i>
+                <span>รอการขอต่ออายุจากผู้ใช้งาน</span>
             </div>
         </div>
-        {% if renewal_requested_items|length == 0 %}
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12">
-                <div class="flex flex-col items-center justify-center text-center">
-                    <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                        <i class="ph ph-file-plus text-4xl text-blue-500"></i>
-                    </div>
-                    <h4 class="text-xl font-semibold text-blue-700 mb-2">ยังไม่มีรายการที่ขอต่ออายุ</h4>
-                    <p class="text-blue-600 max-w-md mb-6">เมื่อมีการขอต่ออายุครุภัณฑ์ รายการจะปรากฏที่นี่</p>
-                    <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        <i class="ph ph-info"></i>
-                        <span>รอการขอต่ออายุจากผู้ใช้งาน</span>
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-blue-200">
-                        <thead class="bg-gradient-to-r">
-                            <tr>
-                                <th class="text-center font-semibold text-base-content text-sm py-4 w-32"></th>
-                                <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-32">ชื่อรายการ</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
-                                {% if current_user.has_organization_roles("staff") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">Staff Action</th>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-blue-200">
+                <thead class="bg-gradient-to-r">
+                    <tr>
+                        <th class="text-center font-semibold text-base-content text-sm py-4 w-32"></th>
+                        <th class="text-center font-semibold text-base-content text-sm py-4 w-32">เลขที่</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-32">ชื่อรายการ</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-40">วันที่ต้องการใช้งาน</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-32">จำนวนเงินรวม</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
+                        {% if current_user.has_organization_roles("staff") %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Staff Action</th>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("head") %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Head Action</th>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("admin") %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action</th>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("supervisor supplier") %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
+                        {% endif %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Approve Status</th>
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for item in renewal_requested_items %}
+                    <tr class="{% if item.status == 'incomplete' %}bg-red-50{% elif item.status == 'complete' %}bg-green-50{% endif %}"
+                        id="toggle-btn-{{ item.id }}">
+                        <!-- Add toggle icon as first cell -->
+                        <td class="px-2 py-3 whitespace-nowrap text-center ">
+                            <button class="toggle-icon-btn bg-transparent border-none cursor-pointer "
+                                onclick="toggleSubtable('{{ item.id }}')" title="แสดง/ซ่อนรายละเอียด">
+                                <span id="toggle-icon-{{ item.id }}" style="font-size:1.2em;"><i
+                                        class="ph ph-caret-circle-down"></i></span>
+                            </button>
+                        </td>
+                        <!-- ...existing code (move all cells right by one, update colspan below)... -->
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <div class="text-ms flex items-center gap-1 justify-center">
+                                <i class="ph ph-barcode"></i>{{ item.requisition_code }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <span
+                                class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                {{ item.items|length }} รายการ
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <div class="flex items-center gap-2 justify-center">
+                                <i class="ph ph-calendar-x text-blue-500"></i>
+                                <span class="text-sm font-medium text-blue-700">{{ item.start_date.strftime("%d/%m/%Y")
+                                    if item.start_date }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                            <div class="text-lg font-bold text-blue-600">
+                                ฿{{ "{:,.2f}".format(item.items | map(attribute='amount') | sum) if item.items else
+                                '0.00' }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if item.tor_document.filename %}
+                            <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
+                                class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                                target="_blank">
+                                <i class="ph ph-file-arrow-down"></i> ดูเอกสารทั้งหมด
+                            </a>
+                            {% else %}
+                            <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% set document_url = url_for('procurement.requisitions.document',
+                            requisition_procurement_id=item.id) %}
+                            <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                                onclick="printDocument('{{ document_url }}')">
+                                <i class="ph ph-file-arrow-down"></i> ดูใบขอซื้อ
+                            </button>
+                        </td>
+                        {% if current_user.has_organization_roles("staff") %}
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% set is_ma = item.type == 'MA' %}
+                            <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
+                                class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
+                                {% if item.approval_history or item.status=='incomplete' %}disabled{% endif %}>
+                                {% if is_ma %}
+                                <i class="ph ph-check text-lg"></i>
+                                <span>ยืนยัน</span>
+                                {% else %}
+                                <i class="ph ph-pencil-simple-line text-lg"></i>
+                                <span>แก้ไข</span>
                                 {% endif %}
-                                {% if current_user.has_organization_roles("head") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">Head Action</th>
-                                {% endif %}
-                                {% if current_user.has_organization_roles("admin") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action</th>
-                                {% endif %}
-                                {% if current_user.has_organization_roles("supervisor supplier") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
-                                {% endif %}
-                                <th class="font-semibold text-base-content text-sm text-center w-20">Approve Status</th>
-                                <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            {% for item in renewal_requested_items %}
-                                <tr class="{% if item.status == 'incomplete' %}bg-red-50{% elif item.status == 'complete' %}bg-green-50{% endif %}"
-                                    id="toggle-btn-{{ item.id }}">
-                                    <!-- Add toggle icon as first cell -->
-                                    <td class="px-2 py-3 whitespace-nowrap text-center ">
-                                        <button class="toggle-icon-btn bg-transparent border-none cursor-pointer "
-                                                onclick="toggleSubtable('{{ item.id }}')"
-                                                title="แสดง/ซ่อนรายละเอียด">
-                                            <span id="toggle-icon-{{ item.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
+                            </a>
+                        </td>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("head") %}
+                        {% set already_acted = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {# Head is always first, so only check if already acted or incomplete #}
+                            <form method="post" style="display:inline"
+                                action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                <input type="hidden" name="approver_role" value="head">
+                                <input type="hidden" name="action" value="approved">
+                                <button type="submit"
+                                    class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                    {% if already_acted or item.status=='incomplete' %}disabled{% endif %}>
+                                    <i class="ph ph-check text-lg" title="Approve"></i>
+                                </button>
+                            </form>
+                            <button type="button"
+                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
+                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
+                                <i class="ph ph-x text-lg" title="Reject"></i>
+                            </button>
+                            <!-- Reject Modal for Head -->
+                            <dialog id="modal-reject-head-{{ item.id }}" class="modal">
+                                <form method="post"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                    class="modal-box">
+                                    <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                    <input type="hidden" name="approver_role" value="head">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <div class="mb-6 flex flex-col items-center">
+                                        <label class="label mb-2 text-lg font-semibold text-error">
+                                            <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                        </label>
+                                        <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                            class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                            maxlength="25" required style="min-width:300px"
+                                            onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-head-{{ item.id }}').close()}" />
+                                    </div>
+                                    <div class="modal-action flex gap-2 justify-end">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">
+                                            ยกเลิก
                                         </button>
-                                    </td>
-                                    <!-- ...existing code (move all cells right by one, update colspan below)... -->
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        <div class="text-ms flex items-center gap-1 justify-center">
-                                            <i class="ph ph-barcode"></i>{{ item.requisition_code }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                            {{ item.items|length }} รายการ
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        <div class="flex items-center gap-2 justify-center">
-                                            <i class="ph ph-calendar-x text-blue-500"></i>
-                                            <span class="text-sm font-medium text-blue-700">{{ item.start_date.strftime("%d/%m/%Y") if item.start_date }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-right">
-                                        <div class="text-lg font-bold text-blue-600">
-                                            ฿{{ "{:,.2f}".format(item.items | map(attribute='amount') | sum) if item.items else
-                                            '0.00' }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        {% if item.tor_document.filename %}
-                                            <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
-                                               class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                                               target="_blank">
-                                                <i class="ph ph-file-arrow-down"></i> ดูเอกสารทั้งหมด
-                                            </a>
-                                        {% else %}
-                                            <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        {% set document_url = url_for('procurement.requisitions.document',
-                                                                                requisition_procurement_id=item.id) %}
-                                        <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                                                onclick="printDocument('{{ document_url }}')">
-                                            <i class="ph ph-file-arrow-down"></i> ดูใบขอซื้อ
+                                        <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                    </div>
+                                </form>
+                            </dialog>
+                        </td>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("admin") %}
+                        {% set already_acted = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
+                        {% set head_approved = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
+                        list | length > 0 %}
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <!-- Approve Button triggers MAS modal -->
+                            <button type="button"
+                                class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                {% if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif
+                                %} onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
+                                <i class="ph ph-check text-lg" title="Approve"></i>
+                            </button>
+                            <!-- Reject Button as modal -->
+                            <button type="button"
+                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
+                                if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
+                                <i class="ph ph-x text-lg" title="Reject"></i>
+                            </button>
+                            <!-- Reject Modal for Admin -->
+                            <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
+                                <form method="post"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                    class="modal-box ">
+                                    <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                    <input type="hidden" name="approver_role" value="admin">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <div class="mb-6 flex flex-col items-center">
+                                        <label class="label mb-2 text-lg font-semibold text-error">
+                                            <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                        </label>
+                                        <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                            class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                            maxlength="25" required style="min-width:300px"
+                                            onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
+                                    </div>
+                                    <div class="modal-action flex gap-2 justify-end">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-reject-admin-{{ item.id }}').close()">
+                                            ยกเลิก
                                         </button>
-                                    </td>
-                                    {% if current_user.has_organization_roles("staff") %}
-                                        <td class="px-4 py-3 whitespace-nowrap text-center">
-                                            {% set is_ma = item.type == 'MA' %}
-                                            <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
-                                               class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
-                                               {% if item.approval_history or item.status=='incomplete' %}disabled{% endif %}>
-                                                {% if is_ma %}
-                                                    <i class="ph ph-check text-lg"></i>
-                                                    <span>ยืนยัน</span>
-                                                {% else %}
-                                                    <i class="ph ph-pencil-simple-line text-lg"></i>
-                                                    <span>แก้ไข</span>
+                                        <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                    </div>
+                                </form>
+                            </dialog>
+                            <!-- MAS Selection Modal -->
+                            <dialog id="modal-mas-{{ item.id }}" class="modal">
+                                <form method="post"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                    class="modal-box max-w-full w-full">
+                                    <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
+                                    <input type="hidden" name="approver_role" value="admin">
+                                    <input type="hidden" name="action" value="approved">
+                                    <div class="mb-4">
+                                        <div class="form-control mb-4">
+                                            <label for="supervisor-{{ item.id }}" class="block font-semibold mb-2">
+                                                เลือกผู้บริหาร (Supervisor
+                                                Supplier)
+                                            </label>
+                                            <select name="supervisor" id="supervisor-{{ item.id }}"
+                                                class="select select-bordered w-full" required>
+                                                <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
+                                                {% for user in organization.get_organization_users() %}
+                                                {% if 'supervisor supplier' in user.roles %}
+                                                <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
                                                 {% endif %}
-                                            </a>
-                                        </td>
-                                    {% endif %}
-                                    {% if current_user.has_organization_roles("head") %}
-                                        {% set already_acted = item.approval_history and item.approval_history |
-                                                                                selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
-                                        <td class="px-4 py-3 whitespace-nowrap text-center">
-                                            {# Head is always first, so only check if already acted or incomplete #}
-                                            <form method="post"
-                                                  style="display:inline"
-                                                  action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                                <input type="hidden" name="approver_role" value="head">
-                                                <input type="hidden" name="action" value="approved">
-                                                <button type="submit"
-                                                        class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                        {% if already_acted or item.status=='incomplete' %}disabled{% endif %}>
-                                                    <i class="ph ph-check text-lg" title="Approve"></i>
-                                                </button>
-                                            </form>
-                                            <button type="button"
-                                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                if already_acted or item.status=='incomplete' %}disabled{% endif %}
-                                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
-                                                <i class="ph ph-x text-lg" title="Reject"></i>
-                                            </button>
-                                            <!-- Reject Modal for Head -->
-                                            <dialog id="modal-reject-head-{{ item.id }}" class="modal">
-                                                <form method="post"
-                                                      action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                      class="modal-box">
-                                                    <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
-                                                    <input type="hidden" name="approver_role" value="head">
-                                                    <input type="hidden" name="action" value="rejected">
-                                                    <div class="mb-6 flex flex-col items-center">
-                                                        <label class="label mb-2 text-lg font-semibold text-error">
-                                                            <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
-                                                        </label>
-                                                        <input type="text"
-                                                               name="reason"
-                                                               placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                               class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                               maxlength="25"
-                                                               required
-                                                               style="min-width:300px"
-                                                               onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-head-{{ item.id }}').close()}" />
-                                                    </div>
-                                                    <div class="modal-action flex gap-2 justify-end">
-                                                        <button type="button"
-                                                                class="btn"
-                                                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">
-                                                            ยกเลิก
-                                                        </button>
-                                                        <button type="submit" class="btn btn-error">ปฏิเสธ</button>
-                                                    </div>
-                                                </form>
-                                            </dialog>
-                                        </td>
-                                    {% endif %}
-                                    {% if current_user.has_organization_roles("admin") %}
-                                        {% set already_acted = item.approval_history and item.approval_history |
-                                                                                selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
-                                        {% set head_approved = item.approval_history and item.approval_history |
-                                                                                    selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
-                                                                                list | length > 0 %}
-                                        <td class="px-4 py-3 whitespace-nowrap text-center">
-                                            <!-- Approve Button triggers MAS modal -->
-                                            <button type="button"
-                                                class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                {% if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif
-                                                    %} onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
-                                                    <i class="ph ph-check text-lg" title="Approve"></i>
-                                                </button>
-                                                <!-- Reject Button as modal -->
-                                                <button type="button"
-                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                    if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
-                                                    onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
-                                                    <i class="ph ph-x text-lg" title="Reject"></i>
-                                                </button>
-                                                <!-- Reject Modal for Admin -->
-                                                <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
-                                                    <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box ">
-                                                        <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
-                                                        <input type="hidden" name="approver_role" value="admin">
-                                                        <input type="hidden" name="action" value="rejected">
-                                                        <div class="mb-6 flex flex-col items-center">
-                                                            <label class="label mb-2 text-lg font-semibold text-error">
-                                                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
-                                                            </label>
-                                                            <input type="text"
-                                                                   name="reason"
-                                                                   placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                                   class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                                   maxlength="25"
-                                                                   required
-                                                                   style="min-width:300px"
-                                                                   onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
-                                                        </div>
-                                                        <div class="modal-action flex gap-2 justify-end">
-                                                            <button type="button"
-                                                                    class="btn"
-                                                                    onclick="document.getElementById('modal-reject-admin-{{ item.id }}').close()">
-                                                                ยกเลิก
-                                                            </button>
-                                                            <button type="submit" class="btn btn-error">ปฏิเสธ</button>
-                                                        </div>
-                                                    </form>
-                                                </dialog>
-                                                <!-- MAS Selection Modal -->
-                                                <dialog id="modal-mas-{{ item.id }}" class="modal">
-                                                    <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box max-w-full w-full">
-                                                        <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
-                                                        <input type="hidden" name="approver_role" value="admin">
-                                                        <input type="hidden" name="action" value="approved">
-                                                        <div class="mb-4">
-                                                            <div class="form-control mb-4">
-                                                                <label for="supervisor-{{ item.id }}" class="block font-semibold mb-2">
-                                                                    เลือกผู้บริหาร (Supervisor
-                                                                    Supplier)
-                                                                </label>
-                                                                <select name="supervisor"
-                                                                        id="supervisor-{{ item.id }}"
-                                                                        class="select select-bordered w-full"
-                                                                        required>
-                                                                    <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
-                                                                    {% for user in organization.get_organization_users() %}
-                                                                        {% if 'supervisor supplier' in user.roles %}
-                                                                            <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
-                                                                        {% endif %}
-                                                                    {% endfor %}
-                                                                </select>
-                                                            </div>
-                                                            <div class="form-control">
-                                                                <div class="overflow-y-auto max-h-[600px]">
-                                                                    <table class="table table-md w-full border">
-                                                                        <thead>
-                                                                            <tr class="bg-base-200">
-                                                                                <th></th>
-                                                                                <th>รหัส MAS</th>
-                                                                                <th>ชื่อโครงการ</th>
-                                                                                <th>หมวดหลัก</th>
-                                                                                <th>หมวดย่อย</th>
-                                                                                <th>รายละเอียด</th>
-                                                                                <th>งบประมาณ</th>
-                                                                                <th>ประมาณจ่าย</th>
-                                                                                <th>จ่ายจริง</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {% for mas in mas_list %}
-                                                                                <tr>
-                                                                                    <td>
-                                                                                        <input type="radio" name="fund" value="{{ mas.id }}" required>
-                                                                                    </td>
-                                                                                    <td class="font-mono text-xs">{{ mas.mas_code }}</td>
-                                                                                    <td class="font-semibold">{{ mas.name }}</td>
-                                                                                    <td>{{ mas.main_category }}</td>
-                                                                                    <td>{{ mas.sub_category }}</td>
-                                                                                    <td class="text-xs text-gray-500">
-                                                                                        {{
-                                                                                        mas.item_description }}
-                                                                                    </td>
-                                                                                    <td class="text-right">
-                                                                                        ฿{{ "{:,.2f}".format(mas.budget
-                                                                                        or 0) }}
-                                                                                    </td>
-                                                                                    <td class="text-right">
-                                                                                        ฿{{ "{:,.2f}".format(mas.amount
-                                                                                        or 0) }}
-                                                                                    </td>
-                                                                                    <td class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
-                                                                                        ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}
-                                                                                    </td>
-                                                                                </tr>
-                                                                            {% endfor %}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-action flex gap-2 justify-end">
-                                                            <button type="button"
-                                                                    class="btn"
-                                                                    onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
-                                                                ยกเลิก
-                                                            </button>
-                                                            <button type="submit" class="btn btn-success">บันทึกและอนุมัติ</button>
-                                                        </div>
-                                                    </form>
-                                                </dialog>
-                                            </td>
-                                        {% endif %}
-                                        {% if current_user.has_organization_roles("supervisor supplier") %}
-                                            {% set already_acted = item.approval_history and item.approval_history |
-                                                                                        selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
-                                            {% set admin_approved = item.approval_history and item.approval_history |
-                                                                                            selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
-                                                                                        list | length > 0 %}
-                                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                                <form method="post"
-                                                      style="display:inline"
-                                                      action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                                    <input type="hidden" name="approver_role" value="supervisor supplier">
-                                                    <input type="hidden" name="action" value="approved">
-                                                    <button type="submit"
-                                                        class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                        {% if not admin_approved or already_acted or item.status=='incomplete' %}disabled{%
-                                                            endif %}>
-                                                            <i class="ph ph-check text-lg" title="Approve"></i>
-                                                        </button>
-                                                    </form>
-                                                    <button type="button"
-                                                        class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                        if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif
-                                                        %}
-                                                        onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
-                                                        <i class="ph ph-x text-lg" title="Reject"></i>
-                                                    </button>
-                                                    <!-- Reject Modal for Supervisor Supplier -->
-                                                    <dialog id="modal-reject-supervisor-{{ item.id }}" class="modal">
-                                                        <form method="post"
-                                                              action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                              class="modal-box">
-                                                            <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
-                                                            <input type="hidden" name="approver_role" value="supervisor supplier">
-                                                            <input type="hidden" name="action" value="rejected">
-                                                            <div class="mb-6 flex flex-col items-center">
-                                                                <label class="label mb-2 text-lg font-semibold text-error">
-                                                                    <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
-                                                                </label>
-                                                                <input type="text"
-                                                                       name="reason"
-                                                                       placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                                       class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                                       maxlength="25"
-                                                                       required
-                                                                       style="min-width:300px"
-                                                                       onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
-                                                            </div>
-                                                            <div class="modal-action flex gap-2 justify-end">
-                                                                <button type="button"
-                                                                        class="btn"
-                                                                        onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').close()">
-                                                                    ยกเลิก
-                                                                </button>
-                                                                <button type="submit" class="btn btn-error">ปฏิเสธ</button>
-                                                            </div>
-                                                        </form>
-                                                    </dialog>
-                                                </td>
-                                            {% endif %}
-                                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                                <div class="flex flex-warp gap-0.5">
-                                                    {% set role_badges = {
-                                                        "head": [
-                                                            "badge-primary",
-                                                            "ph-user"
-                                                        ],
-                                                        "admin": [
-                                                            "badge-secondary",
-                                                            "ph-shield"
-                                                        ],
-                                                        "supervisor supplier": [
-                                                            "badge-accent",
-                                                            "ph-users"
-                                                        ]
-                                                    } %}
-                                                    {% for role, badge_info in role_badges.items() %}
-                                                        {% set badge_class = badge_info[0] %}
-                                                        {% set icon = badge_info[1] %}
-                                                        {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
-                                                                                                                role) | list %}
-                                                        {% if approvals %}
-                                                            {# ถ้า role นี้มีการ approve แล้ว #}
-                                                            <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
-                                                                 title="{{ role|title }} {{ approvals[-1].timestamp.strftime("%d/%m/%Y %H:%M") }}">
-                                                            </div>
-                                                        {% else %}
-                                                            {# ถ้ายังไม่ approve → แสดง badge-soft เปล่า ๆ #}
-                                                            <div class="badge badge-soft {{ badge_class }} badge-sm"></div>
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                </div>
-                                                <!-- <div class="flex gap-2 justify-center items-end">
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-control">
+                                            <div class="overflow-y-auto max-h-[600px]">
+                                                <table class="table table-md w-full border">
+                                                    <thead>
+                                                        <tr class="bg-base-200">
+                                                            <th></th>
+                                                            <th>รหัส MAS</th>
+                                                            <th>ชื่อโครงการ</th>
+                                                            <th>หมวดหลัก</th>
+                                                            <th>หมวดย่อย</th>
+                                                            <th>รายละเอียด</th>
+                                                            <th>งบประมาณ</th>
+                                                            <th>ประมาณจ่าย</th>
+                                                            <th>จ่ายจริง</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for mas in mas_list %}
+                                                        <tr>
+                                                            <td>
+                                                                <input type="radio" name="fund" value="{{ mas.id }}"
+                                                                    required>
+                                                            </td>
+                                                            <td class="font-mono text-xs">{{ mas.mas_code }}</td>
+                                                            <td class="font-semibold">{{ mas.name }}</td>
+                                                            <td>{{ mas.main_category }}</td>
+                                                            <td>{{ mas.sub_category }}</td>
+                                                            <td class="text-xs text-gray-500">
+                                                                {{
+                                                                mas.item_description }}
+                                                            </td>
+                                                            <td class="text-right">
+                                                                ฿{{ "{:,.2f}".format(mas.budget
+                                                                or 0) }}
+                                                            </td>
+                                                            <td class="text-right">
+                                                                ฿{{ "{:,.2f}".format(mas.amount
+                                                                or 0) }}
+                                                            </td>
+                                                            <td
+                                                                class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
+                                                                ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-action flex gap-2 justify-end">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="submit" class="btn btn-success">บันทึกและอนุมัติ</button>
+                                    </div>
+                                </form>
+                            </dialog>
+                        </td>
+                        {% endif %}
+                        {% if current_user.has_organization_roles("supervisor supplier") %}
+                        {% set already_acted = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
+                        {% set admin_approved = item.approval_history and item.approval_history |
+                        selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
+                        list | length > 0 %}
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <form method="post" style="display:inline"
+                                action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
+                                <input type="hidden" name="approver_role" value="supervisor supplier">
+                                <input type="hidden" name="action" value="approved">
+                                <button type="submit"
+                                    class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                    {% if not admin_approved or already_acted or item.status=='incomplete' %}disabled{%
+                                    endif %}>
+                                    <i class="ph ph-check text-lg" title="Approve"></i>
+                                </button>
+                            </form>
+                            <button type="button"
+                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
+                                if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif
+                                %}
+                                onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
+                                <i class="ph ph-x text-lg" title="Reject"></i>
+                            </button>
+                            <!-- Reject Modal for Supervisor Supplier -->
+                            <dialog id="modal-reject-supervisor-{{ item.id }}" class="modal">
+                                <form method="post"
+                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                    class="modal-box">
+                                    <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                    <input type="hidden" name="approver_role" value="supervisor supplier">
+                                    <input type="hidden" name="action" value="rejected">
+                                    <div class="mb-6 flex flex-col items-center">
+                                        <label class="label mb-2 text-lg font-semibold text-error">
+                                            <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                        </label>
+                                        <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                            class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                            maxlength="25" required style="min-width:300px"
+                                            onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
+                                    </div>
+                                    <div class="modal-action flex gap-2 justify-end">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').close()">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                    </div>
+                                </form>
+                            </dialog>
+                        </td>
+                        {% endif %}
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            <div class="flex flex-warp gap-1">
+                                {% set role_badges = {
+                                "head": [
+                                "badge-primary",
+                                "ph-user"
+                                ],
+                                "admin": [
+                                "badge-secondary",
+                                "ph-shield"
+                                ],
+                                "supervisor supplier": [
+                                "badge-accent",
+                                "ph-users"
+                                ]
+                                } %}
+                                {% for role, badge_info in role_badges.items() %}
+                                {% set badge_class = badge_info[0] %}
+                                {% set icon = badge_info[1] %}
+                                {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
+                                role) | list %}
+                                {% if approvals %}
+                                {# ถ้า role นี้มีการ approve แล้ว #}
+                                <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
+                                    title="{{ role|title }} {{ approvals[-1].timestamp.strftime(" %d/%m/%Y %H:%M") }}">
+                                </div>
+                                {% else %}
+                                {# ถ้ายังไม่ approve → แสดง badge-soft เปล่า ๆ #}
+                                <div class="badge badge-soft {{ badge_class }} badge-sm"></div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <!-- <div class="flex gap-2 justify-center items-end">
                                     {% set role_badges = {
                                     'head': ['badge-primary', 'ph-user'],
                                     'admin': ['badge-secondary', 'ph-shield'],
@@ -1137,113 +1142,117 @@
                                     {% endif %}
                                     {% endfor %}
                                 </div> -->
-                                            </td>
-                                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                                {% if item.status == 'pending' %}
-                                                    <span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
-                                                        <i class="ph ph-clock text-yellow-500"></i>
-                                                        รอดำเนินการ
-                                                    </span>
-                                                {% elif item.status == 'progress' %}
-                                                    <span class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                                                        <i class="ph ph-arrow-clockwise text-blue-500"></i>
-                                                        กำลังดำเนินการ
-                                                    </span>
-                                                {% elif item.status == 'incomplete' %}
-                                                    <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
-                                                          onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
-                                                        <i class="ph ph-x-circle text-red-500"></i>
-                                                        ไม่อนุมัติ
-                                                    </span>
-                                                    <!-- Modal for rejection info -->
-                                                    <dialog id="modal-reject-info-{{ item.id }}" class="modal">
-                                                        <div class="modal-box">
-                                                            <h3 class="font-bold text-lg text-error mb-4 flex items-center gap-2">
-                                                                <i class="ph ph-x-circle text-red-500"></i>
-                                                                รายละเอียดการปฏิเสธ
-                                                            </h3>
-                                                            {% set rejection = item.approval_history | selectattr('action', 'equalto',
-                                                                                                                        'rejected') | list | last %}
-                                                            {% if rejection %}
-                                                                <div class="mb-2">
-                                                                    <span class="font-semibold">ผู้ปฏิเสธ:</span>
-                                                                    <span>{{ rejection.approver.display_fullname() or rejection.approver_role or '-'
-                                                                    }}</span>
-                                                                </div>
-                                                                <div class="mb-2">
-                                                                    <span class="font-semibold">วันที่:</span>
-                                                                    <span>{{ rejection.timestamp.strftime("%d/%m/%Y %H:%M") if rejection.timestamp
-                                                                    else '-' }}</span>
-                                                                </div>
-                                                                <div class="mb-2">
-                                                                    <span class="font-semibold">เหตุผล:</span>
-                                                                    <span>{{ rejection.reason or '-' }}</span>
-                                                                </div>
-                                                            {% else %}
-                                                                <div class="text-gray-500">ไม่พบข้อมูลการปฏิเสธ</div>
-                                                            {% endif %}
-                                                            <div class="modal-action mt-4">
-                                                                <button type="button"
-                                                                        class="btn"
-                                                                        onclick="document.getElementById('modal-reject-info-{{ item.id }}').close()">
-                                                                    ปิด
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </dialog>
-                                                {% elif item.status == 'complete' %}
-                                                    <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                                                        <i class="ph ph-check-circle text-green-500"></i>
-                                                        อนุมัติ
-                                                    </span>
-                                                {% endif %}
-                                            </td>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if item.status == 'pending' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-clock text-yellow-500"></i>
+                                รอดำเนินการ
+                            </span>
+                            {% elif item.status == 'progress' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-arrow-clockwise text-blue-500"></i>
+                                กำลังดำเนินการ
+                            </span>
+                            {% elif item.status == 'incomplete' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
+                                onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
+                                <i class="ph ph-x-circle text-red-500"></i>
+                                ไม่อนุมัติ
+                            </span>
+                            <!-- Modal for rejection info -->
+                            <dialog id="modal-reject-info-{{ item.id }}" class="modal">
+                                <div class="modal-box">
+                                    <h3 class="font-bold text-lg text-error mb-4 flex items-center gap-2">
+                                        <i class="ph ph-x-circle text-red-500"></i>
+                                        รายละเอียดการปฏิเสธ
+                                    </h3>
+                                    {% set rejection = item.approval_history | selectattr('action', 'equalto',
+                                    'rejected') | list | last %}
+                                    {% if rejection %}
+                                    <div class="mb-2">
+                                        <span class="font-semibold">ผู้ปฏิเสธ:</span>
+                                        <span>{{ rejection.approver.display_fullname() or rejection.approver_role or '-'
+                                            }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="font-semibold">วันที่:</span>
+                                        <span>{{ rejection.timestamp.strftime("%d/%m/%Y %H:%M") if rejection.timestamp
+                                            else '-' }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="font-semibold">เหตุผล:</span>
+                                        <span>{{ rejection.reason or '-' }}</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-gray-500">ไม่พบข้อมูลการปฏิเสธ</div>
+                                    {% endif %}
+                                    <div class="modal-action mt-4">
+                                        <button type="button" class="btn"
+                                            onclick="document.getElementById('modal-reject-info-{{ item.id }}').close()">
+                                            ปิด
+                                        </button>
+                                    </div>
+                                </div>
+                            </dialog>
+                            {% elif item.status == 'complete' %}
+                            <span
+                                class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="ph ph-check-circle text-green-500"></i>
+                                อนุมัติ
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr id="subtable-{{ item.id }}">
+                        <td colspan="12" class="px-4 py-2 p-0">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full table-sm divide-y divide-blue-100">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
+                                            <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
+                                            <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
+                                            <th class="w-24 font-semibold text-xs text-center">หน่วยเงิน</th>
+                                            <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
                                         </tr>
-                                        <tr id="subtable-{{ item.id }}">
-                                            <td colspan="12" class="px-4 py-2 p-0">
-                                                <div class="overflow-x-auto">
-                                                    <table class="min-w-full table-sm divide-y divide-blue-100">
-                                                        <thead>
-                                                            <tr>
-                                                                <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
-                                                                <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
-                                                                <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
-                                                                <th class="w-24 font-semibold text-xs text-center">หน่วยเงิน</th>
-                                                                <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {% for subitem in item.items %}
-                                                                <tr>
-                                                                    <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
-                                                                        title="{{ subitem.product_name }}">
-                                                                        {{ subitem.product_name }}
-                                                                    </td>
-                                                                    <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
-                                                                        title="{{ subitem.get_category_display() }}">
-                                                                        {{ subitem.get_category_display() }}
-                                                                    </td>
-                                                                    <td class="w-20 text-sm text-center">{{ subitem.quantity }}</td>
-                                                                    <td class="w-24 text-sm text-center">
-                                                                        {{ subitem.currency if
-                                                                        subitem.currency else '' }}
-                                                                    </td>
-                                                                    <td class="w-32 text-sm text-right font-bold text-blue-700">฿{{ "{:,.2f}".format(subitem.amount) }}</td>
-                                                                </tr>
-                                                            {% endfor %}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                    </thead>
+                                    <tbody>
+                                        {% for subitem in item.items %}
+                                        <tr>
+                                            <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
+                                                title="{{ subitem.product_name }}">
+                                                {{ subitem.product_name }}
                                             </td>
+                                            <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
+                                                title="{{ subitem.get_category_display() }}">
+                                                {{ subitem.get_category_display() }}
+                                            </td>
+                                            <td class="w-20 text-sm text-center">{{ subitem.quantity }}</td>
+                                            <td class="w-24 text-sm text-center">
+                                                {{ subitem.currency if
+                                                subitem.currency else '' }}
+                                            </td>
+                                            <td class="w-32 text-sm text-right font-bold text-blue-700">฿{{
+                                                "{:,.2f}".format(subitem.amount) }}</td>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-            <script>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+<script>
     function printDocument(url) {
         // สร้าง iframe แบบ dynamic
         var iframe = document.createElement('iframe');
@@ -1280,5 +1289,5 @@
             icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
         });
     });
-            </script>
-        {% endmacro %}
+</script>
+{% endmacro %}
