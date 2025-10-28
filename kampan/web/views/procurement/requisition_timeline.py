@@ -55,6 +55,56 @@ def filtered_requisition_timeline_by_progress(requisition_timeline, progress):
     return filtered_timelines
 
 
+# return ตําเเหน่งของ progress_status ใน progress_list
+def get_progress_index(progress_list, progress_status):
+    if not progress_list:
+        return 0
+    progress_index = None
+    # หา index ของ progress_status ที่กําลังจะเพิ่ม
+    order_index = PROGRESS_STATUS_ORDER.index(progress_status)
+    # หา index ของ progress_status ที่มีอยู่ใน progress_list
+    for i, progress in enumerate(progress_list):
+        current_index = PROGRESS_STATUS_ORDER.index(progress.progress_status)
+        if current_index >= order_index:
+            progress_index = i
+            break
+    # สําหรับกรณีที่ progress_status ที่จะเพิ่มอยู่ท้ายสุด
+    if progress_index is None:
+        progress_index = len(progress_list)
+
+    return progress_index
+
+
+def add_progress_in_order(
+    requisition_timeline,
+    new_progress_status,
+    current_user,
+    request,
+):
+    progress_index = get_progress_index(
+        requisition_timeline.progress,
+        new_progress_status,
+    )
+    if progress_index < len(requisition_timeline.progress):
+        requisition_timeline.progress = requisition_timeline.progress[:progress_index]
+
+    new_progress = models.Progress(
+        progress_status=new_progress_status,
+        created_by=current_user._get_current_object(),
+        last_ip_address=request.remote_addr,
+        user_agent=request.headers.get("User-Agent"),
+        timestamp=datetime.datetime.now(),
+    )
+    requisition_timeline.progress.append(new_progress)
+
+    # อัปเดตข้อมูลอื่นๆ
+    requisition_timeline.last_updated_by = current_user._get_current_object()
+    requisition_timeline.updated_date = datetime.datetime.now()
+    requisition_timeline.save()
+
+    return requisition_timeline
+
+
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
@@ -120,19 +170,13 @@ def add_progress(requisition_timeline_id):
     new_progress_status = request.form.get("progress")
 
     if new_progress_status:
-        # Create a new Progress embedded document
-        progress_entry = models.Progress(
-            progress_status=new_progress_status,
-            created_by=current_user._get_current_object(),
-            last_ip_address=request.remote_addr,
-            user_agent=request.headers.get("User-Agent"),
-            timestamp=datetime.datetime.now(),
+        # Call the function to add progress in order
+        add_progress_in_order(
+            requisition_timeline,
+            new_progress_status,
+            current_user,
+            request,
         )
-        # Append to the progress list
-        requisition_timeline.progress.append(progress_entry)
-        requisition_timeline.last_updated_by = current_user._get_current_object()
-        requisition_timeline.updated_date = datetime.datetime.now()
-        requisition_timeline.save()
 
     return redirect(
         url_for(
