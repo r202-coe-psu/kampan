@@ -1,192 +1,240 @@
 <div class="drawer-side shadow">
-  <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
-  <aside
-    class="items-center min-h-screen max-h-screen px-2 z-[999] space-y-1 h-screen bg-base-100 w-[280px] flex flex-col">
-    <h1 class="text-tns-black w-full font-bold text-2xl py-3 px-2 h-[20%] border-b">DIIS INVENTORY</h1>
-    <nav class="menu space-y-1 w-full h-[60%] flex-1 overflow-auto">
-      {% if organization %}
-      {% if current_user.has_organization_roles("admin")
-      %}
-      <li class="menu-title">
-        <span class="font-bold text-lg">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</span>
-      </li>
-      <ul class="ml-1">
-        <li>
-          <a class="{{ 'menu-active' if '/upload_files' in request.path else '' }}"
-            href="{{ url_for('admin.upload_files.index', organization_id=organization.id) }}">
-            <i class="ph ph-upload"></i> อัพโหลดไฟล์
-          </a>
-        </li>
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-scroll"></i> ขอซื้อขอจ้าง
-            </summary>
-            <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-                  href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id, user_id=current_user.id) }}">
-                  <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
+  <label for="drawer-menu"
+         aria-label="close sidebar"
+         class="drawer-overlay h-full"></label>
+  <aside class="items-center min-h-screen px-2 z-50 space-y-1 bg-base-100 w-[280px] flex flex-col fixed left-0 top-0 h-screen">
+    <!-- Header Section - Fixed Height -->
+    <div class="w-full py-3 px-2 border-b flex-shrink-0">
+      <h1 class="text-tns-black font-bold text-2xl text-start select-none">DIIS INVENTORY</h1>
+    </div>
+    <!-- Navigation Menu - Scrollable with proper constraints -->
+    <nav class="menu w-full flex-1 overflow-y-auto overflow-x-hidden">
+      <div class="space-y-1 w-full">
+        {% if organization %}
+          {% if current_user.has_organization_roles("admin") %}
+            <li class="menu-title">
+              <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</span>
+            </li>
+            <ul class="ml-1 w-full">
+              <li class="w-full">
+                <a class="{{ 'menu-active' if '/upload_files' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                   href="{{ url_for('admin.upload_files.index', organization_id=organization.id) }}"
+                   title="อัพโหลดไฟล์">
+                  <i class="ph ph-upload flex-shrink-0"></i>
+                  <span class="truncate">อัพโหลดไฟล์</span>
                 </a>
               </li>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }}"
-                  href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id, user_id=current_user.id) }}">
-                  <i class="ph ph-clipboard-text"></i> รายการรอดำเนินการ
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-scroll flex-shrink-0"></i>
+                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                  </summary>
+                  <ul class="w-full">
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id, user_id=current_user.id) }}"
+                         title="รายการขอซื้อขอจ้าง">
+                        <i class="ph ph-arrow-clockwise flex-shrink-0"></i>
+                        <span class="truncate">รายการขอซื้อขอจ้าง</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id, user_id=current_user.id) }}"
+                         title="รายการรอดำเนินการ">
+                        <i class="ph ph-clipboard-text flex-shrink-0"></i>
+                        <span class="truncate">รายการรอดำเนินการ</span>
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-package flex-shrink-0"></i>
+                    <span class="truncate">จัดการ MA</span>
+                  </summary>
+                  <ul class="w-full">
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
+                         title="รายการ MA">
+                        <i class="ph ph-shopping-cart flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if ('/procurement/requisitions' in request.path) and ('/procurement/requisitions/' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                         title="รายการ MA ขอต่ออายุ">
+                        <i class="ph ph-list flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA ขอต่ออายุ</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}"
+                         title="รายการ MA ไม่ต่ออายุ">
+                        <i class="ph ph-x-circle flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA ไม่ต่ออายุ</span>
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-bank flex-shrink-0"></i>
+                    <span class="truncate">ระบบ MAS</span>
+                  </summary>
+                  <ul class="w-full">
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/mas' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
+                         title="แหล่งเงิน">
+                        <i class="ph ph-money-wavy flex-shrink-0"></i>
+                        <span class="truncate">แหล่งเงิน</span>
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          {% endif %}
+          {% if current_user.has_organization_roles("staff") %}
+            <li class="menu-title">
+              <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับพนักงาน</span>
+            </li>
+            <ul class="ml-1 w-full">
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-scroll flex-shrink-0"></i>
+                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                  </summary>
+                  <ul class="w-full">
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
+                         title="รายการขอซื้อขอจ้าง">
+                        <i class="ph ph-arrow-clockwise flex-shrink-0"></i>
+                        <span class="truncate">รายการขอซื้อขอจ้าง</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+                         title="รายการรอดำเนินการ">
+                        <i class="ph ph-clipboard-text flex-shrink-0"></i>
+                        <span class="truncate">รายการรอดำเนินการ</span>
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-package flex-shrink-0"></i>
+                    <span class="truncate">จัดการ MA</span>
+                  </summary>
+                  <ul class="w-full">
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
+                         title="รายการ MA">
+                        <i class="ph ph-shopping-cart flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if ('/procurement/requisitions' in request.path) and ('/procurement/requisitions/' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                         title="รายการ MA ขอต่ออายุ">
+                        <i class="ph ph-list flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA ขอต่ออายุ</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                         href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}"
+                         title="รายการ MA ไม่ต่ออายุ">
+                        <i class="ph ph-x-circle flex-shrink-0"></i>
+                        <span class="truncate">รายการ MA ไม่ต่ออายุ</span>
+                      </a>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          {% endif %}
+          {% if current_user.has_organization_roles("head") %}
+            <li class="menu-title">
+              <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับหัวหน้าฝ่าย</span>
+            </li>
+            <ul class="ml-1 w-full">
+              <li class="w-full">
+                <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                   href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
+                   title="อนุมัติรายการขอซื้อขอจ้าง">
+                  <i class="ph ph-list flex-shrink-0"></i>
+                  <span class="truncate">อนุมัติรายการขอซื้อขอจ้าง</span>
                 </a>
               </li>
             </ul>
-          </details>
-        </li>
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-package"></i> จัดการ MA
-            </summary>
-            <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
-                  href="{{ url_for('procurement.products.index', organization_id=organization.id) }}">
-                  <i class="ph ph-shopping-cart"></i> รายการ MA
-                </a>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if ('/procurement/requisitions' in request.path) and ('/procurement/requisitions/' not in request.path) else '' }}"
-                  href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}">
-                  <i class="ph ph-list"></i> รายการ MA ขอต่ออายุ
-                </a>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }}"
-                  href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}">
-                  <i class="ph ph-x-circle"></i> รายการ MA ไม่ต่ออายุ
+          {% endif %}
+          {% if current_user.has_organization_roles("supervisor supplier") %}
+            <li class="menu-title mt-2">
+              <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับหัวหน้าฝ่ายบริหารจัดการ</span>
+            </li>
+            <ul class="ml-1 w-full">
+              <li class="w-full">
+                <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                   href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
+                   title="จัดการ Supplier">
+                  <i class="ph ph-users flex-shrink-0"></i>
+                  <span class="truncate">จัดการ Supplier</span>
                 </a>
               </li>
             </ul>
-          </details>
-        </li>
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-bank"></i> ระบบ MAS
-            </summary>
-            <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/mas' in request.path else '' }}"
-                  href="{{ url_for('admin.mas.index', organization_id=organization.id) }}">
-                  <i class="ph ph-money-wavy"></i> แหล่งเงิน
-                </a>
-              </li>
-            </ul>
-          </details>
-        </li>
-      </ul>
-      {% endif %}
-      {% if current_user.has_organization_roles("staff") %}
-      <li class="menu-title">
-        <span class="font-bold text-lg">สำหรับพนักงาน</span>
-      </li>
-      <ul class="ml-1">
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-scroll"></i> ขอซื้อขอจ้าง
-            </summary>
-            <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-                  href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}">
-                  <i class="ph ph-arrow-clockwise"></i> รายการขอซื้อขอจ้าง
-                </a>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }}"
-                  href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}">
-                  <i class="ph ph-clipboard-text"></i> รายการรอดำเนินการ
-                </a>
-              </li>
-            </ul>
-          </details>
-        </li>
-        <li>
-          <details open>
-            <summary>
-              <i class="ph ph-package"></i> จัดการ MA
-            </summary>
-            <ul>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/products' in request.path else '' }}"
-                  href="{{ url_for('procurement.products.index', organization_id=organization.id) }}">
-                  <i class="ph ph-shopping-cart"></i> รายการ MA
-                </a>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if ('/procurement/requisitions' in request.path) and ('/procurement/requisitions/' not in request.path) else '' }}"
-                  href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}">
-                  <i class="ph ph-list"></i> รายการ MA ขอต่ออายุ
-                </a>
-              </li>
-              <li>
-                <a class="{{ 'menu-active' if '/procurement/requisitions/non-renewal' in request.path  else '' }}"
-                  href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}">
-                  <i class="ph ph-x-circle"></i> รายการ MA ไม่ต่ออายุ
-                </a>
-              </li>
-            </ul>
-          </details>
-        </li>
-      </ul>
-      {% endif %}
-      {% if current_user.has_organization_roles("head") %}
-      <li class="menu-title">
-        <span class="font-bold text-lg">สำหรับหัวหน้าฝ่าย</span>
-      </li>
-      <ul class="ml-1">
-        <li>
-          <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-            href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}">
-            <i class="ph ph-list"></i> อนุมัติรายการขอซื้อขอจ้าง
-          </a>
-        </li>
-      </ul>
-      {% endif %}
-      {% if current_user.has_organization_roles("supervisor supplier") %}
-      <li class="menu-title mt-2">
-        <span class="font-bold text-lg">สำหรับหัวหน้าฝ่ายบริหารจัดการ</span>
-      </li>
-      <ul class="ml-1">
-        <li>
-          <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }}"
-            href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}">
-            <i class="ph ph-users"></i> จัดการ Supplier
-          </a>
-        </li>
-      </ul>
-      {% endif %}
-      <ul class="ml-1 mt-2">
-        <li>
-          <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
-            href="{{ url_for('site.select_system', organization_id=organization.id) }}">
-            <i class="ph ph-swap"></i> เปลี่ยนระบบ
-          </a>
-        </li>
-      </ul>
-      {% endif %}
+          {% endif %}
+          <ul class="ml-1 mt-4 w-full">
+            <li class="w-full">
+              <a class="{{ 'menu-active' if '/-----' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                 href="{{ url_for('site.select_system', organization_id=organization.id) }}"
+                 title="เปลี่ยนระบบ">
+                <i class="ph ph-swap flex-shrink-0"></i>
+                <span class="truncate">เปลี่ยนระบบ</span>
+              </a>
+            </li>
+          </ul>
+        {% endif %}
+      </div>
     </nav>
-    <div class="mt-auto h-[20%] px-2">
-      <div class="py-3 flex border-t items-center gap-3">
-        <div class="avatar placeholder">
-          <div class="bg-base-300 text-base-content rounded-full w-10">
-            <span class="text-sm"><i class="ph ph-user"></i></span>
+    <!-- User Profile Section - Fixed at Bottom -->
+    <div class="w-full px-2 py-3 border-t flex-shrink-0">
+      <div class="flex items-center gap-3 w-full min-w-0">
+        <div class="avatar placeholder flex-shrink-0">
+          <div class="bg-base-300 p-1.5 text-center align-middle text-base-content rounded-full w-10 h-10 flex items-center justify-center">
+            <i class="ph ph-user text-sm"></i>
           </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium truncate">{{ current_user.get_resources_fullname_th() }}</p>
-          <p class="text-xs text-base-content/60 truncate">{{ current_user.email }}</p>
+        <div class="flex-1 min-w-0 overflow-hidden">
+          <p class="text-sm font-medium text-base-content truncate whitespace-nowrap"
+             title="{{ current_user.get_resources_fullname_th() }}">{{ current_user.get_resources_fullname_th() }}</p>
+          <p class="text-xs text-base-content/60 truncate whitespace-nowrap"
+             title="{{ current_user.email }}">{{ current_user.email }}</p>
         </div>
-        <a class="btn btn-ghost rounded-full btn-sm text-error" href="{{ url_for('accounts.logout') }}">
-          <i class="ph ph-sign-out"></i>
-        </a>
+        <div class="flex-shrink-0">
+          <a class="btn btn-ghost btn-sm rounded-full text-error hover:bg-error/10"
+             href="{{ url_for("accounts.logout") }}"
+             title="ออกจากระบบ">
+            <i class="ph ph-sign-out text-lg"></i>
+          </a>
+        </div>
       </div>
     </div>
   </aside>
