@@ -95,15 +95,12 @@
                                     "desc": "เสร็จสิ้น"
                                 }
                             ] %}
-                            <tr class="{% if item.requisition.status == 'incomplete' %}bg-red-50{% elif item.status == 'complete' %}bg-green-50{% endif %}">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <button class="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 flex items-center justify-center group"
+                            <tr class="  {{ 'bg-red-50' if item.requisition.status == 'incomplete' else ('bg-green-50' if item.status == 'complete' else '') }}">
+                                <td class="px-4  text-center ">
+                                    <button class="toggle-icon-btn rounded-full h-10 w-10 flex items-center justify-center bg-blue-400 border-none cursor-pointer "
                                             onclick="toggleSubtable('{{ item.requisition.id }}')"
                                             title="แสดง/ซ่อนรายละเอียด">
-                                        <span id="toggle-icon-{{ item.requisition.id }}"
-                                              class="text-blue-600 group-hover:text-blue-800 transition-transform duration-200">
-                                            <i class="ph ph-caret-circle-down text-lg"></i>
-                                        </span>
+                                        <span id="toggle-icon-{{ item.requisition.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
                                     </button>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -287,5 +284,13 @@
             icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
         }
     }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[id^="subtable-"]').forEach(function (row) {
+            row.style.display = 'none';
+        });
+        document.querySelectorAll('[id^="toggle-icon-"]').forEach(function (icon) {
+            icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+        });
+    });
     </script>
 {% endmacro %}

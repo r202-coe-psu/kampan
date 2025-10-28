@@ -42,9 +42,6 @@
                             </option>
                         {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="ph ph-magnifying-glass"></i> กรอง
-                    </button>
                     {% if request.args.get('progress') %}
                         <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                            class="btn btn-sm btn-ghost">
