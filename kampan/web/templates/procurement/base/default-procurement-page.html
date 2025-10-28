@@ -1,13 +1,13 @@
 {% extends "/base/base.html" %}
 {% import '/base/html-renderer.html' as renderer %}
 {% block body %}
-  <div class="drawer lg:drawer-open">
+  <div class="drawer lg:drawer-open relative">
     <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
-    <div class="drawer-content bg-base-200 h-full min-h-screen">
+    <div class="drawer-content bg-base-200 h-full min-h-screen relative z-10">
       <div class="flex flex-col h-full">
         <div class="w-full navbar p-0 h-auto">
           <div class="flex w-full flex-col items-start">
-            <div class="flex flex-row w-full justify-between p-0 h-auto fixed top-0 z-40 bg-purple-400">
+            <div class="flex flex-row w-full justify-between p-0 h-auto fixed top-0 z-30 bg-purple-400">
               <label for="drawer-menu"
                      class="btn rounded-none border-0 bg-purple-400 drawer-button lg:hidden text-white hover:bg-base-100 hover:text-black">
                 <i class="ph ph-size ph-list"></i>
