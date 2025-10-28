@@ -186,9 +186,16 @@ def renewal_requested(requisition_procurement_id):
 
         # Apply filters based on role (lowest privilege first)
         if is_staff and not (is_admin_or_head or is_supervisor):
-            requisitions = requisitions.filter(
-                created_by=current_user._get_current_object()
-            )
+            # Filter by purchaser.user matching current_user
+            staff_requisitions = []
+            for req in requisitions:
+                if (
+                    req.purchaser
+                    and req.purchaser.user
+                    and req.purchaser.user.id == current_user.id
+                ):
+                    staff_requisitions.append(req.id)
+            requisitions = requisitions.filter(id__in=staff_requisitions)
         elif is_supervisor and not is_admin_or_head:
             requisitions = requisitions.filter(supervisor=org_user_role)
         # Admin and head see all (no filter)

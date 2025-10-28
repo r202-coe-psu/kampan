@@ -61,6 +61,7 @@ class CommitteeForm(Form):
 
 class RequisitionForm(BaseRequisitionForm):
     type = fields.StringField("ประเภท")
+    phone = fields.StringField("เบอร์โทรศัพท์")
     start_date = fields.DateField(
         "วันที่ต้องการใช้งาน",
     )
