@@ -1,278 +1,391 @@
 {% macro requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list, current_user,
-    organization, PROGRESS_STATUS_ORDER) %}
-    {% if requisition_timeline_list|length == 0 %}
-        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12 mx-auto max-w-2xl">
-            <div class="flex flex-col items-center justify-center text-center">
-                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse shadow-lg">
-                    <i class="ph ph-clock text-4xl text-blue-500"></i>
-                </div>
-                <h4 class="text-2xl font-bold text-blue-700 mb-3">ยังไม่มีรายการไทม์ไลน์การขอซื้อ</h4>
-                <p class="text-blue-600 max-w-md mb-6 leading-relaxed">
-                    เมื่อมีการสร้างคำขอซื้อขอจ้าง
-                    ไทม์ไลน์การดำเนินงานจะปรากฏที่นี่
-                </p>
-                <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-6 py-3 rounded-full shadow-md border border-blue-100">
-                    <i class="ph ph-info text-lg"></i>
-                    <span class="font-medium">รอการสร้างคำขอซื้อขอจ้าง</span>
-                </div>
-            </div>
+organization, PROGRESS_STATUS_ORDER) %}
+{% if requisition_timeline_list|length == 0 %}
+<div
+    class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-200 p-12 mx-auto max-w-2xl">
+    <div class="flex flex-col items-center justify-center text-center">
+        <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 animate-pulse shadow-lg">
+            <i class="ph ph-clock text-4xl text-blue-500"></i>
         </div>
-    {% else %}
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="w-12 px-6 py-4"></th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 w-48">
-                                <div class="flex items-center gap-2">
-                                    <i class="ph ph-barcode text-blue-500"></i>
-                                    เลขที่คำขอ
+        <h4 class="text-2xl font-bold text-blue-700 mb-3">ยังไม่มีรายการไทม์ไลน์การขอซื้อ</h4>
+        <p class="text-blue-600 max-w-md mb-6 leading-relaxed">
+            เมื่อมีการสร้างคำขอซื้อขอจ้าง
+            ไทม์ไลน์การดำเนินงานจะปรากฏที่นี่
+        </p>
+        <div
+            class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-6 py-3 rounded-full shadow-md border border-blue-100">
+            <i class="ph ph-info text-lg"></i>
+            <span class="font-medium">รอการสร้างคำขอซื้อขอจ้าง</span>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Desktop/Tablet view -->
+<div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden md:block hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr class="bg-gray-50">
+                    <th class="w-12 px-6 py-4"></th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 w-48">
+                        <div class="flex items-center gap-2">
+                            <i class="ph ph-barcode text-blue-500"></i>
+                            เลขที่คำขอ
+                        </div>
+                    </th>
+                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">
+                        <div class="flex items-center justify-center gap-2">
+                            <i class="ph ph-chart-line text-green-500"></i>
+                            ความคืบหน้า
+                        </div>
+                    </th>
+                    {% if current_user.has_organization_roles("admin") %}
+                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 w-40">
+                        <div class="flex items-center justify-center gap-2">
+                            <i class="ph ph-gear text-orange-500"></i>
+                            จัดการ
+                        </div>
+                    </th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+                {% for item in paginated_requisition_timeline.items %}
+                {% set latest_progress = item.progress[-1] if item.progress else None %}
+                {% set current_step = PROGRESS_STATUS_ORDER.index(latest_progress.progress_status) + 1 if
+                latest_progress else 0 %}
+                {% set steps = [
+                {"key": "request_created", "short": "จัดทำเอกสาร", "title": "จัดทำเอกสารขอซื้อขอจ้าง และรายงานผล",
+                "desc": "สร้างเอกสารและเตรียมความพร้อมสำหรับการจัดซื้อ"},
+                {"key": "vendor_contacted", "short": "ประสานงาน", "title": "ประสานงานกับร้านค้า/บริษัท", "desc":
+                "ติดต่อและเจรจากับผู้ขาย เปรียบเทียบราคา"},
+                {"key": "order_confirmed", "short": "ยืนยันสั่งซื้อ", "title": "ยืนยันการสั่งซื้อสั่งจ้าง", "desc":
+                "อนุมัติและยืนยันคำสั่งซื้อจากผู้มีอำนาจ"},
+                {"key": "awaiting_delivery", "short": "รอส่งมอบ", "title": "รอส่งมอบพัสดุ", "desc":
+                "รอผู้ขายจัดส่งสินค้าตามที่สั่งซื้อ"},
+                {"key": "inspection", "short": "ตรวจรับ", "title": "ตรวจรับพัสดุ", "desc":
+                "ตรวจสอบและรับมอบสินค้าจากผู้ขาย"},
+                {"key": "payment_processed", "short": "เบิกจ่าย", "title": "เบิกจ่าย", "desc":
+                "จ่ายเงินและดำเนินการเสร็จสิ้น"},
+                {"key": "completed", "short": "เสร็จสิ้น", "title": "เสร็จสิ้น", "desc": "เสร็จสิ้น"}
+                ] %}
+                <tr
+                    class="{{ 'bg-red-50' if item.requisition.status == 'incomplete' else ('bg-green-50' if item.status == 'complete' else '') }}">
+                    <td class="px-4 text-center">
+                        <button
+                            class="toggle-icon-btn rounded-full h-10 w-10 flex items-center justify-center border-none cursor-pointer"
+                            onclick="toggleSubtable('{{ item.requisition.id }}')" title="แสดง/ซ่อนรายละเอียด">
+                            <span id="toggle-icon-{{ item.requisition.id }}" style="font-size:1.2em;"><i
+                                    class="ph ph-caret-circle-down"></i></span>
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-receipt text-blue-600"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900">{{ item.requisition.requisition_code }}
                                 </div>
-                            </th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">
-                                <div class="flex items-center justify-center gap-2">
-                                    <i class="ph ph-chart-line text-green-500"></i>
-                                    ความคืบหน้า
-                                </div>
-                            </th>
-                            {% if current_user.has_organization_roles("admin") %}
-                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 w-40">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <i class="ph ph-gear text-orange-500"></i>
-                                        จัดการ
-                                    </div>
-                                </th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                        {% for item in paginated_requisition_timeline.items %}
-                            {% set latest_progress = item.progress[-1] if item.progress else None %}
-                            {% set current_step = PROGRESS_STATUS_ORDER.index(latest_progress.progress_status) + 1 if
-                                                        latest_progress else 0 %}
-                            {% set steps = [
-                                {
-                                    "key": "request_created",
-                                    "short": "จัดทำเอกสาร",
-                                    "title": "จัดทำเอกสารขอซื้อขอจ้าง และรายงานผล",
-                                    "desc": "สร้างเอกสารและเตรียมความพร้อมสำหรับการจัดซื้อ"
-                                },
-                                {
-                                    "key": "vendor_contacted",
-                                    "short": "ประสานงาน",
-                                    "title": "ประสานงานกับร้านค้า/บริษัท",
-                                    "desc": "ติดต่อและเจรจากับผู้ขาย เปรียบเทียบราคา"
-                                },
-                                {
-                                    "key": "order_confirmed",
-                                    "short": "ยืนยันสั่งซื้อ",
-                                    "title": "ยืนยันการสั่งซื้อสั่งจ้าง",
-                                    "desc": "อนุมัติและยืนยันคำสั่งซื้อจากผู้มีอำนาจ"
-                                },
-                                {
-                                    "key": "awaiting_delivery",
-                                    "short": "รอส่งมอบ",
-                                    "title": "รอส่งมอบพัสดุ",
-                                    "desc": "รอผู้ขายจัดส่งสินค้าตามที่สั่งซื้อ"
-                                },
-                                {
-                                    "key": "inspection",
-                                    "short": "ตรวจรับ",
-                                    "title": "ตรวจรับพัสดุ",
-                                    "desc": "ตรวจสอบและรับมอบสินค้าจากผู้ขาย"
-                                },
-                                {
-                                    "key": "payment_processed",
-                                    "short": "เบิกจ่าย",
-                                    "title": "เบิกจ่าย",
-                                    "desc": "จ่ายเงินและดำเนินการเสร็จสิ้น"
-                                },
-                                {
-                                    "key": "completed",
-                                    "short": "เสร็จสิ้น",
-                                    "title": "เสร็จสิ้น",
-                                    "desc": "เสร็จสิ้น"
-                                }
-                            ] %}
-                            <tr class="  {{ 'bg-red-50' if item.requisition.status == 'incomplete' else ('bg-green-50' if item.status == 'complete' else '') }}">
-                                <td class="px-4  text-center ">
-                                    <button class="toggle-icon-btn rounded-full h-10 w-10 flex items-center justify-center bg-blue-400 border-none cursor-pointer "
-                                            onclick="toggleSubtable('{{ item.requisition.id }}')"
-                                            title="แสดง/ซ่อนรายละเอียด">
-                                        <span id="toggle-icon-{{ item.requisition.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
-                                    </button>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <i class="ph ph-receipt text-blue-600"></i>
+                                <div class="text-sm text-gray-500">คำขอซื้อขอจ้าง</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex justify-center items-center">
+                            <div class="w-full max-w-4xl flex justify-center">
+                                <ul class="steps steps-horizontal text-sm w-full justify-center">
+                                    {% for step in steps %}
+                                    <li class="step {% if current_step >= loop.index %}step-primary{% endif %}">
+                                        <div class="text-sm mt-2 text-center font-medium">{{ step.short }}</div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                    {% if current_user.has_organization_roles("admin") %}
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        <button type="button"
+                            class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
+                            onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
+                            <i class="ph ph-arrows-clockwise"></i> อัปเดต
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
+                    <td colspan="{% if current_user.has_organization_roles('admin') %}4{% else %}3{% endif %}"
+                        class="px-0 py-0">
+                        <div class="bg-gradient-to-r from-gray-50 to-blue-50 p-8">
+                            <div class="max-w-4xl mx-auto">
+                                <h4 class="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                                    <i class="ph ph-list-checks text-blue-600"></i>
+                                    รายละเอียดขั้นตอนการดำเนินงาน
+                                </h4>
+                                <div class="space-y-2">
+                                    <div class="relative">
+                                        <div
+                                            class="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-green-300 via-orange-300 to-gray-300">
                                         </div>
-                                        <div>
-                                            <div class="text-sm font-semibold text-gray-900">{{ item.requisition.requisition_code }}</div>
-                                            <div class="text-sm text-gray-500">คำขอซื้อขอจ้าง</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex justify-center items-center">
-                                        <div class="w-full max-w-4xl flex justify-center">
-                                            <ul class="steps steps-horizontal text-sm w-full justify-center">
-                                                {% for step in steps %}
-                                                    <li class="step {% if current_step >= loop.index %}step-primary{% endif %}">
-                                                        <div class="text-sm mt-2 text-center font-medium">{{ step.short }}</div>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </td>
-                                {% if current_user.has_organization_roles("admin") %}
-                                    <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        <button type="button"
-                                                class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
-                                                onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
-                                            <i class="ph ph-arrows-clockwise"></i> อัปเดต
-                                        </button>
-                                    </td>
-                                {% endif %}
-                            </tr>
-                            <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
-                                <td colspan="{% if current_user.has_organization_roles('admin') %}4{% else %}3{% endif %}"
-                                    class="px-0 py-0">
-                                    <div class="bg-gradient-to-r from-gray-50 to-blue-50 p-8">
-                                        <div class="max-w-4xl mx-auto">
-                                            <h4 class="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                                <i class="ph ph-list-checks text-blue-600"></i>
-                                                รายละเอียดขั้นตอนการดำเนินงาน
-                                            </h4>
-                                            <div class="space-y-2">
-                                                <div class="relative">
-                                                    <div class="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-green-300 via-orange-300 to-gray-300"></div>
-                                                    <div class="space-y-4">
-                                                        {% for step in steps %}
-                                                            {% set i = loop.index %}
-                                                            {% set is_done = current_step >= i %}
-                                                            {% set is_active = current_step == i - 1 %}
-                                                            {% set circle_cls = 'bg-green-500' if is_done else ('bg-orange-500 ' if is_active else 'border-2 border-gray-300 bg-gray-300') %}
-                                                            {% set box_border_cls = 'border-green-200' if is_done else
-                                                                                                                        ('border-orange-200' if is_active else 'border-gray-300') %}
-                                                            {% set box_bg_cls = 'bg-white' if (is_done or is_active) else 'bg-gray-50' %}
-                                                            {% set badge_text = 'เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if
-                                                                                                                        is_active else 'รอดำเนินการ') %}
-                                                            {% set badge_cls = 'bg-green-100 text-green-800' if is_done else
-                                                                                                                            ('bg-orange-100 text-orange-800' if is_active else 'bg-gray-100
-                                                                                                                        text-gray-600') %}
-                                                            <div class="relative gap-4 flex items-center">
-                                                                <div class="relative right-2 z-10 w-12 h-12 {{ circle_cls }} rounded-full flex items-center justify-center  border-4 border-white">
-                                                                    <i class="ph {{ 'ph-check text-white' if is_done else ('ph-hourglass text-white' if is_active else 'ph-clock text-gray-200 ') }}  text-xl{{ ' font-bold' if (is_done or is_active) else '' }}"></i>
-                                                                </div>
-                                                                <div class="ml-8 flex-1">
-                                                                    <div class="{{ box_bg_cls }} rounded-lg border {{ box_border_cls }} p-4 {{ 'shadow-md hover:shadow-lg transition-shadow' if (is_done or is_active) else 'shadow-sm' }}">
-                                                                        <div class="flex justify-between items-start mb-2">
-                                                                            <h5 class="font-semibold {{ 'text-gray-800' if (is_done or is_active) else 'text-gray-500' }}">{{ step.title }}</h5>
-                                                                            <span class="{{ badge_cls }} text-xs font-medium px-3 py-1 rounded-full">{{
-                                                                            badge_text }}</span>
-                                                                        </div>
-                                                                        <p class="text-sm {{ 'text-gray-600' if (is_done or is_active) else 'text-gray-400' }} mb-3">{{ step.desc }}</p>
-                                                                        <div class="flex items-center gap-4 text-xs {{ 'text-gray-300' if (is_done or is_active) else 'text-gray-400' }}">
-                                                                            {% set step_progress = (item.progress |
-                                                                                                                                                            selectattr('progress_status','equalto', step.key) | list |
-                                                                                                                                                        first) %}
-                                                                            <div class="flex items-center gap-1">
-                                                                                Updated By<i class="ph ph-user"></i>
-                                                                                <span>
-                                                                                    {% if is_done and step_progress and
-                                                                                        step_progress.created_by %}
-                                                                                        {{ step_progress.created_by.get_resources_fullname_th() 
-                                                                                        }}
-                                                                                    {% else %}
-                                                                                        -
-                                                                                    {% endif %}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div class="flex items-center gap-1">
-                                                                                <i class="ph ph-clock"></i>
-                                                                                <span>
-                                                                                    {% if is_done and step_progress and
-                                                                                        step_progress.timestamp %}
-                                                                                        {{
-                                                                                        step_progress.timestamp|format_thai_datetime_short_month
-                                                                                        }}
-                                                                                    {% else %}
-                                                                                        -
-                                                                                    {% endif %}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                        <div class="space-y-4">
+                                            {% for step in steps %}
+                                            {% set i = loop.index %}
+                                            {% set is_done = current_step >= i %}
+                                            {% set is_active = current_step == i - 1 %}
+                                            {% set circle_cls = 'bg-green-500' if is_done else ('bg-orange-500 ' if
+                                            is_active else 'border-2 border-gray-300 bg-gray-300') %}
+                                            {% set box_border_cls = 'border-green-200' if is_done else
+                                            ('border-orange-200' if is_active else 'border-gray-300') %}
+                                            {% set box_bg_cls = 'bg-white' if (is_done or is_active) else 'bg-gray-50'
+                                            %}
+                                            {% set badge_text = 'เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if
+                                            is_active else 'รอดำเนินการ') %}
+                                            {% set badge_cls = 'bg-green-100 text-green-800' if is_done else
+                                            ('bg-orange-100 text-orange-800' if is_active else 'bg-gray-100
+                                            text-gray-600') %}
+                                            <div class="relative gap-4 flex items-center">
+                                                <div
+                                                    class="relative z-10 w-12 h-12 {{ circle_cls }} rounded-full flex items-center justify-center border-4 border-white">
+                                                    <i
+                                                        class="ph {{ 'ph-check text-white' if is_done else ('ph-hourglass text-white' if is_active else 'ph-clock text-gray-200 ') }} text-xl{{ ' font-bold' if (is_done or is_active) else '' }}"></i>
+                                                </div>
+                                                <div class="ml-8 flex-1">
+                                                    <div
+                                                        class="{{ box_bg_cls }} rounded-lg border {{ box_border_cls }} p-4 {{ 'shadow-md hover:shadow-lg transition-shadow' if (is_done or is_active) else 'shadow-sm' }}">
+                                                        <div class="flex justify-between items-start mb-2">
+                                                            <h5
+                                                                class="font-semibold {{ 'text-gray-800' if (is_done or is_active) else 'text-gray-500' }}">
+                                                                {{ step.title }}</h5>
+                                                            <span
+                                                                class="{{ badge_cls }} text-xs font-medium px-3 py-1 rounded-full">{{
+                                                                badge_text }}</span>
+                                                        </div>
+                                                        <p
+                                                            class="text-sm {{ 'text-gray-600' if (is_done or is_active) else 'text-gray-400' }} mb-3">
+                                                            {{ step.desc }}</p>
+                                                        <div
+                                                            class="flex items-center gap-4 text-xs {{ 'text-gray-700' if (is_done or is_active) else 'text-gray-600' }}">
+                                                            {% set step_progress = (item.progress |
+                                                            selectattr('progress_status','equalto', step.key) | list |
+                                                            first) %}
+                                                            <div class="flex items-center gap-1">
+                                                                Updated By<i class="ph ph-user"></i>
+                                                                <span>
+                                                                    {% if is_done and step_progress and
+                                                                    step_progress.created_by %}
+                                                                    {{
+                                                                    step_progress.created_by.get_resources_fullname_th()
+                                                                    }}
+                                                                    {% else %}
+                                                                    -
+                                                                    {% endif %}
+                                                                </span>
                                                             </div>
-                                                        {% endfor %}
+                                                            <div class="flex items-center gap-1">
+                                                                <i class="ph ph-clock"></i>
+                                                                <span>
+                                                                    {% if is_done and step_progress and
+                                                                    step_progress.timestamp %}
+                                                                    {{
+                                                                    step_progress.timestamp|format_thai_datetime_short_month
+                                                                    }}
+                                                                    {% else %}
+                                                                    -
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            {% endfor %}
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-                            <!-- Update modal with correct choices -->
-                            {% if current_user.has_organization_roles("admin") %}
-                                <dialog id="modal-update-{{ item.id }}" class="modal">
-                                    <div class="modal-box">
-                                        <h3 class="font-bold text-lg mb-4">อัปเดตความคืบหน้า</h3>
-                                        <p class="mb-2">
-                                            เลขที่: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
-                                        </p>
-                                        <form method="POST"
-                                              action="{{ url_for('procurement.requisition_timeline.add_progress', requisition_timeline_id=item.id, organization_id=organization.id) }}">
-                                            <div class="form-control w-full">
-                                                <label class="label">
-                                                    <span class="label-text">เลือกขั้นตอน</span>
-                                                </label>
-                                                <select name="progress" class="select select-bordered w-full" required>
-                                                    <option value="" disabled {% if not latest_progress %}selected{% endif %}>
-                                                        --
-                                                        เลือกขั้นตอน --
-                                                    </option>
-                                                    {% for value, label in [
-                                                        ('request_created', 'จัดทำเอกสารขอซื้อ/ขอจ้าง'),
-                                                        ('vendor_contacted', 'ประสานงานกับร้านค้า/บริษัท'),
-                                                        ('order_confirmed', 'ยืนยันการสั่งซื้อ/สั่งจ้าง'),
-                                                        ('awaiting_delivery', 'รอส่งมอบพัสดุ'),
-                                                        ('inspection', 'ตรวจรับพัสดุ'),
-                                                        ('payment_processed', 'เบิกจ่าย'),
-                                                        ('completed', 'เสร็จสิ้น')
-                                                        ] %}
-                                                        <option value="{{ value }}" {% if latest_progress and
-                                                            latest_progress.progress_status==value %}selected{% endif %}>
-                                                            {{ loop.index }}. {{ label }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="modal-action">
-                                                <button type="button"
-                                                        class="btn"
-                                                        onclick="document.getElementById('modal-update-{{ item.id }}').close()">
-                                                    ยกเลิก
-                                                </button>
-                                                <button type="submit" class="btn btn-primary">บันทึก</button>
-                                            </div>
-                                        </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% if current_user.has_organization_roles("admin") %}
+                <!-- Leave modal rendering outside responsive wrappers below to avoid hidden parents -->
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Mobile view -->
+<div class="md:hidden space-y-4">
+    {% for item in paginated_requisition_timeline.items %}
+    {% set latest_progress = item.progress[-1] if item.progress else None %}
+    {% set current_step = PROGRESS_STATUS_ORDER.index(latest_progress.progress_status) + 1 if latest_progress else 0 %}
+    {% set steps = [
+    {"key": "request_created", "short": "จัดทำเอกสาร", "title": "จัดทำเอกสารขอซื้อขอจ้าง และรายงานผล", "desc":
+    "สร้างเอกสารและเตรียมความพร้อมสำหรับการจัดซื้อ"},
+    {"key": "vendor_contacted", "short": "ประสานงาน", "title": "ประสานงานกับร้านค้า/บริษัท", "desc":
+    "ติดต่อและเจรจากับผู้ขาย เปรียบเทียบราคา"},
+    {"key": "order_confirmed", "short": "ยืนยันสั่งซื้อ", "title": "ยืนยันการสั่งซื้อสั่งจ้าง", "desc":
+    "อนุมัติและยืนยันคำสั่งซื้อจากผู้มีอำนาจ"},
+    {"key": "awaiting_delivery", "short": "รอส่งมอบ", "title": "รอส่งมอบพัสดุ", "desc":
+    "รอผู้ขายจัดส่งสินค้าตามที่สั่งซื้อ"},
+    {"key": "inspection", "short": "ตรวจรับ", "title": "ตรวจรับพัสดุ", "desc": "ตรวจสอบและรับมอบสินค้าจากผู้ขาย"},
+    {"key": "payment_processed", "short": "เบิกจ่าย", "title": "เบิกจ่าย", "desc": "จ่ายเงินและดำเนินการเสร็จสิ้น"},
+    {"key": "completed", "short": "เสร็จสิ้น", "title": "เสร็จสิ้น", "desc": "เสร็จสิ้น"}
+    ] %}
+    {% set current_label = steps[current_step - 1].short if current_step > 0 else 'ยังไม่เริ่ม' %}
+    {% set progress_value = (current_step * 100) // (steps|length if steps|length > 0 else 1) %}
+    <div
+        class="bg-white rounded-xl shadow-md border border-gray-100 p-4 {{ 'bg-red-50' if item.requisition.status == 'incomplete' else ('bg-green-50' if item.status == 'complete' else '') }}">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="ph ph-receipt text-blue-600"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-semibold text-gray-900">{{ item.requisition.requisition_code }}</div>
+                    <div class="text-xs text-gray-500">คำขอซื้อขอจ้าง</div>
+                </div>
+            </div>
+            {% if current_user.has_organization_roles('admin') %}
+            <button type="button" class="btn btn-xs btn-primary"
+                onclick="event.stopPropagation(); document.getElementById('modal-update-{{ item.id }}').showModal();">
+                <i class="ph ph-arrows-clockwise"></i>
+                อัปเดต
+            </button>
+            {% endif %}
+        </div>
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-gray-600">ความคืบหน้า</span>
+                <span class="text-xs font-medium text-blue-600">{{ current_label }}</span>
+            </div>
+            <progress class="progress progress-primary w-full" value="{{ progress_value }}" max="100"></progress>
+        </div>
+        <div class="mt-3">
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-100 rounded-lg overflow-hidden">
+                <div class="collapse-title-custom text-sm font-semibold flex items-center justify-between gap-2 cursor-pointer p-4 hover:bg-blue-100 transition-colors"
+                    onclick="toggleMobileCollapse('mobile-collapse-{{ item.requisition.id }}')">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-list-checks text-blue-600"></i>
+                        รายละเอียดขั้นตอน
+                    </div>
+                    <i id="mobile-collapse-icon-{{ item.requisition.id }}" class="ph ph-caret-down text-blue-600"></i>
+                </div>
+                <div id="mobile-collapse-{{ item.requisition.id }}" class="collapse-content-custom hidden p-4 pt-0">
+                    <div class="space-y-3">
+                        {% for step in steps %}
+                        {% set i = loop.index %}
+                        {% set is_done = current_step >= i %}
+                        {% set is_active = current_step == i - 1 %}
+                        {% set badge_text = 'เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if is_active else
+                        'รอดำเนินการ') %}
+                        {% set badge_cls = 'bg-green-100 text-green-800' if is_done else ('bg-orange-100
+                        text-orange-800' if is_active else 'bg-gray-100 text-gray-600') %}
+                        <div
+                            class="rounded-lg border {{ 'border-green-200' if is_done else ('border-orange-200' if is_active else 'border-gray-200') }} p-3 bg-white">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        class="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center {{ 'bg-green-500 text-white' if is_done else ('bg-orange-500 text-white' if is_active else 'bg-gray-200 text-gray-400') }}">
+                                        <i
+                                            class="ph {{ 'ph-check' if is_done else ('ph-hourglass' if is_active else 'ph-clock') }} text-base"></i>
                                     </div>
-                                    <form method="dialog" class="modal-backdrop">
-                                        <button>close</button>
-                                    </form>
-                                </dialog>
-                            {% endif %}
+                                    <div>
+                                        <div
+                                            class="text-sm font-medium {{ 'text-gray-800' if (is_done or is_active) else 'text-gray-500' }}">
+                                            {{ step.title }}</div>
+                                        <div
+                                            class="text-xs {{ 'text-gray-600' if (is_done or is_active) else 'text-gray-400' }}">
+                                            {{ step.desc }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 flex items-center gap-4 text-gray-500">
+                                {% set step_progress = (item.progress | selectattr('progress_status','equalto',
+                                step.key) | list | first) %}
+                                <div class="flex items-center gap-1 text-xs py-1">
+                                    <i class="ph ph-user" style="font-size: 1rem;"></i>
+                                    <span>
+                                        {% if is_done and step_progress and step_progress.created_by %}
+                                        {{ step_progress.created_by.get_resources_fullname_th() }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-xs">
+                                    <i class="ph ph-clock text-xs" style="font-size: 1rem;"></i>
+                                    <span>
+                                        {% if is_done and step_progress and step_progress.timestamp %}
+                                        {{ step_progress.timestamp|format_thai_datetime_short_month }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             </div>
         </div>
-    {% endif %}
-    <script>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Render modals once per item outside hidden containers so they work in all responsive views -->
+{% if current_user.has_organization_roles('admin') %}
+{% for item in paginated_requisition_timeline.items %}
+{% set latest_progress = item.progress[-1] if item.progress else None %}
+<dialog id="modal-update-{{ item.id }}" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">อัปเดตความคืบหน้า</h3>
+        <p class="mb-2">
+            เลขที่: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+        </p>
+        <form method="POST"
+            action="{{ url_for('procurement.requisition_timeline.add_progress', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text">เลือกขั้นตอน</span>
+                </label>
+                <select name="progress" class="select select-bordered w-full" required>
+                    <option value="" disabled {% if not latest_progress %}selected{% endif %}>-- เลือกขั้นตอน --
+                    </option>
+                    {% for value, label in [
+                    ('request_created', 'จัดทำเอกสารขอซื้อ/ขอจ้าง'),
+                    ('vendor_contacted', 'ประสานงานกับร้านค้า/บริษัท'),
+                    ('order_confirmed', 'ยืนยันการสั่งซื้อ/สั่งจ้าง'),
+                    ('awaiting_delivery', 'รอส่งมอบพัสดุ'),
+                    ('inspection', 'ตรวจรับพัสดุ'),
+                    ('payment_processed', 'เบิกจ่าย'),
+                    ('completed', 'เสร็จสิ้น')
+                    ] %}
+                    <option value="{{ value }}" {% if latest_progress and latest_progress.progress_status==value
+                        %}selected{% endif %}>
+                        {{ loop.index }}. {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn"
+                    onclick="document.getElementById('modal-update-{{ item.id }}').close()">ยกเลิก</button>
+                <button type="submit" class="btn btn-primary">บันทึก</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endfor %}
+{% endif %}
+{% endif %}
+<script>
     function toggleSubtable(itemId) {
         var subtable = document.getElementById('subtable-' + itemId);
         var icon = document.getElementById('toggle-icon-' + itemId);
@@ -284,6 +397,21 @@
             icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
         }
     }
+
+    function toggleMobileCollapse(collapseId) {
+        var content = document.getElementById(collapseId);
+        var icon = document.getElementById(collapseId + '-icon');
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.classList.remove('ph-caret-down');
+            icon.classList.add('ph-caret-up');
+        } else {
+            content.classList.add('hidden');
+            icon.classList.remove('ph-caret-up');
+            icon.classList.add('ph-caret-down');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[id^="subtable-"]').forEach(function (row) {
             row.style.display = 'none';
@@ -292,5 +420,5 @@
             icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
         });
     });
-    </script>
+</script>
 {% endmacro %}
