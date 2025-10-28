@@ -7,13 +7,13 @@
       <div class="flex flex-col h-full">
         <div class="w-full navbar p-0 h-auto">
           <div class="flex w-full flex-col items-start">
-            <div class="flex flex-row w-full justify-between bg-purple-400 pt-2">
+            <div class="flex flex-row w-full justify-between  p-0 h-auto fixed top-0  bg-purple-400">
               <label for="drawer-menu"
                      class="btn rounded-none border-0 bg-purple-400 drawer-button 2xl:hidden text-white hover:bg-base-100 hover:text-black">
                 <i class="ph ph-size ph-list"></i>
               </label>
             </div>
-            <div class="flex flex-col px-2 lg:px-10">
+            <div class="flex flex-col pt-16 px-2 lg:px-10">
               <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
                 <span class="text-3xl font-bold">
                   {% block dashboard_title %}{{ self.title }}{% endblock %}
