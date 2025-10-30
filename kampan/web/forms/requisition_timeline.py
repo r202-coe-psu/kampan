@@ -12,9 +12,19 @@ BaseRequisitionTimelineForm = model_form(
         "purchaser",
         "updated_date",
         "updated_by",
+        "created_date",
+        "created_by",
+        "status",
     ],
 )
 
 
 class RequisitionTimelineForm(BaseRequisitionTimelineForm):
     pass
+
+
+class RequisitionCancelForm(FlaskForm):
+    note = fields.TextAreaField(
+        "เหตุผลการยกเลิก",
+        [validators.DataRequired(), validators.Length(max=500)],
+    )
