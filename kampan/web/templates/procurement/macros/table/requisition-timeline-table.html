@@ -111,6 +111,12 @@ organization, PROGRESS_STATUS_ORDER) %}
                             onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
                             <i class="ph ph-arrows-clockwise"></i> อัปเดต
                         </button>
+                        <!-- ปุ่มยกเลิก -->
+                        <button type="button"
+                            class="btn btn-sm btn-error ml-2"
+                            onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
+                            <i class="ph ph-x-circle"></i> ยกเลิก
+                        </button>
                     </td>
                     {% endif %}
                 </tr>
@@ -249,11 +255,19 @@ organization, PROGRESS_STATUS_ORDER) %}
                 </div>
             </div>
             {% if current_user.has_organization_roles('admin') %}
-            <button type="button" class="btn btn-xs btn-primary"
-                onclick="event.stopPropagation(); document.getElementById('modal-update-{{ item.id }}').showModal();">
-                <i class="ph ph-arrows-clockwise"></i>
-                อัปเดต
-            </button>
+            <div class="flex gap-2">
+                <button type="button" class="btn btn-xs btn-primary"
+                    onclick="event.stopPropagation(); document.getElementById('modal-update-{{ item.id }}').showModal();">
+                    <i class="ph ph-arrows-clockwise"></i>
+                    อัปเดต
+                </button>
+                <!-- ปุ่มยกเลิก (มือถือ) -->
+                <button type="button" class="btn btn-xs btn-error"
+                    onclick="event.stopPropagation(); document.getElementById('modal-cancel-{{ item.id }}').showModal();">
+                    <i class="ph ph-x-circle"></i>
+                    ยกเลิก
+                </button>
+            </div>
             {% endif %}
         </div>
         <div class="mt-3">
@@ -353,8 +367,7 @@ organization, PROGRESS_STATUS_ORDER) %}
                     <span class="label-text">เลือกขั้นตอน</span>
                 </label>
                 <select name="progress" class="select select-bordered w-full" required>
-                    <option value="" disabled {% if not latest_progress %}selected{% endif %}>-- เลือกขั้นตอน --
-                    </option>
+                    <option value="" disabled {% if not latest_progress %}selected{% endif %}>-- เลือกขั้นตอน --</option>
                     {% for value, label in [
                     ('request_created', 'จัดทำเอกสารขอซื้อ/ขอจ้าง'),
                     ('vendor_contacted', 'ประสานงานกับร้านค้า/บริษัท'),
@@ -364,17 +377,42 @@ organization, PROGRESS_STATUS_ORDER) %}
                     ('payment_processed', 'เบิกจ่าย'),
                     ('completed', 'เสร็จสิ้น')
                     ] %}
-                    <option value="{{ value }}" {% if latest_progress and latest_progress.progress_status==value
-                        %}selected{% endif %}>
+                    <option value="{{ value }}" {% if latest_progress and latest_progress.progress_status==value %}selected{% endif %}>
                         {{ loop.index }}. {{ label }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn"
-                    onclick="document.getElementById('modal-update-{{ item.id }}').close()">ยกเลิก</button>
+                <button type="button" class="btn" onclick="document.getElementById('modal-update-{{ item.id }}').close()">ยกเลิก</button>
                 <button type="submit" class="btn btn-primary">บันทึก</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- cancellation modal -->
+<dialog id="modal-cancel-{{ item.id }}" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-2">ยกเลิกรายการขอซื้อ/จ้าง</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+        </p>
+        <form method="POST"
+              action="{{ url_for('procurement.requisition_timeline.cancel', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">เหตุผลในการยกเลิก</span>
+                </label>
+                <textarea name="note" class="textarea textarea-bordered" rows="4" required placeholder="กรุณาระบุเหตุผล"></textarea>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('modal-cancel-{{ item.id }}').close()">ปิด</button>
+                <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
             </div>
         </form>
     </div>

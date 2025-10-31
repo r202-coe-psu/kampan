@@ -549,6 +549,8 @@ def requisition_action(requisition_id):
             requisition=requisition,
             purchaser=requisition.purchaser,
             progress=[],
+            note=None,
+            status="active",
             updated_date=datetime.datetime.now(),
             last_updated_by=current_user._get_current_object(),
             created_date=datetime.datetime.now(),

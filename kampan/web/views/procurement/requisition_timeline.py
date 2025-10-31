@@ -186,10 +186,9 @@ def add_progress(requisition_timeline_id):
     )
 
 
-@module.route("/<requisition_timeline_id>/cancel", methods=["POST"])
+@module.route("/<requisition_timeline_id>/cancel", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def cancel(requisition_timeline_id):
-    form = forms.requisition_timeline.RequisitionCancelForm()
     error_msg = ""
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -198,23 +197,23 @@ def cancel(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id
     )
-    if not form.validate_on_submit():
-        if not form.note.data:
-            error_msg = "กรุณาระบุเหตุผลการยกเลิก"
-        return render_template(
-            requisition_timeline_form=form,
-            organization=organization,
-            requisition_timeline=requisition_timeline,
-            error_msg=error_msg,
+    note = request.form.get("note")
+    if not note:
+        return redirect(
+            url_for(
+                "procurement.requisition_timeline.index",
+                organization_id=organization.id,
+            )
         )
     # บันทึกเหตุผลการยกเลิก
-    requisition_timeline.note = form.note.data
+    requisition_timeline.note = note
     requisition_timeline.status = "cancelled"
     requisition_timeline.save()
 
     requisition = requisition_timeline.requisition
-    requisition.status = "cancelled"
-    requisition.save()
+    if requisition:
+        requisition.status = "cancelled"
+        requisition.save()
 
     return redirect(
         url_for(

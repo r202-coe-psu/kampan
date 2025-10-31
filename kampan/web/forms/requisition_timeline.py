@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
-from wtforms import fields, Form, validators
+from wtforms import fields, Form, validators, TextAreaField
 
 from kampan import models
 
@@ -24,7 +24,7 @@ class RequisitionTimelineForm(BaseRequisitionTimelineForm):
 
 
 class RequisitionCancelForm(FlaskForm):
-    note = fields.TextAreaField(
+    note = TextAreaField(
         "เหตุผลการยกเลิก",
         [validators.DataRequired(), validators.Length(max=500)],
     )
