@@ -104,21 +104,32 @@ organization, PROGRESS_STATUS_ORDER) %}
                             </div>
                         </div>
                     </td>
-                    {% if current_user.has_organization_roles("admin") %}
                     <td class="px-4 py-3 whitespace-nowrap text-center">
+                        {% if current_user.has_organization_roles("admin")%}
                         <button type="button"
                             class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
                             onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
                             <i class="ph ph-arrows-clockwise"></i> อัปเดต
                         </button>
-                        <!-- ปุ่มยกเลิก -->
+                        {% endif %}
+                        
+                        <!-- ปุ่มยกเลิก (เฉพาะ admin และยังไม่ยกเลิก) -->
+                        {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
                         <button type="button"
                             class="btn btn-sm btn-error ml-2"
                             onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
                             <i class="ph ph-x-circle"></i> ยกเลิก
                         </button>
+                        {% endif %}
+                        {% if item.status == 'cancelled' %}
+                        <button type="button"
+                            class="btn btn-sm btn-info ml-2"
+                            onclick="document.getElementById('modal-note-{{ item.id }}').showModal();">
+                            <i class="ph ph-eye"></i> ดูเหตุผลการยกเลิก
+                        </button>
+                        {% endif %}
                     </td>
-                    {% endif %}
+                    
                 </tr>
                 <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
                     <td colspan="{% if current_user.has_organization_roles('admin') %}4{% else %}3{% endif %}"
@@ -254,21 +265,31 @@ organization, PROGRESS_STATUS_ORDER) %}
                     <div class="text-xs text-gray-500">คำขอซื้อขอจ้าง</div>
                 </div>
             </div>
-            {% if current_user.has_organization_roles('admin') %}
             <div class="flex gap-2">
+                {% if current_user.has_organization_roles('admin') %}
                 <button type="button" class="btn btn-xs btn-primary"
                     onclick="event.stopPropagation(); document.getElementById('modal-update-{{ item.id }}').showModal();">
                     <i class="ph ph-arrows-clockwise"></i>
                     อัปเดต
                 </button>
+                {% endif %}
+
                 <!-- ปุ่มยกเลิก (มือถือ) -->
+                {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
                 <button type="button" class="btn btn-xs btn-error"
                     onclick="event.stopPropagation(); document.getElementById('modal-cancel-{{ item.id }}').showModal();">
                     <i class="ph ph-x-circle"></i>
                     ยกเลิก
                 </button>
+                {% endif %}
+                {% if item.status == 'cancelled' %}
+                <button type="button" class="btn btn-xs btn-info"
+                    onclick="event.stopPropagation(); document.getElementById('modal-note-{{ item.id }}').showModal();">
+                    <i class="ph ph-eye"></i>
+                    ดูเหตุผลการยกเลิก
+                </button>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
         <div class="mt-3">
             <div class="flex items-center justify-between mb-1">
@@ -351,7 +372,6 @@ organization, PROGRESS_STATUS_ORDER) %}
 </div>
 
 <!-- Render modals once per item outside hidden containers so they work in all responsive views -->
-{% if current_user.has_organization_roles('admin') %}
 {% for item in paginated_requisition_timeline.items %}
 {% set latest_progress = item.progress[-1] if item.progress else None %}
 <dialog id="modal-update-{{ item.id }}" class="modal">
@@ -412,7 +432,7 @@ organization, PROGRESS_STATUS_ORDER) %}
             </div>
             <div class="modal-action">
                 <button type="button" class="btn" onclick="document.getElementById('modal-cancel-{{ item.id }}').close()">ปิด</button>
-                <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
+                <button type="submit" class="btn btn-error">ยืนยันการยกเลิก</button>
             </div>
         </form>
     </div>
@@ -420,8 +440,54 @@ organization, PROGRESS_STATUS_ORDER) %}
         <button>close</button>
     </form>
 </dialog>
+
+<dialog id="modal-note-{{ item.id }}" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-2 text-red-600">
+            <i class="ph ph-x-circle mr-2"></i>เหตุผลการยกเลิก
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">
+            เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+        </p>
+        
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="bg-white rounded border p-3 min-h-[80px]">
+                <p class="text-gray-700 whitespace-pre-wrap">
+                    {% if item.note %}
+                    {{ item.note }}
+                    {% else %}
+                    <span class="text-gray-500 italic">ไม่ได้ระบุเหตุผลการยกเลิก</span>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- แสดงข้อมูลเพิ่มเติม -->
+            {% if item.last_updated_by or item.updated_date %}
+            <div class="mt-3 pt-3 border-t border-red-200">
+                <div class="text-xs text-red-600">
+                    {% if item.last_updated_by %}
+                    ยกเลิกโดย: {{ item.last_updated_by.first_name }} {{ item.last_updated_by.last_name }}
+                    {% endif %}
+                    {% if item.updated_date %}
+                    <br>วันที่: {{ item.updated_date.strftime('%d/%m/%Y %H:%M น.') }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('modal-note-{{ item.id }}').close()">
+                ปิด
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
 {% endfor %}
-{% endif %}
 {% endif %}
 <script>
     function toggleSubtable(itemId) {
