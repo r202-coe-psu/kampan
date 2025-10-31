@@ -107,12 +107,7 @@ def add():
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    if quantity > item.get_amount_pieces():
-        return redirect(
-            url_for(
-                "lost_breaks.add", organization_id=organization_id, error_message=True
-            )
-        )
+
     inventories = models.Inventory.objects(item=item, remain__gt=0)
     for inventory in inventories:
         lost_break_item = models.LostBreakItem()

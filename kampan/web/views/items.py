@@ -32,7 +32,7 @@ def index():
         status__in=["active", "pending"], organization=organization
     ).order_by("status", "-created_date")
 
-    form.item.choices = [("", "เลือกวัสดุ")] + [
+    form.item.choices = [("", "")] + [
         (
             str(item.id),
             f"{item.name} " + (f"({item.barcode_id}) " if item.barcode_id else ""),
