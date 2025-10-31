@@ -107,8 +107,17 @@ def add():
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
+    # query inventory ordered by remain desc
+    inventories = models.Inventory.objects(item=item).order_by("-remain")
 
-    inventories = models.Inventory.objects(item=item, remain__gt=0)
+    # if not inventories:
+    #     return render_template(
+    #         "/lost_breaks/add.html",
+    #         form=form,
+    #         organization=organization,
+    #         error_message=True,
+    #     )
+    lost_break_item = None
     for inventory in inventories:
         lost_break_item = models.LostBreakItem()
         lost_break_item.user = current_user._get_current_object()
@@ -132,6 +141,7 @@ def add():
 
         if quantity <= 0:
             break
+
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_lost_break,
         args=(lost_break_item, current_user._get_current_object(), current_app.config),
