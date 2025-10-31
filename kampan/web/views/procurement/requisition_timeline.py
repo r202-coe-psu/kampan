@@ -189,7 +189,7 @@ def add_progress(requisition_timeline_id):
 @module.route("/<requisition_timeline_id>/cancel", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def cancel(requisition_timeline_id):
-    error_msg = ""
+    form = forms.requisition_timeline.RequisitionCancelForm()
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -197,7 +197,7 @@ def cancel(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id
     )
-    note = request.form.get("note")
+    note = form.note.data
     if not note:
         return redirect(
             url_for(
