@@ -371,12 +371,15 @@ def item_report_custom():
         )
         reports = DashboardRepository.get_item_report(
             start_date=form.start_date.data,
-            end_date=form.end_date.data,
+            end_date=form.end_date.data + datetime.timedelta(days=1),
             item_id=form.item.data,
             organization_id=organization_id,
         )
         data = prepare_data(
-            form.start_date.data, form.end_date.data, form.item.data, organization
+            form.start_date.data,
+            form.end_date.data + datetime.timedelta(days=1),
+            form.item.data,
+            organization,
         )
         list_data = calculate_amount_item(data)
         return render_template(
