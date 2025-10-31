@@ -171,7 +171,9 @@ def get_item_report(start_date, end_date, organization, item_id=None):
         for item in items:
             reports = DashboardRepository.get_item_report(
                 start_date=start_date,
-                end_date=end_date,
+                end_date=(end_date + datetime.timedelta(days=1)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                ),
                 item_id=item.id,
                 organization_id=organization.id,
             )

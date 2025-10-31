@@ -410,7 +410,7 @@ def download_item_report():
     search_quarter = request.args.get("search_quarter")
     if search_quarter:
         year, quarter = str(search_quarter).split("_")
-        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
+        start_date, end_date = get_quarter_of_year(int(year))[int(quarter)]
 
     search_start_date = request.args.get("search_start_date")
     search_end_date = request.args.get("search_end_date")
