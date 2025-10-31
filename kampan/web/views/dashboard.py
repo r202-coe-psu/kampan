@@ -309,7 +309,14 @@ def item_report_quarter():
 
         year, quarter = str(form.quarter.data).split("_")
         start_date, end_date = get_quarter_of_year(int(year))[int(quarter)]
-
+        start_date = datetime.datetime.combine(
+            start_date, datetime.datetime.min.time()
+        ).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = datetime.datetime.combine(
+            end_date, datetime.datetime.max.time()
+        ).replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(
+            days=1
+        )
         reports = DashboardRepository.get_item_report(
             start_date=start_date,
             end_date=end_date,
@@ -369,6 +376,8 @@ def item_report_custom():
         form.item.data = request.args.get(
             "search_item", (form.item.choices[0][0] if form.item.choices else None)
         )
+        print(form.start_date.data, form.end_date.data)
+
         reports = DashboardRepository.get_item_report(
             start_date=form.start_date.data,
             end_date=form.end_date.data + datetime.timedelta(days=1),
