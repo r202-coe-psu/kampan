@@ -51,9 +51,19 @@ class ControllerServer:
                 logger.debug("Start checking item data monthly")
 
                 today = datetime.date.today()
+
                 next_month = today + relativedelta(months=1)
                 next_month_start = next_month.replace(day=1)
                 time_set = datetime.datetime.combine(next_month_start, process_time)
+
+                this_day_month_snap = datetime.datetime.combine(
+                    today.replace(day=1), process_time
+                )
+                if datetime.datetime.now() <= this_day_month_snap:
+                    # snap for this month
+                    next_month = today + relativedelta(months=1)
+                    next_month_start = next_month.replace(day=1)
+                    time_set = datetime.datetime.combine(next_month_start, process_time)
 
                 time_to_check = (time_set - datetime.datetime.now()).total_seconds()
                 if time_to_check > 0:
