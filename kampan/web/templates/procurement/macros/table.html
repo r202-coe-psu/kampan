@@ -779,16 +779,19 @@
                                         </button>
                                     </td>
                                     <!-- ...existing code (move all cells right by one, update colspan below)... -->
+                                    <!--- เลขที่ -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         <div class="text-ms flex items-center gap-1 justify-center">
                                             <i class="ph ph-barcode"></i>{{ item.requisition_code }}
                                         </div>
                                     </td>
+                                    <!--- ชื่อรายการ -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                             {{ item.items|length }} รายการ
                                         </span>
                                     </td>
+                                    <!--- วันที่ต้องการใช้งาน -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         <div class="flex items-center gap-2 justify-center">
                                             <i class="ph ph-calendar-x text-blue-500"></i>
@@ -796,12 +799,14 @@
                                             if item.start_date }}</span>
                                         </div>
                                     </td>
+                                    <!--- จำนวนเงินรวม -->
                                     <td class="px-4 py-3 whitespace-nowrap text-right">
                                         <div class="text-lg font-bold text-blue-600">
                                             ฿{{ "{:,.2f}".format(item.items | map(attribute='amount') | sum) if item.items else
                                             '0.00' }}
                                         </div>
                                     </td>
+                                    <!--- แนบเอกสาร -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         {% if item.tor_document.filename %}
                                             <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
@@ -813,6 +818,7 @@
                                             <span class="text-gray-400 text-xs">ไม่มีเอกสาร</span>
                                         {% endif %}
                                     </td>
+                                    <!--- เอกสาร -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         {% set document_url = url_for('procurement.requisitions.document',
                                                                                 requisition_procurement_id=item.id) %}
@@ -821,6 +827,7 @@
                                             <i class="ph ph-file-arrow-down"></i> ดูใบขอซื้อ
                                         </button>
                                     </td>
+                                    <!--- ดำเนินการ(พนักงงาน) -->
                                     {% if current_user.has_organization_roles("staff") %}
                                         <td class="px-4 py-3 whitespace-nowrap text-center">
                                             {% set is_ma = item.type == 'MA' %}
@@ -837,6 +844,7 @@
                                             </a>
                                         </td>
                                     {% endif %}
+                                    <!--- ดำเนินการ(ผู้บริหาร) -->
                                     {% if current_user.has_organization_roles("admin") %}
                                         {% set already_acted = item.approval_history and item.approval_history |
                                                                                 selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
@@ -975,6 +983,7 @@
                                                 </dialog>
                                             </td>
                                         {% endif %}
+                                        <!--- ดำเนินการ(เจ้าหน้าที่พัสดุ) -->
                                         {% if current_user.has_organization_roles("supervisor supplier") %}
                                             {% set already_acted = item.approval_history and item.approval_history |
                                                                                         selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
@@ -1050,6 +1059,7 @@
                                                 </dialog>
                                             </td>
                                         {% endif %}
+                                        <!--- ดำเนินการ(หัวหน้าฝ่าย) -->
                                         {% if current_user.has_organization_roles("head") %}
                                             {% set already_acted = item.approval_history and item.approval_history |
                                                                                         selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
@@ -1122,6 +1132,7 @@
                                                 </dialog>
                                             </td>
                                         {% endif %}
+                                        <!--- สถานะการอนุมัติ -->
                                         <td class="px-4 py-3 whitespace-nowrap text-center">
                                             <div class="flex flex-warp gap-1">
                                                 {% set role_badges = {
@@ -1254,19 +1265,24 @@
                                                     <tbody>
                                                         {% for subitem in item.items %}
                                                             <tr>
+                                                                <!--- ชื่อรายการ -->
                                                                 <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
                                                                     title="{{ subitem.product_name }}">
                                                                     {{ subitem.product_name }}
                                                                 </td>
+                                                                <!--- ประเภท -->
                                                                 <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
                                                                     title="{{ subitem.get_category_display() }}">
                                                                     {{ subitem.get_category_display() }}
                                                                 </td>
+                                                                <!--- จำนวน -->
                                                                 <td class="w-20 text-sm text-center">{{ subitem.quantity }}</td>
+                                                                <!--- หน่วยนับ -->
                                                                 <td class="w-24 text-sm text-center">
                                                                     {{ subitem.currency if
                                                                     subitem.currency else '' }}
                                                                 </td>
+                                                                <!--- จำนวนเงิน -->
                                                                 <td class="w-32 text-sm text-right font-bold text-blue-700">฿{{ "{:,.2f}".format(subitem.amount) }}</td>
                                                             </tr>
                                                         {% endfor %}
