@@ -652,7 +652,7 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="text-sm font-medium text-gray-900 max-w-xs truncate"
-                                             title="{{ item.name }}">
+                                            title="{{ item.name }}">
                                             {{
                                             item.name }}
                                         </div>
@@ -710,17 +710,18 @@
         <div class="mb-6 flex justify-center">
             <div class="flex flex-wrap gap-6 text-sm">
                 <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-pink-500 rounded"></div>
-                    <span class="font-medium">ผู้บริหาร</span>
+                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                    <span class="font-medium">หัวหน้าฝ่าย</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 bg-yellow-500 rounded"></div>
                     <span class="font-medium">เจ้าหน้าที่พัสดุ</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span class="font-medium">หัวหน้าฝ่าย</span>
+                    <div class="w-4 h-4 bg-pink-500 rounded"></div>
+                    <span class="font-medium">ผู้บริหาร</span>
                 </div>
+                
             </div>
         </div>
         {% if renewal_requested_items|length == 0 %}
@@ -753,15 +754,16 @@
                                 {% if current_user.has_organization_roles("staff") %}
                                     <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (พนักงาน)</th>
                                 {% endif %}
-                                {% if current_user.has_organization_roles("admin") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (ผู้บริหาร)</th>
-                                {% endif %}
-                                {% if current_user.has_organization_roles("supervisor supplier") %}
-                                    <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (เจ้าหน้าที่พัสดุ)</th>
-                                {% endif %}
                                 {% if current_user.has_organization_roles("head") %}
                                     <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (หัวหน้าฝ่าย)</th>
                                 {% endif %}
+                                {% if current_user.has_organization_roles("admin") %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ(เจ้าหน้าที่พัสดุ)</th>
+                                {% endif %}
+                                {% if current_user.has_organization_roles("supervisor supplier") %}
+                                    <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (ผู้บริหาร)</th>
+                                {% endif %}
+                                
                                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะการอนุมัติ</th>
                                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะ</th>
                             </tr>
@@ -810,8 +812,8 @@
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         {% if item.tor_document.filename %}
                                             <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
-                                               class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                                               target="_blank">
+                                                class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                                                target="_blank">
                                                 <i class="ph ph-file-arrow-down"></i> ดูเอกสารทั้งหมด
                                             </a>
                                         {% else %}
@@ -832,8 +834,8 @@
                                         <td class="px-4 py-3 whitespace-nowrap text-center">
                                             {% set is_ma = item.type == 'MA' %}
                                             <a href="{{ url_for('procurement.requisitions.create_or_edit', requisition_procurement_id=item.id) }}"
-                                               class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
-                                               {% if item.approval_history or item.status=='incomplete' %}disabled{% endif %}>
+                                                class="btn btn-outline btn-sm {{ 'text-green-700 border-green-300 hover:bg-green-50' if is_ma else 'text-yellow-700 border-yellow-300 hover:bg-yellow-50' }}"
+                                                {% if item.approval_history or item.status=='incomplete' %}disabled{% endif %}>
                                                 {% if is_ma %}
                                                     <i class="ph ph-check text-lg"></i>
                                                     <span>ยืนยัน</span>
@@ -844,33 +846,138 @@
                                             </a>
                                         </td>
                                     {% endif %}
-                                    <!--- ดำเนินการ(ผู้บริหาร) -->
+                                    <!--- ดำเนินการ(หัวหน้าฝ่าย) -->
+                                    {% if current_user.has_organization_roles("head") %}
+                                        {% set head_actioned = item.approval_history and item.approval_history |
+                                                                                    selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
+                                        {% set head_rejected = item.approval_history  and item.approval_history |
+                                                                                    selectattr('approver_role', 'equalto', 'head') | list | length > 0 
+                                                                                    and item.approval_history |
+                                                                                    selectattr('action', 'equalto', 'rejected') | list | length > 0 %}
+                                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                                            {% if head_actioned %}
+                                                {% if not head_approved %}
+                                                    <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                                        อนุมัติ
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
+                                                        onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
+                                                        ไม่อนุมัติ
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                            <!-- Change direct form submission to modal trigger -->
+                                            <button type="button"
+                                                    class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
+                                                    {% if item.status =='incomplete' or item.status == 'cancelled' %}disabled{% endif %}
+                                                    onclick="document.getElementById('modal-approve-head-{{ item.id }}').showModal();">
+                                                <i class="ph ph-check text-lg" title="Approve"></i>
+                                            </button>
+                                            <!-- Confirmation Modal for Head Approve -->
+                                            <dialog id="modal-approve-head-{{ item.id }}" class="modal">
+                                                <form method="post"
+                                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                    class="modal-box text-start">
+                                                    <h3 class="font-bold text-xl  text-green-700">ยืนยันการอนุมัติ</h3>
+                                                    <p class="py-4">คุณต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
+                                                    <input type="hidden" name="approver_role" value="head">
+                                                    <input type="hidden" name="action" value="approved">
+                                                    <div class="modal-action">
+                                                        <button type="button"
+                                                                class="btn"
+                                                                onclick="document.getElementById('modal-approve-head-{{ item.id }}').close()">
+                                                            ยกเลิก
+                                                        </button>
+                                                        <button type="submit"
+                                                                class="btn border-2 bg-white hover:shadow-sm border-green-700 text-green-700">
+                                                            ยืนยันอนุมัติ
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </dialog>
+                                            <button type="button"
+                                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                                {% if item.status =='incomplete' or item.status == 'cancelled' %}disabled{% endif %}
+                                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
+                                                <i class="ph ph-x text-lg" title="Reject"></i>
+                                            </button>
+                                            <!-- Reject Modal for Head -->
+                                            <dialog id="modal-reject-head-{{ item.id }}" class="modal">
+                                                <form method="post"
+                                                    action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                    class="modal-box">
+                                                    <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                                                    <input type="hidden" name="approver_role" value="head">
+                                                    <input type="hidden" name="action" value="rejected">
+                                                    <div class="mb-6 flex flex-col items-center">
+                                                        <label class="label mb-2 text-lg font-semibold text-error">
+                                                            <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                                        </label>
+                                                        <input type="text"
+                                                                name="reason"
+                                                                placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                                class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                                maxlength="25"
+                                                                required
+                                                                style="min-width:300px"
+                                                                onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-head-{{ item.id }}').close()}" />
+                                                    </div>
+                                                    <div class="modal-action flex gap-2 justify-end">
+                                                        <button type="button"
+                                                                class="btn"
+                                                                onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">
+                                                            ยกเลิก
+                                                        </button>
+                                                        <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                                                    </div>
+                                                </form>
+                                            </dialog>
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                    <!--- ดำเนินการ(เจ้าหน้าที่พัสดุ) -->
                                     {% if current_user.has_organization_roles("admin") %}
-                                        {% set already_acted = item.approval_history and item.approval_history |
-                                                                                selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
                                         {% set head_approved = item.approval_history and item.approval_history |
                                                                                     selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
                                                                                 list | length > 0 %}
+                                        {% set admin_actioned = item.approval_history and item.approval_history |
+                                                                                selectattr('approver_role', 'equalto', 'admin') | list | length > 0 %}
+                                        {% set admin_rejected = item.approval_history and item.approval_history |
+                                                                                selectattr('approver_role', 'equalto', 'admin') | list | length > 0 
+                                                                                and item.approval_history | selectattr('action', 'equalto', 'rejected') | list | length > 0 %}
+                                        
                                         <td class="px-4 py-3 whitespace-nowrap text-center">
                                             <!-- Approve Button triggers MAS modal -->
+                                            {% if admin_actioned  %}
+                                                {% if not admin_rejected %}
+                                                    <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                                        อนุมัติ
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer">
+                                                        ไม่อนุมัติ
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
                                             <button type="button"
                                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                {% if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif
-                                                    %} onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
+                                                {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %}disabled{% endif%}
+                                                onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                                 </button>
                                                 <!-- Reject Button as modal -->
                                                 <button type="button"
-                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                    if not head_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                                    {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %}disabled{% endif%}
                                                     onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
                                                     <i class="ph ph-x text-lg" title="Reject"></i>
                                                 </button>
                                                 <!-- Reject Modal for Admin -->
                                                 <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
                                                     <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box ">
+                                                            action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                            class="modal-box ">
                                                         <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
                                                         <input type="hidden" name="approver_role" value="admin">
                                                         <input type="hidden" name="action" value="rejected">
@@ -879,13 +986,13 @@
                                                                 <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
                                                             </label>
                                                             <input type="text"
-                                                                   name="reason"
-                                                                   placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                                   class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                                   maxlength="25"
-                                                                   required
-                                                                   style="min-width:300px"
-                                                                   onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
+                                                                    name="reason"
+                                                                    placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                                    class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                                    maxlength="25"
+                                                                    required
+                                                                    style="min-width:300px"
+                                                                    onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
                                                         </div>
                                                         <div class="modal-action flex gap-2 justify-end">
                                                             <button type="button"
@@ -900,8 +1007,8 @@
                                                 <!-- MAS Selection Modal -->
                                                 <dialog id="modal-mas-{{ item.id }}" class="modal">
                                                     <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box max-w-full w-full">
+                                                            action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                            class="modal-box max-w-full w-full">
                                                         <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
                                                         <input type="hidden" name="approver_role" value="admin">
                                                         <input type="hidden" name="action" value="approved">
@@ -983,26 +1090,43 @@
                                                 </dialog>
                                             </td>
                                         {% endif %}
-                                        <!--- ดำเนินการ(เจ้าหน้าที่พัสดุ) -->
-                                        {% if current_user.has_organization_roles("supervisor supplier") %}
-                                            {% set already_acted = item.approval_history and item.approval_history |
-                                                                                        selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
-                                            {% set admin_approved = item.approval_history and item.approval_history |
-                                                                                            selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
-                                                                                        list | length > 0 %}
-                                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                                <!-- Change direct form submission to modal trigger -->
+                                    {% endif %}
+                                    <!--- ดำเนินการ(ผู้บริหาร) -->
+                                    {% if current_user.has_organization_roles("supervisor supplier") %}
+                                        {% set admin_approved = item.approval_history and item.approval_history |
+                                                                                selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
+                                                                            list | length > 0 %}
+                                        {% set supervisor_supplier_actioned = item.approval_history and item.approval_history |
+                                                                                selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
+                                        {% set supervisor_supplier_rejected = item.approval_history and item.approval_history |
+                                                                            selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 
+                                                                            and item.approval_history | selectattr('action', 'equalto', 'rejected') | list | length > 0 %}
+                                        
+                                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                                            <!-- Change direct form submission to modal trigger -->
+                                            {% if supervisor_supplier_actioned %}
+                                                {% if not supervisor_supplier_rejected %}
+                                                    <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                                        อนุมัติ
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
+                                                        onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
+                                                        ไม่อนุมัติ
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}   
                                                 <button type="button"
                                                         class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                        {% if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                                        {% if not admin_approved or item.status=='incomplete' or item.status == 'cancelled' %}disabled{% endif%}
                                                         onclick="document.getElementById('modal-approve-supervisor-{{ item.id }}').showModal();">
                                                     <i class="ph ph-check text-lg" title="Approve"></i>
                                                 </button>
                                                 <!-- Confirmation Modal for Supervisor Supplier Approve -->
                                                 <dialog id="modal-approve-supervisor-{{ item.id }}" class="modal">
                                                     <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box text-start">
+                                                            action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                            class="modal-box text-start">
                                                         <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติ</h3>
                                                         <p class="py-4">คุณต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
                                                         <input type="hidden" name="approver_role" value="supervisor supplier">
@@ -1021,16 +1145,16 @@
                                                     </form>
                                                 </dialog>
                                                 <button type="button"
-                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                    if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif %}
+                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
+                                                    {% if not admin_approved or item.status=='incomplete' or item.status == 'cancelled' %}disabled{% endif%}
                                                     onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
                                                     <i class="ph ph-x text-lg" title="Reject"></i>
                                                 </button>
                                                 <!-- Reject Modal for Supervisor Supplier -->
                                                 <dialog id="modal-reject-supervisor-{{ item.id }}" class="modal">
                                                     <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box">
+                                                            action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
+                                                            class="modal-box">
                                                         <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
                                                         <input type="hidden" name="approver_role" value="supervisor supplier">
                                                         <input type="hidden" name="action" value="rejected">
@@ -1039,13 +1163,13 @@
                                                                 <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
                                                             </label>
                                                             <input type="text"
-                                                                   name="reason"
-                                                                   placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                                   class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                                   maxlength="25"
-                                                                   required
-                                                                   style="min-width:300px"
-                                                                   onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
+                                                                    name="reason"
+                                                                    placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
+                                                                    class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
+                                                                    maxlength="25"
+                                                                    required
+                                                                    style="min-width:300px"
+                                                                    onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
                                                         </div>
                                                         <div class="modal-action flex gap-2 justify-end">
                                                             <button type="button"
@@ -1057,115 +1181,44 @@
                                                         </div>
                                                     </form>
                                                 </dialog>
-                                            </td>
-                                        {% endif %}
-                                        <!--- ดำเนินการ(หัวหน้าฝ่าย) -->
-                                        {% if current_user.has_organization_roles("head") %}
-                                            {% set already_acted = item.approval_history and item.approval_history |
-                                                                                        selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
-                                            <td class="px-4 py-3 whitespace-nowrap text-center">
-                                                <!-- Change direct form submission to modal trigger -->
-                                                <button type="button"
-                                                        class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                                        {% if already_acted or item.status=='incomplete' %}disabled{% endif %}
-                                                        onclick="document.getElementById('modal-approve-head-{{ item.id }}').showModal();">
-                                                    <i class="ph ph-check text-lg" title="Approve"></i>
-                                                </button>
-                                                <!-- Confirmation Modal for Head Approve -->
-                                                <dialog id="modal-approve-head-{{ item.id }}" class="modal">
-                                                    <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box text-start">
-                                                        <h3 class="font-bold text-xl  text-green-700">ยืนยันการอนุมัติ</h3>
-                                                        <p class="py-4">คุณต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
-                                                        <input type="hidden" name="approver_role" value="head">
-                                                        <input type="hidden" name="action" value="approved">
-                                                        <div class="modal-action">
-                                                            <button type="button"
-                                                                    class="btn"
-                                                                    onclick="document.getElementById('modal-approve-head-{{ item.id }}').close()">
-                                                                ยกเลิก
-                                                            </button>
-                                                            <button type="submit"
-                                                                    class="btn border-2 bg-white hover:shadow-sm border-green-700 text-green-700">
-                                                                ยืนยันอนุมัติ
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                </dialog>
-                                                <button type="button"
-                                                    class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
-                                                    if already_acted or item.status=='incomplete' %}disabled{% endif %}
-                                                    onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
-                                                    <i class="ph ph-x text-lg" title="Reject"></i>
-                                                </button>
-                                                <!-- Reject Modal for Head -->
-                                                <dialog id="modal-reject-head-{{ item.id }}" class="modal">
-                                                    <form method="post"
-                                                          action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                                          class="modal-box">
-                                                        <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
-                                                        <input type="hidden" name="approver_role" value="head">
-                                                        <input type="hidden" name="action" value="rejected">
-                                                        <div class="mb-6 flex flex-col items-center">
-                                                            <label class="label mb-2 text-lg font-semibold text-error">
-                                                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
-                                                            </label>
-                                                            <input type="text"
-                                                                   name="reason"
-                                                                   placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                                                   class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                                                   maxlength="25"
-                                                                   required
-                                                                   style="min-width:300px"
-                                                                   onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-head-{{ item.id }}').close()}" />
-                                                        </div>
-                                                        <div class="modal-action flex gap-2 justify-end">
-                                                            <button type="button"
-                                                                    class="btn"
-                                                                    onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">
-                                                                ยกเลิก
-                                                            </button>
-                                                            <button type="submit" class="btn btn-error">ปฏิเสธ</button>
-                                                        </div>
-                                                    </form>
-                                                </dialog>
-                                            </td>
-                                        {% endif %}
-                                        <!--- สถานะการอนุมัติ -->
-                                        <td class="px-4 py-3 whitespace-nowrap text-center">
-                                            <div class="flex flex-warp gap-1">
-                                                {% set role_badges = {
-                                                    "head": [
-                                                        "badge-primary",
-                                                        "ph-user"
-                                                    ],
-                                                    "admin": [
-                                                        "badge-secondary",
-                                                        "ph-shield"
-                                                    ],
-                                                    "supervisor supplier": [
-                                                        "badge-accent",
-                                                        "ph-users"
-                                                    ]
-                                                } %}
-                                                {% for role, badge_info in role_badges.items() %}
-                                                    {% set badge_class = badge_info[0] %}
-                                                    {% set icon = badge_info[1] %}
-                                                    {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
-                                                                                                        role) | list %}
-                                                    {% if approvals %}
-                                                        {# ถ้า role นี้มีการ approve แล้ว #}
-                                                        <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
-                                                             title="{{ role|title }} {{ approvals[-1].timestamp.strftime(" %d/%m/%Y %H:%M") }}">
-                                                        </div>
-                                                    {% else %}
-                                                        {# ถ้ายังไม่ approve → แสดง badge-soft เปล่า ๆ #}
-                                                        <div class="badge badge-soft {{ badge_class }} badge-sm"></div>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <!-- <div class="flex gap-2 justify-center items-end">
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                        
+                                    <!--- สถานะการอนุมัติ -->
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        <div class="flex flex-warp gap-1">
+                                            {% set role_badges = {
+                                                "head": [
+                                                    "badge-primary",
+                                                    "ph-user"
+                                                ],
+                                                "admin": [
+                                                    "badge-secondary",
+                                                    "ph-shield"
+                                                ],
+                                                "supervisor supplier": [
+                                                    "badge-accent",
+                                                    "ph-users"
+                                                ]
+                                            } %}
+                                            {% for role, badge_info in role_badges.items() %}
+                                                {% set badge_class = badge_info[0] %}
+                                                {% set icon = badge_info[1] %}
+                                                {% set approvals = item.approval_history | selectattr('approver_role', 'equalto',
+                                                                                                    role) | list %}
+                                                {% if approvals %}
+                                                    {# ถ้า role นี้มีการ approve แล้ว #}
+                                                    <div class="badge {{ badge_class }} badge-sm flex items-center gap-1"
+                                                            title="{{ role|title }} {{ approvals[-1].timestamp.strftime(" %d/%m/%Y %H:%M") }}">
+                                                    </div>
+                                                {% else %}
+                                                    {# ถ้ายังไม่ approve → แสดง badge-soft เปล่า ๆ #}
+                                                    <div class="badge badge-soft {{ badge_class }} badge-sm"></div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <!-- <div class="flex gap-2 justify-center items-end">
                                     {% set role_badges = {
                                     'head': ['badge-primary', 'ph-user'],
                                     'admin': ['badge-secondary', 'ph-shield'],
@@ -1201,8 +1254,8 @@
                                                 </span>
                                             {% elif item.status == 'incomplete' %}
                                                 <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
-                                                      onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
-                                                    <i class="ph ph-x-circle text-red-500"></i>
+                                                        onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
+                                                    <i class="ph ph-prohibit text-red-500"></i>
                                                     ไม่อนุมัติ
                                                 </span>
                                                 <!-- Modal for rejection info -->
@@ -1245,6 +1298,11 @@
                                                 <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                                                     <i class="ph ph-check-circle text-green-500"></i>
                                                     อนุมัติ
+                                                </span>
+                                            {% elif item.status == 'cancelled' %}
+                                                <span class="inline-flex items-center gap-2 bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-medium cursor-pointer">
+                                                    <i class="ph ph-x-circle text-gray-600"></i>
+                                                    ยกเลิก
                                                 </span>
                                             {% endif %}
                                         </td>
