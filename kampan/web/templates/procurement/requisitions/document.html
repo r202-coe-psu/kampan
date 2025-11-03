@@ -128,18 +128,19 @@ td, th {
             <div style="text-align: right; position: relative;">
                 <span style="margin: 2; display: inline-block; position: relative;">
                     วันที่ ........
-                    <span style="position: absolute; right: 0.7rem;">{{ requisitions.created_date.day }}</span>
+                    <span id="doc-day" style="position: absolute; right: 0.7rem; top: -0.3rem;">{{ requisitions.created_date.day }}</span>
                 </span>
                 <span style="margin: 2; display: inline-block; position: relative;">
                     เดือน .........................
-                    <span style="position: absolute; right: 2rem; top: -0.3rem;">
-                        {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
-                        "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.created_date.month-1] }}
+                    <span id="doc-month" style="position: absolute; right: 2rem; top: -0.3rem;">
+                        {{ ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"][requisitions.created_date.month-1] }}
                     </span>
                 </span>
                 <span style="margin: 2; display: inline-block; position: relative;">
-                    พ.ศ. ...............
-                    <span style="position: absolute; right: 1.5rem;">{{ requisitions.created_date.year + 543 }}</span>
+                    พ.ศ. ............
+                    <span id="doc-year" style="position: absolute; right: 1rem; top: -0.3rem;">
+                        {{ requisitions.created_date.year + 543 }}
+                    </span>
                 </span>
             </div>
             <div>
@@ -830,9 +831,22 @@ td, th {
                                     </tr>
                                 </table>
                                 <script>
-        window.onload = function () {
-            window.print();
-        };
+(function () {
+  const TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const params = new URLSearchParams(location.search);
+  const dateStr = params.get('date');
+
+  if (dateStr) {
+    const d = new Date(dateStr);
+    if (!isNaN(d)) {
+      document.getElementById('doc-day').textContent = d.getDate();
+      document.getElementById('doc-month').textContent = TH_MONTHS[d.getMonth()];
+      document.getElementById('doc-year').textContent = d.getFullYear() + 543;
+    }
+  }
+  // small delay to ensure fonts/layout are ready
+  setTimeout(() => window.print(), 200);
+})();
                                 </script>
                             </body>
                         {% endblock content %}

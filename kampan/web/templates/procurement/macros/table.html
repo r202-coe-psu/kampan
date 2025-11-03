@@ -773,7 +773,6 @@
                                             <span id="toggle-icon-{{ item.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
                                         </button>
                                     </td>
-                                    <!-- ...existing code (move all cells right by one, update colspan below)... -->
                                     <!--- เลขที่ -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
                                         <div class="text-ms flex items-center gap-1 justify-center">
@@ -815,12 +814,42 @@
                                     </td>
                                     <!--- เอกสาร -->
                                     <td class="px-4 py-3 whitespace-nowrap text-center">
-                                        {% set document_url = url_for('procurement.requisitions.document',
-                                                                                requisition_procurement_id=item.id) %}
+                                        {% set document_url = url_for('procurement.requisitions.document', requisition_procurement_id=item.id) %}
                                         <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                                                onclick="printDocument('{{ document_url }}')">
+                                                onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime("%Y-%m-%d") if item.created_date else '' }}')">
                                             <i class="ph ph-file-arrow-down"></i> ดูใบขอซื้อ
                                         </button>
+                                        <!-- Date picker modal (per row) -->
+                                        <dialog id="modal-print-date-{{ item.id }}" class="modal">
+                                            <div class="modal-box text-start">
+                                                <h3 class="flex items-center font-bold text-lg mb-2">
+                                                    <i class="ph ph-calendar mr-1"></i>เลือกวันที่ก่อนพิมพ์
+                                                </h3>
+                                                <p class="text-sm text-gray-600 mb-3">ถ้าไม่เลือก ระบบจะใช้วันที่จากเอกสารอัตโนมัติ</p>
+                                                <input id="print-date-{{ item.id }}"
+                                                       type="date"
+                                                       class="input input-bordered w-full" />
+                                                <div class="modal-action flex justify-between w-full gap-3">
+                                                    <button type="button"
+                                                            class="btn btn-secondary"
+                                                            onclick="document.getElementById('modal-print-date-{{ item.id }}').close()">
+                                                        ยกเลิก
+                                                    </button>
+                                                    <div class="flex gap-3">
+                                                        <button type="button"
+                                                                class="btn"
+                                                                onclick="confirmPrint('{{ item.id }}', true)">
+                                                            ใช้วันที่เดิม
+                                                        </button>
+                                                        <button type="button"
+                                                                class="btn btn-primary"
+                                                                onclick="confirmPrint('{{ item.id }}', false)">
+                                                            ยืนยันและพิมพ์
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </dialog>
                                     </td>
                                     <!--- ดำเนินการ(พนักงงาน) -->
                                     {% if current_user.has_organization_roles("staff") %}
@@ -852,11 +881,6 @@
                                                 {% if not head_approved %}
                                                     <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                                                         อนุมัติ
-                                                    </span>
-                                                {% else %}
-                                                    <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
-                                                          onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
-                                                        ไม่อนุมัติ
                                                     </span>
                                                 {% endif %}
                                             {% else %}
@@ -1387,5 +1411,27 @@
             icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
         });
     });
+
+    function openPrintDateModal(itemId, baseUrl, defaultDate) {
+      const dlg = document.getElementById('modal-print-date-' + itemId);
+      const input = document.getElementById('print-date-' + itemId);
+      dlg.dataset.baseUrl = baseUrl;
+      input.value = defaultDate || '';
+      dlg.showModal();
+    }
+
+    function confirmPrint(itemId, useDefault) {
+      const dlg = document.getElementById('modal-print-date-' + itemId);
+      const baseUrl = dlg.dataset.baseUrl;
+      const input = document.getElementById('print-date-' + itemId);
+      const picked = input.value;
+
+      dlg.close();
+      if (useDefault || !picked) {
+        printDocument(baseUrl);
+      } else {
+        printDocument(baseUrl + '?date=' + encodeURIComponent(picked));
+      }
+    }
         </script>
     {% endmacro %}
