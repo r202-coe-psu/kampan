@@ -11,7 +11,10 @@
   endblock %}
   {% block content %}
     <div class="container mx-auto px-4 py-6">
-      <div class="mb-4 flex justify-end">
+      <div class="flex items-center justify-between mb-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
+          <span class="text-blue-700 font-semibold text-sm">{{ requisitions|length }} รายการ</span>
+        </div>
         <a href="{{ url_for('procurement.requisitions.create_or_edit', organization_id=organization.id) }}"
            class="btn btn-primary">
           <i class="ph ph-plus"></i>
