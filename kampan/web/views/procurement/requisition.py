@@ -188,14 +188,16 @@ def renewal_requested(requisition_procurement_id):
         ).first()
 
         # Determine user role hierarchy
-        is_admin_or_head = current_user.has_organization_roles(
-            "admin"
-        ) or current_user.has_organization_roles("head")
+        # is_admin_or_head = current_user.has_organization_roles(
+        #     "admin"
+        # ) or current_user.has_organization_roles("head")
+        is_admin = current_user.has_organization_roles("admin")
+        is_head = current_user.has_organization_roles("head")
         is_supervisor = current_user.has_organization_roles("supervisor supplier")
         is_staff = current_user.has_organization_roles("staff")
 
         # Apply filters based on role (lowest privilege first)
-        if is_staff and not (is_admin_or_head or is_supervisor):
+        if is_staff and not (is_admin or is_supervisor or is_head):
             # Filter by purchaser.user matching current_user
             staff_requisitions = []
             for req in requisitions:
@@ -206,11 +208,18 @@ def renewal_requested(requisition_procurement_id):
                 ):
                     staff_requisitions.append(req.id)
             requisitions = requisitions.filter(id__in=staff_requisitions)
-        elif is_supervisor and not is_admin_or_head:
+        elif is_supervisor and not (is_admin or is_head):
             requisitions = requisitions.filter(supervisor=org_user_role)
+        elif is_head and not (is_admin or is_supervisor):
+            purchaser_ids = models.OrganizationUserRole.objects(
+                division=org_user_role.division
+            ).only("id")
+
+            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
         # Admin and head see all (no filter)
 
         requisitions = requisitions.order_by("-requisition_code")
+        # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
 
         return render_template(
