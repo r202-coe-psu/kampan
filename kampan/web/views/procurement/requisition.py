@@ -45,12 +45,20 @@ def generate_next_requisition_code():
 def index():
     organization = current_user.user_setting.current_organization
 
-    category = request.args.get("category", "")
-
     query = {}
+
+    category = request.args.get("category", "")
+    name = request.args.get("name", "")
+    product_number = request.args.get("product_number", "")
+    asset_number = request.args.get("asset_number", "")
     if category:
         query["category"] = category
-
+    if name:
+        query["name__icontains"] = name
+    if product_number:
+        query["product_number__icontains"] = product_number
+    if asset_number:
+        query["asset_number__icontains"] = asset_number
     # Filter only items expiring within 7 days and status pending
     procurements = models.Procurement.objects(**query, status="pending")
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
@@ -63,11 +71,9 @@ def index():
         and not current_user.has_organization_roles("admin")
     ):
         procurements = procurements.filter(responsible_by=org_user_role)
-
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=8, type=int)
     paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
-
     category_choices = models.procurement.CATEGORY_CHOICES
     return render_template(
         "procurement/requisitions/index.html",
@@ -76,6 +82,9 @@ def index():
         organization=organization,
         category_choices=category_choices,
         selected_category=category,
+        selected_name=name,
+        selected_product_number=product_number,
+        selected_asset_number=asset_number,
     )
 
 
@@ -166,6 +175,7 @@ def renewal_requested(requisition_procurement_id):
         procurement.status = "renewal-requested"
         procurement.last_updated_by = current_user._get_current_object()
         procurement.save()
+
         return redirect(
             url_for("procurement.requisitions.index", organization_id=organization.id)
         )
