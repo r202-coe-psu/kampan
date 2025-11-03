@@ -205,15 +205,31 @@ def cancel(requisition_timeline_id):
                 organization_id=organization.id,
             )
         )
-    # บันทึกเหตุผลการยกเลิก
+    # บันทึกเหตุผลการยกเลิกs
     requisition_timeline.note = note
     requisition_timeline.status = "cancelled"
     requisition_timeline.save()
 
-    requisition = requisition_timeline.requisition
+    requisition = models.Requisition.objects(
+        id=requisition_timeline.requisition.id
+    ).first()
+
     if requisition:
         requisition.status = "cancelled"
         requisition.save()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.send_cancellation_email_to_relevant.send_cancellation_email_to_relevant,
+        args=(
+            requisition,
+            requisition_timeline,
+            current_user._get_current_object(),
+            current_app.config,
+        ),
+        timeout=600,
+        job_timeout=600,
+    )
+    if job:
+        print("=====> Cancellation email job submitted", job.get_id())
 
     return redirect(
         url_for(

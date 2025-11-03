@@ -15,3 +15,4 @@ from . import approved_emails
 from . import rejected_emails
 from . import send_emails_to_head
 from . import send_email_to_supervisor_supplier
+from . import send_cancellation_email_to_relevant
