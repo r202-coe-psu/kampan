@@ -50,17 +50,31 @@ def index():
     category = request.args.get("category", "")
     name = request.args.get("name", "")
     product_number = request.args.get("product_number", "")
-    asset_number = request.args.get("asset_number", "")
+    asset_code = request.args.get("asset_code", "")
+    procurement_id = request.args.get("procurement_id", "")
     if category:
         query["category"] = category
     if name:
         query["name__icontains"] = name
     if product_number:
         query["product_number__icontains"] = product_number
-    if asset_number:
-        query["asset_number__icontains"] = asset_number
+    if asset_code:
+        query["asset_code__icontains"] = asset_code
+    if procurement_id:
+        query["id__icontains"] = procurement_id
+
     # Filter only items expiring within 7 days and status pending
     procurements = models.Procurement.objects(**query, status="pending")
+
+    # ถ้ากด redirect button มาจากหน้ารายการ MA ให้ดึงค่าต่างๆ มาแสดงในช่องค้นหา
+    if procurement_id:
+        procurement = procurements.filter(id=procurement_id).first()
+        if procurement:
+            category = procurement.category
+            name = procurement.name
+            asset_code = procurement.asset_code
+            product_number = procurement.product_number
+
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
@@ -84,7 +98,7 @@ def index():
         selected_category=category,
         selected_name=name,
         selected_product_number=product_number,
-        selected_asset_number=asset_number,
+        selected_asset_code=asset_code,
     )
 
 
