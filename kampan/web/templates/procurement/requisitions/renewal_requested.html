@@ -11,7 +11,14 @@
   endblock %}
   {% block content %}
     <div class="container mx-auto px-4 py-6">
-      <form method="GET" action="{{ url_for('procurement.requisitions.renewal_requested') }}" class="mb-6">
+      <div class="flex items-center justify-between mb-4">
+      <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
+          <span class="text-blue-700 font-semibold text-sm">{{ requisitions|length }} รายการ</span>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-between mb-4">
+        <form method="GET" action="{{ url_for('procurement.requisitions.renewal_requested') }}" class="mb-6">
         <div class="flex items-center gap-4">
           <!-- Filter by Requisition Code -->
           <div class="form-control">
@@ -46,12 +53,9 @@
           </div>
         </div>
       </form>
-      <div class="flex items-center justify-between mb-4">
-        <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
-          <span class="text-blue-700 font-semibold text-sm">{{ requisitions|length }} รายการ</span>
-        </div>
+        
         <a href="{{ url_for('procurement.requisitions.create_or_edit', organization_id=organization.id) }}"
-           class="btn btn-primary">
+            class="btn btn-primary">
           <i class="ph ph-plus"></i>
           สร้างรายการขอจัดซื้อ
         </a>
