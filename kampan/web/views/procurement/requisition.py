@@ -136,6 +136,14 @@ def non_renewal(requisition_procurement_id):
 @login_required
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
+    query = {}
+
+    requisition_code = request.args.get("requisition_code", "")
+    status = request.args.get("status", "")
+    if requisition_code:
+        query["requisition_code__icontains"] = requisition_code
+    if status:
+        query["status"] = status
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
         if not procurement:
@@ -181,7 +189,7 @@ def renewal_requested(requisition_procurement_id):
         )
     else:
         category = request.args.get("category", "")
-        requisitions = models.Requisition.objects()
+        requisitions = models.Requisition.objects(**query)
 
         org_user_role = models.OrganizationUserRole.objects(
             user=current_user._get_current_object()
@@ -227,6 +235,7 @@ def renewal_requested(requisition_procurement_id):
             requisitions=requisitions,
             organization=organization,
             selected_category=category,
+            status_choices=models.requisitions.STATUS_CHOICES,
             mas_list=mas_list,
         )
 
