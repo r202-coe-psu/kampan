@@ -111,6 +111,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
     progress = request.args.get("progress", default=None, type=str)
+    requisition_code = request.args.get("requisition_code", default=None, type=str)
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = current_user.user_setting.current_organization
@@ -133,6 +134,17 @@ def index():
         requisition_timeline = models.RequisitionTimeline.objects(
             id__in=filtered_timelines
         ).order_by("-updated_date")
+
+    if requisition_code:
+        # ดึง requisitions ที่มี requisition_code ตรงกับเงื่อนไข
+        requisitions = models.Requisition.objects(
+            requisition_code__icontains=requisition_code
+        ).only("id")
+        # กรอง requisition_timeline โดยใช้ requisition IDs
+        requisition_ids = [req.id for req in requisitions]
+        requisition_timeline = requisition_timeline.filter(
+            requisition__in=requisition_ids
+        )
 
     # เช็คสิทธิ์ถ้าไม่ใช่ admin ให้กรองเฉพาะรายการของผู้ใช้คนนั้น
     if not is_admin:

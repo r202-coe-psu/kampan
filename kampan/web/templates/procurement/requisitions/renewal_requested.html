@@ -43,7 +43,13 @@
               {% endfor %}
             </select>
           </div>
-
+          <!-- ปุ่มล้างการค้นหา -->
+          {% if request.args.get('status') or request.args.get('requisition_code') %}
+            <a href="{{ url_for('procurement.requisitions.renewal_requested') }}"
+              class="btn btn-sm btn-ghost mt-6">
+                <i class="ph ph-x"></i> ล้าง
+            </a>
+          {% endif %}
           <!-- Submit Button -->
           <div class="form-control mt-6">
             <button type="submit" class="btn btn-primary">
