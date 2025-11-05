@@ -37,9 +37,10 @@ def get_choice_of_quarter():
                     f"ปี {year+543+1} ไตรมาสที่ {(count%4)+1} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
                 )
             )
-            count += 1
-            if end_date <= datetime.date.today():
+            if start_date <= datetime.date.today():
                 default_quarter = f"{year}_{count%4}"
+            count += 1
+
     return quarter_choices, default_quarter
 
 
@@ -323,11 +324,13 @@ def item_report_quarter():
             item_id=form.item.data,
             organization_id=organization_id,
         )
+        item = models.Item.objects(id=form.item.data).first()
         return render_template(
             "/dashboard/item_report_quarter.html",
             organization=organization,
             reports=reports,
             form=form,
+            item=item,
         )
 
     return redirect(
@@ -376,7 +379,6 @@ def item_report_custom():
         form.item.data = request.args.get(
             "search_item", (form.item.choices[0][0] if form.item.choices else None)
         )
-        print(form.start_date.data, form.end_date.data)
 
         reports = DashboardRepository.get_item_report(
             start_date=form.start_date.data,
@@ -391,11 +393,13 @@ def item_report_custom():
             organization,
         )
         list_data = calculate_amount_item(data)
+        item = models.Item.objects(id=form.item.data).first()
         return render_template(
             "/dashboard/item_report_custom.html",
             organization=organization,
             reports=reports,
             form=form,
+            item=item,
         )
 
     return redirect(

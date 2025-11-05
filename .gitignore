@@ -7,3 +7,4 @@ node_modules
 *.egg-*
 .vscode
 **/app.css
+**/**.dump

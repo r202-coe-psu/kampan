@@ -178,20 +178,13 @@ class ItemSnapshot(me.Document):
         return self.last_price_per_piece * self.amount
 
     def update_data(self):
-        date = self.created_date - datetime.timedelta(days=1)
+        date = self.created_date
 
         item_id = self.item.id
         organization_id = self.organization.id
 
         start_date = datetime.datetime(2024, 1, 1, 0, 0, 0)
-        end_date = datetime.datetime(
-            date.year,
-            date.month,
-            calendar.monthrange(date.year, date.month)[1],
-            23,
-            59,
-            59,
-        )
+        end_date = date
         reports = []
         inventories = Inventory.objects(
             item=item_id,
@@ -287,6 +280,7 @@ class ItemSnapshot(me.Document):
 
         reports.sort(key=lambda x: x["created_date"])
         total = 0
+
         for i in range(len(reports)):
             if i == 0:
                 total += reports[i]["quantity"]
@@ -303,11 +297,9 @@ class ItemSnapshot(me.Document):
                 self.last_price_per_piece = last_snap.last_price_per_piece
                 self.last_price = last_snap.last_price
                 self.remaining_balance = last_snap.remaining_balance
-                self.save()
         else:
-
             self.amount = total
             self.last_price_per_piece = reports[-1]["price"]
             self.last_price = self.item.get_last_price()
             self.remaining_balance = int(str(total * int(reports[-1]["price"])))
-            self.save()
+        self.save()
