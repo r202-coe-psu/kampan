@@ -30,6 +30,9 @@ search_quarter=search_quarter if search_quarter else form.quarter.data, item_id=
 </form>
 
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if current_user.has_roles(['admin']) %}
+<b> จำนวนที่มีในระบบ ณ ตอนนี้ {{ item.get_items_quantity() }}</b>
+{% endif %}
   <div class="overflow-x-auto mt-2 rounded-xl">
     {% if reports %}
     <table class="table-auto w-full">

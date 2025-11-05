@@ -78,8 +78,6 @@
           <td class="table-style">{{ item_snapshot.get_all_price() if item_snapshot.get_all_price() else "-" }}</td>
           {% if current_user.has_roles(['admin']) %}
           <td class="table-style  {% if current_user.has_roles(['admin']) %} {{ 'bg-red-200' if item_snapshot.item.get_amount_pieces() != item_snapshot.get_amount_pieces() else '' }}" {% endif %}>{{ item_snapshot.item.get_amount_pieces() }}
-      <br>
-      {{ item_snapshot.item.id }}
           </td>
           {% endif %}
 
