@@ -55,6 +55,9 @@
           <th class="table-style">ราคาหน่วยใหญ่</th>
           <th class="table-style">ราคาหน่วยเล็ก</th>
           <th class="table-style">รวมเป็นเงิน</th>
+          {% if current_user.has_roles(['admin']) %}
+          <th class="table-style">คงเหลือหน้าเว็บ</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -73,6 +76,13 @@
           <td class="table-style">{{ (item_snapshot.last_price_per_piece if item_snapshot.last_price_per_piece else "-") if
           item_snapshot.item.item_format == "one to many" else "-" }}</td>
           <td class="table-style">{{ item_snapshot.get_all_price() if item_snapshot.get_all_price() else "-" }}</td>
+          {% if current_user.has_roles(['admin']) %}
+          <td class="table-style  {% if current_user.has_roles(['admin']) %} {{ 'bg-red-200' if item_snapshot.item.get_amount_pieces() != item_snapshot.get_amount_pieces() else '' }}" {% endif %}>{{ item_snapshot.item.get_amount_pieces() }}
+      <br>
+      {{ item_snapshot.item.id }}
+          </td>
+          {% endif %}
+
         </tr>
         {% endfor %}
       </tbody>
