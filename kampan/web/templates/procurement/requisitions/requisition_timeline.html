@@ -5,88 +5,93 @@
 {% block title %}รายการขอซื้อขอจ้างกำลังดำเนินการ{% endblock %}
 {% block dashboard_title %}รายการขอซื้อขอจ้าง{% endblock %}
 {% block breadcrumbs %}
-    {{ RenderBreadcrumb([
-        ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisition_timeline.index',
-        organization_id=organization.id) ), ("รายการขอซื้อขอจ้าง", None) ]) }}
+  {{ RenderBreadcrumb([
+    ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisition_timeline.index',
+    organization_id=organization.id) ), ("รายการขอซื้อขอจ้าง", None) ]) }}
 {% endblock %}
 {% block content %}
-    <div class="container mx-auto px-4 py-6">
-        <!-- แสดงจำนวนรายการ -->
-        <div class="flex items-center justify-between mb-4">
-            <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
-                    <span class="text-blue-700 font-semibold text-sm">
-                        {{ requisition_timeline_list|length }} รายการ
-                    </span>
-                </div>
-            </div>
-        <!-- Search Bar -->
-        <div class="flex items-center justify-between mb-6">
-            <form method="GET"
-                action="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-                class="flex gap-4 items-center">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">เลขที่คำขอ</span>
-                    </label>
-                    <input type="text" name="requisition_code" value="{{ request.args.get('requisition_code', '') }}"
-                        class="input input-bordered" placeholder="ค้นหาเลขที่คำขอ">
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">สถานะ</span>
-                    </label>
-                    <select name="progress" class="select select-bordered">
-                        <option value="">-- เลือกสถานะ --</option>
-                            {% for value, label in progress_choices %}
-                        <option value="{{ value }}" {% if request.args.get('progress') == value %}selected{% endif %}>
-                        {{ label }}
-                        </option>
-                    {% endfor %}
-                    </select>
-                </div>
-
-                <!-- ปุ่มล้างการค้นหา -->
-                {% if request.args.get('progress') or request.args.get('requisition_code') %}
-                    <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-                    class="btn btn-sm btn-ghost mt-6">
-                        <i class="ph ph-x"></i> ล้าง
-                    </a>
-                {% endif %}
-
-                <!-- ปุ่มค้นหา -->
-                <div class="form-control mt-6">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ph ph-magnifying-glass"></i>
-                        ค้นหา
-                    </button>
-                </div>
-            </form>
-        </div>
-        {% if requisition_timeline_list|length == 0 %}
-            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
-                <div class="flex flex-col items-center justify-center text-center">
-                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                        <i class="ph ph-file-plus text-4xl text-gray-500"></i>
-                    </div>
-                    <h4 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีรายการที่กำลังดำเนินการต่ออายุ</h4>
-                    <p class="text-gray-600 max-w-md mb-6">เมื่อมีอนุมัติรายการที่กำลังดำเนินการต่ออายุ รายการจะปรากฏที่นี่</p>
-                    <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        <i class="ph ph-info"></i>
-                        <span>รายละเอียดรายการขอซื้อขอจ้าง</span>
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            {{ table_macros.requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list,
-                            current_user, organization, PROGRESS_STATUS_ORDER) }}
-            {% set params = {"organization_id": organization.id} %}
-            {% if request.args.get('progress') %}
-                {% set _dummy = params.update({"progress": request.args.get('progress')}) %}
-            {% endif %}
-            <div class="mt-6">
-                {{ paginated.render_pagination(paginated_requisition_timeline, 'procurement.requisition_timeline.index',
-                                    params) }}
-            </div>
-        {% endif %}
+  <div class="container mx-auto px-4 py-6">
+    <!-- แสดงจำนวนรายการ -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
+        <span class="text-blue-700 font-semibold text-sm">
+          {{ requisition_timeline_list|length }} รายการ
+        </span>
+      </div>
     </div>
+    <!-- Search Bar -->
+    <div class="flex items-center justify-between mb-6">
+      <form method="GET"
+            action="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+            class="flex gap-4 items-center">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">เลขที่คำขอ</span>
+          </label>
+          <input type="text"
+                 name="requisition_code"
+                 value="{{ request.args.get('requisition_code', '') }}"
+                 class="input input-bordered"
+                 placeholder="ค้นหาเลขที่คำขอ" />
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">สถานะ</span>
+          </label>
+          <select name="progress" class="select select-bordered">
+            <option value="">-- เลือกสถานะ --</option>
+            {% for value, label in progress_choices %}
+              <option value="{{ value }}" {% if request.args.get('progress') == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- ปุ่มล้างการค้นหา -->
+        {% if request.args.get('progress') or request.args.get('requisition_code') %}
+          <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+             class="btn btn-ghost mt-6">
+            <i class="ph ph-x"></i> ล้าง
+          </a>
+        {% endif %}
+
+        <!-- ปุ่มค้นหา -->
+        <div class="form-control mt-6">
+          <button type="submit" class="btn btn-primary">
+            <i class="ph ph-magnifying-glass"></i>
+            ค้นหา
+          </button>
+        </div>
+      </form>
+    </div>
+    {% if requisition_timeline_list|length == 0 %}
+      <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
+        <div class="flex flex-col items-center justify-center text-center">
+          <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <i class="ph ph-file-plus text-4xl text-gray-500"></i>
+          </div>
+          <h4 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีรายการที่กำลังดำเนินการต่ออายุ</h4>
+          <p class="text-gray-600 max-w-md mb-6">
+            เมื่อมีอนุมัติรายการที่กำลังดำเนินการต่ออายุ รายการจะปรากฏที่นี่
+          </p>
+          <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
+            <i class="ph ph-info"></i>
+            <span>รายละเอียดรายการขอซื้อขอจ้าง</span>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      {{ table_macros.requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list,
+            current_user, organization, PROGRESS_STATUS_ORDER) }}
+      {% set params = {"organization_id": organization.id} %}
+      {% if request.args.get('progress') %}
+        {% set _dummy = params.update({"progress": request.args.get('progress')}) %}
+      {% endif %}
+      <div class="mt-6">
+        {{ paginated.render_pagination(paginated_requisition_timeline, 'procurement.requisition_timeline.index',
+                params) }}
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}
