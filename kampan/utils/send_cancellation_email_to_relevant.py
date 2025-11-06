@@ -12,21 +12,28 @@ email_body_template = """
 จากระบบงานพัสดุ (patsadu_diis@psu.ac.th) ถึงผู้เกี่ยวข้อง (ผู้รับผิดชอบ / หัวหน้าฝ่าย 
 / รองผู้บริหารแต่ละฝ่าย / หัวหน้าเจ้าหน้าที่พัสดุ)
 
-    {{ admin_name }} มีความต้องการยกเลิกการขอซื้อ/จ้าง ตามรายละเอียดดังนี้
+เรื่อง การยกเลิกรายการขออนุมัติซื้อ/จ้างพัสดุ
+
+เรียน ทุกท่าน
+
+    ตามที่ {{purchaser_name}} จาก ฝ่าย{{purchaser_division}} ได้รับอนุมัติให้ซื้อ/จ้าง ตามรายละเอียดที่เเจ้งไว้นี้
+
+    
 ใบขอซื้อ/จ้างเลขที่: {{ requisition_code }}
 รายการขอซื้อ:
 {% for item in items %}  
     - {{ item }}
 {% endfor %}
-เนื่องในสาเหตุ: {{ note }}
+บัดนี้ รายการดังกล่าวได้ภูกยกเลิก ระหว่างการดําเนินการ เนื่องจาก {{ note }}
 
-ระบบขอซื้อพัสดุ
-Link เอกสาร: {{ document_url }}
+จึงขอเเจ้งให้ทุกท่านทราบเเละงดดําเนินการในส่วนที่เกี่ยวข้องต่อไป
 
-ด้วยความเคารพ
-{{ admin_name }}
-อีเมลติดต่อ
-{{ admin_email }}
+รายการขอซื้อ/จ้างพัสดุ
+Link: {{ document_url }}
+
+    ด้วยความเคารพ
+      งานพัสดุ
+โทร 2105, 2077, 2119
 """
 
 
@@ -81,21 +88,20 @@ def get_email_text_format(
 
     if not requisition_timeline:
         return
+    purchaser_user = requisition.purchaser
+    purchaser_name = purchaser_user.user.get_name() if purchaser_user else "-"
+    purchaser_division = purchaser_user.division.name if purchaser_user else "-"
     requisition_code = requisition.requisition_code
-    admin_user = user
-    admin_name = admin_user.get_name() if admin_user else "-"
-    admin_email = admin_user.email if admin_user else "-"
     note = requisition_timeline.note if requisition_timeline.note else "-"
     host_url = setting.get("KAMPAN_HOST_URL")
-    document_url = f"{host_url}/procurement/requisitions/{requisition.id}/document"
+    document_url = f"{host_url}/procurement/requisition_timeline"
     text_format = {
-        "admin_name": admin_name,
+        "purchaser_name": purchaser_name,
+        "purchaser_division": purchaser_division,
         "requisition_code": requisition_code,
         "items": [item.product_name for item in requisition.items],
         "note": note,
         "document_url": document_url,
-        "admin_email": admin_email,
-        "admin_name": admin_name,
     }
 
     return text_format
@@ -130,12 +136,12 @@ def send_cancellation_email_to_relevant(
 
         email_subject = Template(email_subject_template).render(text_format)
         email_body = Template(email_body_template).render(text_format)
-        print("relevant_emails:", relevant_emails)
+        # print("relevant_emails:", relevant_emails)
 
         for email in relevant_emails:
             try:
-                print("subject:", email_subject)
-                print("body:", email_body)
+                # print("subject:", email_subject)
+                # print("body:", email_body)
                 psu_smtp.send_email(
                     to_address=email,
                     subject=email_subject,
