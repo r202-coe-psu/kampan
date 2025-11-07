@@ -721,8 +721,8 @@
   </div>
 {% endmacro %}
 {# filepath: Untitled #}
-{% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization) %}
-  <div class="mt-12">
+{% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization, supervisor_action) %}
+  <div class="mt-6">
     <div class="mb-6 flex justify-center">
       <div class="flex flex-wrap gap-6 text-sm">
         <div class="flex items-center gap-2">
@@ -777,7 +777,7 @@
                     ดำเนินการ(เจ้าหน้าที่พัสดุ)
                   </th>
                 {% endif %}
-                {% if current_user.has_organization_roles("supervisor supplier") %}
+                {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"])%}
                   <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (ผู้บริหาร)</th>
                 {% endif %}
                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะการอนุมัติ</th>
@@ -1129,7 +1129,7 @@
                     {% endif %}
                   {% endif %}
                   <!--- ดำเนินการ(ผู้บริหาร) -->
-                  {% if current_user.has_organization_roles("supervisor supplier") %}
+                  {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"])%}
                     {% set admin_approved = item.approval_history and item.approval_history |
                                           selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
                                         list | length > 0 %}

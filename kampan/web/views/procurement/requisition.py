@@ -231,7 +231,13 @@ def renewal_requested(requisition_procurement_id):
                     staff_requisitions.append(req.id)
             requisitions = requisitions.filter(id__in=staff_requisitions)
         elif is_supervisor and not (is_admin or is_head):
-            requisitions = requisitions.filter(supervisor=org_user_role)
+            supervisor_requisitions = requisitions.filter(
+                supervisor=org_user_role,
+                approval_history__not__elemMatch={
+                    "approver_role": "supervisor supplier",
+                },
+            )
+
         elif is_head and not (is_admin or is_supervisor):
             purchaser_ids = models.OrganizationUserRole.objects(
                 division=org_user_role.division
@@ -240,13 +246,24 @@ def renewal_requested(requisition_procurement_id):
             requisitions = requisitions.filter(purchaser__in=purchaser_ids)
         # Admin and head see all (no filter)
 
+        elif is_supervisor and is_staff and is_head and is_admin:
+            supervisor_requisitions = requisitions.filter(
+                supervisor=org_user_role,
+                approval_history__not__elemMatch={
+                    "approver_role": "supervisor supplier",
+                },
+            )
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
+        print(is_admin, is_head, is_supervisor, is_staff)
 
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=requisitions,
+            supervisor_requisitions=(
+                supervisor_requisitions if is_supervisor else None
+            ),
             organization=organization,
             selected_category=category,
             status_choices=models.requisitions.STATUS_CHOICES,

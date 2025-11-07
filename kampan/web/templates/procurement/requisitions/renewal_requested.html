@@ -66,6 +66,11 @@
           สร้างรายการขอจัดซื้อ
         </a>
       </div>
-      {{ table_macros.render_renewal_requested_items_table(requisitions,current_user, mas_list, organization) }}
+      {%if current_user.has_organization_roles("supervisor supplier")%}
+      <h1 class="text-xl font-bold">รายการขอซื้อขอจ้างที่รอการต่ออายุ</h1>
+      {{ table_macros.render_renewal_requested_items_table(supervisor_requisitions,current_user, mas_list, organization, supervisor_action=true) }}
+      {%endif%}
+      <h1 class="text-xl font-bold mt-6">รายการขอซื้อขอจ้างทั้งหมด</h1>
+      {{ table_macros.render_renewal_requested_items_table(requisitions,current_user, mas_list, organization, supervisor_action=false) }}
     </div>
   {% endblock %}
