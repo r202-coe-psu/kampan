@@ -22,6 +22,11 @@ STATUS_CHOICES = [
     ("cancelled", "ยกเลิก"),
 ]
 
+SHOW_ITEM_CHOICES = [
+    ("all", "แสดงทั้งหมด"),
+    ("me", "แสดงเฉพาะของฉัน"),
+]
+
 
 class Committees(me.EmbeddedDocument):
     _id = me.ObjectIdField(required=True, default=ObjectId)

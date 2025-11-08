@@ -43,6 +43,20 @@
               {% endfor %}
             </select>
           </div>
+          <!-- filter by my user -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">แสดงรายการ</span>
+            </label>
+            <select name="show_item" class="select select-bordered">
+              {% for value, label in show_item_choices %}
+                <option value="{{ value|default('all') }}" {% if request.args.get('show_item') == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
           <!-- ปุ่มล้างการค้นหา -->
           {% if request.args.get('status') or request.args.get('requisition_code') %}
             <a href="{{ url_for('procurement.requisitions.renewal_requested') }}"

@@ -150,14 +150,23 @@ def non_renewal(requisition_procurement_id):
 @login_required
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
+
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object()
+    ).first()
+
     query = {}
 
     requisition_code = request.args.get("requisition_code", "")
     status = request.args.get("status", "")
+    show_item = request.args.get("show_item", "")
     if requisition_code:
         query["requisition_code__icontains"] = requisition_code
     if status:
         query["status"] = status
+    if show_item == "me":
+        query["supervisor"] = org_user_role
+
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
         if not procurement:
@@ -204,10 +213,6 @@ def renewal_requested(requisition_procurement_id):
     else:
         category = request.args.get("category", "")
         requisitions = models.Requisition.objects(**query)
-
-        org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object()
-        ).first()
 
         # Determine user role hierarchy
         # is_admin_or_head = current_user.has_organization_roles(
@@ -256,7 +261,6 @@ def renewal_requested(requisition_procurement_id):
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
-        print(is_admin, is_head, is_supervisor, is_staff)
 
         return render_template(
             "procurement/requisitions/renewal_requested.html",
@@ -267,6 +271,7 @@ def renewal_requested(requisition_procurement_id):
             organization=organization,
             selected_category=category,
             status_choices=models.requisitions.STATUS_CHOICES,
+            show_item_choices=models.requisitions.SHOW_ITEM_CHOICES,
             mas_list=mas_list,
         )
 
