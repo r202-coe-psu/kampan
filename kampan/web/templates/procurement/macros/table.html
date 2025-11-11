@@ -205,11 +205,11 @@
         <th class="font-semibold text-base-content text-sm w-48">ปีงบประมาณ</th>
         <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
         <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
-        <th class="font-semibold text-base-content text-sm text-center w-64">ประเภท</th>
         <th class="font-semibold text-base-content text-sm text-center w-64">ระยะเวลา</th>
         <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
         <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
         <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
+        <th class="font-semibold text-base-content text-sm text-center w-64">บริษัท</th>
         <th class="font-semibold text-base-content text-sm text-center w-32">สถานะการต่ออายุ</th>
         <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
       </tr>
@@ -228,46 +228,47 @@
             <td class="py-4">
               <div class="flex flex-col">
                 <span class="font-bold text-primary text-base">{{ item.created_date.year+543 }}</span>
-                <span class="text-s text-base-content/60">รหัสครุภัณฑ์: {{ item.asset_code
-                }}</span>
+                {% if item.get_category_display() == 'ครุภัณฑ์' %}
+                  <span class="text-s text-base-content/60">
+                    รหัสครุภัณฑ์: {{ item.asset_code
+                  }}</span>
+                {% endif %}
               </div>
             </td>
             <!-- Name -->
             <td class="py-4">
-              <div class="font-medium text-base-content text-base">{{ item.name }}</div>
-            </td>
-            <!-- Range Date -->
-            <td class="text-center py-4">
-              <div class="flex flex-col items-center">
-                {% if item.start_date and item.end_date %}
-                  <span class="font-bold text-base text-primary">
-                    {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
-                  </span>
-                  <span class="text-base text-gray-400">ถึง</span>
-                  <span class="font-bold text-base text-error">{{ item.end_date.strftime("%d/%m/") ~
-                  (item.end_date.year + 543) }}</span>
-                {% else %}
-                  <span class="text-gray-400">-</span>
-                {% endif %}
-              </div>
-            </td>
-            <!-- Type -->
-            <td class="items-center py-4">
-              <div class="flex flex-col items-center">
+              <div class="flex flex-col gap-2">
+                <div class="font-medium text-base-content text-base">{{ item.name }}</div>
                 {% set category_badge = {
                                   'ซอฟต์แวร์': 'badge-primary',
                                   'ครุภัณฑ์': 'badge-warning',
                                   'จ้างเหมาบริการ': 'badge-accent',
                                   'วัสดุ': 'badge-neutral'
                                 }.get(item.get_category_display(), 'badge-secondary') %}
+                <span class="text-sm text-base-content/60">ประเภท:</span>
                 <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
                   {{ item.get_category_display() }}
                 </div>
               </div>
             </td>
+            <!-- Range Date -->
+            <td class="text-center py-4">
+              <div class="flex flex-col items-center text-base text-gray-800">
+                {% if item.start_date and item.end_date %}
+                  <span class="font-bold  ">
+                    {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
+                  </span>
+                  <span>ถึง</span>
+                  <span class="font-bold ">{{ item.end_date.strftime("%d/%m/") ~
+                  (item.end_date.year + 543) }}</span>
+                {% else %}
+                  <span class="">-</span>
+                {% endif %}
+              </div>
+            </td>
             <!-- Period -->
             <td class="text-center py-4">
-              <div class="font-bold text-base text-warning">
+              <div class="font-bold text-base text-gray-900">
                 {% if item.duration_months is not none and item.duration_days is not none %}
                   {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
                 {% endif %}
@@ -306,11 +307,10 @@
                 {% endif %}
               </div>
             </td>
-            <!-- Company -->
+            <!-- Responsible Person -->
             <td class="py-4">
               <div class="flex flex-col">
-                <span class="font-bold text-base py-1">{{ item.company }}</span>
-                <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span>
+                <!-- <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span> -->
                 <div class="flex flex-wrap gap-1 py-1">
                   {% if item.responsible_by %}
                     {% for u in item.responsible_by %}
@@ -320,6 +320,12 @@
                     <span class="text-gray-400">-</span>
                   {% endif %}
                 </div>
+              </div>
+            </td>
+            <!-- Company -->
+            <td class="items-center py-4">
+              <div class="flex flex-col items-center">
+                <span class="font-bold text-base py-1">{{ item.company }}</span>
               </div>
             </td>
             <!-- Renewal Status -->
@@ -727,15 +733,15 @@
       <div class="flex flex-wrap gap-6 text-sm">
         <div class="flex items-center gap-2">
           <div class="w-4 h-4 bg-blue-500 rounded"></div>
-          <span class="font-medium">หัวหน้าฝ่าย</span>
+          <span class="font-medium">หัวหน้าฝ่ายอนุมัติ</span>
         </div>
         <div class="flex items-center gap-2">
           <div class="w-4 h-4 bg-yellow-500 rounded"></div>
-          <span class="font-medium">เจ้าหน้าที่พัสดุ</span>
+          <span class="font-medium">เจ้าหน้าที่พัสดุจัดสรรแหล่งเงิน</span>
         </div>
         <div class="flex items-center gap-2">
           <div class="w-4 h-4 bg-pink-500 rounded"></div>
-          <span class="font-medium">ผู้บริหาร</span>
+          <span class="font-medium">ผู้บริหารอนุมัติ</span>
         </div>
       </div>
     </div>
@@ -767,7 +773,7 @@
                 <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
                 <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
                 {% if current_user.has_organization_roles("staff") %}
-                  <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (พนักงาน)</th>
+                  <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (บุคลากร)</th>
                 {% endif %}
                 {% if current_user.has_organization_roles("head") %}
                   <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (หัวหน้าฝ่าย)</th>
@@ -777,7 +783,7 @@
                     ดำเนินการ(เจ้าหน้าที่พัสดุ)
                   </th>
                 {% endif %}
-                {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"])%}
+                {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"]) %}
                   <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (ผู้บริหาร)</th>
                 {% endif %}
                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะการอนุมัติ</th>
@@ -907,14 +913,12 @@
                           </span>
                         {% endif %}
                       {% else %}
-                        <!-- Change direct form submission to modal trigger -->
                         <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
                                 {% if item.status =='incomplete' or item.status == 'cancelled' %}disabled{% endif %}
                                 onclick="document.getElementById('modal-approve-head-{{ item.id }}').showModal();">
                           <i class="ph ph-check text-lg" title="Approve"></i>
                         </button>
-                        <!-- Confirmation Modal for Head Approve -->
                         <dialog id="modal-approve-head-{{ item.id }}" class="modal">
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
@@ -941,17 +945,16 @@
                                 onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
                           <i class="ph ph-x text-lg" title="Reject"></i>
                         </button>
-                        <!-- Reject Modal for Head -->
                         <dialog id="modal-reject-head-{{ item.id }}" class="modal">
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
                             <input type="hidden" name="approver_role" value="head" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
                               </label>
                               <input type="text"
                                      name="reason"
@@ -968,7 +971,7 @@
                                       onclick="document.getElementById('modal-reject-head-{{ item.id }}').close()">
                                 ยกเลิก
                               </button>
-                              <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                              <button type="submit" class="btn btn-error">ไม่อนุมัติ</button>
                             </div>
                           </form>
                         </dialog>
@@ -990,7 +993,7 @@
                       {% if admin_actioned %}
                         {% if not admin_rejected %}
                           <span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                            อนุมัติ
+                            จัดสรรแหล่งเงินแล้ว
                           </span>
                         {% else %}
                           <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer">
@@ -1006,46 +1009,28 @@
                                 onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                           <i class="ph ph-check text-lg" title="Approve"></i>
                         </button>
-                        <!-- Reject Button as modal -->
-                        <button type="button"
-                                class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %}
-                                  disabled
-                                {% endif %}
-                                onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
+                        <!-- <button type="button" class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %} disabled {% endif %} onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
                           <i class="ph ph-x text-lg" title="Reject"></i>
                         </button>
-                        <!-- Reject Modal for Admin -->
                         <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
-                          <form method="post"
-                                action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                          <form method="post" action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}" class="modal-box">
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
                             <input type="hidden" name="approver_role" value="admin" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
                               </label>
-                              <input type="text"
-                                     name="reason"
-                                     placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
-                                     class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
-                                     maxlength="25"
-                                     required
-                                     style="min-width:300px"
-                                     onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
+                              <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน" class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150" maxlength="25" required style="min-width:300px" onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
                             </div>
                             <div class="modal-action flex gap-2 justify-end">
-                              <button type="button"
-                                      class="btn"
-                                      onclick="document.getElementById('modal-reject-admin-{{ item.id }}').close()">
+                              <button type="button" class="btn" onclick="document.getElementById('modal-reject-admin-{{ item.id }}').close()">
                                 ยกเลิก
                               </button>
-                              <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                              <button type="submit" class="btn btn-error">ไม่อนุมัติ</button>
                             </div>
                           </form>
-                        </dialog>
+                        </dialog>-->
                         <!-- MAS Selection Modal -->
                         <dialog id="modal-mas-{{ item.id }}" class="modal">
                           <form method="post"
@@ -1121,7 +1106,7 @@
                               <button type="button" class="btn" onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
                                 ยกเลิก
                               </button>
-                              <button type="submit" class="btn btn-success">บันทึกและอนุมัติ</button>
+                              <button type="submit" class="btn btn-success">บันทึก</button>
                             </div>
                           </form>
                         </dialog>
@@ -1129,7 +1114,7 @@
                     {% endif %}
                   {% endif %}
                   <!--- ดำเนินการ(ผู้บริหาร) -->
-                  {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"])%}
+                  {% if (current_user.has_organization_roles("supervisor supplier") and supervisor_action) or current_user.has_roles(["admin"]) %}
                     {% set admin_approved = item.approval_history and item.approval_history |
                                           selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
                                         list | length > 0 %}
@@ -1166,7 +1151,7 @@
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box text-start">
                             <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติ</h3>
-                            <p class="py-4">คุณต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
+                            <p class="py-4">ต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
                             <input type="hidden" name="approver_role" value="supervisor supplier" />
                             <input type="hidden" name="action" value="approved" />
                             <div class="modal-action">
@@ -1194,12 +1179,12 @@
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
                             <input type="hidden" name="approver_role" value="supervisor supplier" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการปฏิเสธ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
                               </label>
                               <input type="text"
                                      name="reason"
@@ -1216,7 +1201,7 @@
                                       onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').close()">
                                 ยกเลิก
                               </button>
-                              <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+                              <button type="submit" class="btn btn-error">ไม่อนุมัติ</button>
                             </div>
                           </form>
                         </dialog>
@@ -1301,13 +1286,13 @@
                         <div class="modal-box">
                           <h3 class="font-bold text-lg text-error mb-4 flex items-center gap-2">
                             <i class="ph ph-x-circle text-red-500"></i>
-                            รายละเอียดการปฏิเสธ
+                            รายละเอียดการไม่อนุมัติ
                           </h3>
                           {% set rejection = item.approval_history | selectattr('action', 'equalto',
                                                     'rejected') | list | last %}
                           {% if rejection %}
                             <div class="mb-2">
-                              <span class="font-semibold">ผู้ปฏิเสธ:</span>
+                              <span class="font-semibold">ผู้ไม่อนุมัติ:</span>
                               <span>{{ rejection.approver.display_fullname() or rejection.approver_role or '-'
                               }}</span>
                             </div>
@@ -1321,7 +1306,7 @@
                               <span>{{ rejection.reason or '-' }}</span>
                             </div>
                           {% else %}
-                            <div class="text-gray-500">ไม่พบข้อมูลการปฏิเสธ</div>
+                            <div class="text-gray-500">ไม่พบข้อมูลการไม่อนุมัติ</div>
                           {% endif %}
                           <div class="modal-action mt-4">
                             <button type="button"

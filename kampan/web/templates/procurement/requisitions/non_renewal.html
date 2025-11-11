@@ -6,15 +6,9 @@
 {% block title %}รายการที่ไม่ต่ออายุแล้ว{% endblock %}
 {% block dashboard_title %}รายการครุภัณฑ์ที่ไม่ต่ออายุแล้ว{% endblock %}
 
-{% block breadcrumbs %}
-{{ RenderBreadcrumb([
-("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisitions.index', organization_id=organization.id)),
-("รายการที่ไม่ต่ออายุแล้ว", None)
-]) }}
-{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
+  <div class="container mx-auto px-4 py-6">
     {{ table_macros.render_non_renewal_items_table(items) }}
-</div>
+  </div>
 {% endblock %}

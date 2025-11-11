@@ -4,11 +4,7 @@
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 {% block title %}รายการขอซื้อขอจ้างกำลังดำเนินการ{% endblock %}
 {% block dashboard_title %}รายการขอซื้อขอจ้าง{% endblock %}
-{% block breadcrumbs %}
-  {{ RenderBreadcrumb([
-    ("รายการครุภัณฑ์ใกล้หมดอายุ", url_for('procurement.requisition_timeline.index',
-    organization_id=organization.id) ), ("รายการขอซื้อขอจ้าง", None) ]) }}
-{% endblock %}
+
 {% block content %}
   <div class="container mx-auto px-4 py-6">
     <!-- แสดงจำนวนรายการ -->
