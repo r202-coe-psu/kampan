@@ -137,7 +137,7 @@ def save_mas_db(document, mas, user_id):
     document.updated_date = datetime.datetime.now()
     if created_count == 0:
         document.status = "failed"
-    elif created_count > 0:
+    elif created_count != len(df):
         document.status = "incomplete"
     else:
         document.status = "completed"
