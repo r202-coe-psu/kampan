@@ -13,6 +13,8 @@ ORGANIZATION_ROLES = [
     ("supervisor supplier", "หัวหน้าฝ่ายบริหารจัดการ"),
     ("admin", "ผู้ดูแล/เจ้าหน้าที่พัสดุ"),
     ("driver", "พนักงานขับรถ"),
+    ("director", "ผู้อำนวยการ"),
+    ("manager", "ผู้บริหาร"),
 ]
 
 ORGANIZATION_USER_ROLE_STATUS = [
@@ -218,9 +220,10 @@ class Organization(me.Document):
         return models.User.objects(id__in=user_ids)
 
     def get_director(self):
-        division = models.Division.objects(name="ฝ่ายบริหาร").first()
-        endorsers = division.get_header()
-        user_ids = [endorser.user.id for endorser in endorsers]
+        directors_in_org = models.OrganizationUserRole.objects(
+            organization=self, roles__in=["director"], status="active"
+        )
+        user_ids = [director.user.id for director in directors_in_org if director.user]
         return models.User.objects(id__in=user_ids)
 
     def get_all_drivers(self):

@@ -37,9 +37,10 @@ def get_choice_of_quarter():
                     f"ปี {year+543+1} ไตรมาสที่ {(count%4)+1} : {start_date.strftime('%d-%m-%Y')} - {end_date.strftime('%d-%m-%Y')}",
                 )
             )
-            count += 1
-            if end_date <= datetime.date.today():
+            if start_date <= datetime.date.today():
                 default_quarter = f"{year}_{count%4}"
+            count += 1
+
     return quarter_choices, default_quarter
 
 
@@ -309,18 +310,27 @@ def item_report_quarter():
 
         year, quarter = str(form.quarter.data).split("_")
         start_date, end_date = get_quarter_of_year(int(year))[int(quarter)]
-
+        start_date = datetime.datetime.combine(
+            start_date, datetime.datetime.min.time()
+        ).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = datetime.datetime.combine(
+            end_date, datetime.datetime.max.time()
+        ).replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(
+            days=1
+        )
         reports = DashboardRepository.get_item_report(
             start_date=start_date,
             end_date=end_date,
             item_id=form.item.data,
             organization_id=organization_id,
         )
+        item = models.Item.objects(id=form.item.data).first()
         return render_template(
             "/dashboard/item_report_quarter.html",
             organization=organization,
             reports=reports,
             form=form,
+            item=item,
         )
 
     return redirect(
@@ -369,21 +379,27 @@ def item_report_custom():
         form.item.data = request.args.get(
             "search_item", (form.item.choices[0][0] if form.item.choices else None)
         )
+
         reports = DashboardRepository.get_item_report(
             start_date=form.start_date.data,
-            end_date=form.end_date.data,
+            end_date=form.end_date.data + datetime.timedelta(days=1),
             item_id=form.item.data,
             organization_id=organization_id,
         )
         data = prepare_data(
-            form.start_date.data, form.end_date.data, form.item.data, organization
+            form.start_date.data,
+            form.end_date.data + datetime.timedelta(days=1),
+            form.item.data,
+            organization,
         )
         list_data = calculate_amount_item(data)
+        item = models.Item.objects(id=form.item.data).first()
         return render_template(
             "/dashboard/item_report_custom.html",
             organization=organization,
             reports=reports,
             form=form,
+            item=item,
         )
 
     return redirect(
@@ -407,7 +423,7 @@ def download_item_report():
     search_quarter = request.args.get("search_quarter")
     if search_quarter:
         year, quarter = str(search_quarter).split("_")
-        start_date, end_date = get_quarter_of_year(int(year))[int(quarter) - 1]
+        start_date, end_date = get_quarter_of_year(int(year))[int(quarter)]
 
     search_start_date = request.args.get("search_start_date")
     search_end_date = request.args.get("search_end_date")

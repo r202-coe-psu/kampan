@@ -107,13 +107,9 @@ def add():
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    if quantity > item.get_amount_pieces():
-        return redirect(
-            url_for(
-                "lost_breaks.add", organization_id=organization_id, error_message=True
-            )
-        )
-    inventories = models.Inventory.objects(item=item, remain__gt=0)
+    inventories = models.Inventory.objects(item=item).order_by("-remain")
+
+    lost_break_item = None
     for inventory in inventories:
         lost_break_item = models.LostBreakItem()
         lost_break_item.user = current_user._get_current_object()
@@ -132,11 +128,11 @@ def add():
             lost_break_item.quantity = inventory.remain
             inventory.remain = 0
 
-        inventory.save()
         lost_break_item.save()
 
         if quantity <= 0:
             break
+
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_lost_break,
         args=(lost_break_item, current_user._get_current_object(), current_app.config),
@@ -187,12 +183,6 @@ def edit(lost_break_item_id):
             form=form,
             organization=organization,
         )
-    if lost_break_item.quantity != 0:
-        return_inventory = models.Inventory.objects(
-            id=lost_break_item.lost_from.id
-        ).first()
-        return_inventory.remain -= lost_break_item.quantity
-        return_inventory.save()
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
@@ -223,7 +213,6 @@ def edit(lost_break_item_id):
             lost_break_item.quantity = inventory.remain
             inventory.remain = 0
 
-        inventory.save()
         lost_break_item.save()
 
         if quantity <= 0:
@@ -249,12 +238,6 @@ def delete(lost_break_item_id):
     organization_id = request.args.get("organization_id")
 
     lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
-    if lost_break_item.quantity != 0:
-        return_inventory = models.Inventory.objects(
-            id=lost_break_item.lost_from.id
-        ).first()
-        return_inventory.remain -= lost_break_item.quantity
-        return_inventory.save()
     lost_break_item.status = "disactive"
     lost_break_item.save()
 
@@ -289,6 +272,14 @@ def decide(lost_break_item_id, decide_choice):
     lost_break_item = models.LostBreakItem.objects(id=lost_break_item_id).first()
     if decide_choice == "approve":
         lost_break_item.status = "active"
+        if lost_break_item.quantity != 0:
+            return_inventory = (
+                models.Inventory.objects(id=lost_break_item.lost_from.id)
+                .order_by("-remain")
+                .first()
+            )
+            return_inventory.remain += lost_break_item.quantity
+            return_inventory.save()
     elif decide_choice == "denied":
         lost_break_item.status = "denied"
         if lost_break_item.quantity != 0:

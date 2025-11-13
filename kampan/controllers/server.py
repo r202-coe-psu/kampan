@@ -51,14 +51,27 @@ class ControllerServer:
                 logger.debug("Start checking item data monthly")
 
                 today = datetime.date.today()
+
+                this_day_month_snap = datetime.datetime.combine(
+                    datetime.date.today().replace(day=1), process_time
+                )
                 next_month = today + relativedelta(months=1)
                 next_month_start = next_month.replace(day=1)
-                time_set = datetime.datetime.combine(next_month_start, process_time)
-
+                logger.debug("This day month snap: %s", this_day_month_snap)
+                if datetime.datetime.now() <= this_day_month_snap:
+                    # snap for this month
+                    logger.debug(
+                        "Setting time to snap for this month: %s", this_day_month_snap
+                    )
+                    time_set = datetime.datetime.combine(today, process_time)
+                else:
+                    # snap for next month
+                    time_set = datetime.datetime.combine(next_month_start, process_time)
+                logger.debug("Next snap time set to: %s", time_set)
                 time_to_check = (time_set - datetime.datetime.now()).total_seconds()
                 if time_to_check > 0:
                     logger.debug(
-                        f"Sleeping for {time_to_check} seconds until {time_set}"
+                        f"===> Sleeping for {time_to_check} seconds until {time_set}"
                     )
                     await asyncio.sleep(time_to_check)
 
