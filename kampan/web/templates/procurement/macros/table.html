@@ -203,15 +203,15 @@
       <tr class="border-none">
         <!-- <th class="text-center font-semibold text-base-content text-sm py-4">ลำดับ</th> -->
         <th class="font-semibold text-base-content text-sm w-48">ปีงบประมาณ</th>
-        <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
-        <th class="font-semibold text-base-content text-sm text-center w-12">ช่วงเวลา</th>
-        <th class="font-semibold text-base-content text-sm text-center w-64">ระยะเวลา</th>
+        <th class="font-semibold text-base-content text-sm w-72">รายการ</th>
+        <th class="font-semibold text-base-content text-sm text-center w-12">ระยะเวลาบำรุงรักษา</th>
+        <th class="font-semibold text-base-content text-sm text-center w-64">เวลาคงเหลือ</th>
+        <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
+        <th class="font-semibold text-base-content text-sm text-center w-64">ผู้ให้บริการ</th>
         <th class="font-semibold text-base-content text-sm text-center">จำนวนเงิน</th>
         <th class="font-semibold text-base-content text-sm text-center w-32">การจ่ายเงิน</th>
-        <th class="font-semibold text-base-content text-sm text-center w-72">ผู้รับผิดชอบ</th>
-        <th class="font-semibold text-base-content text-sm text-center w-64">บริษัท</th>
         <th class="font-semibold text-base-content text-sm text-center w-32">สถานะการต่ออายุ</th>
-        <th class="font-semibold text-base-content text-sm text-center w-12">Tools</th>
+        <th class="font-semibold text-base-content text-sm text-center w-12"></th>
       </tr>
     </thead>
     <tbody>
@@ -227,9 +227,9 @@
             <!-- PR Number -->
             <td class="py-4">
               <div class="flex flex-col">
-                <span class="font-bold text-primary text-base">{{ item.created_date.year+543 }}</span>
+                <span class="font-bold text-black text-base">{{ item.created_date.year+543 }}</span>
                 {% if item.get_category_display() == 'ครุภัณฑ์' %}
-                  <span class="text-s text-base-content/60">
+                  <span class="text-sm text-base-content/80">
                     รหัสครุภัณฑ์: {{ item.asset_code
                   }}</span>
                 {% endif %}
@@ -239,21 +239,15 @@
             <td class="py-4">
               <div class="flex flex-col gap-2">
                 <div class="font-medium text-base-content text-base">{{ item.name }}</div>
-                {% set category_badge = {
-                                  'ซอฟต์แวร์': 'badge-primary',
-                                  'ครุภัณฑ์': 'badge-warning',
-                                  'จ้างเหมาบริการ': 'badge-accent',
-                                  'วัสดุ': 'badge-neutral'
-                                }.get(item.get_category_display(), 'badge-secondary') %}
                 <span class="text-sm text-base-content/60">ประเภท:</span>
-                <div class="badge {{ category_badge }} font-medium text-base px-3 py-1">
+                <div class="badge bg-gray-600 text-white font-medium text-base px-3 py-1">
                   {{ item.get_category_display() }}
                 </div>
               </div>
             </td>
             <!-- Range Date -->
             <td class="text-center py-4">
-              <div class="flex flex-col items-center text-base text-gray-800">
+              <div class="flex flex-col items-center text-base text-black">
                 {% if item.start_date and item.end_date %}
                   <span class="font-bold  ">
                     {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
@@ -268,15 +262,37 @@
             </td>
             <!-- Period -->
             <td class="text-center py-4">
-              <div class="font-bold text-base text-gray-900">
+              <div class="font-bold text-base text-black">
                 {% if item.duration_months is not none and item.duration_days is not none %}
                   {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
                 {% endif %}
               </div>
             </td>
+
+            <!-- Responsible Person -->
+            <td class="py-4">
+              <div class="flex flex-col">
+                <!-- <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span> -->
+                <div class="flex flex-wrap gap-1 py-1">
+                  {% if item.responsible_by %}
+                    {% for u in item.responsible_by %}
+                      <span class="badge badge-outline badge-primary font-medium truncate">{{ u.display_user_fullname() }}</span>
+                    {% endfor %}
+                  {% else %}
+                    <span class="text-gray-400">-</span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <!-- Company -->
+            <td class="items-center py-4">
+              <div class="flex flex-col items-center">
+                <span class="font-bold text-base py-1">{{ item.company }}</span>
+              </div>
+            </td>
             <!-- Amount -->
             <td class="text-center py-4">
-              <div class="text-lg font-bold text-success">฿{{ "{:,.2f}".format(item.amount) }}</div>
+              <div class="text-lg font-bold text-black">฿{{ "{:,.2f}".format(item.amount) }}</div>
             </td>
             <!-- Payment Status -->
             <td class="text-center py-4">
@@ -307,27 +323,7 @@
                 {% endif %}
               </div>
             </td>
-            <!-- Responsible Person -->
-            <td class="py-4">
-              <div class="flex flex-col">
-                <!-- <span class="text-s text-base-content/60 py-1">ผู้รับผิดชอบ:</span> -->
-                <div class="flex flex-wrap gap-1 py-1">
-                  {% if item.responsible_by %}
-                    {% for u in item.responsible_by %}
-                      <span class="badge badge-outline badge-primary font-medium truncate">{{ u.display_user_fullname() }}</span>
-                    {% endfor %}
-                  {% else %}
-                    <span class="text-gray-400">-</span>
-                  {% endif %}
-                </div>
-              </div>
-            </td>
-            <!-- Company -->
-            <td class="items-center py-4">
-              <div class="flex flex-col items-center">
-                <span class="font-bold text-base py-1">{{ item.company }}</span>
-              </div>
-            </td>
+
             <!-- Renewal Status -->
             <td class="text-center py-4">
               {% if item.status == "pending" %}
@@ -357,20 +353,18 @@
                   </a>
                 </div>
               </div>
-              <div>
+              <!-- <div>
                 <div class="tooltip tooltip-left" data-tip="แก้ไขรูปภาพ">
-                  <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}"
-                     class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
+                  <a href="{{ url_for('procurement.products.edit_image', procurement_id=item.id, organization_id=organization.id) }}" class="btn btn-outline btn-warning btn-sm rounded-full border-yellow-500 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-700 transition mt-2">
                     <i class="ph ph-pencil-simple text-lg"></i>
                   </a>
                 </div>
                 <div class="tooltip tooltip-left" data-tip="ไปหน้าต่ออายุ">
-                  <a href="{{ url_for('procurement.requisitions.index',  procurement_id=item.id, organization_id=organization.id) }}"
-                     class="btn btn-outline btn-warning btn-sm rounded-full border-red-500 text-red-700 hover:bg-red-100 hover:border-red-700 transition mt-2">
+                  <a href="{{ url_for('procurement.requisitions.index',  procurement_id=item.id, organization_id=organization.id) }}" class="btn btn-outline btn-warning btn-sm rounded-full border-red-500 text-red-700 hover:bg-red-100 hover:border-red-700 transition mt-2">
                     <i class="ph ph-arrows-out text-lg"></i>
                   </a>
                 </div>
-              </div>
+              </div> -->
             </td>
           </tr>
         {% endfor %}
