@@ -923,8 +923,8 @@
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box text-start">
-                            <h3 class="font-bold text-xl  text-green-700">ยืนยันการอนุมัติ</h3>
-                            <p class="py-4">คุณต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
+                            <h3 class="font-bold text-xl  text-green-700">ยืนยันการอนุมัติรายการขอซื้อ/ขอจ้าง</h3>
+                            <p class="py-4">ต้องการอนุมัติรายการขอซื้อ/ขอจ้างเลขที่ {{ item.requisition_code }} หรือไม่</p>
                             <input type="hidden" name="approver_role" value="head" />
                             <input type="hidden" name="action" value="approved" />
                             <div class="modal-action">
@@ -949,12 +949,12 @@
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติรายการขอซื้อ/ขอจ้าง</div>
                             <input type="hidden" name="approver_role" value="head" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ</span>
                               </label>
                               <input type="text"
                                      name="reason"
@@ -1014,12 +1014,12 @@
                         </button>
                         <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
                           <form method="post" action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}" class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติรายการขอซื้อ/ขอจ้าง</div>
                             <input type="hidden" name="approver_role" value="admin" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ</span>
                               </label>
                               <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน" class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150" maxlength="25" required style="min-width:300px" onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-admin-{{ item.id }}').close()}" />
                             </div>
@@ -1150,8 +1150,8 @@
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box text-start">
-                            <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติ</h3>
-                            <p class="py-4">ต้องการอนุมัติคำขอซื้อรหัส {{ item.requisition_code }} หรือไม่?</p>
+                            <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติรายการขอซื้อ/ขอจ้าง</h3>
+                            <p class="py-4">ต้องการอนุมัติรายการขอซื้อ/ขอจ้างเลขที่  {{ item.requisition_code }} หรือไม่</p>
                             <input type="hidden" name="approver_role" value="supervisor supplier" />
                             <input type="hidden" name="action" value="approved" />
                             <div class="modal-action">
@@ -1179,12 +1179,12 @@
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box">
-                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติการขอซื้อ</div>
+                            <div class="text-lg font-bold mb-2 text-error">ไม่อนุมัติรายการขอซื้อ/ขอจ้าง</div>
                             <input type="hidden" name="approver_role" value="supervisor supplier" />
                             <input type="hidden" name="action" value="rejected" />
                             <div class="mb-6 flex flex-col items-center">
                               <label class="label mb-2 text-lg font-semibold text-error">
-                                <span class="label-text">เหตุผลในการไม่อนุมัติ (สั้นๆ)</span>
+                                <span class="label-text">เหตุผลในการไม่อนุมัติ</span>
                               </label>
                               <input type="text"
                                      name="reason"
