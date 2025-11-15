@@ -565,14 +565,14 @@
             <td
                 style="border: 1px solid #333; border-left: none; border-bottom: none; padding: 8px; vertical-align: top;">
                 <span style="font-size: 15px;">
-                    {% set supervisor_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
-                    'supervisor supplier') | list %}
+                    {% set manager_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
+                    'manager') | list %}
                 </span>
                 <p>
                     <span>
                         <input type="checkbox"
                             style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {% if
-                            supervisor_approval and supervisor_approval[-1].action=='approved' %}checked{% endif %}>
+                            manager_approval and manager_approval[-1].action=='approved' %}checked{% endif %}>
                         <span style="vertical-align: middle;">อนุมัติ</span>
                     </span>
                 </p>
@@ -580,12 +580,12 @@
                     <span>
                         <input type="checkbox"
                             style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {% if
-                            supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
+                            manager_approval and manager_approval[-1].action=='rejected' %}checked{% endif %}>
                         <span style="vertical-align: middle;">ไม่อนุมัติ เพราะ</span>
                         <span style="position: relative;">..................................................
                             <span style="position: absolute; left: 0.1rem; top: -0.3rem; white-space: nowrap;">
-                                {%- if supervisor_approval and supervisor_approval[-1].reason -%}
-                                {{ supervisor_approval[-1].reason }}
+                                {%- if manager_approval and manager_approval[-1].reason -%}
+                                {{ manager_approval[-1].reason }}
                                 {%- endif -%}
                             </span>
                         </span>
@@ -594,10 +594,10 @@
                 <p style="margin-top: -0.5rem; text-align: right; margin-right: 1.5rem;">
                     <span style="position: relative;">...................................
                         <span style="position: absolute; left: 0.1rem; top: -0.3rem; white-space: nowrap;">
-                            {%- if supervisor_approval and supervisor_approval[-1].approver -%}
-                            {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
-                            supervisor_approval[-1].approver.display_fullname() else
-                            supervisor_approval[-1].approver.display_fullname() }}
+                            {%- if manager_approval and manager_approval[-1].approver -%}
+                            {{ manager_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
+                            manager_approval[-1].approver.display_fullname() else
+                            manager_approval[-1].approver.display_fullname() }}
                             {%- endif -%}
                         </span>
                     </span>
@@ -606,8 +606,8 @@
                 <p style="margin-top: -1rem;">
                     <span style="margin-left: 10.4rem;">
                         <span style="font-size: 15px;">
-                            {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
-                            {{ supervisor_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
+                            {%- if manager_approval and manager_approval[-1].timestamp -%}
+                            {{ manager_approval[-1].timestamp.strftime('%d/%m/%Y %H:%M') }}
                             {%- else -%}
                             <p style="text-align: right; margin-top: -0.5rem; margin-right: 1.5rem;">
                                 .............../.............../...............</p>

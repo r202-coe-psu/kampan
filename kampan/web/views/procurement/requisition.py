@@ -181,11 +181,11 @@ def renewal_requested(requisition_procurement_id):
         is_admin_or_head = current_user.has_organization_roles(
             "admin"
         ) or current_user.has_organization_roles("head")
-        is_supervisor = current_user.has_organization_roles("supervisor supplier")
+        is_manager = current_user.has_organization_roles("manager")
         is_staff = current_user.has_organization_roles("staff")
 
         # Apply filters based on role (lowest privilege first)
-        if is_staff and not (is_admin_or_head or is_supervisor):
+        if is_staff and not (is_admin_or_head or is_manager):
             # Filter by purchaser.user matching current_user
             staff_requisitions = []
             for req in requisitions:
@@ -196,8 +196,8 @@ def renewal_requested(requisition_procurement_id):
                 ):
                     staff_requisitions.append(req.id)
             requisitions = requisitions.filter(id__in=staff_requisitions)
-        elif is_supervisor and not is_admin_or_head:
-            requisitions = requisitions.filter(supervisor=org_user_role)
+        elif is_manager and not is_admin_or_head:
+            requisitions = requisitions.filter(manager=org_user_role)
         # Admin and head see all (no filter)
 
         requisitions = requisitions.order_by("-requisition_code")
@@ -436,7 +436,7 @@ def requisition_action(requisition_id):
     action = request.form.get("action")  # 'approved' or 'rejected'
     reason = request.form.get("reason")  # เหตุผลในการปฏิเสธ
     fund_id = request.form.get("fund")
-    supervisor_id = request.form.get("supervisor")
+    manager_id = request.form.get("manager")
     requisition = models.Requisition.objects(id=requisition_id).first()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
@@ -451,9 +451,7 @@ def requisition_action(requisition_id):
     if not member_obj or not requisition:
         abort(404)
 
-    if (
-        approver_role == "head" or approver_role == "supervisor supplier"
-    ) and action == "approved":
+    if (approver_role == "head" or approver_role == "manager") and action == "approved":
         job = redis_rq.redis_queue.queue.enqueue(
             utils.approved_emails.send_email_approve_to_user_admin_committee,
             args=(
@@ -474,24 +472,22 @@ def requisition_action(requisition_id):
             mas_obj = models.MAS.objects(id=fund_id).first()
             if mas_obj:
                 requisition.fund = mas_obj
-        if supervisor_id:
-            supervisor_obj = models.OrganizationUserRole.objects(
-                id=supervisor_id
-            ).first()
-            if supervisor_obj:
-                requisition.supervisor = supervisor_obj
+        if manager_id:
+            manager_obj = models.OrganizationUserRole.objects(id=manager_id).first()
+            if manager_obj:
+                requisition.manager = manager_obj
                 job = redis_rq.redis_queue.queue.enqueue(
-                    utils.send_email_to_supervisor_supplier.send_email_to_supervisor_supplier,
+                    utils.send_email_to_manager.send_email_to_manager,
                     args=(
                         requisition,
                         current_app.config,
-                        supervisor_obj,
+                        manager_obj,
                         organization,
                     ),
                     timeout=600,
                     job_timeout=600,
                 )
-                print("=====> Supervisor email job submitted", job.get_id())
+                print("=====> Manager email job submitted", job.get_id())
 
     approval = models.requisitions.ApprovalHistory(
         approver=member_obj,
@@ -506,7 +502,7 @@ def requisition_action(requisition_id):
         requisition.approval_history = []
     requisition.approval_history.append(approval)
 
-    required_roles = {"head", "admin", "supervisor supplier"}
+    required_roles = {"head", "admin", "manager"}
     approved_roles = set(
         h.approver_role for h in requisition.approval_history if h.action == "approved"
     )

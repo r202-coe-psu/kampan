@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 email_subject_template = {
     "head": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากหัวหน้าฝ่าย",
-    "supervisor supplier": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากผู้บริหาร",
+    "manager": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง จากผู้บริหาร",
     "default": "[แจ้งผล] การพิจารณาอนุมัติรายการขอซื้อ/จ้าง",
 }
 
@@ -58,7 +58,7 @@ Link: {{ document_url }}
 """
 ROLES_MAP = {
     "head": "หัวหน้าฝ่าย",
-    "supervisor supplier": "ผู้บริหาร",
+    "manager": "ผู้บริหาร",
 }
 
 
@@ -182,8 +182,8 @@ def send_email_approve_to_user_admin_committee(
         # print(email_body)
         # print("=" * 50 + "\n")
 
-        # Send to committee members only if not supervisor supplier
-        if notif_type != "supervisor supplier":
+        # Send to committee members only if not manager
+        if notif_type != "manager":
             all_committee_members = (
                 text_format["specification_members"]
                 + text_format["procurement_members"]

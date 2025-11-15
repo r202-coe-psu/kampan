@@ -61,17 +61,17 @@ def get_head_text_format(requisition, setting):
     return text_format
 
 
-def send_email_to_supervisor_supplier(
+def send_email_to_manager(
     requisition: models.Requisition,
     setting,
-    supervisor_obj: models.OrganizationUserRole,
+    manager_obj: models.OrganizationUserRole,
     organization,
 ):
-    logger.debug("use send_email_to_supervisor ")
+    logger.debug("use send_email_to_manager ")
     text_format = get_head_text_format(requisition, setting)
 
     if not text_format:
-        logger.error("no text format for email to supervisor")
+        logger.error("no text format for email to manager")
         return False
 
     purchaser_email = text_format["purchaser_email"]
@@ -79,12 +79,12 @@ def send_email_to_supervisor_supplier(
         logger.debug("purchaser email is required")
         return False
 
-    if not supervisor_obj or not supervisor_obj.user:
-        logger.debug("supervisor_obj or user is required")
+    if not manager_obj or not manager_obj.user:
+        logger.debug("manager_obj or user is required")
         return False
 
-    if not supervisor_obj.user.email:
-        logger.debug("supervisor email is required")
+    if not manager_obj.user.email:
+        logger.debug("manager email is required")
         return False
 
     try:
@@ -95,15 +95,15 @@ def send_email_to_supervisor_supplier(
         email_body = Template(email_body_template).render(text_format)
         # print(email_subject)
         # print(email_body)
-        supervisor_email = supervisor_obj.user.email
+        manager_email = manager_obj.user.email
         try:
-            logger.debug(f"send email to {supervisor_email}")
-            psu_smtp.send_email(supervisor_email, email_subject, email_body)
+            logger.debug(f"send email to {manager_email}")
+            psu_smtp.send_email(manager_email, email_subject, email_body)
         except Exception as e:
-            logger.error(f"send email to supervisor error: {e}")
+            logger.error(f"send email to manager error: {e}")
 
         psu_smtp.quit()
         return True
     except Exception as e:
-        logger.error(f"send_email_to_supervisor_supplier error: {e}")
+        logger.error(f"send_email_to_manager error: {e}")
         return False

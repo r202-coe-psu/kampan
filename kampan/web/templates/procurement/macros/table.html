@@ -775,8 +775,8 @@
                         {% if current_user.has_organization_roles("admin") %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Admin Action</th>
                         {% endif %}
-                        {% if current_user.has_organization_roles("supervisor supplier") %}
-                        <th class="font-semibold text-base-content text-sm text-center w-20">Supervisor Action</th>
+                        {% if current_user.has_organization_roles("manager") %}
+                        <th class="font-semibold text-base-content text-sm text-center w-20">Manager Action</th>
                         {% endif %}
                         <th class="font-semibold text-base-content text-sm text-center w-20">Approve Status</th>
                         <th class="font-semibold text-base-content text-sm text-center w-20">Status</th>
@@ -960,15 +960,14 @@
                                     <input type="hidden" name="action" value="approved">
                                     <div class="mb-4">
                                         <div class="form-control mb-4">
-                                            <label for="supervisor-{{ item.id }}" class="block font-semibold mb-2">
-                                                เลือกผู้บริหาร (Supervisor
-                                                Supplier)
+                                            <label for="manager-{{ item.id }}" class="block font-semibold mb-2">
+                                                เลือกผู้บริหาร (Manager)
                                             </label>
-                                            <select name="supervisor" id="supervisor-{{ item.id }}"
+                                            <select name="manager" id="manager-{{ item.id }}"
                                                 class="select select-bordered w-full" required>
                                                 <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
                                                 {% for user in organization.get_organization_users() %}
-                                                {% if 'supervisor supplier' in user.roles %}
+                                                {% if 'manager' in user.roles %}
                                                 <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
                                                 {% endif %}
                                                 {% endfor %}
@@ -1035,16 +1034,16 @@
                             </dialog>
                         </td>
                         {% endif %}
-                        {% if current_user.has_organization_roles("supervisor supplier") %}
+                        {% if current_user.has_organization_roles("manager") %}
                         {% set already_acted = item.approval_history and item.approval_history |
-                        selectattr('approver_role', 'equalto', 'supervisor supplier') | list | length > 0 %}
+                        selectattr('approver_role', 'equalto', 'manager') | list | length > 0 %}
                         {% set admin_approved = item.approval_history and item.approval_history |
                         selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
                         list | length > 0 %}
                         <td class="px-4 py-3 whitespace-nowrap text-center">
                             <form method="post" style="display:inline"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}">
-                                <input type="hidden" name="approver_role" value="supervisor supplier">
+                                <input type="hidden" name="approver_role" value="manager">
                                 <input type="hidden" name="action" value="approved">
                                 <button type="submit"
                                     class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
@@ -1056,17 +1055,16 @@
                             <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {%
                                 if not admin_approved or already_acted or item.status=='incomplete' %}disabled{% endif
-                                %}
-                                onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').showModal();">
+                                %} onclick="document.getElementById('modal-reject-manager-{{ item.id }}').showModal();">
                                 <i class="ph ph-x text-lg" title="Reject"></i>
                             </button>
-                            <!-- Reject Modal for Supervisor Supplier -->
-                            <dialog id="modal-reject-supervisor-{{ item.id }}" class="modal">
+                            <!-- Reject Modal for manager -->
+                            <dialog id="modal-reject-manager-{{ item.id }}" class="modal">
                                 <form method="post"
                                     action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                     class="modal-box">
                                     <div class="text-lg font-bold mb-2 text-error">ปฏิเสธการขอซื้อ</div>
-                                    <input type="hidden" name="approver_role" value="supervisor supplier">
+                                    <input type="hidden" name="approver_role" value="manager">
                                     <input type="hidden" name="action" value="rejected">
                                     <div class="mb-6 flex flex-col items-center">
                                         <label class="label mb-2 text-lg font-semibold text-error">
@@ -1075,11 +1073,11 @@
                                         <input type="text" name="reason" placeholder="เช่น ไม่จำเป็น, ไม่อยู่ในแผน"
                                             class="input input-bordered w-full max-w-xl text-lg py-3 px-4 border-2 border-error focus:border-error focus:outline-none rounded-lg shadow-sm transition-all duration-150"
                                             maxlength="25" required style="min-width:300px"
-                                            onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-supervisor-{{ item.id }}').close()}" />
+                                            onkeydown="if(event.key==='Escape') {document.getElementById('modal-reject-manager-{{ item.id }}').close()}" />
                                     </div>
                                     <div class="modal-action flex gap-2 justify-end">
                                         <button type="button" class="btn"
-                                            onclick="document.getElementById('modal-reject-supervisor-{{ item.id }}').close()">
+                                            onclick="document.getElementById('modal-reject-manager-{{ item.id }}').close()">
                                             ยกเลิก
                                         </button>
                                         <button type="submit" class="btn btn-error">ปฏิเสธ</button>
@@ -1099,7 +1097,7 @@
                                 "badge-secondary",
                                 "ph-shield"
                                 ],
-                                "supervisor supplier": [
+                                "manager": [
                                 "badge-accent",
                                 "ph-users"
                                 ]
@@ -1124,7 +1122,7 @@
                                     {% set role_badges = {
                                     'head': ['badge-primary', 'ph-user'],
                                     'admin': ['badge-secondary', 'ph-shield'],
-                                    'supervisor supplier': ['badge-accent', 'ph-users']
+                                    'manager': ['badge-accent', 'ph-users']
                                     } %}
                                     {% set all_approved = true %}
                                     {% for role, badge_info in role_badges.items() %}
