@@ -111,6 +111,7 @@ def index():
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
     progress = request.args.get("progress", default=None, type=str)
+    requisition_code = request.args.get("requisition_code", default=None, type=str)
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = current_user.user_setting.current_organization
@@ -133,6 +134,17 @@ def index():
         requisition_timeline = models.RequisitionTimeline.objects(
             id__in=filtered_timelines
         ).order_by("-updated_date")
+
+    if requisition_code:
+        # ดึง requisitions ที่มี requisition_code ตรงกับเงื่อนไข
+        requisitions = models.Requisition.objects(
+            requisition_code__icontains=requisition_code
+        ).only("id")
+        # กรอง requisition_timeline โดยใช้ requisition IDs
+        requisition_ids = [req.id for req in requisitions]
+        requisition_timeline = requisition_timeline.filter(
+            requisition__in=requisition_ids
+        )
 
     # เช็คสิทธิ์ถ้าไม่ใช่ admin ให้กรองเฉพาะรายการของผู้ใช้คนนั้น
     if not is_admin:
@@ -177,6 +189,59 @@ def add_progress(requisition_timeline_id):
             current_user,
             request,
         )
+
+    return redirect(
+        url_for(
+            "procurement.requisition_timeline.index",
+            organization_id=organization.id,
+        )
+    )
+
+
+@module.route("/<requisition_timeline_id>/cancel", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def cancel(requisition_timeline_id):
+    form = forms.requisition_timeline.RequisitionCancelForm()
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    requisition_timeline = models.RequisitionTimeline.objects.get(
+        id=requisition_timeline_id
+    )
+    note = form.note.data
+    if not note:
+        return redirect(
+            url_for(
+                "procurement.requisition_timeline.index",
+                organization_id=organization.id,
+            )
+        )
+    # บันทึกเหตุผลการยกเลิกs
+    requisition_timeline.note = note
+    requisition_timeline.status = "cancelled"
+    requisition_timeline.save()
+
+    requisition = models.Requisition.objects(
+        id=requisition_timeline.requisition.id
+    ).first()
+
+    if requisition:
+        requisition.status = "cancelled"
+        requisition.save()
+    job = redis_rq.redis_queue.queue.enqueue(
+        utils.send_cancellation_email_to_relevant.send_cancellation_email_to_relevant,
+        args=(
+            requisition,
+            requisition_timeline,
+            current_user._get_current_object(),
+            current_app.config,
+        ),
+        timeout=600,
+        job_timeout=600,
+    )
+    if job:
+        print("=====> Cancellation email job submitted", job.get_id())
 
     return redirect(
         url_for(

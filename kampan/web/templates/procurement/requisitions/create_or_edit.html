@@ -1,238 +1,230 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-
 {% block title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block dashboard_title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
-
 {% block content %}
-<div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
-    <div class="flex items-center mb-6">
-        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-        </div>
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-800">{{ 'แก้ไข' if form._obj else 'สร้าง'
-                }}รายการขอจัดซื้อ</h1>
-            <p class="text-gray-500 text-sm">กรอกข้อมูลสำหรับการขอจัดซื้อของคุณ</p>
-        </div>
-    </div>
-
-    <form method="POST" enctype="multipart/form-data" class="space-y-6">
-        {{ form.hidden_tag() }}
-
-        <!-- Basic Information -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลพื้นฐาน</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.purchaser.label.text }}</span>
-                    </label>
-                    {{ form.purchaser(class="select select-bordered w-full") }}
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.phone.label.text }}</span>
-                    </label>
-                    {{ form.phone(class="input input-bordered w-full", placeholder="เบอร์โทรศัพท์") }}
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.start_date.label.text }} <span
-                                class="text-red-500">*</span></span>
-                    </label>
-                    {{ form.start_date(class="input input-bordered w-full", type="date") }}
-                </div>
+    <div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-6 w-6 text-primary"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
             </div>
-
-            <div class="form-control mt-4">
-                <label class="label">
-                    <span class="label-text font-medium">{{ form.reason.label.text }}</span>
-                </label>
-                {{ form.reason(class="textarea textarea-bordered w-full", placeholder="ระบุเหตุผลในการขอจัดซื้อ") }}
-            </div>
-
-            <div class="form-control mt-4">
-                <label class="label flex justify-between items-center">
-                    <span class="label-text font-medium">{{ form.tor_document.label.text }}</span>
-                    <a href="{{ url_for('static', filename='data/แบบฟอร์ม TOR ขอซื้อขอจ้าง.docx') }}" target="_blank"
-                        class="link link-primary text-xs ml-2">ดาวน์โหลดตัวอย่างแบบฟอร์ม</a>
-                </label>
-                {{ form.tor_document(class="file-input file-input-bordered w-full") }}
-            </div>
-
-            <div class="form-control mt-4">
-                <label class="label">
-                    <span class="label-text font-medium">{{ form.qt_document.label.text }}</span>
-                </label>
-                {{ form.qt_document(class="file-input file-input-bordered w-full") }}
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">
+                    {{ 'แก้ไข' if form._obj else 'สร้าง'
+                    }}รายการขอจัดซื้อ
+                </h1>
+                <p class="text-gray-500 text-sm">กรอกข้อมูลสำหรับการขอจัดซื้อของคุณ</p>
             </div>
         </div>
-
-        <!-- Items Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">รายการขอซื้อ</h2>
-                <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
-                    <i class="ph ph-plus"></i>
-                    เพิ่มรายการ
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {{ form.hidden_tag() }}
+            <!-- Basic Information -->
+            <div class="bg-gray-50 rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลพื้นฐาน</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.purchaser.label.text }}</span>
+                        </label>
+                        {{ form.purchaser(class="select select-bordered w-full") }}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.phone.label.text }}</span>
+                        </label>
+                        {{ form.phone(class="input input-bordered w-full", placeholder="เบอร์โทรศัพท์") }}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.start_date.label.text }} <span class="text-red-500">*</span></span>
+                        </label>
+                        {{ form.start_date(class="input input-bordered w-full", type="date") }}
+                    </div>
+                </div>
+                <div class="form-control mt-4">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.reason.label.text }}</span>
+                    </label>
+                    {{ form.reason(class="textarea textarea-bordered w-full", placeholder="ระบุเหตุผลในการขอจัดซื้อ") }}
+                </div>
+                <div class="form-control mt-4">
+                    <label class="label flex justify-between items-center">
+                        <span class="label-text font-medium">{{ form.tor_document.label.text }}</span>
+                        <a href="{{ url_for('static', filename='data/แบบฟอร์ม TOR ขอซื้อขอจ้าง.docx') }}"
+                           target="_blank"
+                           class="link link-primary text-xs ml-2">ดาวน์โหลดตัวอย่างแบบฟอร์ม</a>
+                    </label>
+                    {{ form.tor_document(class="file-input file-input-bordered w-full") }}
+                </div>
+                <div class="form-control mt-4">
+                    <label class="label">
+                        <span class="label-text font-medium">{{ form.qt_document.label.text }}</span>
+                    </label>
+                    {{ form.qt_document(class="file-input file-input-bordered w-full") }}
+                </div>
+            </div>
+            <!-- Items Section -->
+            <div class="bg-gray-50 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">รายการขอซื้อ</h2>
+                    <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
+                        <i class="ph ph-plus"></i>
+                        เพิ่มรายการ
+                    </button>
+                </div>
+                <div id="items-container" class="space-y-4">
+                    {% for item_form in form.items.entries %}
+                        <div class="bg-white p-4 rounded-lg border item-row">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
+                                {% if loop.index > 1 %}<button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>{% endif %}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ item_form.product_name.label.text }} <span class="text-red-500">*</span></span>
+                                    </label>
+                                    {{ item_form.product_name(class="input input-bordered input-sm w-full") }}
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ item_form.category.label.text }} <span class="text-red-500">*</span></span>
+                                    </label>
+                                    {{ item_form.category(class="select select-bordered select-sm w-full") }}
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ item_form.quantity.label.text }} <span class="text-red-500">*</span></span>
+                                    </label>
+                                    {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1") 
+                                    }}
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ item_form.currency.label.text }} <span class="text-red-500">*</span></span>
+                                    </label>
+                                    {{ item_form.currency(class="input input-bordered input-sm w-full") }}
+                                </div>
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text text-xs">{{ item_form.amount.label.text }} <span class="text-red-500">*</span></span>
+                                    </label>
+                                    {{ item_form.amount(class="input input-bordered input-sm w-full") }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Committee Section -->
+            <div class="bg-gray-50 rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                    คณะกรรมการ<span class="text-red-500">*</span>
+                </h2>
+                <div class="mb-6">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 text-sm text-gray-700">
+                        <strong class="block mb-2 text-yellow-800">หมายเหตุในการเลือกกรรมการ</strong>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>
+                                <span class="font-semibold">กรณีที่ 1</span> <span class="text-gray-800">ยอดเงินไม่เกิน
+                                100,000 บาท</span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">1 คน
+                                (ประธาน)</span></span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">1 คน (ประธาน)</span></span>
+                            </li>
+                            <li>
+                                <span class="font-semibold">กรณีที่ 2</span> <span class="text-gray-800">ยอดเงิน 100,001 -
+                                500,000 บาท</span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
+                                กรรมการ 2 คน)</span></span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
+                                คน)</span></span>
+                            </li>
+                            <li>
+                                <span class="font-semibold">กรณีที่ 3</span> <span class="text-gray-800">ยอดเงินเกิน 500,000
+                                บาท</span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
+                                กรรมการ 2 คน)</span></span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการจัดซื้อ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
+                                คน)</span></span>
+                                <br>
+                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน,
+                                กรรมการ 2 คน)</span></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% set committee_types = [('specification', 'คณะกรรมการกำหนดคุณสมบัติ'), ('procurement', 'คณะกรรมการจัดซื้อ'), ('inspection', 'คณะกรรมการตรวจรับ')] %}
+                    {% for type_value, type_label in committee_types %}
+                        <div class="bg-white rounded-lg border p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-base font-semibold text-gray-700">{{ type_label }}</span>
+                                <button type="button"
+                                        class="btn btn-primary btn-sm gap-2 add-committee-btn"
+                                        data-committee-type="{{ type_value }}">
+                                    <i class="ph ph-plus"></i>
+                                    เพิ่มกรรมการ
+                                </button>
+                            </div>
+                            <div class="space-y-4 committees-container"
+                                 id="committees-{{ type_value }}">
+                                {% for committee_form in form.committees.entries if committee_form.committee_type.data ==
+                                    type_value %}
+                                    <div class="bg-gray-50 p-4 rounded-lg border committee-row">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
+                                            <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-4">
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
+                                                </label>
+                                                {{ committee_form.member(class="select select-bordered select-sm w-full") }}
+                                            </div>
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text text-xs">{{ committee_form.committee_position.label.text
+                                                    }}</span>
+                                                </label>
+                                                {{ committee_form.committee_position(class="select select-bordered select-sm
+                                                                                                w-full") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ url_for("procurement.requisitions.renewal_requested") }}"
+                   class="btn btn-ghost">ยกเลิก</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-check"></i>
+                    {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
                 </button>
             </div>
-
-            <div id="items-container" class="space-y-4">
-                {% for item_form in form.items.entries %}
-                <div class="bg-white p-4 rounded-lg border item-row">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
-                        {% if loop.index > 1 %}
-                        <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
-                        {% endif %}
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.product_name.label.text }} <span
-                                        class="text-red-500">*</span></span>
-                            </label>
-                            {{ item_form.product_name(class="input input-bordered input-sm w-full") }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.category.label.text }} <span
-                                        class="text-red-500">*</span></span>
-                            </label>
-                            {{ item_form.category(class="select select-bordered select-sm w-full") }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.quantity.label.text }} <span
-                                        class="text-red-500">*</span></span>
-                            </label>
-                            {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1")
-                            }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.currency.label.text }} <span
-                                        class="text-red-500">*</span></span>
-                            </label>
-                            {{ item_form.currency(class="input input-bordered input-sm w-full") }}
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-xs">{{ item_form.amount.label.text }} <span
-                                        class="text-red-500">*</span></span>
-                            </label>
-                            {{ item_form.amount(class="input input-bordered input-sm w-full") }}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Committee Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">คณะกรรมการ<span class="text-red-500">*</span></h2>
-            <div class="mb-6">
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 text-sm text-gray-700">
-                    <strong class="block mb-2 text-yellow-800">หมายเหตุในการเลือกกรรมการ</strong>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li>
-                            <span class="font-semibold">กรณีที่ 1</span> <span class="text-gray-800">ยอดเงินไม่เกิน
-                                100,000 บาท</span><br>
-                            <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">1 คน
-                                    (ประธาน)</span></span><br>
-                            <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">1 คน (ประธาน)</span></span>
-                        </li>
-                        <li>
-                            <span class="font-semibold">กรณีที่ 2</span> <span class="text-gray-800">ยอดเงิน 100,001 -
-                                500,000 บาท</span><br>
-                            <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                    กรรมการ 2 คน)</span></span><br>
-                            <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
-                                    คน)</span></span>
-                        </li>
-                        <li>
-                            <span class="font-semibold">กรณีที่ 3</span> <span class="text-gray-800">ยอดเงินเกิน 500,000
-                                บาท</span><br>
-                            <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                    กรรมการ 2 คน)</span></span><br>
-                            <span class="ml-2">คณะกรรมการจัดซื้อ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
-                                    คน)</span></span><br>
-                            <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                    กรรมการ 2 คน)</span></span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {% set committee_types = [
-                ("specification", "คณะกรรมการกำหนดคุณสมบัติ"),
-                ("procurement", "คณะกรรมการจัดซื้อ"),
-                ("inspection", "คณะกรรมการตรวจรับ")
-                ] %}
-                {% for type_value, type_label in committee_types %}
-                <div class="bg-white rounded-lg border p-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-base font-semibold text-gray-700">{{ type_label }}</span>
-                        <button type="button" class="btn btn-primary btn-sm gap-2 add-committee-btn"
-                            data-committee-type="{{ type_value }}">
-                            <i class="ph ph-plus"></i>
-                            เพิ่มกรรมการ
-                        </button>
-                    </div>
-                    <div class="space-y-4 committees-container" id="committees-{{ type_value }}">
-                        {% for committee_form in form.committees.entries if committee_form.committee_type.data ==
-                        type_value %}
-                        <div class="bg-gray-50 p-4 rounded-lg border committee-row">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
-                                <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
-                            </div>
-                            <div class="grid grid-cols-1 gap-4">
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
-                                    </label>
-                                    {{ committee_form.member(class="select select-bordered select-sm w-full") }}
-                                </div>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ committee_form.committee_position.label.text
-                                            }}</span>
-                                    </label>
-                                    {{ committee_form.committee_position(class="select select-bordered select-sm
-                                    w-full") }}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <a href="{{ url_for('procurement.requisitions.renewal_requested') }}" class="btn btn-ghost">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary">
-                <i class="ph ph-check"></i>
-                {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
-            </button>
-        </div>
-    </form>
-</div>
+        </form>
+    </div>
 {% endblock %}
-
 {% block additional_js %}
-<script type="text/javascript">
+    <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
         if ("{{ form.type.data }}" === "MA") {
             document.getElementById('add-item-btn').style.display = 'none';
@@ -325,7 +317,7 @@
                     </div>
                     <div class="form-control">
                         <label class="label">
-                            <span class="label-text text-xs">หน่วยเงิน <span class="text-red-500">*</span></span>
+                            <span class="label-text text-xs">หน่วยนับ <span class="text-red-500">*</span></span>
                         </label>
                         <input type="text" name="items-${itemIndex}-currency" class="input input-bordered input-sm w-full" required>
                     </div>
@@ -463,5 +455,5 @@
     // Initial setup
     updateAddItemButton();
     });
-</script>
+    </script>
 {% endblock %}

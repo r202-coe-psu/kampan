@@ -16,10 +16,15 @@ COMMITTEE_POSITION_CHOICES = [
 ]
 
 STATUS_CHOICES = [
-    ("pending", "Pending"),
-    ("progress", "Progress"),
-    ("incomplete", "Incomplete"),
-    ("complete", "Complete"),
+    ("pending", "รอดำเนินการ"),
+    ("progress", "กําลังดําเนินการ"),
+    ("complete", "อนุมัติ"),
+    ("cancelled", "ยกเลิก"),
+]
+
+SHOW_ITEM_CHOICES = [
+    ("all", "แสดงทั้งหมด"),
+    ("me", "แสดงเฉพาะของฉัน"),
 ]
 
 

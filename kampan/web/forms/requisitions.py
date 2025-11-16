@@ -48,7 +48,7 @@ class RequisitionItemForm(Form):
             validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),
         ],
     )
-    currency = fields.StringField("หน่วยเงิน")
+    currency = fields.StringField("หน่วยนับ")
 
 
 class CommitteeForm(Form):

@@ -31,6 +31,8 @@ class RequisitionTimeline(me.Document):
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
+    note = me.StringField()
+    status = me.StringField(default="active", max_length=20)
     updated_date = me.DateTimeField(default=datetime.datetime.now)
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
