@@ -78,12 +78,12 @@ def index():
     is_staff = current_user.has_organization_roles("staff")
     is_admin = current_user.has_organization_roles("admin")
     is_head = current_user.has_organization_roles("head")
-    is_supervisor = current_user.has_organization_roles("supervisor")
+    is_manager = current_user.has_organization_roles("manager")
 
-    if org_user_role and is_staff and not (is_admin or is_head or is_supervisor):
+    if org_user_role and is_staff and not (is_admin or is_head or is_manager):
         procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
 
-    if org_user_role and is_head and not (is_admin or is_supervisor):
+    if org_user_role and is_head and not (is_admin or is_manager):
         division_procurements = models.OrganizationUserRole.objects(
             division=org_user_role.division
         ).only("id")
