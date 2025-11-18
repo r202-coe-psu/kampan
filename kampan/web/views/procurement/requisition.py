@@ -18,6 +18,7 @@ from kampan import models, utils
 from ... import redis_rq
 
 import datetime
+from decimal import Decimal  # เพิ่ม
 
 
 module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
@@ -498,18 +499,17 @@ def download(requisition_procurement_id):
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
     action = request.form.get("action")  # 'approved' or 'rejected'
-    reason = request.form.get("reason")  # เหตุผลในการปฏิเสธ
-    fund_id = request.form.get("fund")
+    reason = request.form.get("reason")
+    fund_id = request.form.get("fund")  # fallback เดิม
+    fund_ids = request.form.getlist("fund_ids")  # ใหม่: เลือกหลายแหล่งเงิน
+    print(fund_ids)
     manager_id = request.form.get("manager")
+
     requisition = models.Requisition.objects(id=requisition_id).first()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
     member_obj = next(
-        (
-            member
-            for member in members
-            if str(getattr(member.user, "id", "")) == str(current_user.id)
-        ),
+        (m for m in members if str(getattr(m.user, "id", "")) == str(current_user.id)),
         None,
     )
     if not member_obj or not requisition:
@@ -530,24 +530,59 @@ def requisition_action(requisition_id):
         )
         print("=====> Approved email job submitted", job.get_id())
 
-    # If admin approves and fund is provided, set fund
+    # Admin อนุมัติ: อัปเดตการจัดสรร MAS แบบหลายแหล่ง (ไม่กันการจัดสรรซ้ำ)
     if approver_role == "admin" and action == "approved":
-        if fund_id:
-            mas_obj = models.MAS.objects(id=fund_id).first()
-            if mas_obj:
-                requisition.fund = mas_obj
+        # รวบรวม amounts ต่อ MAS จาก form: key = fund_amounts[<mas_id>]
+        items = list(request.form.items(multi=True))  # แปลงเป็น list เพื่อใช้งาน/ debug ได้
+        # print("raw items (first 10):", raw_items[:10])
+        input_amounts = {}
+        for k, v in items:
+            if k.startswith("fund_amounts[") and k.endswith("]"):
+                mas_id = k[len("fund_amounts[") : -1]
+                try:
+                    amt = Decimal(str(v or "0")).quantize(Decimal("0.01"))
+                except Exception:
+                    amt = Decimal("0.00")
+                input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + amt
+
+        if not fund_ids and fund_id:
+            fund_ids = [fund_id]
+            input_amounts.setdefault(
+                fund_id, input_amounts.get(fund_id, Decimal("0.00"))
+            )
+
+        # ไม่คืนยอดเดิมใน MAS (ไม่กันการจัดสรรซ้ำ)
+
+        fund = []
+        for fid in set(fund_ids or []):
+            amt = input_amounts.get(fid, Decimal("0.00"))
+            if amt <= 0:
+                continue
+            mas_obj = models.MAS.objects(id=fid).first()
+            if not mas_obj:
+                continue
+            fund.append(models.requisitions.Funds(mas=mas_obj, amount=amt))
+
+        requisition.fund = fund
+
+        for f in fund:
+            try:
+                mas = models.MAS.objects(id=f.mas.id).first()
+                if mas:
+                    mas.actual_cost -= f.amount
+                    mas.last_updated_by = current_user._get_current_object()
+                    mas.save()
+            except Exception:
+                pass
+
+        # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:
             manager_obj = models.OrganizationUserRole.objects(id=manager_id).first()
             if manager_obj:
                 requisition.manager = manager_obj
                 job = redis_rq.redis_queue.queue.enqueue(
                     utils.send_email_to_manager.send_email_to_manager,
-                    args=(
-                        requisition,
-                        current_app.config,
-                        manager_obj,
-                        organization,
-                    ),
+                    args=(requisition, current_app.config, manager_obj, organization),
                     timeout=600,
                     job_timeout=600,
                 )
@@ -574,12 +609,10 @@ def requisition_action(requisition_id):
         h.approver_role for h in requisition.approval_history if h.action == "rejected"
     )
 
-    # ถ้ามี role ใด reject ให้เปลี่ยนสถานะเป็น incomplete และจบการทำงานทันที
     if rejected_roles:
         requisition.status = "incomplete"
         requisition.last_updated_by = current_user._get_current_object()
         requisition.save()
-
         job = redis_rq.redis_queue.queue.enqueue(
             utils.rejected_emails.send_email_rejected_to_user_admin_committee,
             args=(
@@ -593,14 +626,13 @@ def requisition_action(requisition_id):
             job_timeout=600,
         )
         print("=====> Reject email job submitted", job.get_id())
-
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
                 organization_id=current_user.user_setting.current_organization.id,
             )
         )
-    # ถ้า approve ครบทุก role ให้เปลี่ยนสถานะเป็น complete
+
     if required_roles.issubset(approved_roles):
         requisition.status = "complete"
         requisition.last_updated_by = current_user._get_current_object()
@@ -624,11 +656,7 @@ def requisition_action(requisition_id):
             )
         )
 
-    # ถ้ามี approve แต่ยังไม่ครบทุก role ให้เปลี่ยนสถานะเป็น progress
-    if approved_roles:
-        requisition.status = "progress"
-    else:
-        requisition.status = "pending"
+    requisition.status = "progress" if approved_roles else "pending"
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
     return redirect(

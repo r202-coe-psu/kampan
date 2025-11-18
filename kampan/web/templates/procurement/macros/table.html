@@ -1027,18 +1027,19 @@
                         </dialog>-->
                         <!-- MAS Selection Modal -->
                         <dialog id="modal-mas-{{ item.id }}" class="modal">
+                          {% set total_amount = (item.items | map(attribute='amount') | sum) if item.items else 0 %}
                           <form method="post"
+                                id="mas-form-{{ item.id }}"
+                                onsubmit="return validateMasForm('{{ item.id }}', {{ total_amount|float }})"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
                                 class="modal-box max-w-full w-full">
                             <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
                             <input type="hidden" name="approver_role" value="admin" />
                             <input type="hidden" name="action" value="approved" />
-                            <div class="mb-4">
-                              <div class="form-control mb-4">
-                                <label for="manager-{{ item.id }}" class="block font-semibold mb-2">
-                                  เลือกผู้บริหาร (manager
-                                  Supplier)
-                                </label>
+
+                            <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div class="form-control">
+                                <label for="manager-{{ item.id }}" class="block font-semibold mb-2">เลือกผู้บริหาร (manager Supplier)</label>
                                 <select name="manager" id="manager-{{ item.id }}" class="select select-bordered w-full" required>
                                   <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
                                   {% for user in organization.get_organization_users() %}
@@ -1048,58 +1049,76 @@
                                   {% endfor %}
                                 </select>
                               </div>
+
                               <div class="form-control">
-                                <div class="overflow-y-auto max-h-[600px]">
-                                  <table class="table table-md w-full border">
-                                    <thead>
-                                      <tr class="bg-base-200">
-                                        <th></th>
-                                        <th>รหัส MAS</th>
-                                        <th>ชื่อโครงการ</th>
-                                        <th>หมวดหลัก</th>
-                                        <th>หมวดย่อย</th>
-                                        <th>รายละเอียด</th>
-                                        <th>งบประมาณ</th>
-                                        <th>ประมาณจ่าย</th>
-                                        <th>จ่ายจริง</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {% for mas in mas_list %}
-                                        <tr>
-                                          <td>
-                                            <input type="radio" name="fund" value="{{ mas.id }}" required />
-                                          </td>
-                                          <td class="font-mono text-xs">{{ mas.mas_code }}</td>
-                                          <td class="font-semibold">{{ mas.name }}</td>
-                                          <td>{{ mas.main_category }}</td>
-                                          <td>{{ mas.sub_category }}</td>
-                                          <td class="text-xs text-gray-500">
-                                            {{
-                                            mas.item_description }}
-                                          </td>
-                                          <td class="text-right">
-                                            ฿{{ "{:,.2f}".format(mas.budget
-                                            or 0) }}
-                                          </td>
-                                          <td class="text-right">
-                                            ฿{{ "{:,.2f}".format(mas.amount
-                                            or 0) }}
-                                          </td>
-                                          <td class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
-                                            ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}
-                                          </td>
-                                        </tr>
-                                      {% endfor %}
-                                    </tbody>
-                                  </table>
-                                </div>
+                                <label class="block font-semibold mb-2">ยอดต้องจัดสรร</label>
+                                <div class="input input-bordered w-full text-right font-semibold">฿{{ "{:,.2f}".format(total_amount) }}</div>
+                              </div>
+
+                              <div class="form-control">
+                                <label class="block font-semibold mb-2">ยอดที่จัดสรรแล้ว</label>
+                                <div class="input input-bordered w-full text-right font-semibold" id="allocated-sum-{{ item.id }}">฿0.00</div>
                               </div>
                             </div>
+
+                            <div class="form-control">
+                              <div class="overflow-y-auto max-h-[600px]">
+                                <table class="table table-md w-full border">
+                                  <thead>
+                                    <tr class="bg-base-200">
+                                      <th>เลือก</th>
+                                      <th>รหัส MAS</th>
+                                      <th>ชื่อโครงการ</th>
+                                      <th>หมวดหลัก</th>
+                                      <th>หมวดย่อย</th>
+                                      <th>รายละเอียด</th>
+                                      <th class="text-right">งบประมาณ</th>
+                                      <th class="text-right">จ่ายจริง</th>
+                                      <th class="text-right">จำนวนเงินจัดสรร</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for mas in mas_list %}
+                                      <tr>
+                                        <td>
+                                          <input type="checkbox"
+                                                 class="fund-checkbox"
+                                                 name="fund_ids"
+                                                 value="{{ mas.id }}"
+                                                 data-item-id="{{ item.id }}"
+                                                 data-mas-id="{{ mas.id }}"
+                                                 onchange="toggleFundAmount('{{ item.id }}','{{ mas.id }}', this.checked)" />
+                                        </td>
+                                        <td class="font-mono text-xs">{{ mas.mas_code }}</td>
+                                        <td class="font-semibold">{{ mas.name }}</td>
+                                        <td>{{ mas.main_category }}</td>
+                                        <td>{{ mas.sub_category }}</td>
+                                        <td class="text-xs text-gray-500">{{ mas.item_description }}</td>
+                                        <td class="text-right">฿{{ "{:,.2f}".format(mas.budget or 0) }}</td>
+                                        <td class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
+                                          ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}
+                                        </td>
+                                        <td class="text-right">
+                                          <input type="number"
+                                                 step="0.01"
+                                                 min="0"
+                                                 placeholder="0.00"
+                                                 class="input input-bordered w-32 text-right fund-amount-{{ item.id }}"
+                                                 name="fund_amounts[{{ mas.id }}]"
+                                                 data-item-id="{{ item.id }}"
+                                                 data-mas-id="{{ mas.id }}"
+                                                 disabled
+                                                 oninput="recalcAllocation('{{ item.id }}', {{ total_amount|float }})" />
+                                        </td>
+                                      </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
                             <div class="modal-action flex gap-2 justify-end">
-                              <button type="button" class="btn" onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
-                                ยกเลิก
-                              </button>
+                              <button type="button" class="btn" onclick="document.getElementById('modal-mas-{{ item.id }}').close()">ยกเลิก</button>
                               <button type="submit" class="btn btn-success">บันทึก</button>
                             </div>
                           </form>
@@ -1438,4 +1457,75 @@
             }
         }
     </script>
-  {% endmacro %}
+    <script>
+function toggleFundAmount(itemId, masId, checked) {
+  const input = document.querySelector('input.fund-amount-' + itemId + '[data-mas-id="'+masId+'"]');
+  if (!input) return;
+  input.disabled = !checked;
+  if (!checked) {
+    input.value = '';
+  }
+  const totalElem = document.getElementById('allocated-sum-' + itemId);
+  if (totalElem) {
+    const required = parseFloat(totalElem.dataset.required || '0');
+  }
+  // recalc on toggle
+  const requiredTotal = parseFloat(document.getElementById('allocated-sum-' + itemId)?.dataset.required || '0');
+  // if dataset not set yet, pass NaN safe by reading from hidden arg on call
+  // we will always call recalc with explicit total from oninput
+}
+
+function recalcAllocation(itemId, requiredTotal) {
+  let sum = 0;
+  document.querySelectorAll('input.fund-amount-' + itemId).forEach(inp => {
+    if (!inp.disabled && inp.value) {
+      sum += parseFloat(inp.value) || 0;
+    }
+  });
+  const display = document.getElementById('allocated-sum-' + itemId);
+  if (display) {
+    display.textContent = '฿' + sum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    display.dataset.required = requiredTotal;
+    if (requiredTotal > 0) {
+      if (Math.abs(sum - requiredTotal) < 0.005) {
+        display.classList.remove('text-error');
+        display.classList.add('text-success');
+      } else {
+        display.classList.add('text-error');
+        display.classList.remove('text-success');
+      }
+    }
+  }
+}
+
+function validateMasForm(itemId, requiredTotal) {
+  const checked = Array.from(document.querySelectorAll('#modal-mas-' + itemId + ' input.fund-checkbox'))
+    .filter(cb => cb.checked);
+  if (checked.length === 0) {
+    alert('กรุณาเลือกอย่างน้อย 1 แหล่งเงิน');
+    return false;
+  }
+  // all checked must have positive amount
+  for (const cb of checked) {
+    const masId = cb.getAttribute('data-mas-id');
+    const amtInput = document.querySelector('input.fund-amount-' + itemId + '[data-mas-id="'+masId+'"]');
+    const val = parseFloat(amtInput?.value || '0');
+    if (!amtInput || isNaN(val) || val <= 0) {
+      alert('กรุณากรอกจำนวนเงินสำหรับแหล่งเงินที่เลือกให้ถูกต้อง');
+      return false;
+    }
+  }
+  // optional: enforce sum == requiredTotal (comment out ifไม่ต้องการบังคับ)
+  let sum = 0;
+  document.querySelectorAll('input.fund-amount-' + itemId).forEach(inp => {
+    if (!inp.disabled && inp.value) sum += parseFloat(inp.value) || 0;
+  });
+  if (requiredTotal > 0 && Math.abs(sum - requiredTotal) > 0.005) {
+    if (!confirm('ยอดที่จัดสรร (฿' + sum.toLocaleString() + ') ไม่เท่ากับยอดต้องจัดสรร (฿' + requiredTotal.toLocaleString() + '). ต้องการดำเนินการต่อหรือไม่?')) {
+      return false;
+    }
+  }
+  return true;
+}
+</script>
+{% endmacro %}

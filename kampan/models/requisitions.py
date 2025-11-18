@@ -28,6 +28,11 @@ SHOW_ITEM_CHOICES = [
 ]
 
 
+class Funds(me.EmbeddedDocument):
+    mas = me.ReferenceField("MAS", dbref=True)
+    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+
+
 class Committees(me.EmbeddedDocument):
     _id = me.ObjectIdField(required=True, default=ObjectId)
     member = me.ReferenceField("OrganizationUserRole", dbref=True)
@@ -80,7 +85,7 @@ class Requisition(me.Document):
 
     status = me.StringField(default=STATUS_CHOICES[0][0])
     type = me.StringField(max_length=50)
-    fund = me.ReferenceField("MAS", dbref=True)
+    fund = me.EmbeddedDocumentListField("Funds")
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
