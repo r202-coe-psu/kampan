@@ -27,29 +27,6 @@
       </div>
     {% endif %}
 
-
-    {% if organization %}
-      <div class="w-full px-2 py-3 border-b">
-        <label class="text-xs font-semibold text-gray-600 mb-2 block">เลือกมุมมอง</label>
-
-        <select id="role-selector" class="select select-bordered select-sm w-full">
-          <option value="" disabled selected>เลือกมุมมอง</option>
-          {% if current_user.has_organization_roles("admin") %}
-            <option value="admin">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</option>
-          {% endif %}
-          {% if current_user.has_organization_roles("staff") %}
-            <option value="staff">สำหรับบุคคลากร</option>
-          {% endif %}
-          {% if current_user.has_organization_roles("head") %}
-            <option value="head">สำหรับหัวหน้าฝ่าย</option>
-          {% endif %}
-          {% if current_user.has_organization_roles("manager") %}
-            <option value="manager">สำหรับทีมบริหาร</option>
-          {% endif %}
-        </select>
-      </div>
-    {% endif %}
-
     <nav class="menu w-full flex-1 overflow-y-auto overflow-x-hidden">
       <div class="space-y-1 w-full">
         {% if organization %}
