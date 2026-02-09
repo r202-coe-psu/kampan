@@ -92,24 +92,24 @@ pipeline {
                 }
             }
         }
-        stage('SonarQube Analysis') {
-            agent { 
-                label 'built-in'
-            }
-            when {
-                branch 'develop'
-            }
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        withSonarQubeEnv() {
-                            sh "${scannerHome}/bin/sonar-scanner -Dsonar.login=${SONAR_TOKEN}"
-                        }
-                    }
-                }
-            }
-        }
+        // stage('SonarQube Analysis') {
+        //     agent { 
+        //         label 'built-in'
+        //     }
+        //     when {
+        //         branch 'develop'
+        //     }
+        //     steps {
+        //         script {
+        //             def scannerHome = tool 'SonarScanner'
+        //             withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'SONAR_TOKEN')]) {
+        //                 withSonarQubeEnv() {
+        //                     sh "${scannerHome}/bin/sonar-scanner -Dsonar.login=${SONAR_TOKEN}"
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         stage('Upload docker image to registry') {
             agent { 
                 label 'built-in'
