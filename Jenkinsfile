@@ -2,7 +2,7 @@ pipeline {
     agent none
     
     environment {
-        ENV_FILE_ID = "${BRANCH_NAME == 'main' ? 'INVENTORY_ENV_PRODUCTION' : 'INVENTORY_ENV_DEVELOPMENT'}"
+        CFG_FILE_ID = "${BRANCH_NAME == 'main' ? 'INVENTORY_CFG_PRODUCTION' : 'INVENTORY_CFG_DEVELOPMENT'}"
         ENVIRONMENT = "${BRANCH_NAME == 'main' ? 'production' : 'development'}"
         REGISTRY_INVENTORY_IMAGE = "${REGISTRY_URL}/r202-coe-psu/kampan"
         VERSION = "1.0.0"
@@ -137,7 +137,7 @@ pipeline {
 
                 withCredentials([
                     string(credentialsId: 'DOCKER_REGISTRY_TOKEN', variable: 'REGISTRY_TOKEN'),
-                    file(credentialsId: "${ENV_FILE_ID}", variable: 'ENV_FILE')
+                    file(credentialsId: "${CFG_FILE_ID}", variable: 'CFG_FILE')
                 ]) {
                     // Login to Docker Registry
                     sh 'echo "$REGISTRY_TOKEN" | docker login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"'
@@ -145,19 +145,21 @@ pipeline {
                     // Pull the latest Docker image
                     sh "docker pull \"$REGISTRY_INVENTORY_IMAGE:latest\""
                     
-                    // Copy environment file
-                    sh "cp \$ENV_FILE .env.${ENVIRONMENT}"
+                    // Copy config file to deployment directory
+                    sh "cp \$CFG_FILE kampan-${ENVIRONMENT}.cfg"
 
                     echo 'Deploying to Staging'
                     
-                    // Use docker compose for deployment with explicit environment file
+                    // Use docker compose for deployment with config file mounted via volume
                     sh """
                         ENVIRONMENT=${ENVIRONMENT} \
                         REGISTRY_URL=${REGISTRY_URL} \
                         REGISTRY_INVENTORY_IMAGE=${REGISTRY_INVENTORY_IMAGE} \
-                        docker compose --env-file .env.${ENVIRONMENT} -f docker-compose.yml down --remove-orphans
-                        docker compose pull
-                        docker compose --env-file .env.${ENVIRONMENT} -f docker-compose.yml up -d
+                        KAMPAN_CFG_FILE=\$(pwd)/kampan-${ENVIRONMENT}.cfg \
+                        docker compose -f docker-compose.develop.yml down --remove-orphans
+                        docker compose -f docker-compose.develop.yml pull
+                        KAMPAN_CFG_FILE=\$(pwd)/kampan-${ENVIRONMENT}.cfg \
+                        docker compose -f docker-compose.develop.yml up -d
                         docker volume prune -f
                     """
                     
@@ -173,7 +175,7 @@ pipeline {
             }
             post {
                 always {
-                    sh "rm -f .env.${ENVIRONMENT}"
+                    sh "rm -f kampan-${ENVIRONMENT}.cfg"
                     sh 'docker logout "$REGISTRY_URL"'
                 }
                 success {

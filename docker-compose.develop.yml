@@ -17,6 +17,7 @@ services:
     volumes:
       - ../deployment:/deployment
       - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-development.cfg}:/app/kampan-development.cfg:ro
     ports:
       - 10060:10060
     depends_on:
@@ -55,6 +56,7 @@ services:
     container_name: kampan-worker-${ENVIRONMENT:-development}
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-development.cfg}:/app/kampan-development.cfg:ro
     networks:
       - kampan-network
     depends_on:
@@ -76,6 +78,7 @@ services:
     volumes:
       # - ../deployment:/deployment
       - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-development.cfg}:/app/kampan-development.cfg:ro
     networks:
       - kampan-network
     restart: always
