@@ -4,8 +4,9 @@ pipeline {
     environment {
         ENV_FILE_ID = "${BRANCH_NAME == 'main' ? 'INVENTORY_ENV_PRODUCTION' : 'INVENTORY_ENV_DEVELOPMENT'}"
         ENVIRONMENT = "${BRANCH_NAME == 'main' ? 'production' : 'development'}"
-        REGISTRY_INVENTORY_IMAGE = "${REGISTRY_URL}/diis-itoc/ropa-management-system/ropa-management-system"
+        REGISTRY_INVENTORY_IMAGE = "${REGISTRY_URL}/r202-coe-psu/kampan"
         VERSION = "1.0.0"
+        REGISTRY_USER = "bomzyx"
     }
     
     stages {
