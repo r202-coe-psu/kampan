@@ -34,7 +34,7 @@ jobs:
 
       - name: Set up Environment File
 
-        run: echo "${{ secrets.INVENTORY_CFG_DEVELOPMENT }}" > $GITHUB_WORKSPACE/.kampan-development.cfg
+        run: echo "${{ secrets.INVENTORY_CFG_DEVELOPMENT }}" > $GITHUB_WORKSPACE/kampan-development.cfg
 
       # - name: Append Firebase ENV
 
@@ -48,13 +48,13 @@ jobs:
 
           cd $GITHUB_WORKSPACE
 
-          DEBUG=false FORCE_OPEN=true docker compose --env-file .kampan-development.cfg -f docker-compose.development.yml up -d --build --remove-orphans
+          DEBUG=false FORCE_OPEN=true docker compose --env-file kampan-development.cfg -f docker-compose.development.yml up -d --build --remove-orphans
 
       # 4. Remove sensitive files
 
-      # - name: Cleanup
+      - name: Cleanup
 
-      #   run: rm -f $GITHUB_WORKSPACE/.kampan-development.cfg
+        run: rm -f $GITHUB_WORKSPACE/kampan-development.cfg
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
@@ -82,7 +82,7 @@ jobs:
 
       - name: Set up Environment File
 
-        run: echo "${{ secrets.INVENTORY_CFG_PRODUCTION }}" > $GITHUB_WORKSPACE/.kampan-production.cfg
+        run: echo "${{ secrets.INVENTORY_CFG_PRODUCTION }}" > $GITHUB_WORKSPACE/kampan-production.cfg
 
       # - name: Append Firebase ENV
 
@@ -96,10 +96,10 @@ jobs:
 
           cd $GITHUB_WORKSPACE
 
-          DEBUG=false docker compose --env-file .kampan-production.cfg -f docker-compose.production.yml up -d --build
+          DEBUG=false docker compose --env-file kampan-production.cfg -f docker-compose.production.yml up -d --build
 
       # 4. Remove sensitive files
 
-      # - name: Cleanup
+      - name: Cleanup
 
-      #   run: rm -f $GITHUB_WORKSPACE/.kampan-production.cfg
+        run: rm -f $GITHUB_WORKSPACE/kampan-production.cfg

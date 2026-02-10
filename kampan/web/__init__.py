@@ -1,3 +1,4 @@
+import json
 import optparse
 
 from flask import Flask
@@ -7,20 +8,37 @@ from . import views
 from . import acl
 from . import oauth2
 from . import redis_rq
+import os
+import dotenv
 
 app = Flask(__name__)
 
 
 def create_app():
-    app.config.from_object("kampan.default_settings")
+    # app.config.from_object("kampan.default_settings")
+    # app.config.from_envvar("KAMPAN_SETTINGS", silent=True)
+
+    # app.config["DEBUG"] = True
+
+    # print("KAMPAN_SETTINGS =", app.config.get("KAMPAN_SETTINGS"))
+    # print("DEBUG =", app.config.get("DEBUG"))
+
+    for key, value in os.environ.items():
+        app.config[key] = value
+    
+    env_file_name = os.environ.get("KAMPAN_CFG", ".cfg")
+    dotenv.load_dotenv(dotenv_path=env_file_name)
+    app.config.update(dotenv.dotenv_values(env_file_name))
+    for k, v in app.config.items():
+        if "CLIENT_KWARGS" in k:
+            app.config[k] = json.loads(v)
+
     app.config.from_envvar("KAMPAN_SETTINGS", silent=True)
 
-    app.config["DEBUG"] = True
-
-    print("KAMPAN_SETTINGS =", app.config.get("KAMPAN_SETTINGS"))
-    print("DEBUG =", app.config.get("DEBUG"))
-
-    
+    if os.getenv("FLASK_ENV") == "development":
+        app.config["DEBUG"] = True
+    else:
+        app.config["DEBUG"] = False
 
     models.init_db(app)
     acl.init_acl(app)
