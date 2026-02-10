@@ -90,5 +90,20 @@ services:
         max-size: "10m"
         max-file: "3"
 
+volumes:
+  redis-production:
+    driver: local
+  mongodb-production:
+    driver: local
+  redis-development:
+    driver: local
+  mongodb-development:
+    driver: local
+
 networks:
-  default:
+  kampan-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.15.0/24
