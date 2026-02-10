@@ -1,0 +1,115 @@
+name: Deploy on Push
+ 
+on:
+
+  push:
+
+    branches:
+
+      - main
+
+      - develop
+ 
+jobs:
+ 
+  deploy-staging:
+
+    if: github.ref == 'refs/heads/develop'
+
+    runs-on: github-runner
+ 
+    steps:
+
+    # 0. Clean docker images and build cache
+
+    - name: Clean Docker Images and Build Cache
+
+      run: |
+
+        docker image prune -f
+
+        docker builder prune -f
+
+    # 1. Checkout Repository
+
+    - name: Checkout Code
+
+      uses: actions/checkout@v3
+ 
+    # 2. Copy .env from GitHub Secrets
+
+    - name: Set up Environment File
+
+      run: echo "${{ secrets.INVENTORY_CFG_DEVELOPMENT }}" > $GITHUB_WORKSPACE/.kampan-development.cfg
+ 
+    # - name: Append Firebase ENV
+
+    #   run: echo "${{ secrets.ENV_FIREBASE }}" >> $GITHUB_WORKSPACE/.env
+ 
+    # 3. Restart Docker Containers
+
+    - name: Restart Docker Containers
+
+      run: |
+
+        cd $GITHUB_WORKSPACE
+
+        DEBUG=false FORCE_OPEN=true docker compose --env-file .env -f docker-compose.development.yml up -d --build --remove-orphans
+ 
+    # 4. Remove sensitive files
+
+    - name: Cleanup
+
+      run: rm -f $GITHUB_WORKSPACE/.env
+ 
+  deploy-production:
+
+    if: github.ref == 'refs/heads/main'
+
+    runs-on: github-runner-production
+ 
+    steps:
+
+    # 0. Clean docker images and build cache
+
+    - name: Clean Docker Images and Build Cache
+
+      run: |
+
+        docker image prune -f
+
+        docker builder prune -f
+
+    # 1. Checkout Repository (GitHub Actions จะ checkout ให้อัตโนมัติ)
+
+    - name: Checkout Code
+
+      uses: actions/checkout@v3
+ 
+    # 2. Copy .env from GitHub Secrets
+
+    - name: Set up Environment File
+
+      run: echo "${{ secrets.INVENTORY_CFG_PRODUCTION }}" > $GITHUB_WORKSPACE/.kampan-production.cfg
+ 
+    # - name: Append Firebase ENV
+
+    #   run: echo "${{ secrets.ENV_FIREBASE }}" >> $GITHUB_WORKSPACE/.env
+ 
+    # 3. Restart Docker Containers
+
+    - name: Restart Docker Containers
+
+      run: |
+
+        cd $GITHUB_WORKSPACE
+
+        DEBUG=false docker compose --env-file .env -f docker-compose.production.yml up -d --build
+ 
+    # 4. Remove sensitive files
+
+    - name: Cleanup
+
+      run: rm -f $GITHUB_WORKSPACE/.env
+
+ 
