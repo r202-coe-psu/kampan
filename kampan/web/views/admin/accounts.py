@@ -72,6 +72,10 @@ def login_oauth(name):
     redirect_uri = url_for(
         "admin.accounts.authorized_oauth", name=name, _external=True, _scheme=scheme
     )
+    
+    print("Client =", client)
+    print("redirect_uri =", redirect_uri)
+    
     response = None
     if name == "google":
         response = client.google.authorize_redirect(redirect_uri)
