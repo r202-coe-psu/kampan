@@ -1,0 +1,94 @@
+version: "3"
+services:
+  mongodb:
+    image: mongo
+    container_name: kampan-mongodb-${ENVIRONMENT:-production}
+    volumes:
+      - mongodb-${ENVIRONMENT:-production}:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    networks:
+      - kampan-network
+
+  web:
+    build: .
+    image: ${REGISTRY_KAMPAN_IMAGE:-kampan-image}
+    container_name: kampan-web-${ENVIRONMENT:-production}
+    volumes:
+      - ../deployment:/deployment
+      - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-production.cfg}:/app/kampan-production.cfg:ro
+    ports:
+      - 10060:10060
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - kampan-network
+    restart: always
+    environment:
+      KAMPAN_SETTINGS: /app/kampan-production.cfg
+      MONGODB_HOST: mongodb
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    command:
+      # uwsgi --lazy-apps --ini scripts/kampan-uwsgi.ini
+      /venv/bin/gunicorn -w 4 --bind 0.0.0.0:10060 "kampan.web:create_app()"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis
+    container_name: kampan-redis-${ENVIRONMENT:-production}
+    restart: always
+    networks:
+      - kampan-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    build: .
+    image: ${REGISTRY_KAMPAN_IMAGE:-kampan-image}
+    container_name: kampan-worker-${ENVIRONMENT:-production}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-production.cfg}:/app/kampan-production.cfg:ro
+    networks:
+      - kampan-network
+    depends_on:
+      - mongodb
+      - redis
+    restart: always
+    environment:
+      KAMPAN_SETTINGS: /app/kampan-production.cfg
+    command: /venv/bin/kampan-worker
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  controller:
+    build: .
+    image: ${REGISTRY_KAMPAN_IMAGE:-kampan-image}
+    container_name: kampan-controller-${ENVIRONMENT:-production}
+    volumes:
+      # - ../deployment:/deployment
+      - /etc/localtime:/etc/localtime:ro
+      - ${KAMPAN_CFG_FILE:-./kampan-production.cfg}:/app/kampan-production.cfg:ro
+    networks:
+      - kampan-network
+    restart: always
+    environment:
+      KAMPAN_SETTINGS: /app/kampan-production.cfg
+    command: /venv/bin/kampan-controller
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
