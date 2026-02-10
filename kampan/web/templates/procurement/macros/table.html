@@ -114,7 +114,7 @@
                 <div class="space-y-2 text-sm">
                   <div class="flex justify-between">
                     <span class="text-green-600">จำนวนเงินรวม:</span>
-                    <span class="font-medium text-green-700">฿{{ "{:,.2f}".format(item.amount) 
+                    <span class="font-medium text-green-700">฿{{ "{:,.2f}".format(item.amount or 0) 
                     }}</span>
                   </div>
                   <div class="flex justify-between">
@@ -185,7 +185,7 @@
                           </td>
                           <td class="text-xs">{{ record.paid_by.get_name() if record.paid_by else '-' }}</td>
                           <td class="text-xs">{{ record.product_number if record.product_number else '-' }}</td>
-                          <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount) }}</td>
+                          <td class="text-xs text-right">฿{{ "{:,.2f}".format(record.amount or 0) }}</td>
                         </tr>
                       {% endfor %}
                     </tbody>
@@ -292,7 +292,7 @@
             </td>
             <!-- Amount -->
             <td class="text-center py-4">
-              <div class="text-lg font-bold text-black">฿{{ "{:,.2f}".format(item.amount) }}</div>
+              <div class="text-lg font-bold text-black">฿{{ "{:,.2f}".format(item.amount or 0) }}</div>
             </td>
             <!-- Payment Status -->
             <td class="text-center py-4">
@@ -703,7 +703,7 @@
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right">
-                    <div class="text-lg font-bold text-rose-600">฿{{ "{:,.2f}".format(item.amount) }}</div>
+                    <div class="text-lg font-bold text-rose-600">฿{{ "{:,.2f}".format(item.amount or 0) }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-medium">
@@ -1395,7 +1395,7 @@
                               </td>
                               <!--- จำนวนเงิน -->
                               <td class="w-32 text-sm text-right font-bold text-blue-700">
-                                ฿{{ "{:,.2f}".format(subitem.amount) }}
+                                ฿{{ "{:,.2f}".format(subitem.amount or 0) }}
                               </td>
                             </tr>
                           {% endfor %}
