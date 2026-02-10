@@ -15,6 +15,13 @@ def create_app():
     app.config.from_object("kampan.default_settings")
     app.config.from_envvar("KAMPAN_SETTINGS", silent=True)
 
+    app.config["DEBUG"] = True
+
+    print("KAMPAN_SETTINGS =", app.config.get("KAMPAN_SETTINGS"))
+    print("DEBUG =", app.config.get("DEBUG"))
+
+    
+
     models.init_db(app)
     acl.init_acl(app)
     oauth2.init_oauth(app)
