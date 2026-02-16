@@ -589,6 +589,7 @@ def requisition_action(requisition_id):
                 if mas:
                     mas.reservable_amount -= f.amount
                     mas.last_updated_by = current_user._get_current_object()
+                    mas.editable = False
                     reservation_record = models.Reservation(
                         mas=mas,
                         amount=f.amount,

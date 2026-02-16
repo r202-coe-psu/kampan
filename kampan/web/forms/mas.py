@@ -13,6 +13,7 @@ BaseMASForm = model_form(
         "last_updated_by",
         "reservable_amount",
         "status",
+        "editable",
     ],
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},

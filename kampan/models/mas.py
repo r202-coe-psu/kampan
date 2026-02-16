@@ -19,7 +19,7 @@ class MAS(me.Document):
     reservable_amount = me.DecimalField(
         required=True, min_value=0, max_value=1e12, precision=2
     )
-
+    editable = me.BooleanField(default=True)
     status = me.StringField(max_length=20, choices=STATUS_CHOICES, default="active")
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
