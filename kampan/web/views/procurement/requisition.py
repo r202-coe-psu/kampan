@@ -265,10 +265,28 @@ def renewal_requested(requisition_procurement_id):
         # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
 
+        # Pagination
+        page = request.args.get("page", default=1, type=int)
+        per_page = request.args.get("per_page", default=10, type=int)
+        paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
+
+        paginated_manager_requisitions = None
+        if manager_requisitions:
+            manager_page = request.args.get("manager_page", default=1, type=int)
+            paginated_manager_requisitions = Pagination(
+                manager_requisitions, page=manager_page, per_page=per_page
+            )
+
         return render_template(
             "procurement/requisitions/renewal_requested.html",
-            requisitions=requisitions,
-            manager_requisitions=manager_requisitions if manager_requisitions else [],
+            requisitions=paginated_requisitions.items,
+            paginated_requisitions=paginated_requisitions,
+            manager_requisitions=(
+                paginated_manager_requisitions.items
+                if paginated_manager_requisitions
+                else []
+            ),
+            paginated_manager_requisitions=paginated_manager_requisitions,
             organization=organization,
             selected_category=category,
             status_choices=models.requisitions.STATUS_CHOICES,

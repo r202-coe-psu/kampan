@@ -8,6 +8,7 @@ from flask import (
     abort,
 )
 from flask_login import login_required, current_user
+from flask_mongoengine import Pagination
 from kampan.web import acl, forms
 from kampan import models
 
@@ -25,13 +26,16 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    mas = models.MAS.objects(status="active")
+    mas = models.MAS.objects(status="active").order_by("-created_date")
+    page = request.args.get("page", default=1, type=int)
+    paginated_mas = Pagination(mas, page=page, per_page=20)
     total_actual = sum(m.actual_amount or 0 for m in mas)
     total_reservable = sum(m.reservable_amount or 0 for m in mas)
     return render_template(
         "procurement/mas/index.html",
         organization=organization,
-        mas=mas,
+        mas=paginated_mas.items,
+        paginated_mas=paginated_mas,
         total_actual=total_actual,
         total_reservable=total_reservable,
     )
@@ -96,10 +100,13 @@ def reservation(mas_id):
 
     mas = models.MAS.objects(id=mas_id).first()
     reservations = models.Reservation.objects(mas=mas).order_by("-reserved_date")
+    page = request.args.get("page", default=1, type=int)
+    paginated_reservations = Pagination(reservations, page=page, per_page=20)
 
     return render_template(
         "procurement/mas/reservation.html",
         organization=organization,
         mas=mas,
-        reservations=reservations,
+        reservations=paginated_reservations.items,
+        paginated_reservations=paginated_reservations,
     )
