@@ -149,9 +149,10 @@ def index():
 @login_required
 @acl.organization_roles_required("admin")
 def create():
-    form = forms.procurement.ProcurementForm()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
+
+    form = forms.procurement.ProcurementForm()
     form.responsible_by.queryset = members
 
     if not form.validate_on_submit():
@@ -184,7 +185,6 @@ def create():
                 filename=image.filename,
                 content_type=image.content_type,
             )
-
     procurement.save()
     return redirect(url_for("procurement.products.index", organization=organization))
 

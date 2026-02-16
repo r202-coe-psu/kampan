@@ -12,8 +12,6 @@ BaseProcurementForm = model_form(
         "created_by",
         "last_updated_by",
         "image",
-        "start_date",
-        "end_date",
         "status",
     ],
     field_args={
