@@ -84,3 +84,22 @@ def delete(mas_id):
         mas.save()
 
     return redirect(url_for("admin.mas.index", organization_id=organization.id))
+
+
+@module.route("/<mas_id>/reservation", methods=["GET"])
+@acl.organization_roles_required("admin")
+def reservation(mas_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    mas = models.MAS.objects(id=mas_id).first()
+    reservations = models.Reservation.objects(mas=mas).order_by("-reserved_date")
+
+    return render_template(
+        "procurement/mas/reservation.html",
+        organization=organization,
+        mas=mas,
+        reservations=reservations,
+    )

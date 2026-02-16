@@ -379,7 +379,7 @@ def create_or_edit(requisition_procurement_id):
     del form.items
     del form.tor_document
     del form.qt_document
-    del form.fund
+    # del form.fund
     form.populate_obj(requisition)
 
     # Handle ToR file
@@ -569,8 +569,14 @@ def requisition_action(requisition_id):
             try:
                 mas = models.MAS.objects(id=f.mas.id).first()
                 if mas:
-                    mas.actual_amount -= f.amount
+                    mas.reservable_amount -= f.amount
                     mas.last_updated_by = current_user._get_current_object()
+                    reservation_record = models.Reservation(
+                        mas=mas,
+                        amount=f.amount,
+                        reserved_by=current_user._get_current_object(),
+                    )
+                    reservation_record.save()
                     mas.save()
             except Exception:
                 pass

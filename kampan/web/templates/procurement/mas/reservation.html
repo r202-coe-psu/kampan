@@ -1,0 +1,140 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+
+{% block title %}การจองเงิน - {{ mas.name }}{% endblock %}
+{% block dashboard_title %}การจองเงิน - {{ mas.mas_code }}{% endblock %}
+
+{% block content %}
+<!-- Back Button -->
+<div class="mb-6">
+    <a href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
+        class="inline-flex items-center text-blue-700 hover:text-blue-800">
+        <i class="ph ph-arrow-left mr-2"></i>
+        กลับไปหน้าระบบ MAS
+    </a>
+</div>
+
+<!-- MAS Info Card -->
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+        <div class="flex-1">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center mr-4">
+                    <i class="ph ph-folder-open text-2xl text-blue-700"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">{{ mas.name }}</h1>
+                    <p class="text-gray-600 mt-1">รหัส MAS: <span class="font-mono font-semibold">{{ mas.mas_code }}</span></p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-500 uppercase font-medium mb-1">จ่ายจริง</p>
+                    <p class="text-xl font-bold text-gray-800">฿{{ "{:,.2f}".format(mas.actual_amount or 0) }}</p>
+                </div>
+                <div class="bg-teal-50 rounded-lg p-4">
+                    <p class="text-sm text-teal-600 uppercase font-medium mb-1">จำนวนเงินที่จองได้</p>
+                    <p class="text-xl font-bold text-teal-700">฿{{ "{:,.2f}".format(mas.reservable_amount or 0) }}</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <p class="text-sm text-blue-600 uppercase font-medium mb-1">จองแล้ว</p>
+                    {% set total_reserved = reservations|sum(attribute='amount')|default(0) %}
+                    <p class="text-xl font-bold text-blue-700">฿{{ "{:,.2f}".format(total_reserved) }}</p>
+                    {% if mas.reservable_amount and mas.reservable_amount > 0 %}
+                        <p class="text-xs text-blue-600 mt-1">
+                            {{ "%.1f"|format((total_reserved / mas.reservable_amount * 100)) }}% ของยอดจอง
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservations Table -->
+<div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+    <div class="border-b border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-md bg-blue-50 flex items-center justify-center mr-4">
+                    <i class="ph ph-calendar-check text-blue-700"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">รายการการจองเงิน</h2>
+                    <p class="text-sm text-gray-500">แสดง {{ reservations|length }} รายการ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700">
+                    <th class="font-semibold">#</th>
+                    <th class="font-semibold">ผู้จอง</th>
+                    <th class="font-semibold">วันที่จอง</th>
+                    <th class="font-semibold text-right">จำนวนเงิน</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in reservations %}
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="py-4">
+                            <span class="text-gray-700 font-medium">{{ loop.index }}</span>
+                        </td>
+                        <td>
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 mr-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="ph ph-user text-blue-700"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">
+                                        {% if reservation.reserved_by %}
+                                            {{ reservation.reserved_by.first_name }} {{ reservation.reserved_by.last_name }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-gray-700">
+                                {{ reservation.reserved_date.strftime("%d/%m/") ~ (reservation.reserved_date.year + 543) ~ " " ~ reservation.reserved_date.strftime("%H:%M") }}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <span class="font-semibold text-gray-900">฿{{ "{:,.2f}".format(reservation.amount or 0) }}</span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-16">
+                            <div class="flex flex-col items-center">
+                                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                    <i class="ph ph-calendar-x text-4xl text-gray-400"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-700 mb-1">ไม่พบข้อมูลการจองเงิน</h3>
+                                <p class="text-gray-500">ยังไม่มีการจองเงินสำหรับโครงการนี้</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="font-medium">แสดงทั้งหมด:</span> {{ reservations|length }} รายการ
+            </div>
+            <div>
+                <span class="font-medium">รวมยอดจองทั้งหมด:</span> 
+                <span class="text-blue-700 font-bold">฿{{ "{:,.2f}".format(reservations|sum(attribute='amount')|default(0)) }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
