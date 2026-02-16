@@ -64,6 +64,7 @@ def create_or_edit(mas_id=None):
 
     form.populate_obj(mas)
     mas.last_updated_by = current_user._get_current_object()
+    mas.reservable_amount = mas.actual_amount or 0
     mas.save()
 
     return redirect(url_for("admin.mas.index", organization_id=organization.id))
