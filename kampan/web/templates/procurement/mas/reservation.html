@@ -140,5 +140,9 @@
 </div>
 
 <!-- Pagination -->
-{{ paginated.render_pagination(paginated_reservations, "admin.mas.reservation", request.args|combine({'mas_id': mas.id|string})) }}
+{% set pagination_params = {'mas_id': mas.id} %}
+{% for key, value in request.args.items() %}
+    {% set _ = pagination_params.update({key: value}) %}
+{% endfor %}
+{{ paginated.render_pagination(paginated_reservations, "admin.mas.reservation", pagination_params) }}
 {% endblock %}

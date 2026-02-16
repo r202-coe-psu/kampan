@@ -26,7 +26,7 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    mas = models.MAS.objects(status="active").order_by("-created_date")
+    mas = models.MAS.objects(status="active").order_by("created_date")
     page = request.args.get("page", default=1, type=int)
     paginated_mas = Pagination(mas, page=page, per_page=20)
     total_actual = sum(m.actual_amount or 0 for m in mas)
