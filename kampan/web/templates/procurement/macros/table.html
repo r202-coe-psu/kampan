@@ -455,7 +455,7 @@
     </div>
   </div>
 {% endmacro %}
-{% macro render_mas_table(mas, organization, budget) %}
+{% macro render_mas_table(mas, organization) %}
   <div class="bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
     <div class="border-b border-gray-200 p-6">
       <div class="flex items-center justify-between">
@@ -474,8 +474,8 @@
             <option value="">เรียงตาม</option>
             <option value="mas_code">รหัส MAS</option>
             <option value="name">ชื่อโครงการ</option>
-            <option value="budget">งบประมาณ</option>
-            <option value="actual_cost">จ่ายจริง</option>
+            <option value="actual_amount">จ่ายจริง</option>
+            <option value="reservable_amount">จำนวนเงินจอง</option>
           </select>
         </div>
       </div>
@@ -486,16 +486,13 @@
           <tr class="bg-gray-50 text-gray-700">
             <th class="font-semibold">รหัส MAS</th>
             <th class="font-semibold">รายการ</th>
-            <th class="font-semibold">หมวดรายจ่าย</th>
-            <th class="font-semibold text-right">จำนวนเงิน</th>
-            <th class="font-semibold text-right">ประมาณจ่าย</th>
             <th class="font-semibold text-right">จ่ายจริง</th>
+            <th class="font-semibold text-right">จำนวนเงินที่จองได้</th>
             <th class="font-semibold text-center">การดำเนินการ</th>
           </tr>
         </thead>
         <tbody>
           {% for project in mas %}
-            {% set usage_percent = ((project.actual_cost or 0) / (project.budget or 1) * 100) %}
             <tr class="hover:bg-gray-50 border-b border-gray-100">
               <td class="py-4">
                 <span class="inline-block bg-blue-50 text-blue-800 font-mono text-sm py-1 px-2 rounded border border-blue-100">
@@ -511,33 +508,14 @@
                   </div>
                   <div>
                     <p class="font-medium text-gray-900">{{ project.name }}</p>
-                    {% if project.item_description %}
-                      <p class="text-sm text-gray-500 truncate max-w-xs">
-                        {{ project.item_description[:50]
-                        }}{{ '...' if project.item_description|length > 50 }}
-                      </p>
-                    {% endif %}
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div class="space-y-1">
-                  <div class="bg-gray-100 text-gray-800 text-xs py-1 px-2 rounded-md inline-flex items-center">
-                    <i class="ph ph-tag-simple mr-1"></i>
-                    {{ project.main_category }}
                   </div>
                 </div>
               </td>
               <td class="text-right">
-                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.amount or 0) }}</span>
+                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.actual_amount or 0) }}</span>
               </td>
               <td class="text-right">
-                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.budget or 0) }}</span>
-              </td>
-              <td class="text-right">
-                <span class="font-medium {{ 'text-red-700' if (project.actual_cost or 0) > (project.budget or 0) else 'text-gray-900' }}">
-                  ฿{{ "{:,.2f}".format(project.actual_cost or 0) }}
-                </span>
+                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.reservable_amount or 0) }}</span>
               </td>
               <td class="text-center">
                 <div class="flex justify-center space-x-2">
@@ -589,7 +567,7 @@
             </tr>
           {% else %}
             <tr>
-              <td colspan="7" class="text-center py-16">
+              <td colspan="5" class="text-center py-16">
                 <div class="flex flex-col items-center">
                   <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                     <i class="ph ph-file-x text-4xl text-gray-400"></i>
@@ -607,9 +585,6 @@
       <div class="flex justify-between items-center">
         <div>
           <span class="font-medium">แสดงทั้งหมด:</span> {{ mas|length }} รายการ
-        </div>
-        <div>
-          <span class="font-medium">งบประมาณรวม:</span> ฿{{ "{:,.2f}".format(budget or 0) }}
         </div>
       </div>
     </div>
@@ -1079,11 +1054,8 @@
                                       <th>เลือก</th>
                                       <th>รหัส MAS</th>
                                       <th>ชื่อโครงการ</th>
-                                      <th>หมวดหลัก</th>
-                                      <th>หมวดย่อย</th>
-                                      <th>รายละเอียด</th>
-                                      <th class="text-right">งบประมาณ</th>
                                       <th class="text-right">จ่ายจริง</th>
+                                      <th class="text-right">จำนวนเงินจอง</th>
                                       <th class="text-right">จำนวนเงินจัดสรร</th>
                                     </tr>
                                   </thead>
@@ -1101,13 +1073,8 @@
                                         </td>
                                         <td class="font-mono text-xs">{{ mas.mas_code }}</td>
                                         <td class="font-semibold">{{ mas.name }}</td>
-                                        <td>{{ mas.main_category }}</td>
-                                        <td>{{ mas.sub_category }}</td>
-                                        <td class="text-xs text-gray-500">{{ mas.item_description }}</td>
-                                        <td class="text-right">฿{{ "{:,.2f}".format(mas.budget or 0) }}</td>
-                                        <td class="text-right {{ 'text-red-700' if (mas.actual_cost or 0) > (mas.budget or 0) else 'text-gray-900' }}">
-                                          ฿{{ "{:,.2f}".format(mas.actual_cost or 0) }}
-                                        </td>
+                                        <td class="text-right">฿{{ "{:,.2f}".format(mas.actual_amount or 0) }}</td>
+                                        <td class="text-right">฿{{ "{:,.2f}".format(mas.reservable_amount or 0) }}</td>
                                         <td class="text-right">
                                           <input type="number"
                                                  step="0.01"

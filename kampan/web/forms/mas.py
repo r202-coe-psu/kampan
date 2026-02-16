@@ -15,13 +15,9 @@ BaseMASForm = model_form(
     ],
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
-        "main_category": {"label": "หมวดรายจ่าย"},
-        "sub_category": {"label": "หมวดรายจ่ายย่อย"},
         "name": {"label": "ชื่อรายการ"},
-        "item_description": {"label": "รายละเอียดรายการ"},
-        "amount": {"label": "จำนวนเงิน"},
-        "budget": {"label": "ประมาณจ่าย"},
-        "actual_cost": {"label": "จ่ายจริง"},
+        "actual_amount": {"label": "จ่ายจริง"},
+        "reservable_amount": {"label": "จำนวนเงินที่สามารถจองได้"},
     },
 )
 

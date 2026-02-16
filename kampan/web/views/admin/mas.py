@@ -26,18 +26,14 @@ def index():
         id=organization_id, status="active"
     ).first()
     mas = models.MAS.objects(status="active")
-    total_amount = sum(m.amount or 0 for m in mas)
-    total_budget = sum(m.budget or 0 for m in mas)
-    total_actual = sum(m.actual_cost or 0 for m in mas)
-    total_remain = total_budget - total_actual
+    total_actual = sum(m.actual_amount or 0 for m in mas)
+    total_reservable = sum(m.reservable_amount or 0 for m in mas)
     return render_template(
         "procurement/mas/index.html",
         organization=organization,
         mas=mas,
-        amount=total_amount,
-        budget=total_budget,
-        actual_cost=total_actual,
-        remain=total_remain,
+        total_actual=total_actual,
+        total_reservable=total_reservable,
     )
 
 

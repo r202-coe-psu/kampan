@@ -569,7 +569,7 @@ def requisition_action(requisition_id):
             try:
                 mas = models.MAS.objects(id=f.mas.id).first()
                 if mas:
-                    mas.actual_cost -= f.amount
+                    mas.actual_amount -= f.amount
                     mas.last_updated_by = current_user._get_current_object()
                     mas.save()
             except Exception:

@@ -36,42 +36,11 @@
                     {% endif %}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-1" for="main_category">{{
-                        form.main_category.label }}</label>
-                    {{ form.main_category(class_="input input-bordered w-full", placeholder="ครุภัณฑ์") }}
-                    {% if form.main_category.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.main_category.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-1" for="sub_category">{{
-                        form.sub_category.label }}</label>
-                    {{ form.sub_category(class_="input input-bordered w-full", placeholder="คอมพิวเตอร์") }}
-                    {% if form.sub_category.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.sub_category.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
                     <label class="block text-gray-700 font-medium mb-1" for="name">{{ form.name.label }}</label>
                     {{ form.name(class_="input input-bordered w-full", placeholder="ชื่อรายการ") }}
                     {% if form.name.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
                         <i class="ph ph-warning text-sm"></i>{{ form.name.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-700 font-medium mb-1" for="item_description">{{
-                        form.item_description.label }}</label>
-                    {{ form.item_description(class_="textarea textarea-bordered w-full",
-                    placeholder="รายละเอียดรายการ") }}
-                    {% if form.item_description.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.item_description.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
@@ -83,44 +52,30 @@
             <h2 class="text-lg font-semibold text-purple-700 mb-4 flex items-center gap-2">
                 <i class="ph ph-currency-circle-dollar text-xl"></i> ข้อมูลทางการเงิน
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-1" for="amount">{{ form.amount.label }}</label>
+                    <label class="block text-gray-700 font-medium mb-1" for="actual_amount">{{ form.actual_amount.label }}</label>
                     <div class="relative">
-                        {{ form.amount(class_="input input-bordered w-full pl-8", step="0.01", min="0",
-                        placeholder="จำนวนเงิน") }}
-                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
-                    </div>
-                    {% if form.amount.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.amount.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-1" for="budget">{{ form.budget.label }}</label>
-                    <div class="relative">
-                        {{ form.budget(class_="input input-bordered w-full pl-8", step="0.01", min="0",
-                        placeholder="ประมาณจ่าย") }}
-                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
-                    </div>
-                    {% if form.budget.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.budget.errors[0] }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium mb-1" for="actual_cost">{{ form.actual_cost.label
-                        }}</label>
-                    <div class="relative">
-                        {{ form.actual_cost(class_="input input-bordered w-full pl-8", step="0.01", min="0",
+                        {{ form.actual_amount(class_="input input-bordered w-full pl-8", step="0.01", min="0",
                         placeholder="จ่ายจริง") }}
                         <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
                     </div>
-                    {% if form.actual_cost.errors %}
+                    {% if form.actual_amount.errors %}
                     <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <i class="ph ph-warning text-sm"></i>{{ form.actual_cost.errors[0] }}
+                        <i class="ph ph-warning text-sm"></i>{{ form.actual_amount.errors[0] }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1" for="reservable_amount">{{ form.reservable_amount.label }}</label>
+                    <div class="relative">
+                        {{ form.reservable_amount(class_="input input-bordered w-full pl-8", step="0.01", min="0",
+                        placeholder="จำนวนเงินที่จองได้") }}
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">฿</span>
+                    </div>
+                    {% if form.reservable_amount.errors %}
+                    <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <i class="ph ph-warning text-sm"></i>{{ form.reservable_amount.errors[0] }}
                     </p>
                     {% endif %}
                 </div>
