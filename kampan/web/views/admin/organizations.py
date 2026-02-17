@@ -122,11 +122,11 @@ def add_member(organization_id):
             organization=organization,
             user=user,
             roles=form.roles.data,
-            division=models.Division.objects(
-                id=form.division.data, status="active"
-            ).first()
-            if form.division.data
-            else None,
+            division=(
+                models.Division.objects(id=form.division.data, status="active").first()
+                if form.division.data
+                else None
+            ),
             appointment=form.appointment.data,
             added_by=current_user._get_current_object(),
             last_modifier=current_user._get_current_object(),
