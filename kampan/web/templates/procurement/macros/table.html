@@ -520,15 +520,15 @@
               <td class="text-center">
                 <div class="flex justify-center space-x-2">
                   <a href="{{ url_for('admin.mas.reservation', mas_id=project.id, organization_id=organization.id) }}"
-                    class="btn btn-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md"
-                    title="จัดการการจองเงิน">
+                     class="btn btn-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md"
+                     title="จัดการการจองเงิน">
                     <i class="ph ph-calendar-check"></i>
                   </a>
                   {% if project.editable %}
-                  <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id, organization_id=organization.id) }}"
-                    class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
-                    <i class="ph ph-pencil-simple"></i>
-                  </a>
+                    <a href="{{ url_for('admin.mas.create_or_edit', mas_id=project.id, organization_id=organization.id) }}"
+                       class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md">
+                      <i class="ph ph-pencil-simple"></i>
+                    </a>
                   {% endif %}
                   <button type="button"
                           class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
@@ -749,18 +749,28 @@
                 <th class="font-semibold text-base-content text-sm text-center w-32">แนบเอกสาร</th>
                 <th class="font-semibold text-base-content text-sm text-center w-24">เอกสาร</th>
                 {% if current_user.has_organization_roles("staff") %}
-                  <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (บุคลากร)</th>
+                  <th class="font-semibold text-base-content text-sm text-center w-20">
+                    <p>บุคลากร</p>
+                    <p>(ดำเนินการ)</p>
+                  </th>
                 {% endif %}
                 {% if current_user.has_organization_roles("head") %}
-                  <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (หัวหน้าฝ่าย)</th>
+                  <th class="font-semibold text-base-content text-sm text-center w-20">
+                    <p>หัวหน้าฝ่าย</p>
+                    <p>(ดำเนินการ)</p>
+                  </th>
                 {% endif %}
                 {% if current_user.has_organization_roles("admin") %}
                   <th class="font-semibold text-base-content text-sm text-center w-20">
-                    ดำเนินการ(เจ้าหน้าที่พัสดุ)
+                    <p>เจ้าหน้าที่พัสดุ</p>
+                    <p>(ดำเนินการ)</p>
                   </th>
                 {% endif %}
                 {% if (current_user.has_organization_roles("manager") and manager_action) or current_user.has_roles(["admin"]) %}
-                  <th class="font-semibold text-base-content text-sm text-center w-20">ดำเนินการ (ผู้บริหาร)</th>
+                  <th class="font-semibold text-base-content text-sm text-center w-20">
+                    <p>เผู้บริหาร</p>
+                    <p>(ดำเนินการ)</p>
+                  </th>
                 {% endif %}
                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะการอนุมัติ</th>
                 <th class="font-semibold text-base-content text-sm text-center w-20">สถานะ</th>
