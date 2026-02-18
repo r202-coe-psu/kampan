@@ -1024,96 +1024,135 @@
                                 id="mas-form-{{ item.id }}"
                                 onsubmit="return validateMasForm('{{ item.id }}', {{ total_amount|float }})"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                class="modal-box max-w-full w-full">
-                            <div class="text-lg font-bold mb-2">เลือกแหล่งเงิน (MAS)</div>
+                                class="modal-box w-full max-w-6xl p-0 overflow-hidden">
+                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+                            <div class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-5">
+                              <div class="flex items-start justify-between gap-4">
+                                <div>
+                                  <div class="text-xl font-bold">เลือกแหล่งเงิน (MAS)</div>
+                                  <div class="text-white/80 text-sm mt-1">
+                                    เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition_code }}</span>
+                                  </div>
+                                </div>
+                                <button type="button"
+                                        class="btn btn-sm btn-ghost text-white hover:bg-white/10"
+                                        onclick="document.getElementById('modal-mas-{{ item.id }}').close()"
+                                        aria-label="close">
+                                  <i class="ph ph-x"></i>
+                                </button>
+                              </div>
+                            </div>
+
                             <input type="hidden" name="approver_role" value="admin" />
                             <input type="hidden" name="action" value="approved" />
 
-                            <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {% if organization and organization.get_organization_users() %}
-                                <div class="form-control">
-                                  <label for="manager-{{ item.id }}" class="block font-semibold mb-2">
-                                    เลือกผู้บริหาร (manager Supplier)
-                                  </label>
-                                  <select name="manager" id="manager-{{ item.id }}" class="select select-bordered w-full" required>
-                                    <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
-                                    {% for user in organization.get_organization_users() %}
-                                      {% if 'manager' in user.roles %}
-                                        <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
-                                      {% endif %}
-                                    {% endfor %}
-                                  </select>
+                            <div class="p-5 space-y-5">
+                              <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                                <div class="lg:col-span-6">
+                                  {% if organization and organization.get_organization_users() %}
+                                    <div class="form-control flex flex-col">
+                                      <label for="manager-{{ item.id }}" class="label">
+                                        <span class="label-text font-semibold">เลือกผู้บริหาร (manager Supplier)</span>
+                                      </label>
+                                      <select name="manager" id="manager-{{ item.id }}" class="select select-bordered w-full" required>
+                                        <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
+                                        {% for user in organization.get_organization_users() %}
+                                          {% if 'manager' in user.roles %}
+                                            <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
+                                          {% endif %}
+                                        {% endfor %}
+                                      </select>
+                                    </div>
+                                  {% else %}
+                                    <div class="alert alert-warning">
+                                      <span>ไม่พบข้อมูลองค์กร (organization) สำหรับการเลือกผู้บริหาร</span>
+                                    </div>
+                                  {% endif %}
                                 </div>
-                              {% else %}
-                                <div class="alert alert-warning">ไม่พบข้อมูลองค์กร (organization) สำหรับการเลือกผู้บริหาร</div>
-                              {% endif %}
-
-                              <div class="form-control">
-                                <label class="block font-semibold mb-2">ยอดต้องจอง</label>
-                                <div class="input input-bordered w-full text-right font-semibold">
-                                  ฿{{ "{:,.2f}".format(total_amount) }}
+                                <div class="lg:col-span-3">
+                                  <div class="rounded-xl border border-base-300 bg-base-100 p-4">
+                                    <div class="text-xs text-base-content/70 font-medium">ยอดต้องจอง</div>
+                                    <div class="text-center text-xl font-bold text-blue-700 mt-1">
+                                      ฿{{ "{:,.2f}".format(total_amount) }}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="lg:col-span-3">
+                                  <div class="rounded-xl border border-base-300 bg-base-100 p-4">
+                                    <div class="text-xs text-base-content/70 font-medium">ยอดที่จองแล้ว</div>
+                                    <div class="text-center text-xl font-bold mt-1" id="allocated-sum-{{ item.id }}">฿0.00</div>
+                                  </div>
                                 </div>
                               </div>
 
-                              <div class="form-control">
-                                <label class="block font-semibold mb-2">ยอดที่จองแล้ว</label>
-                                <div class="input input-bordered w-full text-right font-semibold" id="allocated-sum-{{ item.id }}">
-                                  ฿0.00
+                              <div class="rounded-xl border border-base-300 bg-base-100 overflow-hidden">
+                                <div class="px-4 py-3 border-b border-base-200 bg-base-200/60 flex items-center justify-between">
+                                  <div class="font-semibold">รายการแหล่งเงิน (MAS)</div>
+                                  <div class="text-xs text-base-content/60">เลือกอย่างน้อย 1 รายการ แล้วระบุจำนวนเงิน</div>
                                 </div>
-                              </div>
-                            </div>
 
-                            <div class="form-control">
-                              <div class="overflow-y-auto max-h-[600px]">
-                                <table class="table table-md w-full border">
-                                  <thead>
-                                    <tr class="bg-base-200">
-                                      <th>เลือก</th>
-                                      <th>รหัส MAS</th>
-                                      <th>ชื่อโครงการ</th>
-                                      <th class="text-right">จำนวนเงินที่จองได้</th>
-                                      <th class="text-right">จำนวนเงินที่จอง</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {% for mas in mas_list %}
-                                      <tr>
-                                        <td>
-                                          <input type="checkbox"
-                                                 class="fund-checkbox"
-                                                 name="fund_ids"
-                                                 value="{{ mas.id }}"
-                                                 data-item-id="{{ item.id }}"
-                                                 data-mas-id="{{ mas.id }}"
-                                                 onchange="toggleFundAmount('{{ item.id }}','{{ mas.id }}', this.checked)" />
-                                        </td>
-                                        <td class="font-mono text-xs">{{ mas.mas_code }}</td>
-                                        <td class="font-semibold">{{ mas.name }}</td>
-                                        <td class="text-right">฿{{ "{:,.2f}".format(mas.reservable_amount or 0) }}</td>
-                                        <td class="text-right">
-                                          <input type="number"
-                                                 step="0.01"
-                                                 min="0"
-                                                 placeholder="0.00"
-                                                 class="input input-bordered w-32 text-right fund-amount-{{ item.id }}"
-                                                 name="fund_amounts[{{ mas.id }}]"
-                                                 data-item-id="{{ item.id }}"
-                                                 data-mas-id="{{ mas.id }}"
-                                                 disabled
-                                                 oninput="recalcAllocation('{{ item.id }}', {{ total_amount|float }})" />
-                                        </td>
+                                <div class="overflow-y-auto max-h-[40vh]">
+                                  <table class="table table-md w-full">
+                                    <thead>
+                                      <tr class="bg-base-200 sticky top-0 z-10">
+                                        <th>เลือก</th>
+                                        <th>รหัส MAS</th>
+                                        <th>ชื่อโครงการ</th>
+                                        <th class="text-right">จำนวนเงินที่จองได้</th>
+                                        <th class="text-right">จำนวนเงินที่จอง</th>
                                       </tr>
-                                    {% endfor %}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {% for mas in mas_list %}
+                                        <tr class="hover:bg-base-200/40">
+                                          <td>
+                                            <input type="checkbox"
+                                                   class="checkbox checkbox-primary fund-checkbox"
+                                                   name="fund_ids"
+                                                   value="{{ mas.id }}"
+                                                   data-item-id="{{ item.id }}"
+                                                   data-mas-id="{{ mas.id }}"
+                                                   onchange="toggleFundAmount('{{ item.id }}','{{ mas.id }}', this.checked)" />
+                                          </td>
+                                          <td class="font-mono text-md">{{ mas.mas_code }}</td>
+                                          <td class="font-semibold">{{ mas.name }}</td>
+                                          <td class="text-right">฿{{ "{:,.2f}".format(mas.reservable_amount or 0) }}</td>
+                                          <td class="text-right">
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   placeholder="0.00"
+                                                   class="input input-bordered input-sm w-36 text-right fund-amount-{{ item.id }}"
+                                                   name="fund_amounts[{{ mas.id }}]"
+                                                   data-item-id="{{ item.id }}"
+                                                   data-mas-id="{{ mas.id }}"
+                                                   disabled
+                                                   oninput="recalcAllocation('{{ item.id }}', {{ total_amount|float }})" />
+                                          </td>
+                                        </tr>
+                                      {% endfor %}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              <div class="pt-2 text-xs text-base-content/60">
+                                หมายเหตุ: ระบบจะขอให้กรอกจำนวนเงินให้มากกว่า 0 สำหรับแหล่งเงินที่เลือก
                               </div>
                             </div>
 
-                            <div class="modal-action flex gap-2 justify-end">
-                              <button type="button" class="btn" onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
-                                ยกเลิก
-                              </button>
-                              <button type="submit" class="btn btn-success">บันทึก</button>
+                            <div class="px-5 py-4 bg-base-200/60 border-t border-base-300 flex items-center justify-between">
+                              <div class="text-sm text-base-content/70">
+                                <span class="font-semibold">Tip:</span> กด <span class="font-mono">Esc</span> เพื่อปิดหน้าต่าง
+                              </div>
+                              <div class="flex gap-2">
+                                <button type="button" class="btn" onclick="document.getElementById('modal-mas-{{ item.id }}').close()">
+                                  ยกเลิก
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                  <i class="ph ph-check"></i> บันทึก
+                                </button>
+                              </div>
                             </div>
                           </form>
                         </dialog>
