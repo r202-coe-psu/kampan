@@ -30,8 +30,8 @@
     <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-gray-500 uppercase font-medium">จ่ายจริงรวม</p>
-                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(total_actual or 0) }}</h3>
+                <p class="text-sm text-gray-500 uppercase font-medium">งบประมาณรวม</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(total_amount or 0) }}</h3>
             </div>
             <div class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center">
                 <i class="ph ph-credit-card text-2xl text-amber-700"></i>
@@ -39,12 +39,12 @@
         </div>
     </div>
 
-    <!-- Total Reservable Amount Card -->
+    <!-- Total Remaining Amount Card -->
     <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-5">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-gray-500 uppercase font-medium">จำนวนเงินที่จองได้รวม</p>
-                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(total_reservable or 0) }}</h3>
+                <p class="text-sm text-gray-500 uppercase font-medium">จำนวนเงินที่เหลือรวม</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1">฿{{ "{:,.2f}".format(total_remaining or 0) }}</h3>
             </div>
             <div class="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center">
                 <i class="ph ph-piggy-bank text-2xl text-teal-700"></i>

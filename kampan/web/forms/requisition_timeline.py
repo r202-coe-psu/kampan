@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
-from wtforms import fields, Form, validators, TextAreaField
+from wtforms import fields, Form, validators, TextAreaField, HiddenField, DecimalField
 
 from kampan import models
 
@@ -30,10 +30,15 @@ class RequisitionCancelForm(FlaskForm):
     )
 
 
-class RequisitionTimelinePaymentForm(FlaskForm):
-    amount = fields.DecimalField(
-        "จำนวนเงินที่จ่าย",
+class ReservationPaymentForm(Form):
+    reservation_id = HiddenField()
+    amount = DecimalField(
         places=2,
         rounding=None,
-        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+        default=0,
+        validators=[validators.NumberRange(min=0)],
     )
+
+
+class BillingForm(FlaskForm):
+    reservations = fields.FieldList(fields.FormField(ReservationPaymentForm))

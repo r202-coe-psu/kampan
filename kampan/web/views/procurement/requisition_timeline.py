@@ -155,6 +155,19 @@ def index():
         page=page,
         per_page=per_page,
     )
+
+    # Build reservations_map: {str(requisition_id): [Reservation, ...]}
+    page_requisition_ids = [
+        item.requisition.id
+        for item in paginated_requisition_timeline.items
+        if item.requisition
+    ]
+    page_reservations = models.Reservation.objects(requisition__in=page_requisition_ids)
+    reservations_map = {}
+    for res in page_reservations:
+        key = str(res.requisition.id)
+        reservations_map.setdefault(key, []).append(res)
+
     return render_template(
         "/procurement/requisitions/requisition_timeline.html",
         paginated_requisition_timeline=paginated_requisition_timeline,
@@ -162,7 +175,8 @@ def index():
         organization=organization,
         progress_choices=progress_choices,
         is_admin=is_admin,
-        PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,  # Add this line
+        PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,
+        reservations_map=reservations_map,
     )
 
 
@@ -251,10 +265,9 @@ def cancel(requisition_timeline_id):
     )
 
 
-@module.route("/<requisition_timeline_id>/billing_modal", methods=["GET", "POST"])
+@module.route("/<requisition_timeline_id>/billing_modal", methods=["POST"])
 @acl.organization_roles_required("admin")
 def billing_modal(requisition_timeline_id):
-    form = forms.requisition_timeline.RequisitionTimelinePaymentForm()
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -262,21 +275,41 @@ def billing_modal(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id
     )
-    if form.validate_on_submit():
-        amount = form.amount.data
-        requisition_timeline.payment_amount = amount
-        requisition_timeline.save()
+    reservations = list(
+        models.Reservation.objects(requisition=requisition_timeline.requisition)
+    )
 
-        return redirect(
-            url_for(
-                "procurement.requisition_timeline.index",
-                organization_id=organization.id,
-            )
+    form = forms.requisition_timeline.BillingForm()
+
+    res_map = {str(r.id): r for r in reservations}
+
+    usage_amounts = {}
+    total_amount = 0.0
+    for entry in form.reservations.entries:
+        res_id = entry.reservation_id.data
+        actual = float(entry.amount.data or 0)
+        usage_amounts[res_id] = round(actual, 2)
+        total_amount += actual
+
+    for res_id, actual in usage_amounts.items():
+        res = res_map.get(res_id)
+        if not res:
+            continue
+        unused = float(res.amount or 0) - actual
+        res.actual_amount = actual
+        res.reservation_status = "finished"
+        res.save()
+        if res.mas:
+            res.mas.remaining_amount = float(res.mas.remaining_amount or 0) - actual
+            res.mas.reservable_amount = float(res.mas.reservable_amount or 0) + unused
+            res.mas.save()
+
+    requisition_timeline.fund_usage_amounts = usage_amounts
+    requisition_timeline.payment_amount = round(total_amount, 2)
+    add_progress_in_order(requisition_timeline, "completed", current_user, request)
+
+    return redirect(
+        url_for(
+            "procurement.requisition_timeline.index", organization_id=organization.id
         )
-
-    return render_template(
-        "/procurement/requisitions/billing_modal.html",
-        form=form,
-        organization=organization,
-        requisition_timeline=requisition_timeline,
     )

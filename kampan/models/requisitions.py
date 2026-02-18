@@ -30,7 +30,10 @@ SHOW_ITEM_CHOICES = [
 
 class Funds(me.EmbeddedDocument):
     mas = me.ReferenceField("MAS", dbref=True)
+    reservation = me.ReferenceField("Reservation", dbref=True)
     amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+    assigned_by = me.ReferenceField("User", dbref=True)
+    assigned_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
 class Committees(me.EmbeddedDocument):

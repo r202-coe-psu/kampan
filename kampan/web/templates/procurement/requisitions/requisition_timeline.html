@@ -79,7 +79,7 @@
       </div>
     {% else %}
       {{ table_macros.requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list,
-            current_user, organization, PROGRESS_STATUS_ORDER) }}
+            current_user, organization, PROGRESS_STATUS_ORDER, reservations_map) }}
       {% set params = {"organization_id": organization.id} %}
       {% if request.args.get('progress') %}
         {% set _dummy = params.update({"progress": request.args.get('progress')}) %}

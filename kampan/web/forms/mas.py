@@ -14,11 +14,13 @@ BaseMASForm = model_form(
         "reservable_amount",
         "status",
         "editable",
+        "remaining_amount",
+        "reservable_amount",
     ],
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
         "name": {"label": "ชื่อรายการ"},
-        "actual_amount": {"label": "งบประมาน"},
+        "amount": {"label": "งบประมาณทั้งหมด"},
     },
 )
 

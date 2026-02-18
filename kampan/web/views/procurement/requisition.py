@@ -569,37 +569,28 @@ def requisition_action(requisition_id):
                 fund_id, input_amounts.get(fund_id, Decimal("0.00"))
             )
 
-        # ไม่คืนยอดเดิมใน MAS (ไม่กันการจัดสรรซ้ำ)
-
         fund = []
         for fid in set(fund_ids or []):
             amt = input_amounts.get(fid, Decimal("0.00"))
             if amt <= 0:
                 continue
-            mas_obj = models.MAS.objects(id=fid).first()
-            if not mas_obj:
+            mas = models.MAS.objects(id=fid).first()
+            if not mas:
                 continue
-            fund.append(models.requisitions.Funds(mas=mas_obj, amount=amt))
 
-        requisition.fund = fund
+            fund.append(models.requisitions.Funds(mas=mas, amount=amt))
 
-        for f in fund:
-            try:
-                mas = models.MAS.objects(id=f.mas.id).first()
-                if mas:
-                    mas.reservable_amount -= f.amount
-                    mas.last_updated_by = current_user._get_current_object()
-                    mas.editable = False
-                    reservation_record = models.Reservation(
-                        requisition=requisition,
-                        mas=mas,
-                        amount=f.amount,
-                        reserved_by=current_user._get_current_object(),
-                    )
-                    reservation_record.save()
-                    mas.save()
-            except Exception:
-                pass
+            mas.reservable_amount -= amt
+            mas.last_updated_by = current_user._get_current_object()
+            mas.editable = False
+            mas.save()
+
+            models.Reservation(
+                requisition=requisition,
+                mas=mas,
+                amount=amt,
+                reserved_by=current_user._get_current_object(),
+            ).save()
 
         # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:

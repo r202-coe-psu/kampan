@@ -474,7 +474,7 @@
             <option value="">เรียงตาม</option>
             <option value="mas_code">รหัส MAS</option>
             <option value="name">ชื่อโครงการ</option>
-            <option value="actual_amount">จ่ายจริง</option>
+            <option value="remaining_amount">จ่ายจริง</option>
             <option value="reservable_amount">จำนวนเงินจอง</option>
           </select>
         </div>
@@ -486,12 +486,12 @@
           <tr class="bg-gray-50 text-gray-700">
             <th class="font-semibold">รหัส MAS</th>
             <th class="font-semibold">รายการ</th>
-            <th class="font-semibold text-right">จ่ายจริง</th>
+            <th class="font-semibold text-right">งบประมาณคงเหลือ</th>
             <th class="font-semibold text-right">จำนวนเงินที่จองได้</th>
             <th class="font-semibold text-center">การดำเนินการ</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody>ต
           {% for project in mas %}
             <tr class="hover:bg-gray-50 border-b border-gray-100">
               <td class="py-4">
@@ -512,7 +512,7 @@
                 </div>
               </td>
               <td class="text-right">
-                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.actual_amount or 0) }}</span>
+                <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.remaining_amount or 0) }}</span>
               </td>
               <td class="text-right">
                 <span class="font-medium text-gray-900">฿{{ "{:,.2f}".format(project.reservable_amount or 0) }}</span>
