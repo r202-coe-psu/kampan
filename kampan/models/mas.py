@@ -31,7 +31,7 @@ class MAS(me.Document):
 
 class Reservation(me.Document):
     meta = {"collection": "reservations"}
-
+    requisition = me.ReferenceField("Requisition", required=True, dbref=True)
     mas = me.ReferenceField(MAS, required=True, dbref=True)
     amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
     reserved_by = me.ReferenceField("User", dbref=True)
