@@ -249,3 +249,34 @@ def cancel(requisition_timeline_id):
             organization_id=organization.id,
         )
     )
+
+
+@module.route("/<requisition_timeline_id>/billing_modal", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def billing_modal(requisition_timeline_id):
+    form = forms.requisition_timeline.RequisitionTimelinePaymentForm()
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    requisition_timeline = models.RequisitionTimeline.objects.get(
+        id=requisition_timeline_id
+    )
+    if form.validate_on_submit():
+        amount = form.amount.data
+        requisition_timeline.payment_amount = amount
+        requisition_timeline.save()
+
+        return redirect(
+            url_for(
+                "procurement.requisition_timeline.index",
+                organization_id=organization.id,
+            )
+        )
+
+    return render_template(
+        "/procurement/requisitions/billing_modal.html",
+        form=form,
+        organization=organization,
+        requisition_timeline=requisition_timeline,
+    )

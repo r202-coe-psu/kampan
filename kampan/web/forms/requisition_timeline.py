@@ -28,3 +28,10 @@ class RequisitionCancelForm(FlaskForm):
         "เหตุผลการยกเลิก",
         [validators.DataRequired(), validators.Length(max=500)],
     )
+
+
+class RequisitionTimelinePaymentForm(FlaskForm):
+    amount = TextAreaField(
+        "จำนวนเงินที่จ่าย",
+        [validators.DataRequired(), validators.Length(max=500)],
+    )
