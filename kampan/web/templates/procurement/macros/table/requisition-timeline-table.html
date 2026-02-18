@@ -153,11 +153,20 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
-                      <button type="button"
-                              class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
-                              onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
-                        <i class="ph ph-arrows-clockwise"></i> อัปเดต
-                      </button>
+                      {% set can_bill = latest_progress and latest_progress.progress_status == 'inspection' and item.status != 'completed' %}
+                      {% if can_bill %}
+                        <button type="button"
+                                class="btn btn-sm btn-success bg-gradient-to-r from-emerald-500 to-teal-600 border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md"
+                                onclick="document.getElementById('modal-billing-{{ item.id }}').showModal();">
+                          <i class="ph ph-receipt"></i> ตรวจสอบบิล
+                        </button>
+                      {% else %}
+                        <button type="button"
+                                class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
+                                onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
+                          <i class="ph ph-arrows-clockwise"></i> อัปเดต
+                        </button>
+                      {% endif %}
                       <button type="button"
                               class="btn btn-sm btn-error ml-2"
                               onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
@@ -361,11 +370,20 @@
               <div class="flex gap-2">
                 <!-- ปุ่มยกเลิก (เฉพาะ admin และยังไม่ยกเลิก) -->
                 {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
-                  <button type="button"
-                          class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
-                          onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
-                    <i class="ph ph-arrows-clockwise"></i> อัปเดต
-                  </button>
+                  {% set can_bill = latest_progress and latest_progress.progress_status == 'inspection' and item.status != 'completed' %}
+                  {% if can_bill %}
+                    <button type="button"
+                            class="btn btn-sm btn-success bg-gradient-to-r from-emerald-500 to-teal-600 border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md"
+                            onclick="document.getElementById('modal-billing-{{ item.id }}').showModal();">
+                      <i class="ph ph-receipt"></i> ตรวจสอบบิล
+                    </button>
+                  {% else %}
+                    <button type="button"
+                            class="btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md"
+                            onclick="document.getElementById('modal-update-{{ item.id }}').showModal();">
+                      <i class="ph ph-arrows-clockwise"></i> อัปเดต
+                    </button>
+                  {% endif %}
                   <button type="button"
                           class="btn btn-sm btn-error ml-2"
                           onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
@@ -475,6 +493,7 @@
       <!-- Render modals once per item outside hidden containers so they work in all responsive views -->
       {% for item in paginated_requisition_timeline.items %}
         {% set latest_progress = item.progress[-1] if item.progress else None %}
+        {% set can_bill = latest_progress and latest_progress.progress_status == 'inspection' and item.status != 'completed' %}
         <dialog id="modal-update-{{ item.id }}" class="modal">
           <div class="modal-box">
             <h3 class="font-bold text-lg mb-4">อัปเดตความคืบหน้า</h3>
@@ -497,8 +516,6 @@
                     ('order_confirmed', 'ยืนยันการสั่งซื้อ/สั่งจ้าง'),
                     ('awaiting_delivery', 'รอส่งมอบพัสดุ'),
                     ('inspection', 'ตรวจรับพัสดุ'),
-                    ('payment_processed', 'เบิกจ่าย'),
-                    ('completed', 'เสร็จสิ้น')
                     ] %}
                     <option value="{{ value }}"
                             {% if latest_progress and latest_progress.progress_status==value %}selected{% endif %}>{{ loop.index }}. {{ label }}</option>
@@ -517,6 +534,122 @@
             <button>close</button>
           </form>
         </dialog>
+
+        {% if can_bill %}
+          <dialog id="modal-billing-{{ item.id }}" class="modal">
+            <div class="modal-box max-w-4xl">
+              <h3 class="font-bold text-lg mb-2">ตรวจสอบบิล / เบิกจ่าย</h3>
+              <p class="text-sm text-gray-600 mb-4">
+                เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+              </p>
+
+              <form method="post"
+                    action="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+
+                <div class="mb-4">
+                  <div class="font-semibold mb-2">แหล่งเงินที่จอง (MAS)</div>
+                  {% set reserved_funds = item.requisition.fund or [] %}
+                  {% set usage_map = item.fund_usage_amounts or {} %}
+                  {% if reserved_funds|length == 0 %}
+                    <div class="text-sm text-gray-500">ไม่พบข้อมูลการจองแหล่งเงิน</div>
+                  {% else %}
+                    <div class="overflow-x-auto">
+                      <table class="table table-sm w-full">
+                        <thead>
+                          <tr>
+                            <th>รหัส MAS</th>
+                            <th>ชื่อโครงการ</th>
+                            <th class="text-right">จำนวนเงินที่จอง</th>
+                            <th class="text-center">รายละเอียด</th>
+                            <th class="text-right">จำนวนเงินที่ใช้จริง</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for f in reserved_funds %}
+                            {% set mas_id = (f.mas.id|string) if f.mas else '' %}
+                            {% set used_amount = usage_map.get(mas_id) if mas_id else None %}
+                            <tr>
+                              <td class="font-mono text-xs">{{ f.mas.mas_code if f.mas else '-' }}</td>
+                              <td class="text-sm">{{ f.mas.name if f.mas else '-' }}</td>
+                              <td class="text-right font-semibold">฿{{ "{:,.2f}".format(f.amount or 0) }}</td>
+                              <td class="text-center">
+                                {% if f.mas %}
+                                  <a class="link link-primary text-sm"
+                                     href="{{ url_for('admin.mas.reservation', mas_id=f.mas.id, organization_id=organization.id) }}"
+                                     target="_blank">ดูการจอง</a>
+                                {% else %}
+                                  -
+                                {% endif %}
+                              </td>
+                              <td class="text-right">
+                                {% if f.mas %}
+                                  <input type="number"
+                                         step="0.01"
+                                         min="0"
+                                         max="{{ f.amount or 0 }}"
+                                         placeholder="0.00"
+                                         class="input input-bordered input-sm w-36 text-right"
+                                         name="usage_amounts[{{ mas_id }}]"
+                                         value="{{ used_amount if used_amount is not none else (f.amount or 0) }}"
+                                         data-usage-item-id="{{ item.id }}"
+                                         oninput="recalcUsageTotal('{{ item.id }}')" />
+                                {% else %}
+                                  -
+                                {% endif %}
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600 text-right">
+                      {% set total_reserved = reserved_funds | map(attribute='amount') | sum %}
+                      รวมยอดจอง: <span class="font-semibold">฿{{ "{:,.2f}".format(total_reserved or 0) }}</span>
+                    </div>
+                  {% endif %}
+                </div>
+
+                {% set ns = namespace(total_used=0) %}
+                {% for f in reserved_funds %}
+                  {% set mas_id = (f.mas.id|string) if f.mas else '' %}
+                  {% set used_amount = usage_map.get(mas_id) if mas_id else None %}
+                  {% set ns.total_used = ns.total_used + ((used_amount if used_amount is not none else (f.amount or 0))|float) %}
+                {% endfor %}
+
+                <div class="form-control w-full mb-2">
+                  <label class="label">
+                    <span class="label-text">จำนวนเงินที่จ่าย (รวม)</span>
+                  </label>
+                  <div class="text-xs text-gray-500 mb-1">รวมจาก “จำนวนเงินที่ใช้จริง” (แก้ไขไม่ได้)</div>
+                  <input type="number"
+                         name="amount"
+                         id="payment-amount-{{ item.id }}"
+                         step="0.01"
+                         min="0"
+                         class="input input-bordered w-full bg-gray-50"
+                         value="{{ "%.2f"|format(ns.total_used) }}"
+                         readonly
+                         required />
+
+                  <div class="mt-2 text-sm text-right text-gray-700">
+                    รวมยอดใช้จริง: <span class="font-semibold" id="usage-total-text-{{ item.id }}">฿{{ "{:,.2f}".format(ns.total_used) }}</span>
+                  </div>
+                </div>
+
+                <div class="modal-action">
+                  <button type="button" class="btn" onclick="document.getElementById('modal-billing-{{ item.id }}').close()">
+                    ปิด
+                  </button>
+                  <button type="submit" class="btn btn-success">บันทึก</button>
+                </div>
+              </form>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+              <button>close</button>
+            </form>
+          </dialog>
+        {% endif %}
         <!-- cancellation modal -->
         <dialog id="modal-cancel-{{ item.id }}" class="modal">
           <div class="modal-box">
@@ -638,6 +771,30 @@
       {% endfor %}
     {% endif %}
     <script>
+        function recalcUsageTotal(itemId) {
+            var inputs = document.querySelectorAll('input[data-usage-item-id="' + itemId + '"]');
+            var total = 0;
+            inputs.forEach(function(input) {
+                var v = parseFloat(input.value);
+                if (!isNaN(v)) {
+                    total += v;
+                }
+            });
+
+            var amountInput = document.getElementById('payment-amount-' + itemId);
+            if (amountInput) {
+                amountInput.value = total.toFixed(2);
+            }
+
+            var totalText = document.getElementById('usage-total-text-' + itemId);
+            if (totalText) {
+                totalText.textContent = '฿' + total.toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+            }
+        }
+
         function toggleSubtable(itemId) {
             var subtable = document.getElementById('subtable-' + itemId);
             var icon = document.getElementById('toggle-icon-' + itemId);
@@ -670,6 +827,15 @@
             });
             document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
                 icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+            });
+
+            var usageInputs = document.querySelectorAll('input[data-usage-item-id]');
+            var itemIds = new Set();
+            usageInputs.forEach(function(input) {
+                itemIds.add(input.getAttribute('data-usage-item-id'));
+            });
+            itemIds.forEach(function(itemId) {
+                recalcUsageTotal(itemId);
             });
         });
     </script>

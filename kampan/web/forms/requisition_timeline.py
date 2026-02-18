@@ -31,7 +31,9 @@ class RequisitionCancelForm(FlaskForm):
 
 
 class RequisitionTimelinePaymentForm(FlaskForm):
-    amount = TextAreaField(
+    amount = fields.DecimalField(
         "จำนวนเงินที่จ่าย",
-        [validators.DataRequired(), validators.Length(max=500)],
+        places=2,
+        rounding=None,
+        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
     )
