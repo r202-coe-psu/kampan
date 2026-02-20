@@ -768,7 +768,7 @@
                 {% endif %}
                 {% if (current_user.has_organization_roles("manager") and manager_action) or current_user.has_roles(["admin"]) %}
                   <th class="font-semibold text-base-content text-sm text-center w-20">
-                    <p>เผู้บริหาร</p>
+                    <p>ผู้บริหาร</p>
                     <p>(ดำเนินการ)</p>
                   </th>
                 {% endif %}
@@ -995,7 +995,7 @@
                                 onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
                           <i class="ph ph-check text-lg" title="Approve"></i>
                         </button>
-                        <!-- <button type="button" class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %} disabled {% endif %} onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
+                        <button type="button" class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50" {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %} disabled {% endif %} onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
                           <i class="ph ph-x text-lg" title="Reject"></i>
                         </button>
                         <dialog id="modal-reject-admin-{{ item.id }}" class="modal">
@@ -1016,7 +1016,7 @@
                               <button type="submit" class="btn btn-error">ไม่อนุมัติ</button>
                             </div>
                           </form>
-                        </dialog>-->
+                        </dialog>
                         <!-- MAS Selection Modal -->
                         <dialog id="modal-mas-{{ item.id }}" class="modal">
                           {% set total_amount = (item.items | map(attribute='amount') | sum) if item.items else 0 %}
@@ -1314,13 +1314,26 @@
                     {% if item.status == 'pending' %}
                       <span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
                         <i class="ph ph-clock text-yellow-500"></i>
-                        รอดำเนินการ
+                        รอหัวหน้าฝ่ายอนุมัติ
                       </span>
                     {% elif item.status == 'progress' %}
-                      <span class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                        <i class="ph ph-arrow-clockwise text-blue-500"></i>
-                        กำลังดำเนินการ
-                      </span>
+                      {% set head_approved = item.approval_history and item.approval_history |
+                                          selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
+                                        list | length > 0 %}
+                      {% set admin_approved = item.approval_history and item.approval_history |
+                                          selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
+                                        list | length > 0 %}
+                      {% if admin_approved and head_approved %}
+                        <span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                          <i class="ph ph-clock text-yellow-500"></i>
+                          รอผู้บริหารอนุมัติ
+                        </span>
+                      {% else %}
+                        <span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                          <i class="ph ph-clock text-yellow-500"></i>
+                          รอเจ้าหน้าที่พัสดุจัดสรรแหล่งเงิน
+                        </span>
+                      {% endif %}
                     {% elif item.status == 'incomplete' %}
                       <span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
                             onclick="document.getElementById('modal-reject-info-{{ item.id }}').showModal();">
