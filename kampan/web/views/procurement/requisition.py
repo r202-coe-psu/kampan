@@ -657,7 +657,17 @@ def requisition_action(requisition_id):
         requisition_timeline = models.RequisitionTimeline(
             requisition=requisition,
             purchaser=requisition.purchaser,
-            progress=[],
+            progress=[
+                models.Progress(
+                    progress_status="request_created",
+                    created_by=current_user._get_current_object(),
+                    last_ip_address=request.headers.get(
+                        "X-Forwarded-For", request.remote_addr
+                    ),
+                    user_agent=request.headers.get("User-Agent"),
+                    timestamp=datetime.datetime.now(),
+                )
+            ],
             note=None,
             status="active",
             updated_date=datetime.datetime.now(),
