@@ -303,13 +303,6 @@
                   {{ head_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                   head_approval[-1].approver.display_fullname() else head_approval[-1].approver.display_fullname() }}
                 {%- endif -%}</span>
-                <span style="position: absolute; right: 6rem; top: 1.5rem; white-space: nowrap; font-size: 15px">
-                  {%- if head_approval and head_approval[-1].timestamp -%}
-                    {{ head_approval[-1].timestamp.strftime("%d/%m/%Y %H:%M") }}
-                  {%- else -%}
-                    &nbsp;
-                  {%- endif -%}
-                </span>
               </span>
               <span>หัวหน้าฝ่าย</span>
             </div>
@@ -621,7 +614,7 @@
                           {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
                                                     'equalto', 'admin') | list %}
                           {% if admin_approval and admin_approval[-1].timestamp %}
-                            {{ admin_approval[-1].timestamp.strftime("%d/%m/%Y %H:%M") }}
+                            <!-- {{ admin_approval[-1].timestamp.strftime("%d/%m/%Y %H:%M") }} -->
                           {% else %}
                             ........../........./...........
                           {% endif %}
