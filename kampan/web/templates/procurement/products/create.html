@@ -1,5 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% import '/base/components/forms.html' as render_form %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}ระบบขอซื้อขอจ้าง{% endblock %}
 {% block dashboard_title %}ครุภัณฑ์{% endblock %}
@@ -27,54 +27,19 @@
             </h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="product_number">{{
-                        form.product_number.label }}</label>
-                    <div class="relative">
-                        {{ form.product_number(class_="input input-bordered w-full focus:input-primary pl-10") }}
-                        <i class="ph ph-barcode absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    </div>
-                    {% if form.product_number.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.product_number.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.base_render(form.product_number) }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="name">{{ form.name.label }}</label>
-                    {{ form.name(class_="input input-bordered w-full focus:input-primary") }}
-                    {% if form.name.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.name.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.base_render(form.name) }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="category">{{ form.category.label }}</label>
-                    {{ form.category(class_="select select-bordered w-full focus:select-primary") }}
-                    {% if form.category.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.category.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.render_select_field(form.category) }}
                 </div>
                 <div class="lg:col-span-2">
-                    <label class="block text-gray-700 font-medium mb-2" for="asset_code">{{ form.asset_code.label
-                        }}</label>
-                    {{ form.asset_code(class_="input input-bordered w-full focus:input-primary") }}
-                    {% if form.asset_code.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.asset_code.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.base_render(form.asset_code) }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="company">{{ form.company.label }}</label>
-                    {{ form.company(class_="input input-bordered w-full focus:input-primary") }}
-                    {% if form.company.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.company.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.base_render(form.company) }}
                 </div>
             </div>
         </div>
@@ -86,63 +51,16 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="start_date">{{ form.start_date.label
-                        }}</label>
-                    <div class="relative">
-                        {{ form.start_date(class_="input input-bordered w-full", type="date",
-                        id="start_date") }}
-                    </div>
-                    {% if form.start_date.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.start_date.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.date_field(form.start_date) }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="end_date">{{ form.end_date.label }}</label>
-                    <div class="relative">
-                        {{ form.end_date(class_="input input-bordered w-full", type="date",
-                        id="end_date") }}
-                    </div>
-                    {% if form.end_date.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.end_date.errors[0] }}
-                    </p>
-                    {% endif %}
+                    {{ renderer.date_field(form.end_date) }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="amount">{{ form.amount.label }}</label>
-                    <div class="relative">
-                        {{ form.amount(class_="input input-bordered w-full focus:input-primary pl-10", min="0",
-                        id="amount") }}
-                        <i class="ph ph-currency-dollar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    </div>
-                    {% if form.amount.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.amount.errors[0] }}
-                    </p>
-                    {% endif %}
-                    <p id="amount_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
-                        จำนวนเงินต้องมากกว่าหรือเท่ากับ 0
-                    </p>
-                    
+                    {{ renderer.render_number_field(form.amount, min=0, id="amount") }}
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="period">{{ form.period.label }}</label>
-                    <div class="relative">
-                        {{ form.period(class_="input input-bordered w-full focus:input-primary", min="1", id="period")
-                        }}
-                        <span
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">งวด</span>
-                    </div>
-                    {% if form.period.errors %}
-                    <p class="text-red-500 text-xs mt-1 flex items-center">
-                        {{ form.period.errors[0] }}
-                    </p>
-                    {% endif %}
-                    <p id="period_error" class="text-red-500 text-xs mt-1 flex items-center" style="display:none;">
-                        จำนวนงวดต้องมากกว่า 0
-                    </p>
+                    {{ renderer.render_number_field(form.period, min=1, id="period") }}
                 </div>
             </div>
         </div>

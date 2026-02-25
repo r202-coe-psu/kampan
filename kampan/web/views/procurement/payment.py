@@ -3,8 +3,6 @@ from flask import (
     render_template,
     redirect,
     url_for,
-    request,
-    send_file,
     abort,
 )
 from flask_login import login_required, current_user
@@ -12,9 +10,6 @@ from kampan.web import forms, acl
 from kampan import models
 
 import datetime
-import decimal
-from flask import redirect, url_for
-from decimal import Decimal, InvalidOperation
 
 
 module = Blueprint("payment", __name__, url_prefix="/payment")
@@ -28,11 +23,13 @@ def index(procurement_id):
     if not procurement:
         abort(404)
     print(procurement.id)
+    form = forms.procurement.PaymentForm()
     return render_template(
         "procurement/payment/index.html",
         item=procurement,
         organization=organization,
         today=today,
+        form=form,
         is_last_period=procurement.is_last_period(),
         remaining_amount=(
             procurement.get_remaining_amount() if procurement.is_last_period() else None
@@ -48,40 +45,61 @@ def set_paid(procurement_id):
     if not procurement:
         abort(404)
 
-    errors, form_data = {}, {}
+    form = forms.procurement.PaymentForm()
 
-    # --- รับค่า input ---
-    new_product_number = request.form.get("product_number")
-    amount_input = request.form.get("amount")
-    form_data["product_number"] = new_product_number
-    form_data["amount"] = amount_input
-
-    # --- ตรวจสอบจำนวนเงิน ---
-    try:
-        amount = Decimal(amount_input or "0")
-        if amount <= 0:
-            errors["amount"] = "จำนวนเงินต้องมากกว่า 0"
-        elif procurement.amount is not None and amount > procurement.amount:
-            errors["amount"] = "จำนวนเงินไม่สามารถเกินยอดรวมของโครงการ"
-    except (InvalidOperation, ValueError):
-        errors["amount"] = "จำนวนเงินไม่ถูกต้อง"
-
-    # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ (กันชนกับตัวเอง) ---
-    existing = models.Procurement.objects(
-        product_number=new_product_number, id__ne=procurement.id
-    ).first()
-    if existing:
-        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว"
-
-    # --- ถ้ามี error แสดงผลกลับ ---
-    if errors:
+    if not form.validate_on_submit():
         return render_template(
             "procurement/payment/index.html",
             item=procurement,
             organization=organization,
-            errors=errors,
-            form_data=form_data,
+            form=form,
             today=datetime.date.today(),
+            is_last_period=procurement.is_last_period(),
+            remaining_amount=(
+                procurement.get_remaining_amount()
+                if procurement.is_last_period()
+                else None
+            ),
+        )
+
+    amount = form.amount.data
+    new_product_number = form.product_number.data
+
+    # --- ตรวจสอบจำนวนเงิน ---
+    if procurement.amount is not None and amount > procurement.amount:
+        form.amount.errors.append("จำนวนเงินไม่สามารถเกินยอดรวมของโครงการ")
+        return render_template(
+            "procurement/payment/index.html",
+            item=procurement,
+            organization=organization,
+            form=form,
+            today=datetime.date.today(),
+            is_last_period=procurement.is_last_period(),
+            remaining_amount=(
+                procurement.get_remaining_amount()
+                if procurement.is_last_period()
+                else None
+            ),
+        )
+
+    # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ ---
+    existing = models.Procurement.objects(
+        product_number=new_product_number, id__ne=procurement.id
+    ).first()
+    if existing:
+        form.product_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
+        return render_template(
+            "procurement/payment/index.html",
+            item=procurement,
+            organization=organization,
+            form=form,
+            today=datetime.date.today(),
+            is_last_period=procurement.is_last_period(),
+            remaining_amount=(
+                procurement.get_remaining_amount()
+                if procurement.is_last_period()
+                else None
+            ),
         )
 
     # --- บันทึกข้อมูลการจ่าย ---
@@ -99,7 +117,6 @@ def set_paid(procurement_id):
         product_number=procurement.product_number,
     )
 
-    # --- อัปเดตยอดและสถานะ ---
     procurement.paid_period_index = next_period_index
     procurement.payment_status = procurement.get_current_payment_status(
         datetime.date.today()
@@ -111,15 +128,20 @@ def set_paid(procurement_id):
 
     try:
         procurement.save()
-    except:
-        errors["product_number"] = "เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว"
+    except Exception:
+        form.product_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
         return render_template(
             "procurement/payment/index.html",
             item=procurement,
             organization=organization,
-            errors=errors,
-            form_data=form_data,
+            form=form,
             today=datetime.date.today(),
+            is_last_period=procurement.is_last_period(),
+            remaining_amount=(
+                procurement.get_remaining_amount()
+                if procurement.is_last_period()
+                else None
+            ),
         )
 
     return redirect(url_for("procurement.products.index", organization=organization))

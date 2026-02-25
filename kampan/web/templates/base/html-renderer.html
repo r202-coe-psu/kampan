@@ -133,10 +133,10 @@ max=None
     {{ field(
     placeholder=placeholder,
     readonly=readonly,
-    type="number" if (field.type == "FloatField" or field.type == "IntergerField") else None,
-    step="any" if (field.type == "FloatField" or field.type == "IntergerField") else None,
-    min=min if (field.type == "FloatField" or field.type == "IntergerField") and min is not none else None,
-    max=max if (field.type == "FloatField" or field.type == "IntergerField") and max is not none else None,
+    type="number",
+    step="any",
+    min=min if min is not none else None,
+    max=max if max is not none else None,
     **kwargs
     ) }}
     {% if suffix %}

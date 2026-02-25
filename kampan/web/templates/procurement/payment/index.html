@@ -1,5 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% import '/base/components/forms.html' as render_form %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}รายละเอียดการจ่ายเงิน{% endblock %}
 {% block dashboard_title %}รายละเอียดการจ่ายเงินโครงการ{% endblock %}
@@ -169,62 +169,19 @@
                         <i class="ph ph-currency-circle-dollar text-lg md:text-xl"></i>
                         <span>เพิ่มข้อมูลการจ่าย</span>
                     </h4>
-                    <form method="post" action="{{ url_for('procurement.payment.set_paid', procurement_id=item.id) }}">
-                        <div class="form-control mb-3">
-                            <label class="label p-1 md:p-2" for="amount">
-                                <span class="label-text text-xs md:text-sm">จำนวนเงินที่จ่าย</span>
-                            </label>
-                            {% if is_last_period %}
-                            <div class="relative">
-                                <input type="text" name="amount" value="{{ '{:,.2f}'.format(remaining_amount) }}"
-                                    class="input input-bordered input-sm md:input-md w-full" readonly id="amount"
-                                    title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด" inputmode="decimal" pattern="[0-9,\.]*">
-                            </div>
-                            {% else %}
-                            <div class="relative">
-                                <input type="text" name="amount"
-                                    class="input input-bordered input-sm md:input-md w-full" required id="amount"
-                                    inputmode="decimal" pattern="[0-9,\.]*">
-                            </div>
-                            {% endif %}
-                        </div>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function () {
-                                var amountInput = document.getElementById('amount');
-                                var form = amountInput ? amountInput.form : null;
-                                if (amountInput && !amountInput.readOnly) {
-                                    amountInput.addEventListener('input', function (e) {
-                                        let value = amountInput.value.replace(/,/g, '');
-                                        if (!isNaN(value) && value !== '') {
-                                            let parts = value.split('.');
-                                            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                            amountInput.value = parts.join('.');
-                                        } else if (value === '') {
-                                            amountInput.value = '';
-                                        }
-                                    });
-                                }
-                                if (form) {
-                                    form.addEventListener('submit', function (e) {
-                                        if (amountInput) {
-                                            amountInput.value = amountInput.value.replace(/,/g, '');
-                                        }
-                                    });
-                                }
-                            });
-                        </script>
-                        <div class="form-control mb-3">
-                            <label class="label p-1 md:p-2" for="product_number">
-                                <span class="label-text text-xs md:text-sm">เลขที่ใบจ่ายเงิน</span>
-                            </label>
-                            <input type="text" name="product_number" id="product_number"
-                                class="input input-bordered input-sm md:input-md w-full" required
-                                value="{{ form_data.product_number if form_data is defined else '' }}">
-                            {% if errors is defined and errors.product_number %}
-                            <p class="text-xs text-error mt-1">{{ errors.product_number }}</p>
-                            {% endif %}
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm md:btn-md w-full">บันทึกการจ่าย</button>
+                    <form method="post" action="{{ url_for('procurement.payment.set_paid', procurement_id=item.id) }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        {% if is_last_period %}
+                        <fieldset class="w-full fieldset mb-3">
+                            <legend class="fieldset-legend">จำนวนเงินที่จ่าย</legend>
+                            <input type="number" name="amount" value="{{ remaining_amount }}" class="input w-full" readonly step="any" min="0" title="งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด">
+                            <span class="fieldset-label text-xs">งวดสุดท้าย - จ่ายยอดที่เหลือทั้งหมด</span>
+                        </fieldset>
+                        {% else %}
+                        {{ renderer.render_number_field(form.amount, min=0) }}
+                        {% endif %}
+                        {{ renderer.base_render(form.product_number) }}
+                        <button type="submit" class="btn btn-primary w-full mt-2">บันทึกการจ่าย</button>
                     </form>
             </div>
             {% endif %}
