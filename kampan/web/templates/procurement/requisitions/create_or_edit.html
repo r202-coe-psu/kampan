@@ -3,457 +3,612 @@
 {% block title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block dashboard_title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block content %}
-    <div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
-        <div class="flex items-center mb-6">
-            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     class="h-6 w-6 text-primary"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800">
-                    {{ 'แก้ไข' if form._obj else 'สร้าง'
-                    }}รายการขอจัดซื้อ
-                </h1>
-                <p class="text-gray-500 text-sm">กรอกข้อมูลสำหรับการขอจัดซื้อของคุณ</p>
-            </div>
-        </div>
-        <form method="POST" enctype="multipart/form-data" class="space-y-6">
-            {{ form.hidden_tag() }}
-            <!-- Basic Information -->
-            <div class="bg-gray-50 rounded-lg p-6">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">ข้อมูลพื้นฐาน</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text font-medium">{{ form.purchaser.label.text }}</span>
-                        </label>
-                        {{ form.purchaser(class="select select-bordered w-full") }}
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text font-medium">{{ form.phone.label.text }}</span>
-                        </label>
-                        {{ form.phone(class="input input-bordered w-full", placeholder="เบอร์โทรศัพท์") }}
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text font-medium">{{ form.start_date.label.text }} <span class="text-red-500">*</span></span>
-                        </label>
-                        {{ form.start_date(class="input input-bordered w-full", type="date") }}
-                    </div>
-                </div>
-                <div class="form-control mt-4">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.reason.label.text }}</span>
-                    </label>
-                    {{ form.reason(class="textarea textarea-bordered w-full", placeholder="ระบุเหตุผลในการขอจัดซื้อ") }}
-                </div>
-                <div class="form-control mt-4">
-                    <label class="label flex justify-between items-center">
-                        <span class="label-text font-medium">{{ form.tor_document.label.text }}</span>
-                        <a href="{{ url_for('static', filename='data/แบบฟอร์ม TOR ขอซื้อขอจ้าง.docx') }}"
-                           target="_blank"
-                           class="link link-primary text-xs ml-2">ดาวน์โหลดตัวอย่างแบบฟอร์ม</a>
-                    </label>
-                    {{ form.tor_document(class="file-input file-input-bordered w-full") }}
-                </div>
-                <div class="form-control mt-4">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.qt_document.label.text }}</span>
-                    </label>
-                    {{ form.qt_document(class="file-input file-input-bordered w-full") }}
-                </div>
-            </div>
-            <!-- Items Section -->
-            <div class="bg-gray-50 rounded-lg p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold text-gray-800">รายการขอซื้อ</h2>
-                    <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
-                        <i class="ph ph-plus"></i>
-                        เพิ่มรายการ
-                    </button>
-                </div>
-                <div id="items-container" class="space-y-4">
-                    {% for item_form in form.items.entries %}
-                        <div class="bg-white p-4 rounded-lg border item-row">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
-                                {% if loop.index > 1 %}<button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>{% endif %}
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ item_form.product_name.label.text }} <span class="text-red-500">*</span></span>
-                                    </label>
-                                    {{ item_form.product_name(class="input input-bordered input-sm w-full") }}
-                                </div>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ item_form.category.label.text }} <span class="text-red-500">*</span></span>
-                                    </label>
-                                    {{ item_form.category(class="select select-bordered select-sm w-full") }}
-                                </div>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ item_form.quantity.label.text }} <span class="text-red-500">*</span></span>
-                                    </label>
-                                    {{ item_form.quantity(class="input input-bordered input-sm w-full", type="number", min="1") 
-                                    }}
-                                </div>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ item_form.currency.label.text }} <span class="text-red-500">*</span></span>
-                                    </label>
-                                    {{ item_form.currency(class="input input-bordered input-sm w-full") }}
-                                </div>
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text text-xs">{{ item_form.amount.label.text }} <span class="text-red-500">*</span></span>
-                                    </label>
-                                    {{ item_form.amount(class="input input-bordered input-sm w-full") }}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <!-- Committee Section -->
-            <div class="bg-gray-50 rounded-lg p-6">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                    คณะกรรมการ<span class="text-red-500">*</span>
-                </h2>
-                <div class="mb-6">
-                    <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 text-sm text-gray-700">
-                        <strong class="block mb-2 text-yellow-800">หมายเหตุในการเลือกกรรมการ</strong>
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li>
-                                <span class="font-semibold">กรณีที่ 1</span> <span class="text-gray-800">ยอดเงินไม่เกิน
-                                100,000 บาท</span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">1 คน
-                                (ประธาน)</span></span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">1 คน (ประธาน)</span></span>
-                            </li>
-                            <li>
-                                <span class="font-semibold">กรณีที่ 2</span> <span class="text-gray-800">ยอดเงิน 100,001 -
-                                500,000 บาท</span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                กรรมการ 2 คน)</span></span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
-                                คน)</span></span>
-                            </li>
-                            <li>
-                                <span class="font-semibold">กรณีที่ 3</span> <span class="text-gray-800">ยอดเงินเกิน 500,000
-                                บาท</span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                กรรมการ 2 คน)</span></span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการจัดซื้อ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2
-                                คน)</span></span>
-                                <br>
-                                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน,
-                                กรรมการ 2 คน)</span></span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {% set committee_types = [('specification', 'คณะกรรมการกำหนดคุณสมบัติ'), ('procurement', 'คณะกรรมการจัดซื้อ'), ('inspection', 'คณะกรรมการตรวจรับ')] %}
-                    {% for type_value, type_label in committee_types %}
-                        <div class="bg-white rounded-lg border p-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-base font-semibold text-gray-700">{{ type_label }}</span>
-                                <button type="button"
-                                        class="btn btn-primary btn-sm gap-2 add-committee-btn"
-                                        data-committee-type="{{ type_value }}">
-                                    <i class="ph ph-plus"></i>
-                                    เพิ่มกรรมการ
-                                </button>
-                            </div>
-                            <div class="space-y-4 committees-container"
-                                 id="committees-{{ type_value }}">
-                                {% for committee_form in form.committees.entries if committee_form.committee_type.data ==
-                                    type_value %}
-                                    <div class="bg-gray-50 p-4 rounded-lg border committee-row">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
-                                            <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
-                                        </div>
-                                        <div class="grid grid-cols-1 gap-4">
-                                            <div class="form-control">
-                                                <label class="label">
-                                                    <span class="label-text text-xs">{{ committee_form.member.label.text }}</span>
-                                                </label>
-                                                {{ committee_form.member(class="select select-bordered select-sm w-full") }}
-                                            </div>
-                                            <div class="form-control">
-                                                <label class="label">
-                                                    <span class="label-text text-xs">{{ committee_form.committee_position.label.text
-                                                    }}</span>
-                                                </label>
-                                                {{ committee_form.committee_position(class="select select-bordered select-sm
-                                                                                                w-full") }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <!-- Submit Button -->
-            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <a href="{{ url_for("procurement.requisitions.renewal_requested") }}"
-                   class="btn btn-ghost">ยกเลิก</a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="ph ph-check"></i>
-                    {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
-                </button>
-            </div>
-        </form>
+  <div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
+    <div class="flex items-center mb-6">
+      <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-6 w-6 text-primary"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-800">
+          {{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ
+        </h1>
+        <p class="text-gray-500 text-sm">กรอกข้อมูลสำหรับการขอจัดซื้อของคุณ</p>
+      </div>
     </div>
-{% endblock %}
-{% block additional_js %}
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-        if ("{{ form.type.data }}" === "MA") {
-            document.getElementById('add-item-btn').style.display = 'none';
-        }
-        let itemIndex = {{ form.items.entries| length |default (1)
-    }};
-    let committeeIndex = {{ form.committees.entries| length |default (1) }};
+    <form method="POST" enctype="multipart/form-data" class="space-y-6" novalidate>
+      {{ form.hidden_tag() }}
 
-    // Category choices for new items
-    const categoryChoices = [
-        ['', 'เลือกหมวดหมู่'],
-        {% if form.items and form.items[0] and form.items[0].category.choices %}
-    {% for value, label in form.items[0].category.choices %}
-    ['{{ value }}', '{{ label }}'],
-        {% endfor %}
-    {% endif %}
-        ];
+      {% set has_errors = form.errors|length > 0 %}
+      {% if has_errors %}
+        <div id="form-error-banner" class="alert alert-error shadow-lg">
+          <div class="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-6 w-6 shrink-0 stroke-current"
+                 fill="none"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 class="font-bold">กรุณาตรวจสอบข้อมูลอีกครั้ง</h3>
+              <p class="text-sm">พบข้อผิดพลาดในแบบฟอร์ม กรุณาแก้ไขข้อมูลที่ไม่ถูกต้อง</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
 
-    // Committee type choices for new committees
-    const committeeTypeChoices = [
-        ['', 'เลือกประเภท'],
-        {% if form.committees and form.committees[0] and form.committees[0].committee_type.choices %}
-    {% for value, label in form.committees[0].committee_type.choices %}
-    ['{{ value }}', '{{ label }}'],
-        {% endfor %}
-    {% endif %}
-        ];
+      {% set basic_has_errors = form.purchaser.errors or form.phone.errors or form.start_date.errors or form.reason.errors or form.tor_document.errors or form.qt_document.errors %}
+      <div class="bg-gray-50 rounded-lg p-6 {{ 'ring-2 ring-error/50' if basic_has_errors }}">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          ข้อมูลพื้นฐาน
+          {% if basic_has_errors %}
+            <span class="badge badge-error badge-sm ml-2">มีข้อผิดพลาด</span>
+          {% endif %}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {{ renderer.render_search_select_field(form.purchaser) }}
+          {{ renderer.render_field(form.phone, placeholder="เบอร์โทรศัพท์") }}
+          {{ renderer.date_field(form.start_date) }}
+        </div>
+        <div class="mt-4">{{ renderer.render_text_area_field(form.reason) }}</div>
+        <div class="mt-4">
+          <div class="flex justify-between items-center mb-1">
+            <span></span>
+            <a href="{{ url_for('static', filename='data/แบบฟอร์ม TOR ขอซื้อขอจ้าง.docx') }}"
+               target="_blank"
+               class="link link-primary text-xs">ดาวน์โหลดตัวอย่างแบบฟอร์ม</a>
+          </div>
+          {{ renderer.file_input(form.tor_document) }}
+        </div>
+        <div class="mt-4">{{ renderer.file_input(form.qt_document) }}</div>
+      </div>
 
-    // Committee position choices for new committees
-    const committeePositionChoices = [
-        ['', 'เลือกตำแหน่ง'],
-        {% if form.committees and form.committees[0] and form.committees[0].committee_position.choices %}
-    {% for value, label in form.committees[0].committee_position.choices %}
-    ['{{ value }}', '{{ label }}'],
-        {% endfor %}
-    {% endif %}
-        ];
+      {% set items_has_errors = form.items.errors|length > 0 %}
+      <div class="bg-gray-50 rounded-lg p-6 {{ 'ring-2 ring-error/50' if items_has_errors }}">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-gray-800">
+            รายการขอซื้อ
+            {% if items_has_errors %}
+              <span class="badge badge-error badge-sm ml-2">มีข้อผิดพลาด</span>
+            {% endif %}
+          </h2>
+          <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
+            <i class="ph ph-plus"></i>
+            เพิ่มรายการ
+          </button>
+        </div>
+        <div id="items-container" class="space-y-4">
+          <div id="item-template" class="hidden">
+            {% set template_item = form.items.entries[0] %}
+            <div class="bg-white p-4 rounded-lg border item-row">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-medium text-gray-700">รายการที่ X</span>
+                <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>{{ renderer.render_field(template_item.product_name, disabled=True) }}</div>
+                <div>{{ renderer.render_select_field(template_item.category, disabled=True) }}</div>
+                <div>{{ renderer.render_number_field(template_item.quantity, min=1, disabled=True) }}</div>
+                <div>{{ renderer.render_field(template_item.currency, disabled=True) }}</div>
+                <div>{{ renderer.render_number_field(template_item.amount, disabled=True) }}</div>
+              </div>
+            </div>
+          </div>
 
-    // Member choices for new committees
-    const memberChoices = [
-        ['-', 'เลือกกรรมการ'],
-        {% if form.committees and form.committees[0] and form.committees[0].member.choices %}
-    {% for value, label in form.committees[0].member.choices %}
-    ['{{ value }}', '{{ label }}'],
-        {% endfor %}
-    {% endif %}
-        ];
+          {% for item_form in form.items.entries %}
+            <div class="bg-white p-4 rounded-lg border item-row">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
+                {% if loop.index > 1 %}
+                  <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+                {% endif %}
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>{{ renderer.render_field(item_form.product_name) }}</div>
+                <div>{{ renderer.render_select_field(item_form.category) }}</div>
+                <div>{{ renderer.render_number_field(item_form.quantity, min=1) }}</div>
+                <div>{{ renderer.render_field(item_form.currency) }}</div>
+                <div>{{ renderer.render_number_field(item_form.amount) }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        {% if form.items.errors %}
+          {% for item_errors in form.items.errors %}
+            {% if item_errors %}
+              {% for field_name, field_errors in item_errors.items() %}
+                {% for error in field_errors %}
+                  <p class="text-error text-sm mt-1">
+                    <i class="ph ph-warning-circle"></i>
+                    รายการที่ {{ loop.index }}: {{ error }}
+                  </p>
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </div>
 
-    // Add new item function
-    function addNewItem() {
-        if (itemIndex >= 4) {
-            alert('สามารถเพิ่มสินค้าได้สูงสุด 4 รายการ');
-            return;
-        }
-
-        const itemsContainer = document.getElementById('items-container');
-        const newItemDiv = document.createElement('div');
-        newItemDiv.className = 'bg-white p-4 rounded-lg border item-row';
-
-        let categoryOptionsHtml = '';
-        categoryChoices.forEach(choice => {
-            categoryOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
-        });
-
-        newItemDiv.innerHTML = `
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-sm font-medium text-gray-700">รายการที่ ${itemIndex + 1}</span>
-                    <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">ชื่อรายการ <span class="text-red-500">*</span></span>
-                        </label>
-                        <input type="text" name="items-${itemIndex}-product_name" class="input input-bordered input-sm w-full" required>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">หมวดหมู่ <span class="text-red-500">*</span></span>
-                        </label>
-                        <select name="items-${itemIndex}-category" class="select select-bordered select-sm w-full" required>
-                            ${categoryOptionsHtml}
-                        </select>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">จำนวน <span class="text-red-500">*</span></span>
-                        </label>
-                        <input type="number" name="items-${itemIndex}-quantity" class="input input-bordered input-sm w-full" min="1" required>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">หน่วยนับ <span class="text-red-500">*</span></span>
-                        </label>
-                        <input type="text" name="items-${itemIndex}-currency" class="input input-bordered input-sm w-full" required>
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text text-xs">จำนวนเงิน (บาท) <span class="text-red-500">*</span></span>
-                        </label>
-                        <input type="number" name="items-${itemIndex}-amount" class="input input-bordered input-sm w-full" step="0.01" required>
-                    </div>
-                </div>
-            `;
-
-        itemsContainer.appendChild(newItemDiv);
-        itemIndex++;
-        updateAddItemButton();
-    }
-
-    // กรรมการสามารถเลือกซ้ำกันได้ ไม่ต้อง disable option
-
-    // Add new committee function by type
-    function addNewCommittee(typeValue) {
-        const committeesContainer = document.getElementById('committees-' + typeValue);
-        const newCommitteeDiv = document.createElement('div');
-        newCommitteeDiv.className = 'bg-gray-50 p-4 rounded-lg border committee-row';
-
-        let memberOptionsHtml = '';
-        memberChoices.forEach(choice => {
-            memberOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
-        });
-
-        let committeePositionOptionsHtml = '';
-        committeePositionChoices.forEach(choice => {
-            committeePositionOptionsHtml += `<option value="${choice[0]}">${choice[1]}</option>`;
-        });
-
-        newCommitteeDiv.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-sm font-medium text-gray-700">กรรมการที่ ${committeesContainer.children.length + 1}</span>
+      {% set committees_has_errors = form.committees.errors|length > 0 %}
+      <div class="bg-gray-50 rounded-lg p-6 {{ 'ring-2 ring-error/50' if committees_has_errors }}">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          คณะกรรมการ<span class="text-red-500">*</span>
+          {% if committees_has_errors %}
+            <span class="badge badge-error badge-sm ml-2">มีข้อผิดพลาด</span>
+          {% endif %}
+        </h2>
+        <div class="mb-6">
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 text-sm text-gray-700">
+            <strong class="block mb-2 text-yellow-800">หมายเหตุในการเลือกกรรมการ</strong>
+            <ul class="list-disc pl-5 space-y-2">
+              <li>
+                <span class="font-semibold">กรณีที่ 1</span> <span class="text-gray-800">ยอดเงินไม่เกิน 100,000 บาท</span>
+                <br />
+                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">1 คน (ประธาน)</span></span>
+                <br />
+                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">1 คน (ประธาน)</span></span>
+              </li>
+              <li>
+                <span class="font-semibold">กรณีที่ 2</span> <span class="text-gray-800">ยอดเงิน 100,001 - 500,000 บาท</span>
+                <br />
+                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2 คน)</span></span>
+                <br />
+                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2 คน)</span></span>
+              </li>
+              <li>
+                <span class="font-semibold">กรณีที่ 3</span> <span class="text-gray-800">ยอดเงินเกิน 500,000 บาท</span>
+                <br />
+                <span class="ml-2">คณะกรรมการกำหนดคุณสมบัติฯ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2 คน)</span></span>
+                <br />
+                <span class="ml-2">คณะกรรมการจัดซื้อ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2 คน)</span></span>
+                <br />
+                <span class="ml-2">คณะกรรมการตรวจรับ <span class="font-bold">3 คน (ประธาน 1 คน, กรรมการ 2 คน)</span></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div id="committee-template" class="hidden">
+            {% set template_form = form.committees.entries[0] %}
+            <div class="bg-gray-50 p-4 rounded-lg border committee-row">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-medium text-gray-700">กรรมการที่ X</span>
                 <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+              </div>
+              <div class="grid grid-cols-1 gap-4">
+                <div class="hidden">{{ template_form.committee_type(class="hidden", disabled=True) }}</div>
+                <div>{{ renderer.render_select_field(template_form.member, disabled=True) }}</div>
+                <div>{{ renderer.render_select_field(template_form.committee_position, disabled=True) }}</div>
+              </div>
             </div>
-            <div class="grid grid-cols-1 gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text text-xs">กรรมการ</span>
-                    </label>
-                    <select name="committees-${committeeIndex}-member" class="select select-bordered select-sm w-full committee-member-select">
-                        ${memberOptionsHtml}
-                    </select>
-                </div>
-                <input type="hidden" name="committees-${committeeIndex}-committee_type" value="${typeValue}">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text text-xs">ตำแหน่งกรรมการ</span>
-                    </label>
-                    <select name="committees-${committeeIndex}-committee_position" class="select select-bordered select-sm w-full">
-                        ${committeePositionOptionsHtml}
-                    </select>
-                </div>
+          </div>
+
+          {% set committee_types = [('specification', 'คณะกรรมการกำหนดคุณสมบัติ'), ('procurement', 'คณะกรรมการจัดซื้อ'), ('inspection', 'คณะกรรมการตรวจรับ')] %}
+          {% for type_value, type_label in committee_types %}
+            <div class="bg-white rounded-lg border p-4">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-base font-semibold text-gray-700">{{ type_label }}</span>
+                <button type="button"
+                        class="btn btn-primary btn-sm gap-2 add-committee-btn"
+                        data-committee-type="{{ type_value }}">
+                  <i class="ph ph-plus"></i>
+                  เพิ่มกรรมการ
+                </button>
+              </div>
+              <div class="space-y-4 committees-container" id="committees-{{ type_value }}">
+                {% for committee_form in form.committees.entries if committee_form.committee_type.data == type_value %}
+                  <div class="bg-gray-50 p-4 rounded-lg border committee-row">
+                    <div class="flex justify-between items-center mb-3">
+                      <span class="text-sm font-medium text-gray-700">กรรมการที่ {{ loop.index }}</span>
+                      <button type="button" class="btn btn-error btn-xs remove-committee-btn">ลบ</button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4">
+                      <div class="hidden">{{ committee_form.committee_type(class="hidden") }}</div>
+                      <div>{{ renderer.render_select_field(committee_form.member) }}</div>
+                      <div>{{ renderer.render_select_field(committee_form.committee_position) }}</div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
             </div>
-        `;
+          {% endfor %}
+        </div>
 
-        committeesContainer.appendChild(newCommitteeDiv);
-        committeeIndex++;
+        {% if form.committees.errors %}
+          {% for committee_errors in form.committees.errors %}
+            {% if committee_errors %}
+              {% for field_name, field_errors in committee_errors.items() %}
+                {% for error in field_errors %}
+                  <p class="text-error text-sm mt-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {% if field_name == 'member' %}
+                      ชื่อกรรมการ:
+                    {% elif field_name == 'committee_position' %}
+                      ตำแหน่ง:
+                    {% else %}
+                      กรรมการ:
+                    {% endif %}
 
-        // Add event listener to the new select
-        const newSelect = newCommitteeDiv.querySelector('.committee-member-select');
-        newSelect.addEventListener('change', updateCommitteeMemberSelections);
+                    {% if 'Not a valid choice' in error or 'not a valid choice' in error.lower() %}
+                      กรุณาเลือกข้อมูลจากรายการที่กำหนด
+                    {% elif 'This field is required' in error or 'this field is required' in error.lower() %}
+                      กรุณาระบุข้อมูลในช่องนี้
+                    {% else %}
+                      {{ error }}
+                    {% endif %}
+                  </p>
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </div>
 
-        // Update all selections
-        updateCommitteeMemberSelections();
-    }
+      <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+        <a href="{{ url_for("procurement.requisitions.renewal_requested") }}" class="btn btn-ghost">ยกเลิก</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="ph ph-check"></i>
+          {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
 
-    // Update add item button state
-    function updateAddItemButton() {
-        const addItemBtn = document.getElementById('add-item-btn');
-        if (itemIndex >= 4) {
-            addItemBtn.disabled = true;
-            addItemBtn.classList.add('btn-disabled');
-        } else {
-            addItemBtn.disabled = false;
-            addItemBtn.classList.remove('btn-disabled');
-        }
-    }
+{% block additional_js %}
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const hiddenTemplates = document.querySelectorAll('#item-template, #committee-template');
+          hiddenTemplates.forEach(template => {
+              const inputs = template.querySelectorAll('input, select, textarea');
+              inputs.forEach(input => {
+                  input.removeAttribute('required');
+                  input.disabled = true; // บังคับ disable เพื่อไม่ให้ถูกส่งไปกับฟอร์ม
+              });
+          });
+          // Add Item
+          const addItemBtn = document.getElementById('add-item-btn');
+          const itemsContainer = document.getElementById('items-container');
 
-    // Update item numbers
-    function updateItemNumbers() {
-        const itemRows = document.querySelectorAll('.item-row');
-        itemRows.forEach((row, index) => {
-            const title = row.querySelector('span');
-            if (title) title.textContent = `รายการที่ ${index + 1}`;
-        });
-    }
+          if (addItemBtn) {
+              addItemBtn.addEventListener('click', function() {
+                  const itemRows = itemsContainer.querySelectorAll('.item-row:not(#item-template .item-row)');
+                  const newIndex = itemRows.length;
+                  if (newIndex >= 4) {
+                      alert('สามารถเพิ่มรายการได้สูงสุด 4 รายการ');
+                      return;
+                  }
 
-    // Update committee numbers
-    function updateCommitteeNumbers() {
-        const committeeRows = document.querySelectorAll('.committee-row');
-        committeeRows.forEach((row, index) => {
-            const title = row.querySelector('span');
-            if (title) title.textContent = `กรรมการที่ ${index + 1}`;
-        });
-    }
+                  const templateRow = document.querySelector('#item-template .item-row');
+                  const newRow = templateRow.cloneNode(true);
 
-    // Event listeners
-    document.getElementById('add-item-btn').addEventListener('click', addNewItem);
-    document.querySelectorAll('.add-committee-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            const typeValue = btn.getAttribute('data-committee-type');
-            addNewCommittee(typeValue);
-        });
-    });
+                  newRow.innerHTML = newRow.innerHTML.replace(/items-0-/g, `items-${newIndex}-`);
+                  newRow.innerHTML = newRow.innerHTML.replace(/items-0/g, `items-${newIndex}`);
 
-    // Remove item event delegation
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.remove-item-btn')) {
-            e.preventDefault();
-            const itemRow = e.target.closest('.item-row');
-            itemRow.remove();
-            itemIndex--;
-            updateItemNumbers();
-            updateAddItemButton();
-        }
-    });
+                  // Fix the onclick attribute for the legend element
+                  const legends = newRow.querySelectorAll('legend');
+                  legends.forEach(legend => {
+                      if (legend.hasAttribute('onclick')) {
+                          const onclickAttr = legend.getAttribute('onclick');
+                          legend.setAttribute('onclick', onclickAttr.replace(/items-0/g, `items-${newIndex}`));
+                      }
+                  });
 
-    // Remove committee event delegation
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.remove-committee-btn')) {
-            e.preventDefault();
-            const committeeRow = e.target.closest('.committee-row');
-            committeeRow.remove();
-            committeeIndex--;
-            updateCommitteeNumbers();
-        }
-    });
+                  const inputs = newRow.querySelectorAll('input, select');
+                  inputs.forEach(input => {
+                      input.disabled = false;
+                      if (input.type !== 'hidden') {
+                          input.value = '';
+                      }
+                  });
 
-    // Initial setup
-    updateAddItemButton();
-    });
-    </script>
+                  const uls = newRow.querySelectorAll('ul');
+                  uls.forEach(ul => {
+                      ul.removeAttribute('hidden');
+                  });
+
+                  const label = newRow.querySelector('.text-sm.font-medium');
+                  if (label) {
+                      label.textContent = `รายการที่ ${newIndex + 1}`;
+                  }
+
+                  let removeBtn = newRow.querySelector('.remove-item-btn');
+                  if (!removeBtn) {
+                      const headerDiv = newRow.querySelector('.flex.justify-between');
+                      removeBtn = document.createElement('button');
+                      removeBtn.type = 'button';
+                      removeBtn.className = 'btn btn-error btn-xs remove-item-btn';
+                      removeBtn.textContent = 'ลบ';
+                      headerDiv.appendChild(removeBtn);
+                  }
+
+                  itemsContainer.appendChild(newRow);
+                  attachRemoveItemEvents();
+                  attachAmountChangeEvents();
+              });
+          }
+
+          function attachRemoveItemEvents() {
+              const removeBtns = document.querySelectorAll('.remove-item-btn');
+              removeBtns.forEach(btn => {
+                  btn.onclick = function() {
+                      const row = this.closest('.item-row');
+                      row.remove();
+                      updateItemIndices();
+                      calculateTotalAmount();
+                  };
+              });
+          }
+
+          function updateItemIndices() {
+              const itemRows = itemsContainer.querySelectorAll('.item-row:not(#item-template .item-row)');
+              itemRows.forEach((row, index) => {
+                  const label = row.querySelector('.text-sm.font-medium');
+                  if (label) {
+                      label.textContent = `รายการที่ ${index + 1}`;
+                  }
+
+                  // Update all attributes that might contain the index
+                  const elements = row.querySelectorAll('*');
+                  elements.forEach(el => {
+                      Array.from(el.attributes).forEach(attr => {
+                          if (attr.value.match(/items-\d+/)) {
+                              attr.value = attr.value.replace(/items-\d+/g, `items-${index}`);
+                          }
+                      });
+                  });
+
+                  // Fix the onclick attribute for the legend element
+                  const legends = row.querySelectorAll('legend');
+                  legends.forEach(legend => {
+                      if (legend.hasAttribute('onclick')) {
+                          const onclickAttr = legend.getAttribute('onclick');
+                          legend.setAttribute('onclick', onclickAttr.replace(/items-\d+/g, `items-${index}`));
+                      }
+                  });
+              });
+          }
+
+          // Add Committee
+          const addCommitteeBtns = document.querySelectorAll('.add-committee-btn');
+          addCommitteeBtns.forEach(btn => {
+              btn.addEventListener('click', function() {
+                  const type = this.getAttribute('data-committee-type');
+                  const container = document.getElementById(`committees-${type}`);
+                  const rows = container.querySelectorAll('.committee-row');
+
+                  const allRows = document.querySelectorAll('.committee-row:not(#committee-template .committee-row)');
+                  const newIndex = allRows.length;
+
+                  const templateRow = document.querySelector('#committee-template .committee-row');
+                  if (!templateRow) {
+                      alert('ไม่สามารถเพิ่มกรรมการได้ (ไม่พบแม่แบบ)');
+                      return;
+                  }
+
+                  const newRow = templateRow.cloneNode(true);
+
+                  const regex = new RegExp(`committees-0`, 'g');
+                  newRow.innerHTML = newRow.innerHTML.replace(regex, `committees-${newIndex}`);
+
+                  // Fix the onclick attribute for the legend element
+                  const legends = newRow.querySelectorAll('legend');
+                  legends.forEach(legend => {
+                      if (legend.hasAttribute('onclick')) {
+                          const onclickAttr = legend.getAttribute('onclick');
+                          legend.setAttribute('onclick', onclickAttr.replace(/committees-0/g, `committees-${newIndex}`));
+                      }
+                  });
+
+                  const inputs = newRow.querySelectorAll('input, select');
+                  inputs.forEach(input => {
+                      input.disabled = false;
+                      if (input.name && input.name.includes('committee_type')) {
+                          input.value = type;
+                      } else if (input.type !== 'hidden' || (input.name && input.name.includes('csrf_token'))) {
+                          // Keep CSRF token if any, otherwise clear
+                          if (!input.name || !input.name.includes('csrf_token')) {
+                              input.value = '';
+                          }
+                      }
+                  });
+
+                  // ลบการจัดการ Search Select events ออก เพราะเปลี่ยนเป็น Select ธรรมดาแล้ว
+
+                  const uls = newRow.querySelectorAll('ul');
+                  uls.forEach(ul => {
+                      ul.removeAttribute('hidden');
+                  });
+
+                  const label = newRow.querySelector('.text-sm.font-medium');
+                  if (label) {
+                      label.textContent = `กรรมการที่ ${rows.length + 1}`;
+                  }
+
+                  let removeBtn = newRow.querySelector('.remove-committee-btn');
+                  if (!removeBtn) {
+                      const headerDiv = newRow.querySelector('.flex.justify-between');
+                      removeBtn = document.createElement('button');
+                      removeBtn.type = 'button';
+                      removeBtn.className = 'btn btn-error btn-xs remove-committee-btn';
+                      removeBtn.textContent = 'ลบ';
+                      headerDiv.appendChild(removeBtn);
+                  }
+
+                  container.appendChild(newRow);
+                  attachRemoveCommitteeEvents();
+              });
+          });
+
+          function attachRemoveCommitteeEvents() {
+              const removeBtns = document.querySelectorAll('.remove-committee-btn');
+              removeBtns.forEach(btn => {
+                  btn.onclick = function() {
+                      const row = this.closest('.committee-row');
+                      const container = row.closest('.committees-container');
+                      row.remove();
+                      updateCommitteeIndices(container);
+                  };
+              });
+          }
+
+          function updateCommitteeIndices(container) {
+              const rows = container.querySelectorAll('.committee-row:not(#committee-template .committee-row)');
+              rows.forEach((row, index) => {
+                  const label = row.querySelector('.text-sm.font-medium');
+                  if (label) {
+                      label.textContent = `กรรมการที่ ${index + 1}`;
+                  }
+              });
+
+              const allRows = document.querySelectorAll('.committee-row:not(#committee-template .committee-row)');
+              allRows.forEach((row, index) => {
+                  // Update all attributes that might contain the index
+                  const elements = row.querySelectorAll('*');
+                  elements.forEach(el => {
+                      Array.from(el.attributes).forEach(attr => {
+                          if (attr.value.match(/committees-\d+/)) {
+                              attr.value = attr.value.replace(/committees-\d+/g, `committees-${index}`);
+                          }
+                      });
+                  });
+
+                  // Fix the onclick attribute for the legend element
+                  const legends = row.querySelectorAll('legend');
+                  legends.forEach(legend => {
+                      if (legend.hasAttribute('onclick')) {
+                          const onclickAttr = legend.getAttribute('onclick');
+                          legend.setAttribute('onclick', onclickAttr.replace(/committees-\d+/g, `committees-${index}`));
+                      }
+                  });
+
+                  // ลบการจัดการ Search Select events ออกจากส่วนอัปเดต Index ด้วยเช่นกัน
+              });
+          }
+
+          function calculateTotalAmount() {
+              let total = 0;
+              const itemRows = document.querySelectorAll('.item-row:not(#item-template .item-row)');
+              itemRows.forEach(row => {
+                  const amountInput = row.querySelector('input[name$="-amount"]');
+                  if (amountInput) {
+                      const amount = parseFloat(amountInput.value) || 0;
+                      total += amount;
+                  }
+              });
+              return total;
+          }
+
+          function attachAmountChangeEvents() {
+              const inputs = document.querySelectorAll('input[name$="-amount"]');
+              inputs.forEach(input => {
+                  input.removeEventListener('input', handleAmountChange);
+                  input.addEventListener('input', handleAmountChange);
+              });
+          }
+
+          function handleAmountChange() {
+              const total = calculateTotalAmount();
+              // Optional: Update UI to show required committees based on total
+          }
+
+          const form = document.querySelector('form');
+          form.addEventListener('submit', function(e) {
+              const total = calculateTotalAmount();
+              let isValid = true;
+              let errorMessage = '';
+
+              const specRows = document.querySelectorAll('#committees-specification .committee-row');
+              const procRows = document.querySelectorAll('#committees-procurement .committee-row');
+              const inspRows = document.querySelectorAll('#committees-inspection .committee-row');
+
+              function countPositions(rows) {
+                  let chairman = 0;
+                  let member = 0;
+                  rows.forEach(row => {
+                      const posSelect = row.querySelector('select[name$="-committee_position"]');
+                      if (posSelect && posSelect.value === 'chairman') chairman++;
+                      if (posSelect && posSelect.value === 'member') member++;
+                  });
+                  return {
+                      chairman,
+                      member,
+                      total: chairman + member
+                  };
+              }
+
+              const specCounts = countPositions(specRows);
+              const procCounts = countPositions(procRows);
+              const inspCounts = countPositions(inspRows);
+
+              if (total <= 100000) {
+                  if (specCounts.chairman !== 1 || specCounts.total !== 1) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการกำหนดคุณสมบัติฯ ต้องมี 1 คน (ประธาน)\n';
+                  }
+                  if (inspCounts.chairman !== 1 || inspCounts.total !== 1) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการตรวจรับ ต้องมี 1 คน (ประธาน)\n';
+                  }
+                  if (procCounts.total > 0) {
+                      isValid = false;
+                      errorMessage += '- ยอดเงินไม่เกิน 100,000 บาท ไม่ต้องมีคณะกรรมการจัดซื้อ\n';
+                  }
+              } else if (total <= 500000) {
+                  if (specCounts.chairman !== 1 || specCounts.member !== 2 || specCounts.total !== 3) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการกำหนดคุณสมบัติฯ ต้องมี 3 คน (ประธาน 1 คน, กรรมการ 2 คน)\n';
+                  }
+                  if (inspCounts.chairman !== 1 || inspCounts.member !== 2 || inspCounts.total !== 3) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการตรวจรับ ต้องมี 3 คน (ประธาน 1 คน, กรรมการ 2 คน)\n';
+                  }
+                  if (procCounts.total > 0) {
+                      isValid = false;
+                      errorMessage += '- ยอดเงิน 100,001 - 500,000 บาท ไม่ต้องมีคณะกรรมการจัดซื้อ\n';
+                  }
+              } else {
+                  if (specCounts.chairman !== 1 || specCounts.member !== 2 || specCounts.total !== 3) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการกำหนดคุณสมบัติฯ ต้องมี 3 คน (ประธาน 1 คน, กรรมการ 2 คน)\n';
+                  }
+                  if (procCounts.chairman !== 1 || procCounts.member !== 2 || procCounts.total !== 3) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการจัดซื้อ ต้องมี 3 คน (ประธาน 1 คน, กรรมการ 2 คน)\n';
+                  }
+                  if (inspCounts.chairman !== 1 || inspCounts.member !== 2 || inspCounts.total !== 3) {
+                      isValid = false;
+                      errorMessage += '- คณะกรรมการตรวจรับ ต้องมี 3 คน (ประธาน 1 คน, กรรมการ 2 คน)\n';
+                  }
+              }
+
+              if (!isValid) {
+                  e.preventDefault();
+                  alert(`ยอดเงินรวม: ${total.toLocaleString()} บาท\nกรุณาตรวจสอบคณะกรรมการให้ถูกต้องตามเงื่อนไข:\n\n${errorMessage}`);
+              } else {
+                  // Remove templates before submit so they don't mess up WTForms indices
+                  const itemTemplate = document.getElementById('item-template');
+                  if (itemTemplate) itemTemplate.remove();
+
+                  const committeeTemplate = document.getElementById('committee-template');
+                  if (committeeTemplate) committeeTemplate.remove();
+
+                  // Re-index all rows to ensure they start from 0 and are sequential
+                  updateItemIndices();
+
+                  const committeeContainers = document.querySelectorAll('.committees-container');
+                  committeeContainers.forEach(container => updateCommitteeIndices(container));
+              }
+          });
+
+          attachRemoveItemEvents();
+          attachRemoveCommitteeEvents();
+          attachAmountChangeEvents();
+      });
+  </script>
 {% endblock %}
