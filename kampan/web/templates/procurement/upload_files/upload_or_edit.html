@@ -43,24 +43,11 @@
 
         <form method="POST" enctype="multipart/form-data" id="editForm" class="p-6">
             {{ form.hidden_tag() }}
+            <!-- Category Selection -->
+            {{ renderer.render_select_field(form.category , optionals={'required': True}) }}
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Category Selection -->
-                <div class="space-y-2">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.category.label.text }}</span>
-                    </label>
-                    {{ form.category(class="select select-bordered w-full focus:select-primary") }}
-                </div>
-
-                <!-- File Upload -->
-                <div class="space-y-2">
-                    <label class="label">
-                        <span class="label-text font-medium">{{ form.document_upload.label.text }}</span>
-                    </label>
-                    {{ form.document_upload(class="file-input file-input-bordered w-full") }}
-                </div>
-            </div>
+            <!-- File Upload -->
+            {{ renderer.file_input(form.document_upload, optionals={'required': True}) }}
 
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 pt-6 mt-6 border-t border-gray-200">
