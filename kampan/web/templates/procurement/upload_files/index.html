@@ -33,12 +33,12 @@
                             <span class="text-black">เลือกประเภทเทมเพลต</span>
                         </div>
                         <div class="flex flex-col gap-3">
-                            <a href="{{ url_for('static', filename='data/Template_MAS.xlsx') }}" download
+                            <a href="{{ url_for('admin.upload_files.download_mas_template', organization_id=organization.id) }}"
                                 class="btn btn-block btn-outline-success flex items-center gap-2"
                                 onclick="closeModal('template-modal')">
                                 <i class="ph ph-file-xls"></i> Template แหล่งเงิน (MAS)
                             </a>
-                            <a href="{{ url_for('static', filename='data/Template_MA.xlsx') }}" download
+                            <a href="{{ url_for('admin.upload_files.download_ma_template', organization_id=organization.id) }}"
                                 class="btn btn-block btn-outline-success flex items-center gap-2"
                                 onclick="closeModal('template-modal')">
                                 <i class="ph ph-file-xls"></i> Template MA (Procurement)

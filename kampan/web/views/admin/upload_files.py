@@ -12,6 +12,14 @@ import datetime
 
 from ... import models, forms, acl, redis_rq
 from .... import utils
+from ....utils.upload_files import (
+    MAS_COLUMNS,
+    MA_COLUMNS,
+    MAS_COLUMN_MAP,
+    MA_COLUMN_MAP,
+    generate_mas_template,
+    generate_ma_template,
+)
 
 import pandas as pd
 from io import BytesIO
@@ -80,33 +88,17 @@ def upload_or_edit(document_id):
                     print(f"Error reading Excel file: {e}")
                     df = None
 
-            category = "unknown"
+            category = form.category.data or "unknown"
             if df is not None:
-                cols = set(col.lower() for col in df.columns)
-                if {
-                    "mas_code",
-                    "main_category",
-                    "sub_category",
-                    "name",
-                    "item_description",
-                    "amount",
-                    "budget",
-                    "actual_cost",
-                }.issubset(cols):
+                cols = set(col for col in df.columns)
+                cols_lower = set(col.lower() for col in df.columns)
+                if set(MAS_COLUMN_MAP.values()).issubset(cols) or set(
+                    MAS_COLUMNS
+                ).issubset(cols_lower):
                     category = "mas"
-                elif {
-                    "product_number",
-                    "asset_code",
-                    "name",
-                    "category",
-                    "start_date",
-                    "end_date",
-                    "amount",
-                    "period",
-                    "quantity",
-                    "company",
-                    "responsible_by",
-                }.issubset(cols):
+                elif set(MA_COLUMN_MAP.values()).issubset(cols) or set(
+                    MA_COLUMNS
+                ).issubset(cols_lower):
                     category = "ma"
 
             document.category = category
@@ -210,6 +202,32 @@ def upload_or_edit(document_id):
 
     return redirect(
         url_for("admin.upload_files.index", organization_id=organization.id)
+    )
+
+
+@module.route("/template/mas")
+@login_required
+@acl.organization_roles_required("admin")
+def download_mas_template():
+    buf = generate_mas_template()
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="mas_template.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@module.route("/template/ma")
+@login_required
+@acl.organization_roles_required("admin")
+def download_ma_template():
+    buf = generate_ma_template()
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="ma_template.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
