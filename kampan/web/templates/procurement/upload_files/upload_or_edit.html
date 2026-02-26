@@ -19,7 +19,7 @@
             </div>
             <div class="flex gap-2">
                 <a class="btn btn-secondary btn-md"
-                    href="{{ url_for('admin.upload_files.index', page=request.args.get('page')) }}"
+                    href="{{ url_for('admin.upload_files.index', organization_id=organization.id, page=request.args.get('page')) }}"
                     data-tooltip="ย้อนกลับ">
                     <i class="ph ph-arrow-left text-lg"></i>
                     ย้อนกลับ

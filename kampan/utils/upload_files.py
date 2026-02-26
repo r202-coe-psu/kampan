@@ -6,6 +6,58 @@ import io
 from .. import models
 from decimal import Decimal
 
+# ---- MAS column map: field_name → Thai label (used for template headers & import remap) ----
+MAS_COLUMN_MAP = {
+    "mas_code": "รหัสแหล่งเงิน (MAS Code)",
+    "name": "ชื่อรายการ",
+    "amount": "งบประมาณทั้งหมด",
+    "remaining_amount": "งบประมาณคงเหลือ",
+    "reservable_amount": "งบประมาณที่จองได้",
+}
+# Keep list aliases for backward-compat (column detection in view)
+MAS_COLUMNS = list(MAS_COLUMN_MAP.keys())
+
+# ---- MA column map: field_name → Thai label ----
+MA_COLUMN_MAP = {
+    "product_number": "เลขที่สินค้า/เลขที่เอกสาร",
+    "name": "ชื่อรายการ",
+    "asset_code": "รหัสครุภัณฑ์",
+    "start_date": "วันที่เริ่มต้น",
+    "end_date": "วันที่สิ้นสุด",
+    "amount": "จำนวนเงิน(บาท)",
+    "period": "จำนวนงวด",
+    "category": "ประเภท",
+    "responsible_by": "ผู้รับผิดชอบ",
+    "company": "บริษัท",
+}
+MA_COLUMNS = list(MA_COLUMN_MAP.keys())
+
+
+def _normalize_columns(df: pd.DataFrame, column_map: dict) -> pd.DataFrame:
+    """Rename Thai label columns back to English field names if needed."""
+    reverse = {v: k for k, v in column_map.items()}
+    return df.rename(columns=reverse)
+
+
+def generate_mas_template() -> io.BytesIO:
+    """Return a BytesIO containing an xlsx template for MAS import (Thai headers)."""
+    df = pd.DataFrame(columns=list(MAS_COLUMN_MAP.values()))
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="MAS")
+    buf.seek(0)
+    return buf
+
+
+def generate_ma_template() -> io.BytesIO:
+    """Return a BytesIO containing an xlsx template for MA (Procurement) import (Thai headers)."""
+    df = pd.DataFrame(columns=list(MA_COLUMN_MAP.values()))
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="MA")
+    buf.seek(0)
+    return buf
+
 
 def to_decimal(val):
     try:
@@ -44,86 +96,101 @@ def save_mas_db(document, mas, user_id):
     print("=====> Start processing MAS document:", document.id)
     """
     อ่านข้อมูล MAS จากไฟล์ Excel แล้วสร้าง MAS แต่ละตัวลงฐานข้อมูล
+
+    Expected columns: mas_code, name, amount, remaining_amount, reservable_amount
     """
     errors = []
     processed_user = models.User.objects(id=user_id).first()
     document = models.Document.objects(id=document.id).first()
     if not document:
-        document.status = "failed"
-        document.updated_date = datetime.datetime.now()
-        document.updated_by = processed_user
-        document.save()
-        print(f"Document {document.id} not found.")
-        return False
+        print(f"Document not found.")
+        return False, []
 
     try:
         document.file.seek(0)
         df = pd.read_excel(document.file)
         df.columns = df.columns.str.strip()
+        df = _normalize_columns(df, MAS_COLUMN_MAP)
     except Exception as e:
         document.status = "failed"
+        document.save()
         print(f"Error reading Excel in save_mas_db: {e}")
-        return False
+        return False, []
 
     print(f"\n==== Loaded Excel File: {len(df)} rows ====\n")
     if not processed_user:
         document.status = "failed"
+        document.save()
         print("Cannot find user.")
-        return False
+        return False, []
+
+    required_cols = {
+        "mas_code",
+        "name",
+        "amount",
+        "remaining_amount",
+        "reservable_amount",
+    }
+    missing_cols = required_cols - set(col.lower() for col in df.columns)
+    if missing_cols:
+        document.status = "failed"
+        document.save()
+        msg = f"Missing required columns: {missing_cols}"
+        print(msg)
+        return False, [msg]
 
     created_count = 0
 
     for i, row in df.iterrows():
         required_fields = {
             "mas_code": row.get("mas_code"),
-            "main_category": row.get("main_category"),
-            "sub_category": row.get("sub_category"),
             "name": row.get("name"),
-            "item_description": row.get("item_description"),
             "amount": row.get("amount"),
-            "budget": row.get("budget"),
-            "actual_cost": row.get("actual_cost"),
+            "remaining_amount": row.get("remaining_amount"),
+            "reservable_amount": row.get("reservable_amount"),
         }
-        missing = [
-            key for key, value in required_fields.items() if is_missing_required(value)
-        ]
-
-        name = row.get("name")
-        if not isinstance(name, str):
-            msg = f"Skipped MAS #{i + 1}: name is not a string"
-            document.status = "incomplete"
-            errors.append(msg)
-            continue
-        if name is not None and len(name.strip()) < 3:
-            missing.append("name (too short)")
+        missing = [k for k, v in required_fields.items() if is_missing_required(v)]
         if missing:
             document.status = "incomplete"
             msg = f"Skipped MAS #{i + 1}: missing required fields -- {missing}"
             errors.append(msg)
+            print(msg)
+            continue
+
+        name = safe_str(row.get("name"))
+        if len(name) < 3:
+            msg = f"Skipped MAS #{i + 1}: name too short ('{name}')"
+            document.status = "incomplete"
+            errors.append(msg)
+            print(msg)
             continue
 
         mas_code = safe_str(row.get("mas_code"))
-        print(f"Checking MAS code: '{mas_code}'")
         if not mas_code:
-            document.status = "failed"
-            continue
-
-        mas = models.MAS.objects(mas_code=mas_code, status="active").first()
-        if mas:
-            msg = f"MAS with code '{mas_code}' already exists. Skipping creation."
+            msg = f"Skipped MAS #{i + 1}: mas_code is empty"
             document.status = "incomplete"
             errors.append(msg)
+            print(msg)
             continue
+
+        existing = models.MAS.objects(mas_code=mas_code, status="active").first()
+        if existing:
+            msg = f"MAS with code '{mas_code}' already exists. Skipping."
+            document.status = "incomplete"
+            errors.append(msg)
+            print(msg)
+            continue
+
+        amount = to_decimal(row.get("amount"))
+        remaining_amount = to_decimal(row.get("remaining_amount"))
+        reservable_amount = to_decimal(row.get("reservable_amount"))
 
         mas_obj = models.MAS(
             mas_code=mas_code,
-            main_category=safe_str(row.get("main_category")),
-            sub_category=safe_str(row.get("sub_category")),
-            name=safe_str(row.get("name")),
-            item_description=safe_str(row.get("item_description")),
-            amount=to_decimal(row.get("amount")),
-            budget=to_decimal(row.get("budget")),
-            actual_cost=to_decimal(row.get("actual_cost")),
+            name=name,
+            amount=amount,
+            remaining_amount=remaining_amount,
+            reservable_amount=reservable_amount,
             status="active",
             created_by=processed_user,
             last_updated_by=processed_user,
@@ -210,6 +277,7 @@ def save_ma_db(document, ma, user_id):
         file_bytes = document.file.read()
         df = pd.read_excel(io.BytesIO(file_bytes))
         df.columns = df.columns.str.strip()
+        df = _normalize_columns(df, MA_COLUMN_MAP)
     except Exception as e:
         document.status = "failed"
         print(f"Error reading Excel in save_ma_db: {e}")
@@ -330,7 +398,7 @@ def save_ma_db(document, ma, user_id):
     document.updated_date = datetime.datetime.now()
     if created_count == 0:
         document.status = "failed"
-    elif created_count > 0:
+    elif created_count < len(df):
         document.status = "incomplete"
     else:
         document.status = "completed"
