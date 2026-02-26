@@ -25,6 +25,7 @@ class Document(me.Document):
     status = me.StringField(
         choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0], required=True
     )
+    error_messages = me.ListField(me.StringField(), default=list)
 
     created_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True

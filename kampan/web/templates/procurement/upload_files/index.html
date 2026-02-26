@@ -105,12 +105,52 @@
                             {% set status_display = doc.get_status_display() %}
                             {% set info = status_info.get(status_display, {'color': 'bg-gray-200', 'icon':
                             'ph-question', 'tooltip': 'ไม่ทราบสถานะ'}) %}
-                            <span
-                                class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
-                                title="{{ info.tooltip }}">
-                                <i class="ph {{ info.icon }} text-base"></i>
-                                {{ info.tooltip }}
-                            </span>
+                            <div class="flex flex-col items-center gap-1">
+                                <span
+                                    class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
+                                    title="{{ info.tooltip }}">
+                                    <i class="ph {{ info.icon }} text-base"></i>
+                                    {{ info.tooltip }}
+                                </span>
+                                {% if doc.error_messages %}
+                                <button type="button"
+                                    class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 underline"
+                                    onclick="openModal('errors-{{ doc.id }}')">
+                                    <i class="ph ph-warning text-sm"></i>
+                                    {{ doc.error_messages|length }} ข้อผิดพลาด
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Error Detail Modal -->
+                            {% if doc.error_messages %}
+                            <div id="errors-{{ doc.id }}"
+                                class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto relative max-h-[80vh] flex flex-col">
+                                    <button type="button"
+                                        class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                                        onclick="closeModal('errors-{{ doc.id }}')">
+                                        <i class="ph ph-x text-xl"></i>
+                                    </button>
+                                    <div class="font-bold text-base mb-3 flex items-center gap-2 text-red-600">
+                                        <i class="ph ph-warning-circle text-xl"></i>
+                                        ข้อผิดพลาดในไฟล์ {{ doc.file.filename }}
+                                    </div>
+                                    <ul class="overflow-y-auto flex-1 space-y-1 text-sm text-gray-700 pr-1">
+                                        {% for err in doc.error_messages %}
+                                        <li class="flex items-start gap-2 bg-red-50 rounded px-3 py-2">
+                                            <i class="ph ph-x-circle text-red-400 mt-0.5 shrink-0"></i>
+                                            {{ err }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    <div class="mt-4 flex justify-end">
+                                        <button type="button" class="btn btn-sm btn-outline"
+                                            onclick="closeModal('errors-{{ doc.id }}')">ปิด</button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </td>
                         <td class="py-2 px-2 whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">

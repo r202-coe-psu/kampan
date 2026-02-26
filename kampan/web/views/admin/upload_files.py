@@ -19,6 +19,8 @@ from ....utils.upload_files import (
     MA_COLUMN_MAP,
     generate_mas_template,
     generate_ma_template,
+    validate_mas_file,
+    validate_ma_file,
 )
 
 import pandas as pd
@@ -49,16 +51,16 @@ def index():
 @login_required
 @acl.organization_roles_required("admin")
 def upload_or_edit(document_id):
-    document = None
-    form = forms.upload_files.FileForm()
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
 
+    document = None
     if document_id:
         document = models.Document.objects(id=document_id).first()
-        form = forms.upload_files.FileForm(obj=document)
+
+    form = forms.upload_files.FileForm(obj=document)
 
     if not form.validate_on_submit():
         return render_template(
@@ -68,14 +70,17 @@ def upload_or_edit(document_id):
             organization=organization,
         )
 
-    # Handle multiple file uploads
-    if not document_id and form.document_upload.data:
-        documents = []
+    # ---- CREATE ----
+    if not document_id:
         for file in form.document_upload.data:
-            document = models.Document()
-            document.created_by = current_user
-            document.updated_by = current_user
-            document.status = "waiting"
+            if not getattr(file, "filename", None):
+                continue
+
+            new_doc = models.Document()
+            new_doc.created_by = current_user
+            new_doc.updated_by = current_user
+            new_doc.status = "waiting"
+            new_doc.error_messages = []
 
             file_stream = BytesIO(file.read())
             try:
@@ -90,7 +95,7 @@ def upload_or_edit(document_id):
 
             category = form.category.data or "unknown"
             if df is not None:
-                cols = set(col for col in df.columns)
+                cols = set(df.columns)
                 cols_lower = set(col.lower() for col in df.columns)
                 if set(MAS_COLUMN_MAP.values()).issubset(cols) or set(
                     MAS_COLUMNS
@@ -101,104 +106,74 @@ def upload_or_edit(document_id):
                 ).issubset(cols_lower):
                     category = "ma"
 
-            document.category = category
+            new_doc.category = category
 
-            # Save file
             file_stream.seek(0)
-            document.file.put(
+            new_doc.file.put(
                 file_stream,
                 filename=file.filename,
                 content_type=file.content_type,
             )
-            document.save()
-            documents.append(document)
+            new_doc.save()
 
-        if documents:
-            return redirect(
-                url_for("admin.upload_files.index", organization_id=organization.id)
-            )
-
-    # Handle single file edit
-    if document_id:
-        document = models.Document.objects(id=document_id).first()
-        form = forms.upload_files.FileForm(obj=document)
-        if not form.validate_on_submit():
-            return render_template(
-                "procurement/upload_files/upload_or_edit.html",
-                form=form,
-                document=document,
-                organization=organization,
-            )
-
+    # ---- EDIT ----
+    else:
         form.populate_obj(document)
         document.updated_by = current_user
         document.status = "waiting"
+        document.error_messages = []
 
-        if form.document_upload.data:
-            for file in form.document_upload.data:
-                file_stream = BytesIO(file.read())
-                df = None
+        files = [
+            f for f in (form.document_upload.data or []) if getattr(f, "filename", None)
+        ]
+        if files:
+            file = files[0]
+            file_stream = BytesIO(file.read())
 
-                # Only auto-detect category for new files
-                if not document_id:
-                    try:
-                        df = pd.read_excel(file_stream, engine="openpyxl")
-                    except Exception:
-                        try:
-                            file_stream.seek(0)
-                            df = pd.read_excel(file_stream, engine="xlrd")
-                        except Exception as e:
-                            print(f"Error reading Excel file: {e}")
-                            df = None
+            try:
+                df = pd.read_excel(file_stream, engine="openpyxl")
+            except Exception:
+                try:
+                    file_stream.seek(0)
+                    df = pd.read_excel(file_stream, engine="xlrd")
+                except Exception as e:
+                    print(f"Error reading Excel file: {e}")
+                    df = None
 
-                # Auto-detect category only for new files
-                if df is not None:
-                    cols = set(col.lower() for col in df.columns)
-                    if {
-                        "mas_code",
-                        "main_category",
-                        "sub_category",
-                        "name",
-                        "item_description",
-                        "amount",
-                        "budget",
-                        "actual_cost",
-                    }.issubset(cols):
-                        form.category.data = "mas"
-                    elif {
-                        "product_number",
-                        "name",
-                        "asset_code",
-                        "start_date",
-                        "end_date",
-                        "quantity",
-                        "period",
-                        "category",
-                        "responsible_by",
-                        "amount",
-                        "company",
-                    }.issubset(cols):
-                        form.category.data = "ma"
-
-                file_stream.seek(0)
-                if document.id:
-                    document.file.replace(
-                        file_stream,
-                        filename=file.filename,
-                        content_type=file.content_type,
-                    )
-                    document.status = "waiting"
+            if df is not None:
+                cols = set(df.columns)
+                cols_lower = set(col.lower() for col in df.columns)
+                if set(MAS_COLUMN_MAP.values()).issubset(cols) or set(
+                    MAS_COLUMNS
+                ).issubset(cols_lower):
+                    document.category = "mas"
+                elif set(MA_COLUMN_MAP.values()).issubset(cols) or set(
+                    MA_COLUMNS
+                ).issubset(cols_lower):
+                    document.category = "ma"
                 else:
-                    document.file.put(
-                        file_stream,
-                        filename=file.filename,
-                        content_type=file.content_type,
-                    )
-        document.updated_date = datetime.datetime.now()
+                    document.category = form.category.data or "unknown"
+            else:
+                document.category = form.category.data or "unknown"
 
-    # Use form category or fallback to auto-detected
-    document.category = form.category.data
-    document.save()
+            file_stream.seek(0)
+            if document.file:
+                document.file.replace(
+                    file_stream,
+                    filename=file.filename,
+                    content_type=file.content_type,
+                )
+            else:
+                document.file.put(
+                    file_stream,
+                    filename=file.filename,
+                    content_type=file.content_type,
+                )
+        else:
+            document.category = form.category.data or document.category
+
+        document.updated_date = datetime.datetime.now()
+        document.save()
 
     return redirect(
         url_for("admin.upload_files.index", organization_id=organization.id)
@@ -269,6 +244,7 @@ def download(document_id, filename):
 
 
 @module.route("/<document_id>/process", methods=["GET"])
+@login_required
 @acl.organization_roles_required("admin")
 def processing(document_id):
     organization_id = request.args.get("organization_id")
@@ -276,16 +252,30 @@ def processing(document_id):
         id=organization_id, status="active"
     ).first()
     document = models.Document.objects.get(id=document_id)
-    document.status = "waiting"
-    document.save()
 
     category = document.category or "unknown"
 
-    print(category)
+    errors = []
     if category == "mas":
-        mas = models.MAS.objects(
-            status="active",
+        errors = validate_mas_file(document)
+    elif category == "ma":
+        errors = validate_ma_file(document)
+
+    if errors:
+        document.status = "failed"
+        document.error_messages = errors
+        document.updated_date = datetime.datetime.now()
+        document.save()
+        return redirect(
+            url_for("admin.upload_files.index", organization_id=organization.id)
         )
+
+    document.status = "waiting"
+    document.error_messages = []
+    document.save()
+
+    if category == "mas":
+        mas = models.MAS.objects(status="active")
         job = redis_rq.redis_queue.queue.enqueue(
             utils.upload_files.save_mas_db,
             args=(document, mas, current_user.id),
@@ -295,7 +285,6 @@ def processing(document_id):
         print("=====> MAS creation job submitted", job.get_id())
     elif category == "ma":
         ma = models.Procurement.objects()
-
         job = redis_rq.redis_queue.queue.enqueue(
             utils.upload_files.save_ma_db,
             args=(document, ma, current_user.id),

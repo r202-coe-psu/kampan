@@ -5,8 +5,10 @@ import re
 import io
 from .. import models
 from decimal import Decimal
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
-# ---- MAS column map: field_name → Thai label (used for template headers & import remap) ----
 MAS_COLUMN_MAP = {
     "mas_code": "รหัสแหล่งเงิน (MAS Code)",
     "name": "ชื่อรายการ",
@@ -14,10 +16,8 @@ MAS_COLUMN_MAP = {
     "remaining_amount": "งบประมาณคงเหลือ",
     "reservable_amount": "งบประมาณที่จองได้",
 }
-# Keep list aliases for backward-compat (column detection in view)
 MAS_COLUMNS = list(MAS_COLUMN_MAP.keys())
 
-# ---- MA column map: field_name → Thai label ----
 MA_COLUMN_MAP = {
     "product_number": "เลขที่สินค้า/เลขที่เอกสาร",
     "name": "ชื่อรายการ",
@@ -34,27 +34,161 @@ MA_COLUMNS = list(MA_COLUMN_MAP.keys())
 
 
 def _normalize_columns(df: pd.DataFrame, column_map: dict) -> pd.DataFrame:
-    """Rename Thai label columns back to English field names if needed."""
     reverse = {v: k for k, v in column_map.items()}
     return df.rename(columns=reverse)
 
 
 def generate_mas_template() -> io.BytesIO:
-    """Return a BytesIO containing an xlsx template for MAS import (Thai headers)."""
-    df = pd.DataFrame(columns=list(MAS_COLUMN_MAP.values()))
+
+    example_rows = [
+        {
+            "รหัสแหล่งเงิน (MAS Code)": "MAS-2024-001",
+            "ชื่อรายการ": "งบดำเนินการ ประจำปี 2567",
+            "งบประมาณทั้งหมด": 500000.00,
+            "งบประมาณคงเหลือ": 350000.00,
+            "งบประมาณที่จองได้": 200000.00,
+        },
+        {
+            "รหัสแหล่งเงิน (MAS Code)": "MAS-2024-002",
+            "ชื่อรายการ": "งบลงทุน ครุภัณฑ์สำนักงาน",
+            "งบประมาณทั้งหมด": 1200000.00,
+            "งบประมาณคงเหลือ": 1200000.00,
+            "งบประมาณที่จองได้": 800000.00,
+        },
+    ]
+    headers = list(MAS_COLUMN_MAP.values())
+    df = pd.DataFrame(example_rows, columns=headers)
+
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="MAS")
+        wb = writer.book
+        ws = writer.sheets["MAS"]
+
+        header_fill = PatternFill("solid", fgColor="4472C4")
+        example_fill = PatternFill("solid", fgColor="D9E1F2")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        example_font = Font(color="595959", italic=True, size=10)
+        center = Alignment(horizontal="center", vertical="center")
+        thin = Side(style="thin", color="B0B0B0")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        for col_idx, col in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center
+            cell.border = border
+
+        for row_idx in range(2, len(df) + 2):
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                cell.fill = example_fill
+                cell.font = example_font
+                cell.alignment = Alignment(vertical="center")
+                cell.border = border
+
+        for col_idx, col in enumerate(headers, start=1):
+            col_values = [col] + [
+                str(example_rows[r].get(col, "")) for r in range(len(example_rows))
+            ]
+            max_len = max(len(v) for v in col_values) + 4
+            ws.column_dimensions[get_column_letter(col_idx)].width = max_len
+
+        ws.row_dimensions[1].height = 22
+
     buf.seek(0)
     return buf
 
 
 def generate_ma_template() -> io.BytesIO:
-    """Return a BytesIO containing an xlsx template for MA (Procurement) import (Thai headers)."""
-    df = pd.DataFrame(columns=list(MA_COLUMN_MAP.values()))
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    example_rows = [
+        {
+            "เลขที่สินค้า/เลขที่เอกสาร": "DOC-2024-001",
+            "ชื่อรายการ": "เครื่องคอมพิวเตอร์โน้ตบุ๊ก",
+            "รหัสครุภัณฑ์": "IT-NB-0001",
+            "วันที่เริ่มต้น": "01/01/2024",
+            "วันที่สิ้นสุด": "31/12/2024",
+            "จำนวนเงิน(บาท)": 35000.00,
+            "จำนวนงวด": 12,
+            "ประเภท": "ครุภัณฑ์",
+            "ผู้รับผิดชอบ": "สมชาย ใจดี",
+            "บริษัท": "บริษัท เทคโนโลยี จำกัด",
+        },
+        {
+            "เลขที่สินค้า/เลขที่เอกสาร": "DOC-2024-002",
+            "ชื่อรายการ": "ซอฟต์แวร์บัญชี",
+            "รหัสครุภัณฑ์": "SW-ACC-0001",
+            "วันที่เริ่มต้น": "01/03/2024",
+            "วันที่สิ้นสุด": "28/02/2025",
+            "จำนวนเงิน(บาท)": 120000.00,
+            "จำนวนงวด": 1,
+            "ประเภท": "ซอฟต์แวร์",
+            "ผู้รับผิดชอบ": "สมหญิง รักสงบ",
+            "บริษัท": "บริษัท ซอฟต์แวร์ไทย จำกัด",
+        },
+    ]
+    headers = list(MA_COLUMN_MAP.values())
+    df = pd.DataFrame(example_rows, columns=headers)
+
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="MA")
+        wb = writer.book
+        ws = writer.sheets["MA"]
+
+        header_fill = PatternFill("solid", fgColor="375623")
+        example_fill = PatternFill("solid", fgColor="E2EFDA")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        example_font = Font(color="595959", italic=True, size=10)
+        center = Alignment(horizontal="center", vertical="center")
+        thin = Side(style="thin", color="B0B0B0")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        for col_idx, col in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center
+            cell.border = border
+
+        for row_idx in range(2, len(df) + 2):
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                cell.fill = example_fill
+                cell.font = example_font
+                cell.alignment = Alignment(vertical="center")
+                cell.border = border
+
+        for col_idx, col in enumerate(headers, start=1):
+            col_values = [col] + [
+                str(example_rows[r].get(col, "")) for r in range(len(example_rows))
+            ]
+            max_len = max(len(v) for v in col_values) + 4
+            ws.column_dimensions[get_column_letter(col_idx)].width = max_len
+
+        ws.row_dimensions[1].height = 22
+
+        note_row = len(df) + 3
+        ws.cell(
+            row=note_row,
+            column=1,
+            value="หมายเหตุ: ประเภท (ประเภท) ให้ระบุเป็น: ครุภัณฑ์, ซอฟต์แวร์, จ้างเหมาบริการ, วัสดุ",
+        )
+        ws.cell(row=note_row, column=1).font = Font(color="FF0000", italic=True, size=9)
+        ws.cell(
+            row=note_row + 1,
+            column=1,
+            value="หมายเหตุ: วันที่ให้ระบุในรูปแบบ DD/MM/YYYY เช่น 01/01/2024",
+        )
+        ws.cell(row=note_row + 1, column=1).font = Font(
+            color="FF0000", italic=True, size=9
+        )
+
     buf.seek(0)
     return buf
 
@@ -92,6 +226,119 @@ def is_missing_required(value):
     )
 
 
+def validate_mas_file(document) -> list:
+
+    errors = []
+    try:
+        document.file.seek(0)
+        df = pd.read_excel(document.file)
+        df.columns = df.columns.str.strip()
+        df = _normalize_columns(df, MAS_COLUMN_MAP)
+    except Exception as e:
+        return [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
+
+    missing_cols = set(MAS_COLUMNS) - set(df.columns)
+    if missing_cols:
+        thai_missing = [MAS_COLUMN_MAP.get(c, c) for c in missing_cols]
+        return [f"ไม่พบคอลัมน์ที่จำเป็น: {', '.join(thai_missing)}"]
+
+    for idx, row in df.iterrows():
+        row_num = idx + 2
+        missing = [
+            MAS_COLUMN_MAP.get(k, k)
+            for k in MAS_COLUMNS
+            if is_missing_required(row.get(k))
+        ]
+        if missing:
+            errors.append(f"แถวที่ {row_num}: ขาดข้อมูล {', '.join(missing)}")
+            continue
+
+        name = safe_str(row.get("name"))
+        if len(name) < 3:
+            errors.append(f"แถวที่ {row_num}: ชื่อรายการสั้นเกินไป ('{name}')")
+
+        mas_code = safe_str(row.get("mas_code"))
+        if not mas_code:
+            errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงินว่างเปล่า")
+            continue
+
+        if models.MAS.objects(mas_code=mas_code, status="active").first():
+            errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงิน '{mas_code}' มีอยู่ในระบบแล้ว")
+
+        for col, label in [
+            ("amount", MAS_COLUMN_MAP["amount"]),
+            ("remaining_amount", MAS_COLUMN_MAP["remaining_amount"]),
+            ("reservable_amount", MAS_COLUMN_MAP["reservable_amount"]),
+        ]:
+            val = row.get(col)
+            if not is_missing_required(val):
+                try:
+                    if float(val) < 0:
+                        errors.append(f"แถวที่ {row_num}: {label} ต้องไม่ติดลบ")
+                except (ValueError, TypeError):
+                    errors.append(f"แถวที่ {row_num}: {label} ต้องเป็นตัวเลข")
+
+    return errors
+
+
+def validate_ma_file(document) -> list:
+
+    errors = []
+    try:
+        document.file.seek(0)
+        file_bytes = document.file.read()
+        df = pd.read_excel(io.BytesIO(file_bytes))
+        df.columns = df.columns.str.strip()
+        df = _normalize_columns(df, MA_COLUMN_MAP)
+    except Exception as e:
+        return [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
+
+    missing_cols = set(MA_COLUMNS) - set(df.columns)
+    if missing_cols:
+        thai_missing = [MA_COLUMN_MAP.get(c, c) for c in missing_cols]
+        return [f"ไม่พบคอลัมน์ที่จำเป็น: {', '.join(thai_missing)}"]
+
+    for idx, row in df.iterrows():
+        row_num = idx + 2
+        missing = [
+            MA_COLUMN_MAP.get(k, k)
+            for k in MA_COLUMNS
+            if is_missing_required(row.get(k))
+        ]
+        if missing:
+            errors.append(f"แถวที่ {row_num}: ขาดข้อมูล {', '.join(missing)}")
+            continue
+
+        if pd.notna(row.get("start_date")) and pd.notna(row.get("end_date")):
+            try:
+                sd = parse_date(row.get("start_date"))
+                ed = parse_date(row.get("end_date"))
+                if sd and ed and ed < sd:
+                    errors.append(f"แถวที่ {row_num}: วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น")
+            except Exception:
+                pass
+
+        if pd.notna(row.get("amount")):
+            try:
+                if float(row.get("amount")) < 0:
+                    errors.append(
+                        f"แถวที่ {row_num}: {MA_COLUMN_MAP['amount']} ต้องไม่ติดลบ"
+                    )
+            except (ValueError, TypeError):
+                errors.append(f"แถวที่ {row_num}: {MA_COLUMN_MAP['amount']} ต้องเป็นตัวเลข")
+
+        if pd.notna(row.get("period")):
+            try:
+                if int(float(row.get("period"))) < 1:
+                    errors.append(
+                        f"แถวที่ {row_num}: {MA_COLUMN_MAP['period']} ต้องมากกว่า 0"
+                    )
+            except (ValueError, TypeError):
+                errors.append(f"แถวที่ {row_num}: {MA_COLUMN_MAP['period']} ต้องเป็นตัวเลข")
+
+    return errors
+
+
 def save_mas_db(document, mas, user_id):
     print("=====> Start processing MAS document:", document.id)
     """
@@ -106,6 +353,9 @@ def save_mas_db(document, mas, user_id):
         print(f"Document not found.")
         return False, []
 
+    # Clear previous errors
+    document.error_messages = []
+
     try:
         document.file.seek(0)
         df = pd.read_excel(document.file)
@@ -113,16 +363,18 @@ def save_mas_db(document, mas, user_id):
         df = _normalize_columns(df, MAS_COLUMN_MAP)
     except Exception as e:
         document.status = "failed"
+        document.error_messages = [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
         document.save()
         print(f"Error reading Excel in save_mas_db: {e}")
-        return False, []
+        return False, document.error_messages
 
     print(f"\n==== Loaded Excel File: {len(df)} rows ====\n")
     if not processed_user:
         document.status = "failed"
+        document.error_messages = ["ไม่พบข้อมูลผู้ใช้"]
         document.save()
         print("Cannot find user.")
-        return False, []
+        return False, document.error_messages
 
     required_cols = {
         "mas_code",
@@ -133,15 +385,18 @@ def save_mas_db(document, mas, user_id):
     }
     missing_cols = required_cols - set(col.lower() for col in df.columns)
     if missing_cols:
+        thai_missing = [MAS_COLUMN_MAP.get(c, c) for c in missing_cols]
+        msg = f"ไม่พบคอลัมน์ที่จำเป็น: {', '.join(thai_missing)}"
         document.status = "failed"
+        document.error_messages = [msg]
         document.save()
-        msg = f"Missing required columns: {missing_cols}"
         print(msg)
         return False, [msg]
 
     created_count = 0
 
     for i, row in df.iterrows():
+        row_num = i + 2
         required_fields = {
             "mas_code": row.get("mas_code"),
             "name": row.get("name"),
@@ -149,34 +404,34 @@ def save_mas_db(document, mas, user_id):
             "remaining_amount": row.get("remaining_amount"),
             "reservable_amount": row.get("reservable_amount"),
         }
-        missing = [k for k, v in required_fields.items() if is_missing_required(v)]
+        missing = [
+            MAS_COLUMN_MAP.get(k, k)
+            for k, v in required_fields.items()
+            if is_missing_required(v)
+        ]
         if missing:
-            document.status = "incomplete"
-            msg = f"Skipped MAS #{i + 1}: missing required fields -- {missing}"
+            msg = f"แถวที่ {row_num}: ขาดข้อมูล {', '.join(missing)}"
             errors.append(msg)
             print(msg)
             continue
 
         name = safe_str(row.get("name"))
         if len(name) < 3:
-            msg = f"Skipped MAS #{i + 1}: name too short ('{name}')"
-            document.status = "incomplete"
+            msg = f"แถวที่ {row_num}: ชื่อรายการสั้นเกินไป ('{name}')"
             errors.append(msg)
             print(msg)
             continue
 
         mas_code = safe_str(row.get("mas_code"))
         if not mas_code:
-            msg = f"Skipped MAS #{i + 1}: mas_code is empty"
-            document.status = "incomplete"
+            msg = f"แถวที่ {row_num}: รหัสแหล่งเงินว่างเปล่า"
             errors.append(msg)
             print(msg)
             continue
 
         existing = models.MAS.objects(mas_code=mas_code, status="active").first()
         if existing:
-            msg = f"MAS with code '{mas_code}' already exists. Skipping."
-            document.status = "incomplete"
+            msg = f"แถวที่ {row_num}: รหัสแหล่งเงิน '{mas_code}' มีอยู่ในระบบแล้ว"
             errors.append(msg)
             print(msg)
             continue
@@ -202,6 +457,7 @@ def save_mas_db(document, mas, user_id):
         print(f"Created MAS #{i + 1}: {mas_obj.name}")
 
     document.updated_date = datetime.datetime.now()
+    document.error_messages = errors
     if created_count == 0:
         document.status = "failed"
     elif created_count != len(df):
@@ -265,12 +521,11 @@ def save_ma_db(document, ma, user_id):
     document = models.Document.objects(id=document.id).first()
     created_count = 0
     if not document:
-        document.status = "failed"
-        document.updated_date = datetime.datetime.now()
-        document.updated_by = processed_user
-        document.save()
-        print(f"Document {document.id} not found.")
+        print(f"Document not found.")
         return False
+
+    # Clear previous errors
+    document.error_messages = []
 
     try:
         document.file.seek(0)
@@ -280,12 +535,16 @@ def save_ma_db(document, ma, user_id):
         df = _normalize_columns(df, MA_COLUMN_MAP)
     except Exception as e:
         document.status = "failed"
+        document.error_messages = [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
+        document.save()
         print(f"Error reading Excel in save_ma_db: {e}")
         return False
 
     print(f"\n==== Loaded Excel File: {len(df)} rows ====\n")
     if not processed_user:
         document.status = "failed"
+        document.error_messages = ["ไม่พบข้อมูลผู้ใช้"]
+        document.save()
         print("Cannot find user.")
         return False
 
@@ -311,10 +570,11 @@ def save_ma_db(document, ma, user_id):
     required_columns = list(column_map.keys())
 
     for idx, row in df.iterrows():
+        row_num = idx + 2
         missing = False
         for col in required_columns:
             if pd.isnull(row.get(col)) or str(row.get(col)).strip() == "":
-                msg = f"Row {idx+1} skipped: missing required column '{col}'."
+                msg = f"แถวที่ {row_num}: ขาดข้อมูล '{MA_COLUMN_MAP.get(col, col)}'"
                 print(msg)
                 errors.append(msg)
                 missing = True
@@ -359,7 +619,7 @@ def save_ma_db(document, ma, user_id):
                         continue
                     data[model_field] = value
                 except Exception as field_e:
-                    msg = f"Row {idx+1} field '{excel_col}' error: {field_e}"
+                    msg = f"แถวที่ {row_num}: คอลัมน์ '{MA_COLUMN_MAP.get(excel_col, excel_col)}' ผิดพลาด: {field_e}"
                     print(msg)
                     errors.append(msg)
 
@@ -375,7 +635,7 @@ def save_ma_db(document, ma, user_id):
                 "responsible_by": data.get("responsible_by"),
             }
             if models.Procurement.objects(**duplicate_query).first():
-                msg = f"Row {idx+1} skipped: duplicate found."
+                msg = f"แถวที่ {row_num}: ข้อมูลซ้ำกับที่มีในระบบแล้ว"
                 print(msg)
                 errors.append(msg)
                 continue
@@ -390,12 +650,13 @@ def save_ma_db(document, ma, user_id):
             created_count += 1
             print(f"Saved procurement: {procurement.product_number}")
         except Exception as e:
-            msg = f"Row {idx+1} error: {e}"
+            msg = f"แถวที่ {row_num}: เกิดข้อผิดพลาด: {e}"
             print(msg)
             errors.append(msg)
             continue
 
     document.updated_date = datetime.datetime.now()
+    document.error_messages = errors
     if created_count == 0:
         document.status = "failed"
     elif created_count < len(df):
