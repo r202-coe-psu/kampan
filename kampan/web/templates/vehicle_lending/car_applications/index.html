@@ -1,6 +1,7 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% from "/base/components/dialogs.html" import ModalNegative, ModalPositive%}
 
 
 {% block title %}คำขอใช้รถยนต์{% endblock %}
@@ -136,4 +137,4 @@
 {% else %}
 <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
 {% endif %}
-{% endblock %}
+</div> </div> {% endblock %}
