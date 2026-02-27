@@ -28,6 +28,11 @@ TRAVEL_TYPE = [
     ("one way", "เที่ยวเดียว"),
 ]
 
+AIRPORT_TRANSFER_TYPE = [
+    ("pickup", "รับ"),
+    ("dropoff", "ส่ง"),
+]
+
 USING_TYPE = [
     ("general", "ใช้รถทั่วไป"),
     ("airport transfer", "รับส่งสนามบิน"),
@@ -70,6 +75,9 @@ class CarApplication(VehicleApplication, me.Document):
     travel_type = me.StringField(
         default="one way", choices=TRAVEL_TYPE
     )  # ประเภทการเดินทาง
+    airport_transfer_type = me.StringField(
+        default="", choices=AIRPORT_TRANSFER_TYPE
+    )  # ประเภทการรับส่งสนามบิน
 
     passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
     flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป

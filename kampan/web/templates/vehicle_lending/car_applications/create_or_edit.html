@@ -27,23 +27,15 @@
   </div>
 </div>
 <form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{form.csrf_token }}
-    {{renderer.render_field(form.request_reason)}}
-  </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{renderer.render_field(form.location)}}
-  </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{renderer.render_field(form.passenger_location)}}
-  </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{ renderer.render_select_field(form.car, clearable=false) }}
-    {{ renderer.render_field(form.passenger_number) }}
-  </div>
+  {{form.csrf_token }}
   <div class="flex flex-row justify-between w-full gap-2">
     {{ renderer.render_radio(form.using_type) }}
-    {{ renderer.render_radio(form.travel_type) }}
+    <div id="travel_type_field" class="w-full">
+      {{ renderer.render_radio(form.travel_type) }}
+    </div>
+    <div id="airport_transfer_type_field" class="w-full" style="display: none;">
+      {{ renderer.render_radio(form.airport_transfer_type) }}
+    </div>
   </div>
 
   <!-- {{ render_form.RadioField(form.travel_type) }}
@@ -67,6 +59,21 @@
     {{renderer.render_field(form.flight_return_number) }}
     {{renderer.time_field(form.flight_return_time) }}
   </div>
+  <div class="divider"></div>
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{renderer.render_field(form.request_reason)}}
+  </div>
+  <div class="flex flex-row justify-between w-full gap-2" id="location_field_row">
+    {{renderer.render_field(form.location)}}
+  </div>
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{renderer.render_field(form.passenger_location)}}
+  </div>
+  <div class="flex flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.car, clearable=false) }}
+    {{ renderer.render_field(form.passenger_number) }}
+  </div>
+  
   <div class="flex flex-row w-full justify-between">
     <div class="flex justify-start w-full gap-2">
       <button type="submit" class="btn btn-primary">ยืนยัน</button>
@@ -79,74 +86,78 @@
 {% block additional_js %}
 <script type="text/javascript">
   $(document).ready(function () {
-
-    function toggleReturnDate() {
-      let travelType = $("input[name='travel_type']:checked").val();
-      let return_dateField = $("#return_date");
-      let return_timeField = $("#return_time");
-
-      if (travelType === "one way") {
-        $("#return_datetime").hide();
-        return_dateField.prop("required", false);
-        return_timeField.prop("required", false);
-      } else {
-        $("#return_datetime").show();
-        return_dateField.prop("required", true);
-        return_timeField.prop("required", true);
-      }
-    }
-
-    $("input[name='travel_type']").change(toggleReturnDate);
-
-    toggleReturnDate();
-  });
-</script>
-<script type="text/javascript">
-  $(document).ready(function () {
-
-    function toggleFlightDate() {
-      let travelType = $("input[name='travel_type']:checked").val();
+    function updateFormVisibility() {
       let usingType = $("input[name='using_type']:checked").val();
+      let travelType = $("input[name='travel_type']:checked").val();
+      let airportTransferType = $("input[name='airport_transfer_type']:checked").val();
+      let returnDatetime = $("#return_datetime");
+      let flightDatetime = $("#flight_datetime");
+      let flightReturnField = $("#flight_return_field");
+      let travelTypeField = $("#travel_type_field");
+      let airportTransferTypeField = $("#airport_transfer_type_field");
 
-      let flight_numberField = $("#flight_number");
-      let flight_timeField = $("#flight_time");
-
-      let flight_numberReturnField = $("#flight_return_number");
-      let flight_timeReturnField = $("#flight_return_time");
+      let returnDateField = $("#return_date");
+      let returnTimeField = $("#return_time");
+      let flightNumberField = $("#flight_number");
+      let flightTimeField = $("#flight_time");
+      let flightReturnNumberField = $("#flight_return_number");
+      let flightReturnTimeField = $("#flight_return_time");
       let locationField = $("#location");
+      let locationFieldRow = $("#location_field_row");
+
+      [returnDateField, returnTimeField, flightNumberField, flightTimeField, flightReturnNumberField, flightReturnTimeField].forEach(function(field) {
+        field.prop("required", false);
+      });
 
       if (usingType === "airport transfer") {
-        $("#flight_datetime").show();
-        flight_numberField.prop("required", true);
-        flight_timeField.prop("required", true);
-        locationField.val("สนามบิน");
+        travelTypeField.hide();
 
+        airportTransferTypeField.show();
+        locationFieldRow.hide();
+        locationField.val("สนามบินหาดใหญ่");
+        returnDatetime.hide();
 
+        if (airportTransferType === "pickup") {
+            flightDatetime.hide();
+            flightReturnField.show();
+            flightReturnNumberField.prop("required", true);
+            flightReturnTimeField.prop("required", true);
+        } else if (airportTransferType === "dropoff") {
+            flightDatetime.show();
+            flightReturnField.hide();
+            flightNumberField.prop("required", true);
+            flightTimeField.prop("required", true);
+        } else {
+            flightDatetime.hide();
+            flightReturnField.hide();
+        }
       } else {
-        $("#flight_datetime").hide();
-        flight_numberField.prop("required", false);
-        flight_timeField.prop("required", false);
-        locationField.val("");
+        travelTypeField.show();
+        airportTransferTypeField.hide();
+        locationFieldRow.show();
 
+        flightDatetime.hide();
+        flightReturnField.hide();
+        
+        if (locationField.val() === "สนามบินหาดใหญ่") {
+            locationField.val("");
+        }
 
-      }
-
-      if ((travelType === "round trip") && (usingType === "airport transfer")) {
-        $("#flight_return_field").show();
-        flight_numberReturnField.prop("required", true);
-        flight_timeReturnField.prop("required", true);
-
-      } else {
-        $("#flight_return_field").hide();
-        flight_numberReturnField.prop("required", false);
-        flight_timeReturnField.prop("required", false);
+        if (travelType === "round trip") {
+          returnDatetime.show();
+          returnDateField.prop("required", true);
+          returnTimeField.prop("required", true);
+        } else {
+          returnDatetime.hide();
+        }
       }
     }
 
-    $("input[name='using_type']").change(toggleFlightDate);
-    $("input[name='travel_type']").change(toggleFlightDate);
+    $("input[name='using_type']").change(updateFormVisibility);
+    $("input[name='travel_type']").change(updateFormVisibility);
+    $("input[name='airport_transfer_type']").change(updateFormVisibility);
 
-    toggleFlightDate();
+    updateFormVisibility();
   });
 </script>
 {% endblock %}

@@ -31,6 +31,7 @@
           <th class="table-style"></th>
           <th class="table-style">วันที่ต้องการใช้</th>
           <th class="table-style">ป้ายทะเบียนรถ</th>
+          <th class="table-style">ประเภทการใช้รถ</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
@@ -52,6 +53,12 @@
             </span>
           </td>
           <td class="table-style"> {{ car_application.car.license_plate }}</td>
+          <td class="table-style">
+            {{ car_application.get_using_type_display() }}
+            {% if car_application.using_type == 'airport transfer' %}
+            ({{ car_application.get_airport_transfer_type_display() }})
+            {% endif %}
+          </td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
           <td class="table-style">{{ car_application.location }}</td>
 
@@ -92,6 +99,12 @@
         </div>
         <div class="grid grid-cols-1 gap-2 text-sm">
           <div><span class="font-semibold">ป้ายทะเบียนรถ:</span> {{ car_application.car.license_plate }}</div>
+          <div><span class="font-semibold">ประเภทการใช้รถ:</span>
+            {{ car_application.get_using_type_display() }}
+            {% if car_application.using_type == 'airport transfer' %}
+            ({{ car_application.get_airport_transfer_type_display() }})
+            {% endif %}
+          </div>
           <div><span class="font-semibold">เหตุผลที่ต้องการใช้:</span> {{ car_application.request_reason }}</div>
           <div><span class="font-semibold">สถานที่ต้องการจะไป:</span> {{ car_application.location }}</div>
           <div><span class="font-semibold">ชื่อผู้ใช้งาน:</span> {{ car_application.creator.get_name() }}</div>
@@ -120,21 +133,22 @@
       </div>
       {% endfor %}
     </div>
-  </div>
-</div>
-{% for car_application in paginated_car_applications.items %}
 
-{{ ModalNegative(
-  id=car_application.id,
-  header="ลบคำขอใช้รถยนต์",
-  body="ต้องการลบคำขอใช้รถยนต์ <b> %s </b>" | format(car_application.request_reason),
-  cancel="ยกเลิก",
-  submit="ยืนยัน",
-  redirect=url_for('vehicle_lending.car_applications.delete', car_application_id=car_application.id, organization_id=organization.id),
-  ) }}
-{% endfor %}
+    {% else %}
+    <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้ </div>
+    {% endif %}
 
-{% else %}
-<div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>
+  </div> </div> {% if paginated_car_applications.total %}
+  {% for car_application in paginated_car_applications.items %}
+  {{ ModalNegative(
+    id=car_application.id,
+    header="ลบคำขอใช้รถยนต์",
+    body="ต้องการลบคำขอใช้รถยนต์ <b> %s </b>" | format(car_application.request_reason),
+    cancel="ยกเลิก",
+    submit="ยืนยัน",
+    redirect=url_for('vehicle_lending.car_applications.delete', car_application_id=car_application.id, organization_id=organization.id),
+    ) }}
+  {% endfor %}
 {% endif %}
-</div> </div> {% endblock %}
+
+{% endblock %}

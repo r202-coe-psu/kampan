@@ -46,17 +46,22 @@ class CarApplicationForm(BaseCarApplicationForm):
         choices=models.vehicle_applications.USING_TYPE,
         default=models.vehicle_applications.USING_TYPE[0][0],
     )
+    airport_transfer_type = fields.RadioField(
+        "ประเภทการเดินทางรับส่งสนามบิน",
+        choices=models.vehicle_applications.AIRPORT_TRANSFER_TYPE,
+        default=models.vehicle_applications.AIRPORT_TRANSFER_TYPE[0][0],
+    )
     travel_type = fields.RadioField(
         "ประเภทการเดินทาง",
         choices=models.vehicle_applications.TRAVEL_TYPE,
         default=models.vehicle_applications.TRAVEL_TYPE[0][0],
     )
     departure_date = fields.DateField(
-        "วันเวลาออกเดินทาง",
+        "วันออกเดินทาง",
         validators=[validators.InputRequired()],
     )
     departure_time = fields.TimeField(
-        "เวลาออกเดินทาง",
+        "เวลา",
         # format="%I:%M %p",
         validators=[validators.InputRequired()],
     )
@@ -72,11 +77,11 @@ class CarApplicationForm(BaseCarApplicationForm):
     )
 
     flight_return_time = fields.TimeField(
-        "เวลาไฟล์ทบินกลับ",
+        "เครื่องมาถึงสนามบินหาดใหญ่เวลา",
         validators=[validators.Optional()],
     )
     flight_time = fields.TimeField(
-        "เวลาไฟล์ทบินไป",
+        "เครื่องออกจากสนามบินหาดใหญ่เวลา",
         # format="%I:%M %p",
         validators=[validators.Optional()],
     )
