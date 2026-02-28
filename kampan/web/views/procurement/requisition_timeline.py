@@ -306,7 +306,9 @@ def billing_modal(requisition_timeline_id):
 
     requisition_timeline.fund_usage_amounts = usage_amounts
     requisition_timeline.payment_amount = round(total_amount, 2)
-    add_progress_in_order(requisition_timeline, "completed", current_user, request)
+    add_progress_in_order(
+        requisition_timeline, "awaiting_delivery", current_user, request
+    )
 
     return redirect(
         url_for(
