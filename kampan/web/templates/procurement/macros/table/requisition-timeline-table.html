@@ -3,7 +3,8 @@
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
     <input type="hidden" name="progress" value="{{ step_key }}" />
     <button type="submit" class="{{ btn_cls }}">
-      <i class="ph {{ icon_cls }}"></i> {{ label }}
+      <i class="ph {{ icon_cls }}"></i>
+      <span class= "hidden sm:inline">{{ label }}</span>
     </button>
   </form>
 {% endmacro %}
@@ -18,7 +19,7 @@
       <button type="button"
               class="btn btn-sm btn-success bg-gradient-to-r from-emerald-500 to-teal-600 border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md"
               onclick="document.getElementById('modal-billing-{{ item.id }}').showModal();">
-        <i class="ph ph-receipt"></i> ตรวจสอบบิล
+        <i class="ph ph-receipt"></i> ยืนยันคำสั่งซื้อ
       </button>
     {% elif not latest_progress or latest_progress.progress_status != 'completed' %}
       {% set can_go_back = current_step > 1 and not (billing_done and current_step <= 3) and not current_step == 4 %}
@@ -344,7 +345,7 @@
                   </button>
                 </div>
               </div>
-              <div class="flex gap-2 flex-wrap">
+              <div class="flex gap-2 flex-wrap items-end justify-end">
                 {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user) }}
               </div>
             </div>
