@@ -1,3 +1,4 @@
+from uuid import uuid4
 from flask import (
     Blueprint,
     render_template,
@@ -6,11 +7,12 @@ from flask import (
     request,
     flash,
     abort,
+    send_file,
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import acl, forms
-from kampan import models
+from kampan.web import acl, forms, redis_rq
+from kampan import models, utils
 
 import mongoengine as me
 import datetime
@@ -112,4 +114,49 @@ def reservation(mas_id):
         mas=mas,
         reservations=paginated_reservations.items,
         paginated_reservations=paginated_reservations,
+    )
+
+
+@module.route("/export_mas_excel_modal", methods=["GET"])
+@acl.organization_roles_required("admin")
+def export_excel_modal():
+    modal_id = uuid4()
+    organization_id = request.args.get("organization_id")
+    exported_file = models.export_file.ExportFile.objects(
+        created_by=current_user._get_current_object()
+    ).first()
+    return render_template(
+        "procurement/components/export_excel_modal.html",
+        modal_id=modal_id,
+        exported_file=exported_file,
+        organization_id=organization_id,
+    )
+
+
+@module.route("/export_excel")
+@acl.organization_roles_required("admin")
+def export_excel():
+    organization_id = request.args.get("organization_id")
+    job_id = redis_rq.redis_queue.queue.enqueue(
+        utils.export_file.process_mas_export,
+        args=(current_user._get_current_object(),),
+        timeout=3600,
+        job_timeout=1200,
+    )
+    flash("ระบบกำลังสร้างไฟล์ส่งออกข้อมูลบุคคลากร กรุณารอสักครู่", "info")
+    return redirect(url_for("admin.mas.index", organization_id=organization_id))
+
+
+@module.route("/download_exported_excel/<export_id>")
+@acl.organization_roles_required("admin")
+def download_exported_file(export_id):
+    export_mas_excel = models.ExportFile.objects.get(id=export_id)
+    if not export_mas_excel or not export_mas_excel.file:
+        flash("ไม่พบไฟล์ที่ส่งออก กรุณาทำการส่งออกข้อมูลใหม่", "error")
+        return redirect(url_for("admin.mas.index"))
+
+    return send_file(
+        export_mas_excel.file,
+        as_attachment=True,
+        download_name=f"{export_mas_excel.file_name}",
     )

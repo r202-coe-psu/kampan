@@ -22,7 +22,7 @@ from .upload_files import Document
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
 from .requisition_timeline import RequisitionTimeline, Progress, PROGRESS_STATUS_CHOICES
-
+from .export_file import ExportFile
 
 db = MongoEngine()
 

@@ -1,0 +1,64 @@
+{% import '/base/html-renderer.html' as renderer %}
+
+<dialog id="{{ modal_id }}" class="modal modal-open">
+  <div class="modal-box w-11/12 max-w-2xl !max-h-[85vh]">
+    <h3 class="text-lg">ส่งออกข้อมูลแหล่งเงิน</h3>
+    <span class="text-sm text-gray-600">คลิกปุ่มยืนยันเพื่อเริ่มการส่งออกข้อมูล</span>
+    <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 outline-none"
+      onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">✕</button>
+    
+    <div class="flex flex-col mt-4">
+      <span class="text-sm text-gray-500">หมายเหตุ: หลังจากกดยืนยัน ระบบจะเริ่มดำเนินการส่งออกข้อมูล
+        ซึ่งอาจใช้เวลาสักครู่ ขึ้นอยู่กับจำนวนข้อมูลบุคลากรในระบบ</span>
+      
+
+
+    <div class="modal-action justify-end">
+      <button type="button" class="btn"
+        onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+        ปิด
+      </button>
+
+      <button type="button" class="btn btn-orange" onclick="submitExportMAS('{{ modal_id }}')">
+        <i class="ph ph-download"></i>
+        ยืนยันส่งออก
+      </button>
+    </div>
+
+    <div class="divider"></div>
+    
+    <div class="flex flex-col mt-6">
+      <h1 class="text-bold pb-4">ไฟล์ที่มีในระบบ</h1>
+      {% if not exported_file %}
+      <span class="text-sm text-gray-500 ml-2">ยังไม่มีไฟล์ส่งออกในระบบ</span>
+      {% else %}
+      <div class="flex flex-col bg-white p-4 mb-4 rounded-lg shadow-md">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class="text-sm font-semibold">{{exported_file.file_name}}</span>
+            <span class="text-sm text-gray-500 block">อัปเดตเมื่อ
+              {{ exported_file.updated_date.strftime('%d %B %Y, %H:%M') }}</span>
+          </div>
+          <a href="{{ url_for('admin.mas.download_exported_file', export_id=exported_file.id) }}"
+            class="btn btn-sm" download>
+            <i class="ph ph-download"></i> ดาวน์โหลด
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</dialog>
+
+<script>
+  function submitExportMAS(modalId) {
+    const errorMsg = document.getElementById('export-error-msg');
+    const modal = document.getElementById(modalId);
+    if (errorMsg) errorMsg.classList.add('hidden');
+    const exportUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id) }}";
+    window.location.href = exportUrl;
+    if (modal) {
+      modal.classList.remove('modal-open');
+    }
+  }
+</script>
