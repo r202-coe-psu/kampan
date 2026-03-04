@@ -21,7 +21,12 @@ from .requisitions import Requisition, RequisitionItem, Committees
 from .upload_files import Document
 import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
-from .requisition_timeline import RequisitionTimeline, Progress, PROGRESS_STATUS_CHOICES
+from .requisition_timeline import (
+    RequisitionTimeline,
+    Progress,
+    PROGRESS_STATUS_CHOICES,
+    RequisitionTimelineLogs,
+)
 from .export_file import ExportFile
 
 db = MongoEngine()

@@ -1,11 +1,41 @@
-{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label) %}
-  <form method="post" action="{{ url }}" class="inline">
+{% import '/base/html-renderer.html' as renderer %}
+
+
+{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label, confirm_id) %}
+  <form id="form-{{ confirm_id }}" method="post" action="{{ url }}" class="inline">
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
     <input type="hidden" name="progress" value="{{ step_key }}" />
-    <button type="submit" class="{{ btn_cls }}">
+
+    <button type="button" class="{{ btn_cls }}" onclick="document.getElementById('{{ confirm_id }}').showModal();">
       <i class="ph {{ icon_cls }}"></i>
-      <span class= "hidden sm:inline">{{ label }}</span>
+      <span class="hidden sm:inline">{{ label }}</span>
     </button>
+
+    <dialog id="{{ confirm_id }}" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
+        <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
+
+        {% if step_key == 'order_confirmed' %}
+          <div class="form-control w-full mb-3">
+            <label class="label"><span class="label-text">ผู้ชนะใบเสนอราคา <span class="text-error">*</span></span></label>
+            <input type="text" name="winner" class="input input-bordered w-full"
+                   placeholder="ระบุชื่อผู้ชนะใบเสนอราคา" required />
+          </div>
+          <div class="form-control w-full mb-3">
+            <label class="label"><span class="label-text">ราคาสุทธิที่สั่งซื้อ (บาท) <span class="text-error">*</span></span></label>
+            <input type="number" step="0.01" min="0" name="total_amount" class="input input-bordered w-full"
+                   placeholder="0.00" required />
+          </div>
+        {% endif %}
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">ยกเลิก</button>
+          <button type="submit" class="btn {{ 'btn-warning' if 'warning' in btn_cls else 'btn-primary' }}">ตกลง</button>
+        </div>
+      </div>
+      <div class="modal-backdrop" onclick="document.getElementById('{{ confirm_id }}').close()"></div>
+    </dialog>
   </form>
 {% endmacro %}
 
@@ -25,12 +55,12 @@
       {% set can_go_back = current_step > 1 and not (billing_done and current_step <= 3) and not current_step == 4 %}
       {% if can_go_back %}
         {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step - 2],
-                'btn btn-sm btn-warning border-0 shadow-md', 'ph-arrow-left', 'ย้อนกลับ') }}
+                'btn btn-sm btn-warning border-0 shadow-md', 'ph-arrow-left', 'ย้อนกลับ', 'modal-back-' ~ item.id) }}
       {% endif %}
       {% if current_step < PROGRESS_STATUS_ORDER|length %}
         {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step],
                 'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md',
-                'ph-arrow-right', 'ขั้นตอนถัดไป') }}
+                'ph-arrow-right', 'ขั้นตอนถัดไป', 'modal-next-' ~ item.id) }}
       {% endif %}
     {% endif %}
     <button type="button"
@@ -270,10 +300,28 @@
                                       <p class="text-sm {{ 'text-gray-600' if (is_done or is_active) else ('text-red-700' if is_after_cancelled else 'text-gray-400') }} mb-3">
                                         {{ step.desc }}
                                       </p>
+                                      {% if step.key == 'order_confirmed' and (item.quotation_winner or item.total_amount) %}
+                                        <div class="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                          {% if item.quotation_winner %}
+                                            <div class="flex items-center gap-2 text-sm text-blue-800">
+                                              <i class="ph ph-medal-military font-bold"></i>
+                                              <span class="font-semibold">ผู้ชนใบเสนอราคา:</span>
+                                              <span>{{ item.quotation_winner }}</span>
+                                            </div>
+                                          {% endif %}
+                                          {% if item.total_amount %}
+                                            <div class="flex items-center gap-2 text-sm text-blue-800 mt-1">
+                                              <i class="ph ph-money font-bold"></i>
+                                              <span class="font-semibold">ราคาสุทธิ:</span>
+                                              <span class="font-bold">฿{{ "{:,.2f}".format(item.total_amount) }}</span>
+                                            </div>
+                                          {% endif %}
+                                        </div>
+                                      {% endif %}
                                       <div class="flex items-center gap-4 text-xs {{ 'text-gray-700' if (is_done or is_active) else ('text-red-700' if is_after_cancelled else 'text-gray-600') }}">
                                         {% set step_progress = (item.progress | selectattr('progress_status','equalto', step.key) | list | first) %}
                                         <div class="flex items-center gap-1">
-                                          Updated By<i class="ph ph-user"></i>
+                                          อัปเดตโดย<i class="ph ph-user"></i>
                                           <span>
                                             {% if is_done and step_progress and
                                               step_progress.created_by %}
@@ -398,6 +446,20 @@
                                 <div class="text-xs {{ 'text-gray-600' if (is_done or is_active) else 'text-gray-400' }}">
                                   {{ step.desc }}
                                 </div>
+                                {% if step.key == 'order_confirmed' and (item.quotation_winner or item.total_amount) %}
+                                  <div class="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
+                                    {% if item.quotation_winner %}
+                                      <div class="text-xs text-blue-800">
+                                        <span class="font-semibold">ผู้ชนะใบเสนอราคา:</span> {{ item.quotation_winner }}
+                                      </div>
+                                    {% endif %}
+                                    {% if item.total_amount %}
+                                      <div class="text-xs text-blue-800">
+                                        <span class="font-semibold">ราคาสุทธิ:</span> <span class="font-bold">฿{{ "{:,.2f}".format(item.total_amount) }}</span>
+                                      </div>
+                                    {% endif %}
+                                  </div>
+                                {% endif %}
                               </div>
                             </div>
                           </div>
@@ -488,6 +550,18 @@
             <form method="post"
                   action="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+
+              <div class="form-control w-full mb-4">
+                <label class="label">
+                  <span class="label-text">ผู้ชนะใบเสนอราคา</span>
+                </label>
+                <input type="text"
+                       name="quotation_winner"
+                       class="input input-bordered w-full"
+                       placeholder="ระบุชื่อผู้ชนะใบเสนอราคา"
+                       value="{{ item.quotation_winner if item.quotation_winner else '' }}"
+                       required />
+              </div>
 
               {% set item_reservations = reservations_map.get(item.requisition.id|string, []) %}
               {% set usage_map = item.fund_usage_amounts or {} %}

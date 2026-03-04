@@ -42,3 +42,11 @@ class ReservationPaymentForm(Form):
 
 class BillingForm(FlaskForm):
     reservations = fields.FieldList(fields.FormField(ReservationPaymentForm))
+    quotation_winner = fields.StringField(
+        "ผู้ชนะการเสนอราคา", validators=[validators.Optional()]
+    )
+
+
+class RequisitionTimelineFilterForm(FlaskForm):
+    requisition_code = fields.StringField("เลขที่คำขอ")
+    progress = fields.SelectField("สถานะ", choices=[])

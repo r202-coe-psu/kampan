@@ -112,6 +112,8 @@ def index():
     per_page = request.args.get("per_page", default=10, type=int)
     progress = request.args.get("progress", default=None, type=str)
     requisition_code = request.args.get("requisition_code", default=None, type=str)
+    filter_form = forms.requisition_timeline.RequisitionTimelineFilterForm()
+
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = current_user.user_setting.current_organization
@@ -156,7 +158,6 @@ def index():
         per_page=per_page,
     )
 
-    # Build reservations_map: {str(requisition_id): [Reservation, ...]}
     page_requisition_ids = [
         item.requisition.id
         for item in paginated_requisition_timeline.items
@@ -173,6 +174,7 @@ def index():
         paginated_requisition_timeline=paginated_requisition_timeline,
         requisition_timeline_list=requisition_timeline,
         organization=organization,
+        filter_form=filter_form,
         progress_choices=progress_choices,
         is_admin=is_admin,
         PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,
@@ -191,18 +193,24 @@ def add_progress(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id
     )
-
-    # Get progress value from form
     new_progress_status = request.form.get("progress")
 
     if new_progress_status:
-        # Call the function to add progress in order
         add_progress_in_order(
             requisition_timeline,
             new_progress_status,
             current_user,
             request,
         )
+        requisition_timeline_logs = models.RequisitionTimelineLogs(
+            requisition_timeline=requisition_timeline,
+            metadata=requisition_timeline.to_mongo().to_dict(),
+            progress_status=new_progress_status,
+            created_by=current_user._get_current_object(),
+            last_ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        requisition_timeline_logs.save()
 
     return redirect(
         url_for(
@@ -278,11 +286,8 @@ def billing_modal(requisition_timeline_id):
     reservations = list(
         models.Reservation.objects(requisition=requisition_timeline.requisition)
     )
-
     form = forms.requisition_timeline.BillingForm()
-
     res_map = {str(r.id): r for r in reservations}
-
     usage_amounts = {}
     total_amount = 0.0
     for entry in form.reservations.entries:
@@ -300,7 +305,8 @@ def billing_modal(requisition_timeline_id):
         res.reservation_status = "finished"
         res.save()
         if res.mas:
-            res.mas.remaining_amount = float(res.mas.remaining_amount or 0) - actual
+            new_remaining = float(res.mas.remaining_amount or 0) - actual
+            res.mas.remaining_amount = max(0, new_remaining)
             res.mas.reservable_amount = float(res.mas.reservable_amount or 0) + unused
             res.mas.save()
 
@@ -309,6 +315,9 @@ def billing_modal(requisition_timeline_id):
     add_progress_in_order(
         requisition_timeline, "awaiting_delivery", current_user, request
     )
+    if form.quotation_winner.data:
+        requisition_timeline.quotation_winner = form.quotation_winner.data
+        requisition_timeline.save()
 
     return redirect(
         url_for(
