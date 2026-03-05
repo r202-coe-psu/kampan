@@ -48,6 +48,7 @@ class RequisitionTimelineLogs(me.Document):
     )
     progress_status = me.StringField(required=True, max_length=20)
     metadata = me.DictField()
+    hashed_metadata = me.StringField()  # from latest progress status and metadata
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     created_by = me.ReferenceField("User", dbref=True)
     last_ip_address = me.StringField()

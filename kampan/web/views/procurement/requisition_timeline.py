@@ -15,8 +15,10 @@ from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
 from kampan import models, utils
+from kampan.utils.hash import hash_mongo_metadata
 from ... import redis_rq
 import datetime
+import hashlib
 
 
 module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_timeline")
@@ -100,6 +102,7 @@ def add_progress_in_order(
     # อัปเดตข้อมูลอื่นๆ
     requisition_timeline.last_updated_by = current_user._get_current_object()
     requisition_timeline.updated_date = datetime.datetime.now()
+
     requisition_timeline.save()
 
     return requisition_timeline
@@ -205,6 +208,7 @@ def add_progress(requisition_timeline_id):
         requisition_timeline_logs = models.RequisitionTimelineLogs(
             requisition_timeline=requisition_timeline,
             metadata=requisition_timeline.to_mongo().to_dict(),
+            hashed_metadata=hash_mongo_metadata(requisition_timeline),
             progress_status=new_progress_status,
             created_by=current_user._get_current_object(),
             last_ip_address=request.remote_addr,
