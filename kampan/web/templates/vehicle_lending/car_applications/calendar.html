@@ -26,8 +26,8 @@
     </a>
   </div>
 </div>
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div id='calendar'></div>
+<div class="segment my-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm max-sm:h-[calc(100svh-10rem)]">
+  <div id='calendar' class="max-sm:h-full"></div>
 </div>
 <style>
   .fc-view-harness {
@@ -38,6 +38,15 @@
   .fc-view-harness-active {
     display: block !important;
     z-index: 0 !important;
+  }
+
+  @media (max-width: 640px) {
+    #calendar,
+    #calendar .fc,
+    #calendar .fc-view-harness,
+    #calendar .fc-view-harness-active {
+      height: 100% !important;
+    }
   }
 </style>
 {% endblock %}
