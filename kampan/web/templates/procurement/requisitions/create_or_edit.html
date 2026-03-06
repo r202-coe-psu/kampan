@@ -55,6 +55,73 @@
           {{ renderer.render_field(form.phone, placeholder="เบอร์โทรศัพท์") }}
           {{ renderer.date_field(form.start_date) }}
         </div>
+
+        {% set items_has_errors = form.items.errors|length > 0 %}
+        <div class="mt-6 border-t border-gray-100 pt-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-md font-semibold text-gray-700">
+              รายการขอซื้อ
+              {% if items_has_errors %}
+                <span class="badge badge-error badge-sm ml-2">มีข้อผิดพลาด</span>
+              {% endif %}
+            </h3>
+            <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
+              <i class="ph ph-plus"></i>
+              เพิ่มรายการ
+            </button>
+          </div>
+          <div id="items-container" class="space-y-4">
+            <div id="item-template" class="hidden">
+              {% set template_item = form.items.entries[0] %}
+              <div class="bg-white p-4 rounded-lg border item-row">
+                <div class="flex justify-between items-center mb-3">
+                  <span class="text-sm font-medium text-gray-700">รายการที่ X</span>
+                  <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>{{ renderer.render_field(template_item.product_name, disabled=True) }}</div>
+                  <div>{{ renderer.render_select_field(template_item.category, disabled=True) }}</div>
+                  <div>{{ renderer.render_number_field(template_item.quantity, min=1, disabled=True) }}</div>
+                  <div>{{ renderer.render_field(template_item.currency, disabled=True) }}</div>
+                  <div>{{ renderer.render_number_field(template_item.amount, disabled=True) }}</div>
+                </div>
+              </div>
+            </div>
+
+            {% for item_form in form.items.entries %}
+              <div class="bg-white p-4 rounded-lg border item-row">
+                <div class="flex justify-between items-center mb-3">
+                  <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
+                  {% if loop.index > 1 %}
+                    <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
+                  {% endif %}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>{{ renderer.render_field(item_form.product_name) }}</div>
+                  <div>{{ renderer.render_select_field(item_form.category) }}</div>
+                  <div>{{ renderer.render_number_field(item_form.quantity, min=1) }}</div>
+                  <div>{{ renderer.render_field(item_form.currency) }}</div>
+                  <div>{{ renderer.render_number_field(item_form.amount) }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% if form.items.errors %}
+            {% for item_errors in form.items.errors %}
+              {% if item_errors %}
+                {% for field_name, field_errors in item_errors.items() %}
+                  {% for error in field_errors %}
+                    <p class="text-error text-sm mt-1">
+                      <i class="ph ph-warning-circle"></i>
+                      รายการที่ {{ loop.index }}: {{ error }}
+                    </p>
+                  {% endfor %}
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </div>
+
         <div class="mt-4">{{ renderer.render_text_area_field(form.reason) }}</div>
         <div class="mt-4">
           <div class="flex justify-between items-center mb-1">
@@ -66,72 +133,6 @@
           {{ renderer.file_input(form.tor_document) }}
         </div>
         <div class="mt-4">{{ renderer.file_input(form.qt_document) }}</div>
-      </div>
-
-      {% set items_has_errors = form.items.errors|length > 0 %}
-      <div class="bg-gray-50 rounded-lg p-6 {{ 'ring-2 ring-error/50' if items_has_errors }}">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold text-gray-800">
-            รายการขอซื้อ
-            {% if items_has_errors %}
-              <span class="badge badge-error badge-sm ml-2">มีข้อผิดพลาด</span>
-            {% endif %}
-          </h2>
-          <button type="button" id="add-item-btn" class="btn btn-primary btn-sm gap-2">
-            <i class="ph ph-plus"></i>
-            เพิ่มรายการ
-          </button>
-        </div>
-        <div id="items-container" class="space-y-4">
-          <div id="item-template" class="hidden">
-            {% set template_item = form.items.entries[0] %}
-            <div class="bg-white p-4 rounded-lg border item-row">
-              <div class="flex justify-between items-center mb-3">
-                <span class="text-sm font-medium text-gray-700">รายการที่ X</span>
-                <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>{{ renderer.render_field(template_item.product_name, disabled=True) }}</div>
-                <div>{{ renderer.render_select_field(template_item.category, disabled=True) }}</div>
-                <div>{{ renderer.render_number_field(template_item.quantity, min=1, disabled=True) }}</div>
-                <div>{{ renderer.render_field(template_item.currency, disabled=True) }}</div>
-                <div>{{ renderer.render_number_field(template_item.amount, disabled=True) }}</div>
-              </div>
-            </div>
-          </div>
-
-          {% for item_form in form.items.entries %}
-            <div class="bg-white p-4 rounded-lg border item-row">
-              <div class="flex justify-between items-center mb-3">
-                <span class="text-sm font-medium text-gray-700">รายการที่ {{ loop.index }}</span>
-                {% if loop.index > 1 %}
-                  <button type="button" class="btn btn-error btn-xs remove-item-btn">ลบ</button>
-                {% endif %}
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>{{ renderer.render_field(item_form.product_name) }}</div>
-                <div>{{ renderer.render_select_field(item_form.category) }}</div>
-                <div>{{ renderer.render_number_field(item_form.quantity, min=1) }}</div>
-                <div>{{ renderer.render_field(item_form.currency) }}</div>
-                <div>{{ renderer.render_number_field(item_form.amount) }}</div>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-        {% if form.items.errors %}
-          {% for item_errors in form.items.errors %}
-            {% if item_errors %}
-              {% for field_name, field_errors in item_errors.items() %}
-                {% for error in field_errors %}
-                  <p class="text-error text-sm mt-1">
-                    <i class="ph ph-warning-circle"></i>
-                    รายการที่ {{ loop.index }}: {{ error }}
-                  </p>
-                {% endfor %}
-              {% endfor %}
-            {% endif %}
-          {% endfor %}
-        {% endif %}
       </div>
 
       {% set committees_has_errors = form.committees.errors|length > 0 %}

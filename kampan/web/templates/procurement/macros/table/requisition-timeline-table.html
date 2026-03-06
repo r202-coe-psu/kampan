@@ -16,18 +16,7 @@
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
 
-        {% if step_key == 'order_confirmed' %}
-          <div class="form-control w-full mb-3">
-            <label class="label"><span class="label-text">ผู้ชนะใบเสนอราคา <span class="text-error">*</span></span></label>
-            <input type="text" name="winner" class="input input-bordered w-full"
-                   placeholder="ระบุชื่อผู้ชนะใบเสนอราคา" required />
-          </div>
-          <div class="form-control w-full mb-3">
-            <label class="label"><span class="label-text">ราคาสุทธิที่สั่งซื้อ (บาท) <span class="text-error">*</span></span></label>
-            <input type="number" step="0.01" min="0" name="total_amount" class="input input-bordered w-full"
-                   placeholder="0.00" required />
-          </div>
-        {% endif %}
+
 
         <div class="modal-action">
           <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">ยกเลิก</button>
