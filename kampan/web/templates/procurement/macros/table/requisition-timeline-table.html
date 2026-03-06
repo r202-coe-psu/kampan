@@ -15,9 +15,6 @@
       <div class="modal-box">
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
-
-
-
         <div class="modal-action">
           <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">ยกเลิก</button>
           <button type="submit" class="btn {{ 'btn-warning' if 'warning' in btn_cls else 'btn-primary' }}">ตกลง</button>
