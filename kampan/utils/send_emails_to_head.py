@@ -29,7 +29,7 @@ Link เอกสาร: {{ document_url }}
 """
 
 
-def get_head_text_format(requisition, setting):
+def get_head_text_format(requisition, setting, organization_id):
 
     req = models.Requisition.objects(id=requisition.id).first()
     if not req:
@@ -50,7 +50,8 @@ def get_head_text_format(requisition, setting):
     )
     purchaser_email = user.email if user else purchaser.email if purchaser else "-"
     host_url = default_settings.KAMPAN_HOST_URL
-    document_url = f"{host_url}/procurement/requisitions/{requisition.id}/document"
+
+    document_url = f"{host_url}/procurement/requisitions/renewal_requested"
 
     text_format = {
         "requisition_code": req.requisition_code,
@@ -67,12 +68,13 @@ def get_head_text_format(requisition, setting):
 
 def send_email_to_head(
     requisition: models.Requisition,
-    user_id,
+    organization_id: str,
+    user_id: str,
     setting,
     organization,
 ):
     logger.debug("use send_email_to_head ")
-    text_format = get_head_text_format(requisition, setting)
+    text_format = get_head_text_format(requisition, setting, organization_id)
     all_heads = organization.get_heads_by_division(text_format["purchaser_division_id"])
 
     if not text_format:

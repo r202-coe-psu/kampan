@@ -21,7 +21,7 @@ email_body_template = """
 เหตุผลความต้องการ: {{ reason }}
 
 ระบบขอซื้อพัสดุ
-Link เอกสาร: {{ document_url }}
+Link: {{ document_url }}
 
 ด้วยความเคารพ
 {{ purchaser_name }}
@@ -47,7 +47,7 @@ def get_head_text_format(requisition, setting):
     )
     purchaser_email = user.email if user else purchaser.email if purchaser else "-"
     host_url = default_settings.KAMPAN_HOST_URL
-    document_url = f"{host_url}/procurement/requisitions/{requisition.id}/document"
+    document_url = f"{host_url}"
 
     text_format = {
         "requisition_code": req.requisition_code,

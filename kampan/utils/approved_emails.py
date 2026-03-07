@@ -2,6 +2,7 @@ from jinja2 import Template
 import logging
 from kampan import models
 from .email_utils import PSUSMTP
+from kampan import default_settings
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +82,8 @@ def get_email_text_format(requisition, setting, notif_type=None):
         user.get_name() if user else purchaser.display_name() if purchaser else "-"
     )
     purchaser_email = user.email if user else purchaser.email if purchaser else "-"
-    host_url = setting.get("KAMPAN_HOST_URL")
-    document_url = f"{host_url}/procurement/requisitions/{requisition.id}/document"
+    host_url = default_settings.KAMPAN_HOST_URL
+    document_url = f"{host_url}/procurement/requisitions/renewal_requested"
 
     for committee in requisition.committees:
         if not committee.member:

@@ -27,18 +27,18 @@ module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 def generate_next_requisition_code():
     now = datetime.datetime.now()
     buddhist_year = now.year + 543
-    prefix = f"{buddhist_year}-"
+    suffix = f"/{buddhist_year}"
     last = (
-        models.Requisition.objects(requisition_code__startswith=prefix)
+        models.Requisition.objects(requisition_code__endswith=suffix)
         .order_by("-requisition_code")
         .first()
     )
     if last and last.requisition_code:
-        last_number = int(last.requisition_code.split("-")[1])
+        last_number = int(last.requisition_code.split("/")[0])
         next_number = last_number + 1
     else:
         next_number = 1
-    return f"{buddhist_year}-{next_number:04d}"
+    return f"{next_number:04d}/{buddhist_year}"
 
 
 @module.route("", methods=["GET", "POST"])
@@ -439,6 +439,7 @@ def create_or_edit(requisition_procurement_id):
         utils.send_emails_to_head.send_email_to_head,
         args=(
             requisition,
+            organization.id,
             current_user.id,
             current_app.config,
             organization,
