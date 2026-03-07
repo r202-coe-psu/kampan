@@ -1,5 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% import 'procurement/macros/table.html' as table_macros %}
+{% from 'procurement/macros/products_table.html' import render_products_table %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 
@@ -124,7 +124,7 @@
     <div class="card bg-base-100 shadow-xl border border-base-200">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          {{ table_macros.render_products_table(procurements, current_user, organization, today) }}
+          {{ render_products_table(procurements, current_user, organization, today) }}
         </div>
       </div>
     </div>

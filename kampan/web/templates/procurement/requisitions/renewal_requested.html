@@ -1,6 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
-{% import '/procurement/macros/table.html' as table_macros %}
+{% from '/procurement/macros/renewal_requested_table.html' import render_renewal_requested_items_table %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 {% block title %}รายการขอซื้อขอจ้าง{% endblock %}
 {% block dashboard_title %}รายการขอซื้อขอจ้าง{% endblock %}
@@ -80,13 +80,13 @@
     </div>
     {% if current_user.has_organization_roles("manager") %}
       <h1 class="text-xl font-bold">รายการขอซื้อขอจ้างที่รอการพิจารณา</h1>
-      {{ table_macros.render_renewal_requested_items_table(manager_requisitions,current_user, mas_list, organization, manager_action=true) }}
+      {{ render_renewal_requested_items_table(manager_requisitions,current_user, mas_list, organization, manager_action=true) }}
       {% if paginated_manager_requisitions %}
         {{ paginated.render_pagination(paginated_manager_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
       {% endif %}
     {% endif %}
     <h1 class="text-xl font-bold mt-6">รายการขอซื้อขอจ้างทั้งหมด</h1>
-    {{ table_macros.render_renewal_requested_items_table(requisitions,current_user, mas_list, organization, manager_action=false) }}
+    {{ render_renewal_requested_items_table(requisitions,current_user, mas_list, organization, manager_action=false) }}
     {{ paginated.render_pagination(paginated_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
   </div>
 {% endblock %}

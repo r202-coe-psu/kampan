@@ -1,6 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
-{% import '/procurement/macros/table.html' as table_macros %}
+{% from '/procurement/macros/non_renewal_table.html' import render_non_renewal_items_table %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
 
 {% block title %}รายการที่ไม่ต่ออายุแล้ว{% endblock %}
@@ -8,7 +8,5 @@
 
 
 {% block content %}
-  <div class="container mx-auto px-4 py-6">
-    {{ table_macros.render_non_renewal_items_table(items) }}
-  </div>
+  <div class="container mx-auto px-4 py-6">{{ render_non_renewal_items_table(items) }}</div>
 {% endblock %}

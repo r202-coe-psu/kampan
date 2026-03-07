@@ -1,44 +1,42 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
-{% from '/procurement/macros/table.html' import render_mas_table %}
+{% from '/procurement/macros/mas_table.html' import render_mas_table %}
 
 {% block title %}ระบบ MAS{% endblock %}
 {% block dashboard_title %}ระบบบริหารจัดการงบประมาณ (MAS){% endblock %}
 
 {% block content %}
-<div id="export_excel_modal"></div>
-<!-- Header Section -->
-<div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+  <div id="export_excel_modal"></div>
+  <!-- Header Section -->
+  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center">
-        <div class="">
-            <h1 class="text-2xl font-bold text-gray-800">ระบบบริหารจัดการงบประมาณ</h1>
-            <p class="text-gray-600 mt-1">Management Accounting System (MAS)</p>
+      <div class="">
+        <h1 class="text-2xl font-bold text-gray-800">ระบบบริหารจัดการงบประมาณ</h1>
+        <p class="text-gray-600 mt-1">Management Accounting System (MAS)</p>
+      </div>
+      <div class="flex gap-1">
+        <button class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-amber-600 transition"
+                hx-target="#export_excel_modal"
+                hx-get="{{ url_for('admin.mas.export_excel_modal', **request.args) }}">
+          <i class="ph ph-download mr-2"></i>
+          ส่งออกข้อมูลแหล่งเงิน
+        </button>
+        <div class="mt-4 md:mt-0">
+          <a href="{{ url_for('admin.mas.create_or_edit', organization_id=organization.id) }}"
+             class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+            <i class="ph ph-plus mr-2"></i>
+            เพิ่มโครงการใหม่
+          </a>
         </div>
-        <div class="flex gap-1">
-            <button
-            class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-amber-600 transition"
-                hx-target="#export_excel_modal" hx-get="{{ url_for('admin.mas.export_excel_modal', **request.args) }}">
-                <i class="ph ph-download mr-2"></i>
-                ส่งออกข้อมูลแหล่งเงิน
-            </button>
-            <div class="mt-4 md:mt-0">
-                <a href="{{ url_for('admin.mas.create_or_edit', organization_id=organization.id) }}"
-                class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
-                <i class="ph ph-plus mr-2"></i>
-                เพิ่มโครงการใหม่
-                </a>
-            </div>
-            
-        </div>
+
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- MAS Table with formal styling -->
-<div class="mt-6">
-    {{ render_mas_table(mas, organization) }}
-</div>
+  <!-- MAS Table with formal styling -->
+  <div class="mt-6">{{ render_mas_table(mas, organization) }}</div>
 
-<!-- Pagination -->
-{{ paginated.render_pagination(paginated_mas, "admin.mas.index", request.args) }}
+  <!-- Pagination -->
+  {{ paginated.render_pagination(paginated_mas, "admin.mas.index", request.args) }}
 {% endblock %}

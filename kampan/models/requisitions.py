@@ -114,7 +114,7 @@ class Requisition(me.Document):
                 next_number = last_number + 1
             else:
                 next_number = 1
-            self.requisition_code = f"{buddhist_year}-{next_number:04d}"
+            self.requisition_code = f"{next_number:04d}/{buddhist_year}"
         return super().save(*args, **kwargs)
 
     def get_category_display(self):

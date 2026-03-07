@@ -22,6 +22,15 @@ def format_number(data: str | int | float, digits: int = 2):
         return f"{data:,.{digits}f}"
 
 
+def format_amount(value):
+    """Format number: show integer if decimal part is .00, otherwise 2 decimal places."""
+    try:
+        v = float(value or 0)
+    except (TypeError, ValueError):
+        v = 0.0
+    return f"{v:,.0f}" if v == int(v) else f"{v:,.2f}"
+
+
 def format_thai_datetime_short_month(dt):
     if not isinstance(dt, datetime.datetime):
         return ""
