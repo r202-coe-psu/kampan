@@ -53,3 +53,26 @@ def format_thai_datetime_short_month(dt):
     thai_month = thai_months[dt.month]
 
     return f"{dt.day} {thai_month} {thai_year} {dt.hour:02}:{dt.minute:02} น."
+
+def format_thai_date(dt):
+    if not isinstance(dt, datetime.date):
+        return ""
+
+    thai_year = dt.year + 543
+    thai_months = {
+        1: "ม.ค.",
+        2: "ก.พ.",
+        3: "มี.ค.",
+        4: "ม.ย.",
+        5: "พ.ค.",
+        6: "มิ.ย.",
+        7: "ก.ค.",
+        8: "ส.ค.",
+        9: "ก.ย.",
+        10: "ต.ค.",
+        11: "พ.ย.",
+        12: "ธ.ค.",
+    }
+    thai_month = thai_months[dt.month]
+
+    return f"{dt.day} {thai_month} {thai_year}"

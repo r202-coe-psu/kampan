@@ -7,6 +7,7 @@ CAR_APPLICATION_STATUS = [
     ("pending on director", "รอพัสดุเสนอ ผอ."),
     ("pending on admin", "รอพัสดุอนุมัติ"),
     ("active", "อนุมัติสำเร็จ"),
+    ("completed", "เสร็จสิ้น"),
     ("denied by header", "ปฏิเสธ"),
     ("denied by director", "ปฏิเสธ"),
     ("denied by admin", "ปฏิเสธ"),
@@ -121,6 +122,7 @@ class CarApplication(VehicleApplication, me.Document):
             "pending on header": "text-primary",
             "disactive": "text-error",
             "active": "text-green-500",
+            "completed": "text-gray-500",
         }
         return f'<td class="table-style" data-label="Status"><span class="{key_color[self.status]} font-medium">{self.get_status_display()}</span></td>'
 

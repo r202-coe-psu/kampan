@@ -1,0 +1,117 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}รายการงาน{% endblock %}
+
+{% block dashboard_title %}รายการงาน{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div id="edit-modal"></div>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <!-- Date Filter Form -->
+  <div class="mb-6 flex justify-between items-end flex-wrap gap-4">
+    <form method="GET" action="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
+      class="flex items-end gap-2 w-full sm:w-auto">
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      <div class="form-control w-full sm:w-auto">
+        <label class="label">
+          <span class="label-text font-bold">เลือกวันที่</span>
+        </label>
+        <div class="flex flex-col sm:flex-row gap-2 w-full">
+          <input type="date" name="date" class="input input-bordered w-full sm:w-auto flex-none sm:flex-1 min-w-0"
+            value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary flex-1 sm:flex-none">ค้นหา</button>
+            <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
+              class="btn btn-outline flex-1 sm:flex-none">วันนี้</a>
+            <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
+              class="btn btn-ghost w-full sm:w-auto text-center">ล้างการค้นหา</a>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-2 text-lg font-bold mb-4">
+    {% if target_date %}
+    แสดงข้อมูลของวันที่ {{ target_date|format_thai_date }}
+    {% else %}
+    แสดงรายการงานทั้งหมด
+    {% endif %}
+  </div>
+
+  <div class="overflow-x-auto rounded-xl">
+    <!-- Mobile-First Cards View -->
+    <div class="space-y-4">
+      {% for car_application in paginated_car_applications.items %}
+      <div class="border border-base-300 rounded-xl p-4 shadow-sm bg-base-100 flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <span class="text-sm font-bold text-primary">#{{ paginated_car_applications.total -
+            ((paginated_car_applications.page - 1) * paginated_car_applications.per_page) - loop.index0 }}</span>
+          <span class="text-sm font-medium">{{ car_application.departure_datetime|format_thai_datetime_short_month
+            }}</span>
+        </div>
+
+        <div class="text-base">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div><span class="font-semibold text-gray-500 text-sm">ผู้ขอใช้:</span> <br />{{
+              car_application.creator.get_name() }}</div>
+            <div><span class="font-semibold text-gray-500 text-sm">ลักษณะงาน:</span> <br />{{
+              car_application.request_reason }}</div>
+            <div><span class="font-semibold text-gray-500 text-sm">สถานที่ไป:</span> <br />{{ car_application.location
+              }}</div>
+            <div><span class="font-semibold text-gray-500 text-sm">สถานะ:</span> <br />{{
+              car_application.get_status_display() }}</div>
+
+            {% if car_application.return_datetime %}
+            <div><span class="font-semibold text-gray-500 text-sm">กลับถึงเวลา:</span> <br />{{
+              car_application.return_datetime|format_thai_datetime_short_month }}</div>
+            {% endif %}
+
+            <div class="sm:col-span-2 grid grid-cols-2 gap-2 mt-2 bg-base-200 p-2 rounded-lg">
+              <div><span class="font-semibold text-gray-500 text-sm">ไมล์ก่อนเดินทาง:</span> <br />{{
+                car_application.get_mile_before() }}</div>
+              <div><span class="font-semibold text-gray-500 text-sm">ไมล์หลังเดินทาง:</span> <br />{{
+                car_application.last_mileage if car_application.last_mileage else '-' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-2 w-full">
+          <button class="btn btn-primary btn-sm sm:btn-md w-full h-12" hx-target="#edit-modal" hx-swap="innerHTML"
+            hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
+            <i class="ph ph-gas-pump text-lg"></i>
+            <span class="text-md">บันทึกการกลับ / กรอกไมล์</span>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if paginated_car_applications.pages != 1 %}
+    <div class="mt-6">
+      {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.car_tasks.index",
+      request.args) }}
+    </div>
+    {% endif %}
+
+    {% if not paginated_car_applications.total %}
+    <div class="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+      <i class="ph ph-calendar-check text-6xl mb-4 text-base-300"></i>
+      {% if target_date %}
+      <div class="text-xl font-bold">ไม่มีรายการงานสำหรับวันที่เลืออก</div>
+      <p class="mt-2 text-sm">พักผ่อนให้สบาย หรือเลือกวันที่อื่นเพื่อดูงานย้อนหลัง</p>
+      {% else %}
+      <div class="text-xl font-bold">ไม่มีรายการงาน</div>
+      <p class="mt-2 text-sm">ยังไม่มีรายการงานที่ต้องดำเนินการในขณะนี้</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

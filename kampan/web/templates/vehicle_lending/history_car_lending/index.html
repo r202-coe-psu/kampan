@@ -39,7 +39,8 @@
         {% for car_application in paginated_car_applications.items %}
         <tr>
           <td class="table-style">
-            {{ paginated_car_applications.total - ((paginated_car_applications.page -1) * paginated_car_applications.per_page) - loop.index0 }}
+            {{ paginated_car_applications.total - ((paginated_car_applications.page -1) *
+            paginated_car_applications.per_page) - loop.index0 }}
           </td>
           <td class="table-style">
             {{ car_application.departure_datetime|format_thai_datetime_short_month }}
@@ -54,7 +55,8 @@
             {{ car_application.location }}
           </td>
           <td class="table-style">
-            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else "" }}
+            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else
+            "" }}
           </td>
           <td class="table-style">
             {{ car_application.get_mile_before() }}
@@ -87,15 +89,16 @@
           <span class="text-sm font-bold text-black">#{{ paginated_car_applications.total -
             ((paginated_car_applications.page
             -1) * paginated_car_applications.per_page) - loop.index0 }}</span>
-          <span
-            class="text-sm font-medium text-gray-700">{{ car_application.departure_datetime|format_thai_datetime_short_month }}</span>
+          <span class="text-sm font-medium text-gray-700">{{
+            car_application.departure_datetime|format_thai_datetime_short_month }}</span>
         </div>
         <div class="grid grid-cols-2 gap-2 text-sm">
           <div><span class="font-semibold">ผู้ขอใช้:</span> {{ car_application.creator.get_name() }}</div>
           <div><span class="font-semibold">ลักษณะงาน:</span> {{ car_application.request_reason }}</div>
           <div><span class="font-semibold">สถานที่ไป:</span> {{ car_application.location }}</div>
           <div><span class="font-semibold">กลับถึงเวลา:</span>
-            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else "-" }}
+            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else
+            "-" }}
           </div>
           <div><span class="font-semibold">เลขไมล์ก่อนเดินทาง:</span> {{ car_application.get_mile_before() }}</div>
           <div><span class="font-semibold">เลขไมล์หลังเดินทาง:</span> {{ car_application.last_mileage }}</div>
@@ -114,7 +117,8 @@
       {% endfor %}
     </div>
     {% if paginated_car_applications.pages != 1 %}
-    {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.history_car_lending.index", request.args)}}
+    {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.history_car_lending.index",
+    request.args)}}
     {% endif %}
     {% if not paginated_car_applications.total %}
     <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>

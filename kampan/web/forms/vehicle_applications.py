@@ -104,6 +104,14 @@ class ReturnCarApplicationForm(FlaskForm):
     )
 
 
+class ReturnCarApplicationMileageOnlyForm(FlaskForm):
+    last_mileage = fields.IntegerField(
+        "เลขไมล์หลังกลับ",
+        validators=[validators.InputRequired()],
+        widget=widgets.NumberInput(),
+    )
+
+
 class DateRangeForm(FlaskForm):
     start_date = fields.DateField(
         "จากวันที่",

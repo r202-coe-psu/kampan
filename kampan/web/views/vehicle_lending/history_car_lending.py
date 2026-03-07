@@ -31,7 +31,7 @@ def index():
         id=organization_id, status="active"
     ).first()
     car_lendings = models.vehicle_applications.CarApplication.objects(
-        organization=organization, status="active"
+        organization=organization, status="completed"
     ).order_by("-departure_datetime")
     page = request.args.get("page", 1, type=int)
     paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
