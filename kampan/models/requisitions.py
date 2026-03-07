@@ -103,14 +103,14 @@ class Requisition(me.Document):
             now = datetime.datetime.now()
             buddhist_year = now.year + 543
             # หาเลขรันนิ้งล่าสุดของปีนี้
-            prefix = f"{buddhist_year}-"
+            suffix = f"/{buddhist_year}"
             last = (
-                Requisition.objects(requisition_code__startswith=prefix)
+                Requisition.objects(requisition_code__endswith=suffix)
                 .order_by("-requisition_code")
                 .first()
             )
             if last and last.requisition_code:
-                last_number = int(last.requisition_code.split("-")[1])
+                last_number = int(last.requisition_code.split("/")[0])
                 next_number = last_number + 1
             else:
                 next_number = 1
