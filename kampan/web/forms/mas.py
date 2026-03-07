@@ -19,8 +19,10 @@ BaseMASForm = model_form(
     ],
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
-        "name": {"label": "ชื่อรายการ"},
+        "description": {"label": "รายละเอียด"},
         "amount": {"label": "งบประมาณทั้งหมด"},
+        "direction": {"label": "ทิศทาง"},
+        "year": {"label": "ปีงบประมาณ (พ.ศ.)"},
     },
 )
 

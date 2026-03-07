@@ -15,10 +15,12 @@ RESERVATION_STATUS_CHOICES = [
 class MAS(me.Document):
     meta = {"collection": "mas"}
 
+    year = me.IntField(required=True, min_value=2500, max_value=2700)
     mas_code = me.StringField(required=True, max_length=50)
-    name = me.StringField(required=True, max_length=200)
-
+    description = me.StringField(required=True, max_length=200)
+    direction = me.StringField(required=True, max_length=100)
     amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+
     remaining_amount = me.DecimalField(
         required=True, min_value=0, max_value=1e12, precision=2
     )

@@ -2,7 +2,7 @@
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
-{% block title %}รายการจองในแหล่งเงิน - {{ mas.name }}{% endblock %}
+{% block title %}รายการจองในแหล่งเงิน - {{ mas.description }}{% endblock %}
 {% block dashboard_title %}รายการจองเงิน{% endblock %}
 
 {% block content %}
@@ -24,11 +24,11 @@
                     <i class="ph ph-folder-open text-2xl text-blue-700"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800">{{ mas.name }}</h1>
+                    <h1 class="text-2xl font-bold text-gray-800">{{ mas.description }}</h1>
                     <p class="text-gray-600 mt-1">รหัส MAS: <span class="font-mono font-semibold">{{ mas.mas_code }}</span></p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
                 <div class="bg-gray-50 rounded-lg p-4">
                     <p class="text-sm text-gray-500 uppercase font-medium mb-1">งบประมาณทั้งหมด</p>
                     <p class="text-xl font-bold text-gray-800">฿{{ "{:,.2f}".format(mas.amount or 0) }}</p>
@@ -44,6 +44,10 @@
                 <div class="bg-yellow-50 rounded-lg p-4">
                     <p class="text-sm text-yellow-600 uppercase font-medium mb-1">จำนวนเงินที่จองไปแล้ว</p>
                     <p class="text-xl font-bold text-yellow-700">฿{{ "{:,.2f}".format((mas.remaining_amount - mas.reservable_amount) or 0) }}</p>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-4">
+                    <p class="text-sm text-orange-600 uppercase font-medium mb-1">จำนวนเงินที่ใช้ไปแล้ว</p>
+                    <p class="text-xl font-bold text-orange-700">฿{{ "{:,.2f}".format((mas.amount - mas.remaining_amount) or 0) }}</p>
                 </div>
             </div>
         </div>

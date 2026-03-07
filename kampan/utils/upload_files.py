@@ -10,11 +10,11 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 MAS_COLUMN_MAP = {
-    "mas_code": "รหัสแหล่งเงิน (MAS Code)",
-    "name": "ชื่อรายการ",
-    "amount": "งบประมาณทั้งหมด",
-    "remaining_amount": "งบประมาณคงเหลือ",
-    "reservable_amount": "งบประมาณที่จองได้",
+    "year": "Year\nปีงบประมาณ",
+    "mas_code": "Item Code\nรหัสงบประมาณ",
+    "amount": "Amount\nจำนวนเงินที่ขอจัดตั้ง",
+    "description": "Description\nรายละเอียด",
+    "direction": "Direction\nทิศทาง",
 }
 MAS_COLUMNS = list(MAS_COLUMN_MAP.keys())
 
@@ -42,18 +42,18 @@ def generate_mas_template() -> io.BytesIO:
 
     example_rows = [
         {
-            "รหัสแหล่งเงิน (MAS Code)": "MAS-2024-001",
-            "ชื่อรายการ": "งบดำเนินการ ประจำปี 2567",
-            "งบประมาณทั้งหมด": 500000.00,
-            "งบประมาณคงเหลือ": 350000.00,
-            "งบประมาณที่จองได้": 200000.00,
+            "Year\nปีงบประมาณ": 2569,
+            "Item Code\nรหัสงบประมาณ": "MAS-2024-001",
+            "Description\nรายละเอียด": "งบดำเนินการ ประจำปี 2567",
+            "Amount\nจำนวนเงินที่ขอจัดตั้ง": 500000.00,
+            "Direction\nทิศทาง": "เข้า",
         },
         {
-            "รหัสแหล่งเงิน (MAS Code)": "MAS-2024-002",
-            "ชื่อรายการ": "งบลงทุน ครุภัณฑ์สำนักงาน",
-            "งบประมาณทั้งหมด": 1200000.00,
-            "งบประมาณคงเหลือ": 1200000.00,
-            "งบประมาณที่จองได้": 800000.00,
+            "Year\nปีงบประมาณ": 2569,
+            "Item Code\nรหัสงบประมาณ": "MAS-2024-002",
+            "Description\nรายละเอียด": "งบลงทุน ครุภัณฑ์สำนักงาน",
+            "Amount\nจำนวนเงินที่ขอจัดตั้ง": 1200000.00,
+            "Direction\nทิศทาง": "ออก",
         },
     ]
     headers = list(MAS_COLUMN_MAP.values())
@@ -253,10 +253,6 @@ def validate_mas_file(document) -> list:
             errors.append(f"แถวที่ {row_num}: ขาดข้อมูล {', '.join(missing)}")
             continue
 
-        name = safe_str(row.get("name"))
-        if len(name) < 3:
-            errors.append(f"แถวที่ {row_num}: ชื่อรายการสั้นเกินไป ('{name}')")
-
         mas_code = safe_str(row.get("mas_code"))
         if not mas_code:
             errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงินว่างเปล่า")
@@ -265,10 +261,22 @@ def validate_mas_file(document) -> list:
         if models.MAS.objects(mas_code=mas_code, status="active").first():
             errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงิน '{mas_code}' มีอยู่ในระบบแล้ว")
 
+        year = safe_str(row.get("year"))
+        if not year:
+            errors.append(f"แถวที่ {row_num}: ปีงบประมาณว่างเปล่า")
+            continue
+
+        description = safe_str(row.get("description"))
+        if len(description) < 3:
+            errors.append(f"แถวที่ {row_num}: รายละเอียดสั้นเกินไป ('{description}')")
+
+        direction = safe_str(row.get("direction"))
+        if not direction:
+            errors.append(f"แถวที่ {row_num}: ทิศทางว่างเปล่า")
+            continue
+
         for col, label in [
             ("amount", MAS_COLUMN_MAP["amount"]),
-            ("remaining_amount", MAS_COLUMN_MAP["remaining_amount"]),
-            ("reservable_amount", MAS_COLUMN_MAP["reservable_amount"]),
         ]:
             val = row.get(col)
             if not is_missing_required(val):
@@ -344,7 +352,7 @@ def save_mas_db(document, mas, user_id):
     """
     อ่านข้อมูล MAS จากไฟล์ Excel แล้วสร้าง MAS แต่ละตัวลงฐานข้อมูล
 
-    Expected columns: mas_code, name, amount, remaining_amount, reservable_amount
+    Expected columns: mas_code, description, amount, direction
     """
     errors = []
     processed_user = models.User.objects(id=user_id).first()
@@ -377,11 +385,11 @@ def save_mas_db(document, mas, user_id):
         return False, document.error_messages
 
     required_cols = {
+        "year",
         "mas_code",
-        "name",
+        "description",
         "amount",
-        "remaining_amount",
-        "reservable_amount",
+        "direction",
     }
     missing_cols = required_cols - set(col.lower() for col in df.columns)
     if missing_cols:
@@ -398,11 +406,11 @@ def save_mas_db(document, mas, user_id):
     for i, row in df.iterrows():
         row_num = i + 2
         required_fields = {
+            "year": row.get("year"),
             "mas_code": row.get("mas_code"),
-            "name": row.get("name"),
+            "description": row.get("description"),
             "amount": row.get("amount"),
-            "remaining_amount": row.get("remaining_amount"),
-            "reservable_amount": row.get("reservable_amount"),
+            "direction": row.get("direction"),
         }
         missing = [
             MAS_COLUMN_MAP.get(k, k)
@@ -415,9 +423,16 @@ def save_mas_db(document, mas, user_id):
             print(msg)
             continue
 
-        name = safe_str(row.get("name"))
-        if len(name) < 3:
-            msg = f"แถวที่ {row_num}: ชื่อรายการสั้นเกินไป ('{name}')"
+        year = to_decimal(row.get("year"))
+        if year < 2500 or year > 2700:
+            msg = f"แถวที่ {row_num}: ปีงบประมาณต้องอยู่ระหว่าง พ.ศ. 2500 ถึง พ.ศ. 2700 (พบ {year})"
+            errors.append(msg)
+            print(msg)
+            continue
+
+        description = safe_str(row.get("description"))
+        if len(description) < 3:
+            msg = f"แถวที่ {row_num}: รายละเอียดสั้นเกินไป ('{description}')"
             errors.append(msg)
             print(msg)
             continue
@@ -425,6 +440,13 @@ def save_mas_db(document, mas, user_id):
         mas_code = safe_str(row.get("mas_code"))
         if not mas_code:
             msg = f"แถวที่ {row_num}: รหัสแหล่งเงินว่างเปล่า"
+            errors.append(msg)
+            print(msg)
+            continue
+
+        direction = safe_str(row.get("direction"))
+        if not direction:
+            msg = f"แถวที่ {row_num}: ทิศทางว่างเปล่า"
             errors.append(msg)
             print(msg)
             continue
@@ -441,11 +463,13 @@ def save_mas_db(document, mas, user_id):
         reservable_amount = to_decimal(row.get("reservable_amount"))
 
         mas_obj = models.MAS(
+            year=year,
             mas_code=mas_code,
-            name=name,
+            description=description,
             amount=amount,
-            remaining_amount=remaining_amount,
-            reservable_amount=reservable_amount,
+            remaining_amount=amount,
+            reservable_amount=amount,
+            direction=direction,
             status="active",
             created_by=processed_user,
             last_updated_by=processed_user,
@@ -454,7 +478,7 @@ def save_mas_db(document, mas, user_id):
         )
         mas_obj.save()
         created_count += 1
-        print(f"Created MAS #{i + 1}: {mas_obj.name}")
+        print(f"Created MAS #{i + 1}: {mas_obj.description} ({mas_obj.mas_code})")
 
     document.updated_date = datetime.datetime.now()
     document.error_messages = errors

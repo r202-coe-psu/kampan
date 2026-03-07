@@ -26,7 +26,11 @@
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {{ renderer.render_field(form.mas_code, placeholder="0.0EU310108.N28.66") }}
-          {{ renderer.render_field(form.name, placeholder="ชื่อรายการ") }}
+          {{ renderer.render_field(form.description, placeholder="ชื่อรายการ") }}
+        </div>
+        <div class="mt-4 flex items-center gap-4">
+          {{ renderer.render_field(form.direction, placeholder="ทิศทาง" ) }}
+          {{ renderer.render_field(form.year, placeholder="ปีงบประมาณ (พ.ศ.)" ) }}
         </div>
       </div>
 
@@ -43,7 +47,7 @@
       <!-- ปุ่ม -->
       <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
         <a href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
-           class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100">
+          class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100">
           <i class="ph ph-x mr-2"></i> ยกเลิก
         </a>
         <button type="submit" class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg">
