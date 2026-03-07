@@ -6,7 +6,9 @@
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
     <input type="hidden" name="progress" value="{{ step_key }}" />
 
-    <button type="button" class="{{ btn_cls }}" onclick="document.getElementById('{{ confirm_id }}').showModal();">
+    <button type="button"
+            class="{{ btn_cls }}"
+            onclick="document.getElementById('{{ confirm_id }}').showModal();">
       <i class="ph {{ icon_cls }}"></i>
       <span class="hidden sm:inline">{{ label }}</span>
     </button>
@@ -16,8 +18,12 @@
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
         <div class="modal-action">
-          <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">ยกเลิก</button>
-          <button type="submit" class="btn {{ 'btn-warning' if 'warning' in btn_cls else 'btn-primary' }}">ตกลง</button>
+          <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">
+            ยกเลิก
+          </button>
+          <button type="submit" class="btn {{ 'btn-warning' if 'warning' in btn_cls else 'btn-primary' }}">
+            ตกลง
+          </button>
         </div>
       </div>
       <div class="modal-backdrop" onclick="document.getElementById('{{ confirm_id }}').close()"></div>
@@ -299,7 +305,7 @@
                                             <div class="flex items-center gap-2 text-sm text-blue-800 mt-1">
                                               <i class="ph ph-money font-bold"></i>
                                               <span class="font-semibold">ราคาสุทธิ:</span>
-                                              <span class="font-bold">฿{{ "{:,.2f}".format(item.total_amount) }}</span>
+                                              <span class="font-bold">{{ item.total_amount | format_amount }}</span>
                                             </div>
                                           {% endif %}
                                         </div>
@@ -436,12 +442,12 @@
                                   <div class="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
                                     {% if item.quotation_winner %}
                                       <div class="text-xs text-blue-800">
-                                        <span class="font-semibold">ผู้ชนะใบเสนอราคา:</span> {{ item.quotation_winner }}
+                                        <span class="font-semibold">ผู้ชนะเสนอราคา:</span> {{ item.quotation_winner }}
                                       </div>
                                     {% endif %}
                                     {% if item.total_amount %}
                                       <div class="text-xs text-blue-800">
-                                        <span class="font-semibold">ราคาสุทธิ:</span> <span class="font-bold">฿{{ "{:,.2f}".format(item.total_amount) }}</span>
+                                        <span class="font-semibold">ราคาสุทธิ:</span> <span class="font-bold">{{ item.total_amount | format_amount }}</span>
                                       </div>
                                     {% endif %}
                                   </div>
@@ -539,12 +545,12 @@
 
               <div class="form-control w-full mb-4">
                 <label class="label">
-                  <span class="label-text">ผู้ชนะใบเสนอราคา</span>
+                  <span class="label-text">ผู้ชนะเสนอราคา</span>
                 </label>
                 <input type="text"
                        name="quotation_winner"
                        class="input input-bordered w-full"
-                       placeholder="ระบุชื่อผู้ชนะใบเสนอราคา"
+                       placeholder="ระบุชื่อผู้ชนะเสนอราคา"
                        value="{{ item.quotation_winner if item.quotation_winner else '' }}"
                        required />
               </div>
@@ -576,14 +582,14 @@
                           <tr>
                             <td class="font-mono text-xs">{{ r.mas.mas_code if r.mas else '-' }}</td>
                             <td class="text-sm">{{ r.mas.name if r.mas else '-' }}</td>
-                            <td class="text-right font-semibold">฿{{ "{:,.2f}".format(r.amount or 0) }}</td>
+                            <td class="text-right font-semibold">{{ r.amount | format_amount }}</td>
                             <td class="text-center">
                               <a class="link link-primary text-sm"
                                  href="{{ url_for('admin.mas.reservation', mas_id=r.mas.id, organization_id=organization.id) }}"
                                  target="_blank">ดูการจอง</a>
                             </td>
                             <td class="text-right font-semibold text-gray-700">
-                              ฿{{ "{:,.2f}".format((used_amount if used_amount is not none else (r.amount or 0) )|float) }}
+                              {{ (used_amount if used_amount is not none else (r.amount or 0)) | float | format_amount }}
                             </td>
                           </tr>
                         {% endfor %}
@@ -595,7 +601,7 @@
                     {% for r in item_reservations %}
                       {% set ns.total_reserved = ns.total_reserved + (r.amount or 0)|float %}
                     {% endfor %}
-                    รวมยอดจอง: <span class="font-semibold">฿{{ "{:,.2f}".format(ns.total_reserved) }}</span>
+                    รวมยอดจอง: <span class="font-semibold">{{ ns.total_reserved | format_amount }}</span>
                   </div>
                 {% endif %}
               </div>
@@ -625,7 +631,7 @@
                                value="{{ used_amount if used_amount is not none else (r.amount or 0) }}"
                                data-usage-item-id="{{ item.id }}"
                                oninput="recalcUsageTotal('{{ item.id }}')" />
-                        <span class="text-xs text-gray-400 shrink-0">/ ฿{{ "{:,.2f}".format(r.amount or 0) }}</span>
+                        <span class="text-xs text-gray-400 shrink-0">/ {{ r.amount | format_amount }}</span>
                       </div>
                     {% endfor %}
                   </div>
@@ -655,7 +661,7 @@
                        required />
 
                 <div class="mt-2 text-sm text-right text-gray-700">
-                  รวมยอดใช้จริง: <span class="font-semibold" id="usage-total-text-{{ item.id }}">฿{{ "{:,.2f}".format(ns.total_used) }}</span>
+                  รวมยอดใช้จริง: <span class="font-semibold" id="usage-total-text-{{ item.id }}">{{ ns.total_used | format_amount }}</span>
                 </div>
               </div>
 
@@ -771,7 +777,7 @@
                       </td>
                       <td class="text-sm text-center">{{ subitem.quantity }}</td>
                       <td class="text-sm text-center">{{ subitem.currency if subitem.currency else '' }}</td>
-                      <td class="text-sm text-right font-bold text-blue-700">฿{{ "{:,.2f}".format(subitem.amount) }}</td>
+                      <td class="text-sm text-right font-bold text-blue-700">{{ subitem.amount | format_amount }}</td>
                     </tr>
                   {% endfor %}
                 </tbody>
