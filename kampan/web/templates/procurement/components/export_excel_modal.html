@@ -9,21 +9,24 @@
     
     <div class="flex flex-col mt-4">
       <span class="text-sm text-gray-500">หมายเหตุ: หลังจากกดยืนยัน ระบบจะเริ่มดำเนินการส่งออกข้อมูล
-        ซึ่งอาจใช้เวลาสักครู่ ขึ้นอยู่กับจำนวนข้อมูลบุคลากรในระบบ</span>
-      
+        ซึ่งอาจใช้เวลาสักครู่ ขึ้นอยู่กับจำนวนข้อมูลบุคลากรในระบบ
+      </span>
 
-
-    <div class="modal-action justify-end">
-      <button type="button" class="btn"
-        onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
-        ปิด
-      </button>
-
-      <button type="button" class="btn btn-orange" onclick="submitExportMAS('{{ modal_id }}')">
-        <i class="ph ph-download"></i>
-        ยืนยันส่งออก
-      </button>
-    </div>
+      <form method="post" id="export-mas-form">
+        {{ form.hidden_tag() }}
+        {{ renderer.date_field(form.start_date) }}
+        {{ renderer.date_field(form.end_date) }}
+      </form>
+      <div class="modal-action justify-end">
+        <button type="button" class="btn"
+          onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+          ปิด
+        </button>
+        <button type="button" class="btn btn-orange" onclick="submitExportMAS('{{ modal_id }}')">
+          <i class="ph ph-download"></i>
+          ยืนยันส่งออก
+        </button>
+      </div>
 
     <div class="divider"></div>
     
@@ -55,7 +58,12 @@
     const errorMsg = document.getElementById('export-error-msg');
     const modal = document.getElementById(modalId);
     if (errorMsg) errorMsg.classList.add('hidden');
-    const exportUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id) }}";
+    
+    const startDate = document.querySelector('#export-mas-form input[name="start_date"]').value;
+    const endDate = document.querySelector('#export-mas-form input[name="end_date"]').value;
+
+    const baseUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id, start_date='START_OBJ', end_date='END_OBJ') | safe }}";
+    const exportUrl = baseUrl.replace('START_OBJ', encodeURIComponent(startDate)).replace('END_OBJ', encodeURIComponent(endDate));
     window.location.href = exportUrl;
     if (modal) {
       modal.classList.remove('modal-open');

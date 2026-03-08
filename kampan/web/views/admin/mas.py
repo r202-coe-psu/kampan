@@ -121,15 +121,18 @@ def reservation(mas_id):
 @acl.organization_roles_required("admin")
 def export_excel_modal():
     modal_id = uuid4()
+    form = forms.mas.ExportMASExcelForm()
     organization_id = request.args.get("organization_id")
     exported_file = models.export_file.ExportFile.objects(
         created_by=current_user._get_current_object()
     ).first()
+
     return render_template(
         "procurement/components/export_excel_modal.html",
         modal_id=modal_id,
         exported_file=exported_file,
         organization_id=organization_id,
+        form=form,
     )
 
 
@@ -137,9 +140,12 @@ def export_excel_modal():
 @acl.organization_roles_required("admin")
 def export_excel():
     organization_id = request.args.get("organization_id")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
     job_id = redis_rq.redis_queue.queue.enqueue(
         utils.export_file.process_mas_export,
-        args=(current_user._get_current_object(),),
+        args=(current_user._get_current_object(), start_date, end_date),
         timeout=3600,
         job_timeout=1200,
     )
