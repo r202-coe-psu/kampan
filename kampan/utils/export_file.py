@@ -188,6 +188,17 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
             horizontal="center", vertical="center", wrap_text=True
         )
 
+        # --- Column D: total amount (merged for all items in this requisition) ---
+        ws.cell(row=first_row, column=4).value = data["actual_amount"]
+        ws.cell(row=first_row, column=4).number_format = "#,##0.00"
+        ws.cell(row=first_row, column=4).alignment = Alignment(
+            horizontal="right", vertical="center"
+        )
+        if num_items > 1:
+            ws.merge_cells(
+                start_row=first_row, start_column=4, end_row=last_row, end_column=4
+            )
+
         # --- Column E: quotation_winner (merged) ---
         ws.cell(row=first_row, column=5).value = data["quotation_winner"] or "-"
         if num_items > 1:
@@ -198,19 +209,13 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
             horizontal="center", vertical="center", wrap_text=True
         )
 
-        # --- Columns C & D: item name + amount (one row per item) ---
+        # --- Column C: item names (one row per item) ---
         for idx, item in enumerate(items):
             row_idx = first_row + idx
             # item name
             ws.cell(row=row_idx, column=3).value = item.product_name or "-"
             ws.cell(row=row_idx, column=3).alignment = Alignment(
                 horizontal="left", vertical="center", wrap_text=True
-            )
-            # item amount
-            ws.cell(row=row_idx, column=4).value = float(item.amount or 0)
-            ws.cell(row=row_idx, column=4).number_format = "#,##0.00"
-            ws.cell(row=row_idx, column=4).alignment = Alignment(
-                horizontal="right", vertical="center"
             )
 
         # apply thin border to all cells in the group
@@ -223,12 +228,6 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
         for r in range(first_row, last_row + 1):
             for c in range(1, len(sub_headers) + 1):
                 ws.cell(row=r, column=c).border = thin
-
-        # Excel row grouping (outline) — collapse all item rows except the first
-        if num_items > 1:
-            for r in range(first_row + 1, last_row + 1):
-                ws.row_dimensions[r].outline_level = 2  # Level 2 for nested items
-                ws.row_dimensions[r].hidden = True  # Collapse by default
 
         current_row = last_row + 1
 
