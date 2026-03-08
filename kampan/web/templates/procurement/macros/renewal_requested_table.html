@@ -1,3 +1,4 @@
+{% import '/procurement/macros/items_sub_table.html' as items_table %}
 {% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization, manager_action) %}
   <div class="mt-6">
     <div class="mb-6 flex justify-center">
@@ -86,7 +87,7 @@
                     <button class="toggle-icon-btn bg-transparent border-none cursor-pointer"
                             onclick="toggleSubtable('{{ item.id }}')"
                             title="แสดง/ซ่อนรายละเอียด">
-                      <span id="toggle-icon-{{ item.id }}" style="font-size:1.2em;"><i class="ph ph-caret-circle-down"></i></span>
+                      <span id="toggle-icon-{{ item.id }}" class="text-xl"><i class="ph ph-caret-circle-up"></i></span>
                     </button>
                   </td>
                   <!--- เลขที่ -->
@@ -129,7 +130,7 @@
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% set document_url = url_for('procurement.requisitions.document', requisition_procurement_id=item.id) %}
                     <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                            onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime("%Y-%m-%d") if item.created_date else '' }}')">
+                            onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime('%Y-%m-%d') if item.created_date else '' }}')">
                       <i class="ph ph-file-arrow-down"></i>
                     </button>
                     <!-- Date picker modal (per row) -->
@@ -698,50 +699,7 @@
                     {% endif %}
                   </td>
                 </tr>
-                <tr id="subtable-{{ item.id }}">
-                  <td colspan="12" class="px-4 py-2 p-0">
-                    <div class="overflow-x-auto">
-                      <table class="min-w-full table-sm divide-y divide-blue-100">
-                        <thead>
-                          <tr>
-                            <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
-                            <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
-                            <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
-                            <th class="w-24 font-semibold text-xs text-center">หน่วยนับ</th>
-                            <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% for subitem in item.items %}
-                            <tr>
-                              <!--- ชื่อรายการ -->
-                              <td class="w-40 text-sm text-center truncate overflow-hidden whitespace-nowrap"
-                                  title="{{ subitem.product_name }}">
-                                {{ subitem.product_name }}
-                              </td>
-                              <!--- ประเภท -->
-                              <td class="w-24 text-sm text-center truncate overflow-hidden whitespace-nowrap"
-                                  title="{{ subitem.get_category_display() }}">
-                                {{ subitem.get_category_display() }}
-                              </td>
-                              <!--- จำนวน -->
-                              <td class="w-20 text-sm text-center">{{ subitem.quantity }}</td>
-                              <!--- หน่วยนับ -->
-                              <td class="w-24 text-sm text-center">
-                                {{ subitem.currency if
-                                subitem.currency else '' }}
-                              </td>
-                              <!--- จำนวนเงิน -->
-                              <td class="w-32 text-sm text-right font-bold text-blue-700">
-                                {{ subitem.amount | format_amount }}
-                              </td>
-                            </tr>
-                          {% endfor %}
-                        </tbody>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
+                {{ items_table.render_items_sub_table(item.items, item.id) }}
               {% endfor %}
             </table>
           </div>
@@ -767,19 +725,16 @@
         function toggleSubtable(itemId) {
             var subtable = document.getElementById('subtable-' + itemId);
             var icon = document.getElementById('toggle-icon-' + itemId);
-            if (subtable.style.display === 'none') {
-                subtable.style.display = '';
+            if (subtable.classList.contains('hidden')) {
+                subtable.classList.remove('hidden');
                 icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
             } else {
-                subtable.style.display = 'none';
+                subtable.classList.add('hidden');
                 icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
             }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('[id^="subtable-"]').forEach(function(row) {
-                row.style.display = 'none';
-            });
             document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
                 icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
             });

@@ -16,7 +16,8 @@
                   onchange="sortTable(this.value)">
             <option value="">เรียงตาม</option>
             <option value="mas_code">รหัส MAS</option>
-            <option value="name">ชื่อโครงการ</option>
+            <option value="description">รายละเอียด</option>
+            <option value="amount">จำนวนเงินที่ขอจัดตั้ง</option>
             <option value="remaining_amount">จ่ายจริง</option>
             <option value="reservable_amount">จำนวนเงินจอง</option>
           </select>
@@ -28,7 +29,8 @@
         <thead>
           <tr class="bg-gray-50 text-gray-700">
             <th class="font-semibold">รหัส MAS</th>
-            <th class="font-semibold">ชื่อแหล่งเงิน</th>
+            <th class="font-semibold">รายละเอียด</th>
+            <th class="font-semibold text-right">จำนวนเงินที่ขอจัดตั้ง</th>
             <th class="font-semibold text-right">งบประมาณคงเหลือ</th>
             <th class="font-semibold text-right">จำนวนเงินที่จองได้</th>
             <th class="font-semibold text-center">การดำเนินการ</th>
@@ -53,6 +55,10 @@
                     <p class="font-medium text-gray-900">{{ project.description }}</p>
                   </div>
                 </div>
+              </td>
+              <td class="text-right">
+                <span class="font-medium text-gray-900">
+                {{ project.amount | format_amount if project.amount is not none else '0.00' }}</span>
               </td>
               <td class="text-right">
                 <span class="font-medium text-gray-900">

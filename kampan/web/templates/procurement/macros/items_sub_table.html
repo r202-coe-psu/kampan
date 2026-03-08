@@ -1,0 +1,65 @@
+{% macro render_items_sub_table(items, id_prefix) %}
+<tr id="subtable-{{ id_prefix }}">
+    <td colspan="100%" class="p-0 border-none">
+        <div class="px-6 py-4 bg-gray-50/50 border-y border-gray-100">
+            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+                <table class="min-w-full divide-y divide-blue-50">
+                    <thead class="bg-blue-50/50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">ชื่อรายการ</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-blue-700 uppercase tracking-wider">ประเภท</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-blue-700 uppercase tracking-wider">จำนวน</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-blue-700 uppercase tracking-wider">หน่วยนับ</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-blue-700 uppercase tracking-wider">จำนวนเงิน</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% if items %}
+                            {% for item in items %}
+                            <tr class="hover:bg-blue-50/30 transition-colors duration-150">
+                                <td class="px-4 py-3 text-sm text-gray-700">
+                                    <div class="font-medium text-gray-900">{{ item.product_name }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center">
+                                    <span class="inline-flex px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-xs">
+                                        {{ item.get_category_display() }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center font-medium text-gray-700">
+                                    {{ item.quantity }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-center text-gray-500">
+                                    {{ item.currency or '-' }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-right font-bold text-blue-600">
+                                    {{ item.amount | format_amount }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <i class="ph ph-package text-3xl mb-2"></i>
+                                        <p class="text-sm italic">ไม่มีข้อมูลรายการ</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                    {% if items %}
+                    <tfoot class="bg-gray-50/30 border-t border-blue-50">
+                        <tr>
+                            <td colspan="4" class="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase">รวมทั้งสิ้น</td>
+                            <td class="px-4 py-2 text-right text-sm font-bold text-blue-700">
+                                {{ (items | map(attribute='amount') | sum) | format_amount }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </td>
+</tr>
+{% endmacro %}
