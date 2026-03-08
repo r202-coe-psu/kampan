@@ -26,6 +26,7 @@ from .requisition_timeline import (
     Progress,
     PROGRESS_STATUS_CHOICES,
     RequisitionTimelineLogs,
+    CompletedProgressDetail,
 )
 from .export_file import ExportFile
 

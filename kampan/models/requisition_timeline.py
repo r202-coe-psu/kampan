@@ -26,6 +26,20 @@ class Progress(me.EmbeddedDocument):
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
+class CompletedProgressDetail(me.EmbeddedDocument):
+    seller_name = me.StringField(required=True, max_length=200)
+    money_type = me.StringField(required=True, max_length=50)
+    contract_number = me.StringField(required=True, max_length=200)
+    purchase_method = me.StringField(required=True, max_length=20)
+    start_warranty_date = me.DateField(required=True)
+    end_warranty_date = me.DateField(required=True)
+    warranty_period = me.IntField(required=True, max_length=20)
+    product_number = me.StringField(required=True, max_length=200)
+    asset_code = me.StringField(required=True, max_length=200)
+    usage_location = me.StringField(required=True, max_length=200)
+    account_code = me.StringField(required=True, max_length=200)
+
+
 class RequisitionTimeline(me.Document):
     meta = {"collection": "requisition_timeline"}
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
@@ -34,6 +48,7 @@ class RequisitionTimeline(me.Document):
     note = me.StringField()
     quotation_winner = me.StringField()
     total_amount = me.FloatField()
+    completed_progress_detail = me.EmbeddedDocumentField(CompletedProgressDetail)
     status = me.StringField(default="active", max_length=20)
     updated_date = me.DateTimeField(default=datetime.datetime.now)
     last_updated_by = me.ReferenceField("User", dbref=True)

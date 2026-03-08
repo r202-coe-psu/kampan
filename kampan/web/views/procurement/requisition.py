@@ -570,7 +570,7 @@ def requisition_action(requisition_id):
                 fund_id, input_amounts.get(fund_id, Decimal("0.00"))
             )
 
-        fund = []
+        fund_list = []
         for fid in set(fund_ids or []):
             amt = input_amounts.get(fid, Decimal("0.00"))
             if amt <= 0:
@@ -579,19 +579,26 @@ def requisition_action(requisition_id):
             if not mas:
                 continue
 
-            fund.append(models.requisitions.Funds(mas=mas, amount=amt))
+            print("=====> mas", mas)
+
+            res = models.Reservation(
+                requisition=requisition,
+                mas=mas,
+                amount=amt,
+                reserved_by=current_user._get_current_object(),
+            )
+            res.save()
+
+            fund_list.append(
+                models.requisitions.Funds(mas=mas, amount=amt, reservation=res)
+            )
 
             mas.reservable_amount -= amt
             mas.last_updated_by = current_user._get_current_object()
             mas.editable = False
             mas.save()
 
-            models.Reservation(
-                requisition=requisition,
-                mas=mas,
-                amount=amt,
-                reserved_by=current_user._get_current_object(),
-            ).save()
+        requisition.fund = fund_list
 
         # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:

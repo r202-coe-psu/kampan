@@ -50,3 +50,63 @@ class BillingForm(FlaskForm):
 class RequisitionTimelineFilterForm(FlaskForm):
     requisition_code = fields.StringField("เลขที่คำขอ")
     progress = fields.SelectField("สถานะ", choices=[])
+
+
+class MasForm(FlaskForm):
+    mas_year = fields.IntegerField("ปีงบประมาณ", validators=[validators.Optional()])
+    mas_code = fields.StringField("รหัสแหล่งเงิน", validators=[validators.Optional()])
+
+
+class ItemListForm(FlaskForm):
+    product_name = fields.StringField("ชื่อสินค้า", validators=[validators.Optional()])
+    serial_number = fields.StringField("เลขที่สินค้า", validators=[validators.Optional()])
+    price_per_piece = fields.DecimalField(
+        "ราคาต่อชิ้น", validators=[validators.Optional()]
+    )
+
+
+class CompletedForm(FlaskForm):
+    requisition_code = fields.StringField(
+        "เลขที่ มอ.เบิกจ่าย", render_kw={"readonly": True}
+    )
+    paid_date = fields.DateField("วันที่เบิกจ่าย", render_kw={"readonly": True})
+    product_name = fields.StringField("ชื่อรายการ", render_kw={"readonly": True})
+    total_amount = fields.StringField(
+        "เงินทั้งหมดตามเลขที่ มอ เบิกจ่าย", render_kw={"readonly": True}
+    )
+    delivered_date = fields.DateField("วันที่ส่งของ", render_kw={"readonly": True})
+    inspection_date = fields.DateField("วันที่ตรวจรับ", render_kw={"readonly": True})
+    requisition_creator = fields.StringField(
+        "ชื่อผู้เบิกครุภัณฑ์", render_kw={"readonly": True}
+    )
+    money_type = fields.SelectField(
+        "ประเภทเงิน",
+        validators=[validators.DataRequired()],
+        choices=[
+            ("งบประมาณ", "งบประมาณ"),
+            ("รายได้", "รายได้"),
+        ],
+    )
+    seller_name = fields.StringField("ชื่อผู้ขาย", validators=[validators.DataRequired()])
+    contract_number = fields.StringField(
+        "เลขที่สัญญา", validators=[validators.DataRequired()]
+    )
+    purchase_method = fields.StringField(
+        "วิธีการจัดซื้อ",
+        validators=[validators.DataRequired()],
+    )
+    start_warranty_date = fields.DateField(
+        "วันที่เริ่มประกัน", validators=[validators.DataRequired()]
+    )
+    end_warranty_date = fields.DateField(
+        "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
+    )
+    warranty_period = fields.IntegerField(
+        "ระยะเวลาประกัน", validators=[validators.DataRequired()]
+    )
+    product_number = fields.StringField("เลขที่สินค้า", validators=[validators.Optional()])
+    asset_code = fields.StringField("รหัสครุภัณฑ์", validators=[validators.DataRequired()])
+    account_code = fields.StringField("รหัสบัญชี", validators=[validators.DataRequired()])
+    usage_location = fields.StringField(
+        "สถานที่ใช้งาน", validators=[validators.DataRequired()]
+    )

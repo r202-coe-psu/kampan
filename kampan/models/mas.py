@@ -13,7 +13,7 @@ RESERVATION_STATUS_CHOICES = [
 
 
 class MAS(me.Document):
-    meta = {"collection": "mas", "strict" : False}
+    meta = {"collection": "mas", "strict": False}
 
     year = me.IntField(required=True, min_value=2500, max_value=2700)
     mas_code = me.StringField(required=True, max_length=50)
