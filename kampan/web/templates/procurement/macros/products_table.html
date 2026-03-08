@@ -316,7 +316,7 @@
               </div>
               {% if next_idx < due_dates|length %}
                 <div class="badge badge-outline font-medium text-s mt-1">
-                  ชำระก่อน {{ due_dates[next_idx].strftime("%d/%m/%Y") }}
+                  ชำระก่อน {{ due_dates[next_idx].strftime("%d/%m/") ~ (due_dates[next_idx].year + 543) }}
                 </div>
               {% endif %}
               {% if item.payment_records %}

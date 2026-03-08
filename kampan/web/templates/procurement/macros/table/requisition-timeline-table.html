@@ -735,7 +735,7 @@
                   {% endif %}
                   {% if item.updated_date %}
                     <br />
-                    วันที่: {{ item.updated_date.strftime("%d/%m/%Y %H:%M น.") }}
+                    วันที่: {{ item.updated_date.strftime("%d/%m/") ~ (item.updated_date.year + 543) ~ item.updated_date.strftime(" %H:%M น.") }}
                   {% endif %}
                 </div>
               </div>

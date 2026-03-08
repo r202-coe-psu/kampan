@@ -75,7 +75,7 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <i class="ph ph-calendar-x text-rose-500"></i>
-                      <span class="text-sm font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/%Y") if
+                      <span class="text-sm font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) if
                       item.end_date }}</span>
                     </div>
                   </td>

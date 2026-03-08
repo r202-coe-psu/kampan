@@ -4,205 +4,229 @@
 {% block title %}จัดการไฟล์ Excel{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-6 space-y-6">
+  <div class="container mx-auto p-6 space-y-6">
     <!-- Header Section -->
     <div class="bg-white rounded-lg p-6 text-primary-content shadow-lg">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div class="space-y-2 text-black">
-                <h1 class="text-2xl font-bold flex items-center gap-2">
-                    <i class="ph ph-file-text text-3xl"></i>
-                    การจัดการไฟล์ Excel
-                </h1>
-                <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
-            </div>
-            <div class="flex gap-2">
-                <button type="button" class="btn btn-success btn-md" style="margin-right: 10px;"
-                    onclick="openModal('template-modal')">
-                    <i class="ph ph-file-xls text-lg"></i> ดาวน์โหลดเทมเพลต
-                </button>
-
-                <!-- Modal for template selection -->
-                <div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-                    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs mx-auto relative">
-                        <button type="button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-                            onclick="closeModal('template-modal')">
-                            <i class="ph ph-x text-xl"></i>
-                        </button>
-                        <div class="font-bold text-lg mb-4 flex items-center gap-2">
-                            <i class="ph ph-file-xls text-green-500"></i>
-                            <span class="text-black">เลือกประเภทเทมเพลต</span>
-                        </div>
-                        <div class="flex flex-col gap-3">
-                            <a href="{{ url_for('admin.upload_files.download_mas_template', organization_id=organization.id) }}"
-                                class="btn btn-block btn-outline-success flex items-center gap-2"
-                                onclick="closeModal('template-modal')">
-                                <i class="ph ph-file-xls"></i> Template แหล่งเงิน (MAS)
-                            </a>
-                            <a href="{{ url_for('admin.upload_files.download_ma_template', organization_id=organization.id) }}"
-                                class="btn btn-block btn-outline-success flex items-center gap-2"
-                                onclick="closeModal('template-modal')">
-                                <i class="ph ph-file-xls"></i> Template MA (Procurement)
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <a class="btn btn-primary btn-md"
-                    href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page'), organization_id=organization.id) }}"
-                    data-tooltip="อัปโหลดไฟล์ใหม่">
-                    <i class="ph ph-upload-simple text-lg"></i>
-                    อัปโหลดไฟล์
-                </a>
-            </div>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="space-y-2 text-black">
+          <h1 class="text-2xl font-bold flex items-center gap-2">
+            <i class="ph ph-file-text text-3xl"></i>
+            การจัดการไฟล์ Excel
+          </h1>
+          <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
         </div>
+        <div class="flex gap-2">
+          <button type="button"
+                  class="btn btn-success btn-md"
+                  style="margin-right: 10px"
+                  onclick="openModal('template-modal')">
+            <i class="ph ph-file-xls text-lg"></i> ดาวน์โหลดเทมเพลต
+          </button>
+
+          <!-- Modal for template selection -->
+          <div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs mx-auto relative">
+              <button type="button"
+                      class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                      onclick="closeModal('template-modal')">
+                <i class="ph ph-x text-xl"></i>
+              </button>
+              <div class="font-bold text-lg mb-4 flex items-center gap-2">
+                <i class="ph ph-file-xls text-green-500"></i>
+                <span class="text-black">เลือกประเภทเทมเพลต</span>
+              </div>
+              <div class="flex flex-col gap-3">
+                <a href="{{ url_for('admin.upload_files.download_mas_template', organization_id=organization.id) }}"
+                   class="btn btn-block btn-outline-success flex items-center gap-2"
+                   onclick="closeModal('template-modal')">
+                  <i class="ph ph-file-xls"></i> Template แหล่งเงิน (MAS)
+                </a>
+                <a href="{{ url_for('admin.upload_files.download_ma_template', organization_id=organization.id) }}"
+                   class="btn btn-block btn-outline-success flex items-center gap-2"
+                   onclick="closeModal('template-modal')">
+                  <i class="ph ph-file-xls"></i> Template MA (Procurement)
+                </a>
+              </div>
+            </div>
+          </div>
+          <a class="btn btn-primary btn-md"
+             href="{{ url_for('admin.upload_files.upload_or_edit', page=request.args.get('page') , organization_id=organization.id) }}"
+             data-tooltip="อัปโหลดไฟล์ใหม่">
+            <i class="ph ph-upload-simple text-lg"></i>
+            อัปโหลดไฟล์
+          </a>
+        </div>
+      </div>
     </div>
     <div>
-        <!-- Document Table -->
-        <div class="overflow-x-auto mt-6">
-            <table class="min-w-full bg-white rounded-lg shadow-md border border-gray-200">
-                <thead>
-                    <tr class="bg-gray-50 text-gray-700 text-sm">
-                        <th class="py-3 px-2 font-semibold">วันที่อัปโหลด</th>
-                        <th class="py-3 px-2 font-semibold">วันที่ประมวลผล</th>
-                        <th class="py-3 px-2 font-semibold">ผู้อัปโหลด</th>
-                        <th class="py-3 px-2 font-semibold">ชื่อเอกสาร</th>
-                        <th class="py-3 px-2 font-semibold">หมวดหมู่</th>
-                        <th class="py-3 px-2 font-semibold">สถานะ</th>
-                        <th class="py-3 px-2 font-semibold">เครื่องมือ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if documents|length == 0 %}
-                    <tr>
-                        <td colspan="7" class="py-6 text-center text-gray-400 text-base font-semibold">
-                            ยังไม่มีข้อมูล
-                        </td>
-                    </tr>
-                    {% else %}
-                    {% for doc in documents %}
-                    <tr class="border-b last:border-none hover:bg-gray-50 text-center text-sm">
-                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_date.strftime('%Y-%m-%d %H:%M:%S') }}
-                        </td>
-                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.updated_date.strftime('%Y-%m-%d %H:%M:%S') }}
-                        </td>
-                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.created_by.first_name }} {{
-                            doc.created_by.last_name }}</td>
-                        <td class="py-2 px-2">
-                            <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename, organization_id=organization.id) }}"
-                                class="text-blue-600 hover:underline">
-                                {{ doc.file.filename }}
-                            </a>
-                        </td>
-                        <td class="py-2 px-2 whitespace-nowrap">{{ doc.get_category_display() }}</td>
-                        <td class="py-2 px-2">
-                            {% set status_info = {
-                            'Waiting': {'color': 'bg-gray-300', 'icon': 'ph-clock', 'tooltip': 'รอประมวลผล'},
-                            'Processing': {'color': 'bg-blue-200', 'icon': 'ph-hourglass', 'tooltip': 'กำลังประมวลผล'},
-                            'Completed': {'color': 'bg-green-200', 'icon': 'ph-check-circle', 'tooltip': 'สำเร็จ'},
-                            'Incomplete': {'color': 'bg-yellow-200', 'icon': 'ph-warning-circle', 'tooltip':
-                            'ไม่สำเร็จ'},
-                            'Failed': {'color': 'bg-red-200', 'icon': 'ph-x-circle', 'tooltip': 'ล้มเหลว'}
-                            } %}
-                            {% set status_display = doc.get_status_display() %}
-                            {% set info = status_info.get(status_display, {'color': 'bg-gray-200', 'icon':
-                            'ph-question', 'tooltip': 'ไม่ทราบสถานะ'}) %}
-                            <div class="flex flex-col items-center gap-1">
-                                <span
-                                    class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
-                                    title="{{ info.tooltip }}">
-                                    <i class="ph {{ info.icon }} text-base"></i>
-                                    {{ info.tooltip }}
-                                </span>
-                                {% if doc.error_messages %}
-                                <button type="button"
-                                    class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 underline"
-                                    onclick="openModal('errors-{{ doc.id }}')">
-                                    <i class="ph ph-warning text-sm"></i>
-                                    {{ doc.error_messages|length }} ข้อผิดพลาด
-                                </button>
-                                {% endif %}
-                            </div>
+      <!-- Document Table -->
+      <div class="overflow-x-auto mt-6">
+        <table class="min-w-full bg-white rounded-lg shadow-md border border-gray-200">
+          <thead>
+            <tr class="bg-gray-50 text-gray-700 text-sm">
+              <th class="py-3 px-2 font-semibold">วันที่อัปโหลด</th>
+              <th class="py-3 px-2 font-semibold">วันที่ประมวลผล</th>
+              <th class="py-3 px-2 font-semibold">ผู้อัปโหลด</th>
+              <th class="py-3 px-2 font-semibold">ชื่อเอกสาร</th>
+              <th class="py-3 px-2 font-semibold">หมวดหมู่</th>
+              <th class="py-3 px-2 font-semibold">สถานะ</th>
+              <th class="py-3 px-2 font-semibold">เครื่องมือ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if documents|length == 0 %}
+              <tr>
+                <td colspan="7" class="py-6 text-center text-gray-400 text-base font-semibold">ยังไม่มีข้อมูล</td>
+              </tr>
+            {% else %}
+              {% for doc in documents %}
+                <tr class="border-b last:border-none hover:bg-gray-50 text-center text-sm">
+                  <td class="py-2 px-2 whitespace-nowrap">
+                    {{ (doc.created_date.year + 543) ~ doc.created_date.strftime("-%m-%d %H:%M:%S") }}
+                  </td>
+                  <td class="py-2 px-2 whitespace-nowrap">
+                    {{ (doc.updated_date.year + 543) ~ doc.updated_date.strftime("-%m-%d %H:%M:%S") }}
+                  </td>
+                  <td class="py-2 px-2 whitespace-nowrap">
+                    {{ doc.created_by.first_name }} {{
+                    doc.created_by.last_name }}
+                  </td>
+                  <td class="py-2 px-2">
+                    <a href="{{ url_for('admin.upload_files.download', document_id=doc.id, filename=doc.file.filename, organization_id=organization.id) }}"
+                       class="text-blue-600 hover:underline">{{ doc.file.filename }}</a>
+                  </td>
+                  <td class="py-2 px-2 whitespace-nowrap">{{ doc.get_category_display() }}</td>
+                  <td class="py-2 px-2">
+                    {% set status_info = {
+                      "Waiting": {
+                        "color": "bg-gray-300",
+                        "icon": "ph-clock",
+                        "tooltip": "รอประมวลผล"
+                      },
+                      "Processing": {
+                        "color": "bg-blue-200",
+                        "icon": "ph-hourglass",
+                        "tooltip": "กำลังประมวลผล"
+                      },
+                      "Completed": {
+                        "color": "bg-green-200",
+                        "icon": "ph-check-circle",
+                        "tooltip": "สำเร็จ"
+                      },
+                      "Incomplete": {
+                        "color": "bg-yellow-200",
+                        "icon": "ph-warning-circle",
+                        "tooltip": "ไม่สำเร็จ"
+                      },
+                      "Failed": {
+                        "color": "bg-red-200",
+                        "icon": "ph-x-circle",
+                        "tooltip": "ล้มเหลว"
+                      }
+                    } %}
+                      {% set status_display = doc.get_status_display() %}
+                      {% set info = status_info.get(status_display, {'color': 'bg-gray-200', 'icon':
+                                            'ph-question', 'tooltip': 'ไม่ทราบสถานะ'}) %}
+                      <div class="flex flex-col items-center gap-1">
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-xs {{ info.color }}"
+                              title="{{ info.tooltip }}">
+                          <i class="ph {{ info.icon }} text-base"></i>
+                          {{ info.tooltip }}
+                        </span>
+                        {% if doc.error_messages %}
+                          <button type="button"
+                                  class="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 underline"
+                                  onclick="openModal('errors-{{ doc.id }}')">
+                            <i class="ph ph-warning text-sm"></i>
+                            {{ doc.error_messages|length }} ข้อผิดพลาด
+                          </button>
+                        {% endif %}
+                      </div>
 
-                            <!-- Error Detail Modal -->
-                            {% if doc.error_messages %}
-                            <div id="errors-{{ doc.id }}"
-                                class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-                                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto relative max-h-[80vh] flex flex-col">
-                                    <button type="button"
-                                        class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-                                        onclick="closeModal('errors-{{ doc.id }}')">
-                                        <i class="ph ph-x text-xl"></i>
-                                    </button>
-                                    <div class="font-bold text-base mb-3 flex items-center gap-2 text-red-600">
-                                        <i class="ph ph-warning-circle text-xl"></i>
-                                        ข้อผิดพลาดในไฟล์ {{ doc.file.filename }}
-                                    </div>
-                                    <ul class="overflow-y-auto flex-1 space-y-1 text-sm text-gray-700 pr-1">
-                                        {% for err in doc.error_messages %}
-                                        <li class="flex items-start gap-2 bg-red-50 rounded px-3 py-2">
-                                            <i class="ph ph-x-circle text-red-400 mt-0.5 shrink-0"></i>
-                                            {{ err }}
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                    <div class="mt-4 flex justify-end">
-                                        <button type="button" class="btn btn-sm btn-outline"
-                                            onclick="closeModal('errors-{{ doc.id }}')">ปิด</button>
-                                    </div>
-                                </div>
+                      <!-- Error Detail Modal -->
+                      {% if doc.error_messages %}
+                        <div id="errors-{{ doc.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                          <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto relative max-h-[80vh] flex flex-col">
+                            <button type="button"
+                                    class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                                    onclick="closeModal('errors-{{ doc.id }}')">
+                              <i class="ph ph-x text-xl"></i>
+                            </button>
+                            <div class="font-bold text-base mb-3 flex items-center gap-2 text-red-600">
+                              <i class="ph ph-warning-circle text-xl"></i>
+                              ข้อผิดพลาดในไฟล์ {{ doc.file.filename }}
                             </div>
-                            {% endif %}
-                        </td>
-                        <td class="py-2 px-2 whitespace-nowrap">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id, organization_id=organization.id) }}"
-                                    class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
-                                    title="บันทึกลงในระบบ" {% if doc.status !='waiting' %}aria-disabled="true"
-                                    tabindex="-1" style="pointer-events: none; opacity: 0.5;" {% endif %}>
-                                    <i class="ph ph-floppy-disk"></i>
-                                </a>
-                                <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, organization_id=organization.id) }}"
-                                    class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md"
-                                    title="แก้ไข">
-                                    <i class="ph ph-pencil-simple"></i>
-                                </a>
-                                <!-- Delete Modal Trigger -->
-                                <button type="button"
-                                    class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
-                                    onclick="openModal('modal-{{ doc.id }}')" title="ลบ">
-                                    <i class="ph ph-trash"></i>
-                                </button>
+                            <ul class="overflow-y-auto flex-1 space-y-1 text-sm text-gray-700 pr-1">
+                              {% for err in doc.error_messages %}
+                                <li class="flex items-start gap-2 bg-red-50 rounded px-3 py-2">
+                                  <i class="ph ph-x-circle text-red-400 mt-0.5 shrink-0"></i>
+                                  {{ err }}
+                                </li>
+                              {% endfor %}
+                            </ul>
+                            <div class="mt-4 flex justify-end">
+                              <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('errors-{{ doc.id }}')">
+                                ปิด
+                              </button>
                             </div>
-                            <!-- Modal -->
-                            <div id="modal-{{ doc.id }}"
-                                class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-                                <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-auto relative">
-                                    <button type="button"
-                                        class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-                                        onclick="closeModal('modal-{{ doc.id }}')">
-                                        <i class="ph ph-x text-xl"></i>
-                                    </button>
-                                    <div class="font-bold text-lg mb-2 flex items-center gap-2">
-                                        <i class="ph ph-trash text-red-500"></i>
-                                        ยืนยันการลบ
-                                    </div>
-                                    <div class="mb-4 text-gray-700">คุณต้องการลบ <span class="font-semibold">{{
-                                            doc.file.filename }}</span> ใช่หรือไม่?</div>
-                                    <div class="flex gap-3 justify-end">
-                                        <button type="button" class="btn"
-                                            onclick="closeModal('modal-{{ doc.id }}')">ยกเลิก</button>
-                                        <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id, organization_id=organization.id) }}"
-                                            class="btn btn-error flex items-center gap-1">
-                                            <i class="ph ph-trash"></i> ลบ
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% endif %}
-                </tbody>
-            </table>
+                          </div>
+                        </div>
+                      {% endif %}
+                    </td>
+                    <td class="py-2 px-2 whitespace-nowrap">
+                      <div class="flex items-center justify-center gap-2">
+                        <a href="{{ url_for('admin.upload_files.processing', document_id=doc.id, organization_id=organization.id) }}"
+                           class="btn btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-md"
+                           title="บันทึกลงในระบบ"
+                           {% if doc.status !='waiting' %}
+                             aria-disabled="true" tabindex="-1" style="pointer-events: none; opacity: 0.5;"
+                           {% endif %}>
+                          <i class="ph ph-floppy-disk"></i>
+                        </a>
+                        <a href="{{ url_for('admin.upload_files.upload_or_edit', document_id=doc.id, organization_id=organization.id) }}"
+                           class="btn btn-sm bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-md"
+                           title="แก้ไข">
+                          <i class="ph ph-pencil-simple"></i>
+                        </a>
+                        <!-- Delete Modal Trigger -->
+                        <button type="button"
+                                class="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md"
+                                onclick="openModal('modal-{{ doc.id }}')"
+                                title="ลบ">
+                          <i class="ph ph-trash"></i>
+                        </button>
+                      </div>
+                      <!-- Modal -->
+                      <div id="modal-{{ doc.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+                        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-auto relative">
+                          <button type="button"
+                                  class="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                                  onclick="closeModal('modal-{{ doc.id }}')">
+                            <i class="ph ph-x text-xl"></i>
+                          </button>
+                          <div class="font-bold text-lg mb-2 flex items-center gap-2">
+                            <i class="ph ph-trash text-red-500"></i>
+                            ยืนยันการลบ
+                          </div>
+                          <div class="mb-4 text-gray-700">
+                            คุณต้องการลบ <span class="font-semibold">{{
+                            doc.file.filename }}</span> ใช่หรือไม่?
+                          </div>
+                          <div class="flex gap-3 justify-end">
+                            <button type="button" class="btn" onclick="closeModal('modal-{{ doc.id }}')">ยกเลิก</button>
+                            <a href="{{ url_for('admin.upload_files.delete', document_id=doc.id, organization_id=organization.id) }}"
+                               class="btn btn-error flex items-center gap-1">
+                              <i class="ph ph-trash"></i> ลบ
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
         </div>
         <script>
             // Modal functions
@@ -210,6 +234,7 @@
                 document.getElementById(id).classList.remove('hidden');
                 document.getElementById(id).classList.add('flex');
             }
+
             function closeModal(id) {
                 document.getElementById(id).classList.remove('flex');
                 document.getElementById(id).classList.add('hidden');
@@ -218,6 +243,7 @@
             function setAlertStatus(status) {
                 sessionStorage.setItem('alertStatus', status);
             }
+
             function checkAlertStatus() {
                 const status = sessionStorage.getItem('alertStatus');
                 if (status) {
@@ -234,6 +260,7 @@
                     sessionStorage.removeItem('alertStatus');
                 }
             }
+
             function checkStatusAndShowAlert(status) {
                 if (status === 'Completed') {
                     setAlertStatus('Completed');
@@ -243,25 +270,34 @@
                     setAlertStatus('Incomplete');
                 }
             }
+
             function showAlertCompleted() {
                 const el = document.getElementById('alert-message-completed');
                 el.style.display = 'block';
-                setTimeout(() => { el.style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 3000);
             }
+
             function showAlertFailed() {
                 const el = document.getElementById('alert-message-failed');
                 el.style.display = 'block';
-                setTimeout(() => { el.style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 3000);
             }
+
             function showAlertIncomplete() {
                 const el = document.getElementById('alert-message-incomplete');
                 el.style.display = 'block';
-                setTimeout(() => { el.style.display = 'none'; }, 3000);
+                setTimeout(() => {
+                    el.style.display = 'none';
+                }, 3000);
             }
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 checkAlertStatus();
             });
         </script>
+      </div>
     </div>
-</div>
-{% endblock %}
+  {% endblock %}

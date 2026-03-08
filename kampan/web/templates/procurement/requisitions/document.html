@@ -637,7 +637,7 @@
                       </p>
                       <p style="text-align: right; margin-top: -0.5rem;">
                         {% if requisitions.updated_date %}
-                          {{ requisitions.updated_date.strftime("%d/%m/%Y %H:%M") }}
+                          {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) ~ requisitions.updated_date.strftime(" %H:%M") }}
                         {% endif %}
                       </p>
                     {% else %}
@@ -700,7 +700,7 @@
                           <span style="margin-left: 10.4rem;">
                             <span style="font-size: 15px;">
                               {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
-                                {{ supervisor_approval[-1].timestamp.strftime("%d/%m/%Y %H:%M") }}
+                                {{ supervisor_approval[-1].timestamp.strftime("%d/%m/") ~ (supervisor_approval[-1].timestamp.year + 543) ~ supervisor_approval[-1].timestamp.strftime(" %H:%M") }}
                               {%- else -%}
                                 <p style="text-align: right; margin-top: -0.5rem; margin-right: 1.5rem;">
                                   .............../.............../...............

@@ -41,8 +41,7 @@
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ file.upload_date.strftime("%d/%m/%Y
-                                    %H:%M") }}
+                  {{ file.upload_date.strftime("%d/%m/") ~ (file.upload_date.year + 543) ~ file.upload_date.strftime(" %H:%M") }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ file.uploaded_by.get_name() if file.uploaded_by else 'ไม่ระบุ' }}

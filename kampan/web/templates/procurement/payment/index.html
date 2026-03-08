@@ -87,12 +87,12 @@
               <div class="space-y-2 text-xs md:text-sm">
                 <div class="flex justify-between flex-wrap gap-1">
                   <span class="text-base-content/70">วันที่เริ่มต้น:</span>
-                  <span class="font-medium">{{ item.start_date.strftime("%d/%m/%Y") if item.start_date
+                  <span class="font-medium">{{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) if item.start_date
                   else '-' }}</span>
                 </div>
                 <div class="flex justify-between flex-wrap gap-1">
                   <span class="text-base-content/70">วันที่สิ้นสุด:</span>
-                  <span class="font-medium">{{ item.end_date.strftime("%d/%m/%Y") if item.end_date else
+                  <span class="font-medium">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) if item.end_date else
                   '-' }}</span>
                 </div>
                 <div class="flex justify-between flex-wrap gap-1">
@@ -213,7 +213,9 @@
                     {% for record in item.payment_records %}
                       <tr class="hover">
                         <td class="text-xs">{{ loop.index }}</td>
-                        <td class="text-xs">{{ record.paid_date.strftime("%d/%m/%Y %H:%M") }}</td>
+                        <td class="text-xs">
+                          {{ record.paid_date.strftime("%d/%m/") ~ (record.paid_date.year + 543) ~ record.paid_date.strftime(" %H:%M") }}
+                        </td>
                         <td class="text-xs truncate max-w-xs">
                           {{ record.paid_by.get_name() if record.paid_by
                           else '-' }}

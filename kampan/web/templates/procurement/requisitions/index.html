@@ -139,14 +139,14 @@
                     <div class="text-gray-600 mb-1 font-medium">เริ่มต้น</div>
                     <div class="font-bold text-emerald-700 flex items-center justify-center gap-1">
                       <i class="ph ph-play text-xs"></i>
-                      {{ item.start_date.strftime("%d/%m/%Y") }}
+                      {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
                     </div>
                   </div>
                   <div class="text-center">
                     <div class="text-gray-600 mb-1 font-medium">สิ้นสุด</div>
                     <div class="font-bold text-rose-700 flex items-center justify-center gap-1">
                       <i class="ph ph-stop text-xs"></i>
-                      {{ item.end_date.strftime("%d/%m/%Y") }}
+                      {{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) }}
                     </div>
                   </div>
                 </div>
@@ -221,7 +221,7 @@
                 <p class="text-sm text-gray-600">รหัส: {{ item.product_number }}</p>
                 <div class="flex justify-between mt-2 text-sm">
                   <span class="text-gray-500">วันที่สิ้นสุด:</span>
-                  <span class="font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/%Y") }}</span>
+                  <span class="font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) }}</span>
                 </div>
               </div>
               <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
@@ -257,7 +257,7 @@
                 <p class="text-sm text-gray-600">รหัส: {{ item.product_number }}</p>
                 <div class="flex justify-between mt-2 text-sm">
                   <span class="text-gray-500">วันที่สิ้นสุด:</span>
-                  <span class="font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/%Y") }}</span>
+                  <span class="font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) }}</span>
                 </div>
               </div>
               <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
