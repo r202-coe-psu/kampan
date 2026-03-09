@@ -68,12 +68,17 @@ class ApprovalHistory(me.EmbeddedDocument):
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
 
 
+class SelectedManager(me.EmbeddedDocument):
+    manager = me.ReferenceField("OrganizationUserRole", dbref=True)
+    is_acting = me.BooleanField(default=False)  # รักษาการหรือไม่
+
+
 class Requisition(me.Document):
     meta = {"collection": "requisitions"}
 
     requisition_code = me.StringField(max_length=50, unique=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True, required=True)
-    manager = me.ReferenceField("OrganizationUserRole", dbref=True)
+    selected_manager = me.EmbeddedDocumentField(SelectedManager)
     phone = me.StringField()
     reason = me.StringField(max_length=255)
     start_date = me.DateTimeField(required=True)

@@ -353,15 +353,36 @@
                               <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
                                 <div class="lg:col-span-6">
                                   {% if organization and organization.get_organization_users() %}
-                                    <div class="form-control flex flex-col">
-                                      <label for="manager-{{ item.id }}" class="label">
+                                    {# Determine purchaser's division for filtering #}
+                                    {% set purchaser_division_id = (item.purchaser.division.id | string) if item.purchaser and item.purchaser.division else '' %}
+                                    <div class="form-control flex flex-col gap-2">
+                                      <label class="label">
                                         <span class="label-text font-semibold">เลือกผู้บริหาร (manager Supplier)</span>
                                       </label>
+
+                                      {# Acting checkbox #}
+                                      <label class="flex items-center gap-2 cursor-pointer w-fit mb-1">
+                                        <input type="checkbox"
+                                               id="acting-check-{{ item.id }}"
+                                               class="checkbox checkbox-sm checkbox-warning manager-acting-checkbox"
+                                               data-item-id="{{ item.id }}"
+                                               data-purchaser-division="{{ purchaser_division_id }}" />
+                                        <span class="text-sm font-medium">ผู้บริหารรักษาการ</span>
+                                      </label>
+
+                                      {# Hidden Acting field — updated by JS #}
+                                      <input type="hidden" name="Acting" id="acting-{{ item.id }}" value="False" />
+
                                       <select name="manager" id="manager-{{ item.id }}" class="select select-bordered w-full" required>
                                         <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
                                         {% for user in organization.get_organization_users() %}
                                           {% if 'manager' in user.roles %}
-                                            <option value="{{ user.id }}">{{ user.display_fullname() }}</option>
+                                            {% set mgr_division_id = (user.division.id | string) if user.division else '' %}
+                                            {% set is_same = (mgr_division_id == purchaser_division_id and mgr_division_id != '' and purchaser_division_id != '') %}
+                                            <option value="{{ user.id }}"
+                                                    data-same="{{ 'true' if is_same else 'false' }}">
+                                              {{ user.display_fullname() }}
+                                            </option>
                                           {% endif %}
                                         {% endfor %}
                                       </select>
@@ -737,6 +758,41 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
                 icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+            });
+
+            function applyManagerFilter(cb) {
+                var itemId = cb.getAttribute('data-item-id');
+                var purchaserDivision = cb.getAttribute('data-purchaser-division') || '';
+                var isActing = cb.checked;
+
+                var actingInput = document.getElementById('acting-' + itemId);
+                if (actingInput) actingInput.value = isActing ? 'True' : 'False';
+
+                var select = document.getElementById('manager-' + itemId);
+                if (!select) return;
+                select.value = '';
+                Array.from(select.options).forEach(function(opt) {
+                    if (!opt.value) return;
+                    var isSame = opt.getAttribute('data-same') === 'true';
+                    var show;
+                    if (!purchaserDivision) {
+                        show = true;
+                    } else if (isActing) {
+                        show = !isSame;
+                    } else {
+                        show = isSame;
+                    }
+                    opt.hidden = !show;
+                    opt.disabled = !show;
+                });
+            }
+
+            document.querySelectorAll('input.manager-acting-checkbox').forEach(function(cb) {
+                // apply initial filter on page load
+                applyManagerFilter(cb);
+                cb.addEventListener('change', function() {
+                    applyManagerFilter(this);
+                });
             });
         });
 

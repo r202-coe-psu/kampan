@@ -166,7 +166,7 @@ def renewal_requested(requisition_procurement_id):
     if status:
         query["status"] = status
     if show_item == "me":
-        query["manager"] = org_user_role
+        query["selected_manager__manager"] = org_user_role
 
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
@@ -240,7 +240,7 @@ def renewal_requested(requisition_procurement_id):
 
         elif is_manager and not (is_admin or is_head):
             manager_requisitions = requisitions.filter(
-                manager=org_user_role,
+                selected_manager__manager=org_user_role,
                 approval_history__not__elemMatch={
                     "approver_role": "manager",
                 },
@@ -256,7 +256,7 @@ def renewal_requested(requisition_procurement_id):
 
         elif is_manager and is_staff and is_head and is_admin:
             manager_requisitions = requisitions.filter(
-                manager=org_user_role,
+                selected_manager__manager=org_user_role,
                 approval_history__not__elemMatch={
                     "approver_role": "manager",
                 },
@@ -517,7 +517,7 @@ def download(requisition_procurement_id):
 @login_required
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
-    action = request.form.get("action")  # 'approved' or 'rejected'
+    action = request.form.get("action")
     reason = request.form.get("reason")
     fund_id = request.form.get("fund")  # fallback เดิม
     fund_ids = request.form.getlist("fund_ids")  # ใหม่: เลือกหลายแหล่งเงิน
@@ -602,9 +602,14 @@ def requisition_action(requisition_id):
 
         # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:
+            is_acting = request.form.get("Acting") == "True"
             manager_obj = models.OrganizationUserRole.objects(id=manager_id).first()
             if manager_obj:
-                requisition.manager = manager_obj
+                requisition.selected_manager = models.requisitions.SelectedManager(
+                    manager=manager_obj,
+                    is_acting=is_acting,
+                )
+
                 job = redis_rq.redis_queue.queue.enqueue(
                     utils.send_email_to_manager.send_email_to_manager,
                     args=(requisition, current_app.config, manager_obj, organization),
