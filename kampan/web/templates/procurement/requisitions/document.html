@@ -3,21 +3,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ใบแจ้งขอซื้อ/จ้างวัสดุ</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap"
-          rel="stylesheet" />
     <style>
-        /* Apply Sarabun font to all elements */
+        @font-face {
+            font-family: 'THSarabunNew';
+            src: url("{{ url_for('static', filename='fonts/THSarabunNew.ttf') }}") format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'THSarabunNew';
+            src: url("{{ url_for('static', filename='fonts/THSarabunNew Bold.ttf') }}") format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'THSarabunNew';
+            src: url("{{ url_for('static', filename='fonts/THSarabunNew Italic.ttf') }}") format('truetype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'THSarabunNew';
+            src: url("{{ url_for('static', filename='fonts/THSarabunNew BoldItalic.ttf') }}") format('truetype');
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        /* Apply THSarabunNew font to all elements */
         * {
-            font-family: 'Sarabun', sans-serif !important;
+            font-family: 'THSarabunNew', sans-serif !important;
             font-weight: 400;
             line-height: 1.4;
         }
 
         body {
-            font-family: 'Sarabun', sans-serif;
-            font-size: 18px;
+            font-family: 'THSarabunNew', sans-serif;
+            font-size: 20px;
             font-weight: 400;
             width: 210mm;
             height: 297mm;
@@ -31,7 +55,7 @@
             margin: 15mm;
         }
 
-        /* Ensure all text elements use Sarabun */
+        /* Ensure all text elements use THSarabunNew */
         div,
         span,
         p,
@@ -41,17 +65,17 @@
         table,
         tr,
         td {
-            font-family: 'Sarabun', sans-serif !important;
+            font-family: 'THSarabunNew', sans-serif !important;
         }
 
         b,
         strong {
-            font-family: 'Sarabun', sans-serif !important;
+            font-family: 'THSarabunNew', sans-serif !important;
             font-weight: 700;
         }
 
         .content {
-            font-family: 'Sarabun', sans-serif !important;
+            font-family: 'THSarabunNew', sans-serif !important;
         }
 
         /* Specific element styling */
@@ -130,7 +154,7 @@
                     margin-top: 2rem">
           <p style="margin: 2;">
             เลขที่ ........................
-            <span style="position: absolute; left: 42rem; top: 2rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
+            <span style="position: absolute; left: 44rem; top: 2rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
           </p>
           <p style="margin: 2;">วันที่รับ .............................</p>
         </div>
@@ -142,13 +166,13 @@
         </span>
         <span style="margin: 2; display: inline-block; position: relative;">
           เดือน .........................
-          <span id="doc-month" style="position: absolute; right: 2rem; top: -0.3rem;">
+          <span id="doc-month" style="position: absolute; right: 1.7rem; top: -0.3rem;">
             {{ ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"][requisitions.created_date.month-1] }}
           </span>
         </span>
         <span style="margin: 2; display: inline-block; position: relative;">
           พ.ศ. ............
-          <span id="doc-year" style="position: absolute; right: 1rem; top: -0.3rem;">
+          <span id="doc-year" style="position: absolute; right: 0.8rem; top: -0.3rem;">
             {{ requisitions.created_date.year + 543 }}
           </span>
         </span>
@@ -160,22 +184,22 @@
       <div style="text-align: right;">
         <span>ข้าพเจ้า</span>
         <span style="position: relative;">
-          นาย/นาง/นางสาว .................................................
-          <span style="position: absolute; left: 9rem; top: -0.3rem; white-space: nowrap">
+          นาย/นาง/นางสาว ......................................................
+          <span style="position: absolute; left: 6.5rem; top: -0.3rem; white-space: nowrap">
             {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                         requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
             {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
           </span>
         </span>
         <span style="position: relative;">
-          ฝ่าย .................................
-          <span style="position: absolute; left: 2.5rem; top: -0.3rem; white-space: nowrap">
+          ฝ่าย ...............................................
+          <span style="position: absolute; left: 2rem; top: -0.3rem; white-space: nowrap">
             {{ requisitions.purchaser.division.name[4:] if
             requisitions.purchaser.division.name.startswith("ฝ่าย") else requisitions.purchaser.division.name }}
           </span>
         </span>
         <span style="position: relative;">
-          โทร .................
+          โทร .........................
           <span style="position: absolute; top: -0.3rem; left: 2rem; white-space: nowrap">{{ requisitions.phone if requisitions.phone else '' }}</span>
         </span>
       </div>
@@ -200,7 +224,7 @@
               <span>ดังรายการต่อไปนี้</span>
             </div>
             {% set sorted_items = requisitions.items|sort(attribute='product_name') %}
-            {% for i in range(4) %}
+            {% for i in range(sorted_items|length) %}
               <div>
                 <span>{{ i+1 }}</span>
                 <span style="position: relative;">
@@ -208,21 +232,21 @@
                                left: 15;
                                top: -0.3rem;
                                white-space: normal;
-                               max-width: 350px;
+                               max-width: 450px;
                                overflow-wrap: break-word;
                                line-height: 1.6">
                     {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].product_name }}{% endif %}
                   </span>
-                  ....................................................................................
+                  ......................................................................................................................
                 </span>
                 <span style="position: relative;">
-                  <span style="position: absolute; left: 5rem; top: -0.3rem; white-space: nowrap">
+                  <span style="position: absolute; left: 3rem; top: -0.3rem; white-space: nowrap">
                     {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].quantity }}{% endif %}
                   </span>
                   จำนวน ..............
                 </span>
                 <span style="position: relative;">
-                  <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
+                  <span style="position: absolute; left: 5rem; top: -0.3rem; white-space: nowrap">
                     {% if sorted_items and sorted_items|length > i %}
                       {{ "{:,.2f}".format(sorted_items[i].amount) }}
                     {% endif %}
@@ -234,7 +258,7 @@
             {% endfor %}
             <div style="text-align: right;">
               <span style="position: relative;">
-                <span style="position: absolute; left: 10rem; top: -0.3rem; white-space: nowrap">
+                <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
                   {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
                 </span>
                 รวมเป็นเงินประมาณ ......................
@@ -245,7 +269,7 @@
           <div>
             <span>เหตุผลที่ต้องการใช้
               <span style="position: absolute;
-                           left: 10rem;
+                           left: 7rem;
                            white-space: normal;
                            max-width: 550px;
                            overflow-wrap: break-word;
@@ -257,12 +281,12 @@
           <div>
             <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
             <span style="position: relative;">........
-              <span style="position: absolute; right: 1rem; top: -0.3rem;">
+              <span style="position: absolute; right: 0.8rem; top: -0.3rem;">
                 {{ requisitions.start_date.day if requisitions.start_date }}
               </span>
             </span>
             <span style="position: relative;">เดือน .......................
-              <span style="position: absolute; right: 1rem; top: -0.3rem;">
+              <span style="position: absolute; right: 1.7rem; top: -0.3rem;">
                 {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
                 "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.start_date.month-1] if requisitions.start_date
                 }}
