@@ -229,6 +229,7 @@ def get_car_applications():
             "pending on director",
             "pending on admin",
             "active",
+            "completed",
         ]
     )
 
@@ -237,6 +238,7 @@ def get_car_applications():
         "pending on header": "orange",
         "pending on director": "orange",
         "pending on admin": "orange",
+        "completed": "gray",
     }
     datas = []
     for car_application in car_applications:
