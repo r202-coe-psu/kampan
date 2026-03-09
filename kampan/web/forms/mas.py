@@ -33,6 +33,21 @@ class MASForm(BaseMASForm):
     pass
 
 
+class MASSearchForm(FlaskForm):
+    year = fields.IntegerField(
+        "ปีงบประมาณ (พ.ศ.)", render_kw={"placeholder": "ปีงบประมาณ"}
+    )
+    mas_code = fields.StringField(
+        "รหัสแหล่งเงิน (MAS Code)", render_kw={"placeholder": "รหัสแหล่งเงิน"}
+    )
+    description = fields.StringField(
+        "รายละเอียด", render_kw={"placeholder": "รายละเอียด"}
+    )
+    amount = fields.DecimalField(
+        "จำนวนเงินที่ขอจัดตั้ง", render_kw={"placeholder": "จำนวนเงินที่ขอจัดตั้ง"}
+    )
+
+
 class ExportMASExcelForm(FlaskForm):
     start_date = fields.DateField(
         "วันที่เริ่มต้น",

@@ -2,6 +2,7 @@
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% from '/procurement/macros/mas_table.html' import render_mas_table %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}ระบบ MAS{% endblock %}
 {% block dashboard_title %}ระบบบริหารจัดการงบประมาณ (MAS){% endblock %}
@@ -11,12 +12,13 @@
   <!-- Header Section -->
   <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center">
-      <div class="">
+      <div>
         <h1 class="text-2xl font-bold text-gray-800">ระบบบริหารจัดการงบประมาณ</h1>
         <p class="text-gray-600 mt-1">Management Accounting System (MAS)</p>
+        <p class="text-xs text-gray-400 mt-1">Organization ID: {{ organization_id }}</p>
       </div>
       <div class="flex gap-1">
-        <button class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-amber-600 transition"
+        <button class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-300 transition"
                 hx-target="#export_excel_modal"
                 hx-get="{{ url_for('admin.mas.export_excel_modal', **request.args) }}">
           <i class="ph ph-download mr-2"></i>
@@ -24,7 +26,7 @@
         </button>
         <div class="mt-4 md:mt-0">
           <a href="{{ url_for('admin.mas.create_or_edit', organization_id=organization.id) }}"
-             class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+            class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
             <i class="ph ph-plus mr-2"></i>
             เพิ่มแหล่งเงิน
           </a>
@@ -32,6 +34,29 @@
 
       </div>
     </div>
+  </div>
+  <!-- MAS Search -->
+  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+      <input type="hidden" name="organization_id" value="{{ organization_id }}">
+      {{ renderer.render_field(form.year, placeholder="ค้นหาจากปีงบประมาณ") }}
+      {{ renderer.render_field(form.mas_code, placeholder="ค้นหาจากรหัส MAS") }}
+      {{ renderer.render_field(form.description, placeholder="ค้นหาจากรายละเอียดแหล่งเงิน") }}
+      {{ renderer.render_field(form.amount, placeholder="ค้นหาจากงบประมาณที่ขอจัดตั้ง") }}
+      <div class="pb-1.5">
+        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
+          <i class="ph ph-magnifying-glass mr-2"></i>
+          ค้นหา
+        </button>
+      </div>
+      <div class="pb-1.5 min-w-fit">
+        <a href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
+          class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
+          <i class="ph ph-x mr-2"></i>
+          ล้างการค้นหา
+        </a>
+      </div>
+    </form>
   </div>
 
   <!-- MAS Table with formal styling -->

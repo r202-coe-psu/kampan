@@ -24,24 +24,55 @@ module = Blueprint("mas", __name__, url_prefix="/mas")
 @login_required
 @acl.organization_roles_required("admin")
 def index():
+    organization = current_user.user_setting.current_organization
+    year = request.args.get("year")
+    mas_code = request.args.get("mas_code")
+    description = request.args.get("description")
+    amount = request.args.get("amount")
+
+    query = {}
+    if year:
+        query["year"] = year
+    if mas_code:
+        query["mas_code__icontains"] = mas_code
+    if description:
+        query["description__icontains"] = description
+    if amount:
+        query["amount"] = amount
+    form = forms.mas.MASSearchForm(request.args)
     organization_id = request.args.get("organization_id")
+
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    mas = models.MAS.objects(status="active").order_by("created_date")
+
+    if form.year.data:
+        query["year"] = form.year.data
+    if form.mas_code.data:
+        query["mas_code__icontains"] = form.mas_code.data
+    if form.description.data:
+        query["description__icontains"] = form.description.data
+    if form.amount.data:
+        query["amount"] = form.amount.data
+
+    mas = models.MAS.objects(status="active", **query).order_by("created_date")
+
     page = request.args.get("page", default=1, type=int)
     paginated_mas = Pagination(mas, page=page, per_page=20)
     total_amount = sum(m.amount or 0 for m in mas)
     total_remaining = sum(m.remaining_amount or 0 for m in mas)
     total_reservable = sum(m.reservable_amount or 0 for m in mas)
+
     return render_template(
         "procurement/mas/index.html",
         organization=organization,
+        organization_id=organization_id,
         mas=paginated_mas.items,
         paginated_mas=paginated_mas,
         total_amount=total_amount,
         total_remaining=total_remaining,
         total_reservable=total_reservable,
+        form=form,
     )
 
 
