@@ -36,25 +36,38 @@
   {% set action_url = url_for('procurement.requisition_timeline.add_progress',
     requisition_timeline_id=item.id, organization_id=organization.id) %}
   {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
+    {% set can_complete = latest_progress and latest_progress.progress_status == 'payment_processed' %}
     {% set can_bill = latest_progress and latest_progress.progress_status == 'order_confirmed' %}
-    {% if can_bill %}
+
+    {% if can_complete %}
+      <button type="button"
+              class="btn btn-sm btn-success bg-gradient-to-r from-green-500 to-emerald-600 border-0 hover:from-green-600 hover:to-emerald-700 shadow-md"
+              onclick="openCompletedModal('{{ url_for('procurement.requisition_timeline.completed_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}')">
+        <i class="ph ph-check-square-offset"></i> เสร็จสิ้นการจัดซื้อ
+      </button>
+    {% elif can_bill %}
       <button type="button"
               class="btn btn-sm btn-success bg-gradient-to-r from-emerald-500 to-teal-600 border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md"
               onclick="document.getElementById('modal-billing-{{ item.id }}').showModal();">
         <i class="ph ph-receipt"></i> ยืนยันคำสั่งซื้อ
       </button>
     {% elif not latest_progress or latest_progress.progress_status != 'completed' %}
-      {% set can_go_back = current_step > 1 and not (billing_done and current_step <= 3) and not current_step == 4 %}
-      {% if can_go_back %}
-        {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step - 2],
-                'btn btn-sm btn-warning border-0 shadow-md', 'ph-arrow-left', 'ย้อนกลับ', 'modal-back-' ~ item.id) }}
-      {% endif %}
+      {% set can_go_back = current_step > 1 and not (billing_done and current_step <= 3) and not current_step==4 %}
+      {% if
+        can_go_back %}
+        {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step -
+                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id) }}
+      {% endif
+      %}
+
       {% if current_step < PROGRESS_STATUS_ORDER|length %}
-        {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step],
-                'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md',
-                'ph-arrow-right', 'ขั้นตอนถัดไป', 'modal-next-' ~ item.id) }}
+        {{ _step_nav_form(action_url,
+                PROGRESS_STATUS_ORDER[current_step], 'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md'
+                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id) }}
       {% endif %}
+
     {% endif %}
+
     <button type="button"
             class="btn btn-sm btn-error ml-2"
             onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
@@ -311,7 +324,8 @@
                                         </div>
                                       {% endif %}
                                       <div class="flex items-center gap-4 text-xs {{ 'text-gray-700' if (is_done or is_active) else ('text-red-700' if is_after_cancelled else 'text-gray-600') }}">
-                                        {% set step_progress = (item.progress | selectattr('progress_status','equalto', step.key) | list | first) %}
+                                        {% set step_progress = (item.progress | selectattr('progress_status','equalto',
+                                                                                step.key) | list | first) %}
                                         <div class="flex items-center gap-1">
                                           อัปเดตโดย<i class="ph ph-user"></i>
                                           <span>
@@ -673,197 +687,232 @@
               </div>
             </form>
           </div>
-          <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
-        <!-- cancellation modal -->
-        <dialog id="modal-cancel-{{ item.id }}" class="modal">
-          <div class="modal-box">
-            <h3 class="font-bold text-lg mb-2">ยกเลิกรายการขอซื้อ/จ้าง</h3>
-            <p class="text-sm text-gray-600 mb-4">
-              เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
-            </p>
-            <form method="post"
-                  action="{{ url_for('procurement.requisition_timeline.cancel', requisition_timeline_id=item.id, organization_id=organization.id) }}">
-              {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
-              <div class="space-y-2 flex flex-col">
-                <label class="label">
-                  <span class="w-full label-text">เหตุผลในการยกเลิก</span>
-                </label>
-                <textarea name="note"
-                          class="w-full textarea textarea-bordered"
-                          rows="4"
-                          required
-                          placeholder="กรุณาระบุเหตุผล"></textarea>
+          <!-- cancellation modal -->
+          <dialog id="modal-cancel-{{ item.id }}" class="modal">
+            <div class="modal-box">
+              <h3 class="font-bold text-lg mb-2">ยกเลิกรายการขอซื้อ/จ้าง</h3>
+              <p class="text-sm text-gray-600 mb-4">
+                เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+              </p>
+              <form method="post"
+                    action="{{ url_for('procurement.requisition_timeline.cancel', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+                <div class="space-y-2 flex flex-col">
+                  <label class="label">
+                    <span class="w-full label-text">เหตุผลในการยกเลิก</span>
+                  </label>
+                  <textarea name="note"
+                            class="w-full textarea textarea-bordered"
+                            rows="4"
+                            required
+                            placeholder="กรุณาระบุเหตุผล"></textarea>
+                </div>
+                <div class="modal-action">
+                  <button type="button" class="btn" onclick="document.getElementById('modal-cancel-{{ item.id }}').close()">
+                    ปิด
+                  </button>
+                  <button type="submit" class="btn btn-error">ยืนยันการยกเลิก</button>
+                </div>
+              </form>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+              <button>close</button>
+            </form>
+          </dialog>
+          <dialog id="modal-note-{{ item.id }}" class="modal">
+            <div class="modal-box">
+              <h3 class="font-bold text-lg mb-2 text-red-600">
+                <i class="ph ph-x-circle mr-2"></i>เหตุผลการยกเลิก
+              </h3>
+              <p class="text-sm text-gray-600 mb-4">
+                เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
+              </p>
+              <div class="bg-white text-gray-700  items-start flex text-start rounded border p-3 min-h-[80px]">
+                <p>
+                  {% if item.note %}
+                    {{ item.note }}
+                  {% else %}
+                    <span class="text-gray-500 italic">ไม่ได้ระบุเหตุผลการยกเลิก</span>
+                  {% endif %}
+                </p>
               </div>
+              <!-- แสดงข้อมูลเพิ่มเติม -->
+              {% if item.last_updated_by or item.updated_date %}
+                <div class="mt-3 pt-3 border-t border-red-600">
+                  <div class="text-xs text-red-600">
+                    {% if item.last_updated_by %}
+                      ยกเลิกโดย: {{ item.last_updated_by.first_name }} {{ item.last_updated_by.last_name }}
+                    {% endif %}
+                    {% if item.updated_date %}
+                      <br />
+                      วันที่: {{ item.updated_date.strftime("%d/%m/") ~ (item.updated_date.year + 543) ~ item.updated_date.strftime(" %H:%M น.") }}
+
+                    {% endif %}
+                  </div>
+                </div>
+              {% endif %}
               <div class="modal-action">
-                <button type="button" class="btn" onclick="document.getElementById('modal-cancel-{{ item.id }}').close()">
+                <button type="button" class="btn" onclick="document.getElementById('modal-note-{{ item.id }}').close()">
                   ปิด
                 </button>
-                <button type="submit" class="btn btn-error">ยืนยันการยกเลิก</button>
               </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+              <button>close</button>
             </form>
-          </div>
-          <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
-        <dialog id="modal-note-{{ item.id }}" class="modal">
-          <div class="modal-box">
-            <h3 class="font-bold text-lg mb-2 text-red-600">
-              <i class="ph ph-x-circle mr-2"></i>เหตุผลการยกเลิก
-            </h3>
-            <p class="text-sm text-gray-600 mb-4">
-              เลขที่เอกสาร: <span class="font-semibold">{{ item.requisition.requisition_code }}</span>
-            </p>
-            <div class="bg-white text-gray-700  items-start flex text-start rounded border p-3 min-h-[80px]">
-              <p>
-                {% if item.note %}
-                  {{ item.note }}
-                {% else %}
-                  <span class="text-gray-500 italic">ไม่ได้ระบุเหตุผลการยกเลิก</span>
-                {% endif %}
-              </p>
-            </div>
-            <!-- แสดงข้อมูลเพิ่มเติม -->
-            {% if item.last_updated_by or item.updated_date %}
-              <div class="mt-3 pt-3 border-t border-red-600">
-                <div class="text-xs text-red-600">
-                  {% if item.last_updated_by %}
-                    ยกเลิกโดย: {{ item.last_updated_by.first_name }} {{ item.last_updated_by.last_name }}
-                  {% endif %}
-                  {% if item.updated_date %}
-                    <br />
-                    วันที่: {{ item.updated_date.strftime("%d/%m/") ~ (item.updated_date.year + 543) ~ item.updated_date.strftime(" %H:%M น.") }}
-                  {% endif %}
-                </div>
-              </div>
-            {% endif %}
-            <div class="modal-action">
-              <button type="button" class="btn" onclick="document.getElementById('modal-note-{{ item.id }}').close()">
-                ปิด
-              </button>
-            </div>
-          </div>
-          <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
-        <dialog id="modal-items-{{ item.requisition.id }}" class="modal">
-          <div class="modal-box max-w-5xl">
-            <h3 class="font-bold text-lg mb-4">
-              รายการทั้งหมด — เลขที่ {{ item.requisition.requisition_code }}
-            </h3>
-            <div class="overflow-x-auto max-h-[70vh]">
-              <table class="min-w-full table-sm divide-y divide-blue-100">
-                <thead>
-                  <tr>
-                    <th class="w-12 font-semibold text-xs text-center">ลำดับ</th>
-                    <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
-                    <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
-                    <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
-                    <th class="w-24 font-semibold text-xs text-center">หน่วยนับ</th>
-                    <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for subitem in item.requisition.items %}
+          </dialog>
+          <dialog id="modal-items-{{ item.requisition.id }}" class="modal">
+            <div class="modal-box max-w-5xl">
+              <h3 class="font-bold text-lg mb-4">
+                รายการทั้งหมด — เลขที่ {{ item.requisition.requisition_code }}
+              </h3>
+              <div class="overflow-x-auto max-h-[70vh]">
+                <table class="min-w-full table-sm divide-y divide-blue-100">
+                  <thead>
                     <tr>
-                      <td class="text-center text-xs">{{ loop.index }}</td>
-                      <td class="text-sm text-center" title="{{ subitem.product_name }}">{{ subitem.product_name }}</td>
-                      <td class="text-sm text-center" title="{{ subitem.get_category_display() }}">
-                        {{ subitem.get_category_display() }}
-                      </td>
-                      <td class="text-sm text-center">{{ subitem.quantity }}</td>
-                      <td class="text-sm text-center">{{ subitem.currency if subitem.currency else '' }}</td>
-                      <td class="text-sm text-right font-bold text-blue-700">{{ subitem.amount | format_amount }}</td>
+                      <th class="w-12 font-semibold text-xs text-center">ลำดับ</th>
+                      <th class="w-40 font-semibold text-xs text-center">ชื่อรายการ</th>
+                      <th class="w-24 font-semibold text-xs text-center">ประเภท</th>
+                      <th class="w-20 font-semibold text-xs text-center">จำนวน</th>
+                      <th class="w-24 font-semibold text-xs text-center">หน่วยนับ</th>
+                      <th class="w-32 font-semibold text-xs text-right">จำนวนเงิน</th>
                     </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {% for subitem in item.requisition.items %}
+                      <tr>
+                        <td class="text-center text-xs">{{ loop.index }}</td>
+                        <td class="text-sm text-center" title="{{ subitem.product_name }}">{{ subitem.product_name }}</td>
+                        <td class="text-sm text-center" title="{{ subitem.get_category_display() }}">
+                          {{ subitem.get_category_display() }}
+                        </td>
+                        <td class="text-sm text-center">{{ subitem.quantity }}</td>
+                        <td class="text-sm text-center">{{ subitem.currency if subitem.currency else '' }}</td>
+                        <td class="text-sm text-right font-bold text-blue-700">{{ subitem.amount | format_amount }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-action">
+                <button type="button"
+                        class="btn"
+                        onclick="document.getElementById('modal-items-{{ item.requisition.id }}').close()">
+                  ปิด
+                </button>
+              </div>
             </div>
-            <div class="modal-action">
-              <button type="button"
-                      class="btn"
-                      onclick="document.getElementById('modal-items-{{ item.requisition.id }}').close()">
-                ปิด
-              </button>
-            </div>
-          </div>
-          <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
-      {% endfor %}
-    {% endif %}
-    <script>
-        function recalcUsageTotal(itemId) {
-            var inputs = document.querySelectorAll('input[data-usage-item-id="' + itemId + '"]');
-            var total = 0;
-            inputs.forEach(function(input) {
-                var v = parseFloat(input.value);
-                if (!isNaN(v)) {
-                    total += v;
-                }
-            });
+            <form method="dialog" class="modal-backdrop">
+              <button>close</button>
+            </form>
+          </dialog>
+        {% endfor %}
 
-            var amountInput = document.getElementById('payment-amount-' + itemId);
-            if (amountInput) {
-                amountInput.value = total.toFixed(2);
-            }
+        <!-- Completed modal is injected into document.body via openCompletedModal -->
 
-            var totalText = document.getElementById('usage-total-text-' + itemId);
-            if (totalText) {
-                totalText.textContent = '฿' + total.toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
-            }
-        }
+      {% endif %}
+      <script>
+          function recalcUsageTotal(itemId) {
+              var inputs = document.querySelectorAll('input[data-usage-item-id="' + itemId + '"]');
+              var total = 0;
+              inputs.forEach(function(input) {
+                  var v = parseFloat(input.value);
+                  if (!isNaN(v)) {
+                      total += v;
+                  }
+              });
 
-        function toggleSubtable(itemId) {
-            var subtable = document.getElementById('subtable-' + itemId);
-            var icon = document.getElementById('toggle-icon-' + itemId);
-            if (subtable.style.display === 'none') {
-                subtable.style.display = '';
-                icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
-            } else {
-                subtable.style.display = 'none';
-                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
-            }
-        }
+              var amountInput = document.getElementById('payment-amount-' + itemId);
+              if (amountInput) {
+                  amountInput.value = total.toFixed(2);
+              }
 
-        function toggleMobileCollapse(collapseId) {
-            var content = document.getElementById(collapseId);
-            var icon = document.getElementById(collapseId + '-icon');
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.classList.remove('ph-caret-down');
-                icon.classList.add('ph-caret-up');
-            } else {
-                content.classList.add('hidden');
-                icon.classList.remove('ph-caret-up');
-                icon.classList.add('ph-caret-down');
-            }
-        }
+              var totalText = document.getElementById('usage-total-text-' + itemId);
+              if (totalText) {
+                  totalText.textContent = '฿' + total.toLocaleString('th-TH', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                  });
+              }
+          }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('[id^="subtable-"]').forEach(function(row) {
-                row.style.display = 'none';
-            });
-            document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
-                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
-            });
+          function toggleSubtable(itemId) {
+              var subtable = document.getElementById('subtable-' + itemId);
+              var icon = document.getElementById('toggle-icon-' + itemId);
+              if (subtable.style.display === 'none') {
+                  subtable.style.display = '';
+                  icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
+              } else {
+                  subtable.style.display = 'none';
+                  icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+              }
+          }
 
-            var usageInputs = document.querySelectorAll('input[data-usage-item-id]');
-            var itemIds = new Set();
-            usageInputs.forEach(function(input) {
-                itemIds.add(input.getAttribute('data-usage-item-id'));
-            });
-            itemIds.forEach(function(itemId) {
-                recalcUsageTotal(itemId);
-            });
-        });
-    </script>
-  {% endmacro %}
+          function toggleMobileCollapse(collapseId) {
+              var content = document.getElementById(collapseId);
+              var icon = document.getElementById(collapseId + '-icon');
+              if (content.classList.contains('hidden')) {
+                  content.classList.remove('hidden');
+                  icon.classList.remove('ph-caret-down');
+                  icon.classList.add('ph-caret-up');
+              } else {
+                  content.classList.add('hidden');
+                  icon.classList.remove('ph-caret-up');
+                  icon.classList.add('ph-caret-down');
+              }
+          }
+
+          function openCompletedModal(url) {
+              var prev = document.getElementById('completed-modal-dialog');
+              if (prev) prev.parentNode.remove();
+              var tempDlg = document.createElement('dialog');
+              tempDlg.className = 'modal';
+              tempDlg.innerHTML = '<div class="modal-box flex items-center justify-center p-16"><span class="loading loading-spinner loading-lg text-green-500"></span></div>';
+              document.body.appendChild(tempDlg);
+              tempDlg.showModal();
+              fetch(url, {
+                      headers: {
+                          'X-Requested-With': 'XMLHttpRequest'
+                      }
+                  })
+                  .then(function(r) {
+                      return r.text();
+                  })
+                  .then(function(html) {
+                      tempDlg.remove();
+                      var container = document.createElement('div');
+                      container.innerHTML = html;
+                      document.body.appendChild(container);
+                      container.querySelectorAll('script').forEach(function(oldScript) {
+                          var newScript = document.createElement('script');
+                          Array.from(oldScript.attributes).forEach(function(attr) {
+                              newScript.setAttribute(attr.name, attr.value);
+                          });
+                          newScript.textContent = oldScript.textContent;
+                          oldScript.parentNode.replaceChild(newScript, oldScript);
+                      });
+                  })
+                  .catch(function() {
+                      tempDlg.innerHTML = '<div class="modal-box"><p class="text-error p-4">เกิดข้อผิดพลาด กรุณาลองใหม่</p></div>';
+                  });
+          }
+
+          document.addEventListener('DOMContentLoaded', function() {
+              document.querySelectorAll('[id^="subtable-"]').forEach(function(row) {
+                  row.style.display = 'none';
+              });
+              document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
+                  icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+              });
+
+              var usageInputs = document.querySelectorAll('input[data-usage-item-id]');
+              var itemIds = new Set();
+              usageInputs.forEach(function(input) {
+                  itemIds.add(input.getAttribute('data-usage-item-id'));
+              });
+              itemIds.forEach(function(itemId) {
+                  recalcUsageTotal(itemId);
+              });
+          });
+      </script>
+    {% endmacro %}

@@ -1,6 +1,7 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/procurement/macros/items_sub_table.html' as items_table %}
 
 {% block title %}รายการจองในแหล่งเงิน - {{ mas.description }}{% endblock %}
 {% block dashboard_title %}รายการจองเงิน{% endblock %}
@@ -79,20 +80,19 @@
       <table class="table w-full">
         <thead>
           <tr class="bg-gray-50 text-gray-700">
-            <th class="font-semibold">#</th>
+            <th class="font-semibold w-10"></th>
+            <th class="font-semibold">เลขที่ใบขอซื้อ</th>
             <th class="font-semibold">ผู้จอง</th>
             <th class="font-semibold">วันที่จอง</th>
             <th class="font-semibold text-right">จำนวนเงินที่จอง</th>
             <th class="font-semibold text-right">จํานวนเงินที่ใช้จริง</th>
             <th class="font-semibold text-right">สถานะการจอง</th>
-
-
           </tr>
         </thead>
         <tbody>
           {% if reservations|length == 0 %}
             <tr>
-              <td colspan="6" class="text-center py-16">
+              <td colspan="7" class="text-center py-16">
                 <div class="flex flex-col items-center">
                   <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                     <i class="ph ph-calendar-x text-4xl text-gray-400"></i>
@@ -105,8 +105,17 @@
           {% else %}
             {% for reservation in reservations %}
               <tr class="hover:bg-gray-50 border-b border-gray-100">
-                <td class="py-4">
-                  <span class="text-gray-700 font-medium">{{ loop.index }}</span>
+                <td class="py-4 text-center">
+                  <button class="toggle-icon-btn bg-transparent border-none cursor-pointer"
+                          onclick="toggleSubtable('{{ reservation.id }}')"
+                          title="แสดง/ซ่อนรายละเอียด">
+                    <span id="toggle-icon-{{ reservation.id }}" class="text-xl"><i class="ph ph-caret-circle-up"></i></span>
+                  </button>
+                </td>
+                <td>
+                  <span class="text-gray-700 font-medium">
+                    {{ reservation.requisition.requisition_code if reservation.requisition else '-' }}
+                  </span>
                 </td>
                 <td>
                   <div class="flex items-center">
@@ -148,25 +157,40 @@
                     </span>
                   {% endif %}
                 </td>
-              {% endfor %}
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-      <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
-        <div class="flex justify-between items-center">
-          <div>
-            <span class="font-medium">แสดงทั้งหมด:</span> {{ reservations|length }} รายการ
-          </div>
-
+              </tr>
+              {{ items_table.render_items_sub_table(reservation.requisition.items if reservation.requisition else [], reservation.id) }}
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-500">
+      <div class="flex justify-between items-center">
+        <div>
+          <span class="font-medium">แสดงทั้งหมด:</span> {{ reservations|length }} รายการ
         </div>
+
       </div>
     </div>
+  </div>
 
-    <!-- Pagination -->
-    {% set pagination_params = {'mas_id': mas.id} %}
-    {% for key, value in request.args.items() %}
-      {% set _ = pagination_params.update({key: value}) %}
-    {% endfor %}
-    {{ paginated.render_pagination(paginated_reservations, "admin.mas.reservation", pagination_params) }}
-  {% endblock %}
+  <!-- Pagination -->
+  {% set pagination_params = {'mas_id': mas.id} %}
+  {% for key, value in request.args.items() %}
+    {% set _ = pagination_params.update({key: value}) %}
+  {% endfor %}
+  {{ paginated.render_pagination(paginated_reservations, "admin.mas.reservation", pagination_params) }}
+  <script>
+    function toggleSubtable(itemId) {
+      var subtable = document.getElementById('subtable-' + itemId);
+      var icon = document.getElementById('toggle-icon-' + itemId);
+      if (subtable.classList.contains('hidden')) {
+        subtable.classList.remove('hidden');
+        icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
+      } else {
+        subtable.classList.add('hidden');
+        icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+      }
+    }
+  </script>
+{% endblock %}

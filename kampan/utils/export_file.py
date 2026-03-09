@@ -9,6 +9,7 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from kampan import models
 from kampan.models import mas
 from kampan.models.export_file import ExportFile
+from kampan.utils.date_utils import format_date_th
 
 EXPORT_MAS_COLUMN_MAP = {
     "mas_code": "รหัสงบประมาณ",
@@ -42,11 +43,25 @@ blue_bg = PatternFill(fill_type="solid", start_color="E6F2FF", end_color="E6F2FF
 light_blue_bg = PatternFill(fill_type="solid", start_color="DDEBF7", end_color="DDEBF7")
 
 
-def style_openpyxl_header(ws, headers):
+def style_openpyxl_header(ws, headers, start_date, end_date):
+    # set start and end year in BE format for header text
+    start_year_be = start_date.year + 543
+    end_year_be = end_date.year + 543
+
+    if start_year_be == end_year_be:
+        year_range_text = f"ประจำปีงบประมาณ พ.ศ. {start_year_be}"
+    else:
+        year_range_text = f"ประจำปีงบประมาณ พ.ศ. {start_year_be} - {end_year_be}"
+
+    # set start date and end date in header text
+    start_date_str = format_date_th(start_date)
+    end_date_str = format_date_th(end_date)
+
     header_text = (
-        "รายงานสรุปการใช้เงินทั้งหมด\n"
-        "ประจำปีงบประมาณ พ.ศ. 2569\n"
+        f"รายงานสรุปการใช้เงินทั้งหมด\n"
+        f"{year_range_text}\n"
         "สำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ มหาวิทยาลัยสงขลานครินทร์\n"
+        "ระยะเวลาตั้งแต่วันที่ {} ถึงวันที่ {}".format(start_date_str, end_date_str)
     )
 
     # 3. Assign the text to the top-left cell of our target area (A1)
@@ -83,7 +98,7 @@ def get_last_data_in_object(obj_data):
     return ""
 
 
-def get_purchased_items_in_mas(ws, mas_id, start_row):
+def get_purchased_items_in_mas(ws, mas_id, start_row, start_date, end_date):
     """
     ดึงข้อมูล reservation ที่เสร็จสิ้นทั้งหมดที่เกี่ยวข้องกับ MAS นี้
     แล้ว map ข้อมูลลง worksheet โดยจัดกลุ่มตาม requisition_code
@@ -108,13 +123,28 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
         req_id = str(req.id)
 
         # find order_confirmed timestamp from requisition_timeline
-        timeline = models.RequisitionTimeline.objects(requisition=req).first()
+        # filter by start_date and end_date if provided
+        start_dt = datetime.datetime.combine(start_date, datetime.time.min)
+        end_dt = datetime.datetime.combine(end_date, datetime.time.max)
+
+        timeline = models.RequisitionTimeline.objects(
+            requisition=req,
+            progress__match={
+                "progress_status": "order_confirmed",
+                "timestamp__gte": start_dt,
+                "timestamp__lte": end_dt,
+            },
+        ).first()
+
         order_confirmed_ts = None
         if timeline:
             for p in timeline.progress:
                 if p.progress_status == "order_confirmed":
                     order_confirmed_ts = p.timestamp
                     break
+        else:
+            # Skip this requisition if no matching timeline entry in date range
+            continue
 
         quotation_winner = timeline.quotation_winner if timeline else None
 
@@ -188,6 +218,17 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
             horizontal="center", vertical="center", wrap_text=True
         )
 
+        # --- Column D: total amount (merged for all items in this requisition) ---
+        ws.cell(row=first_row, column=4).value = data["actual_amount"]
+        ws.cell(row=first_row, column=4).number_format = "#,##0.00"
+        ws.cell(row=first_row, column=4).alignment = Alignment(
+            horizontal="right", vertical="center"
+        )
+        if num_items > 1:
+            ws.merge_cells(
+                start_row=first_row, start_column=4, end_row=last_row, end_column=4
+            )
+
         # --- Column E: quotation_winner (merged) ---
         ws.cell(row=first_row, column=5).value = data["quotation_winner"] or "-"
         if num_items > 1:
@@ -198,19 +239,13 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
             horizontal="center", vertical="center", wrap_text=True
         )
 
-        # --- Columns C & D: item name + amount (one row per item) ---
+        # --- Column C: item names (one row per item) ---
         for idx, item in enumerate(items):
             row_idx = first_row + idx
             # item name
             ws.cell(row=row_idx, column=3).value = item.product_name or "-"
             ws.cell(row=row_idx, column=3).alignment = Alignment(
                 horizontal="left", vertical="center", wrap_text=True
-            )
-            # item amount
-            ws.cell(row=row_idx, column=4).value = float(item.amount or 0)
-            ws.cell(row=row_idx, column=4).number_format = "#,##0.00"
-            ws.cell(row=row_idx, column=4).alignment = Alignment(
-                horizontal="right", vertical="center"
             )
 
         # apply thin border to all cells in the group
@@ -224,18 +259,30 @@ def get_purchased_items_in_mas(ws, mas_id, start_row):
             for c in range(1, len(sub_headers) + 1):
                 ws.cell(row=r, column=c).border = thin
 
-        # Excel row grouping (outline) — collapse all item rows except the first
-        if num_items > 1:
-            for r in range(first_row + 1, last_row + 1):
-                ws.row_dimensions[r].outline_level = 2  # Level 2 for nested items
-                ws.row_dimensions[r].hidden = True  # Collapse by default
-
         current_row = last_row + 1
 
     return current_row  # return next available row for the caller
 
 
-def process_mas_export(current_user):
+def process_mas_export(current_user, start_date=None, end_date=None):
+    # Convert strings to date objects if they are passed as strings
+    if isinstance(start_date, str):
+        try:
+            start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+        except ValueError:
+            start_date = datetime.date.today().replace(month=1, day=1)
+
+    if isinstance(end_date, str):
+        try:
+            end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            end_date = datetime.date.today().replace(month=12, day=31)
+
+    # Fallback if None
+    if not start_date:
+        start_date = datetime.date.today().replace(month=1, day=1)
+    if not end_date:
+        end_date = datetime.date.today().replace(month=12, day=31)
 
     # 1. Query ข้อมูล
     mas_qs = models.MAS.objects(status="active")
@@ -248,7 +295,7 @@ def process_mas_export(current_user):
     # 3. กำหนด Header (ชื่อคอลัมน์)
     headers = list(EXPORT_MAS_COLUMN_MAP.values())
     ws.append(headers)
-    style_openpyxl_header(ws, headers)
+    style_openpyxl_header(ws, headers, start_date, end_date)
 
     # 4. วนลูปใส่ข้อมูล
     for m in mas_qs:
@@ -279,7 +326,7 @@ def process_mas_export(current_user):
         # write purchased items for this MAS starting from next row
         next_row = ws.max_row + 1
         purchased_start_row = next_row  # Track where purchased items start
-        next_row = get_purchased_items_in_mas(ws, m.id, next_row)
+        next_row = get_purchased_items_in_mas(ws, m.id, next_row, start_date, end_date)
         purchased_end_row = next_row - 1  # Track where purchased items end
 
         # Group the purchased items rows under this MAS and ensure borders

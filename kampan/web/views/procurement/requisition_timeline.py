@@ -314,6 +314,19 @@ def billing_modal(requisition_timeline_id):
             res.mas.reservable_amount = float(res.mas.reservable_amount or 0) + unused
             res.mas.save()
 
+            # Update the Requisition's fund amount for this MAS
+            for fund_item in requisition_timeline.requisition.fund:
+                for r in reservations:
+                    if str(r.mas.id) == str(fund_item.mas.id):
+                        fund_item.reservation = r
+                        break
+
+                if str(fund_item.mas.id) == str(res.mas.id):
+                    fund_item.amount = actual
+
+    # Save the updated requisition
+    requisition_timeline.requisition.save()
+
     requisition_timeline.fund_usage_amounts = usage_amounts
     requisition_timeline.payment_amount = round(total_amount, 2)
     add_progress_in_order(
@@ -327,4 +340,89 @@ def billing_modal(requisition_timeline_id):
         url_for(
             "procurement.requisition_timeline.index", organization_id=organization.id
         )
+    )
+
+
+@module.route("/<requisition_timeline_id>/completed_modal", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def completed_modal(requisition_timeline_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    requisition_timeline = models.RequisitionTimeline.objects.get(
+        id=requisition_timeline_id
+    )
+
+    form = forms.requisition_timeline.CompletedForm()
+
+    if request.method == "GET":
+        form.requisition_code.data = requisition_timeline.requisition.requisition_code
+        form.product_name.data = (
+            requisition_timeline.requisition.items[0].product_name
+            if requisition_timeline.requisition.items
+            else "-"
+        )
+        form.total_amount.data = sum(
+            item.amount for item in requisition_timeline.requisition.fund
+        )
+        form.delivered_date.data = requisition_timeline.progress[4].created_date
+        form.inspection_date.data = requisition_timeline.progress[4].created_date
+        form.paid_date.data = requisition_timeline.progress[2].created_date
+        form.requisition_creator.data = (
+            requisition_timeline.requisition.created_by.get_resources_fullname_th()
+            if requisition_timeline.requisition.created_by
+            else "-"
+        )
+        print(form.data)
+        return render_template(
+            "/procurement/requisitions/completed_modal.html",
+            item=requisition_timeline,
+            organization=organization,
+            form=form,
+        )
+    if not form.validate_on_submit():
+        print("Form validation failed:", form.errors)
+
+    if form.validate_on_submit():
+        completed_detail = models.requisition_timeline.CompletedProgressDetail(
+            seller_name=form.seller_name.data,
+            contract_number=form.contract_number.data,
+            purchase_method=form.purchase_method.data,
+            usage_location=form.usage_location.data,
+            warranty_period=form.warranty_period.data,
+            start_warranty_date=form.start_warranty_date.data,
+            end_warranty_date=form.end_warranty_date.data,
+            money_type=form.money_type.data,
+            account_code=form.account_code.data,
+            product_number=form.product_number.data or "N/A",
+            asset_code=form.asset_code.data or "",
+        )
+
+        requisition_timeline.completed_progress_detail = completed_detail
+        requisition_timeline.status = "completed"
+        requisition_timeline.save()
+
+        add_progress_in_order(requisition_timeline, "completed", current_user, request)
+
+        requisition = models.Requisition.objects(
+            id=requisition_timeline.requisition.id
+        ).first()
+        if requisition:
+            requisition.status = "completed"
+            requisition.save()
+
+        return redirect(
+            url_for(
+                "procurement.requisition_timeline.index",
+                organization_id=organization.id,
+            )
+        )
+
+    return render_template(
+        "/procurement/requisitions/completed_modal.html",
+        item=requisition_timeline,
+        organization=organization,
+        form=form,
     )
