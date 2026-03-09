@@ -1,10 +1,12 @@
 {% import '/base/html-renderer.html' as renderer %}
+{% set readonly = readonly | default(False) %}
 <dialog id="completed-modal-dialog" class="modal">
 <div class="modal-box max-w-5xl">
   <h3
-    class="font-bold text-xl mb-4 text-green-700 bg-green-50 p-3 rounded-lg border border-green-100 flex items-center gap-2">
-    <i class="ph ph-check-circle text-2xl"></i> บันทึกเสร็จสิ้นการจัดซื้อ
-    <span class="ml-auto text-base font-normal text-green-600">{{ item.requisition.requisition_code }}</span>
+    class="font-bold text-xl mb-4 {% if readonly %}text-blue-700 bg-blue-50 border-blue-100{% else %}text-green-700 bg-green-50 border-green-100{% endif %} p-3 rounded-lg border flex items-center gap-2">
+    <i class="ph {% if readonly %}ph-eye{% else %}ph-check-circle{% endif %} text-2xl"></i>
+    {% if readonly %}ข้อมูลการจัดซื้อ{% else %}บันทึกเสร็จสิ้นการจัดซื้อ{% endif %}
+    <span class="ml-auto text-base font-normal {% if readonly %}text-blue-600{% else %}text-green-600{% endif %}">{{ item.requisition.requisition_code }}</span>
   </h3>
 
   <form id="completed-modal-form" method="post"
@@ -90,35 +92,37 @@
 
       <!-- Editable Input Block -->
       <div class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-        <h4 class="font-semibold text-gray-700 border-b pb-2 mb-3">กรอกข้อมูลครุภัณฑ์/สัญญา</h4>
+        <h4 class="font-semibold text-gray-700 border-b pb-2 mb-3">
+          {% if readonly %}ข้อมูลครุภัณฑ์/สัญญา{% else %}กรอกข้อมูลครุภัณฑ์/สัญญา{% endif %}
+        </h4>
 
-        {{ renderer.render_field(form.seller_name) }}
+        {{ renderer.render_field(form.seller_name, readonly=readonly) }}
 
-        {{ renderer.render_field(form.contract_number) }}
+        {{ renderer.render_field(form.contract_number, readonly=readonly) }}
 
-        {{ renderer.render_field(form.usage_location) }}
+        {{ renderer.render_field(form.usage_location, readonly=readonly) }}
       
         <div class="grid grid-cols-2 gap-2">
           <div class="form-control w-full">
-            {{ renderer.render_field(form.purchase_method) }}
+            {{ renderer.render_field(form.purchase_method, readonly=readonly) }}
           </div>
           <div class="form-control w-full">
-            {{ renderer.render_select_field(form.money_type) }}
+            {{ renderer.render_select_field(form.money_type, readonly=readonly) }}
         </div>
 
         </div>
         <div class="grid grid-cols-3 gap-2 border-t pt-3 mt-2">
-          {{ renderer.render_number_field(form.warranty_period, placeholder="12") }}
-          {{ renderer.date_field(form.start_warranty_date) }}
-          {{ renderer.date_field(form.end_warranty_date) }}
+          {{ renderer.render_number_field(form.warranty_period, placeholder="12", readonly=readonly) }}
+          {{ renderer.date_field(form.start_warranty_date, readonly=readonly) }}
+          {{ renderer.date_field(form.end_warranty_date, readonly=readonly) }}
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div class="form-control w-full">
-            {{ renderer.render_field(form.asset_code) }}
+            {{ renderer.render_field(form.asset_code, readonly=readonly) }}
           </div>
           <div class="form-control w-full">
-              {{ renderer.render_field(form.account_code) }}
+              {{ renderer.render_field(form.account_code, readonly=readonly) }}
           </div>
         </div>
 
@@ -129,11 +133,13 @@
     <div class="modal-action border-t pt-4 mt-0 border-gray-100 bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
       <button type="button" class="btn"
         onclick="document.getElementById('completed-modal-dialog').close()">
-        ยกเลิก
+        {% if readonly %}ปิด{% else %}ยกเลิก{% endif %}
       </button>
+      {% if not readonly %}
       <button type="submit" class="btn btn-success px-8 text-white">
         <i class="ph ph-check"></i> บันทึกเสร็จสิ้นโครงการ
       </button>
+      {% endif %}
     </div>
   </form>
 </div>

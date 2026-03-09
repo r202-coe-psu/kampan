@@ -68,6 +68,14 @@
 
     {% endif %}
 
+    {% if item.status == 'completed' %}
+      <button type="button"
+              class="btn btn-sm btn-info bg-gradient-to-r from-blue-400 to-cyan-500 border-0 hover:from-blue-500 hover:to-cyan-600 shadow-md"
+              onclick="openCompletedModal('{{ url_for('procurement.requisition_timeline.completed_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}')">
+        <i class="ph ph-eye"></i> <span class="hidden sm:inline">ดูข้อมูลการจัดซื้อ</span>
+      </button>
+    {% endif %}
+
     <button type="button"
             class="btn btn-sm btn-error ml-2"
             onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">

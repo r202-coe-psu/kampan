@@ -357,6 +357,8 @@ def completed_modal(requisition_timeline_id):
 
     form = forms.requisition_timeline.CompletedForm()
 
+    is_view_only = requisition_timeline.status == "completed"
+
     if request.method == "GET":
         form.requisition_code.data = requisition_timeline.requisition.requisition_code
         form.product_name.data = (
@@ -367,23 +369,46 @@ def completed_modal(requisition_timeline_id):
         form.total_amount.data = sum(
             item.amount for item in requisition_timeline.requisition.fund
         )
-        form.delivered_date.data = requisition_timeline.progress[4].created_date
-        form.inspection_date.data = requisition_timeline.progress[4].created_date
-        form.paid_date.data = requisition_timeline.progress[2].created_date
+
+        def _find_progress(status):
+            for p in requisition_timeline.progress:
+                if p.progress_status == status:
+                    return p
+            return None
+
+        inspection_p = _find_progress("inspection")
+        order_confirmed_p = _find_progress("order_confirmed")
+        form.delivered_date.data = inspection_p.created_date if inspection_p else None
+        form.inspection_date.data = inspection_p.created_date if inspection_p else None
+        form.paid_date.data = (
+            order_confirmed_p.created_date if order_confirmed_p else None
+        )
         form.requisition_creator.data = (
             requisition_timeline.requisition.created_by.get_resources_fullname_th()
             if requisition_timeline.requisition.created_by
             else "-"
         )
-        print(form.data)
+
+        if is_view_only and requisition_timeline.completed_progress_detail:
+            cpd = requisition_timeline.completed_progress_detail
+            form.seller_name.data = cpd.seller_name
+            form.contract_number.data = cpd.contract_number
+            form.purchase_method.data = cpd.purchase_method
+            form.usage_location.data = cpd.usage_location
+            form.warranty_period.data = cpd.warranty_period
+            form.start_warranty_date.data = cpd.start_warranty_date
+            form.end_warranty_date.data = cpd.end_warranty_date
+            form.money_type.data = cpd.money_type
+            form.account_code.data = cpd.account_code
+            form.asset_code.data = cpd.asset_code
+
         return render_template(
             "/procurement/requisitions/completed_modal.html",
             item=requisition_timeline,
             organization=organization,
             form=form,
+            readonly=is_view_only,
         )
-    if not form.validate_on_submit():
-        print("Form validation failed:", form.errors)
 
     if form.validate_on_submit():
         completed_detail = models.requisition_timeline.CompletedProgressDetail(
