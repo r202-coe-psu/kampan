@@ -18,7 +18,7 @@
         <p class="text-xs text-gray-400 mt-1">Organization ID: {{ organization_id }}</p>
       </div>
       <div class="flex gap-1">
-        <button class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-300 transition"
+        <button class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-300 transition md:mt-0 mt-4"
                 hx-target="#export_excel_modal"
                 hx-get="{{ url_for('admin.mas.export_excel_modal', **request.args) }}">
           <i class="ph ph-download mr-2"></i>

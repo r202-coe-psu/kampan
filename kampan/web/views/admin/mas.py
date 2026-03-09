@@ -127,15 +127,52 @@ def delete(mas_id):
 
 
 @module.route("/<mas_id>/reservation", methods=["GET"])
+@login_required
 @acl.organization_roles_required("admin")
 def reservation(mas_id):
-    organization_id = request.args.get("organization_id")
+    organization = current_user.user_setting.current_organization
+    form = forms.reservations.SearchReservationForm(request.args)
+
+    query = {}
+
+    # Requisition search (must fetch IDs because MongoDB doesn't support joins)
+    if form.requisition_code.data:
+        requisition_ids = models.Requisition.objects(
+            requisition_code__icontains=form.requisition_code.data
+        ).values_list("id")
+        query["requisition__in"] = requisition_ids
+
+    # Reserved by search (must fetch IDs because MongoDB doesn't support joins)
+    if form.reserved_by.data:
+        from mongoengine.queryset.visitor import Q
+
+        user_ids = models.User.objects(
+            Q(first_name__icontains=form.reserved_by.data)
+            | Q(last_name__icontains=form.reserved_by.data)
+        ).values_list("id")
+        query["reserved_by__in"] = user_ids
+
+    if form.reservation_status.data:
+        query["reservation_status"] = form.reservation_status.data
+    if form.reserved_date.data:
+        # Match the date regardless of time
+        start = datetime.datetime.combine(form.reserved_date.data, datetime.time.min)
+        end = datetime.datetime.combine(form.reserved_date.data, datetime.time.max)
+        query["reserved_date__gte"] = start
+        query["reserved_date__lte"] = end
+    if form.amount.data:
+        query["amount"] = form.amount.data
+    if form.actual_amount.data:
+        query["actual_amount"] = form.actual_amount.data
+
     organization = models.Organization.objects(
-        id=organization_id, status="active"
+        id=organization.id, status="active"
     ).first()
 
     mas = models.MAS.objects(id=mas_id).first()
-    reservations = models.Reservation.objects(mas=mas).order_by("-reserved_date")
+    reservations = models.Reservation.objects(
+        mas=mas, status="active", **query
+    ).order_by("-reserved_date")
     page = request.args.get("page", default=1, type=int)
     paginated_reservations = Pagination(reservations, page=page, per_page=20)
 
@@ -145,6 +182,7 @@ def reservation(mas_id):
         mas=mas,
         reservations=paginated_reservations.items,
         paginated_reservations=paginated_reservations,
+        form=form,
     )
 
 
