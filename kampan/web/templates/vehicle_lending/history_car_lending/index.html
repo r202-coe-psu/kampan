@@ -19,6 +19,60 @@
   </a>
 </div>
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
+  <!-- Date Filter Form -->
+  <div class="mb-6">
+    <form method="GET"
+      action="{{ url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id) }}"
+      class="flex flex-wrap items-center gap-3 w-full">
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+
+      <div class="form-control w-full sm:w-48">
+        <label class="label py-2">
+          <span class="label-text font-bold">เลือกวันที่</span>
+        </label>
+        <input type="date" name="date" class="input input-bordered w-full"
+          value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
+      </div>
+
+      <div class="form-control flex-1 min-w-48">
+        <label class="label py-2">
+          <span class="label-text font-bold">เรียงลำดับตาม</span>
+        </label>
+        <select name="sort_by" class="select select-bordered w-full">
+          <option value="departure_datetime" {% if sort_by=='departure_datetime' %}selected{% endif %}>วันเวลาออกเดินทาง
+          </option>
+          <option value="return_datetime" {% if sort_by=='return_datetime' %}selected{% endif %}>วันเวลากลับ</option>
+          <option value="created_date" {% if sort_by=='created_date' %}selected{% endif %}>วันที่สร้าง</option>
+        </select>
+      </div>
+
+      <div class="form-control w-40">
+        <label class="label py-2">
+          <span class="label-text font-bold">ลำดับ</span>
+        </label>
+        <select name="order" class="select select-bordered w-full">
+          <option value="asc" {% if order_dir=='asc' %}selected{% endif %}>น้อยไปมาก</option>
+          <option value="desc" {% if order_dir=='desc' %}selected{% endif %}>มากไปน้อย</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 items-end mt-9">
+        <button type="submit" class="btn btn-primary">ค้นหา</button>
+        <a href="{{ url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
+          class="btn btn-outline">วันนี้</a>
+        <a href="{{ url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id) }}"
+          class="btn btn-ghost">ล้างการค้นหา</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-2 text-lg font-bold mb-4">
+    {% if target_date %}
+    แสดงข้อมูลของวันที่ {{ target_date|format_thai_date }}
+    {% else %}
+    แสดงรายการงานทั้งหมด
+    {% endif %}
+  </div>
   <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full max-lg:hidden">
       <thead>

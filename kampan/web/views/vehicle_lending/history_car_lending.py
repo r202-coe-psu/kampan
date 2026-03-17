@@ -30,15 +30,40 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    car_lendings = models.vehicle_applications.CarApplication.objects(
-        organization=organization, status="completed"
-    ).order_by("-departure_datetime")
+    date_str = request.args.get("date")
+    target_date = None
+    sort_by = request.args.get("sort_by", "departure_datetime")
+    order_dir = request.args.get("order", "asc")
+
+    query = Q(organization=organization, status="completed")
+
+    if date_str:
+        target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+        start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
+        end_of_day = datetime.datetime.combine(target_date, datetime.time.max)
+        query &= Q(
+            departure_datetime__gte=start_of_day, departure_datetime__lte=end_of_day
+        )
+
+    sort_field = sort_by if order_dir == "asc" else f"-{sort_by}"
+    car_lendings = models.vehicle_applications.CarApplication.objects(query).order_by(
+        sort_field
+    )
+
+    page = request.args.get("page", 1, type=int)
+    paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
+    today_date = datetime.date.today()
+
     page = request.args.get("page", 1, type=int)
     paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
     return render_template(
         "/vehicle_lending/history_car_lending/index.html",
         organization=organization,
         car_lendings=car_lendings,
+        target_date=target_date,
+        today_date=today_date,
+        sort_by=sort_by,
+        order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
     )
 
