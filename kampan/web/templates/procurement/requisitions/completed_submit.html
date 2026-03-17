@@ -119,65 +119,14 @@
       </div>
     </div>
 
-    {# ══════════════════════════════════════════════════ #}
-    {# BOTTOM SECTION — กรอกข้อมูลครุภัณฑ์ / สัญญา #}
-    {# ══════════════════════════════════════════════════ #}
-    <div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
-      <div class="card-body p-5">
-        <h2 class="card-title text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <i class="ph ph-pencil-simple text-green-500"></i>
-          {% if readonly %}ข้อมูลครุภัณฑ์/สัญญา{% else %}กรอกข้อมูลครุภัณฑ์/สัญญา{% endif %}
-        </h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.seller_name, readonly=readonly) }}
-          </div>
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.contract_number, readonly=readonly) }}
-          </div>
-        </div>
-
-        <div class="form-control w-full mb-4">
-          {{ renderer.render_field(form.usage_location, readonly=readonly) }}
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.purchase_method, readonly=readonly) }}
-          </div>
-          <div class="form-control w-full">
-            {{ renderer.render_select_field(form.money_type, readonly=readonly) }}
-          </div>
-        </div>
-
-        <div class="border-t pt-4 mt-2">
-          <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-            <i class="ph ph-shield-check"></i> ข้อมูลการรับประกัน
-          </label>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {{ renderer.render_number_field(form.warranty_period, placeholder="12", readonly=readonly) }}
-            {{ renderer.date_field(form.start_warranty_date, readonly=readonly) }}
-            {{ renderer.date_field(form.end_warranty_date, readonly=readonly) }}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.asset_code, readonly=readonly) }}
-          </div>
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.account_code, readonly=readonly) }}
-          </div>
-        </div>
-      </div>
-    </div>
 
     {# ══════════════════════════════════════════════════════════════ #}
     {# PER-ITEM TABLES — one card per requisition item type #}
     {# ══════════════════════════════════════════════════════════════ #}
     {% for req_item in item.requisition.items %}
-    {{ item_table.render_item_table(req_item, items_by_type.get(req_item._id | string, []), readonly) }}
+    {{ item_table.render_item_table(req_item, items_by_type.get(req_item._id | string, []),
+    shared_forms_by_type.get(req_item._id | string), row_forms_by_type.get(req_item._id | string, []), readonly,
+    responder_user_choices) }}
     {% endfor %}
 
     {# ── Action Bar ── #}

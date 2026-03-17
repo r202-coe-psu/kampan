@@ -113,6 +113,9 @@ class CompletedForm(FlaskForm):
 
 
 class RequisitionTimelineItemForm(FlaskForm):
+    class Meta:
+        csrf = False
+
     requisition_timeline = HiddenField()
     requisition = HiddenField()
     requisition_item_id = HiddenField()
@@ -125,8 +128,8 @@ class RequisitionTimelineItemForm(FlaskForm):
         "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
     )
     # section ข้อมูลในตาราง
-    responder_user = fields.StringField(
-        "ผู้รับผิดชอบ", validators=[validators.DataRequired()]
+    responder_user = fields.SelectField(
+        "ผู้รับผิดชอบ", validators=[validators.DataRequired()], choices=[]
     )
     serial_number = fields.StringField(
         "เลขที่สินค้า", validators=[validators.DataRequired()]
@@ -135,3 +138,21 @@ class RequisitionTimelineItemForm(FlaskForm):
         "เลขที่ มอ.เบิกจ่าย", validators=[validators.DataRequired()]
     )
     location = fields.StringField("สถานที่ใช้งาน", validators=[validators.DataRequired()])
+
+
+class RequisitionTimelineItemSharedForm(FlaskForm):
+    class Meta:
+        csrf = False
+
+    seller = fields.StringField("ชื่อผู้ขาย", validators=[validators.DataRequired()])
+    insurance_start_date = fields.DateField(
+        "วันที่เริ่มประกัน", validators=[validators.DataRequired()]
+    )
+    insurance_end_date = fields.DateField(
+        "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
+    )
+    insurance_duration = fields.StringField(
+        "ระยะเวลาประกัน",
+        validators=[validators.Optional()],
+        render_kw={"readonly": True},
+    )

@@ -434,6 +434,139 @@ readonly=False) %}
 {{ render_field(field, class_='ui dropdown') }}
 {%- endmacro %}
 
+
+{% macro render_search_select_name(name, choices=[], selected_value='', label='', placeholder='', field_id='', readonly=False, required=False, hide_label=False, disabled=False) %}
+{% set input_id = field_id if field_id else name %}
+{% set selected_label = namespace(value='') %}
+{% for value, text in choices %}
+{% if (value | string) == (selected_value | string) %}
+{% set selected_label.value = text %}
+{% endif %}
+{% endfor %}
+{% if not placeholder %}
+{% set placeholder = "ค้นหา" + (label if label else "ข้อมูล") %}
+{% endif %}
+
+<fieldset class="w-full fieldset" id="field-{{ input_id }}">
+  {% if not hide_label and label %}
+  <legend class="fieldset-legend" onclick="kampanShowSearchDropdown('{{ input_id }}')">{{ label }}</legend>
+  {% endif %}
+
+  <div class="relative w-full dropdown {% if readonly %}input-readonly{% endif %}">
+    <input type="text" id="{{ input_id }}-input" tabindex="0" role="button" placeholder="{{ placeholder }}"
+      class="w-full select gap-2 items-center flex validator {% if readonly %}input-readonly{% endif %}"
+      autocomplete="off"
+      oninput="kampanUpdateSearchHidden('{{ input_id }}'); kampanFilterSearchDropdown('{{ input_id }}')"
+      onfocus="kampanShowSearchDropdown('{{ input_id }}')"
+      onblur="kampanValidateSearchInput('{{ input_id }}')"
+      value="{{ selected_label.value }}"
+      {% if disabled %}disabled{% endif %}
+      {% if readonly %}readonly{% endif %}
+      {% if required %}required="true"{% endif %}>
+
+    <input class="hidden" id="{{ input_id }}" name="{{ name }}" value="{{ selected_value }}">
+
+    <ul id="{{ input_id }}-dropdown" tabindex="0"
+      class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48"
+      {% if readonly or disabled %}hidden{% endif %}>
+      {% for value, text in choices %}
+      <li>
+        <p class="break-words" data-value="{{ value }}"
+          onclick="kampanSelectSearchValue('{{ input_id }}', '{{ value }}', '{{ text }}')">{{ text }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</fieldset>
+
+<script>
+  if (!window.__kampanSearchSelectReady) {
+    window.__kampanSearchSelectReady = true;
+
+    window.kampanFilterSearchDropdown = function(fieldId) {
+      const input = document.getElementById(fieldId + "-input");
+      const dropdown = document.getElementById(fieldId + "-dropdown");
+      if (!input || !dropdown) return;
+
+      const filter = (input.value || "").toLowerCase();
+      const items = dropdown.getElementsByTagName("li");
+      let hasMatch = false;
+
+      for (let i = 0; i < items.length; i++) {
+        const textValue = items[i].textContent || items[i].innerText;
+        const isMatch = textValue.toLowerCase().indexOf(filter) > -1;
+        items[i].style.display = isMatch ? "" : "none";
+        hasMatch = hasMatch || isMatch;
+      }
+
+      dropdown.style.display = hasMatch ? "block" : "none";
+    };
+
+    window.kampanShowSearchDropdown = function(fieldId) {
+      const dropdown = document.getElementById(fieldId + "-dropdown");
+      if (dropdown) dropdown.style.display = "block";
+    };
+
+    window.kampanSelectSearchValue = function(fieldId, value, text) {
+      const input = document.getElementById(fieldId + "-input");
+      const hiddenInput = document.getElementById(fieldId);
+      const dropdown = document.getElementById(fieldId + "-dropdown");
+      if (!input || !hiddenInput || !dropdown) return;
+
+      input.value = text;
+      hiddenInput.value = value;
+      input.setCustomValidity("");
+      dropdown.style.display = "none";
+    };
+
+    window.kampanUpdateSearchHidden = function(fieldId) {
+      const input = document.getElementById(fieldId + "-input");
+      const hiddenInput = document.getElementById(fieldId);
+      if (!input || !hiddenInput) return;
+      hiddenInput.value = input.value;
+      input.setCustomValidity("");
+    };
+
+    window.kampanValidateSearchInput = function(fieldId) {
+      const input = document.getElementById(fieldId + "-input");
+      const hiddenInput = document.getElementById(fieldId);
+      const dropdown = document.getElementById(fieldId + "-dropdown");
+      if (!input || !hiddenInput || !dropdown) return;
+
+      const entered = (input.value || "").trim();
+      const options = dropdown.querySelectorAll("p[data-value]");
+      let matched = null;
+
+      options.forEach(option => {
+        if ((option.textContent || "").trim() === entered) {
+          matched = option;
+        }
+      });
+
+      if (matched) {
+        hiddenInput.value = matched.getAttribute("data-value") || "";
+        input.setCustomValidity("");
+      } else if (entered !== "") {
+        hiddenInput.value = "";
+        input.setCustomValidity("กรุณาเลือกค่าที่ถูกต้องจากรายการ");
+      } else {
+        hiddenInput.value = "";
+        input.setCustomValidity("");
+      }
+    };
+
+    document.addEventListener("click", function(event) {
+      const dropdowns = document.querySelectorAll(".dropdown-content");
+      dropdowns.forEach(dropdown => {
+        if (!dropdown.parentElement.contains(event.target)) {
+          dropdown.style.display = "none";
+        }
+      });
+    });
+  }
+</script>
+{% endmacro %}
+
 {% macro render_search_select_field(field, id_prefix='', disabled_optional_text=True, readonly=False, disabled=False,
 placeholder="") %}
 {% set list_of_tuples = field.choices %}

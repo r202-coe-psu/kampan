@@ -51,7 +51,7 @@
           {% endif %}
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {{ renderer.render_search_select_field(form.purchaser) }}
+          {{ renderer.render_search_select_field(form.purchaser, readonly=True) }}
           {{ renderer.render_field(form.phone, placeholder="เบอร์โทรศัพท์") }}
           {{ renderer.date_field(form.start_date) }}
         </div>

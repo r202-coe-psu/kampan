@@ -5,7 +5,8 @@
 {#   - Section ข้อมูลในตาราง: scrollable rows with serial, code, location #}
 {# args: req_item, timeline_items, readonly                         #}
 {# ══════════════════════════════════════════════════════════════════ #}
-{% macro render_item_table(req_item, timeline_items, readonly) %}
+{% import '/base/html-renderer.html' as renderer %}
+{% macro render_item_table(req_item, timeline_items, shared_form, row_forms, readonly, responder_user_choices=[]) %}
 {% set item_id = req_item._id | string %}
 <div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
   <div class="card-body p-5">
@@ -26,26 +27,79 @@
       <label class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2 block">
         <i class="ph ph-shield-check"></i> ข้อมูลประกัน / ผู้ขาย
       </label>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {% if shared_form %}
         <div class="form-control w-full">
-          <label class="label"><span class="label-text">ชื่อผู้ขาย</span></label>
-          <input type="text" name="seller_{{ item_id }}" class="input input-bordered input-sm w-full"
-            value="{{ timeline_items[0].seller if timeline_items else '' }}" {% if readonly %}readonly{% endif %} />
+          {{ renderer.render_field(shared_form.seller, readonly=readonly) }}
         </div>
         <div class="form-control w-full">
-          <label class="label"><span class="label-text">วันที่เริ่มประกัน</span></label>
-          <input type="date" name="insurance_start_date_{{ item_id }}" class="input input-bordered input-sm w-full"
-            value="{{ timeline_items[0].insurance_start_date if timeline_items else '' }}"
-            {% if readonly %}readonly{% endif %} />
+          {{ renderer.render_field(shared_form.insurance_start_date, type='date', readonly=readonly) }}
         </div>
         <div class="form-control w-full">
-          <label class="label"><span class="label-text">วันที่สิ้นสุดประกัน</span></label>
-          <input type="date" name="insurance_end_date_{{ item_id }}" class="input input-bordered input-sm w-full"
-            value="{{ timeline_items[0].insurance_end_date if timeline_items else '' }}"
-            {% if readonly %}readonly{% endif %} />
+          {{ renderer.render_field(shared_form.insurance_end_date, type='date', readonly=readonly) }}
         </div>
+        <div class="form-control w-full">
+          {{ renderer.render_field(shared_form.insurance_duration, readonly=True) }}
+        </div>
+        {% endif %}
       </div>
     </div>
+
+    {% if shared_form %}
+    <script>
+      (function() {
+        const startEl = document.getElementById('{{ shared_form.insurance_start_date.id }}');
+        const endEl = document.getElementById('{{ shared_form.insurance_end_date.id }}');
+        const durationEl = document.getElementById('{{ shared_form.insurance_duration.id }}');
+
+        if (!startEl || !endEl || !durationEl) return;
+
+        function calculateDuration() {
+          const startVal = startEl.value;
+          const endVal = endEl.value;
+
+          if (!startVal || !endVal) {
+            durationEl.value = '-';
+            return;
+          }
+
+          const start = new Date(startVal + 'T00:00:00');
+          const end = new Date(endVal + 'T00:00:00');
+
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+            durationEl.value = '-';
+            return;
+          }
+
+          let years = end.getFullYear() - start.getFullYear();
+          let months = end.getMonth() - start.getMonth();
+          let days = end.getDate() - start.getDate();
+
+          if (days < 0) {
+            months -= 1;
+            const lastDayOfPrevMonth = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+            days += lastDayOfPrevMonth;
+          }
+
+          if (months < 0) {
+            years -= 1;
+            months += 12;
+          }
+
+          const parts = [];
+          if (years > 0) parts.push(`${years} ปี`);
+          if (months > 0) parts.push(`${months} เดือน`);
+          if (days > 0) parts.push(`${days} วัน`);
+
+          durationEl.value = parts.length ? parts.join(' ') : '0 วัน';
+        }
+
+        startEl.addEventListener('change', calculateDuration);
+        endEl.addEventListener('change', calculateDuration);
+        calculateDuration();
+      })();
+    </script>
+    {% endif %}
 
     {# ── Section ข้อมูลในตาราง (one row per duplicated item, scrollable) ── #}
     <div class="rounded-xl border border-gray-200 overflow-hidden">
@@ -55,6 +109,7 @@
             <thead class="sticky top-0 z-10">
               <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wide">
                 <th class="text-center w-10">#</th>
+                <th>ผู้รับผิดชอบ</th>
                 <th>เลขที่สินค้า (Serial)</th>
                 <th>เลขที่ มอ.เบิกจ่าย</th>
                 <th>สถานที่ใช้งาน</th>
@@ -62,22 +117,29 @@
             </thead>
             <tbody>
               {% for ti in timeline_items %}
+              {% set row_form = row_forms[loop.index0] if row_forms and (row_forms|length > loop.index0) else none %}
               <tr class="border-b border-gray-100 hover:bg-purple-50 transition-colors">
                 <td class="text-center text-xs font-semibold text-gray-400">{{ loop.index }}</td>
                 <td class="py-2">
-                  <input type="text" name="serial_number_{{ item_id }}_{{ loop.index0 }}"
-                    class="input input-bordered input-sm w-full min-w-[140px]" placeholder="S/N"
-                    value="{{ ti.serial_number }}" {% if readonly %}readonly{% endif %} />
+                  {% if row_form %}
+                  {{ renderer.render_search_select_field(row_form.responder_user, readonly=readonly,
+                  disabled_optional_text=False, placeholder='ค้นหาผู้รับผิดชอบ') }}
+                  {% endif %}
                 </td>
                 <td class="py-2">
-                  <input type="text" name="requisition_item_code_{{ item_id }}_{{ loop.index0 }}"
-                    class="input input-bordered input-sm w-full min-w-[150px]" placeholder="เลขที่ มอ."
-                    value="{{ ti.requisition_item_code }}" {% if readonly %}readonly{% endif %} />
+                  {% if row_form %}
+                  {{ renderer.render_field(row_form.serial_number, placeholder='S/N', readonly=readonly) }}
+                  {% endif %}
                 </td>
                 <td class="py-2">
-                  <input type="text" name="location_{{ item_id }}_{{ loop.index0 }}"
-                    class="input input-bordered input-sm w-full min-w-[160px]" placeholder="ห้อง / อาคาร"
-                    value="{{ ti.location }}" {% if readonly %}readonly{% endif %} />
+                  {% if row_form %}
+                  {{ renderer.render_field(row_form.requisition_item_code, placeholder='เลขที่ มอ.', readonly=readonly) }}
+                  {% endif %}
+                </td>
+                <td class="py-2">
+                  {% if row_form %}
+                  {{ renderer.render_field(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly) }}
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}

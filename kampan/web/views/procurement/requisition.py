@@ -327,7 +327,6 @@ def document(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
 def create_or_edit(requisition_procurement_id):
-    form = forms.requisitions.RequisitionForm()
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
     requisition = None
@@ -335,24 +334,42 @@ def create_or_edit(requisition_procurement_id):
     if requisition_procurement_id:
         requisition = models.Requisition.objects(id=requisition_procurement_id).first()
         form = forms.requisitions.RequisitionForm(obj=requisition)
-        if request.method == "GET":
-            for committee, committee_form in zip(
-                requisition.committees, form.committees
-            ):
-                committee_form.member.data = str(committee.member.id)
+    else:
+        form = forms.requisitions.RequisitionForm()
+
+    if requisition and request.method == "GET":
+        for committee, committee_form in zip(requisition.committees, form.committees):
+            committee_form.member.data = str(committee.member.id)
 
     member_choices = [(str(member.id), member.display_fullname()) for member in members]
     for committee_form in form.committees:
         committee_form.member.choices.extend(member_choices)
 
-    filtered_member_user = [
-        (str(member.id), member.display_fullname())
-        for member in members
-        if str(getattr(member.user, "id", "")) == str(current_user.id)
-    ]
-    form.purchaser.choices = filtered_member_user
+    current_org_user_role = next(
+        (
+            member
+            for member in members
+            if str(getattr(member.user, "id", "")) == str(current_user.id)
+        ),
+        None,
+    )
 
-    if not form.validate_on_submit():
+    if current_org_user_role:
+        current_purchaser_choice = (
+            str(current_org_user_role.id),
+            current_org_user_role.display_fullname(),
+        )
+        form.purchaser.choices = [current_purchaser_choice]
+        form.purchaser.data = current_purchaser_choice[0]
+    else:
+        form.purchaser.choices = [("-", "ไม่พบข้อมูลผู้ขอซื้อ")]
+        form.purchaser.data = "-"
+
+    is_valid = form.validate_on_submit()
+    if request.method == "POST" and not is_valid:
+        print("Form errors:", form.errors)
+
+    if not is_valid:
         return render_template(
             "/procurement/requisitions/create_or_edit.html",
             form=form,
@@ -428,7 +445,9 @@ def create_or_edit(requisition_procurement_id):
                 qt_files, filename=qt_files.filename, content_type=qt_files.content_type
             )
     # Convert SelectField id to document instance for ReferenceField
-    if form.purchaser.data and form.purchaser.data != "-":
+    if current_org_user_role:
+        requisition.purchaser = current_org_user_role
+    elif form.purchaser.data and form.purchaser.data != "-":
         requisition.purchaser = models.OrganizationUserRole.objects(
             id=form.purchaser.data
         ).first()

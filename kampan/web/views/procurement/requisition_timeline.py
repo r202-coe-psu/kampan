@@ -394,12 +394,99 @@ def completed_submit(requisition_timeline_id):
         id=requisition_timeline_id
     )
 
+    responder_user_choices = []
+    seen_user_ids = set()
+    for member in organization.get_organization_users():
+        user = getattr(member, "user", None)
+        if not user:
+            continue
+        user_id = str(user.id)
+        if user_id in seen_user_ids:
+            continue
+        seen_user_ids.add(user_id)
+        responder_user_choices.append((user_id, member.display_user_fullname()))
+
     form = forms.requisition_timeline.CompletedForm()
 
     is_view_only = requisition_timeline.status == "completed"
 
     # Generate / fetch timeline items grouped by requisition item _id
     items_by_type = generate_requisition_items(requisition_timeline)
+
+    def _parse_date(value):
+        if not value:
+            return None
+        if isinstance(value, datetime.date):
+            return value
+        try:
+            return datetime.datetime.strptime(str(value), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    def _format_insurance_duration(start_date, end_date):
+        if not start_date or not end_date:
+            return "-"
+        if end_date < start_date:
+            return "-"
+
+        years = end_date.year - start_date.year
+        months = end_date.month - start_date.month
+        days = end_date.day - start_date.day
+
+        if days < 0:
+            months -= 1
+            previous_month_last_day = (
+                end_date.replace(day=1) - datetime.timedelta(days=1)
+            ).day
+            days += previous_month_last_day
+
+        if months < 0:
+            years -= 1
+            months += 12
+
+        parts = []
+        if years > 0:
+            parts.append(f"{years} ปี")
+        if months > 0:
+            parts.append(f"{months} เดือน")
+        if days > 0:
+            parts.append(f"{days} วัน")
+
+        return " ".join(parts) if parts else "0 วัน"
+
+    shared_forms_by_type = {}
+    row_forms_by_type = {}
+    for item_id, timeline_items in items_by_type.items():
+        shared_form = forms.requisition_timeline.RequisitionTimelineItemSharedForm(
+            prefix=f"shared_{item_id}"
+        )
+        if timeline_items:
+            shared_form.seller.data = timeline_items[0].seller
+            start_date = _parse_date(timeline_items[0].insurance_start_date)
+            end_date = _parse_date(timeline_items[0].insurance_end_date)
+            shared_form.insurance_start_date.data = start_date
+            shared_form.insurance_end_date.data = end_date
+            shared_form.insurance_duration.data = _format_insurance_duration(
+                start_date, end_date
+            )
+        else:
+            shared_form.insurance_duration.data = "-"
+        shared_forms_by_type[item_id] = shared_form
+
+        row_forms = []
+        for idx, ti in enumerate(timeline_items):
+            row_form = forms.requisition_timeline.RequisitionTimelineItemForm(
+                prefix=f"row_{item_id}_{idx}"
+            )
+            row_form.responder_user.choices = responder_user_choices
+            row_form.responder_user.data = (
+                str(ti.responder_user.id) if ti.responder_user else ""
+            )
+            row_form.serial_number.data = ti.serial_number
+            row_form.requisition_item_code.data = ti.requisition_item_code
+            row_form.location.data = ti.location
+            row_forms.append(row_form)
+        row_forms_by_type[item_id] = row_forms
 
     if request.method == "GET":
         form.requisition_code.data = requisition_timeline.requisition.requisition_code
@@ -451,6 +538,9 @@ def completed_submit(requisition_timeline_id):
             form=form,
             readonly=is_view_only,
             items_by_type=items_by_type,
+            responder_user_choices=responder_user_choices,
+            shared_forms_by_type=shared_forms_by_type,
+            row_forms_by_type=row_forms_by_type,
         )
 
     if form.validate_on_submit():
@@ -470,24 +560,31 @@ def completed_submit(requisition_timeline_id):
 
         # Save each RequisitionTimelineItem from the form
         for item_id, timeline_items in items_by_type.items():
+            shared_form = shared_forms_by_type[item_id]
             # Above-table shared fields for this item type
-            insurance_start = request.form.get(f"insurance_start_date_{item_id}", "")
-            seller = request.form.get(f"seller_{item_id}", "")
-            insurance_end = request.form.get(f"insurance_end_date_{item_id}", "")
+            insurance_start = request.form.get(
+                shared_form.insurance_start_date.name, ""
+            )
+            seller = request.form.get(shared_form.seller.name, "")
+            insurance_end = request.form.get(shared_form.insurance_end_date.name, "")
 
             for idx, ti in enumerate(timeline_items):
+                row_form = row_forms_by_type[item_id][idx]
                 ti.insurance_start_date = insurance_start
                 ti.seller = seller
                 ti.insurance_end_date = insurance_end
                 # In-table per-row fields
-                ti.responder_user = None  # TODO: resolve user ref if needed
-                ti.serial_number = request.form.get(
-                    f"serial_number_{item_id}_{idx}", ""
+                responder_user_id = request.form.get(row_form.responder_user.name, "")
+                ti.responder_user = (
+                    models.User.objects(id=responder_user_id).first()
+                    if responder_user_id
+                    else None
                 )
+                ti.serial_number = request.form.get(row_form.serial_number.name, "")
                 ti.requisition_item_code = request.form.get(
-                    f"requisition_item_code_{item_id}_{idx}", ""
+                    row_form.requisition_item_code.name, ""
                 )
-                ti.location = request.form.get(f"location_{item_id}_{idx}", "")
+                ti.location = request.form.get(row_form.location.name, "")
                 ti.save()
 
         requisition_timeline.completed_progress_detail = completed_detail
@@ -516,4 +613,7 @@ def completed_submit(requisition_timeline_id):
         organization=organization,
         form=form,
         items_by_type=items_by_type,
+        responder_user_choices=responder_user_choices,
+        shared_forms_by_type=shared_forms_by_type,
+        row_forms_by_type=row_forms_by_type,
     )

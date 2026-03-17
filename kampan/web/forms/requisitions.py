@@ -20,6 +20,7 @@ BaseRequisitionForm = model_form(
         "last_updated_by",
         "items",
         "committees",
+        "selected_manager",
         "type",
     ],
     field_args={
