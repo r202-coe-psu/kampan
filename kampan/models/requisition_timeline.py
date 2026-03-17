@@ -68,3 +68,28 @@ class RequisitionTimelineLogs(me.Document):
     created_by = me.ReferenceField("User", dbref=True)
     last_ip_address = me.StringField()
     user_agent = me.StringField()
+
+
+class RequisitionTimelineItem(me.Document):
+    meta = {"collection": "requisition_timeline_items"}
+    # reference field
+    requisition_timeline = me.ReferenceField(
+        "RequisitionTimeline", dbref=True, required=True
+    )
+    requisition = me.ReferenceField("Requisition", dbref=True, required=True)
+    requisition_item_id = me.ObjectIdField(required=True)
+    requisition_item = me.StringField(required=True, max_length=200)
+
+    # section ข้างบนตาราง
+    insurance_start_date = me.StringField(required=True, max_length=20)
+    seller = me.StringField(required=True, max_length=200)
+    insurance_end_date = me.StringField(required=True, max_length=20)
+    # section ข้อมูลในตาราง
+    responder_user = me.ReferenceField("User", dbref=True)
+    serial_number = me.StringField(required=True, max_length=20)
+    requisition_item_code = me.StringField(required=True, max_length=20)
+    location = me.StringField(required=True, max_length=200)
+
+    status = me.StringField(default="active", max_length=20)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    created_by = me.ReferenceField("User", dbref=True)

@@ -1,0 +1,92 @@
+{# ══════════════════════════════════════════════════════════════════ #}
+{# MACRO: render_item_table                                         #}
+{# Renders one card per requisition item type containing:           #}
+{#   - Section ข้างบนตาราง : seller, insurance_start/end_date       #}
+{#   - Section ข้อมูลในตาราง: scrollable rows with serial, code, location #}
+{# args: req_item, timeline_items, readonly                         #}
+{# ══════════════════════════════════════════════════════════════════ #}
+{% macro render_item_table(req_item, timeline_items, readonly) %}
+{% set item_id = req_item._id | string %}
+<div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
+  <div class="card-body p-5">
+
+    {# ── Card header ── #}
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-700 flex items-center gap-2">
+        <i class="ph ph-package text-purple-500"></i>
+        {{ req_item.product_name }}
+      </h3>
+      <span class="badge badge-lg badge-outline badge-primary">
+        {{ req_item.quantity }} {{ req_item.currency | default('ชิ้น') }}
+      </span>
+    </div>
+
+    {# ── Section ข้างบนตาราง (shared for this item type) ── #}
+    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+      <label class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2 block">
+        <i class="ph ph-shield-check"></i> ข้อมูลประกัน / ผู้ขาย
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="form-control w-full">
+          <label class="label"><span class="label-text">ชื่อผู้ขาย</span></label>
+          <input type="text" name="seller_{{ item_id }}" class="input input-bordered input-sm w-full"
+            value="{{ timeline_items[0].seller if timeline_items else '' }}" {% if readonly %}readonly{% endif %} />
+        </div>
+        <div class="form-control w-full">
+          <label class="label"><span class="label-text">วันที่เริ่มประกัน</span></label>
+          <input type="date" name="insurance_start_date_{{ item_id }}" class="input input-bordered input-sm w-full"
+            value="{{ timeline_items[0].insurance_start_date if timeline_items else '' }}"
+            {% if readonly %}readonly{% endif %} />
+        </div>
+        <div class="form-control w-full">
+          <label class="label"><span class="label-text">วันที่สิ้นสุดประกัน</span></label>
+          <input type="date" name="insurance_end_date_{{ item_id }}" class="input input-bordered input-sm w-full"
+            value="{{ timeline_items[0].insurance_end_date if timeline_items else '' }}"
+            {% if readonly %}readonly{% endif %} />
+        </div>
+      </div>
+    </div>
+
+    {# ── Section ข้อมูลในตาราง (one row per duplicated item, scrollable) ── #}
+    <div class="rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <div class="max-h-72 overflow-y-auto">
+          <table class="table table-sm w-full">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wide">
+                <th class="text-center w-10">#</th>
+                <th>เลขที่สินค้า (Serial)</th>
+                <th>เลขที่ มอ.เบิกจ่าย</th>
+                <th>สถานที่ใช้งาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ti in timeline_items %}
+              <tr class="border-b border-gray-100 hover:bg-purple-50 transition-colors">
+                <td class="text-center text-xs font-semibold text-gray-400">{{ loop.index }}</td>
+                <td class="py-2">
+                  <input type="text" name="serial_number_{{ item_id }}_{{ loop.index0 }}"
+                    class="input input-bordered input-sm w-full min-w-[140px]" placeholder="S/N"
+                    value="{{ ti.serial_number }}" {% if readonly %}readonly{% endif %} />
+                </td>
+                <td class="py-2">
+                  <input type="text" name="requisition_item_code_{{ item_id }}_{{ loop.index0 }}"
+                    class="input input-bordered input-sm w-full min-w-[150px]" placeholder="เลขที่ มอ."
+                    value="{{ ti.requisition_item_code }}" {% if readonly %}readonly{% endif %} />
+                </td>
+                <td class="py-2">
+                  <input type="text" name="location_{{ item_id }}_{{ loop.index0 }}"
+                    class="input input-bordered input-sm w-full min-w-[160px]" placeholder="ห้อง / อาคาร"
+                    value="{{ ti.location }}" {% if readonly %}readonly{% endif %} />
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endmacro %}

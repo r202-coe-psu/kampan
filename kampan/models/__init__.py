@@ -23,6 +23,7 @@ import kampan.models.vehicles as vehicles
 import kampan.models.vehicle_applications as vehicle_applications
 from .requisition_timeline import (
     RequisitionTimeline,
+    RequisitionTimelineItem,
     Progress,
     PROGRESS_STATUS_CHOICES,
     RequisitionTimelineLogs,

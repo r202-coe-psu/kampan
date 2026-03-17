@@ -108,6 +108,45 @@ def add_progress_in_order(
     return requisition_timeline
 
 
+def generate_requisition_items(requisition_timeline):
+    """For each RequisitionItem, ensure `quantity` RequisitionTimelineItem docs exist.
+    Returns dict: { str(item._id) -> [RequisitionTimelineItem, ...] }
+    """
+    items_by_type = {}
+    requisition = requisition_timeline.requisition
+
+    for req_item in requisition.items:
+        item_id = req_item._id
+        existing = list(
+            models.RequisitionTimelineItem.objects(
+                requisition_timeline=requisition_timeline,
+                requisition_item_id=item_id,
+            ).order_by("created_date")
+        )
+
+        # Create missing items up to the quantity
+        while len(existing) < req_item.quantity:
+            new_item = models.RequisitionTimelineItem(
+                requisition_timeline=requisition_timeline,
+                requisition=requisition,
+                requisition_item_id=item_id,
+                requisition_item=req_item.product_name,
+                insurance_start_date="",
+                seller="",
+                insurance_end_date="",
+                serial_number="",
+                requisition_item_code="",
+                location="",
+                created_by=requisition_timeline.created_by,
+            )
+            new_item.save()
+            existing.append(new_item)
+
+        items_by_type[str(item_id)] = existing
+
+    return items_by_type
+
+
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
@@ -343,9 +382,9 @@ def billing_modal(requisition_timeline_id):
     )
 
 
-@module.route("/<requisition_timeline_id>/completed_modal", methods=["GET", "POST"])
+@module.route("/<requisition_timeline_id>/completed_submit", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
-def completed_modal(requisition_timeline_id):
+def completed_submit(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -358,6 +397,9 @@ def completed_modal(requisition_timeline_id):
     form = forms.requisition_timeline.CompletedForm()
 
     is_view_only = requisition_timeline.status == "completed"
+
+    # Generate / fetch timeline items grouped by requisition item _id
+    items_by_type = generate_requisition_items(requisition_timeline)
 
     if request.method == "GET":
         form.requisition_code.data = requisition_timeline.requisition.requisition_code
@@ -403,11 +445,12 @@ def completed_modal(requisition_timeline_id):
             form.asset_code.data = cpd.asset_code
 
         return render_template(
-            "/procurement/requisitions/completed_modal.html",
+            "/procurement/requisitions/completed_submit.html",
             item=requisition_timeline,
             organization=organization,
             form=form,
             readonly=is_view_only,
+            items_by_type=items_by_type,
         )
 
     if form.validate_on_submit():
@@ -424,6 +467,28 @@ def completed_modal(requisition_timeline_id):
             product_number=form.product_number.data or "N/A",
             asset_code=form.asset_code.data or "",
         )
+
+        # Save each RequisitionTimelineItem from the form
+        for item_id, timeline_items in items_by_type.items():
+            # Above-table shared fields for this item type
+            insurance_start = request.form.get(f"insurance_start_date_{item_id}", "")
+            seller = request.form.get(f"seller_{item_id}", "")
+            insurance_end = request.form.get(f"insurance_end_date_{item_id}", "")
+
+            for idx, ti in enumerate(timeline_items):
+                ti.insurance_start_date = insurance_start
+                ti.seller = seller
+                ti.insurance_end_date = insurance_end
+                # In-table per-row fields
+                ti.responder_user = None  # TODO: resolve user ref if needed
+                ti.serial_number = request.form.get(
+                    f"serial_number_{item_id}_{idx}", ""
+                )
+                ti.requisition_item_code = request.form.get(
+                    f"requisition_item_code_{item_id}_{idx}", ""
+                )
+                ti.location = request.form.get(f"location_{item_id}_{idx}", "")
+                ti.save()
 
         requisition_timeline.completed_progress_detail = completed_detail
         requisition_timeline.status = "completed"
@@ -446,8 +511,9 @@ def completed_modal(requisition_timeline_id):
         )
 
     return render_template(
-        "/procurement/requisitions/completed_modal.html",
+        "/procurement/requisitions/completed_submit.html",
         item=requisition_timeline,
         organization=organization,
         form=form,
+        items_by_type=items_by_type,
     )
