@@ -14,25 +14,46 @@
 
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <!-- Date Filter Form -->
-  <div class="mb-6 flex justify-between items-end flex-wrap gap-4">
+  <div class="mb-6">
     <form method="GET" action="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
-      class="flex items-end gap-2 w-full sm:w-auto">
+      class="flex flex-wrap items-center gap-3 w-full">
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      <div class="form-control w-full sm:w-auto">
-        <label class="label">
+      
+      <div class="form-control w-full sm:w-48">
+        <label class="label py-2">
           <span class="label-text font-bold">เลือกวันที่</span>
         </label>
-        <div class="flex flex-col sm:flex-row gap-2 w-full">
-          <input type="date" name="date" class="input input-bordered w-full sm:w-auto flex-none sm:flex-1 min-w-0"
-            value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
-          <div class="flex flex-wrap gap-2">
-            <button type="submit" class="btn btn-primary flex-1 sm:flex-none">ค้นหา</button>
-            <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
-              class="btn btn-outline flex-1 sm:flex-none">วันนี้</a>
-            <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
-              class="btn btn-ghost w-full sm:w-auto text-center">ล้างการค้นหา</a>
-          </div>
-        </div>
+        <input type="date" name="date" class="input input-bordered w-full"
+          value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
+      </div>
+
+      <div class="form-control flex-1 min-w-48">
+        <label class="label py-2">
+          <span class="label-text font-bold">เรียงลำดับตาม</span>
+        </label>
+        <select name="sort_by" class="select select-bordered w-full">
+          <option value="departure_datetime" {% if sort_by == 'departure_datetime' %}selected{% endif %}>วันเวลาออกเดินทาง</option>
+          <option value="return_datetime" {% if sort_by == 'return_datetime' %}selected{% endif %}>วันเวลากลับ</option>
+          <option value="created_date" {% if sort_by == 'created_date' %}selected{% endif %}>วันที่สร้าง</option>
+        </select>
+      </div>
+
+      <div class="form-control w-40">
+        <label class="label py-2">
+          <span class="label-text font-bold">ลำดับ</span>
+        </label>
+        <select name="order" class="select select-bordered w-full">
+          <option value="asc" {% if order_dir == 'asc' %}selected{% endif %}>น้อยไปมาก</option>
+          <option value="desc" {% if order_dir == 'desc' %}selected{% endif %}>มากไปน้อย</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 items-end mt-9">
+        <button type="submit" class="btn btn-primary">ค้นหา</button>
+        <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
+          class="btn btn-outline">วันนี้</a>
+        <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
+          class="btn btn-ghost">ล้างการค้นหา</a>
       </div>
     </form>
   </div>
@@ -53,41 +74,72 @@
         <div class="flex justify-between items-center border-b pb-2">
           <span class="text-sm font-bold text-primary">#{{ paginated_car_applications.total -
             ((paginated_car_applications.page - 1) * paginated_car_applications.per_page) - loop.index0 }}</span>
-          <span class="text-sm font-medium">{{ car_application.departure_datetime|format_thai_datetime_short_month
-            }}</span>
+          <span class="badge badge-lg">{{ car_application.get_status_display() }}</span>
         </div>
 
         <div class="text-base">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div><span class="font-semibold text-gray-500 text-sm">ผู้ขอใช้:</span> <br />{{
-              car_application.creator.get_name() }}</div>
-            <div><span class="font-semibold text-gray-500 text-sm">ลักษณะงาน:</span> <br />{{
-              car_application.request_reason }}</div>
-            <div><span class="font-semibold text-gray-500 text-sm">สถานที่ไป:</span> <br />{{ car_application.location
-              }}</div>
-            <div><span class="font-semibold text-gray-500 text-sm">สถานะ:</span> <br />{{
-              car_application.get_status_display() }}</div>
-
-            {% if car_application.return_datetime %}
-            <div><span class="font-semibold text-gray-500 text-sm">กลับถึงเวลา:</span> <br />{{
-              car_application.return_datetime|format_thai_datetime_short_month }}</div>
-            {% endif %}
-
-            <div class="sm:col-span-2 grid grid-cols-2 gap-2 mt-2 bg-base-200 p-2 rounded-lg">
-              <div><span class="font-semibold text-gray-500 text-sm">ไมล์ก่อนเดินทาง:</span> <br />{{
-                car_application.get_mile_before() }}</div>
-              <div><span class="font-semibold text-gray-500 text-sm">ไมล์หลังเดินทาง:</span> <br />{{
-                car_application.last_mileage if car_application.last_mileage else '-' }}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">วันออกเดินทาง:</span>
+              <div class="text-base font-medium">{{ car_application.departure_datetime|format_thai_date }}</div>
             </div>
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">เวลาออกเดินทาง:</span>
+              <div class="text-base font-medium">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</div>
+            </div>
+            
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">ประเภทการใช้:</span>
+              <div class="text-base font-medium">
+                {% if car_application.using_type == 'general' %}
+                  ใช้รถทั่วไป
+                {% elif car_application.using_type == 'airport transfer' %}
+                  รับส่งสนามบิน
+                {% elif car_application.using_type == 'out of town' %}
+                  ไปต่างจังหวัด
+                {% else %}
+                  {{ car_application.using_type }}
+                {% endif %}
+              </div>
+            </div>
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">รถที่ใช้:</span>
+              <div class="text-base font-medium">{{ car_application.car.license_plate }}</div>
+            </div>
+
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">ผู้ขอใช้:</span>
+              <div class="text-base font-medium">{{ car_application.creator.get_name() }}</div>
+            </div>
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">เหตุผล:</span>
+              <div class="text-base font-medium">{{ car_application.request_reason }}</div>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="sm:col-span-2">
+              <span class="font-semibold text-gray-500 text-sm">สถานที่ไป:</span>
+              <div class="text-base font-medium">{{ car_application.location }}</div>
+            </div>
+
+            <!-- Row 5 -->
+            {% if car_application.return_datetime %}
+            <div>
+              <span class="font-semibold text-gray-500 text-sm">วันเวลากลับ:</span>
+              <div class="text-base font-medium">{{ car_application.return_datetime|format_thai_datetime_short_month }}</div>
+            </div>
+            {% endif %}
           </div>
         </div>
 
         <div class="flex flex-col gap-2 mt-2 w-full">
+          {% if loop.first %}
           <button class="btn btn-primary btn-sm sm:btn-md w-full h-12" hx-target="#edit-modal" hx-swap="innerHTML"
             hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
             <i class="ph ph-gas-pump text-lg"></i>
             <span class="text-md">บันทึกการกลับ / กรอกไมล์</span>
           </button>
+          {% endif %}
         </div>
       </div>
       {% endfor %}

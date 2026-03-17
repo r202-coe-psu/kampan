@@ -59,7 +59,7 @@
             "" }}
           </td>
           <td class="table-style">
-            {{ car_application.get_mile_before() }}
+            {{ car_application.last_mileage_before if car_application.last_mileage_before else '-' }}
           </td>
           <td class="table-style">
             {{ car_application.last_mileage }}
@@ -70,10 +70,12 @@
                 hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
                 รายละเอียด
               </button>
+              {% if loop.first %}
               <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
                 hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
                 แก้ไข
               </button>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -108,10 +110,12 @@
             hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
             รายละเอียด
           </button>
+          {% if loop.first %}
           <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
             hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
             แก้ไข
           </button>
+          {% endif %}
         </div>
       </div>
       {% endfor %}

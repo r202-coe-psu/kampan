@@ -33,6 +33,8 @@ def index():
     ).first()
     date_str = request.args.get("date")
     target_date = None
+    sort_by = request.args.get("sort_by", "departure_datetime")
+    order_dir = request.args.get("order", "asc")
 
     query = Q(organization=organization, status="active")
 
@@ -44,8 +46,10 @@ def index():
             departure_datetime__gte=start_of_day, departure_datetime__lte=end_of_day
         )
 
+    # Apply sorting
+    sort_field = sort_by if order_dir == "asc" else f"-{sort_by}"
     car_lendings = models.vehicle_applications.CarApplication.objects(query).order_by(
-        "departure_datetime"
+        sort_field
     )
 
     page = request.args.get("page", 1, type=int)
@@ -58,6 +62,8 @@ def index():
         car_lendings=car_lendings,
         target_date=target_date,
         today_date=today_date,
+        sort_by=sort_by,
+        order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
     )
 
@@ -83,6 +89,12 @@ def submit_task_modal(car_application_id):
     )
 
     if request.method == "POST" and form.validate_on_submit():
+        car = models.vehicles.Car.objects(id=car_application.car.id).first()
+        # บันทึกเลขไมล์ก่อนออกเดินทาง
+        car_application.last_mileage_before = car.last_mileage
+        #  บันทึกเลขไมล์หลังเดินทางกลับในรถ
+        car.last_mileage = form.last_mileage.data
+        car.save()
         car_application.last_mileage = form.last_mileage.data
         car_application.status = "completed"
         car_application.return_datetime = datetime.datetime.now()

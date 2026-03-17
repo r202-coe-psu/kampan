@@ -18,6 +18,7 @@ BaseCarForm = model_form(
     ],
     field_args={
         "license_plate": {"label": "ป้ายทะเบียนรถ"},
+        "last_mileage": {"label": "เลขไมล์สุดท้าย"},
         "description": {"label": "รายละเอียด/ลักษณะ"},
     },
 )

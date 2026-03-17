@@ -71,7 +71,6 @@ class VehicleApplication:
 
 class CarApplication(VehicleApplication, me.Document):
     meta = {"collection": "car_applications"}
-
     using_type = me.StringField(default="", choices=USING_TYPE)  # ประเภทการใช้รถ
     travel_type = me.StringField(
         default="one way", choices=TRAVEL_TYPE
@@ -79,7 +78,6 @@ class CarApplication(VehicleApplication, me.Document):
     airport_transfer_type = me.StringField(
         default="", choices=AIRPORT_TRANSFER_TYPE
     )  # ประเภทการรับส่งสนามบิน
-
     passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
     flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป
     flight_return_datetime = me.DateTimeField(
@@ -94,12 +92,13 @@ class CarApplication(VehicleApplication, me.Document):
     division = me.ReferenceField("Division", dbref=True)
 
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
-    last_mileage = me.IntField(min_value=0, default=0)
+    last_mileage = me.IntField(min_value=0)
+    last_mileage_before = me.IntField(min_value=0)
 
     def get_mile_before(self):
         last_car_application = (
             CarApplication.objects(
-                status="active",
+                status="completed",
                 departure_datetime__lt=self.departure_datetime,
                 car=self.car,
             )

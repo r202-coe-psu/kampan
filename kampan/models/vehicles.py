@@ -26,6 +26,7 @@ class BaseVehicle:
 
 
 class Car(BaseVehicle, me.Document):
+    last_mileage = me.IntField(min_value=0, required=True, default=0)
     meta = {"collection": "cars"}
 
 

@@ -23,6 +23,7 @@ BaseCarApplicationForm = model_form(
         "flight_datetime",
         "flight_return_datetime",
         "division",
+        "last_mileage",
     ],
     field_args={
         "request_reason": {"label": "เหตุผลที่ต้องการใช้"},

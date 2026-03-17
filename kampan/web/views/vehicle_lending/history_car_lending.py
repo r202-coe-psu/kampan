@@ -81,6 +81,9 @@ def edit(car_application_id):
 
     if request.method == "POST" and form.validate_on_submit():
         car_application.last_mileage = form.last_mileage.data
+        car = models.vehicles.Car.objects(id=car_application.car.id).first()
+        car.last_mileage = form.last_mileage.data
+        car.save()
         car_application.return_datetime = datetime.datetime.combine(
             form.return_date.data, form.return_time.data
         )

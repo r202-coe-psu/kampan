@@ -124,6 +124,7 @@ def create_or_edit(car_application_id):
             (str(car.id), car.license_plate)
             for car in models.vehicles.Car.objects(organization=organization)
         ]
+
         print(form.errors)
         return render_template(
             "/vehicle_lending/car_applications/create_or_edit.html",

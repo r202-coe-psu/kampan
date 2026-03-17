@@ -30,6 +30,8 @@
   <div class="flex flex-row justify-between w-full gap-2">
     {{form.csrf_token }}
     {{renderer.render_field(form.license_plate)}}
+    {{renderer.render_field(form.last_mileage)}}
+
   </div>
   <div class="flex flex-row w-full gap-2">
     {{renderer.render_text_area_field(form.description)}}

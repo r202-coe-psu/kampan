@@ -43,6 +43,7 @@ def create_or_edit(car_id):
     form = forms.vehicles.CarForm()
     if car_id:
         car = models.vehicles.Car.objects(id=car_id).first()
+
         form = forms.vehicles.CarForm(obj=car)
 
     if not form.validate_on_submit():
