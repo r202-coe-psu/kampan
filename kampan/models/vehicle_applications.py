@@ -75,9 +75,9 @@ class CarApplication(VehicleApplication, me.Document):
     travel_type = me.StringField(
         default="one way", choices=TRAVEL_TYPE
     )  # ประเภทการเดินทาง
-    airport_transfer_type = me.StringField(
-        default="", choices=AIRPORT_TRANSFER_TYPE
-    )  # ประเภทการรับส่งสนามบิน
+    airport_transfer_type = (
+        me.StringField()
+    )  # ประเภทการรับส่งสนามบิน (ตัวเลือกเสริม ไม่ตรวจสอบค่า)
     passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
     flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป
     flight_return_datetime = me.DateTimeField(
@@ -137,6 +137,11 @@ class CarApplication(VehicleApplication, me.Document):
             else:
                 text = f"{self.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. - {self.return_datetime.strftime('%H:%M')} น."
         return text
+
+    def get_airport_transfer_type_display(self):
+        if self.using_type != "airport transfer":
+            return "-"
+        return self.airport_transfer_type if self.airport_transfer_type else "-"
 
 
 class MotorcycleApplication(VehicleApplication, me.Document):
