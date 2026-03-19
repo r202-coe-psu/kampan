@@ -141,7 +141,10 @@ class CarApplication(VehicleApplication, me.Document):
     def get_airport_transfer_type_display(self):
         if self.using_type != "airport transfer":
             return "-"
-        return self.airport_transfer_type if self.airport_transfer_type else "-"
+        if not self.airport_transfer_type:
+            return "-"
+        mapping = dict(AIRPORT_TRANSFER_TYPE)
+        return mapping.get(self.airport_transfer_type, self.airport_transfer_type)
 
 
 class MotorcycleApplication(VehicleApplication, me.Document):
