@@ -467,6 +467,8 @@ def send_email_car_application_to_endorser(
     if state == "pending on header":
         endorsers = division.get_user_endorsers()
         print("-----> header", endorsers)
+        print("-----> header", endorsers[0].email if endorsers else "no endorsers")
+        print("-----> header", endorsers[0].get_name() if endorsers else "no endorsers")
 
     elif state == "pending on director":
         endorsers = organization.get_director()
@@ -478,19 +480,23 @@ def send_email_car_application_to_endorser(
 
     if not email_template:
         logger.debug(f"There are no email template")
+        print("-----> No email template found")
         return False
 
     if not endorsers:
         logger.debug(f"attendant endorser is required")
+        print("-----> No endorsers found")
         return False
 
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
+        print("-----> No email found for creator")
         return False
 
     psu_smtp = PSUSMTP(setting)
     if not psu_smtp.login():
         logger.debug(f"email cannot login")
+        print("-----> Email login failed")
         return False
 
     template_subject = Template(email_template.subject)
@@ -515,7 +521,7 @@ def send_email_car_application_to_endorser(
         email_body = template_body.render(text_format)
 
         logger.debug(f"send email to {endorser.email}")
-        print(f"send email to {endorser.email}")
+        print(f"----> send email to {endorser.email}")
         psu_smtp.send_email(endorser.email, email_subject, email_body)
     logger.debug(
         "################ Finished sending emails to all endorsers ################"
