@@ -21,6 +21,7 @@ from kampan import models, default_settings
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class PSUSMTP:
@@ -456,7 +457,8 @@ def send_email_car_application_to_endorser(
     setting,
     state,
 ):
-    logger.debug(f"use force_send_email_to_endorser")
+    logger.info(f"use force_send_email_to_endorser")
+    print(f"use force_send_email_to_endorser")
 
     creator = car_application.creator
     division = creator.get_current_division()
@@ -464,14 +466,14 @@ def send_email_car_application_to_endorser(
 
     if state == "pending on header":
         endorsers = division.get_user_endorsers()
-        # print("-----> header", endorsers)
+        print("-----> header", endorsers)
 
     elif state == "pending on director":
         endorsers = organization.get_director()
-        # print("-----> director", endorsers)
+        print("-----> director", endorsers)
     elif state == "pending on admin":
         endorsers = organization.get_admins()
-        # print("-----> admin", endorsers)
+        print("-----> admin", endorsers)
     email_template = organization.get_default_email_template("car_application")
 
     if not email_template:
@@ -503,6 +505,7 @@ def send_email_car_application_to_endorser(
         endorsement_url = f"{host_url}/vehicle_lending/car_permissions/admin_page?organization_id={organization.id}"
 
     logger.debug("################ Ready to send email to endorsers ################")
+    print("################ Ready to send email to endorsers ################")
     for endorser in endorsers:
         text_format = get_car_application_text_format(
             division, user, endorser, car_application, endorsement_url
@@ -512,9 +515,11 @@ def send_email_car_application_to_endorser(
         email_body = template_body.render(text_format)
 
         logger.debug(f"send email to {endorser.email}")
+        print(f"send email to {endorser.email}")
         psu_smtp.send_email(endorser.email, email_subject, email_body)
     logger.debug(
         "################ Finished sending emails to all endorsers ################"
     )
+    print("################ Ready to send email to endorsers ################")
     psu_smtp.quit()
     return True
