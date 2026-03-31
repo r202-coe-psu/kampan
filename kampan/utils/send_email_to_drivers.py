@@ -74,8 +74,7 @@ def force_send_email_to_driver(
         email_body = body_template.render(text_format)
 
         success = psu_smtp.send_email(
-            to_email=driver.email,
-            to_name=driver.get_name(),
+            receiver=driver.email,
             subject=email_subject,
             body=email_body,
         )
