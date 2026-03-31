@@ -16,7 +16,7 @@ from email.utils import formataddr
 from jinja2 import Environment, PackageLoader, select_autoescape, Template
 
 import mongoengine as me
-from kampan import models
+from kampan import models, default_settings
 
 import logging
 
@@ -138,7 +138,7 @@ def force_send_email_to_endorser(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
+    host_url = default_settings.KAMPAN_HOST_URL
     endorsement_url = (
         f"{host_url}/approve_orders/endorser?organization_id={organization.id}"
     )
@@ -198,7 +198,7 @@ def force_send_email_to_supervisor_supplier(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
+    host_url = default_settings.KAMPAN_HOST_URL
     endorsement_url = f"{host_url}/approve_orders/supervisor_supplier?organization_id={organization.id}"
     for endorser in endorsers:
         text_format = get_endorser_text_format(
@@ -258,7 +258,7 @@ def force_send_email_to_admin(
         template_subject = Template(email_template.subject)
         template_body = Template(email_template.body)
 
-        host_url = setting.get("KAMPAN_HOST_URL")
+        host_url = default_settings.KAMPAN_HOST_URL
         endorsement_url = (
             f"{host_url}/approve_orders/admin?organization_id={organization.id}"
         )
@@ -322,7 +322,7 @@ def force_send_email_to_staff(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
+    host_url = default_settings.KAMPAN_HOST_URL
     endorsement_url = f""
 
     text_format = get_endorser_text_format(
@@ -406,7 +406,7 @@ def send_email_lost_break(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
+    host_url = default_settings.KAMPAN_HOST_URL
     endorsement_url = (
         f"{host_url}/lost_breaks/approve_page?organization_id={organization.id}"
     )
@@ -494,7 +494,7 @@ def send_email_car_application_to_endorser(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = setting.get("KAMPAN_HOST_URL")
+    host_url = default_settings.KAMPAN_HOST_URL
     if state == "pending on header":
         endorsement_url = f"{host_url}/vehicle_lending/car_permissions/header_page?organization_id={organization.id}"
     elif state == "pending on director":
