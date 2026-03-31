@@ -458,7 +458,6 @@ def send_email_car_application_to_endorser(
     state,
 ):
     logger.info(f"use force_send_email_to_endorser")
-    print(f"use force_send_email_to_endorser")
 
     creator = car_application.creator
     division = creator.get_current_division()
@@ -466,37 +465,31 @@ def send_email_car_application_to_endorser(
 
     if state == "pending on header":
         endorsers = division.get_user_endorsers()
-        print("-----> header", endorsers)
-        print("-----> header", endorsers[0].email if endorsers else "no endorsers")
-        print("-----> header", endorsers[0].get_name() if endorsers else "no endorsers")
+        # print("-----> header", endorsers)
 
     elif state == "pending on director":
         endorsers = organization.get_director()
-        print("-----> director", endorsers)
+        # print("-----> director", endorsers)
     elif state == "pending on admin":
         endorsers = organization.get_admins()
-        print("-----> admin", endorsers)
+        # print("-----> admin", endorsers)
     email_template = organization.get_default_email_template("car_application")
 
     if not email_template:
         logger.debug(f"There are no email template")
-        print("-----> No email template found")
         return False
 
     if not endorsers:
         logger.debug(f"attendant endorser is required")
-        print("-----> No endorsers found")
         return False
 
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
-        print("-----> No email found for creator")
         return False
 
     psu_smtp = PSUSMTP(setting)
     if not psu_smtp.login():
         logger.debug(f"email cannot login")
-        print("-----> Email login failed")
         return False
 
     template_subject = Template(email_template.subject)
@@ -511,7 +504,6 @@ def send_email_car_application_to_endorser(
         endorsement_url = f"{host_url}/vehicle_lending/car_permissions/admin_page?organization_id={organization.id}"
 
     logger.debug("################ Ready to send email to endorsers ################")
-    print("################ Ready to send email to endorsers ################")
     for endorser in endorsers:
         text_format = get_car_application_text_format(
             division, user, endorser, car_application, endorsement_url
@@ -526,6 +518,5 @@ def send_email_car_application_to_endorser(
     logger.debug(
         "################ Finished sending emails to all endorsers ################"
     )
-    print("################ Ready to send email to endorsers ################")
     psu_smtp.quit()
     return True
