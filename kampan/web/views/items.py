@@ -46,6 +46,8 @@ def index():
             organization=organization, status="active"
         )
     ]
+    page = request.args.get("page", default=1, type=int)
+
     if not form.validate_on_submit():
 
         item_name = request.args.get("item_name")
@@ -64,7 +66,6 @@ def index():
             form.categories.data = categories
             items = items.filter(categories=form.categories.data)
 
-        page = request.args.get("page", default=1, type=int)
         try:
             paginated_items = Pagination(items, page=page, per_page=24)
         except:
@@ -88,6 +89,7 @@ def index():
             item_name=item_name,
             categories=categories,
             item_select_id=item_select_id,
+            page=page,
         )
     )
 
