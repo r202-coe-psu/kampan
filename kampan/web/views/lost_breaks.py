@@ -107,7 +107,7 @@ def add():
     item = models.Item.objects(id=form.item.data).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    inventories = models.Inventory.objects(item=item).order_by("-remain")
+    inventories = models.Inventory.objects(item=item,remain__gt=0, status="active").order_by("-remain")
 
     lost_break_item = None
     for inventory in inventories:
@@ -195,7 +195,7 @@ def edit(lost_break_item_id):
                 error_message=True,
             )
         )
-    inventories = models.Inventory.objects(item=item, remain__gt=0)
+    inventories = models.Inventory.objects(item=item, remain__gt=0, status="active").order_by("-remain")
     for inventory in inventories:
         lost_break_item.user = current_user._get_current_object()
         lost_break_item.item = item
@@ -273,18 +273,22 @@ def decide(lost_break_item_id, decide_choice):
     if decide_choice == "approve":
         lost_break_item.status = "active"
         if lost_break_item.quantity != 0:
+            
             return_inventory = (
                 models.Inventory.objects(id=lost_break_item.lost_from.id)
-                .order_by("-remain")
                 .first()
             )
+            print(return_inventory.remain)
+            print(return_inventory.id)
+            print(return_inventory.item.id)
+            print(lost_break_item.lost_from.id)
             return_inventory.remain += lost_break_item.quantity
             return_inventory.save()
     elif decide_choice == "denied":
         lost_break_item.status = "denied"
         if lost_break_item.quantity != 0:
             return_inventory = models.Inventory.objects(
-                id=lost_break_item.lost_from.id
+                id=lost_break_item.lost_from.id, status="active", remain__gte=0
             ).first()
             return_inventory.remain -= lost_break_item.quantity
             return_inventory.save()

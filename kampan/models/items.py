@@ -151,7 +151,7 @@ class ItemSnapshot(me.Document):
     last_price = me.DecimalField()
     last_price_per_piece = me.DecimalField()
 
-    remaining_balance = me.DecimalField()
+    remaining_balance = me.DecimalField() # มูลค่าสินค้าคงเหลือ
     status = me.StringField(default="active")
 
     organization = me.ReferenceField("Organization", dbref=True)
