@@ -121,7 +121,8 @@
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.base_render(row_form.serial_number, placeholder='S/N', readonly=readonly, hide_label=True) }}
+                  {{ renderer.base_render(row_form.serial_number, placeholder='S/N', readonly=readonly, hide_label=True)
+                  }}
                   {% endif %}
                 </td>
                 <td class="py-2">
@@ -132,7 +133,8 @@
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.base_render(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly, hide_label=True) }}
+                  {{ renderer.base_render(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly,
+                  hide_label=True) }}
                   {% endif %}
                 </td>
               </tr>

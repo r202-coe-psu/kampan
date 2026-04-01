@@ -73,6 +73,7 @@ class RequisitionTimelineLogs(me.Document):
 class RequisitionTimelineItem(me.Document):
     meta = {"collection": "requisition_timeline_items"}
     # reference field
+    running_number = me.IntField(required=True)
     requisition_timeline = me.ReferenceField(
         "RequisitionTimeline", dbref=True, required=True
     )

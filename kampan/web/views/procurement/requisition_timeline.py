@@ -131,6 +131,7 @@ def generate_requisition_items(requisition_timeline):
                 requisition=requisition,
                 requisition_item_id=item_id,
                 requisition_item=req_item.product_name,
+                running_number=len(existing) + 1,
                 insurance_start_date="",
                 seller="",
                 insurance_end_date="",
@@ -407,10 +408,7 @@ def completed_submit(requisition_timeline_id):
         responder_user_choices.append((user_id, member.display_user_fullname()))
 
     form = forms.requisition_timeline.CompletedForm()
-
     is_view_only = requisition_timeline.status == "completed"
-
-    # Generate / fetch timeline items grouped by requisition item _id
     items_by_type = generate_requisition_items(requisition_timeline)
 
     def _parse_date(value):
@@ -543,25 +541,9 @@ def completed_submit(requisition_timeline_id):
             row_forms_by_type=row_forms_by_type,
         )
 
-    if form.validate_on_submit():
-        completed_detail = models.requisition_timeline.CompletedProgressDetail(
-            seller_name=form.seller_name.data,
-            contract_number=form.contract_number.data,
-            purchase_method=form.purchase_method.data,
-            usage_location=form.usage_location.data,
-            warranty_period=form.warranty_period.data,
-            start_warranty_date=form.start_warranty_date.data,
-            end_warranty_date=form.end_warranty_date.data,
-            money_type=form.money_type.data,
-            account_code=form.account_code.data,
-            product_number=form.product_number.data or "N/A",
-            asset_code=form.asset_code.data or "",
-        )
-
-        # Save each RequisitionTimelineItem from the form
+    if request.method == "POST":
         for item_id, timeline_items in items_by_type.items():
             shared_form = shared_forms_by_type[item_id]
-            # Above-table shared fields for this item type
             insurance_start = request.form.get(
                 shared_form.insurance_start_date.name, ""
             )
@@ -573,7 +555,6 @@ def completed_submit(requisition_timeline_id):
                 ti.insurance_start_date = insurance_start
                 ti.seller = seller
                 ti.insurance_end_date = insurance_end
-                # In-table per-row fields
                 responder_user_id = request.form.get(row_form.responder_user.name, "")
                 ti.responder_user = (
                     models.User.objects(id=responder_user_id).first()
@@ -587,7 +568,6 @@ def completed_submit(requisition_timeline_id):
                 ti.location = request.form.get(row_form.location.name, "")
                 ti.save()
 
-        requisition_timeline.completed_progress_detail = completed_detail
         requisition_timeline.status = "completed"
         requisition_timeline.save()
 
