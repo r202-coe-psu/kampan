@@ -21,7 +21,8 @@ prefix="",
 suffix="",
 disabled=False,
 readonly=False,
-disabled_optional_text=True
+disabled_optional_text=True,
+hide_label=False
 ) %}
 
 {#% set style = "input input-bordered flex items-center gap-2 w-full" %#}
@@ -43,6 +44,7 @@ disabled_optional_text=True
 {{ field(**kwargs) }}
 {% else %}
 <fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  {% if not hide_label %}
   <legend class="fieldset-legend">
     {{ field.label.text }}
     {% if field.flags.required %}
@@ -52,6 +54,7 @@ disabled_optional_text=True
     <p class="fieldset-label">(ไม่บังคับ)</p>
     {% endif %}
   </legend>
+  {% endif %}
   <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
     {% if prefix %}
     {{ prefix_icon }}
@@ -435,7 +438,8 @@ readonly=False) %}
 {%- endmacro %}
 
 
-{% macro render_search_select_name(name, choices=[], selected_value='', label='', placeholder='', field_id='', readonly=False, required=False, hide_label=False, disabled=False) %}
+{% macro render_search_select_name(name, choices=[], selected_value='', label='', placeholder='', field_id='',
+readonly=False, required=False, hide_label=False, disabled=False) %}
 {% set input_id = field_id if field_id else name %}
 {% set selected_label = namespace(value='') %}
 {% for value, text in choices %}
@@ -457,18 +461,15 @@ readonly=False) %}
       class="w-full select gap-2 items-center flex validator {% if readonly %}input-readonly{% endif %}"
       autocomplete="off"
       oninput="kampanUpdateSearchHidden('{{ input_id }}'); kampanFilterSearchDropdown('{{ input_id }}')"
-      onfocus="kampanShowSearchDropdown('{{ input_id }}')"
-      onblur="kampanValidateSearchInput('{{ input_id }}')"
-      value="{{ selected_label.value }}"
-      {% if disabled %}disabled{% endif %}
-      {% if readonly %}readonly{% endif %}
-      {% if required %}required="true"{% endif %}>
+      onfocus="kampanShowSearchDropdown('{{ input_id }}')" onblur="kampanValidateSearchInput('{{ input_id }}')"
+      value="{{ selected_label.value }}" {% if disabled %}disabled{% endif %} {% if readonly %}readonly{% endif %} {% if
+      required %}required="true" {% endif %}>
 
     <input class="hidden" id="{{ input_id }}" name="{{ name }}" value="{{ selected_value }}">
 
     <ul id="{{ input_id }}-dropdown" tabindex="0"
-      class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48"
-      {% if readonly or disabled %}hidden{% endif %}>
+      class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
+      readonly or disabled %}hidden{% endif %}>
       {% for value, text in choices %}
       <li>
         <p class="break-words" data-value="{{ value }}"
@@ -483,7 +484,7 @@ readonly=False) %}
   if (!window.__kampanSearchSelectReady) {
     window.__kampanSearchSelectReady = true;
 
-    window.kampanFilterSearchDropdown = function(fieldId) {
+    window.kampanFilterSearchDropdown = function (fieldId) {
       const input = document.getElementById(fieldId + "-input");
       const dropdown = document.getElementById(fieldId + "-dropdown");
       if (!input || !dropdown) return;
@@ -502,12 +503,12 @@ readonly=False) %}
       dropdown.style.display = hasMatch ? "block" : "none";
     };
 
-    window.kampanShowSearchDropdown = function(fieldId) {
+    window.kampanShowSearchDropdown = function (fieldId) {
       const dropdown = document.getElementById(fieldId + "-dropdown");
       if (dropdown) dropdown.style.display = "block";
     };
 
-    window.kampanSelectSearchValue = function(fieldId, value, text) {
+    window.kampanSelectSearchValue = function (fieldId, value, text) {
       const input = document.getElementById(fieldId + "-input");
       const hiddenInput = document.getElementById(fieldId);
       const dropdown = document.getElementById(fieldId + "-dropdown");
@@ -519,7 +520,7 @@ readonly=False) %}
       dropdown.style.display = "none";
     };
 
-    window.kampanUpdateSearchHidden = function(fieldId) {
+    window.kampanUpdateSearchHidden = function (fieldId) {
       const input = document.getElementById(fieldId + "-input");
       const hiddenInput = document.getElementById(fieldId);
       if (!input || !hiddenInput) return;
@@ -527,7 +528,7 @@ readonly=False) %}
       input.setCustomValidity("");
     };
 
-    window.kampanValidateSearchInput = function(fieldId) {
+    window.kampanValidateSearchInput = function (fieldId) {
       const input = document.getElementById(fieldId + "-input");
       const hiddenInput = document.getElementById(fieldId);
       const dropdown = document.getElementById(fieldId + "-dropdown");
@@ -555,7 +556,7 @@ readonly=False) %}
       }
     };
 
-    document.addEventListener("click", function(event) {
+    document.addEventListener("click", function (event) {
       const dropdowns = document.querySelectorAll(".dropdown-content");
       dropdowns.forEach(dropdown => {
         if (!dropdown.parentElement.contains(event.target)) {
@@ -568,7 +569,7 @@ readonly=False) %}
 {% endmacro %}
 
 {% macro render_search_select_field(field, id_prefix='', disabled_optional_text=True, readonly=False, disabled=False,
-placeholder="") %}
+placeholder="", hide_label=False) %}
 {% set list_of_tuples = field.choices %}
 {% set field_id = id_prefix + field.id %}
 {% set selected_value = field.data if field.data else "" %}
@@ -583,6 +584,7 @@ placeholder="") %}
 {% endif %}
 
 <fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  {% if not hide_label %}
   <legend class="fieldset-legend" onclick="document.getElementById('{{ field_id }}-input').focus();">
     {{ field.label.text }}
     {% if field.flags.required %}
@@ -592,6 +594,7 @@ placeholder="") %}
     <p class="fieldset-label">(ไม่บังคับ)</p>
     {% endif %}
   </legend>
+  {% endif %}
 
   <div class="relative w-full dropdown {% if readonly %}input-readonly{% endif %}" {% if readonly %}readonly{% endif %}>
     {% if prefix %}

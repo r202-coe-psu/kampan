@@ -1,10 +1,3 @@
-{# ══════════════════════════════════════════════════════════════════ #}
-{# MACRO: render_item_table                                         #}
-{# Renders one card per requisition item type containing:           #}
-{#   - Section ข้างบนตาราง : seller, insurance_start/end_date       #}
-{#   - Section ข้อมูลในตาราง: scrollable rows with serial, code, location #}
-{# args: req_item, timeline_items, readonly                         #}
-{# ══════════════════════════════════════════════════════════════════ #}
 {% import '/base/html-renderer.html' as renderer %}
 {% macro render_item_table(req_item, timeline_items, shared_form, row_forms, readonly, responder_user_choices=[]) %}
 {% set item_id = req_item._id | string %}
@@ -47,7 +40,7 @@
 
     {% if shared_form %}
     <script>
-      (function() {
+      (function () {
         const startEl = document.getElementById('{{ shared_form.insurance_start_date.id }}');
         const endEl = document.getElementById('{{ shared_form.insurance_end_date.id }}');
         const durationEl = document.getElementById('{{ shared_form.insurance_duration.id }}');
@@ -111,7 +104,7 @@
                 <th class="text-center w-10">#</th>
                 <th>ผู้รับผิดชอบ</th>
                 <th>เลขที่สินค้า (Serial)</th>
-                <th>เลขที่ มอ.เบิกจ่าย</th>
+                <th>เลขที่ใบเบิก</th>
                 <th>สถานที่ใช้งาน</th>
               </tr>
             </thead>
@@ -123,22 +116,23 @@
                 <td class="py-2">
                   {% if row_form %}
                   {{ renderer.render_search_select_field(row_form.responder_user, readonly=readonly,
-                  disabled_optional_text=False, placeholder='ค้นหาผู้รับผิดชอบ') }}
+                  disabled_optional_text=False, placeholder='ค้นหาผู้รับผิดชอบ', hide_label=True) }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.render_field(row_form.serial_number, placeholder='S/N', readonly=readonly) }}
+                  {{ renderer.base_render(row_form.serial_number, placeholder='S/N', readonly=readonly, hide_label=True) }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.render_field(row_form.requisition_item_code, placeholder='เลขที่ มอ.', readonly=readonly) }}
+                  {{ renderer.base_render(row_form.requisition_item_code, placeholder='เลขที่ใบเบิก.',
+                  readonly=readonly, hide_label=True) }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.render_field(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly) }}
+                  {{ renderer.base_render(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly, hide_label=True) }}
                   {% endif %}
                 </td>
               </tr>

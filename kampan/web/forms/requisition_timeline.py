@@ -135,7 +135,7 @@ class RequisitionTimelineItemForm(FlaskForm):
         "เลขที่สินค้า", validators=[validators.DataRequired()]
     )
     requisition_item_code = fields.StringField(
-        "เลขที่ มอ.เบิกจ่าย", validators=[validators.DataRequired()]
+        "เลขที่ใบเบิก", validators=[validators.DataRequired()]
     )
     location = fields.StringField("สถานที่ใช้งาน", validators=[validators.DataRequired()])
 
