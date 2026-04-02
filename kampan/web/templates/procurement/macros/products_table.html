@@ -202,33 +202,36 @@
   </div>
 </dialog>
 {% endfor %}
-<table class="table table-sm table-zebra w-full">
+<table class="table w-full">
   <thead class="bg-base-200 text-base-content/70">
     <tr>
-      <th class="font-semibold text-sm">รายการ</th>
-      <th class="font-semibold text-sm text-center">เวลาคงเหลือ</th>
-      <th class="font-semibold text-sm text-center w-48">ผู้รับผิดชอบ</th>
-      <th class="font-semibold text-sm text-center w-36">ผู้ให้บริการ</th>
-      <th class="font-semibold text-sm text-center w-28">จำนวนเงิน</th>
-      <th class="font-semibold text-sm text-center w-36">การจ่ายเงิน</th>
-      <th class="font-semibold text-sm text-center w-32">สถานะ</th>
-      <th class="font-semibold text-sm text-center w-12"></th>
+      <th class="font-semibold text-base">รายการ</th>
+      <th class="font-semibold text-base text-center">เวลาคงเหลือ</th>
+      <th class="font-semibold text-base text-center w-48">ผู้รับผิดชอบ</th>
+      <th class="font-semibold text-base text-center w-36">ผู้ให้บริการ</th>
+      <th class="font-semibold text-base text-center w-28">จำนวนเงิน</th>
+      <th class="font-semibold text-base text-center w-36">การจ่ายเงิน</th>
+      <th class="font-semibold text-base text-center w-32">สถานะ</th>
+      <th class="font-semibold text-base text-center w-12"></th>
     </tr>
   </thead>
   <tbody>
     {% if procurements %}
     {% for item in procurements %}
-    <tr>
+    {% set _status = item.get_current_payment_status(today) %}
+    {% set _row_border = {'overdue': 'border-l-4 border-l-error', 'upcoming': 'border-l-4 border-l-warning', 'paid':
+    'border-l-4 border-l-success'}.get(_status, 'border-l-4 border-l-base-300') %}
+    <tr class="{{ _row_border }} hover:bg-base-200/40 transition-colors">
       <!-- Name + Category -->
       <td>
-        <div class="font-medium text-sm text-base-content leading-snug">{{ item.name }}</div>
+        <div class="font-semibold text-base text-base-content leading-snug">{{ item.name }}</div>
         <span class="badge badge-sm bg-gray-600 text-white font-medium mt-1">
           {{ item.get_category_display() }}
         </span>
       </td>
       <!-- Remaining time -->
       <td class="text-center">
-        <div class="text-sm font-semibold text-base-content">
+        <div class="text-base font-semibold text-base-content">
           {% if item.duration_months is not none and item.duration_days is not none %}
           {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
           {% endif %}
@@ -239,24 +242,24 @@
         <div class="flex flex-wrap gap-1 justify-center">
           {% if item.responsible_by %}
           {% for u in item.responsible_by %}
-          <span class="badge badge-outline badge-primary badge-sm font-medium truncate">{{ u.display_user_fullname()
+          <span class="badge badge-outline badge-primary font-medium truncate">{{ u.display_user_fullname()
             }}</span>
           {% endfor %}
           {% else %}
-          <span class="text-base-content/30 text-xs">-</span>
+          <span class="text-base-content/30 text-sm">-</span>
           {% endif %}
         </div>
       </td>
       <!-- Company -->
       <td class="text-center">
-        <span class="text-sm font-medium text-base-content truncate block max-w-[140px] mx-auto"
+        <span class="text-base font-medium text-base-content truncate block max-w-[140px] mx-auto"
           title="{{ item.company }}">
           {{ item.company }}
         </span>
       </td>
       <!-- Amount -->
       <td class="text-center">
-        <span class="text-sm font-semibold text-base-content truncate block max-w-[110px] mx-auto"
+        <span class="text-base font-semibold text-base-content truncate block max-w-[110px] mx-auto"
           title="{{ item.amount | format_amount if item.amount is not none else '0.00' }}">
           {{ item.amount | format_amount if item.amount is not none else '0.00' }}
         </span>
@@ -273,10 +276,10 @@
         'paid': 'badge-success'
         }.get(status, 'bg-gray-500') %}
         <div class="flex flex-col items-center gap-1">
-          <div class="badge {{ badge_class }} badge-md text-white font-medium whitespace-nowrap px-3">
+          <div class="badge {{ badge_class }} badge-lg text-white font-semibold whitespace-nowrap px-3">
             งวด {{ paid_count }}/{{ item.period }}
           </div>
-          {% if next_idx < due_dates|length %} <div class="text-xs text-base-content/50">
+          {% if next_idx < due_dates|length %}<div class="text-sm text-base-content/60 mt-0.5">
             ก่อน {{ due_dates[next_idx].strftime("%d/%m/") ~ (due_dates[next_idx].year + 543) }}
         </div>
         {% endif %}
@@ -290,13 +293,13 @@
       </td>
       <td class="text-center">
         {% if item.status == "pending" %}
-        <span class="badge badge-warning badge-md whitespace-nowrap px-3">รอตรวจสอบ</span>
+        <span class="badge badge-warning badge-lg whitespace-nowrap px-3">รอตรวจสอบ</span>
         {% elif item.status == "disactive" %}
-        <span class="badge badge-error badge-md whitespace-nowrap px-3">หยุดต่ออายุ</span>
+        <span class="badge badge-error badge-lg whitespace-nowrap px-3">หยุดต่ออายุ</span>
         {% elif item.status == "active" %}
-        <span class="badge badge-success badge-md whitespace-nowrap px-3">กำลังใช้งาน</span>
+        <span class="badge badge-success badge-lg whitespace-nowrap px-3">กำลังใช้งาน</span>
         {% else %}
-        <span class="badge badge-info badge-md whitespace-nowrap px-3">ยื่นขอต่ออายุ</span>
+        <span class="badge badge-info badge-lg whitespace-nowrap px-3">ยื่นขอต่ออายุ</span>
         {% endif %}
       </td>
       <!-- Actions -->
@@ -306,13 +309,13 @@
             <button type="button"
               class="btn btn-outline btn-sm rounded-full border-blue-500 text-blue-600 hover:bg-blue-100 hover:border-blue-700 transition"
               onclick="document.getElementById('modal-{{ item.id }}').showModal();">
-              <i class="ph ph-magnifying-glass text-base"></i>
+              <i class="ph ph-magnifying-glass text-lg"></i>
             </button>
           </div>
           <div class="tooltip tooltip-left" data-tip="จ่ายงวดถัดไป">
             <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
               class="btn btn-outline btn-success btn-sm rounded-full border-green-500 text-green-700 hover:bg-green-100 hover:border-green-700 transition">
-              <i class="ph ph-money-wavy text-base"></i>
+              <i class="ph ph-money-wavy text-lg"></i>
             </a>
           </div>
         </div>
@@ -321,7 +324,7 @@
     {% endfor %}
     {% else %}
     <tr>
-      <td colspan="8" class="text-center py-8 text-base-content/40">ไม่มีข้อมูล</td>
+      <td colspan="8" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
     </tr>
     {% endif %}
   </tbody>
