@@ -15,7 +15,13 @@ from .item_orders import OrderEmail, OrderItem
 from .item_registers import RegistrationItem
 from .lost_break_items import LostBreakItem
 from .categories import Category
-from .procurement import Procurement, PaymentRecord
+from .procurement import (
+    Procurement,
+    PaymentRecord,
+    CATEGORY_CHOICES,
+    PAYEMENT_STATUS_CHOICES,
+    RENEWAL_STATUS_CHOICES,
+)
 from .mas import MAS, Reservation
 from .requisitions import Requisition, RequisitionItem, Committees
 from .upload_files import Document

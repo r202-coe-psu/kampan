@@ -43,30 +43,21 @@ def calculate_months_days(start_date, end_date):
 
 @module.route("", methods=["GET", "POST"])
 def index():
+    form = forms.procurement.ProductFilterForm(request.args)
     organization = current_user.user_setting.current_organization
     today = datetime.date.today()
-
-    # Collect filters from request
-    category = request.args.get("category", "")
-    payment_status = request.args.get("payment_status", "")
+    name = request.args.get("name")
+    category = request.args.get("category")
+    payment_status = request.args.get("payment_status")
     upload_success = request.args.get("upload_success", "")
-    year = request.args.get("year", "")
 
-    # Build query dict
     query = {}
+    if name:
+        query["name__icontains"] = name
     if category:
         query["category"] = category
     if payment_status:
         query["payment_status"] = payment_status
-    if year:
-        try:
-            year_int = int(year)
-            start_of_year = datetime.datetime(year_int, 1, 1)
-            end_of_year = datetime.datetime(year_int, 12, 31, 23, 59, 59)
-            query["created_date__gte"] = start_of_year
-            query["created_date__lte"] = end_of_year
-        except (ValueError, TypeError):
-            pass
 
     procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
 
@@ -118,12 +109,6 @@ def index():
     # Choices for filters
     all_procurements = models.Procurement.objects()
 
-    # Years for filtering
-    available_years = set()
-    for p in all_procurements:
-        available_years.add(p.created_date.year)
-    available_years = sorted(list(available_years), reverse=True)
-
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
 
@@ -132,12 +117,9 @@ def index():
         organization=organization,
         procurements=paginated_procurements.items,
         paginated_procurements=paginated_procurements,
+        form=form,
         today=today,
-        selected_category=category,
-        selected_payment_status=payment_status,
-        selected_year=year,
         category_choices=category_choices,
-        available_years=available_years,
         payment_status_choices=payment_status_choices,
         upload_success=upload_success,
         all_procurements=all_procurements,

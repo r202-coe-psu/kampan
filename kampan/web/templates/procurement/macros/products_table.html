@@ -206,7 +206,6 @@
   <thead class="bg-base-200 text-base-content/70">
     <tr>
       <th class="font-semibold text-sm">รายการ</th>
-      <th class="font-semibold text-sm text-center">ระยะเวลาบำรุงรักษา</th>
       <th class="font-semibold text-sm text-center">เวลาคงเหลือ</th>
       <th class="font-semibold text-sm text-center w-48">ผู้รับผิดชอบ</th>
       <th class="font-semibold text-sm text-center w-36">ผู้ให้บริการ</th>
@@ -226,18 +225,6 @@
         <span class="badge badge-sm bg-gray-600 text-white font-medium mt-1">
           {{ item.get_category_display() }}
         </span>
-      </td>
-      <!-- Date Range -->
-      <td class="text-center">
-        {% if item.start_date and item.end_date %}
-        <div class="text-xs text-base-content leading-relaxed">
-          {{ item.start_date.strftime("%d/%m/") ~ (item.start_date.year + 543) }}
-          <span class="text-base-content/40 mx-0.5">–</span>
-          {{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) }}
-        </div>
-        {% else %}
-        <span class="text-base-content/30 text-xs">-</span>
-        {% endif %}
       </td>
       <!-- Remaining time -->
       <td class="text-center">
@@ -334,7 +321,7 @@
     {% endfor %}
     {% else %}
     <tr>
-      <td colspan="10" class="text-center py-8 text-base-content/40">ไม่มีข้อมูล</td>
+      <td colspan="8" class="text-center py-8 text-base-content/40">ไม่มีข้อมูล</td>
     </tr>
     {% endif %}
   </tbody>

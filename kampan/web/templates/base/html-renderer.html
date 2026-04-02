@@ -64,7 +64,7 @@ hide_label=False
     {{ suffix_icon }}
     {% endif %}
   </label>
-  <span class="label-text-alt text-error text-sm">
+  <span class="validator-hint text-error text-sm">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -183,15 +183,7 @@ disabled=False,
 disabled_optional_text=False,
 readonly=False,
 optionals={}) %}
-{% set style = "select flex items-center gap-2 w-full" %}
-
-{% if field.errors | count > 0 %}
-{% set style = style + " " + "%s-error" | format(type) %}
-{% endif %}
-
-{% if class_ %}
-{% set style = style + " " + class_ %}
-{% endif %}
+{% set has_error = field.errors | count > 0 %}
 
 <fieldset class="w-full fieldset" id="field-{{ field.id }}">
   <legend class="fieldset-legend">
@@ -200,14 +192,16 @@ optionals={}) %}
     <span class="text-error">*</span>
     {% endif %}
   </legend>
-  {% if readonly %}
-  {{ field(placeholder=placeholder, class_=style + " input-readonly", disabled="disabled", **kwargs) }}
-  {# เพิ่ม hidden field เพื่อให้ค่าสามารถส่งไปกับ form ได้ #}
-  <input type="hidden" name="{{ field.name }}" value="{{ field.data }}">
-  {% else %}
-  {{ field( class_=style, **kwargs) }}
-  {% endif %}
-  <span class="validator-hint">
+  <label
+    class="w-full select validator {% if has_error %}select-error{% endif %} {% if readonly %}input-readonly{% endif %} {{ class_ }}">
+    {% if readonly %}
+    {{ field(class_="w-full bg-transparent appearance-none outline-none border-none", disabled="disabled", **kwargs) }}
+    <input type="hidden" name="{{ field.name }}" value="{{ field.data }}">
+    {% else %}
+    {{ field(class_="w-full bg-transparent appearance-none outline-none border-none", **kwargs) }}
+    {% endif %}
+  </label>
+  <span class="validator-hint text-error text-sm">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล

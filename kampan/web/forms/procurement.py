@@ -122,3 +122,20 @@ class PaymentForm(FlaskForm):
         "เลขที่สินค้า/เลขที่เอกสาร",
         validators=[validators.Optional(), validators.Length(max=128)],
     )
+
+
+class ProductFilterForm(FlaskForm):
+    name = fields.StringField(
+        "ชื่อรายการ",
+        validators=[validators.Optional(), validators.Length(max=128)],
+    )
+    category = fields.SelectField(
+        "ประเภท",
+        choices=[("", "ทั้งหมด")] + models.CATEGORY_CHOICES,
+        validators=[validators.Optional()],
+    )
+    payment_status = fields.SelectField(
+        "สถานะการจ่ายเงิน",
+        choices=[("", "ทั้งหมด")] + models.PAYEMENT_STATUS_CHOICES,
+        validators=[validators.Optional()],
+    )

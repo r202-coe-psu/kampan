@@ -46,15 +46,6 @@ def index():
         id=organization_id, status="active"
     ).first()
 
-    if form.year.data:
-        query["year"] = form.year.data
-    if form.mas_code.data:
-        query["mas_code__icontains"] = form.mas_code.data
-    if form.description.data:
-        query["description__icontains"] = form.description.data
-    if form.amount.data:
-        query["amount"] = form.amount.data
-
     mas = models.MAS.objects(status="active", **query).order_by("created_date")
 
     page = request.args.get("page", default=1, type=int)
