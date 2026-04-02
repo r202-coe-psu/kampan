@@ -36,6 +36,7 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
 {% if current_user.has_organization_roles("admin") and item.status != 'cancelled' %}
 {% set can_complete = latest_progress and latest_progress.progress_status == 'payment_processed' %}
 {% set can_bill = latest_progress and latest_progress.progress_status == 'order_confirmed' %}
+{% set can_details_specified = latest_progress and latest_progress.progress_status == 'details_specified' %}
 
 {% if can_complete %}
 <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
@@ -48,8 +49,13 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
   onclick="document.getElementById('modal-billing-{{ item.id }}').showModal();">
   <i class="ph ph-receipt"></i> ยืนยันคำสั่งซื้อ
 </button>
+{% elif can_details_specified %}
+<a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}"
+  class="btn btn-sm btn-success bg-gradient-to-r from-emerald-500 to-teal-600 border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md">
+  <i class="ph ph-receipt"></i> ยืนยันรายละเอียดพัสดุ
+</a>
 {% elif not latest_progress or latest_progress.progress_status != 'completed' %}
-{% set can_go_back = current_step > 1 and not (billing_done and current_step <= 3) and not current_step==4 %} {% if
+{% set can_go_back = current_step > 1 and not (billing_done and current_step <= 4) and not current_step==5 %} {% if
   can_go_back %} {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step -
   2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id) }} {% endif
   %} {% if current_step < PROGRESS_STATUS_ORDER|length %} {{ _step_nav_form(action_url,
@@ -92,10 +98,16 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
   "desc": "ติดต่อและเจรจากับผู้ขาย เปรียบเทียบราคา"
   },
   {
+  "key": "details_specified",
+  "short": "ระบุรายละเอียด",
+  "title": "ระบุรายละเอียด",
+  "desc": "ระบุรายละเอียด"
+  },
+  {
   "key": "order_confirmed",
-  "short": "ยืนยันสั่งซื้อ",
-  "title": "ยืนยันการสั่งซื้อสั่งจ้าง",
-  "desc": "อนุมัติและยืนยันคำสั่งซื้อจากผู้มีอำนาจ"
+  "short": "รายงานผล",
+  "title": "รายงานผลพิจารณา",
+  "desc": "รายงานผลพิจารณาเพื่อขออนุมัติ"
   },
   {
   "key": "awaiting_delivery",
@@ -344,7 +356,7 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
                                   </span>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                  <i class="ph ph-clock"></i>
+                                  ฯ <i class="ph ph-clock"></i>
                                   <span>
                                     {% if is_done and step_progress and
                                     step_progress.timestamp %}
@@ -444,7 +456,7 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
               {% set is_active = current_step == i - 1 %}
               {% set badge_text = 'เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if is_active else
               'รอดำเนินการ') %}
-              {% set badge_cls = 'bg-green-100 text-green-800' if is_done else ('bg-orange-100
+              {% set badge_clฯs = 'bg-green-100 text-green-800' if is_done else ('bg-orange-100
               text-orange-800' if is_active else 'bg-gray-100 text-gray-600') %}
               <div
                 class="rounded-lg border {{ 'border-green-200' if is_done else ('border-orange-200' if is_active else 'border-gray-200') }} p-3 bg-white">
@@ -537,7 +549,8 @@ requisition_timeline_id=item.id, organization_id=organization.id) %}
                     {% for value, label in [
                       ('request_created', 'จัดทำเอกสารขอซื้อ/ขอจ้าง'),
                       ('vendor_contacted', 'ประสานงานกับร้านค้า/บริษัท'),
-                      ('order_confirmed', 'ยืนยันการสั่งซื้อ/สั่งจ้าง'),
+                      ('details_specified', 'ระบุรายละเอียด'),
+                      ('order_confirmed', 'รายงานผลพิจารณา'),
                       ('awaiting_delivery', 'รอส่งมอบพัสดุ'),
                       ('inspection', 'ตรวจรับพัสดุ'),
                       ] %}

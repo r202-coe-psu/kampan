@@ -102,7 +102,8 @@ disabled=False,
 readonly=False,
 disabled_optional_text=False,
 min=None,
-max=None
+max=None,
+hide_label=False
 ) %}
 
 {% set style = "input flex items-center gap-2 w-full" %}
@@ -119,6 +120,7 @@ max=None
 {{ field(**kwargs) }}
 {% else %}
 <fieldset class="w-full fieldset" id="field-{{ field.id }}">
+  {% if not hide_label %}
   <legend class="fieldset-legend">
     {{ field.label.text }}
     {% if field.flags.required %}
@@ -129,6 +131,7 @@ max=None
     <p class="fieldset-label">(ไม่บังคับ) </p>
     {% endif %}
   </legend>
+  {% endif %}
   <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
     {% if prefix %}
     {{ prefix_icon }}

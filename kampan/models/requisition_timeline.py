@@ -5,7 +5,8 @@ from bson.objectid import ObjectId
 PROGRESS_STATUS_CHOICES = [
     ("request_created", "จัดทำเอกสารขอซื้อ/ขอจ้าง"),
     ("vendor_contacted", "ประสานงานกับร้านค้า/บริษัท"),
-    ("order_confirmed", "ยืนยันการสั่งซื้อ/สั่งจ้าง"),
+    ("details_specified", "ระบุรายละเอียด"),
+    ("order_confirmed", "รายงานผลพิจารณา"),
     ("awaiting_delivery", "รอส่งมอบพัสดุ"),
     ("inspection", "ตรวจรับพัสดุ"),
     ("payment_processed", "เบิกจ่าย"),

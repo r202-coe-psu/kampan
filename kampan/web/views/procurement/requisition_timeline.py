@@ -26,6 +26,7 @@ module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_ti
 PROGRESS_STATUS_ORDER = [
     "request_created",
     "vendor_contacted",
+    "details_specified",
     "order_confirmed",
     "awaiting_delivery",
     "inspection",
@@ -596,4 +597,102 @@ def completed_submit(requisition_timeline_id):
         responder_user_choices=responder_user_choices,
         shared_forms_by_type=shared_forms_by_type,
         row_forms_by_type=row_forms_by_type,
+    )
+
+
+@module.route("/<requisition_timeline_id>/details_specified", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def details_specified(requisition_timeline_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    requisition_timeline = models.RequisitionTimeline.objects.get(
+        id=requisition_timeline_id
+    )
+    requisition = requisition_timeline.requisition
+
+    form = forms.requisition_timeline.DetailsSpecifiedForm()
+
+    if request.method == "GET":
+        form.project_name.data = requisition.project_name or ""
+
+        # Populate items from requisition
+        for item in requisition.items:
+            form.items.append_entry(
+                {
+                    "item_id": str(item._id),
+                    "product_name": item.product_name,
+                    "brand": item.brand or "",
+                    "model_name": item.model_name or "",
+                    "quantity": item.quantity,
+                    "amount": item.amount,
+                    "winner": item.winner or "",
+                    "account_code": item.account_code or "",
+                    "note": item.note or "",
+                }
+            )
+
+    if request.method == "POST":
+        requisition.project_name = form.project_name.data
+
+        # Update existing items and add new ones
+        updated_items = []
+        for entry in form.items.entries:
+            item_id = entry.item_id.data
+
+            # Find existing item
+            existing_item = next(
+                (i for i in requisition.items if str(i._id) == item_id), None
+            )
+
+            if existing_item:
+                existing_item.product_name = entry.product_name.data
+                existing_item.brand = entry.brand.data
+                existing_item.model_name = entry.model_name.data
+                existing_item.quantity = entry.quantity.data
+                existing_item.amount = entry.amount.data
+                existing_item.winner = entry.winner.data
+                existing_item.account_code = entry.account_code.data
+                existing_item.note = entry.note.data
+                updated_items.append(existing_item)
+            else:
+                # If they duplicated/added manually with JS and we want to spawn a new item
+                new_item = models.RequisitionItem(
+                    product_name=entry.product_name.data,
+                    company=(
+                        requisition.items[0].company if requisition.items else ""
+                    ),  # Inherit some properties
+                    quantity=entry.quantity.data,
+                    category=(
+                        requisition.items[0].category if requisition.items else "-"
+                    ),
+                    amount=entry.amount.data,
+                    currency=requisition.items[0].currency if requisition.items else "",
+                    brand=entry.brand.data,
+                    model_name=entry.model_name.data,
+                    winner=entry.winner.data,
+                    account_code=entry.account_code.data,
+                    note=entry.note.data,
+                )
+                updated_items.append(new_item)
+
+        requisition.items = updated_items
+        requisition.save()
+        add_progress_in_order(
+            requisition_timeline, "order_confirmed", current_user, request
+        )
+
+        return redirect(
+            url_for(
+                "procurement.requisition_timeline.index",
+                organization_id=organization.id,
+            )
+        )
+
+    return render_template(
+        "/procurement/requisitions/details_specified.html",
+        item=requisition_timeline,
+        organization=organization,
+        form=form,
     )

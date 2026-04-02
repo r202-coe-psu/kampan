@@ -156,3 +156,21 @@ class RequisitionTimelineItemSharedForm(FlaskForm):
         validators=[validators.Optional()],
         render_kw={"readonly": True},
     )
+
+class DetailsSpecifiedItemForm(FlaskForm):
+    class Meta:
+        csrf = False
+        
+    item_id = HiddenField()
+    product_name = fields.StringField("ชื่อรายการ", validators=[validators.DataRequired()])
+    brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional()])
+    model_name = fields.StringField("รุ่น", validators=[validators.Optional()])
+    quantity = fields.IntegerField("จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)])
+    amount = fields.DecimalField("ราคาต่อหน่วย", validators=[validators.DataRequired(), validators.NumberRange(min=0)])
+    winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional()])
+    account_code = fields.StringField("ผังบัญชี", validators=[validators.Optional()])
+    note = fields.StringField("หมายเหตุ", validators=[validators.Optional()])
+
+class DetailsSpecifiedForm(FlaskForm):
+    project_name = fields.StringField("ชื่อโครงการ(optional)", validators=[validators.Optional()])
+    items = fields.FieldList(fields.FormField(DetailsSpecifiedItemForm))

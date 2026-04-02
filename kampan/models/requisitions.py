@@ -51,6 +51,11 @@ class RequisitionItem(me.EmbeddedDocument):
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
     amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
     currency = me.StringField(max_length=10)
+    brand = me.StringField(max_length=100)
+    model_name = me.StringField(max_length=100)
+    winner = me.StringField(max_length=200)
+    account_code = me.StringField(max_length=100)
+    note = me.StringField()
 
 
 class ApprovalHistory(me.EmbeddedDocument):
@@ -77,6 +82,7 @@ class Requisition(me.Document):
     meta = {"collection": "requisitions"}
 
     requisition_code = me.StringField(max_length=50, unique=True, required=True)
+    project_name = me.StringField(max_length=255)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True, required=True)
     selected_manager = me.EmbeddedDocumentField(SelectedManager)
     phone = me.StringField()
