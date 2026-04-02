@@ -4,9 +4,8 @@
   <div class="modal-box w-11/12 max-w-2xl !max-h-[85vh]">
     <h3 class="text-lg">ส่งออกข้อมูลแหล่งเงิน</h3>
     <span class="text-sm text-gray-600">คลิกปุ่มยืนยันเพื่อเริ่มการส่งออกข้อมูล</span>
-    <button type="button"
-            class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 outline-none"
-            onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+    <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 outline-none"
+      onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
       ✕
     </button>
 
@@ -21,9 +20,8 @@
         {{ renderer.date_field(form.end_date) }}
       </form>
       <div class="modal-action justify-end">
-        <button type="button"
-                class="btn"
-                onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+        <button type="button" class="btn"
+          onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
           ปิด
         </button>
         <button type="button" class="btn btn-orange" onclick="submitExportMAS('{{ modal_id }}')">
@@ -37,37 +35,41 @@
       <div class="flex flex-col mt-6">
         <h1 class="text-bold pb-4">ไฟล์ที่มีในระบบ</h1>
         {% if not exported_file %}
-          <span class="text-sm text-gray-500 ml-2">ยังไม่มีไฟล์ส่งออกในระบบ</span>
+        <span class="text-sm text-gray-500 ml-2">ยังไม่มีไฟล์ส่งออกในระบบ</span>
         {% else %}
-          <div class="flex flex-col bg-white p-4 mb-4 rounded-lg shadow-md">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="text-sm font-semibold">{{ exported_file.file_name }}</span>
-                <span class="text-sm text-gray-500 block">อัปเดตเมื่อ
+        <div class="flex flex-col bg-white p-4 mb-4 rounded-lg shadow-md">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-sm font-semibold">{{ exported_file.file_name }}</span>
+              <span class="text-sm text-gray-500 block">อัปเดตเมื่อ
                 {{ exported_file.updated_date.strftime("%d %B %Y, %H:%M") }}</span>
-              </div>
-              <a href="{{ url_for('admin.mas.download_exported_file', export_id=exported_file.id) }}"
-                 class="btn btn-sm"
-                 download>
-                <i class="ph ph-download"></i> ดาวน์โหลด
-              </a>
             </div>
+            <a href="{{ url_for('admin.mas.download_exported_file', export_id=exported_file.id) }}" class="btn btn-sm"
+              download>
+              <i class="ph ph-download"></i> ดาวน์โหลด
+            </a>
           </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</dialog>
 
-          <script>
-              function submitExportMAS(modalId) {
-                  const errorMsg = document.getElementById('export-error-msg');
-                  const modal = document.getElementById(modalId);
-                  if (errorMsg) errorMsg.classList.add('hidden');
+<script>
+  function submitExportMAS(modalId) {
+    const errorMsg = document.getElementById('export-error-msg');
+    const modal = document.getElementById(modalId);
+    if (errorMsg) errorMsg.classList.add('hidden');
 
-                  const startDate = document.querySelector('#export-mas-form input[name="start_date"]').value;
-                  const endDate = document.querySelector('#export-mas-form input[name="end_date"]').value;
+    const startDate = document.querySelector('#export-mas-form input[name="start_date"]').value;
+    const endDate = document.querySelector('#export-mas-form input[name="end_date"]').value;
 
-                  const baseUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id, start_date='START_OBJ', end_date='END_OBJ') | safe }}";
-                  const exportUrl = baseUrl.replace('START_OBJ', encodeURIComponent(startDate)).replace('END_OBJ', encodeURIComponent(endDate));
-                  window.location.href = exportUrl;
-                  if (modal) {
-                      modal.classList.remove('modal-open');
-                  }
-              }
-          </script>
+    const baseUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id, start_date='START_OBJ', end_date='END_OBJ') | safe }}";
+    const exportUrl = baseUrl.replace('START_OBJ', encodeURIComponent(startDate)).replace('END_OBJ', encodeURIComponent(endDate));
+    window.location.href = exportUrl;
+    if (modal) {
+      modal.classList.remove('modal-open');
+    }
+  }
+</script>
