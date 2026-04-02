@@ -45,7 +45,7 @@ def generate_next_requisition_code():
 @login_required
 def index():
     organization = current_user.user_setting.current_organization
-    form = forms.requisitions.RequisitionFilterForm()
+    form = forms.requisitions.RequisitionFilterForm(request.args)
     query = {}
 
     category = request.args.get("category", "")
@@ -152,7 +152,7 @@ def non_renewal(requisition_procurement_id):
 @login_required
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
-
+    form = forms.requisitions.RenewalRequestedFilterForm(request.args)
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()
@@ -287,6 +287,7 @@ def renewal_requested(requisition_procurement_id):
                 if paginated_manager_requisitions
                 else []
             ),
+            form=form,
             paginated_manager_requisitions=paginated_manager_requisitions,
             organization=organization,
             selected_category=category,

@@ -7,6 +7,7 @@ from kampan.models.procurement import CATEGORY_CHOICES
 from kampan.models.requisitions import (
     COMMITTEE_TYPE_CHOICES,
     COMMITTEE_POSITION_CHOICES,
+    STATUS_CHOICES,
 )
 
 BaseRequisitionForm = model_form(
@@ -109,5 +110,22 @@ class RequisitionFilterForm(FlaskForm):
     )
     asset_code = fields.StringField(
         "รหัสครุภัณฑ์",
+        validators=[validators.Optional()],
+    )
+
+
+class RenewalRequestedFilterForm(FlaskForm):
+    requisition_code = fields.StringField(
+        "เลขที่คำขอ",
+        validators=[validators.Optional()],
+    )
+    status = fields.SelectField(
+        "สถานะ",
+        choices=[("", "ทั้งหมด")] + STATUS_CHOICES,
+        validators=[validators.Optional()],
+    )
+    show_item = fields.SelectField(
+        "แสดงรายการ",
+        choices=[("", "ทั้งหมด"), ("me", "เฉพาะของฉัน")],
         validators=[validators.Optional()],
     )

@@ -252,7 +252,8 @@
     </div>
 
     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-      <a href="{{ url_for(" procurement.requisitions.renewal_requested") }}" class="btn btn-ghost">ยกเลิก</a>
+      <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
+        class="btn btn-ghost">ยกเลิก</a>
       <button type="submit" class="btn btn-primary">
         <i class="ph ph-check"></i>
         {{ 'บันทึกการแก้ไข' if form._obj else 'บันทึกรายการ' }}
