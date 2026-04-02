@@ -45,7 +45,7 @@ def generate_next_requisition_code():
 @login_required
 def index():
     organization = current_user.user_setting.current_organization
-
+    form = forms.requisitions.RequisitionFilterForm()
     query = {}
 
     category = request.args.get("category", "")
@@ -93,6 +93,7 @@ def index():
     return render_template(
         "procurement/requisitions/index.html",
         procurements=paginated_procurements.items,
+        form=form,
         paginated_procurements=paginated_procurements,
         organization=organization,
         category_choices=category_choices,

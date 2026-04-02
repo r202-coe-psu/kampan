@@ -91,3 +91,23 @@ class RequisitionForm(BaseRequisitionForm):
         fields.FormField(RequisitionItemForm), min_entries=1, max_entries=4
     )
     committees = fields.FieldList(fields.FormField(CommitteeForm), min_entries=1)
+
+
+class RequisitionFilterForm(FlaskForm):
+    name = fields.StringField(
+        "ชื่อรายการ",
+        validators=[validators.Optional()],
+    )
+    category = fields.SelectField(
+        "หมวดหมู่",
+        choices=[("", "ทั้งหมด")] + CATEGORY_CHOICES,
+        validators=[validators.Optional()],
+    )
+    product_number = fields.StringField(
+        "เลขที่เบิกจ่าย",
+        validators=[validators.Optional()],
+    )
+    asset_code = fields.StringField(
+        "รหัสครุภัณฑ์",
+        validators=[validators.Optional()],
+    )
