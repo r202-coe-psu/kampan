@@ -20,6 +20,7 @@ BaseCheckoutItemForm = model_form(
         "inventories",
         "set_",
         "organization",
+        "created_date"
     ],
     field_args={
         "order": {"label": "คำสั่งเบิก"},
@@ -36,7 +37,7 @@ class CheckoutItemForm(BaseCheckoutItemForm):
         default=1,
     )
     calendar_select_checkout = fields.DateTimeField("เลือกวันที่เพื่อแสดงข้อมูล")
-    created_date = fields.DateField(
+    created_date = fields.DateTimeField(
         "ลงวันที่คำสั่งเบิก",
         format="%Y-%m-%dT%H:%M",
         default=datetime.datetime.now,

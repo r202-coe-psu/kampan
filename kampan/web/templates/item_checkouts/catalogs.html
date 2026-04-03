@@ -71,7 +71,7 @@
 {% if items %}
 <div class="grid grid-cols-1 gap-2 mt-2 lg:grid-cols-3 sm:grid-cols-2 2xl:grid-cols-4 w-full overflow-x-auto">
   {% for item in paginated_items.items %}
-  <div class="w-full card bg-base-100 shadow-sm {{' image-full ' if item.get_amount_items() == 0 else '' }}">
+  <div class="w-full card bg-base-100 shadow-sm {{' image-full ' if item.get_amount_pieces() == 0 else '' }}">
     <figure>
       {% if not item.image %}
       <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
@@ -83,7 +83,7 @@
 
     </figure>
 
-    {% if item.get_amount_items() == 0 %}
+    {% if item.get_amount_pieces() == 0 %}
     <div class="card-body  w-full">
       <h2 class="card-title text-center">วัสดุหมดชั่วคราว</h2>
     </div>

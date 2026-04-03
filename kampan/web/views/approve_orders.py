@@ -382,8 +382,8 @@ def admin_approve(order_id):
                     error_message=True,
                 )
             )
-        inventories = models.Inventory.objects(item=item, remain__gt=0)
-        for inventory in inventories:
+        inventories_ = models.Inventory.objects(item=item, remain__gt=0, status="active").order_by("-remain")
+        for inventory in inventories_:
             if inventory.remain >= quantity:
                 inventory.remain -= quantity
                 quantity = 0
