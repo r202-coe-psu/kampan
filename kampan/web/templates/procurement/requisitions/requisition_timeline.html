@@ -15,44 +15,23 @@
     </div>
   </div>
   <!-- Search Bar -->
-  <div class="flex items-center justify-between mb-6">
-    <form method="GET" action="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-      class="flex gap-4 items-center">
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text">เลขที่คำขอ</span>
-        </label>
-        <input type="text" name="requisition_code" value="{{ request.args.get('requisition_code', '') }}"
-          class="input input-bordered" placeholder="ค้นหาเลขที่คำขอ" />
-      </div>
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text">สถานะ</span>
-        </label>
-        <select name="progress" class="select select-bordered">
-          <option value="">-- เลือกสถานะ --</option>
-          {% for value, label in progress_choices %}
-          <option value="{{ value }}" {% if request.args.get('progress')==value %}selected{% endif %}>
-            {{ label }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- ปุ่มล้างการค้นหา -->
-      {% if request.args.get('progress') or request.args.get('requisition_code') %}
-      <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-        class="btn btn-ghost mt-6">
-        <i class="ph ph-x"></i> ล้าง
-      </a>
-      {% endif %}
-
-      <!-- ปุ่มค้นหา -->
-      <div class="form-control mt-6">
-        <button type="submit" class="btn btn-primary">
-          <i class="ph ph-magnifying-glass"></i>
+  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+      <input type="hidden" name="organization_id" value="{{ organization_id }}">
+      {{ renderer.base_render(form.requisition_code, placeholder="ค้นหาเลขที่คำขอ") }}
+      {{ renderer.render_select_field(form.progress) }}
+      <div class="pb-3.5">
+        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
+          <i class="ph ph-magnifying-glass mr-2"></i>
           ค้นหา
         </button>
+      </div>
+      <div class="pb-3.5 min-w-fit">
+        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+          class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
+          <i class="ph ph-x mr-2"></i>
+          ล้างการค้นหา
+        </a>
       </div>
     </form>
   </div>

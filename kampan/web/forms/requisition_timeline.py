@@ -3,6 +3,7 @@ from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators, TextAreaField, HiddenField, DecimalField
 
 from kampan import models
+from kampan.models.requisition_timeline import PROGRESS_STATUS_CHOICES
 
 BaseRequisitionTimelineForm = model_form(
     models.RequisitionTimeline,
@@ -48,8 +49,13 @@ class BillingForm(FlaskForm):
 
 
 class RequisitionTimelineFilterForm(FlaskForm):
-    requisition_code = fields.StringField("เลขที่คำขอ")
-    progress = fields.SelectField("สถานะ", choices=[])
+    requisition_code = fields.StringField(
+        "เลขที่คำขอ", validators=[validators.Optional()]
+    )
+    progress = fields.SelectField(
+        "เลือกสถานะปัจจุบัน",
+        choices=[("", "สถานะทั้งหมด")] + PROGRESS_STATUS_CHOICES,
+    )
 
 
 class MasForm(FlaskForm):
@@ -157,20 +163,31 @@ class RequisitionTimelineItemSharedForm(FlaskForm):
         render_kw={"readonly": True},
     )
 
+
 class DetailsSpecifiedItemForm(FlaskForm):
     class Meta:
         csrf = False
-        
+
     item_id = HiddenField()
-    product_name = fields.StringField("ชื่อรายการ", validators=[validators.DataRequired()])
+    product_name = fields.StringField(
+        "ชื่อรายการ", validators=[validators.DataRequired()]
+    )
     brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional()])
     model_name = fields.StringField("รุ่น", validators=[validators.Optional()])
-    quantity = fields.IntegerField("จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)])
-    amount = fields.DecimalField("ราคาต่อหน่วย", validators=[validators.DataRequired(), validators.NumberRange(min=0)])
+    quantity = fields.IntegerField(
+        "จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)]
+    )
+    amount = fields.DecimalField(
+        "ราคาต่อหน่วย",
+        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+    )
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional()])
     account_code = fields.StringField("ผังบัญชี", validators=[validators.Optional()])
     note = fields.StringField("หมายเหตุ", validators=[validators.Optional()])
 
+
 class DetailsSpecifiedForm(FlaskForm):
-    project_name = fields.StringField("ชื่อโครงการ(optional)", validators=[validators.Optional()])
+    project_name = fields.StringField(
+        "ชื่อโครงการ(optional)", validators=[validators.Optional()]
+    )
     items = fields.FieldList(fields.FormField(DetailsSpecifiedItemForm))

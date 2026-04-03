@@ -156,7 +156,7 @@ def index():
     per_page = request.args.get("per_page", default=10, type=int)
     progress = request.args.get("progress", default=None, type=str)
     requisition_code = request.args.get("requisition_code", default=None, type=str)
-    filter_form = forms.requisition_timeline.RequisitionTimelineFilterForm()
+    form = forms.requisition_timeline.RequisitionTimelineFilterForm(request.args)
 
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
@@ -218,7 +218,7 @@ def index():
         paginated_requisition_timeline=paginated_requisition_timeline,
         requisition_timeline_list=requisition_timeline,
         organization=organization,
-        filter_form=filter_form,
+        form=form,
         progress_choices=progress_choices,
         is_admin=is_admin,
         PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,
