@@ -18,6 +18,7 @@ from kampan import models, utils
 from kampan.utils.hash import hash_mongo_metadata
 from ... import redis_rq
 import datetime
+import json
 import hashlib
 
 
@@ -318,7 +319,7 @@ def cancel(requisition_timeline_id):
     )
 
 
-@module.route("/<requisition_timeline_id>/billing_modal", methods=["POST"])
+@module.route("/<requisition_timeline_id>/billing_modal", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def billing_modal(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
@@ -331,56 +332,231 @@ def billing_modal(requisition_timeline_id):
     reservations = list(
         models.Reservation.objects(requisition=requisition_timeline.requisition)
     )
-    form = forms.requisition_timeline.BillingForm()
-    res_map = {str(r.id): r for r in reservations}
-    usage_amounts = {}
-    total_amount = 0.0
-    for entry in form.reservations.entries:
-        res_id = entry.reservation_id.data
-        actual = float(entry.amount.data or 0)
-        usage_amounts[res_id] = round(actual, 2)
-        total_amount += actual
+    reservation_map = {str(reservation.id): reservation for reservation in reservations}
+    reservation_payloads = []
+    for reservation in reservations:
+        reservation_payloads.append(
+            {
+                "id": str(reservation.id),
+                "mas_code": reservation.mas.mas_code if reservation.mas else "-",
+                "mas_name": reservation.mas.description if reservation.mas else "-",
+                "reserved_amount": float(reservation.amount or 0),
+                "used_amount": float((requisition_timeline.fund_usage_amounts or {}).get(str(reservation.id), 0) or 0),
+            }
+        )
 
-    for res_id, actual in usage_amounts.items():
-        res = res_map.get(res_id)
+    form = forms.requisition_timeline.BillingForm()
+
+    def _render_page(errors=None):
+        item_source_map = {}
+        if requisition_timeline.fund_allocations:
+            for item in requisition_timeline.requisition.items:
+                item_source_map[str(item._id)] = requisition_timeline.fund_allocations.get(
+                    str(item._id), {}
+                ).get("allocations", [])
+        
+        # Generate JSON payloads for JavaScript to avoid Jinja/formatter issues
+        reservation_limits_dict = {}
+        for reservation in reservations:
+            reservation_limits_dict[str(reservation.id)] = float(reservation.amount or 0)
+        reservation_limits_json = json.dumps(reservation_limits_dict)
+        
+        item_quantity_limits_dict = {}
+        for item in requisition_timeline.requisition.items:
+            item_quantity_limits_dict[str(item._id)] = int(item.quantity or 0)
+        item_quantity_limits_json = json.dumps(item_quantity_limits_dict)
+        
+        return render_template(
+            "procurement/requisitions/billing.html",
+            item=requisition_timeline,
+            organization=organization,
+            form=form,
+            reservations=reservation_payloads,
+            reservation_limits_json=reservation_limits_json,
+            item_quantity_limits_json=item_quantity_limits_json,
+            total_reserved=sum(float(reservation.amount or 0) for reservation in reservations),
+            total_used=sum(float((requisition_timeline.fund_usage_amounts or {}).get(str(reservation.id), 0) or 0) for reservation in reservations),
+            item_source_map=item_source_map,
+            errors=errors or [],
+            selected_purchase_method=requisition_timeline.purchase_method or "",
+        )
+
+    if request.method == "GET":
+        form.purchase_method.data = requisition_timeline.purchase_method or ""
+        form.quotation_winner.data = requisition_timeline.quotation_winner or ""
+        return _render_page()
+
+    errors = []
+    purchase_method = form.purchase_method.data
+    quotation_winner = (form.quotation_winner.data or "").strip()
+    usage_amounts = {}
+    item_allocations = {}
+    total_amount = 0.0
+
+    if not purchase_method:
+        errors.append("กรุณาเลือกวิธีการจัดซื้อ")
+
+    for item in requisition_timeline.requisition.items:
+        item_id = str(item._id)
+        item_reserved_qty = int(item.quantity or 0)
+        is_multi_source = request.form.get(f"item-{item_id}-multi_source") == "on"
+        allocations = []
+        item_total = 0.0
+        item_qty_total = 0
+
+        if is_multi_source:
+            selected_source_ids = request.form.getlist(f"item-{item_id}-multi_sources")
+            if not selected_source_ids:
+                errors.append(f"กรุณาเลือกแหล่งเงินอย่างน้อย 1 รายการสำหรับ {item.product_name}")
+            for source_id in selected_source_ids:
+                amount_raw = request.form.get(f"item-{item_id}-multi_amount_{source_id}", "")
+                qty_raw = request.form.get(f"item-{item_id}-multi_qty_{source_id}", "")
+                reservation = reservation_map.get(source_id)
+                try:
+                    amount = float(amount_raw or 0)
+                except Exception:
+                    amount = -1
+                try:
+                    item_amount = int(qty_raw or 0)
+                except Exception:
+                    item_amount = -1
+                if amount <= 0:
+                    errors.append(f"กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    continue
+                if not reservation:
+                    errors.append(f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    continue
+                reserved_money = float(reservation.amount or 0)
+                if amount > reserved_money:
+                    errors.append(
+                        f"จำนวนเงินของ {item.product_name} ต้องไม่เกินยอดจองของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else source_id})"
+                    )
+                    continue
+                if item_amount < 0:
+                    errors.append(f"กรุณากรอกจำนวนสิ่งของของแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    continue
+                if item_amount > item_reserved_qty:
+                    errors.append(f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})")
+                    continue
+                allocations.append(
+                    {
+                        "reservation_id": source_id,
+                        "amount": round(amount, 2),
+                        "item_amount": item_amount,
+                    }
+                )
+                usage_amounts[source_id] = round(float(usage_amounts.get(source_id, 0)) + amount, 2)
+                item_total += amount
+                item_qty_total += item_amount
+        else:
+            source_id = request.form.get(f"item-{item_id}-source", "")
+            amount_raw = request.form.get(f"item-{item_id}-single_amount", "")
+            qty_raw = request.form.get(f"item-{item_id}-single_qty", "")
+            reservation = reservation_map.get(source_id) if source_id else None
+            if not source_id:
+                errors.append(f"กรุณาเลือกแหล่งเงินสำหรับ {item.product_name}")
+            else:
+                try:
+                    amount = float(amount_raw or 0)
+                except Exception:
+                    amount = -1
+                try:
+                    item_amount = int(qty_raw or 0)
+                except Exception:
+                    item_amount = -1
+                if amount <= 0:
+                    errors.append(f"กรุณากรอกจำนวนเงินที่ใช้จริงของ {item.product_name}")
+                else:
+                    if not reservation:
+                        errors.append(f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                        continue
+                    reserved_money = float(reservation.amount or 0)
+                    if amount > reserved_money:
+                        errors.append(
+                            f"จำนวนเงินของ {item.product_name} ต้องไม่เกินยอดจองของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else source_id})"
+                        )
+                        continue
+                    if item_amount < 0:
+                        errors.append(f"กรุณากรอกจำนวนสิ่งของสำหรับ {item.product_name}")
+                    if item_amount > item_reserved_qty:
+                        errors.append(f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})")
+                    allocations.append(
+                        {
+                            "reservation_id": source_id,
+                            "amount": round(amount, 2),
+                            "item_amount": item_amount if item_amount >= 0 else 0,
+                        }
+                    )
+                    usage_amounts[source_id] = round(float(usage_amounts.get(source_id, 0)) + amount, 2)
+                    item_total += amount
+                    item_qty_total += item_amount if item_amount >= 0 else 0
+
+        if item_qty_total > item_reserved_qty:
+            errors.append(
+                f"ผลรวมจำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
+            )
+
+        item_allocations[item_id] = {
+            "multi_source": is_multi_source,
+            "allocations": allocations,
+            "account_code": request.form.get(f"item-{item_id}-account_code", "").strip(),
+            "item_total": round(item_total, 2),
+        }
+        total_amount += item_total
+
+    if errors:
+        form.purchase_method.data = purchase_method
+        form.quotation_winner.data = quotation_winner
+        return _render_page(errors=errors)
+
+    for reservation_id, used_amount in usage_amounts.items():
+        reservation = reservation_map.get(reservation_id)
+        if not reservation:
+            continue
+        reserved_money = float(reservation.amount or 0)
+        if float(used_amount) > reserved_money:
+            errors.append(
+                f"ยอดใช้จริงรวมของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else reservation_id}) ต้องไม่เกินยอดจอง"
+            )
+
+    if errors:
+        form.purchase_method.data = purchase_method
+        form.quotation_winner.data = quotation_winner
+        return _render_page(errors=errors)
+
+    for reservation_id, actual in usage_amounts.items():
+        res = reservation_map.get(reservation_id)
         if not res:
             continue
-        unused = float(res.amount or 0) - actual
-        res.actual_amount = actual
+        unused = float(res.amount or 0) - float(actual)
+        res.actual_amount = float(actual)
         res.reservation_status = "finished"
         res.save()
         if res.mas:
-            new_remaining = float(res.mas.remaining_amount or 0) - actual
-            res.mas.remaining_amount = max(0, new_remaining)
-            res.mas.reservable_amount = float(res.mas.reservable_amount or 0) + unused
-            res.mas.save()
+            new_remaining = float(res.mas.remaining_amount or 0) - float(actual)
+            models.MAS.objects(id=res.mas.id).update_one(
+                set__remaining_amount=max(0, new_remaining),
+                set__reservable_amount=float(res.mas.reservable_amount or 0) + unused,
+            )
 
-            # Update the Requisition's fund amount for this MAS
             for fund_item in requisition_timeline.requisition.fund:
-                for r in reservations:
-                    if str(r.mas.id) == str(fund_item.mas.id):
-                        fund_item.reservation = r
-                        break
+                if fund_item.mas and str(fund_item.mas.id) == str(res.mas.id):
+                    fund_item.reservation = res
+                    fund_item.amount = float(actual)
 
-                if str(fund_item.mas.id) == str(res.mas.id):
-                    fund_item.amount = actual
-
-    # Save the updated requisition
     requisition_timeline.requisition.save()
-
+    requisition_timeline.purchase_method = purchase_method
+    requisition_timeline.quotation_winner = quotation_winner or requisition_timeline.quotation_winner
     requisition_timeline.fund_usage_amounts = usage_amounts
+    requisition_timeline.fund_allocations = item_allocations
     requisition_timeline.payment_amount = round(total_amount, 2)
     add_progress_in_order(
         requisition_timeline, "awaiting_delivery", current_user, request
     )
-    if form.quotation_winner.data:
-        requisition_timeline.quotation_winner = form.quotation_winner.data
-        requisition_timeline.save()
+    requisition_timeline.save()
 
     return redirect(
-        url_for(
-            "procurement.requisition_timeline.index", organization_id=organization.id
-        )
+        url_for("procurement.requisition_timeline.index", organization_id=organization.id)
     )
 
 

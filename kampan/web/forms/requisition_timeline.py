@@ -42,7 +42,17 @@ class ReservationPaymentForm(Form):
 
 
 class BillingForm(FlaskForm):
-    reservations = fields.FieldList(fields.FormField(ReservationPaymentForm))
+    purchase_method = fields.SelectField(
+        "วิธีการจัดซื้อ",
+        choices=[
+            ("", "เลือกวิธีการจัดซื้อ"),
+            ("specific", "วิธีเฉพาะเจาะจง"),
+            ("selective", "วิธีคัดเลือก"),
+            ("e_bidding", "วิธีประกวดราคาอิเล็กทรอนิกส์ (e-bidding)"),
+            ("other", "อื่น ๆ"),
+        ],
+        validators=[validators.DataRequired()],
+    )
     quotation_winner = fields.StringField(
         "ผู้ชนะการเสนอราคา", validators=[validators.Optional()]
     )

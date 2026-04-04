@@ -1,0 +1,630 @@
+{% extends "/procurement/base/default-procurement-page.html" %}
+
+{% block title %}
+  ยืนยันการจ่ายเงิน
+{% endblock title %}
+{% block dashboard_title %}
+  ยืนยันการจ่ายเงิน
+{% endblock dashboard_title %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-6 max-w-7xl">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
+      <div>
+        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-sm font-medium mb-3">
+          <i class="ph ph-receipt"></i>
+          หน้าสำหรับกำหนดแหล่งเงินและวิธีการจัดซื้อ
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold text-base-content">ยืนยันการจ่ายเงิน</h1>
+        <p class="text-sm text-base-content/70 mt-1">
+          เลขที่เอกสาร: <span class="font-semibold text-base-content">{{ item.requisition.requisition_code }}</span>
+        </p>
+      </div>
+      <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+         class="btn btn-ghost">
+        <i class="ph ph-arrow-left"></i>
+        กลับไปหน้าติดตามสถานะ
+      </a>
+    </div>
+
+    {% if errors %}
+      <div class="alert alert-error mb-6">
+        <div>
+          <h3 class="font-semibold">ตรวจสอบข้อมูลก่อนบันทึก</h3>
+          <ul class="list-disc pl-5 mt-2 space-y-1 text-sm">
+            {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-6">
+      <section class="card bg-base-100 border border-base-200 shadow-sm">
+        <div class="card-body p-5 md:p-6">
+          <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <i class="ph ph-info text-emerald-600"></i>
+            สิ่งที่สามารถทำได้ในหน้านี้
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="rounded-2xl border border-base-200 bg-base-50 p-4">
+              <div class="text-sm font-semibold mb-1">1. เลือกวิธีการจัดซื้อ</div>
+              <div class="text-sm text-base-content/70">กำหนดวิธีการจัดซื้อก่อนบันทึกข้อมูลแหล่งเงิน</div>
+            </div>
+            <div class="rounded-2xl border border-base-200 bg-base-50 p-4">
+              <div class="text-sm font-semibold mb-1">2. เลือกได้มากกว่า 1 แหล่ง</div>
+              <div class="text-sm text-base-content/70">
+                แต่ละรายการสามารถผูกกับแหล่งเงินได้มากกว่าหนึ่งรายการ
+              </div>
+            </div>
+            <div class="rounded-2xl border border-base-200 bg-base-50 p-4">
+              <div class="text-sm font-semibold mb-1">3. ตรวจสอบยอดจองและยอดใช้จริง</div>
+              <div class="text-sm text-base-content/70">
+                ระบบแสดงยอดจอง ยอดที่ใช้ไปทั้งหมด และยอดรวมของแต่ละรายการ
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card bg-base-100 border border-base-200 shadow-sm">
+        <div class="card-body p-5 md:p-6">
+          <div class="flex items-center justify-between border-b border-base-200 pb-3 mb-3">
+            <div class="text-lg font-semibold">รายการจองแหล่งเงิน</div>
+            <div class="text-lg font-semibold">ยอดจอง</div>
+          </div>
+
+          <div class="space-y-2">
+            {% if reservations %}
+              {% for reservation in reservations %}
+                <div class="flex items-center justify-between text-base">
+                  <div class="font-medium">{{ reservation.mas_name or reservation.mas_code }}</div>
+                  <div class="font-semibold">
+                    {{ reservation.reserved_amount | format_amount }} <span class="text-sm">฿</span>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-sm text-base-content/60">ไม่พบข้อมูลแหล่งเงินที่จอง</div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}"
+          onsubmit="return validateBillingPage();">
+      {{ form.hidden_tag() }}
+
+      <section class="card bg-base-100 border border-base-200 shadow-sm mb-6">
+        <div class="card-body p-5 md:p-6">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="font-bold text-lg flex w-fit min-w-xs items-center gap-2">
+              <i class="ph ph-squares-four text-emerald-600"></i>
+              วิธีการจัดซื้อ
+            </h2>
+            <select name="{{ form.purchase_method.name }}" class="select select-bordered w-full" required>
+              {% for value, label in form.purchase_method.choices %}
+                <option value="{{ value }}"
+                        {% if selected_purchase_method == value or form.purchase_method.data == value %}
+                          selected
+                        {% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card bg-base-100 border border-base-200 shadow-sm mb-6">
+        <div class="card-body p-0">
+          <div class="px-5 md:px-6 py-4 border-b border-base-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+              <h2 class="font-bold text-lg flex items-center gap-2">
+                <i class="ph ph-table text-emerald-600"></i>
+                ตารางประกอบการยืนยันแหล่งเงิน
+              </h2>
+              <p class="text-sm text-base-content/60 mt-1">
+                เลือกแหล่งเงิน แบ่งได้หลายแหล่ง และกำหนดจำนวนใช้จริงของแต่ละรายการ
+              </p>
+            </div>
+            <div class="text-sm text-base-content/70">
+              <span class="font-semibold">เลขที่เอกสาร:</span> {{ item.requisition.requisition_code }}
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th class="whitespace-nowrap">ชื่อรายการ</th>
+                  <th class="whitespace-nowrap text-right">จำนวน</th>
+                  <th class="whitespace-nowrap text-center">มากกว่า 1 แหล่ง</th>
+                  <th class="whitespace-nowrap">เลือกแหล่งเงิน</th>
+                  <th class="whitespace-nowrap">ผังเงิน</th>
+                  <th class="whitespace-nowrap text-right">ใช้จริง</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for req_item in item.requisition.items %}
+                  {% set item_id = req_item._id|string %}
+                  {% set saved_allocations = item_source_map.get(item_id, []) %}
+                  {% set has_multi = saved_allocations|length > 1 %}
+                  {% set ns = namespace(single_source='', single_amount='', total=0) %}
+                  {% for saved in saved_allocations %}
+                    {% set ns.total = ns.total + (saved.amount or 0) %}
+                    {% if saved_allocations|length == 1 %}
+                      {% set ns.single_source = saved.reservation_id %}
+                      {% set ns.single_amount = saved.amount %}
+                    {% endif %}
+                  {% endfor %}
+                  <tr class="align-top">
+                    <td>
+                      <div class="font-semibold">{{ req_item.product_name }}</div>
+                      <div class="text-xs text-base-content/60">รายการที่ {{ loop.index }}</div>
+                    </td>
+                    <td class="text-right">
+                      <div class="font-semibold">{{ req_item.quantity }}</div>
+                      <div class="text-xs text-base-content/60">{{ req_item.amount | format_amount }}</div>
+                    </td>
+                    <td class="text-center">
+                      <input type="checkbox"
+                             class="checkbox checkbox-success item-multi-toggle"
+                             data-item-id="{{ item_id }}"
+                             name="item-{{ item_id }}-multi_source"
+                             {% if has_multi %}checked{% endif %}
+                             onchange="toggleSourceMode('{{ item_id }}', this.checked)" />
+                    </td>
+                    <td>
+                      <div class="space-y-2">
+                        <div class="single-source-panel" data-item-id="{{ item_id }}" {% if has_multi %}hidden{% endif %}>
+                          <select name="item-{{ item_id }}-source" class="select select-bordered select-sm w-full mb-2">
+                            <option value="">เลือกแหล่งเงิน</option>
+                            {% for reservation in reservations %}
+                              <option value="{{ reservation.id }}" {% if ns.single_source == reservation.id %}selected{% endif %}>
+                                {{ reservation.mas_code }} - {{ reservation.mas_name }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                          <div class="grid grid-cols-2 gap-2">
+                            <input type="number"
+                                   step="0.01"
+                                   min="0"
+                                   name="item-{{ item_id }}-single_amount"
+                                   class="input input-bordered input-sm w-full text-right"
+                                   placeholder="ราคา/ยอดใช้จริง"
+                                   value="{{ ns.single_amount }}"
+                                   oninput="updateItemTotal('{{ item_id }}')" />
+                            <input type="number"
+                                   min="0"
+                                   step="1"
+                                   max="{{ req_item.quantity }}"
+                                   name="item-{{ item_id }}-single_qty"
+                                   class="input input-bordered input-sm w-full text-right"
+                                   placeholder="จำนวนสิ่งของ"
+                                   value="{{ req_item.quantity }}" />
+                          </div>
+                        </div>
+
+                        <div class="text-xs text-base-content/60 multi-source-hint"
+                             data-item-id="{{ item_id }}"
+                             {% if not has_multi %}hidden{% endif %}>
+                          เลือกมากกว่า 1 แหล่งเงินแล้ว: กรอกข้อมูลในตารางย่อยด้านล่าง
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text"
+                             name="item-{{ item_id }}-account_code"
+                             class="input input-bordered input-sm w-full"
+                             value="{{ req_item.account_code or '' }}"
+                             placeholder="ผังเงิน" />
+                    </td>
+                    <td>
+                      <input type="number"
+                             step="0.01"
+                             min="0"
+                             class="input input-bordered input-sm w-full text-right bg-base-200"
+                             name="item-{{ item_id }}-total"
+                             id="item-total-{{ item_id }}"
+                             value="{{ ns.total if ns.total else '' }}"
+                             readonly />
+                    </td>
+                  </tr>
+
+                  <tr class="multi-source-subtable-row"
+                      data-item-id="{{ item_id }}"
+                      {% if not has_multi %}hidden{% endif %}>
+                    <td colspan="6" class="bg-base-100 border-t border-dashed border-base-300">
+                      <div class="py-3 px-2 md:px-4">
+                        <div class="overflow-x-auto rounded-xl border border-base-300">
+                          <table class="table table-sm w-full">
+                            <thead class="bg-base-200/60">
+                              <tr>
+                                <th class="w-32">เลือก MAS</th>
+                                <th>แหล่งเงิน</th>
+                                <th class="text-right w-48">ราคา</th>
+                                <th class="text-right w-52">จำนวนสิ่งของ</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for reservation in reservations %}
+                                {% set allocation = namespace(found=None) %}
+                                {% for saved in saved_allocations %}
+                                  {% if saved.reservation_id == reservation.id %}
+                                    {% set allocation.found = saved %}
+                                  {% endif %}
+                                {% endfor %}
+                                <tr>
+                                  <td>
+                                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                                      <input type="checkbox"
+                                             class="checkbox checkbox-success source-toggle"
+                                             data-item-id="{{ item_id }}"
+                                             data-reservation-id="{{ reservation.id }}"
+                                             name="item-{{ item_id }}-multi_sources"
+                                             value="{{ reservation.id }}"
+                                             {% if allocation.found %}checked{% endif %}
+                                             onchange="toggleSourceAllocation('{{ item_id }}', '{{ reservation.id }}', this.checked)" />
+                                      <span class="font-mono text-xs">{{ reservation.mas_code }}</span>
+                                    </label>
+                                  </td>
+                                  <td>
+                                    <div class="font-medium text-sm">{{ reservation.mas_name }}</div>
+                                    <div class="text-xs text-base-content/60">
+                                      ยอดจอง {{ reservation.reserved_amount | format_amount }}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <input type="number"
+                                           step="0.01"
+                                           min="0"
+                                           max="{{ reservation.reserved_amount }}"
+                                           name="item-{{ item_id }}-multi_amount_{{ reservation.id }}"
+                                           class="input input-bordered input-sm text-right source-amount"
+                                           data-item-id="{{ item_id }}"
+                                           data-reservation-id="{{ reservation.id }}"
+                                           placeholder="0.00"
+                                           value="{{ allocation.found.amount if allocation.found else '' }}"
+                                           {% if not allocation.found %}disabled{% endif %}
+                                           oninput="updateItemTotal('{{ item_id }}')" />
+                                  </td>
+                                  <td>
+                                    <input type="number"
+                                           min="0"
+                                           step="1"
+                                           max="{{ req_item.quantity }}"
+                                           name="item-{{ item_id }}-multi_qty_{{ reservation.id }}"
+                                           class="input input-bordered input-sm text-right source-item-qty"
+                                           data-item-id="{{ item_id }}"
+                                           data-reservation-id="{{ reservation.id }}"
+                                           placeholder="0"
+                                           value="{{ allocation.found.item_amount if allocation.found and allocation.found.item_amount is defined else '' }}"
+                                           {% if not allocation.found %}disabled{% endif %} />
+                                  </td>
+                                </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+           class="btn btn-ghost">ยกเลิก</a>
+        <button type="button" class="btn btn-success" onclick="openSummaryModal();">
+          <i class="ph ph-check"></i>
+          ยืนยัน
+        </button>
+      </div>
+
+      <dialog id="summary-confirm-modal" class="modal">
+        <div class="modal-box max-w-4xl">
+          <h3 class="font-bold text-lg flex items-center gap-2 mb-1">
+            <i class="ph ph-clipboard-text text-emerald-600"></i>
+            สรุปแหล่งเงินที่ใช้
+          </h3>
+          <p class="text-sm text-base-content/60 mb-4">ตรวจสอบข้อมูลก่อนบันทึกการยืนยัน</p>
+
+          <div class="overflow-x-auto">
+            <table class="table table-sm w-full">
+              <thead>
+                <tr>
+                  <th>รหัส MAS</th>
+                  <th>ชื่อโครงการ</th>
+                  <th class="text-right">จำนวนเงินที่จอง</th>
+                  <th class="text-right">จำนวนเงินที่ใช้ไปทั้งหมด</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for reservation in reservations %}
+                  <tr>
+                    <td class="font-mono text-xs">{{ reservation.mas_code }}</td>
+                    <td>{{ reservation.mas_name }}</td>
+                    <td class="text-right font-semibold">{{ reservation.reserved_amount | format_amount }}</td>
+                    <td class="text-right font-semibold text-emerald-700" id="summary-used-{{ reservation.id }}">
+                      {{ reservation.used_amount | format_amount }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="modal-action">
+            <button type="button" class="btn" onclick="document.getElementById('summary-confirm-modal').close();">
+              ยกเลิก
+            </button>
+            <button type="submit" class="btn btn-success">
+              <i class="ph ph-check"></i>
+              บันทึกการยืนยัน
+            </button>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+    </form>
+  </div>
+
+  <script>
+      const reservationLimitsJson = '{{ reservation_limits_json | safe }}';
+      const itemQuantityLimitsJson = '{{ item_quantity_limits_json | safe }}';
+      const reservationLimits = JSON.parse(reservationLimitsJson);
+      const itemQuantityLimits = JSON.parse(itemQuantityLimitsJson);
+
+      function openSummaryModal() {
+          if (!validateBillingPage()) {
+              return;
+          }
+          updateSummaryTable();
+          const modal = document.getElementById('summary-confirm-modal');
+          if (modal) {
+              modal.showModal();
+          }
+      }
+
+      function toggleSourceMode(itemId, enabled) {
+          const singlePanel = document.querySelector('.single-source-panel[data-item-id="' + itemId + '"]');
+          const multiSubTable = document.querySelector('.multi-source-subtable-row[data-item-id="' + itemId + '"]');
+          const multiHint = document.querySelector('.multi-source-hint[data-item-id="' + itemId + '"]');
+          if (singlePanel) {
+              singlePanel.hidden = enabled;
+          }
+          if (multiSubTable) {
+              multiSubTable.hidden = !enabled;
+          }
+          if (multiHint) {
+              multiHint.hidden = !enabled;
+          }
+
+          // Keep multi-source inputs in sync with selected mode to avoid double-counting.
+          document.querySelectorAll('.source-toggle[data-item-id="' + itemId + '"]').forEach(function(toggle) {
+              const reservationId = toggle.getAttribute('data-reservation-id');
+              const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+              const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+              if (!enabled) {
+                  if (amountInput) {
+                      amountInput.disabled = true;
+                  }
+                  if (qtyInput) {
+                      qtyInput.disabled = true;
+                  }
+              } else {
+                  if (amountInput) {
+                      amountInput.disabled = !toggle.checked;
+                  }
+                  if (qtyInput) {
+                      qtyInput.disabled = !toggle.checked;
+                  }
+              }
+          });
+
+          updateItemTotal(itemId);
+          updateSummaryTable();
+      }
+
+      function toggleSourceAllocation(itemId, reservationId, checked) {
+          const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+          const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+          if (!amountInput) {
+              return;
+          }
+          amountInput.disabled = !checked;
+          if (qtyInput) {
+              qtyInput.disabled = !checked;
+          }
+          if (!checked) {
+              amountInput.value = '';
+              if (qtyInput) {
+                  qtyInput.value = '';
+              }
+          }
+          updateItemTotal(itemId);
+          updateSummaryTable();
+      }
+
+      function updateItemTotal(itemId) {
+          const multiToggle = document.querySelector('.item-multi-toggle[data-item-id="' + itemId + '"]');
+          const totalInput = document.getElementById('item-total-' + itemId);
+          let total = 0;
+
+          if (multiToggle && multiToggle.checked) {
+              document.querySelectorAll('.source-amount[data-item-id="' + itemId + '"]').forEach(function(input) {
+                  if (!input.disabled && input.value) {
+                      total += parseFloat(input.value) || 0;
+                  }
+              });
+          } else {
+              const singleAmount = document.querySelector('input[name="item-' + itemId + '-single_amount"]');
+              if (singleAmount && singleAmount.value) {
+                  total = parseFloat(singleAmount.value) || 0;
+              }
+          }
+
+          if (totalInput) {
+              totalInput.value = total ? total.toFixed(2) : '';
+          }
+
+          // Update summary table in real-time
+          updateSummaryTable();
+      }
+
+      function updateSummaryTable() {
+          // Calculate total used per reservation from active mode per item only.
+          const reservationTotals = {};
+
+          Object.keys(reservationLimits).forEach(function(reservationId) {
+              reservationTotals[reservationId] = 0;
+          });
+
+          document.querySelectorAll('.item-multi-toggle').forEach(function(toggle) {
+              const itemId = toggle.getAttribute('data-item-id');
+
+              if (toggle.checked) {
+                  document.querySelectorAll('.source-toggle[data-item-id="' + itemId + '"]').forEach(function(sourceToggle) {
+                      if (!sourceToggle.checked) {
+                          return;
+                      }
+                      const reservationId = sourceToggle.getAttribute('data-reservation-id');
+                      const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+                      const amount = parseFloat((amountInput && amountInput.value) || 0) || 0;
+                      reservationTotals[reservationId] = (reservationTotals[reservationId] || 0) + amount;
+                  });
+              } else {
+                  const singleAmountInput = document.querySelector('input[name="item-' + itemId + '-single_amount"]');
+                  const sourceSelect = document.querySelector('select[name="item-' + itemId + '-source"]');
+                  if (sourceSelect && sourceSelect.value) {
+                      const amount = parseFloat((singleAmountInput && singleAmountInput.value) || 0) || 0;
+                      reservationTotals[sourceSelect.value] = (reservationTotals[sourceSelect.value] || 0) + amount;
+                  }
+              }
+          });
+
+          // Update summary table cells
+          Object.keys(reservationTotals).forEach(function(reservationId) {
+              const cell = document.getElementById('summary-used-' + reservationId);
+              if (cell) {
+                  const total = reservationTotals[reservationId];
+                  cell.textContent = '฿' + total.toLocaleString('th-TH', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                  });
+              }
+          });
+      }
+
+      function validateBillingPage() {
+          const purchaseMethod = document.querySelector('select[name="{{ form.purchase_method.name }}"]');
+          if (!purchaseMethod || !purchaseMethod.value) {
+              alert('กรุณาเลือกวิธีการจัดซื้อ');
+              return false;
+          }
+
+          let valid = true;
+          document.querySelectorAll('.item-multi-toggle').forEach(function(toggle) {
+              const itemId = toggle.getAttribute('data-item-id');
+              const itemQtyLimit = parseInt(itemQuantityLimits[itemId] || 0, 10);
+              if (toggle.checked) {
+                  const checkedSources = Array.from(document.querySelectorAll('.source-toggle[data-item-id="' + itemId + '"]')).filter(function(sourceToggle) {
+                      return sourceToggle.checked;
+                  });
+                  let qtySum = 0;
+                  if (checkedSources.length === 0) {
+                      alert('กรุณาเลือกแหล่งเงินอย่างน้อย 1 รายการสำหรับแต่ละรายการที่ใช้หลายแหล่ง');
+                      valid = false;
+                      return;
+                  }
+                  checkedSources.forEach(function(sourceToggle) {
+                      const reservationId = sourceToggle.getAttribute('data-reservation-id');
+                      const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+                      const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+                      const reservedMoney = parseFloat(reservationLimits[reservationId] || 0);
+                      const amountVal = parseFloat((amountInput && amountInput.value) || 0);
+                      const qtyVal = parseInt((qtyInput && qtyInput.value) || 0, 10);
+                      if (!amountInput || !amountInput.value || parseFloat(amountInput.value) <= 0) {
+                          alert('กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกให้ถูกต้อง');
+                          valid = false;
+                      }
+                      if (amountVal > reservedMoney) {
+                          alert('จำนวนเงินต้องไม่เกินยอดจองของแหล่งเงินที่เลือก');
+                          valid = false;
+                      }
+                      if (!qtyInput || qtyInput.value === '' || parseInt(qtyInput.value, 10) < 0) {
+                          alert('กรุณากรอกจำนวนสิ่งของของแหล่งเงินที่เลือกให้ถูกต้อง');
+                          valid = false;
+                      }
+                      if (qtyVal > itemQtyLimit) {
+                          alert('จำนวนสิ่งของต้องไม่เกินจำนวนที่จองไว้ของรายการนี้');
+                          valid = false;
+                      }
+                      qtySum += Math.max(0, qtyVal || 0);
+                  });
+                  if (qtySum > itemQtyLimit) {
+                      alert('ผลรวมจำนวนสิ่งของของหลายแหล่งต้องไม่เกินจำนวนที่จองไว้ของรายการนี้');
+                      valid = false;
+                  }
+              } else {
+                  const singleSource = document.querySelector('select[name="item-' + itemId + '-source"]');
+                  const singleAmount = document.querySelector('input[name="item-' + itemId + '-single_amount"]');
+                  const singleQty = document.querySelector('input[name="item-' + itemId + '-single_qty"]');
+                  if (!singleSource || !singleSource.value) {
+                      alert('กรุณาเลือกแหล่งเงินสำหรับทุกรายการ');
+                      valid = false;
+                      return;
+                  }
+                  if (!singleAmount || !singleAmount.value || parseFloat(singleAmount.value) <= 0) {
+                      alert('กรุณากรอกจำนวนเงินที่ใช้จริงของทุกรายการ');
+                      valid = false;
+                  }
+                  if (singleSource && singleSource.value) {
+                      const reservedMoney = parseFloat(reservationLimits[singleSource.value] || 0);
+                      if (parseFloat(singleAmount.value || 0) > reservedMoney) {
+                          alert('จำนวนเงินต้องไม่เกินยอดจองของแหล่งเงินที่เลือก');
+                          valid = false;
+                      }
+                  }
+                  if (!singleQty || singleQty.value === '' || parseInt(singleQty.value, 10) < 0) {
+                      alert('กรุณากรอกจำนวนสิ่งของของทุกรายการ');
+                      valid = false;
+                  }
+                  if (parseInt(singleQty.value || 0, 10) > itemQtyLimit) {
+                      alert('จำนวนสิ่งของต้องไม่เกินจำนวนที่จองไว้ของรายการนี้');
+                      valid = false;
+                  }
+              }
+          });
+          return valid;
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('.item-multi-toggle').forEach(function(toggle) {
+              toggleSourceMode(toggle.getAttribute('data-item-id'), toggle.checked);
+          });
+          document.querySelectorAll('.source-toggle').forEach(function(toggle) {
+              toggleSourceAllocation(toggle.getAttribute('data-item-id'), toggle.getAttribute('data-reservation-id'), toggle.checked);
+          });
+          document.querySelectorAll('input[name$="-single_amount"]').forEach(function(input) {
+              input.addEventListener('input', function() {
+                  const itemId = this.name.replace('item-', '').replace('-single_amount', '');
+                  updateItemTotal(itemId);
+              });
+          });
+          document.querySelectorAll('.source-amount').forEach(function(input) {
+              input.addEventListener('input', function() {
+                  updateItemTotal(this.getAttribute('data-item-id'));
+              });
+          });
+          // Update summary on initial load
+          updateSummaryTable();
+      });
+  </script>
+{% endblock content %}
