@@ -86,7 +86,7 @@ class Requisition(me.Document):
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True, required=True)
     selected_manager = me.EmbeddedDocumentField(SelectedManager)
     phone = me.StringField()
-    reason = me.StringField(max_length=255)
+    reason = me.StringField()
     start_date = me.DateTimeField(required=True)
     tor_document = me.FileField(collection_name="tor_documents")
     qt_document = me.FileField(collection_name="qt_documents")

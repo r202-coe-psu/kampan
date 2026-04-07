@@ -198,6 +198,6 @@ class DetailsSpecifiedItemForm(FlaskForm):
 
 class DetailsSpecifiedForm(FlaskForm):
     project_name = fields.StringField(
-        "ชื่อโครงการ(optional)", validators=[validators.Optional()]
+        "ชื่อโครงการ (ไม่บังคับใส่)", validators=[validators.Optional()]
     )
     items = fields.FieldList(fields.FormField(DetailsSpecifiedItemForm))
