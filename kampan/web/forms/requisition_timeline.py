@@ -187,7 +187,9 @@ class DetailsSpecifiedItemForm(FlaskForm):
         "จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)]
     )
     amount = fields.DecimalField(
-        "ราคาต่อหน่วย",
+        "ราคาทั้งหมด (บาท)",
+        places=2,
+        rounding=None,
         validators=[validators.DataRequired(), validators.NumberRange(min=0)],
     )
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional()])
