@@ -60,11 +60,19 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                      <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
-                        <i class="ph ph-clipboard-text flex-shrink-0"></i>
+                        <i class="ph ph-upload flex-shrink-0"></i>
                         <span class="truncate">รายการรอดำเนินการ</span>
+                      </a>
+                    </li>
+                    <li class="w-full">
+                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline_items' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                        href="{{ url_for('procurement.requisition_timeline_items.index', organization_id=organization.id) }}"
+                        title="รายการสินค้า">
+                        <i class="ph ph-package flex-shrink-0"></i>
+                        <span class="truncate">รายการสินค้า</span>
                       </a>
                     </li>
                   </ul>
@@ -158,7 +166,7 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                      <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
                         <i class="ph ph-clipboard-text flex-shrink-0"></i>
@@ -239,7 +247,7 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                      <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
                         <i class="ph ph-clipboard-text flex-shrink-0"></i>
@@ -327,7 +335,7 @@
                       </a>
                     </li>
                     <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisition_timeline' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
+                      <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
                         <i class="ph ph-clipboard-text flex-shrink-0"></i>

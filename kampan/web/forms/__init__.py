@@ -23,3 +23,4 @@ from . import requisitions
 from . import upload_files
 from . import requisition_timeline
 from . import reservations
+from . import requisition_timeline_items

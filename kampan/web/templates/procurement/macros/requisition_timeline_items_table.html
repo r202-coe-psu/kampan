@@ -1,0 +1,55 @@
+{% macro render_requisition_timeline_items_table(requisition_timeline_items, organization) %}
+<div class="overflow-x-auto bg-base-100 border border-base-200 rounded-lg shadow-sm">
+  <table class="table w-full text-sm">
+    <thead class="bg-base-200 text-base-content/70">
+      <tr>
+        <th class="font-semibold text-center w-12">ลำดับ</th>
+        <th class="font-semibold">รายการ (ชื่อสินค้า)</th>
+        <th class="font-semibold text-center min-w-[120px]">รหัสครุภัณฑ์</th>
+        <th class="font-semibold text-center min-w-[120px]">Serial Number</th>
+        <th class="font-semibold min-w-[150px]">สถานที่ตั้ง</th>
+        <th class="font-semibold min-w-[150px]">ผู้จัดจำหน่าย</th>
+        <th class="font-semibold text-center min-w-[150px]">การรับประกัน</th>
+        <th class="font-semibold min-w-[150px]">ผู้รับผิดชอบ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if requisition_timeline_items %}
+      {% for item in requisition_timeline_items %}
+      <tr class="hover">
+        <td class="text-center">{{ loop.index }}</td>
+        <td class="font-medium text-base-content">{{ item.requisition_item or '-' }}</td>
+        <td class="text-center font-mono">{{ item.requisition_item_code or '-' }}</td>
+        <td class="text-center font-mono">{{ item.serial_number or '-' }}</td>
+        <td class="truncate max-w-[150px]" title="{{ item.location }}">{{ item.location or '-' }}</td>
+        <td class="truncate max-w-[150px]" title="{{ item.seller }}">{{ item.seller or '-' }}</td>
+        <td class="text-center">
+          <div class="flex flex-col gap-1 items-center justify-center">
+            {% if item.insurance_start_date or item.insurance_end_date %}
+            <span class="text-xs text-base-content/70">เริ่ม: {{ item.insurance_start_date or '-' }}</span>
+            <span class="text-xs text-base-content/70">สิ้นสุด: {{ item.insurance_end_date or '-' }}</span>
+            {% else %}
+            <span class="text-xs text-base-content/50">-</span>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          {% if item.responder_user %}
+          <span class="badge badge-outline badge-primary font-medium">{{
+            item.responder_user.display_user_fullname() if item.responder_user.display_user_fullname else
+            item.responder_user.get_name() }}</span>
+          {% else %}
+          <span class="text-xs text-base-content/50">-</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% else %}
+      <tr>
+        <td colspan="8" class="text-center py-12 text-base-content/40 text-base">ไม่พบข้อมูล</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}

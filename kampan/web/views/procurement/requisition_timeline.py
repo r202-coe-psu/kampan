@@ -341,7 +341,12 @@ def billing_modal(requisition_timeline_id):
                 "mas_code": reservation.mas.mas_code if reservation.mas else "-",
                 "mas_name": reservation.mas.description if reservation.mas else "-",
                 "reserved_amount": float(reservation.amount or 0),
-                "used_amount": float((requisition_timeline.fund_usage_amounts or {}).get(str(reservation.id), 0) or 0),
+                "used_amount": float(
+                    (requisition_timeline.fund_usage_amounts or {}).get(
+                        str(reservation.id), 0
+                    )
+                    or 0
+                ),
             }
         )
 
@@ -353,21 +358,25 @@ def billing_modal(requisition_timeline_id):
         item_source_map = {}
         if requisition_timeline.fund_allocations:
             for item in requisition_timeline.requisition.items:
-                item_source_map[str(item._id)] = requisition_timeline.fund_allocations.get(
-                    str(item._id), {}
-                ).get("allocations", [])
-        
+                item_source_map[str(item._id)] = (
+                    requisition_timeline.fund_allocations.get(str(item._id), {}).get(
+                        "allocations", []
+                    )
+                )
+
         # Generate JSON payloads for JavaScript to avoid Jinja/formatter issues
         reservation_limits_dict = {}
         for reservation in reservations:
-            reservation_limits_dict[str(reservation.id)] = float(reservation.amount or 0)
+            reservation_limits_dict[str(reservation.id)] = float(
+                reservation.amount or 0
+            )
         reservation_limits_json = json.dumps(reservation_limits_dict)
-        
+
         item_quantity_limits_dict = {}
         for item in requisition_timeline.requisition.items:
             item_quantity_limits_dict[str(item._id)] = int(item.quantity or 0)
         item_quantity_limits_json = json.dumps(item_quantity_limits_dict)
-        
+
         return render_template(
             "procurement/requisitions/billing.html",
             item=requisition_timeline,
@@ -376,8 +385,18 @@ def billing_modal(requisition_timeline_id):
             reservations=reservation_payloads,
             reservation_limits_json=reservation_limits_json,
             item_quantity_limits_json=item_quantity_limits_json,
-            total_reserved=sum(float(reservation.amount or 0) for reservation in reservations),
-            total_used=sum(float((requisition_timeline.fund_usage_amounts or {}).get(str(reservation.id), 0) or 0) for reservation in reservations),
+            total_reserved=sum(
+                float(reservation.amount or 0) for reservation in reservations
+            ),
+            total_used=sum(
+                float(
+                    (requisition_timeline.fund_usage_amounts or {}).get(
+                        str(reservation.id), 0
+                    )
+                    or 0
+                )
+                for reservation in reservations
+            ),
             item_source_map=item_source_map,
             errors=errors or [],
             selected_purchase_method=requisition_timeline.purchase_method or "",
@@ -413,9 +432,13 @@ def billing_modal(requisition_timeline_id):
         if is_multi_source:
             selected_source_ids = request.form.getlist(f"item-{item_id}-multi_sources")
             if not selected_source_ids:
-                errors.append(f"กรุณาเลือกแหล่งเงินอย่างน้อย 1 รายการสำหรับ {item.product_name}")
+                errors.append(
+                    f"กรุณาเลือกแหล่งเงินอย่างน้อย 1 รายการสำหรับ {item.product_name}"
+                )
             for source_id in selected_source_ids:
-                amount_raw = request.form.get(f"item-{item_id}-multi_amount_{source_id}", "")
+                amount_raw = request.form.get(
+                    f"item-{item_id}-multi_amount_{source_id}", ""
+                )
                 qty_raw = request.form.get(f"item-{item_id}-multi_qty_{source_id}", "")
                 reservation = reservation_map.get(source_id)
                 try:
@@ -427,7 +450,9 @@ def billing_modal(requisition_timeline_id):
                 except Exception:
                     item_amount = -1
                 if amount <= 0:
-                    errors.append(f"กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    errors.append(
+                        f"กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกสำหรับ {item.product_name}"
+                    )
                     continue
                 if not reservation:
                     errors.append(f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}")
@@ -439,10 +464,14 @@ def billing_modal(requisition_timeline_id):
                     )
                     continue
                 if item_amount < 0:
-                    errors.append(f"กรุณากรอกจำนวนสิ่งของของแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    errors.append(
+                        f"กรุณากรอกจำนวนสิ่งของของแหล่งเงินที่เลือกสำหรับ {item.product_name}"
+                    )
                     continue
                 if item_amount > item_reserved_qty:
-                    errors.append(f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})")
+                    errors.append(
+                        f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
+                    )
                     continue
                 allocations.append(
                     {
@@ -451,7 +480,9 @@ def billing_modal(requisition_timeline_id):
                         "item_amount": item_amount,
                     }
                 )
-                usage_amounts[source_id] = round(float(usage_amounts.get(source_id, 0)) + amount, 2)
+                usage_amounts[source_id] = round(
+                    float(usage_amounts.get(source_id, 0)) + amount, 2
+                )
                 item_total += amount
                 item_qty_total += item_amount
         else:
@@ -485,7 +516,9 @@ def billing_modal(requisition_timeline_id):
                     if item_amount < 0:
                         errors.append(f"กรุณากรอกจำนวนสิ่งของสำหรับ {item.product_name}")
                     if item_amount > item_reserved_qty:
-                        errors.append(f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})")
+                        errors.append(
+                            f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
+                        )
                     allocations.append(
                         {
                             "reservation_id": source_id,
@@ -493,7 +526,9 @@ def billing_modal(requisition_timeline_id):
                             "item_amount": item_amount if item_amount >= 0 else 0,
                         }
                     )
-                    usage_amounts[source_id] = round(float(usage_amounts.get(source_id, 0)) + amount, 2)
+                    usage_amounts[source_id] = round(
+                        float(usage_amounts.get(source_id, 0)) + amount, 2
+                    )
                     item_total += amount
                     item_qty_total += item_amount if item_amount >= 0 else 0
 
@@ -505,7 +540,9 @@ def billing_modal(requisition_timeline_id):
         item_allocations[item_id] = {
             "multi_source": is_multi_source,
             "allocations": allocations,
-            "account_code": request.form.get(f"item-{item_id}-account_code", "").strip(),
+            "account_code": request.form.get(
+                f"item-{item_id}-account_code", ""
+            ).strip(),
             "item_total": round(item_total, 2),
         }
         total_amount += item_total
@@ -552,7 +589,9 @@ def billing_modal(requisition_timeline_id):
 
     requisition_timeline.requisition.save()
     requisition_timeline.purchase_method = purchase_method
-    requisition_timeline.quotation_winner = quotation_winner or requisition_timeline.quotation_winner
+    requisition_timeline.quotation_winner = (
+        quotation_winner or requisition_timeline.quotation_winner
+    )
     requisition_timeline.fund_usage_amounts = usage_amounts
     requisition_timeline.fund_allocations = item_allocations
     requisition_timeline.payment_amount = round(total_amount, 2)
@@ -562,7 +601,9 @@ def billing_modal(requisition_timeline_id):
     requisition_timeline.save()
 
     return redirect(
-        url_for("procurement.requisition_timeline.index", organization_id=organization.id)
+        url_for(
+            "procurement.requisition_timeline.index", organization_id=organization.id
+        )
     )
 
 
