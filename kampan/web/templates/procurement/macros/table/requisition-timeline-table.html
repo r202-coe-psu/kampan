@@ -290,26 +290,28 @@
                                 {% set is_done = current_step > i %}
                                 {% set is_active = current_step == i %}
                                 {% set is_after_cancelled = (item.status == 'cancelled') and (i > current_step) %}
+                                {% set is_completed_step = (step.key == 'completed') and is_active %}
+                                {% set is_done_like = is_done or is_completed_step %}
 
                                 {# circle color #}
                                 {% set circle_cls = 'bg-red-500 text-white' if is_after_cancelled else
-                                                                  ('bg-green-500 text-white' if is_done else
+                                                                  ('bg-green-500 text-white' if is_done_like else
                                                                 ('bg-orange-500 text-white' if is_active else 'border-2 border-gray-300 bg-gray-300')) %}
                                 {# box border bg #}
                                 {% set box_border_cls = 'border-red-200' if is_after_cancelled else
-                                                                  ('border-green-200' if is_done else
+                                                                  ('border-green-200' if is_done_like else
                                                                 ('border-orange-200' if is_active else 'border-gray-300')) %}
                                 {% set box_bg_cls = 'bg-white' if (is_done or is_active or is_after_cancelled) else 'bg-gray-50' %}
                                 {# badge #}
                                 {% set badge_text = 'ไม่ดำเนินการ' if is_after_cancelled else
-                                                                ('เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if is_active else 'รอดำเนินการ')) %}
+                                                                ('เสร็จสิ้น' if is_done_like else ('กำลังดำเนินการ' if is_active else 'รอดำเนินการ')) %}
                                 {% set badge_cls = 'bg-red-100 text-red-800' if is_after_cancelled else
-                                                                  ('bg-green-100 text-green-800' if is_done else
+                                                                  ('bg-green-100 text-green-800' if is_done_like else
                                                                 ('bg-orange-100 text-orange-800' if is_active else 'bg-gray-100 text-gray-600')) %}
 
                                 <div class="relative gap-4 flex items-center">
                                   <div class="relative z-10 w-12 h-12 {{ circle_cls }} rounded-full flex items-center justify-center border-4 border-white">
-                                    <i class="ph {{ 'ph-x' if is_after_cancelled else ('ph-check' if is_done else ('ph-hourglass' if is_active else 'ph-clock')) }} text-xl{{ ' font-bold' if (is_done or is_active or is_after_cancelled) else '' }}"></i>
+                                    <i class="ph {{ 'ph-x' if is_after_cancelled else ('ph-check' if is_done_like else ('ph-hourglass' if is_active else 'ph-clock')) }} text-xl{{ ' font-bold' if (is_done or is_active or is_after_cancelled) else '' }}"></i>
                                   </div>
                                   <div class="ml-8 flex-1">
                                     <div class="{{ box_bg_cls }} rounded-lg border {{ box_border_cls }} p-4 {{ 'shadow-md hover:shadow-lg transition-shadow' if (is_done or is_active or is_after_cancelled) else 'shadow-sm' }}">
@@ -339,13 +341,6 @@
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
                                           {% endif %}
-                                          {% if step.key == 'completed' and is_done %}
-                                            <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                               class="btn btn-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 shadow-sm transition-all"
-                                               title="ดูข้อมูลเสร็จสิ้น">
-                                              <i class="ph ph-file-text"></i> ดูรายละเอียด
-                                            </a>
-                                          {% endif %}
                                           <span class="{{ badge_cls }} text-xs font-medium px-3 py-1 rounded-full">{{ badge_text
                                           }}</span>
                                         </div>
@@ -371,7 +366,7 @@
                                           {% endif %}
                                         </div>
                                       {% endif %}
-                                      {% if step.key == 'completed' and is_done and item.completed_progress_detail %}
+                                      {% if step.key == 'completed' and is_done_like and item.completed_progress_detail %}
                                         {% set cpd = item.completed_progress_detail %}
                                         <div class="mb-3 p-3 bg-green-50 rounded-lg border border-green-100">
                                           {% if cpd.seller_name %}
@@ -410,7 +405,7 @@
                                         <div class="flex items-center gap-1">
                                           อัปเดตโดย<i class="ph ph-user"></i>
                                           <span>
-                                            {% if is_done and step_progress and
+                                            {% if is_done_like and step_progress and
                                               step_progress.created_by %}
                                               {{ step_progress.created_by.get_resources_fullname_th() 
                                               }}
@@ -422,7 +417,7 @@
                                         <div class="flex items-center gap-1">
                                           <i class="ph ph-clock"></i>
                                           <span>
-                                            {% if is_done and step_progress and
+                                            {% if is_done_like and step_progress and
                                               step_progress.timestamp %}
                                               {{
                                               step_progress.timestamp|format_thai_datetime_short_month
@@ -517,15 +512,17 @@
                         {% set i = loop.index %}
                         {% set is_done = current_step > i %}
                         {% set is_active = current_step == i %}
-                        {% set badge_text = 'เสร็จสิ้น' if is_done else ('กำลังดำเนินการ' if is_active else
+                        {% set is_completed_step = (step.key == 'completed') and is_active %}
+                        {% set is_done_like = is_done or is_completed_step %}
+                        {% set badge_text = 'เสร็จสิ้น' if is_done_like else ('กำลังดำเนินการ' if is_active else
                                                 'รอดำเนินการ') %}
-                        {% set badge_cls = 'bg-green-100 text-green-800' if is_done else ('bg-orange-100
+                        {% set badge_cls = 'bg-green-100 text-green-800' if is_done_like else ('bg-orange-100
                                                 text-orange-800' if is_active else 'bg-gray-100 text-gray-600') %}
-                        <div class="rounded-lg border {{ 'border-green-200' if is_done else ('border-orange-200' if is_active else 'border-gray-200') }} p-3 bg-white">
+                        <div class="rounded-lg border {{ 'border-green-200' if is_done_like else ('border-orange-200' if is_active else 'border-gray-200') }} p-3 bg-white">
                           <div class="flex items-start justify-between gap-2">
                             <div class="flex items-start gap-3">
-                              <div class="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center {{ 'bg-green-500 text-white' if is_done else ('bg-orange-500 text-white' if is_active else 'bg-gray-200 text-gray-400') }}">
-                                <i class="ph {{ 'ph-check' if is_done else ('ph-hourglass' if is_active else 'ph-clock') }} text-base"></i>
+                              <div class="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center {{ 'bg-green-500 text-white' if is_done_like else ('bg-orange-500 text-white' if is_active else 'bg-gray-200 text-gray-400') }}">
+                                <i class="ph {{ 'ph-check' if is_done_like else ('ph-hourglass' if is_active else 'ph-clock') }} text-base"></i>
                               </div>
                               <div>
                                 <div class="text-sm font-medium {{ 'text-gray-800' if (is_done or is_active) else 'text-gray-500' }}">
@@ -576,14 +573,7 @@
                                     </a>
                                   </div>
                                 {% endif %}
-                                {% if step.key == 'completed' and is_done %}
-                                  <div class="mt-2 text-left">
-                                    <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                       class="btn btn-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 shadow-sm transition-all"
-                                       title="ดูข้อมูลเสร็จสิ้น">
-                                      <i class="ph ph-file-text"></i> ดูรายละเอียด
-                                    </a>
-                                  </div>
+                                {% if step.key == 'completed' and is_done_like %}
                                   {% if item.completed_progress_detail %}
                                     {% set cpd = item.completed_progress_detail %}
                                     <div class="mt-2 p-2 bg-green-50 rounded-md border border-green-100">
@@ -619,7 +609,7 @@
                             <div class="flex items-center gap-1 text-xs py-1">
                               <i class="ph ph-user text-base"></i>
                               <span>
-                                {% if is_done and step_progress and step_progress.created_by %}
+                                {% if is_done_like and step_progress and step_progress.created_by %}
                                   {{ step_progress.created_by.get_resources_fullname_th() }}
                                 {% else %}
                                   -
@@ -629,7 +619,7 @@
                             <div class="flex items-center gap-1 text-xs">
                               <i class="ph ph-clock text-base"></i>
                               <span>
-                                {% if is_done and step_progress and step_progress.timestamp %}
+                                {% if is_done_like and step_progress and step_progress.timestamp %}
                                   {{ step_progress.timestamp|format_thai_datetime_short_month }}
                                 {% else %}
                                   -
