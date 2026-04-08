@@ -14,7 +14,11 @@
     </div>
     <div>
       <h1 class="text-2xl font-bold text-blue-700">
+      {% if readonly %}
+        ระบุรายละเอียดพัสดุ (ดูอย่างเดียว)
+      {% else %}
         ระบุรายละเอียดพัสดุ
+      {% endif %}
       </h1>
       <p class="text-sm text-gray-500">เลขที่คำขอ: <span class="font-semibold text-gray-700">{{
           item.requisition.requisition_code }}</span></p>
@@ -46,9 +50,11 @@
         <i class="ph ph-list-numbers text-blue-500"></i>
         รายการพัสดุ
       </h2>
+      {% if not readonly %}
       <button type="button" class="btn btn-primary btn-sm gap-2 shadow-sm" id="add-item-btn">
         <i class="ph ph-plus"></i> เพิ่มรายการ
       </button>
+      {% endif %}
     </div>
 
     <div class=" bg-white shadow-sm border border-gray-200 rounded-2xl overflow-hidden w-full mb-6">
@@ -108,6 +114,7 @@
                 font-normal") }}
               </td>
               <td class="p-1 w-fit align-middle text-center whitespace-nowrap">
+                {% if not readonly %}
                 <div class="flex items-center gap-1">
                   <button type="button"
                     class="btn btn-ghost btn-xs w-8 h-8 p-0 min-h-0 clone-btn text-gray-500 hover:text-blue-600 tooltip"
@@ -120,6 +127,7 @@
                     <i class="ph ph-x text-lg pointer-events-none"></i>
                   </button>
                 </div>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -134,6 +142,7 @@
       </div>
     </div>
 
+    {% if not readonly %}
     <div
       class="flex justify-end gap-3 mt-8 bg-white p-4 rounded-xl border shadow-sm sticky bottom-4 z-10 transition-shadow">
       <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
@@ -145,6 +154,14 @@
         บันทึกข้อมูลรายละเอียด
       </button>
     </div>
+    {% else %}
+    <div class="flex justify-end gap-3 mt-8">
+      <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+        class="btn btn-ghost px-6">
+        <i class="ph ph-arrow-left"></i> กลับ
+      </a>
+    </div>
+    {% endif %}
   </form>
 </div>
 
@@ -222,5 +239,13 @@
       }
     });
   });
+  {% if readonly %}
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#details-specified-form input, #details-specified-form select, #details-specified-form textarea').forEach(function(el) {
+      el.setAttribute('disabled', 'disabled');
+      el.classList.add('bg-base-200', 'cursor-not-allowed');
+    });
+  });
+  {% endif %}
 </script>
 {% endblock %}

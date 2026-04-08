@@ -15,7 +15,9 @@
           <i class="ph ph-receipt"></i>
           หน้าสำหรับกำหนดแหล่งเงินและวิธีการจัดซื้อ
         </div>
-        <h1 class="text-2xl md:text-3xl font-bold text-base-content">ยืนยันการจ่ายเงิน</h1>
+        <h1 class="text-2xl md:text-3xl font-bold text-base-content">
+          {% if readonly %}ยืนยันการจ่ายเงิน (ดูอย่างเดียว){% else %}ยืนยันการจ่ายเงิน{% endif %}
+        </h1>
         <p class="text-sm text-base-content/70 mt-1">
           เลขที่เอกสาร: <span class="font-semibold text-base-content">{{ item.requisition.requisition_code }}</span>
         </p>
@@ -249,6 +251,7 @@
         </div>
       </section>
 
+      {% if not readonly %}
       <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
         <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
            class="btn btn-ghost">ยกเลิก</a>
@@ -257,6 +260,14 @@
           ยืนยัน
         </button>
       </div>
+      {% else %}
+      <div class="flex justify-end gap-3">
+        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+           class="btn btn-ghost">
+          <i class="ph ph-arrow-left"></i> กลับ
+        </a>
+      </div>
+      {% endif %}
 
       <dialog id="summary-confirm-modal" class="modal">
         <div class="modal-box max-w-4xl">
@@ -460,6 +471,14 @@
           });
           // Update summary on initial load
           updateSummaryTable();
+
+          {% if readonly %}
+          // Readonly mode: disable all form inputs
+          document.querySelectorAll('form input, form select, form textarea').forEach(function(el) {
+              el.setAttribute('disabled', 'disabled');
+              el.classList.add('cursor-not-allowed');
+          });
+          {% endif %}
       });
   </script>
 {% endblock content %}

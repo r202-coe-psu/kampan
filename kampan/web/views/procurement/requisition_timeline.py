@@ -347,6 +347,8 @@ def billing_modal(requisition_timeline_id):
 
     form = forms.requisition_timeline.BillingForm()
 
+    is_readonly = request.args.get("readonly") == "1"
+
     def _render_page(errors=None):
         item_source_map = {}
         if requisition_timeline.fund_allocations:
@@ -379,11 +381,15 @@ def billing_modal(requisition_timeline_id):
             item_source_map=item_source_map,
             errors=errors or [],
             selected_purchase_method=requisition_timeline.purchase_method or "",
+            readonly=is_readonly,
         )
 
     if request.method == "GET":
         form.purchase_method.data = requisition_timeline.purchase_method or ""
         form.quotation_winner.data = requisition_timeline.quotation_winner or ""
+        return _render_page()
+
+    if is_readonly:
         return _render_page()
 
     errors = []
@@ -790,6 +796,7 @@ def details_specified(requisition_timeline_id):
     requisition = requisition_timeline.requisition
 
     form = forms.requisition_timeline.DetailsSpecifiedForm()
+    is_readonly = request.args.get("readonly") == "1"
 
     if request.method == "GET":
         form.project_name.data = requisition.project_name or ""
@@ -810,7 +817,7 @@ def details_specified(requisition_timeline_id):
                 }
             )
 
-    if request.method == "POST":
+    if request.method == "POST" and not is_readonly:
         requisition.project_name = form.project_name.data
 
         # Update existing items and add new ones
@@ -872,4 +879,5 @@ def details_specified(requisition_timeline_id):
         item=requisition_timeline,
         organization=organization,
         form=form,
+        readonly=is_readonly,
     )

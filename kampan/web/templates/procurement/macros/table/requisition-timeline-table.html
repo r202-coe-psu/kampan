@@ -318,10 +318,31 @@
                                           {{ step.title }}
                                         </h5>
                                         <div class="flex items-center gap-2">
+                                          {% if step.key == 'details_specified' and is_done %}
+                                            <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                               class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                               title="ดูรายละเอียดที่ระบุ">
+                                              <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                            </a>
+                                          {% endif %}
+                                          {% if step.key == 'order_confirmed' and is_done %}
+                                            <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                               class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                               title="ดูข้อมูลการยืนยันแหล่งเงิน">
+                                              <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                            </a>
+                                          {% endif %}
                                           {% if step.key == 'payment_processed' and is_done %}
                                             <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                                class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
                                                title="ดูข้อมูลกระบวนการเสร็จสิ้น">
+                                              <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                            </a>
+                                          {% endif %}
+                                          {% if step.key == 'completed' and is_done %}
+                                            <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
+                                               class="btn btn-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 shadow-sm transition-all"
+                                               title="ดูข้อมูลเสร็จสิ้น">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
                                           {% endif %}
@@ -346,6 +367,39 @@
                                               <i class="ph ph-money font-bold"></i>
                                               <span class="font-semibold">ราคาสุทธิ:</span>
                                               <span class="font-bold">{{ item.total_amount | format_amount }}</span>
+                                            </div>
+                                          {% endif %}
+                                        </div>
+                                      {% endif %}
+                                      {% if step.key == 'completed' and is_done and item.completed_progress_detail %}
+                                        {% set cpd = item.completed_progress_detail %}
+                                        <div class="mb-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                                          {% if cpd.seller_name %}
+                                            <div class="flex items-center gap-2 text-sm text-green-800">
+                                              <i class="ph ph-storefront font-bold"></i>
+                                              <span class="font-semibold">ผู้ขาย:</span>
+                                              <span>{{ cpd.seller_name }}</span>
+                                            </div>
+                                          {% endif %}
+                                          {% if cpd.purchase_method %}
+                                            <div class="flex items-center gap-2 text-sm text-green-800 mt-1">
+                                              <i class="ph ph-shopping-cart font-bold"></i>
+                                              <span class="font-semibold">วิธีการจัดซื้อ:</span>
+                                              <span>{{ cpd.purchase_method }}</span>
+                                            </div>
+                                          {% endif %}
+                                          {% if cpd.contract_number %}
+                                            <div class="flex items-center gap-2 text-sm text-green-800 mt-1">
+                                              <i class="ph ph-file-text font-bold"></i>
+                                              <span class="font-semibold">เลขที่สัญญา:</span>
+                                              <span>{{ cpd.contract_number }}</span>
+                                            </div>
+                                          {% endif %}
+                                          {% if cpd.money_type %}
+                                            <div class="flex items-center gap-2 text-sm text-green-800 mt-1">
+                                              <i class="ph ph-wallet font-bold"></i>
+                                              <span class="font-semibold">ประเภทเงิน:</span>
+                                              <span>{{ cpd.money_type }}</span>
                                             </div>
                                           {% endif %}
                                         </div>
@@ -495,6 +549,24 @@
                                     {% endif %}
                                   </div>
                                 {% endif %}
+                                {% if step.key == 'details_specified' and is_done %}
+                                  <div class="mt-2 text-left">
+                                    <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                       class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                       title="ดูรายละเอียดที่ระบุ">
+                                      <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                    </a>
+                                  </div>
+                                {% endif %}
+                                {% if step.key == 'order_confirmed' and is_done %}
+                                  <div class="mt-2 text-left">
+                                    <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                       class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                       title="ดูข้อมูลการยืนยันแหล่งเงิน">
+                                      <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                    </a>
+                                  </div>
+                                {% endif %}
                                 {% if step.key == 'payment_processed' and is_done %}
                                   <div class="mt-2 text-left">
                                     <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
@@ -503,6 +575,40 @@
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
                                     </a>
                                   </div>
+                                {% endif %}
+                                {% if step.key == 'completed' and is_done %}
+                                  <div class="mt-2 text-left">
+                                    <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
+                                       class="btn btn-xs bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 shadow-sm transition-all"
+                                       title="ดูข้อมูลเสร็จสิ้น">
+                                      <i class="ph ph-file-text"></i> ดูรายละเอียด
+                                    </a>
+                                  </div>
+                                  {% if item.completed_progress_detail %}
+                                    {% set cpd = item.completed_progress_detail %}
+                                    <div class="mt-2 p-2 bg-green-50 rounded-md border border-green-100">
+                                      {% if cpd.seller_name %}
+                                        <div class="text-xs text-green-800">
+                                          <span class="font-semibold">ผู้ขาย:</span> {{ cpd.seller_name }}
+                                        </div>
+                                      {% endif %}
+                                      {% if cpd.purchase_method %}
+                                        <div class="text-xs text-green-800">
+                                          <span class="font-semibold">วิธีการจัดซื้อ:</span> {{ cpd.purchase_method }}
+                                        </div>
+                                      {% endif %}
+                                      {% if cpd.contract_number %}
+                                        <div class="text-xs text-green-800">
+                                          <span class="font-semibold">เลขที่สัญญา:</span> {{ cpd.contract_number }}
+                                        </div>
+                                      {% endif %}
+                                      {% if cpd.money_type %}
+                                        <div class="text-xs text-green-800">
+                                          <span class="font-semibold">ประเภทเงิน:</span> {{ cpd.money_type }}
+                                        </div>
+                                      {% endif %}
+                                    </div>
+                                  {% endif %}
                                 {% endif %}
                               </div>
                             </div>
