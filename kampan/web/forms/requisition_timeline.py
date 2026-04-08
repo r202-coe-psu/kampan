@@ -49,7 +49,6 @@ class BillingForm(FlaskForm):
             ("specific", "วิธีเฉพาะเจาะจง"),
             ("selective", "วิธีคัดเลือก"),
             ("e_bidding", "วิธีประกวดราคาอิเล็กทรอนิกส์ (e-bidding)"),
-            ("other", "อื่น ๆ"),
         ],
         validators=[validators.DataRequired()],
     )

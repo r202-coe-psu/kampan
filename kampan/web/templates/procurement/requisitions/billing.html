@@ -140,7 +140,7 @@
                   <th class="whitespace-nowrap text-right">จำนวน</th>
                   <th class="whitespace-nowrap text-center">มากกว่า 1 แหล่ง</th>
                   <th class="whitespace-nowrap">เลือกแหล่งเงิน</th>
-                  <th class="whitespace-nowrap">ผังเงิน</th>
+                  <th class="whitespace-nowrap">ผังบัญชี</th>
                   <th class="whitespace-nowrap text-right">ใช้จริง</th>
                 </tr>
               </thead>
@@ -213,11 +213,12 @@
                       </div>
                     </td>
                     <td>
-                      <input type="text"
+                      <input type="hidden"
                              name="item-{{ item_id }}-account_code"
-                             class="input input-bordered input-sm w-full"
-                             value="{{ req_item.account_code or '' }}"
-                             placeholder="ผังเงิน" />
+                             value="{{ req_item.account_code or '' }}" />
+                      <div class="input input-bordered input-sm w-full bg-base-200 text-base-content/80 cursor-not-allowed flex items-center">
+                        {{ req_item.account_code or '-' }}
+                      </div>
                     </td>
                     <td>
                       <input type="number"
