@@ -99,6 +99,18 @@ def add_progress_in_order(
         user_agent=request.headers.get("User-Agent"),
         timestamp=datetime.datetime.now(),
     )
+
+    # ช็คว่า step ต่อไปเป็น payment_processed ไหม (step ปัจจุบันคือ inspection)
+    if new_progress_status == "payment_processed":
+        inspection_date_str = request.form.get("inspection_date")
+        if inspection_date_str:
+            try:
+                new_progress.inspection_date = datetime.datetime.strptime(
+                    inspection_date_str, "%Y-%m-%d"
+                )
+            except ValueError:
+                pass
+
     requisition_timeline.progress.append(new_progress)
 
     # อัปเดตข้อมูลอื่นๆ
@@ -158,6 +170,7 @@ def index():
     progress = request.args.get("progress", default=None, type=str)
     requisition_code = request.args.get("requisition_code", default=None, type=str)
     form = forms.requisition_timeline.RequisitionTimelineFilterForm(request.args)
+    inspection_form = forms.requisition_timeline.RequisitionInspectionForm()
 
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
@@ -224,6 +237,7 @@ def index():
         is_admin=is_admin,
         PROGRESS_STATUS_ORDER=PROGRESS_STATUS_ORDER,
         reservations_map=reservations_map,
+        inspection_form=inspection_form,
     )
 
 

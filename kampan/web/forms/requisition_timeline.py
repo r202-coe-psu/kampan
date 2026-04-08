@@ -31,6 +31,13 @@ class RequisitionCancelForm(FlaskForm):
     )
 
 
+class RequisitionInspectionForm(FlaskForm):
+    inspection_date = fields.DateField(
+        "วันที่ตรวจรับ",
+        [validators.DataRequired()],
+    )
+
+
 class ReservationPaymentForm(Form):
     reservation_id = HiddenField()
     amount = DecimalField(

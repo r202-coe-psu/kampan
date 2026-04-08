@@ -257,7 +257,7 @@ readonly=False) %}
       </div>
     </button>
 
-    <div id="cally-popover-{{ field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box" {% if
+    <div id="cally-popover-{{ field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box" style="max-height: 400px; overflow-y: auto;" {% if
       readonly or disabled %} hidden {% endif %}>
       <calendar-date class="cally" onchange="{
                   const callyData = document.getElementById('cally-data-{{ field.id }}');

@@ -1,7 +1,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 
-{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label, confirm_id) %}
+{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label, confirm_id, inspection_form=None) %}
   <form id="form-{{ confirm_id }}" method="post" action="{{ url }}" class="inline">
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
     <input type="hidden" name="progress" value="{{ step_key }}" />
@@ -17,6 +17,14 @@
       <div class="modal-box">
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
+        
+        <!-- เช็คว่า step ต่อไปเป็น payment_processed ไหม (step ปัจจุบันคือ inspection) -->
+        {% if step_key == 'payment_processed' and inspection_form %}
+        <div class="form-control w-full mb-4">
+          {{ renderer.date_field_js(inspection_form.inspection_date) }}
+        </div>
+        {% endif %}
+
         <div class="modal-action">
           <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">
             ยกเลิก
@@ -31,7 +39,7 @@
   </form>
 {% endmacro %}
 
-{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user) %}
+{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user, inspection_form=None) %}
   {% set billing_done = item.fund_usage_amounts and item.fund_usage_amounts|length > 0 %}
   {% set action_url = url_for('procurement.requisition_timeline.add_progress',
     requisition_timeline_id=item.id, organization_id=organization.id) %}
@@ -60,14 +68,14 @@
       {% if
         can_go_back %}
         {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step -
-                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id) }}
+                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id, inspection_form) }}
       {% endif
       %}
 
       {% if current_step < PROGRESS_STATUS_ORDER|length %}
         {{ _step_nav_form(action_url,
                 PROGRESS_STATUS_ORDER[current_step], 'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md'
-                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id) }}
+                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id, inspection_form) }}
       {% endif %}
 
     {% endif %}
@@ -93,7 +101,7 @@
 {% endmacro %}
 
 {% macro requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list, current_user,
-  organization, PROGRESS_STATUS_ORDER, reservations_map={}) %}
+  organization, PROGRESS_STATUS_ORDER, reservations_map={}, inspection_form=None) %}
   {# steps is identical for every item — define once here, shared by desktop, mobile, and any future loop #}
   {% set steps = [
     {
@@ -256,7 +264,7 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                        current_user) }}
+                                        current_user, inspection_form) }}
                   </td>
                 </tr>
                 <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
@@ -427,6 +435,14 @@
                                             {% endif %}
                                           </span>
                                         </div>
+                                        {% if step.key == 'inspection' and is_done and step_progress and step_progress.inspection_date %}
+                                        <div class="flex items-center gap-1 font-semibold text-blue-600">
+                                          <i class="ph ph-calendar"></i>
+                                          <span>
+                                            วันที่ตรวจรับ: {{ step_progress.inspection_date|format_thai_date }}
+                                          </span>
+                                        </div>
+                                        {% endif %}
                                       </div>
                                     </div>
                                   </div>
@@ -477,7 +493,7 @@
               </div>
               <div class="flex gap-2 flex-wrap items-end justify-end">
                 {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                current_user) }}
+                                current_user, inspection_form) }}
               </div>
             </div>
             {% if item.status == 'cancelled' %}

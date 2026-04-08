@@ -57,7 +57,7 @@
     {{ table_macros.requisition_timeline_table(paginated_requisition_timeline,
     requisition_timeline_list,
     current_user, organization,
-    PROGRESS_STATUS_ORDER, reservations_map)
+    PROGRESS_STATUS_ORDER, reservations_map, inspection_form)
     }}
   </div>
   {% set params = {"organization_id": organization.id} %}

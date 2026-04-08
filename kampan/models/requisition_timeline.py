@@ -25,6 +25,7 @@ class Progress(me.EmbeddedDocument):
     last_ip_address = me.StringField()
     user_agent = me.StringField()
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
+    inspection_date = me.DateTimeField()
 
 
 class CompletedProgressDetail(me.EmbeddedDocument):
