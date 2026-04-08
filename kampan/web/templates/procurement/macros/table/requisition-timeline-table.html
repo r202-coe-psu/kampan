@@ -342,6 +342,7 @@
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
                                           {% endif %}
+
                                           {% if step.key == 'payment_processed' and is_done %}
                                             <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                                class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
@@ -435,11 +436,11 @@
                                             {% endif %}
                                           </span>
                                         </div>
-                                        {% if step.key == 'inspection' and is_done and step_progress and step_progress.inspection_date %}
+                                        {% if step.key == 'inspection' and is_done and item.inspection_date %}
                                         <div class="flex items-center gap-1 font-semibold text-blue-600">
                                           <i class="ph ph-calendar"></i>
                                           <span>
-                                            วันที่ตรวจรับ: {{ step_progress.inspection_date|format_thai_date }}
+                                            วันที่ตรวจรับ: {{ item.inspection_date|format_thai_date }}
                                           </span>
                                         </div>
                                         {% endif %}
@@ -580,6 +581,7 @@
                                     </a>
                                   </div>
                                 {% endif %}
+
                                 {% if step.key == 'payment_processed' and is_done %}
                                   <div class="mt-2 text-left">
                                     <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"

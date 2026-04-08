@@ -25,7 +25,6 @@ class Progress(me.EmbeddedDocument):
     last_ip_address = me.StringField()
     user_agent = me.StringField()
     timestamp = me.DateTimeField(required=True, default=datetime.datetime.now)
-    inspection_date = me.DateTimeField()
 
 
 class CompletedProgressDetail(me.EmbeddedDocument):
@@ -47,6 +46,7 @@ class RequisitionTimeline(me.Document):
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
+    inspection_date = me.DateTimeField()
     note = me.StringField()
     quotation_winner = me.StringField()
     purchase_method = me.StringField(max_length=50)

@@ -105,7 +105,7 @@ def add_progress_in_order(
         inspection_date_str = request.form.get("inspection_date")
         if inspection_date_str:
             try:
-                new_progress.inspection_date = datetime.datetime.strptime(
+                requisition_timeline.inspection_date = datetime.datetime.strptime(
                     inspection_date_str, "%Y-%m-%d"
                 )
             except ValueError:
@@ -809,7 +809,9 @@ def completed_submit(requisition_timeline_id):
         requisition_timeline.status = "completed"
         requisition_timeline.save()
 
-        add_progress_in_order(requisition_timeline, "payment_processed", current_user, request)
+        add_progress_in_order(
+            requisition_timeline, "payment_processed", current_user, request
+        )
         add_progress_in_order(requisition_timeline, "completed", current_user, request)
 
         requisition = models.Requisition.objects(
