@@ -748,6 +748,7 @@ def completed_submit(requisition_timeline_id):
         requisition_timeline.status = "completed"
         requisition_timeline.save()
 
+        add_progress_in_order(requisition_timeline, "payment_processed", current_user, request)
         add_progress_in_order(requisition_timeline, "completed", current_user, request)
 
         requisition = models.Requisition.objects(
