@@ -37,13 +37,11 @@ def index():
     form = forms.requisition_timeline_items.RequisitionTimelineItemFilterForm(
         request.args
     )
+    query = {}
     if form.start_date.data and form.end_date.data:
-        requisition_timeline_items = models.RequisitionTimelineItem.objects(
-            created_date__gte=form.start_date.data,
-            created_date__lte=form.end_date.data,
-        )
-    else:
-        requisition_timeline_items = models.RequisitionTimelineItem.objects()
+        query["created_date__gte"] = form.start_date.data
+        query["created_date__lte"] = form.end_date.data
+    requisition_timeline_items = models.RequisitionTimelineItem.objects(**query)
     return render_template(
         "procurement/requisitions/requisition_timeline_items.html",
         organization=organization,

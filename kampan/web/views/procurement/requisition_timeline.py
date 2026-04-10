@@ -744,7 +744,7 @@ def completed_submit(requisition_timeline_id):
         inspection_p = _find_progress("inspection")
         order_confirmed_p = _find_progress("order_confirmed")
         form.delivered_date.data = inspection_p.created_date if inspection_p else None
-        form.inspection_date.data = inspection_p.created_date if inspection_p else None
+        form.inspection_date.data = requisition_timeline.inspection_date
         form.paid_date.data = (
             order_confirmed_p.created_date if order_confirmed_p else None
         )
@@ -901,9 +901,7 @@ def details_specified(requisition_timeline_id):
                 # If they duplicated/added manually with JS and we want to spawn a new item
                 new_item = models.RequisitionItem(
                     product_name=entry.product_name.data,
-                    company=(
-                        requisition.items[0].company if requisition.items else ""
-                    ),  # Inherit some properties
+                    company=(requisition.items[0].company if requisition.items else ""),
                     quantity=entry.quantity.data,
                     category=(
                         requisition.items[0].category if requisition.items else "-"

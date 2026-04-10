@@ -11,6 +11,8 @@
         <th class="font-semibold min-w-[150px]">ผู้จัดจำหน่าย</th>
         <th class="font-semibold text-center min-w-[150px]">การรับประกัน</th>
         <th class="font-semibold min-w-[150px]">ผู้รับผิดชอบ</th>
+        <th class="font-semibold min-w-[150px]">วันที่สร้าง</th>
+
       </tr>
     </thead>
     <tbody>
@@ -41,6 +43,9 @@
           {% else %}
           <span class="text-xs text-base-content/50">-</span>
           {% endif %}
+        </td>
+        <td>
+          {{ item.created_date.strftime('%d-%m-%Y') if item.created_date else '-' }}
         </td>
       </tr>
       {% endfor %}
