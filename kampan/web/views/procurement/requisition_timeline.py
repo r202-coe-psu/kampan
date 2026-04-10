@@ -840,6 +840,27 @@ def details_specified(requisition_timeline_id):
     if request.method == "POST" and not is_readonly:
         requisition.project_name = form.project_name.data
 
+        # Check budget constraint
+        total_fund = sum(float(f.amount or 0) for f in requisition.fund)
+        total_price = 0
+        for entry in form.items.entries:
+            try:
+                qty = int(entry.quantity.data or 0)
+                amount = float(entry.amount.data or 0)
+                total_price += qty * amount
+            except Exception:
+                pass
+
+        if total_price > total_fund:
+            return render_template(
+                "/procurement/requisitions/details_specified.html",
+                item=requisition_timeline,
+                organization=organization,
+                form=form,
+                readonly=is_readonly,
+                error=f"ยอดรวมทั้งหมด (฿{total_price:,.2f}) เกินกว่างบประมาณที่รองรับ (฿{total_fund:,.2f})",
+            )
+
         # Update existing items and add new ones
         updated_items = []
         for entry in form.items.entries:
@@ -898,4 +919,5 @@ def details_specified(requisition_timeline_id):
         organization=organization,
         form=form,
         readonly=is_readonly,
+        error=None,
     )
