@@ -10,8 +10,9 @@
         <th class="font-semibold min-w-[150px]">สถานที่ตั้ง</th>
         <th class="font-semibold min-w-[150px]">ผู้จัดจำหน่าย</th>
         <th class="font-semibold text-center min-w-[150px]">การรับประกัน</th>
-        <th class="font-semibold min-w-[150px]">ผู้รับผิดชอบ</th>
+        <th class="font-semibold text-center min-w-[150px]">ระยะเวลารับประกัน</th>
         <th class="font-semibold min-w-[150px]">วันที่สร้าง</th>
+        <th class="font-semibold min-w-[150px]">ผู้รับผิดชอบ</th>
 
       </tr>
     </thead>
@@ -28,12 +29,18 @@
         <td class="text-center">
           <div class="flex flex-col gap-1 items-center justify-center">
             {% if item.insurance_start_date or item.insurance_end_date %}
-            <span class="text-xs text-base-content/70">เริ่ม: {{ item.insurance_start_date or '-' }}</span>
-            <span class="text-xs text-base-content/70">สิ้นสุด: {{ item.insurance_end_date or '-' }}</span>
+            <span class="text-md text-base-content/70">เริ่ม: {{ item.insurance_start_date or '-' }}</span>
+            <span class="text-md text-base-content/70">สิ้นสุด: {{ item.insurance_end_date or '-' }}</span>
             {% else %}
-            <span class="text-xs text-base-content/50">-</span>
+            <span class="text-md text-base-content/50">-</span>
             {% endif %}
           </div>
+        </td>
+        <td class="text-center">
+          {{ item.get_format_insurance_duration() }}
+        </td>
+        <td>
+          {{ item.created_date.strftime('%d-%m-%Y') if item.created_date else '-' }}
         </td>
         <td>
           {% if item.responder_user %}
@@ -44,9 +51,7 @@
           <span class="text-xs text-base-content/50">-</span>
           {% endif %}
         </td>
-        <td>
-          {{ item.created_date.strftime('%d-%m-%Y') if item.created_date else '-' }}
-        </td>
+
       </tr>
       {% endfor %}
       {% else %}

@@ -61,6 +61,9 @@ class RequisitionTimeline(me.Document):
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     created_by = me.ReferenceField("User", dbref=True)
 
+    def find_progress(self, progress_status):
+        return self.progress.filter(progress_status=progress_status).first()
+
 
 class RequisitionTimelineLogs(me.Document):
     meta = {"collection": "requisition_timeline_logs"}
@@ -89,14 +92,56 @@ class RequisitionTimelineItem(me.Document):
 
     # section ข้างบนตาราง
     insurance_start_date = me.StringField(required=True, max_length=20)
-    seller = me.StringField(required=True, max_length=200)
     insurance_end_date = me.StringField(required=True, max_length=20)
+    seller = me.StringField(required=True, max_length=200)
     # section ข้อมูลในตาราง
     responder_user = me.ReferenceField("User", dbref=True)
     serial_number = me.StringField(required=True, max_length=20)
     requisition_item_code = me.StringField(required=True, max_length=20)
     location = me.StringField(required=True, max_length=200)
-
     status = me.StringField(default="active", max_length=20)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     created_by = me.ReferenceField("User", dbref=True)
+
+    def get_format_insurance_duration(self):
+        def _parse(val):
+            if not val:
+                return None
+            if isinstance(val, str):
+                try:
+                    return datetime.datetime.strptime(val, "%Y-%m-%d").date()
+                except ValueError:
+                    return None
+            return getattr(val, "date", lambda: val)()
+
+        start_d = _parse(self.insurance_start_date)
+        end_d = _parse(self.insurance_end_date)
+        if not start_d or not end_d:
+            return "-"
+        if end_d < start_d:
+            return "-"
+
+        years = end_d.year - start_d.year
+        months = end_d.month - start_d.month
+        days = end_d.day - start_d.day
+
+        if days < 0:
+            months -= 1
+            previous_month_last_day = (
+                end_d.replace(day=1) - datetime.timedelta(days=1)
+            ).day
+            days += previous_month_last_day
+
+        if months < 0:
+            years -= 1
+            months += 12
+
+        parts = []
+        if years > 0:
+            parts.append(f"{years} ปี")
+        if months > 0:
+            parts.append(f"{months} เดือน")
+        if days > 0:
+            parts.append(f"{days} วัน")
+
+        return " ".join(parts) if parts else "0 วัน"

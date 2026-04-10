@@ -659,37 +659,6 @@ def completed_submit(requisition_timeline_id):
         except Exception:
             return None
 
-    def _format_insurance_duration(start_date, end_date):
-        if not start_date or not end_date:
-            return "-"
-        if end_date < start_date:
-            return "-"
-
-        years = end_date.year - start_date.year
-        months = end_date.month - start_date.month
-        days = end_date.day - start_date.day
-
-        if days < 0:
-            months -= 1
-            previous_month_last_day = (
-                end_date.replace(day=1) - datetime.timedelta(days=1)
-            ).day
-            days += previous_month_last_day
-
-        if months < 0:
-            years -= 1
-            months += 12
-
-        parts = []
-        if years > 0:
-            parts.append(f"{years} ปี")
-        if months > 0:
-            parts.append(f"{months} เดือน")
-        if days > 0:
-            parts.append(f"{days} วัน")
-
-        return " ".join(parts) if parts else "0 วัน"
-
     shared_forms_by_type = {}
     row_forms_by_type = {}
     for item_id, timeline_items in items_by_type.items():
@@ -702,9 +671,9 @@ def completed_submit(requisition_timeline_id):
             end_date = _parse_date(timeline_items[0].insurance_end_date)
             shared_form.insurance_start_date.data = start_date
             shared_form.insurance_end_date.data = end_date
-            shared_form.insurance_duration.data = _format_insurance_duration(
-                start_date, end_date
-            )
+            shared_form.insurance_duration.data = timeline_items[
+                0
+            ].get_format_insurance_duration()
         else:
             shared_form.insurance_duration.data = "-"
         shared_forms_by_type[item_id] = shared_form
@@ -735,14 +704,8 @@ def completed_submit(requisition_timeline_id):
             item.amount for item in requisition_timeline.requisition.fund
         )
 
-        def _find_progress(status):
-            for p in requisition_timeline.progress:
-                if p.progress_status == status:
-                    return p
-            return None
-
-        inspection_p = _find_progress("inspection")
-        order_confirmed_p = _find_progress("order_confirmed")
+        inspection_p = requisition_timeline.find_progress("inspection")
+        order_confirmed_p = requisition_timeline.find_progress("order_confirmed")
         form.delivered_date.data = inspection_p.created_date if inspection_p else None
         form.inspection_date.data = requisition_timeline.inspection_date
         form.paid_date.data = (
