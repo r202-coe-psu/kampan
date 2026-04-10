@@ -209,7 +209,7 @@ def export_excel():
         timeout=3600,
         job_timeout=1200,
     )
-    flash("ระบบกำลังสร้างไฟล์ส่งออกข้อมูลบุคคลากร กรุณารอสักครู่", "info")
+    flash("ระบบกำลังสร้างไฟล์ส่งออกข้อมูลบุคคลากร กรุณารอสักครู่", "pending")
     return redirect(url_for("admin.mas.index", organization_id=organization_id))
 
 
