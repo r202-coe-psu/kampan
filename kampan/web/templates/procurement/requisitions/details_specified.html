@@ -105,21 +105,24 @@
                   <!-- Row 1: ชื่อรายการ, ยี่ห้อ, รุ่น, จำนวน, ราคา -->
                   <tr>
                     <td class="p-2 w-[30%] align-top border-none">
-                      {{ renderer.render_field(item_form.product_name, class_="input input-bordered w-full") }}
+                      {{ renderer.render_field(item_form.product_name, class_="input input-bordered w-full",
+                      readonly=readonly) }}
                     </td>
                     <td class="p-2 w-[20%] align-top border-none">
-                      {{ renderer.render_field(item_form.brand, class_="input input-bordered w-full") }}
+                      {{ renderer.render_field(item_form.brand, class_="input input-bordered w-full", readonly=readonly)
+                      }}
                     </td>
                     <td class="p-2 w-[20%] align-top border-none">
-                      {{ renderer.render_field(item_form.model_name, class_="input input-bordered w-full") }}
+                      {{ renderer.render_field(item_form.model_name, class_="input input-bordered w-full",
+                      readonly=readonly) }}
                     </td>
                     <td class="p-2 w-[15%] align-top border-none">
                       {{ renderer.render_number_field(item_form.quantity, class_="input input-bordered w-full
-                      text-center", min=1) }}
+                      text-center", min=1, readonly=readonly) }}
                     </td>
                     <td class="p-2 w-[15%] align-top border-none">
                       {{ renderer.render_number_field(item_form.amount, class_="input input-bordered w-full text-right",
-                      min=0) }}
+                      min=0, readonly=readonly) }}
                     </td>
                   </tr>
                 </tbody>
@@ -129,13 +132,14 @@
             <!-- Row 2: ผู้ชนะ, ผังบัญชี, หมายเหตุ -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full px-2 pb-2">
               <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.winner, class_="input input-bordered w-full") }}
+                {{ renderer.render_field(item_form.winner, class_="input input-bordered w-full", readonly=readonly) }}
               </div>
               <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.account_code, class_="input input-bordered w-full")}}
+                {{ renderer.render_field(item_form.account_code, class_="input input-bordered w-full",
+                readonly=readonly)}}
               </div>
               <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.note, class_="input input-bordered w-full") }}
+                {{ renderer.render_field(item_form.note, class_="input input-bordered w-full", readonly=readonly) }}
               </div>
             </div>
           </div>
@@ -283,7 +287,7 @@
     if (container) {
       container.addEventListener('click', function (e) {
         let btn = e.target.closest('button');
-        if (!btn) return;
+        if (!btn) return; 0
 
         const card = btn.closest('.item-card');
         if (!card) return;
@@ -357,13 +361,5 @@
 
   });
 
-  if (typeof readonly !== 'undefined' && readonly) {
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelectorAll('#details-specified-form input, #details-specified-form select, #details-specified-form textarea').forEach(function (el) {
-        el.setAttribute('disabled', 'disabled');
-        el.classList.add('bg-base-200', 'cursor-not-allowed');
-      });
-    });
-  }
 </script>
 {% endblock %}
