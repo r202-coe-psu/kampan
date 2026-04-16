@@ -18,6 +18,7 @@ class ExportFile(me.Document):
     status = me.StringField(
         choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0], required=True
     )
+    type_ = me.StringField(required=True)
     created_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )

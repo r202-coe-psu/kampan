@@ -401,5 +401,10 @@ def process_mas_export(current_user, start_date=None, end_date=None):
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
     export_mas_file.file_name = filename
+    export_mas_file.type_ = "mas_export"
     export_mas_file.save()
     return True
+
+
+def requsition_timeline_items_export(current_user, start_date=None, end_date=None):
+    pass

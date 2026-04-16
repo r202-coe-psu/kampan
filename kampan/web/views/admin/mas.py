@@ -184,7 +184,7 @@ def export_excel_modal():
     form = forms.mas.ExportMASExcelForm()
     organization_id = request.args.get("organization_id")
     exported_file = models.export_file.ExportFile.objects(
-        created_by=current_user._get_current_object()
+        created_by=current_user._get_current_object(), type_="mas_export"
     ).first()
 
     return render_template(
