@@ -192,6 +192,8 @@ def export_excel_modal():
         modal_id=modal_id,
         exported_file=exported_file,
         organization_id=organization_id,
+        modal_title="ส่งออกข้อมูลบุคลากร",
+        url_for_export="admin.mas.download_exported_file",
         form=form,
     )
 
