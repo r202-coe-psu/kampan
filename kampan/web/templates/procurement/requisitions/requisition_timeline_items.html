@@ -6,6 +6,7 @@
 {% block title %}รายการสินค้า{% endblock %}
 
 {% block content %}
+<div id="export_excel_modal"></div>
 <div class="container mx-auto px-4 py-6">
   <!-- แสดงจำนวนรายการ -->
   <div class="flex items-center justify-between mb-4">
@@ -13,6 +14,15 @@
       <span class="text-blue-700 font-semibold text-sm">
         {{ requisition_timeline_items|length }} รายการ
       </span>
+    </div>
+
+    <div class="flex items-end gap-1">
+      <button
+        class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-300 transition md:mt-0 mt-4"
+        hx-target="#export_excel_modal" hx-get="{{ url_for('procurement.requisition_timeline_items.export_excel_modal', **request.args) }}">
+        <i class="ph ph-download mr-2"></i>
+        ส่งออกข้อมูลสินค้า
+      </button>
     </div>
   </div>
 

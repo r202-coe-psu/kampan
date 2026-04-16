@@ -44,7 +44,7 @@
               <span class="text-sm text-gray-500 block">อัปเดตเมื่อ
                 {{ exported_file.updated_date.strftime("%d %B %Y, %H:%M") }}</span>
             </div>
-            <a href="{{ url_for(url_for_export, export_id=exported_file.id) }}" class="btn btn-sm"
+            <a href="{{ url_for(url_for_download, export_id=exported_file.id) }}" class="btn btn-sm"
               download>
               <i class="ph ph-download"></i> ดาวน์โหลด
             </a>
@@ -65,7 +65,7 @@
     const startDate = document.querySelector('#export-mas-form input[name="start_date"]').value;
     const endDate = document.querySelector('#export-mas-form input[name="end_date"]').value;
 
-    const baseUrl = "{{ url_for('admin.mas.export_excel', organization_id=organization_id, start_date='START_OBJ', end_date='END_OBJ') | safe }}";
+    const baseUrl = "{{ url_for(url_for_export, organization_id=organization_id, start_date='START_OBJ', end_date='END_OBJ') | safe }}";
     const exportUrl = baseUrl.replace('START_OBJ', encodeURIComponent(startDate)).replace('END_OBJ', encodeURIComponent(endDate));
     window.location.href = exportUrl;
     if (modal) {
