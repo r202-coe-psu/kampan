@@ -20,6 +20,7 @@ from ... import redis_rq
 import datetime
 import json
 import hashlib
+from bson.objectid import ObjectId
 
 
 module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_timeline")
@@ -368,15 +369,71 @@ def billing_modal(requisition_timeline_id):
 
     is_readonly = request.args.get("readonly") == "1"
 
+    def _to_object_id(value):
+        if value is None:
+            return None
+        if isinstance(value, ObjectId):
+            return value
+        try:
+            return ObjectId(str(value))
+        except Exception:
+            return value
+
+    def _normalize_saved_allocations(allocations):
+        normalized = []
+        for alloc in allocations or []:
+            alloc_id = getattr(alloc, "item_id", None)
+            if alloc_id is None and isinstance(alloc, dict):
+                alloc_id = alloc.get("item_id")
+            # Backward compatibility for previously saved rows.
+            if alloc_id is None:
+                alloc_id = getattr(alloc, "_id", None)
+            if alloc_id is None and isinstance(alloc, dict):
+                alloc_id = alloc.get("_id")
+
+            source_allocations = getattr(alloc, "allocations", None)
+            if source_allocations is None and isinstance(alloc, dict):
+                source_allocations = alloc.get("allocations", [])
+
+            normalized_allocations = []
+            for source in source_allocations or []:
+                reservation_id = getattr(source, "reservation_id", None)
+                if reservation_id is None and isinstance(source, dict):
+                    reservation_id = source.get("reservation_id")
+
+                amount = getattr(source, "amount", None)
+                if amount is None and isinstance(source, dict):
+                    amount = source.get("amount")
+
+                item_amount = getattr(source, "item_amount", None)
+                if item_amount is None and isinstance(source, dict):
+                    item_amount = source.get("item_amount")
+
+                normalized_allocations.append(
+                    {
+                        "reservation_id": _to_object_id(reservation_id),
+                        "amount": float(amount or 0),
+                        "item_amount": int(item_amount or 0),
+                    }
+                )
+
+            normalized.append(
+                (
+                    str(alloc_id) if alloc_id is not None else "",
+                    normalized_allocations,
+                )
+            )
+
+        return normalized
+
     def _render_page(errors=None):
         item_source_map = {}
         if requisition_timeline.fund_allocations:
-            for item in requisition_timeline.requisition.items:
-                item_source_map[str(item._id)] = (
-                    requisition_timeline.fund_allocations.get(str(item._id), {}).get(
-                        "allocations", []
-                    )
-                )
+            for alloc_id, alloc_sources in _normalize_saved_allocations(
+                requisition_timeline.fund_allocations
+            ):
+                if alloc_id:
+                    item_source_map[alloc_id] = alloc_sources
 
         # Generate JSON payloads for JavaScript to avoid Jinja/formatter issues
         reservation_limits_dict = {}
@@ -429,7 +486,7 @@ def billing_modal(requisition_timeline_id):
     purchase_method = form.purchase_method.data
     quotation_winner = (form.quotation_winner.data or "").strip()
     usage_amounts = {}
-    item_allocations = {}
+    item_allocations = []
     total_amount = 0.0
 
     if not purchase_method:
@@ -488,11 +545,11 @@ def billing_modal(requisition_timeline_id):
                     )
                     continue
                 allocations.append(
-                    {
-                        "reservation_id": source_id,
-                        "amount": round(amount, 2),
-                        "item_amount": item_amount,
-                    }
+                    models.FundAllocationSource(
+                        reservation_id=ObjectId(source_id),
+                        amount=round(amount, 2),
+                        item_amount=item_amount,
+                    )
                 )
                 usage_amounts[source_id] = round(
                     float(usage_amounts.get(source_id, 0)) + amount, 2
@@ -534,11 +591,11 @@ def billing_modal(requisition_timeline_id):
                             f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
                         )
                     allocations.append(
-                        {
-                            "reservation_id": source_id,
-                            "amount": round(amount, 2),
-                            "item_amount": item_amount if item_amount >= 0 else 0,
-                        }
+                        models.FundAllocationSource(
+                            reservation_id=ObjectId(source_id),
+                            amount=round(amount, 2),
+                            item_amount=item_amount if item_amount >= 0 else 0,
+                        )
                     )
                     usage_amounts[source_id] = round(
                         float(usage_amounts.get(source_id, 0)) + amount, 2
@@ -551,14 +608,17 @@ def billing_modal(requisition_timeline_id):
                 f"ผลรวมจำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
             )
 
-        item_allocations[item_id] = {
-            "multi_source": is_multi_source,
-            "allocations": allocations,
-            "account_code": request.form.get(
-                f"item-{item_id}-account_code", ""
-            ).strip(),
-            "item_total": round(item_total, 2),
-        }
+        item_allocations.append(
+            models.FundAllocation(
+                item_id=item._id,
+                multi_source=is_multi_source,
+                allocations=allocations,
+                account_code=request.form.get(
+                    f"item-{item_id}-account_code", ""
+                ).strip(),
+                item_total=round(item_total, 2),
+            )
+        )
         total_amount += item_total
 
     if errors:

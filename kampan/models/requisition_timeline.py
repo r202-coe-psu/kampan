@@ -41,6 +41,20 @@ class CompletedProgressDetail(me.EmbeddedDocument):
     account_code = me.StringField(required=True, max_length=200)
 
 
+class FundAllocationSource(me.EmbeddedDocument):
+    reservation_id = me.ObjectIdField(required=True)
+    amount = me.FloatField(required=True)
+    item_amount = me.IntField(required=True, min_value=0, default=0)
+
+
+class FundAllocation(me.EmbeddedDocument):
+    item_id = me.ObjectIdField(required=True, default=ObjectId)
+    multi_source = me.BooleanField(default=False)
+    allocations = me.EmbeddedDocumentListField(FundAllocationSource, default=list)
+    account_code = me.StringField(max_length=200)
+    item_total = me.FloatField(default=0)
+
+
 class RequisitionTimeline(me.Document):
     meta = {"collection": "requisition_timeline"}
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
@@ -53,7 +67,7 @@ class RequisitionTimeline(me.Document):
     payment_amount = me.FloatField()
     total_amount = me.FloatField()
     fund_usage_amounts = me.DictField(default=dict)
-    fund_allocations = me.DictField(default=dict)
+    fund_allocations = me.EmbeddedDocumentListField(FundAllocation, default=list)
     completed_progress_detail = me.EmbeddedDocumentField(CompletedProgressDetail)
     status = me.StringField(default="active", max_length=20)
     updated_date = me.DateTimeField(default=datetime.datetime.now)

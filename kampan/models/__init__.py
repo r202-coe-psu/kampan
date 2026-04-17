@@ -34,6 +34,8 @@ from .requisition_timeline import (
     PROGRESS_STATUS_CHOICES,
     RequisitionTimelineLogs,
     CompletedProgressDetail,
+    FundAllocation,
+    FundAllocationSource,
 )
 from .export_file import ExportFile
 
