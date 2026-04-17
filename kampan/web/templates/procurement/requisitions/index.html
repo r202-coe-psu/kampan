@@ -67,8 +67,7 @@
           {% if item.end_date %}
           <div class="text-center">
             <div class="text-xs font-medium text-gray-500 mb-1">เหลือเวลา</div>
-            <div class="countdown-pulse" id="countdown-{{ item.id }}" data-end-date="{{ item.end_date.strftime("
-              %Y-%m-%dT00:00:00Z") }}"></div>
+            <div class="countdown-pulse" id="countdown-{{ item.id }}" data-end-date="{{ item.end_date.strftime('%Y-%m-%dT00:00:00Z') }}"></div>
             <!-- Progress bar for visual remaining time (updated by JS) -->
             <div class="w-28 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden mx-auto">
               <div id="progress-{{ item.id }}" class="h-full bg-emerald-400 w-0"></div>
