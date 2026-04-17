@@ -17,12 +17,12 @@
       <div class="modal-box">
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
-        
+
         <!-- เช็คว่า step ต่อไปเป็น payment_processed ไหม (step ปัจจุบันคือ inspection) -->
         {% if step_key == 'payment_processed' and inspection_form %}
-        <div class="form-control w-full mb-4">
-          {{ renderer.date_field_js(inspection_form.inspection_date) }}
-        </div>
+          <div class="form-control w-full mb-4">
+            {{ renderer.date_field_js(inspection_form.inspection_date) }}
+          </div>
         {% endif %}
 
         <div class="modal-action">
@@ -281,12 +281,7 @@
                             <i class="ph ph-list-checks text-blue-600"></i>
                             รายละเอียดขั้นตอนการดำเนินงาน
                           </h4>
-                          <!-- View all items button (all roles) -->
-                          <button type="button"
-                                  class="btn btn-sm btn-primary"
-                                  onclick="document.getElementById('modal-items-{{ item.requisition.id }}').showModal();">
-                            <i class="ph ph-list-checks"></i> ดูรายการทั้งหมด
-                          </button>
+
                         </div>
                         <div class="space-y-2">
                           <div class="relative">
@@ -437,12 +432,10 @@
                                           </span>
                                         </div>
                                         {% if step.key == 'inspection' and is_done and item.inspection_date %}
-                                        <div class="flex items-center gap-1 font-semibold text-blue-600">
-                                          <i class="ph ph-calendar"></i>
-                                          <span>
-                                            วันที่ตรวจรับ: {{ item.inspection_date|format_thai_date }}
-                                          </span>
-                                        </div>
+                                          <div class="flex items-center gap-1 font-semibold text-blue-600">
+                                            <i class="ph ph-calendar"></i>
+                                            <span>วันที่ตรวจรับ: {{ item.inspection_date|format_thai_date }}</span>
+                                          </div>
                                         {% endif %}
                                       </div>
                                     </div>
