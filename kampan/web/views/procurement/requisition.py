@@ -117,6 +117,10 @@ def index():
         and not current_user.has_organization_roles("admin")
     ):
         procurements = procurements.filter(responsible_by=org_user_role)
+
+    # Order by expiration date (earliest first)
+    procurements = procurements.order_by("end_date")
+
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=8, type=int)
     paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
