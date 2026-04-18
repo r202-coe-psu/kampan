@@ -24,6 +24,31 @@ from decimal import Decimal  # เพิ่ม
 module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 
 
+def apply_expiration_date_filter(procurements, date_range):
+    if not date_range:
+        return procurements
+
+    today = datetime.datetime.now().date()
+
+    if date_range == "1_month":
+        end_date = today + datetime.timedelta(days=30)
+        return procurements.filter(end_date__gte=today, end_date__lte=end_date)
+    elif date_range == "3_months":
+        end_date = today + datetime.timedelta(days=90)
+        return procurements.filter(end_date__gte=today, end_date__lte=end_date)
+    elif date_range == "6_months":
+        end_date = today + datetime.timedelta(days=180)
+        return procurements.filter(end_date__gte=today, end_date__lte=end_date)
+    elif date_range == "1_year":
+        end_date = today + datetime.timedelta(days=365)
+        return procurements.filter(end_date__gte=today, end_date__lte=end_date)
+    elif date_range == "more_than_1_year":
+        end_date = today + datetime.timedelta(days=365)
+        return procurements.filter(end_date__gt=end_date)
+
+    return procurements
+
+
 def generate_next_requisition_code():
     now = datetime.datetime.now()
     buddhist_year = now.year + 543
@@ -53,6 +78,8 @@ def index():
     product_number = request.args.get("product_number", "")
     asset_code = request.args.get("asset_code", "")
     procurement_id = request.args.get("procurement_id", "")
+    expiration_date_range = request.args.get("expiration_date_range", "3_months")
+
     if category:
         query["category"] = category
     if name:
@@ -64,8 +91,12 @@ def index():
     if procurement_id:
         query["id__icontains"] = procurement_id
 
-    # Filter only items expiring within 7 days and status pending
-    procurements = models.Procurement.objects(**query, status="pending")
+    if expiration_date_range == "3_months":
+        procurements = models.Procurement.objects(**query, status="pending")
+    else:
+        # Apply expiration date range filter
+        procurements = models.Procurement.objects(**query)
+        procurements = apply_expiration_date_filter(procurements, expiration_date_range)
 
     # ถ้ากด redirect button มาจากหน้ารายการ MA ให้ดึงค่าต่างๆ มาแสดงในช่องค้นหา
     if procurement_id:
@@ -101,6 +132,7 @@ def index():
         selected_name=name,
         selected_product_number=product_number,
         selected_asset_code=asset_code,
+        selected_expiration_date_range=expiration_date_range,
     )
 
 

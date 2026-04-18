@@ -112,6 +112,18 @@ class RequisitionFilterForm(FlaskForm):
         "รหัสครุภัณฑ์",
         validators=[validators.Optional()],
     )
+    expiration_date_range = fields.SelectField(
+        "ช่วงเวลาหมดอายุ",
+        choices=[
+            ("1_month", "1 เดือน"),
+            ("3_months", "3 เดือน"),
+            ("6_months", "6 เดือน"),
+            ("1_year", "1 ปี"),
+            ("more_than_1_year", "มากกว่า 1 ปี"),
+        ],
+        default="3_months",
+        validators=[validators.Optional()],
+    )
 
 
 class RenewalRequestedFilterForm(FlaskForm):
