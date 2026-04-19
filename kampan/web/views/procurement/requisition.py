@@ -30,6 +30,8 @@ def apply_expiration_date_filter(procurements, date_range):
 
     today = datetime.datetime.now().date()
 
+    if date_range == "expired":
+        return procurements.filter(end_date__lt=today)
     if date_range == "1_month":
         end_date = today + datetime.timedelta(days=30)
         return procurements.filter(end_date__gte=today, end_date__lte=end_date)
@@ -91,12 +93,8 @@ def index():
     if procurement_id:
         query["id__icontains"] = procurement_id
 
-    if expiration_date_range == "3_months":
-        procurements = models.Procurement.objects(**query, status="pending")
-    else:
-        # Apply expiration date range filter
-        procurements = models.Procurement.objects(**query)
-        procurements = apply_expiration_date_filter(procurements, expiration_date_range)
+    procurements = models.Procurement.objects(**query)
+    procurements = apply_expiration_date_filter(procurements, expiration_date_range)
 
     # ถ้ากด redirect button มาจากหน้ารายการ MA ให้ดึงค่าต่างๆ มาแสดงในช่องค้นหา
     if procurement_id:

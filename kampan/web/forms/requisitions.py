@@ -115,6 +115,7 @@ class RequisitionFilterForm(FlaskForm):
     expiration_date_range = fields.SelectField(
         "ช่วงเวลาหมดอายุ",
         choices=[
+            ("expired", "หมดอายุแล้ว"),
             ("1_month", "1 เดือน"),
             ("3_months", "3 เดือน"),
             ("6_months", "6 เดือน"),
