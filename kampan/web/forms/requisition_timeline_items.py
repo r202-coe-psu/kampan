@@ -12,6 +12,10 @@ class RequisitionTimelineItemFilterForm(FlaskForm):
     end_date = fields.DateField(
         "วันที่สิ้นสุด", format="%Y-%m-%d", validators=[validators.Optional()]
     )
+    user = fields.SelectField(
+        "ผู้รับผิดชอบ",
+        choices=[],
+    )
 
 
 class ExportExcelForm(FlaskForm):

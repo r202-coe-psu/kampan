@@ -39,16 +39,37 @@ def index():
     form = forms.requisition_timeline_items.RequisitionTimelineItemFilterForm(
         request.args
     )
-    query = {}
+    # get users สําหรับทํา filter choice
+    users = models.User.objects()
+    form.user.choices = [(str(user.id), f"{user.get_name()}") for user in users]
+    # เเสดง items เเค่ของเฉพาะรายการ timeline ที่ completed เเล้วเท่านั้น
+    # scalar("id") จะทําการกรองเเค่ id ที่ get มา
+    completed_timelines = models.RequisitionTimeline.objects(status="completed").scalar(
+        "id"
+    )
+    query = {"requisition_timeline__in": list(completed_timelines)}
     if form.start_date.data and form.end_date.data:
         query["created_date__gte"] = form.start_date.data
         query["created_date__lte"] = form.end_date.data
+    if form.user.data:
+        query["responder_user"] = form.user.data
     requisition_timeline_items = models.RequisitionTimelineItem.objects(**query)
+
+    # จัดเรียงข้อมูลและทำ Pagination
+    requisition_timeline_items = requisition_timeline_items.order_by("-created_date")
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=20, type=int)
+
+    paginated_items = Pagination(
+        requisition_timeline_items, page=page, per_page=per_page
+    )
+
     return render_template(
         "procurement/requisitions/requisition_timeline_items.html",
         organization=organization,
         form=form,
         requisition_timeline_items=requisition_timeline_items,
+        paginated_items=paginated_items,
     )
 
 

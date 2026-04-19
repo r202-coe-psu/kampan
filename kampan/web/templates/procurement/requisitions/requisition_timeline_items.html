@@ -2,6 +2,8 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/procurement/macros/requisition_timeline_items_table.html' as table_macros %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
 
 {% block title %}รายการสินค้า{% endblock %}
 
@@ -12,14 +14,15 @@
   <div class="flex items-center justify-between mb-4">
     <div class="bg-blue-50 border border-blue-200 rounded-full px-4 py-2">
       <span class="text-blue-700 font-semibold text-sm">
-        {{ requisition_timeline_items|length }} รายการ
+        {{ paginated_items.total }} รายการ
       </span>
     </div>
 
     <div class="flex items-end gap-1">
       <button
         class="flex btn items-center gap-1 bg-white border-2 border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-300 transition md:mt-0 mt-4"
-        hx-target="#export_excel_modal" hx-get="{{ url_for('procurement.requisition_timeline_items.export_excel_modal', **request.args) }}">
+        hx-target="#export_excel_modal"
+        hx-get="{{ url_for('procurement.requisition_timeline_items.export_excel_modal', **request.args) }}">
         <i class="ph ph-download mr-2"></i>
         ส่งออกข้อมูลสินค้า
       </button>
@@ -32,7 +35,7 @@
       {% if organization %}
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
       {% endif %}
-
+      {{ renderer.render_search_select_field(form.user) }}
       {{ renderer.base_render(form.start_date) }}
       {{ renderer.base_render(form.end_date) }}
 
@@ -68,9 +71,12 @@
   <!-- Desktop and Mobile View -->
   <div class="mt-4">
     {{ table_macros.render_requisition_timeline_items_table(
-    requisition_timeline_items,
+    paginated_items.items,
     organization
     ) }}
+    <div class="mt-4 flex justify-end">
+      {{ paginated.render_pagination(paginated_items, "procurement.requisition_timeline_items.index", request.args) }}
+    </div>
   </div>
   {% endif %}
 </div>
