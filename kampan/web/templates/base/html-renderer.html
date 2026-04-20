@@ -55,7 +55,7 @@ hide_label=False
     {% endif %}
   </legend>
   {% endif %}
-  <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
+  <label class="{{ style }} validator {% if readonly %}input-readonly{% endif %}">
     {% if prefix %}
     {{ prefix_icon }}
     {% endif %}
@@ -64,7 +64,8 @@ hide_label=False
     {{ suffix_icon }}
     {% endif %}
   </label>
-  <span class="validator-hint text-error text-sm">
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -74,6 +75,7 @@ hide_label=False
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </span>
+  {% endif %}
 </fieldset>
 {% endif %}
 {% endmacro %}
@@ -132,7 +134,7 @@ hide_label=False
     {% endif %}
   </legend>
   {% endif %}
-  <label class="w-full input validator {% if readonly %}input-readonly{% endif %}">
+  <label class="{{ style }} validator {% if readonly %}input-readonly{% endif %}">
     {% if prefix %}
     {{ prefix_icon }}
     {% endif %}
@@ -150,7 +152,8 @@ hide_label=False
     {% endif %}
   </label>
 
-  <span class="fieldset-label text-error">
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
     {% for error in field.errors %}
 
     {% if 'This field is required' in error %}
@@ -163,6 +166,7 @@ hide_label=False
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </span>
+  {% endif %}
 </fieldset>
 {% endif %}
 {% endmacro %}
@@ -204,7 +208,8 @@ optionals={}) %}
     {{ field(class_="w-full bg-transparent appearance-none outline-none border-none", **kwargs) }}
     {% endif %}
   </label>
-  <span class="validator-hint text-error text-sm">
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -214,6 +219,7 @@ optionals={}) %}
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </span>
+  {% endif %}
 </fieldset>
 {% endmacro %}
 
@@ -257,8 +263,8 @@ readonly=False) %}
       </div>
     </button>
 
-    <div id="cally-popover-{{ field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box" style="max-height: 400px; overflow-y: auto;" {% if
-      readonly or disabled %} hidden {% endif %}>
+    <div id="cally-popover-{{ field.id }}" class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
+      style="max-height: 400px; overflow-y: auto;" {% if readonly or disabled %} hidden {% endif %}>
       <calendar-date class="cally" onchange="{
                   const callyData = document.getElementById('cally-data-{{ field.id }}');
                   callyData.innerText = new Date(this.value).toLocaleDateString('en-GB')
@@ -274,7 +280,8 @@ readonly=False) %}
     </div>
   </div>
 
-  <p class="validator-hint">
+  {% if field.errors %}
+  <p class="fieldset-label text-error text-sm mt-1">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -284,6 +291,7 @@ readonly=False) %}
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </p>
+  {% endif %}
 </fieldset>
 
 <script>
@@ -349,7 +357,11 @@ readonly=False) %}
     </div>
     </calendar-range>
   </div>
-  <p class="validator-hint">
+  {% if end_field.errors or start_field.errors %}
+  <p class="fieldset-label text-error text-sm mt-1">
+    {% for error in start_field.errors %}
+    {{ error }}<br>
+    {% endfor %}
     {% for error in end_field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -359,6 +371,7 @@ readonly=False) %}
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </p>
+  {% endif %}
 </fieldset>
 <script>
   initDateRange("cally-{{ start_field.id }}", "cally-popover-{{ start_field.id }}", "{{ start_field.id }}", "{{ end_field.id }}", "cally-data-{{ start_field.id }}");
@@ -622,7 +635,8 @@ placeholder="", hide_label=False) %}
     </ul>
   </div>
 
-  <p class="validator-hint text-error">
+  {% if field.errors %}
+  <p class="fieldset-label text-error text-sm mt-1">
     {% for error in field.errors %}
     {% if 'This field is required' in error %}
     กรุณากรอกข้อมูล
@@ -632,6 +646,7 @@ placeholder="", hide_label=False) %}
     {% if not loop.last %}<br>{% endif %}
     {% endfor %}
   </p>
+  {% endif %}
 </fieldset>
 
 <script>

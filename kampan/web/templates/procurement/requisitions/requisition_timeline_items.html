@@ -39,13 +39,13 @@
       {{ renderer.base_render(form.start_date) }}
       {{ renderer.base_render(form.end_date) }}
 
-      <div class="pb-3.5">
+      <div>
         <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
           <i class="ph ph-magnifying-glass mr-2"></i>
           ค้นหา
         </button>
       </div>
-      <div class="pb-3.5 min-w-fit">
+      <div class="min-w-fit">
         <a href="{{ url_for('procurement.requisition_timeline_items.index', organization_id=organization.id if organization else '') }}"
           class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
           <i class="ph ph-x mr-2"></i>
