@@ -24,7 +24,7 @@
 {% block content %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary" href="{{ url_for('item_orders.index', organization_id=organization.id) }}">
+    <a class="btn btn-primary cursor-pointer" onclick="window.history.back()">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>

@@ -125,16 +125,41 @@
 <div class="grid grid-cols-1 gap-2 mt-2 lg:grid-cols-3 sm:grid-cols-2 2xl:grid-cols-4 w-full overflow-x-auto">
   {% for item in paginated_items.items %}
   <div class="w-full card bg-base-100 shadow-sm ">
-    <figure>
+    <figure class="overflow-hidden">
       {% if not item.image %}
-      <img src="{{ url_for('static', filename='/images/image.png') }}" alt="{{ item.name }}">
+      <img src="{{ url_for('static', filename='/images/image.png') }}"
+        class="h-100 w-full object-cover bg-base-200 p-2 cursor-pointer transition-transform hover:scale-105"
+        alt="{{ item.name }}" onclick="document.getElementById('image_modal_{{ item.id }}').showModal()">
       {% else %}
       <img
         src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
-        alt="{{ item.name }}">
+        class="h-100 w-full object-cover cursor-pointer transition-transform hover:scale-105" alt="{{ item.name }}"
+        onclick="document.getElementById('image_modal_{{ item.id }}').showModal()">
       {% endif %}
-
     </figure>
+
+    <!-- Modal for Full Image -->
+    <dialog id="image_modal_{{ item.id }}" class="modal">
+      <div class="modal-box w-11/12 max-w-4xl p-4">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4">{{ item.name }}</h3>
+        <div class="flex justify-center w-full">
+          {% if not item.image %}
+          <img src="{{ url_for('static', filename='/images/image.png') }}"
+            class="max-w-full max-h-[75vh] object-contain rounded-lg" alt="{{ item.name }}">
+          {% else %}
+          <img
+            src="{{ url_for('items.image', item_id=item.id, filename=item.image.filename, organization_id=organization.id) }}"
+            class="max-w-full max-h-[75vh] object-contain rounded-lg" alt="{{ item.name }}">
+          {% endif %}
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
     <div class="card-body">
       <div class="text-2xl font-bold">ชื่อวัสดุ : {{ item.name }}</div>
       <div class=" text-2xl font-bold">จำนวน : {{ item.get_items_quantity() }}</div>
@@ -159,15 +184,16 @@
           </a>
         </div>
         {{ ModalPositive(
-          id=item.id | string + "_confirm",
-          header="บันทึกวัสดุ",
-          body="ต้องการบันทึกวัสดุ <b> %s </b>" | format(item.name) + "หรือไม่?" + ' <span class="text-error">คำเตือน : สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
-            และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
-            *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>',
-          cancel="ยกเลิก",
-          submit="ยืนยัน",
-          redirect=url_for('items.confirm', item_id=item.id, **request.args),
-          ) }}
+        id=item.id | string + "_confirm",
+        header="บันทึกวัสดุ",
+        body="ต้องการบันทึกวัสดุ <b> %s </b>" | format(item.name) + "หรือไม่?" + ' <span class="text-error">คำเตือน :
+          สามารถยืนยันวัสดุได้ครั้งเดียวเท่านั้น
+          และไม่สามารถแก้ไขรายละเอียดได้อีกต่อไป
+          *โปรดตรวจสอบความถูกต้องก่อนยืนยัน*</span>',
+        cancel="ยกเลิก",
+        submit="ยืนยัน",
+        redirect=url_for('items.confirm', item_id=item.id, **request.args),
+        ) }}
 
 
 
@@ -192,13 +218,13 @@
         {% endif %}
 
         {{ ModalNegative(
-          id=item.id,
-          header="ลบวัสดุ",
-          body="ต้องการลบวัสดุ <b> %s </b>" | format(item.name),
-          cancel="ยกเลิก",
-          submit="ยืนยัน",
-          redirect=url_for('items.delete', item_id=item.id, **request.args),
-          ) }}
+        id=item.id,
+        header="ลบวัสดุ",
+        body="ต้องการลบวัสดุ <b> %s </b>" | format(item.name),
+        cancel="ยกเลิก",
+        submit="ยืนยัน",
+        redirect=url_for('items.delete', item_id=item.id, **request.args),
+        ) }}
 
       </div>
     </div>
