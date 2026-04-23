@@ -26,6 +26,7 @@ openpyxl = "^3.1.2"
 pillow = "^11.0.0"
 pypdf2 = "^3.0.1"
 dotenv = "^0.9.9"
+qrcode = "^8.2"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^3.9.2"

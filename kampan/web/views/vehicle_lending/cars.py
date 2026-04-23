@@ -11,6 +11,8 @@ from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
 import datetime
+import io
+import qrcode
 
 from kampan.web import forms, acl
 from kampan import models
@@ -114,3 +116,65 @@ def delete(car_id):
     car.save()
 
     return redirect(url_for("vehicle_lending.cars.index", **request.args))
+
+
+@module.route("/<car_id>/qrcode")
+@acl.organization_roles_required("admin", "supervisor supplier")
+def qr_code(car_id):
+    organization_id = request.args.get("organization_id")
+    car = models.vehicles.Car.objects(id=car_id).first()
+    if not car:
+        return abort(404)
+
+    feedback_url = url_for(
+        "vehicle_lending.cars.feedback",
+        car_id=car_id,
+        _external=True,
+    )
+
+    img = qrcode.make(feedback_url)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return send_file(
+        buf, mimetype="image/png", download_name=f"qrcode_{car.license_plate}.png"
+    )
+
+
+@module.route("/<car_id>/feedback", methods=["GET", "POST"])
+def feedback(car_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+
+    car = models.vehicles.Car.objects(id=car_id).first()
+    if not car:
+        return abort(404)
+
+    form = forms.vehicles.CarFeedbackForm()
+
+    if form.validate_on_submit():
+        fb = models.vehicles.CarFeedback()
+        fb.car = car
+        fb.start_date = form.start_datetime.data
+        fb.end_date = form.end_datetime.data
+        fb.driver_politeness_score = form.driver_politeness_score.data
+        fb.driving_safety_score = form.driving_safety_score.data
+        fb.car_cleanliness_score = form.car_cleanliness_score.data
+        fb.overall = form.overall.data
+        fb.comment = form.comment.data or ""
+        fb.save()
+
+        return render_template(
+            "/vehicle_lending/cars/feedback_thanks.html",
+            car=car,
+            organization=organization,
+        )
+
+    return render_template(
+        "/vehicle_lending/cars/feedback.html",
+        car=car,
+        organization=organization,
+        form=form,
+    )

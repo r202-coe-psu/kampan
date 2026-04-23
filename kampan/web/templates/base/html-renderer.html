@@ -971,3 +971,32 @@ items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-1
   {% endfor %}
 </fieldset>
 {% endmacro %}
+
+
+{% macro star_rating_field(field, hide_label=False) %}
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  {% if not hide_label %}
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  {% endif %}
+
+  <div class="rating rating-lg {% if field.errors %}outline outline-error outline-offset-2 rounded-md{% endif %}">
+    {% for i in range(1, 6) %}
+    <input type="radio" id="{{ field.id }}_star{{ i }}" name="{{ field.name }}" value="{{ i }}"
+      class="mask mask-star-2 bg-orange-400" aria-label="{{ i }} star" {{ 'checked' if field.data==i else '' }}>
+    {% endfor %}
+  </div>
+
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
+    {% for error in field.errors %}
+    {{ error }}{% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </span>
+  {% endif %}
+</fieldset>
+{% endmacro %}

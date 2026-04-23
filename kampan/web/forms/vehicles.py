@@ -56,3 +56,41 @@ class MotorcycleForm(BaseMotorcycleForm):
         "รูปภาพ",
         validators=[FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
+
+
+class CarFeedbackForm(FlaskForm):
+    start_datetime = fields.DateTimeField(
+        "เวลาเริ่มต้น", format="%Y-%m-%dT%H:%M", validators=[validators.DataRequired()]
+    )
+    end_datetime = fields.DateTimeField(
+        "เวลาสิ้นสุด", format="%Y-%m-%dT%H:%M", validators=[validators.DataRequired()]
+    )
+    driver_politeness_score = fields.IntegerField(
+        "คะแนน (1-5)",
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=1, max=5, message="คะแนนต้องอยู่ระหว่าง 1 ถึง 5"),
+        ],
+    )
+    driving_safety_score = fields.IntegerField(
+        "คะแนน (1-5)",
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=1, max=5, message="คะแนนต้องอยู่ระหว่าง 1 ถึง 5"),
+        ],
+    )
+    car_cleanliness_score = fields.IntegerField(
+        "คะแนน (1-5)",
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=1, max=5, message="คะแนนต้องอยู่ระหว่าง 1 ถึง 5"),
+        ],
+    )
+    overall = fields.IntegerField(
+        "คะแนน (1-5)",
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=1, max=5, message="คะแนนต้องอยู่ระหว่าง 1 ถึง 5"),
+        ],
+    )
+    comment = fields.TextAreaField("ความคิดเห็น", validators=[validators.Optional()])

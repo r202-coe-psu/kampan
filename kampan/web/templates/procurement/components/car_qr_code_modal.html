@@ -1,0 +1,41 @@
+<dialog id="qr-modal" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box flex flex-col items-center gap-4">
+        <h3 class="font-bold text-lg text-center w-full" id="qr-modal-title">QR Code</h3>
+        <div class="p-3 bg-white border border-base-300 rounded-xl shadow-inner">
+            <img id="qr-modal-img" src="" alt="QR Code" class="w-56 h-56 object-contain">
+        </div>
+        <p class="text-base-content/50 text-sm text-center">
+            <i class="ph ph-scan"></i> สแกน QR Code เพื่อส่งคำประเมิน
+        </p>
+        <div class="modal-action w-full flex gap-2 justify-center">
+            <a id="qr-download-btn" href="#" download="qrcode.png" class="btn btn-primary">
+                <i class="ph ph-download-simple"></i> ดาวน์โหลด
+            </a>
+            <button class="btn btn-ghost" onclick="document.getElementById('qr-modal').close()">
+                ปิด
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.qr-btn');
+        if (!btn) return;
+
+        const licensePlate = btn.dataset.license;
+        const qrUrl = btn.dataset.qrUrl;
+
+        document.getElementById('qr-modal-title').textContent = 'QR Code — ' + licensePlate;
+        document.getElementById('qr-modal-img').src = qrUrl;
+
+        const dl = document.getElementById('qr-download-btn');
+        dl.href = qrUrl;
+        dl.download = 'qrcode_' + licensePlate + '.png';
+
+        document.getElementById('qr-modal').showModal();
+    });
+</script>

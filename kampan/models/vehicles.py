@@ -30,6 +30,19 @@ class Car(BaseVehicle, me.Document):
     meta = {"collection": "cars"}
 
 
+class CarFeedback(me.Document):
+    car = me.ReferenceField("Car", dbref=True, required=True)
+    start_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    end_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    driver_politeness_score = me.IntField(min_value=1, max_value=5, required=True)
+    driving_safety_score = me.IntField(min_value=1, max_value=5, required=True)
+    car_cleanliness_score = me.IntField(min_value=1, max_value=5, required=True)
+    overall = me.IntField(min_value=1, max_value=5, required=True)
+    comment = me.StringField(default="", max_length=512)
+
+    meta = {"collection": "car_feedbacks"}
+
+
 class Motorcycle(BaseVehicle, me.Document):
     last_mileage = me.IntField(min_value=0, required=True, default=0)
 
