@@ -44,43 +44,11 @@
 		if (feedbackUrl) {
 			copyBtn.style.display = 'inline-flex';
 			copyBtn.onclick = function () {
-				const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
-				const successHTML = '<i class="ph ph-check text-success"></i> คัดลอกแล้ว';
-
-				const fallbackCopyTextToClipboard = (text) => {
-					const textArea = document.createElement("textarea");
-					textArea.value = text;
-					textArea.style.position = "absolute";
-					textArea.style.opacity = "0";
-					textArea.style.left = "-9999px";
-
-					document.body.appendChild(textArea);
-					textArea.focus();
-					textArea.select();
-					textArea.setSelectionRange(0, 99999);
-
-					try {
-						const successful = document.execCommand('copy');
-						if (successful) {
-							copyBtn.innerHTML = successHTML;
-							setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
-						} else {
-							window.prompt("คัดลอกลิ้งก์จากด้านล่างได้เลย:", text);
-						}
-					} catch (err) {
-						window.prompt("คัดลอกลิ้งก์จากด้านล่างได้เลย:", text);
-					}
-					document.body.removeChild(textArea);
-				};
-
-				if (navigator.clipboard && window.isSecureContext) {
-					navigator.clipboard.writeText(feedbackUrl).then(() => {
-						copyBtn.innerHTML = successHTML;
-						setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
-					}).catch(() => fallbackCopyTextToClipboard(feedbackUrl));
-				} else {
-					fallbackCopyTextToClipboard(feedbackUrl);
-				}
+				navigator.clipboard.writeText(feedbackUrl).then(() => {
+					const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
+					copyBtn.innerHTML = '<i class="ph ph-check text-success"></i> คัดลอกแล้ว';
+					setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
+				});
 			};
 		} else {
 			copyBtn.style.display = 'none';
