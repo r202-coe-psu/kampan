@@ -2,7 +2,6 @@
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
-{% include '/procurement/components/car_qr_code_modal.html' %}
 {% block title %}รถยนต์{% endblock %}
 
 {% block dashboard_title %}รถยนต์{% endblock %}
@@ -44,10 +43,6 @@
           href="{{ url_for('vehicle_lending.cars.create_or_edit', organization_id=organization.id, car_id=car.id) }}">
           <i class="ph ph-pen"></i> แก้ไข
         </a>
-        <button class="btn btn-secondary qr-btn" data-car-id="{{ car.id }}" data-license="{{ car.license_plate }}"
-          data-qr-url="{{ url_for('vehicle_lending.cars.qr_code', car_id=car.id, organization_id=organization.id) }}">
-          <i class="ph ph-qr-code"></i> QR Code
-        </button>
       </div>
     </div>
   </div>

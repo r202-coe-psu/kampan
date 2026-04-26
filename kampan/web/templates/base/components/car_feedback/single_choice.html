@@ -1,0 +1,11 @@
+{% macro render_single_choice(q, index) %}
+<div class="mt-4 flex flex-col gap-2">
+	{% for choice in q.choice_list %}
+	<label class="flex items-start gap-4 cursor-pointer hover:bg-base-200/50 p-3 rounded-lg transition-colors group">
+		<input type="radio" name="answer_{{ q.question_id }}" value="{{ choice }}"
+			class="radio radio-primary mt-0.5 border-2" {% if q.is_required %}required{% endif %} />
+		<span class="font-medium text-[15px] group-hover:text-primary transition-colors">{{ choice }}</span>
+	</label>
+	{% endfor %}
+</div>
+{% endmacro %}

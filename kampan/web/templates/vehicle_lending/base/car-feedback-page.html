@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{% block title %}ประเมินความพึงพอใจ{% endblock %}</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+	<link rel="stylesheet"
+		href="{{ url_for('static', filename='node_modules/@phosphor-icons/web/src/regular/style.css') }}">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap">
+	<style>
+		body {
+			font-family: 'Noto Sans Thai', sans-serif;
+		}
+	</style>
+	{% block head %}{% endblock %}
+</head>
+
+<body class="bg-[#F8F6F4] min-h-screen pb-16 text-stone-800">
+	{% block content %}{% endblock %}
+	{% block scripts %}{% endblock %}
+</body>
+
+</html>

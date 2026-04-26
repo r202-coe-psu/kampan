@@ -1,0 +1,108 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% block title %}สถิติแบบประเมิน - {{ template.name }}{% endblock %}
+
+{% block dashboard_title %}สถิติแบบประเมิน: {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-5xl mx-auto pb-20">
+	<div class="flex items-center gap-4 mb-6">
+		<a href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}"
+			class="btn btn-circle btn-ghost bg-base-100 shadow-sm border border-base-200">
+			<i class="ph ph-arrow-left text-xl"></i>
+		</a>
+		<div>
+			<h1 class="text-2xl font-bold text-gray-800">{{ template.name }}</h1>
+			<p class="text-sm text-base-content/60">การตอบกลับทั้งหมด {{ responses|length }} รายการ</p>
+		</div>
+	</div>
+
+	<!-- Stats Loop -->
+	<div class="flex flex-col gap-6">
+		{% for q in template.questions %}
+		{% set stat = stats[q.question_id|string] %}
+		<div class="card bg-base-100 shadow-sm border border-base-200">
+			<div class="card-body p-6 md:p-8">
+				<h3 class="text-lg font-medium text-gray-800">{{ stat.text }}</h3>
+				<p class="text-sm text-base-content/50 mb-6">{{ stat.responses }} การตอบกลับ</p>
+
+				{% if stat.type == 'score' %}
+				<div class="flex flex-col md:flex-row items-start md:items-center gap-8 mb-4">
+					<div class="flex flex-col items-center justify-center p-6 bg-warning/10 rounded-2xl min-w-[120px]">
+						<div class="text-5xl font-bold text-warning">{{ "%.1f"|format(stat.average|default(0)) }}</div>
+						<span class="text-sm text-warning mt-2 font-medium">ค่าเฉลี่ย</span>
+					</div>
+
+					<div class="flex-grow w-full">
+						{% for i in range(5, 0, -1) %}
+						{% set count = stat.data.get(i, 0) %}
+						{% set pct = (count / stat.responses * 100) if stat.responses > 0 else 0 %}
+						<div class="flex items-center gap-3 mt-2">
+							<span class="w-4 font-medium text-center">{{ i }} <span class="text-warning">★</span></span>
+							<progress class="progress progress-warning w-full" value="{{ pct }}" max="100"></progress>
+							<span class="text-sm w-12 text-right text-base-content/70">{{ count|int }}</span>
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+
+				{% elif stat.type == 'boolean' %}
+				{% set true_count = stat.data.get('true', 0)|int %}
+				{% set false_count = stat.data.get('false', 0)|int %}
+				{% set true_pct = (true_count / stat.responses * 100) if stat.responses > 0 else 0 %}
+				{% set false_pct = (false_count / stat.responses * 100) if stat.responses > 0 else 0 %}
+
+				<div class="flex flex-col gap-4 mt-2">
+					<div class="bg-base-200/30 p-4 rounded-xl">
+						<div class="flex items-center justify-between mb-2">
+							<span class="font-medium flex items-center gap-2"><i class="ph ph-check-circle text-primary text-xl"></i>
+								ใช่ (Yes)</span>
+							<span class="text-sm font-semibold">{{ true_pct|round|int }}% ({{ true_count }})</span>
+						</div>
+						<progress class="progress progress-primary w-full h-3" value="{{ true_pct }}" max="100"></progress>
+					</div>
+
+					<div class="bg-base-200/30 p-4 rounded-xl">
+						<div class="flex items-center justify-between mb-2">
+							<span class="font-medium flex items-center gap-2"><i class="ph ph-x-circle text-error text-xl"></i> ไม่ใช่
+								(No)</span>
+							<span class="text-sm font-semibold">{{ false_pct|round|int }}% ({{ false_count }})</span>
+						</div>
+						<progress class="progress progress-error w-full h-3" value="{{ false_pct }}" max="100"></progress>
+					</div>
+				</div>
+
+				{% elif stat.type in ('single_choice', 'multiple_choice') %}
+				<div class="flex flex-col gap-4 mt-2">
+					{% for choice, count in stat.data.items() %}
+					{% set pct = (count / stat.responses * 100) if stat.responses > 0 else 0 %}
+					<div class="bg-base-200/30 p-4 rounded-xl">
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-sm font-medium">{{ choice }}</span>
+							<span class="text-sm font-semibold">{{ pct|round|int }}% ({{ count }})</span>
+						</div>
+						<progress class="progress progress-info w-full h-3" value="{{ pct }}" max="100"></progress>
+					</div>
+					{% endfor %}
+				</div>
+
+				{% elif stat.type == 'text' %}
+				<div class="bg-base-200/50 rounded-xl p-4 md:p-6 max-h-96 overflow-y-auto flex flex-col gap-3">
+					{% for t in stat.texts %}
+					<div
+						class="bg-base-100 p-4 rounded-lg shadow-sm text-sm border border-base-200 text-gray-700 leading-relaxed">{{
+						t }}</div>
+					{% else %}
+					<div class="flex flex-col items-center justify-center py-8 text-base-content/40">
+						<i class="ph ph-chat-circle-slash text-4xl mb-2"></i>
+						<p class="text-sm">ยังไม่มีการตอบกลับ</p>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+</div>
+{% endblock %}

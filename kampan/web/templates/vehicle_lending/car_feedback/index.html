@@ -1,0 +1,72 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% include '/procurement/components/car_qr_code_modal.html' %}
+
+{% block title %}จัดการแบบประเมินรถยนต์{% endblock %}
+
+{% block dashboard_title %}จัดการแบบประเมินรถยนต์{% endblock %}
+
+{% block content %}
+<div class="flex justify-end w-full gap-2">
+  <a href="{{ url_for('vehicle_lending.car_feedback.create_or_edit', organization_id=organization.id) }}"
+    class="btn btn-primary">
+    <i class="ph ph-plus"></i> สร้างแบบประเมินใหม่
+  </a>
+</div>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อแบบประเมิน</th>
+          <th class="table-style">รถยนต์</th>
+          <th class="table-style">รายละเอียด</th>
+          <th class="table-style">จำนวนคำถาม</th>
+          <th class="table-style text-center">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for template in templates %}
+        <tr>
+          <td class="table-style font-medium">{{ template.name }}</td>
+          <td class="table-style">
+            <span class="badge badge-outline">{{ template.car.license_plate }}</span>
+          </td>
+          <td class="table-style truncate max-w-xs">{{ template.description }}</td>
+          <td class="table-style">{{ template.questions|length }}</td>
+          <td class="table-style text-center gap-2">
+            <div class="flex flex-wrap flex-row gap-2 justify-center">
+              <button class="btn btn-sm btn-ghost tooltip qr-btn" data-tip="ดู QR Code"
+                data-car-id="{{ template.id }}" data-license="{{ template.car.license_plate }}" 
+                data-qr-url="{{ url_for('vehicle_lending.car_feedback.qr_code', template_id=template.id, organization_id=organization.id) }}"
+                data-feedback-url="{{ url_for('vehicle_lending.cars.feedback', car_id=template.car.id, template_id=template.id, _external=True) }}">
+                <i class="ph ph-qr-code text-lg"></i>
+              </button>
+              <a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
+                class="btn btn-sm btn-ghost tooltip" data-tip="ดูสถิติ/ผลตอบรับ">
+                <i class="ph ph-chart-bar text-lg"></i>
+              </a>
+              <a href="{{ url_for('vehicle_lending.car_feedback.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
+                class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
+                <i class="ph ph-pencil-simple text-lg"></i>
+              </a>
+              <a href="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}"
+                class="btn btn-sm btn-ghost text-error tooltip" data-tip="ลบ"
+                onclick="return confirm('ยืนยันการลบ?');">
+                <i class="ph ph-trash text-lg"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-8 text-gray-500">
+            ยังไม่มีแบบประเมินข้อมูล กดที่ปุ่ม "สร้างแบบประเมินใหม่" เพื่อเริ่มสร้าง
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

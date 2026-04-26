@@ -8,6 +8,9 @@
             <i class="ph ph-scan"></i> สแกน QR Code เพื่อส่งคำประเมิน
         </p>
         <div class="modal-action w-full flex gap-2 justify-center">
+            <button id="qr-copy-btn" class="btn btn-outline" style="display: none;">
+                <i class="ph ph-copy"></i> คัดลอกลิ้งก์
+            </button>
             <a id="qr-download-btn" href="#" download="qrcode.png" class="btn btn-primary">
                 <i class="ph ph-download-simple"></i> ดาวน์โหลด
             </a>
@@ -35,6 +38,21 @@
         const dl = document.getElementById('qr-download-btn');
         dl.href = qrUrl;
         dl.download = 'qrcode_' + licensePlate + '.png';
+
+        const copyBtn = document.getElementById('qr-copy-btn');
+        const feedbackUrl = btn.dataset.feedbackUrl;
+        if (feedbackUrl) {
+            copyBtn.style.display = 'inline-flex';
+            copyBtn.onclick = function() {
+                navigator.clipboard.writeText(feedbackUrl).then(() => {
+                    const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
+                    copyBtn.innerHTML = '<i class="ph ph-check text-success"></i> คัดลอกแล้ว';
+                    setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
+                });
+            };
+        } else {
+            copyBtn.style.display = 'none';
+        }
 
         document.getElementById('qr-modal').showModal();
     });

@@ -1,0 +1,20 @@
+{% macro render_score(q, index) %}
+<div class="flex flex-col gap-2 mt-4">
+	<div
+		class="flex justify-between items-center bg-base-200/50 p-4 rounded-xl max-w-lg mx-auto w-full md:w-3/4 shadow-inner">
+		<span class="text-sm font-semibold text-base-content/60">น้อยที่สุด</span>
+
+		<div class="flex flex-row justify-center gap-4 md:gap-6 px-4">
+			{% for i in range(1, 6) %}
+			<div class="flex flex-col gap-1 items-center">
+				<input type="radio" name="answer_{{ q.question_id }}" value="{{ i }}"
+					class="radio radio-primary border-2 scale-125" {% if q.is_required %}required{% endif %} />
+				<span class="text-xs font-bold text-base-content/50 mt-1">{{ i }}</span>
+			</div>
+			{% endfor %}
+		</div>
+
+		<span class="text-sm font-semibold text-base-content/60">มากที่สุด</span>
+	</div>
+</div>
+{% endmacro %}

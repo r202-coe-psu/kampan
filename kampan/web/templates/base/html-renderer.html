@@ -400,6 +400,84 @@ readonly=False) %}
 </fieldset>
 {% endmacro %}
 
+{% macro render_radio_field(field) %}
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="flex flex-col gap-3 mt-2 pl-2">
+    {% for subfield in field %}
+    <label class="flex items-center gap-3 cursor-pointer font-medium text-base-content/80 text-sm w-fit group">
+      {{ subfield(class_="radio radio-primary border-2 scale-110 group-hover:bg-primary/10 transition-colors") }} {{
+      subfield.label.text }}
+    </label>
+    {% endfor %}
+  </div>
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
+    {% for error in field.errors %}{{ error }}{% endfor %}
+  </span>
+  {% endif %}
+</fieldset>
+{% endmacro %}
+
+{% macro render_checkbox_list_field(field) %}
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <legend class="fieldset-legend">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div class="flex flex-col gap-3 mt-2 pl-2">
+    {% for subfield in field %}
+    <label class="flex items-center gap-3 cursor-pointer font-medium text-base-content/80 text-sm w-fit group">
+      {{ subfield(class_="checkbox checkbox-primary border-2 rounded-md group-hover:bg-primary/10 transition-colors") }}
+      {{ subfield.label.text }}
+    </label>
+    {% endfor %}
+  </div>
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-1">
+    {% for error in field.errors %}{{ error }}{% endfor %}
+  </span>
+  {% endif %}
+</fieldset>
+{% endmacro %}
+
+{% macro render_score_field(field) %}
+<fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <legend class="fieldset-legend mb-4">
+    {{ field.label.text }}
+    {% if field.flags.required %}
+    <span class="text-error">*</span>
+    {% endif %}
+  </legend>
+  <div
+    class="flex justify-between items-center bg-base-200/50 p-4 rounded-xl max-w-lg mx-auto w-full shadow-inner border border-stone-200/50">
+    <span class="text-xs sm:text-sm font-semibold text-base-content/60 hidden sm:inline ml-2">น้อย</span>
+    <div class="flex flex-row gap-4 sm:gap-6 justify-center w-full sm:w-auto">
+      {% for subfield in field %}
+      <div class="flex flex-col gap-2 items-center cursor-pointer group">
+        {{ subfield(class_="radio radio-primary border-2 sm:scale-125 scale-110 group-hover:bg-primary/20
+        transition-colors") }}
+        <span class="text-xs font-bold text-base-content/50">{{ subfield.label.text }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <span class="text-xs sm:text-sm font-semibold text-base-content/60 hidden sm:inline mr-2">มาก</span>
+  </div>
+  {% if field.errors %}
+  <span class="fieldset-label text-error text-sm mt-2 flex justify-center">
+    {% for error in field.errors %}{{ error }}{% endfor %}
+  </span>
+  {% endif %}
+</fieldset>
+{% endmacro %}
+
 {% macro render_multiple_select_field(field, id_prefix='') %}
 {% set list_of_tuples = field.choices %}
 {% set list_of_lists = list_of_tuples | map('list') | list %}

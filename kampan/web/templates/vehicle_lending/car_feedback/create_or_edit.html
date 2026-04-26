@@ -1,0 +1,247 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+{% block dashboard_title %}สร้างแบบประเมิน{% endblock %}
+
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto pb-32">
+	<div class="flex items-center gap-4 mb-6">
+		<a href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}"
+			class="btn btn-circle btn-ghost">
+			<i class="ph ph-arrow-left text-xl"></i>
+		</a>
+		<h1 class="text-2xl font-bold text-gray-800">{{ 'แก้ไขแบบประเมิน' if template else 'สร้างแบบประเมินใหม่' }}</h1>
+	</div>
+
+	<form id="feedbackForm" method="POST" class="flex flex-col gap-6">
+		<div class="card bg-base-100 shadow-sm border-t-4 border-t-primary">
+			<div class="card-body">
+				<h2 class="card-title text-lg mb-4">ข้อมูลเบื้องต้น</h2>
+
+				<div class="form-control mb-4">
+					{{ renderer.base_render(form.name) }}
+				</div>
+
+				<div class="form-control mb-4">
+					{{ renderer.render_select_field(form.car) }}
+				</div>
+
+				<div class="form-control mb-4">
+					{{ renderer.render_text_area_field(form.description) }}
+				</div>
+			</div>
+		</div>
+
+		<div id="questionsContainer" class="flex flex-col gap-4">
+		</div>
+		<input type="hidden" name="questions_data" id="questionsData">
+		<div class="flex flex-wrap justify-center gap-2 mt-4">
+			<button type="button"
+				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				onclick="addQuestion('score')">
+				<i class="ph ph-star text-warning text-lg"></i> คะแนน (1-5)
+			</button>
+			<button type="button"
+				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				onclick="addQuestion('text')">
+				<i class="ph ph-text-t text-lg"></i> ข้อความสั้น
+			</button>
+			<button type="button"
+				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				onclick="addQuestion('boolean')">
+				<i class="ph ph-toggle-left text-primary text-lg"></i> ใช่/ไม่ใช่
+			</button>
+			<button type="button"
+				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				onclick="addQuestion('single_choice')">
+				<i class="ph ph-radio-button text-info text-lg"></i> เลือกข้อเดียว
+			</button>
+			<button type="button"
+				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				onclick="addQuestion('multiple_choice')">
+				<i class="ph ph-check-square text-success text-lg"></i> เลือกหลายข้อ
+			</button>
+		</div>
+		<div
+			class="flex justify-end gap-2 mt-8 py-4 border-t sticky bottom-0 bg-base-100 px-4 rounded-box shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.1)] z-10">
+			<a href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}"
+				class="btn btn-ghost">ยกเลิก</a>
+			<button type="submit" class="btn btn-primary" onclick="prepareSubmit(event)">
+				<i class="ph ph-floppy-disk"></i> บันทึกข้อมูล
+			</button>
+		</div>
+	</form>
+</div>
+
+<script type="application/json" id="preloadQuestions">
+[
+    {% if template %}
+    {% for q in template.questions %}
+    {
+        "question_id": "{{ q.question_id }}",
+        "question_text": "{{ q.question_text }}",
+        "question_type": "{{ q.question_type }}",
+        "choice_list": {{ q.choice_list | tojson }},
+        "is_required": {{ 'true' if q.is_required else 'false' }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+]
+</script>
+
+<script>
+	let questions = [];
+	const preloadDataStr = document.getElementById("preloadQuestions").textContent;
+	if (preloadDataStr.trim().length > 2) {
+		try {
+			questions = JSON.parse(preloadDataStr);
+		} catch (e) {
+			console.error("Error parsing preloaded questions:", e);
+		}
+	}
+
+	const typeIcons = {
+		'score': '<i class="ph ph-star text-warning"></i>',
+		'text': '<i class="ph ph-text-t"></i>',
+		'boolean': '<i class="ph ph-toggle-left text-primary"></i>',
+		'single_choice': '<i class="ph ph-radio-button text-info"></i>',
+		'multiple_choice': '<i class="ph ph-check-square text-success"></i>'
+	};
+
+	const typeLabels = {
+		'score': 'คะแนน (1-5)',
+		'text': 'ข้อความ',
+		'boolean': 'ใช่/ไม่ใช่',
+		'single_choice': 'เลือกได้ข้อเดียว',
+		'multiple_choice': 'เลือกได้หลายข้อ'
+	};
+
+	function renderQuestions() {
+		const container = document.getElementById('questionsContainer');
+		container.innerHTML = '';
+
+		questions.forEach((q, index) => {
+			const card = document.createElement('div');
+			card.className = "card bg-base-100 shadow-sm relative group border border-base-200 hover:border-primary/30 transition-colors";
+
+			let choicesHtml = '';
+			if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
+				const choicesItems = q.choice_list.map((choice, cIdx) => `
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="ph ${q.question_type === 'single_choice' ? 'ph-circle' : 'ph-square'} text-base-content/30 text-lg"></i>
+                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm" placeholder="ตัวเลือกที่ ${cIdx + 1}" value="${choice}" onchange="updateChoice(${index}, ${cIdx}, this.value)">
+                        <button type="button" class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error" onclick="removeChoice(${index}, ${cIdx})"><i class="ph ph-x"></i></button>
+                    </div>
+                `).join('');
+
+				choicesHtml = `
+                    <div class="mt-4 pl-4 border-l-2 border-base-200">
+                        ${choicesItems}
+                        <button type="button" class="btn btn-ghost btn-sm mt-2 text-primary" onclick="addChoice(${index})">
+                            <i class="ph ph-plus"></i> เพิ่มตัวเลือก
+                        </button>
+                    </div>
+                `;
+			} else if (q.question_type === 'score') {
+				choicesHtml = `<div class="mt-4 pl-4 opacity-50"><div class="rating"><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /></div><span class="text-sm ml-2">รูปแบบ 1-5 ดาว</span></div>`;
+			} else if (q.question_type === 'boolean') {
+				choicesHtml = `<div class="mt-4 pl-4 opacity-50 flex gap-4"><label class="flex items-center gap-2"><input type="radio" class="radio radio-primary" disabled checked> ใช่</label><label class="flex items-center gap-2"><input type="radio" class="radio radio-primary" disabled> ไม่ใช่</label></div>`;
+			} else if (q.question_type === 'text') {
+				choicesHtml = `<div class="mt-4 pl-4 opacity-50 border-b border-dashed border-base-300 w-full max-w-md pb-1">ข้อความตอบกลับแบบสั้น/ยาว</div>`;
+			}
+
+			card.innerHTML = `
+                <div class="card-body p-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                ${typeIcons[q.question_type]} 
+                                <span class="text-xs font-bold text-base-content/50 uppercase tracking-wider">${typeLabels[q.question_type]}</span>
+                            </div>
+                            <input type="text" class="input input-bordered w-full text-md" placeholder="ตั้งคำถาม..." value="${q.question_text}" onchange="updateQuestionText(${index}, this.value)" required>
+                            
+                            ${choicesHtml}
+                        </div>
+                        
+                        <div class="flex flex-col items-end gap-2 border-l border-base-200 pl-4">
+                            <div class="form-control">
+                                <label class="label cursor-pointer gap-2 tooltip tooltip-left" data-tip="จำเป็นต้องตอบ">
+                                    <span class="label-text text-xs">บังคับ</span> 
+                                    <input type="checkbox" class="toggle toggle-sm toggle-primary" ${q.is_required ? 'checked' : ''} onchange="updateRequired(${index}, this.checked)" />
+                                </label>
+                            </div>
+                            <div class="divider my-0"></div>
+                            <button type="button" class="btn btn-ghost btn-sm text-error h-10 px-2" onclick="removeQuestion(${index})" title="ลบคำถาม">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+			container.appendChild(card);
+		});
+	}
+
+	function addQuestion(type) {
+		questions.push({
+			question_id: "",
+			question_text: "",
+			question_type: type,
+			choice_list: (type === 'single_choice' || type === 'multiple_choice') ? ['ตัวเลือก 1'] : [],
+			is_required: false
+		});
+		renderQuestions();
+
+		// Scroll to bottom smoothly
+		setTimeout(() => {
+			window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+		}, 100);
+	}
+
+	function removeQuestion(index) {
+		questions.splice(index, 1);
+		renderQuestions();
+	}
+
+	function updateQuestionText(index, val) {
+		questions[index].question_text = val;
+	}
+
+	function updateRequired(index, val) {
+		questions[index].is_required = val;
+	}
+
+	function addChoice(index) {
+		questions[index].choice_list.push(`ตัวเลือก ${questions[index].choice_list.length + 1}`);
+		renderQuestions();
+	}
+
+	function updateChoice(qIndex, cIndex, val) {
+		questions[qIndex].choice_list[cIndex] = val;
+	}
+
+	function removeChoice(qIndex, cIndex) {
+		questions[qIndex].choice_list.splice(cIndex, 1);
+		renderQuestions();
+	}
+
+	function prepareSubmit(e) {
+		// Validation check
+		if (questions.length === 0) {
+			e.preventDefault();
+			alert('กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ');
+			return;
+		}
+
+		const form = document.getElementById('feedbackForm');
+		if (!form.checkValidity()) {
+			return; // Let native browser validation show
+		}
+
+		document.getElementById('questionsData').value = JSON.stringify(questions);
+	}
+
+	// Initial render
+	renderQuestions();
+</script>
+{% endblock %}

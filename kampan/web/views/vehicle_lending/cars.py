@@ -152,29 +152,54 @@ def feedback(car_id):
     if not car:
         return abort(404)
 
-    form = forms.vehicles.CarFeedbackForm()
+    template_id = request.args.get("template_id")
+    if template_id:
+        template = models.car_feedback.CarFeedbackTemplate.objects(
+            id=template_id, car=car
+        ).first()
+    else:
+        template = models.car_feedback.CarFeedbackTemplate.objects(car=car).first()
+
+    if not template:
+        return render_template("ไม่พบแบบประเมินสำหรับรถคันนี้"), 404
+
+    form = forms.car_feedback.get_dynamic_feedback_form(template)
 
     if form.validate_on_submit():
-        fb = models.vehicles.CarFeedback()
-        fb.car = car
-        fb.start_date = form.start_datetime.data
-        fb.end_date = form.end_datetime.data
-        fb.driver_politeness_score = form.driver_politeness_score.data
-        fb.driving_safety_score = form.driving_safety_score.data
-        fb.car_cleanliness_score = form.car_cleanliness_score.data
-        fb.overall = form.overall.data
-        fb.comment = form.comment.data or ""
-        fb.save()
+        response = models.car_feedback.CarFeedbackResponse(
+            feedback_template=template, car=car
+        )
+        answers = []
+        for q in template.questions:
+            ans = models.car_feedback.Answer(question_id=q.question_id)
+            field_name = f"answer_{q.question_id}"
+            field = getattr(form, field_name)
+
+            if q.question_type == "score" and field.data:
+                ans.answer_score = int(field.data)
+            elif q.question_type == "text" and field.data:
+                ans.answer_text = field.data
+            elif q.question_type == "boolean" and field.data:
+                ans.answer_boolean = field.data == "True"
+            elif q.question_type == "single_choice" and field.data:
+                ans.answer_text = field.data
+            elif q.question_type == "multiple_choice" and field.data:
+                ans.answer_choices = field.data
+            answers.append(ans)
+
+        response.answers = answers
+        response.save()
 
         return render_template(
-            "/vehicle_lending/cars/feedback_thanks.html",
+            "/vehicle_lending/car_feedback/feedback_thanks.html",
             car=car,
             organization=organization,
         )
 
     return render_template(
-        "/vehicle_lending/cars/feedback.html",
+        "/vehicle_lending/car_feedback/feedback.html",
         car=car,
         organization=organization,
+        template=template,
         form=form,
     )

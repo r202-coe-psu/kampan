@@ -1,0 +1,28 @@
+{% extends '/vehicle_lending/base/car-feedback-page.html' %}
+{% block title %}ขอบคุณสำหรับการประเมิน{% endblock %}
+
+{% block content %}
+  <div class="max-w-md mx-auto px-4 py-8 mt-12">
+    <div class="card bg-base-100 shadow-md border-t-[6px] border-t-[#8D6E63] rounded-2xl text-center overflow-hidden">
+      <div class="card-body items-center gap-4 py-12 px-6">
+
+        <div class="flex items-center justify-center w-20 h-20 rounded-full bg-[#8D6E63]/10 text-[#5D4037] text-5xl mb-2 shadow-inner">
+          <i class="ph ph-check-circle"></i>
+        </div>
+
+        <h1 class="card-title text-2xl font-normal text-gray-900">ขอบคุณสำหรับการประเมิน!</h1>
+
+        <div class="flex items-center gap-2 mt-2 bg-stone-50 px-4 py-2 rounded-lg border border-stone-200">
+          <span class="text-base-content/60 text-sm">ทะบียนรถ:</span>
+          <span class="font-bold text-gray-800">{{ car.license_plate }}</span>
+        </div>
+
+        <p class="text-stone-500 text-sm mt-2">ความคิดเห็นของคุณถูกบันทึกเรียบร้อยแล้ว แล้วเราจะนำไปพัฒนาบริการให้ดียิ่งขึ้น</p>
+
+        <div class="divider my-2 w-full max-w-[80%] mx-auto opacity-50"></div>
+        <p class="text-stone-400 text-xs font-medium">คุณสามารถปิดหน้านี้ได้แล้ว</p>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}

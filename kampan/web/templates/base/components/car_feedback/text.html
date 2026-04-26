@@ -1,0 +1,7 @@
+{% macro render_text(q, index) %}
+<div class="mt-4">
+	<textarea name="answer_{{ q.question_id }}"
+		class="textarea textarea-bordered w-full h-24 rounded-lg text-base leading-relaxed bg-base-100 placeholder:text-base-content/30 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+		placeholder="คำตอบของคุณ" {% if q.is_required %}required{% endif %}></textarea>
+</div>
+{% endmacro %}
