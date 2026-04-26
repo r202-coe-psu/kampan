@@ -50,16 +50,25 @@
 				const fallbackCopyTextToClipboard = (text) => {
 					const textArea = document.createElement("textarea");
 					textArea.value = text;
-					textArea.style.position = "fixed";
+					textArea.style.position = "absolute";
+					textArea.style.opacity = "0";
+					textArea.style.left = "-9999px";
+
 					document.body.appendChild(textArea);
 					textArea.focus();
 					textArea.select();
+					textArea.setSelectionRange(0, 99999);
+
 					try {
-						document.execCommand('copy');
-						copyBtn.innerHTML = successHTML;
-						setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
+						const successful = document.execCommand('copy');
+						if (successful) {
+							copyBtn.innerHTML = successHTML;
+							setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
+						} else {
+							window.prompt("คัดลอกลิ้งก์จากด้านล่างได้เลย:", text);
+						}
 					} catch (err) {
-						console.error('Fallback: Oops, unable to copy', err);
+						window.prompt("คัดลอกลิ้งก์จากด้านล่างได้เลย:", text);
 					}
 					document.body.removeChild(textArea);
 				};
