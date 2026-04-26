@@ -1,6 +1,13 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
-{% block dashboard_title %}สร้างแบบประเมิน{% endblock %}
+{%if template %}
+{% set title = "แก้ไขแบบประเมิน" %}
+{%else%}
+{% set title = "สร้างแบบประเมินใหม่" %}
+{%endif%}
+{% block dashboard_title %}{{ title }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+
 
 
 {% block content %}
@@ -10,7 +17,7 @@
 			class="btn btn-circle btn-ghost">
 			<i class="ph ph-arrow-left text-xl"></i>
 		</a>
-		<h1 class="text-2xl font-bold text-gray-800">{{ 'แก้ไขแบบประเมิน' if template else 'สร้างแบบประเมินใหม่' }}</h1>
+		<h1 class="text-lg text-gray-800">ย้อนกลับ</h1>
 	</div>
 
 	<form id="feedbackForm" method="POST" class="flex flex-col gap-6">
