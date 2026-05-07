@@ -23,14 +23,18 @@ document.addEventListener("DOMContentLoaded", function () {
             selected.forEach(id => {
                 const option = options.find(option => option[0] === id);
                 if (option) {
-                    const span = document.createElement("span");
-                    span.className = "bg-blue-500 text-white px-2 py-1 rounded-lg flex items-center";
+                    const span = document.createElement("div");
+                    span.className = "badge badge-primary h-auto py-1 px-3 gap-2";
                     const button = document.createElement("button");
                     button.type = "button";
-                    button.className = "ml-2 text-white";
-                    button.textContent = "✕";
-                    button.onclick = function () { removeSelection(id); };
-                    span.textContent = option[1] + " ";
+                    button.className = "hover:text-error transition-colors";
+                    button.innerHTML = '<i class="ph ph-x-circle text-lg"></i>';
+                    button.onclick = function (e) { 
+                        e.stopPropagation();
+                        removeSelection(id); 
+                    };
+                    const textNode = document.createTextNode(option[1]);
+                    span.appendChild(textNode);
                     span.appendChild(button);
                     selectedItems.appendChild(span);
                 }
@@ -53,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 filteredOptions.forEach(option => {
                     const li = document.createElement("li");
-                    li.className = `px-4 py-1 cursor-pointer ${selected.has(option[0]) ? 'bg-blue-500 text-white' : 'hover:bg-gray-300 hover:text-black'}`;
+                    li.className = `px-4 py-2 cursor-pointer transition-colors border-b border-base-200 last:border-0 ${selected.has(option[0]) ? 'bg-primary text-primary-content' : 'hover:bg-base-200'}`;
                     li.textContent = option[1];
                     li.onclick = () => toggleSelection(option[0]);
                     dropdown.appendChild(li);

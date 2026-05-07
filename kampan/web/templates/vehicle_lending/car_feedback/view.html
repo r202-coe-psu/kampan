@@ -10,9 +10,22 @@
 			class="btn btn-circle btn-ghost bg-base-100 shadow-sm border border-base-200">
 			<i class="ph ph-arrow-left text-xl"></i>
 		</a>
-		<div>
+		<div class="flex-1">
 			<h1 class="text-2xl font-bold text-gray-800">{{ template.name }}</h1>
 			<p class="text-sm text-base-content/60">การตอบกลับทั้งหมด {{ responses|length }} รายการ</p>
+		</div>
+
+		<div class="flex items-center gap-2">
+			<span class="text-sm text-base-content/60">กรองตามรถยนต์:</span>
+			<select class="select select-bordered select-sm" onchange="window.location.href=this.value">
+				<option value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}">ทั้งหมด</option>
+				{% for car in template.cars %}
+				<option value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car.id) }}"
+					{{ 'selected' if car_id == car.id|string else '' }}>
+					{{ car.license_plate }}
+				</option>
+				{% endfor %}
+			</select>
 		</div>
 	</div>
 

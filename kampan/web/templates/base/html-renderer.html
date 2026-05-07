@@ -497,14 +497,13 @@ readonly=False) %}
   <div class="relative w-full  max-w-full min-w-full" id="{{ id_prefix }}multiSelectContainer">
     {{ field(class="hidden", id=id_prefix + field.name) }}
     <div id="{{ id_prefix }}multiSelectBox"
-      class="input input-bordered w-full disabled:bg-base-200 items-center textarea overflow-x-auto"
-      style=" overflow-y: auto;">
-      <div class="flex flex-wrap gap-2 w-fit" id="{{ id_prefix }}selectedItems" style="max-height: 100px;"></div>
-      <input type="text" id="{{ id_prefix }}searchInput" placeholder="" autocomplete="off"
-        class="focus:outline-none flex-1 min-w-0 h-full" />
+      class="input input-bordered w-full h-auto min-h-12 flex flex-wrap items-center gap-2 p-2 cursor-pointer transition-all focus-within:ring-2 focus-within:ring-primary/20">
+      <div class="flex flex-wrap gap-2" id="{{ id_prefix }}selectedItems"></div>
+      <input type="text" id="{{ id_prefix }}searchInput" placeholder="ค้นหาหรือเลือก..." autocomplete="off"
+        class="focus:outline-none flex-1 min-w-[120px] h-8 bg-transparent" />
     </div>
     <ul id="{{ id_prefix }}dropdown"
-      class="absolute z-10 mt-2 bg-white border rounded shadow-lg overflow-y-auto max-h-52 w-full hidden"></ul>
+      class="absolute z-50 mt-2 bg-base-100 border border-base-300 rounded-xl shadow-xl overflow-y-auto max-h-64 w-full hidden py-1"></ul>
   </div>
   <div class="fieldset-label">
     <p class="validator-hint">

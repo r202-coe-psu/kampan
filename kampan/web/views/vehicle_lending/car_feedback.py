@@ -33,7 +33,7 @@ def index():
 
     cars = models.vehicles.Car.objects(organization=organization)
 
-    templates = models.CarFeedbackTemplate.objects(car__in=cars)
+    templates = models.CarFeedbackTemplate.objects(cars__in=cars)
 
     return render_template(
         "/vehicle_lending/car_feedback/index.html",
@@ -56,7 +56,7 @@ def create_or_edit(template_id):
     template = None
     if template_id:
         template = models.CarFeedbackTemplate.objects(
-            id=template_id, car__in=cars
+            id=template_id, cars__in=cars
         ).first()
         if not template:
             return abort(404)
@@ -65,15 +65,15 @@ def create_or_edit(template_id):
 
     cars = models.vehicles.Car.objects(organization=organization, status="active")
     car_choices = [(str(c.id), c.license_plate) for c in cars]
-    form.car.choices = car_choices
+    form.cars.choices = car_choices
 
     if request.method == "POST":
         name = form.name.data
-        car_id = form.car.data
+        car_ids = form.cars.data
         description = form.description.data
 
-        car = models.vehicles.Car.objects(id=car_id, organization=organization).first()
-        if not car:
+        selected_cars = models.vehicles.Car.objects(id__in=car_ids, organization=organization)
+        if len(selected_cars) != len(car_ids):
             return abort(400, "Invalid car selection")
 
         questions_json = request.form.get("questions_data")
@@ -100,7 +100,7 @@ def create_or_edit(template_id):
             template = models.CarFeedbackTemplate()
 
         template.name = name
-        template.car = car
+        template.cars = selected_cars
         template.description = description
         template.questions = question_templates
         template.save()
@@ -125,14 +125,24 @@ def create_or_edit(template_id):
 @module.route("/<template_id>/qrcode")
 @acl.organization_roles_required("admin")
 def qr_code(template_id):
-    organization_id = request.args.get("organization_id")
+    car_id = request.args.get("car_id")
     template = models.CarFeedbackTemplate.objects(id=template_id).first()
-    if not template or not template.car:
+    if not template or not template.cars:
+        return abort(404)
+
+    car = None
+    if car_id:
+        car = models.vehicles.Car.objects(id=car_id).first()
+    else:
+        car = template.cars[0]
+
+    if not car:
         return abort(404)
 
     feedback_url = url_for(
         "vehicle_lending.cars.feedback",
-        car_id=template.car.id,
+        car_id=car.id,
+        template_id=template.id,
         _external=True,
     )
 
@@ -143,7 +153,7 @@ def qr_code(template_id):
     return send_file(
         buf,
         mimetype="image/png",
-        download_name=f"qrcode_form_{template.car.license_plate}.png",
+        download_name=f"qrcode_form_{car.license_plate}.png",
     )
 
 
@@ -159,8 +169,13 @@ def view_responses(template_id):
     if not template:
         return abort(404)
 
+    car_id = request.args.get("car_id")
+    filter_kwargs = {"feedback_template": template}
+    if car_id:
+        filter_kwargs["car"] = car_id
+
     responses = models.car_feedback.CarFeedbackResponse.objects(
-        feedback_template=template
+        **filter_kwargs
     )
 
     stats = {}
@@ -220,6 +235,7 @@ def view_responses(template_id):
         template=template,
         responses=responses,
         stats=stats,
+        car_id=car_id,
     )
 
 

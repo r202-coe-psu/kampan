@@ -155,10 +155,10 @@ def feedback(car_id):
     template_id = request.args.get("template_id")
     if template_id:
         template = models.car_feedback.CarFeedbackTemplate.objects(
-            id=template_id, car=car
+            id=template_id, cars=car
         ).first()
     else:
-        template = models.car_feedback.CarFeedbackTemplate.objects(car=car).first()
+        template = models.car_feedback.CarFeedbackTemplate.objects(cars=car).first()
 
     if not template:
         return render_template("ไม่พบแบบประเมินสำหรับรถคันนี้"), 404

@@ -29,7 +29,7 @@ class Answer(me.EmbeddedDocument):
 
 class CarFeedbackTemplate(me.Document):
     name = me.StringField(required=True)
-    car = me.ReferenceField("Car", required=True)
+    cars = me.ListField(me.ReferenceField("Car"), required=True)
     description = me.StringField(default="")
     questions = me.ListField(me.EmbeddedDocumentField(QuestionTemplate))
     meta = {"collection": "car_feedback_templates"}

@@ -10,7 +10,7 @@ class CarFeedbackTemplateForm(FlaskForm):
         validators=[validators.DataRequired(message="กรุณาระบุชื่อแบบประเมิน")],
     )
     description = fields.StringField("รายละเอียด")
-    car = fields.SelectField(
+    cars = fields.SelectMultipleField(
         "รถยนต์", validators=[validators.DataRequired(message="กรุณาเลือกรถยนต์")]
     )
 
