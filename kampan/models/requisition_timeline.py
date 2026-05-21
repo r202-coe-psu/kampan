@@ -1,4 +1,5 @@
 import datetime
+
 import mongoengine as me
 from bson.objectid import ObjectId
 
@@ -81,9 +82,7 @@ class RequisitionTimeline(me.Document):
 
 class RequisitionTimelineLogs(me.Document):
     meta = {"collection": "requisition_timeline_logs"}
-    requisition_timeline = me.ReferenceField(
-        "RequisitionTimeline", dbref=True, required=True
-    )
+    requisition_timeline = me.ReferenceField("RequisitionTimeline", dbref=True, required=True)
     progress_status = me.StringField(required=True, max_length=20)
     metadata = me.DictField()
     hashed_metadata = me.StringField()  # from latest progress status and metadata
@@ -97,9 +96,7 @@ class RequisitionTimelineItem(me.Document):
     meta = {"collection": "requisition_timeline_items"}
     # reference field
     running_number = me.IntField(required=True)
-    requisition_timeline = me.ReferenceField(
-        "RequisitionTimeline", dbref=True, required=True
-    )
+    requisition_timeline = me.ReferenceField("RequisitionTimeline", dbref=True, required=True)
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     requisition_item_id = me.ObjectIdField(required=True)
     requisition_item = me.StringField(required=True, max_length=200)
@@ -110,8 +107,8 @@ class RequisitionTimelineItem(me.Document):
     seller = me.StringField(required=True, max_length=200)
     # section ข้อมูลในตาราง
     responder_user = me.ReferenceField("User", dbref=True)
-    serial_number = me.StringField(required=True, max_length=20)
-    requisition_item_code = me.StringField(required=True, max_length=20)
+    serial_number = me.StringField(required=True, max_length=200)
+    requisition_item_code = me.StringField(required=True, max_length=200)
     location = me.StringField(required=True, max_length=200)
     status = me.StringField(default="active", max_length=20)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
@@ -141,9 +138,7 @@ class RequisitionTimelineItem(me.Document):
 
         if days < 0:
             months -= 1
-            previous_month_last_day = (
-                end_d.replace(day=1) - datetime.timedelta(days=1)
-            ).day
+            previous_month_last_day = (end_d.replace(day=1) - datetime.timedelta(days=1)).day
             days += previous_month_last_day
 
         if months < 0:
