@@ -62,10 +62,10 @@
     <div id="items-container" class="space-y-4 mb-6">
       {% for item_form in form.items %}
       <div
-        class="item-card bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden relative transition-all hover:border-blue-300">
+        class="item-card bg-white border border-gray-200 rounded-2xl shadow-sm relative transition-all hover:border-blue-300">
 
         <!-- Card Header with Index -->
-        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
           <div class="flex items-center gap-2">
             <span
               class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs item-index-badge">
@@ -135,8 +135,8 @@
                 {{ renderer.render_field(item_form.winner, class_="input input-bordered w-full", readonly=readonly) }}
               </div>
               <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.account_code, class_="input input-bordered w-full",
-                readonly=readonly)}}
+                {{ renderer.render_search_select_field(item_form.account_code, readonly=readonly,
+                placeholder='ค้นหาผังบัญชี') }}
               </div>
               <div class="md:col-span-1">
                 {{ renderer.render_field(item_form.note, class_="input input-bordered w-full", readonly=readonly) }}
@@ -229,18 +229,21 @@
         const indexText = card.querySelector('.item-index-text');
         if (indexText) indexText.textContent = `รายการที่ ${index + 1}`;
 
-        card.querySelectorAll('input, select, textarea').forEach(input => {
-          if (input.name) {
-            input.name = input.name.replace(/items-\d+-/, `items-${index}-`);
-            if (input.id) input.id = input.id.replace(/items-\d+-/, `items-${index}-`);
+        card.querySelectorAll('*').forEach(el => {
+          if (el.id) {
+            el.id = el.id.replace(/items-\d+-/, `items-${index}-`);
           }
-        });
-
-        card.querySelectorAll('label[for]').forEach(label => {
-          const forAttr = label.getAttribute('for');
-          if (forAttr) {
-            label.setAttribute('for', forAttr.replace(/items-\d+-/, `items-${index}-`));
+          if (el.name) {
+            el.name = el.name.replace(/items-\d+-/, `items-${index}-`);
           }
+          if (el.hasAttribute('for')) {
+            el.setAttribute('for', el.getAttribute('for').replace(/items-\d+-/, `items-${index}-`));
+          }
+          ['oninput', 'onfocus', 'onblur', 'onclick', 'onchange'].forEach(attr => {
+            if (el.hasAttribute(attr)) {
+              el.setAttribute(attr, el.getAttribute(attr).replace(/items-\d+-/, `items-${index}-`));
+            }
+          });
         });
       });
     }
