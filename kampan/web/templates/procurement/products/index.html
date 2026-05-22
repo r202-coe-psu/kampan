@@ -3,134 +3,135 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}รายการครุภัณฑ์{% endblock %}
-{% block dashboard_title %}รายการครุภัณฑ์{% endblock %}
+{% block title %}รายการซอฟต์แวร์/บริการ{% endblock %}
+{% block dashboard_title %}รายการซอฟต์แวร์/บริการ{% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
+  <div class="container mx-auto px-4 py-6">
 
-  <!-- Action Bar -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-    <span
-      class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-semibold text-sm">
-      <i class="ph ph-list-numbers"></i>
-      จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
-    </span>
-    {% if current_user.has_organization_roles("admin") %}
-    <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
-      class="btn btn-primary btn-sm shadow-md">
-      <i class="ph ph-plus"></i>
-      เพิ่มรายการใหม่
-    </a>
-    {% endif %}
-  </div>
-
-  <!-- Filter Form -->
-  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
-      <input type="hidden" name="organization_id" value="{{ organization_id }}">
-      {{ renderer.base_render(form.name) }}
-      {{ renderer.render_select_field(form.category) }}
-      {{ renderer.render_select_field(form.payment_status) }}
-      <div>
-        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
-          <i class="ph ph-magnifying-glass mr-2"></i>
-          ค้นหา
-        </button>
-      </div>
-      <div class="min-w-fit">
-        <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
-          class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
-          <i class="ph ph-x mr-2"></i>
-          ล้างการค้นหา
+    <!-- Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <span class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-semibold text-sm">
+        <i class="ph ph-list-numbers"></i>
+        จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
+      </span>
+      {% if current_user.has_organization_roles("admin") %}
+        <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
+           class="btn btn-primary btn-sm shadow-md">
+          <i class="ph ph-plus"></i>
+          เพิ่มรายการใหม่
         </a>
-      </div>
-    </form>
-  </div>
+      {% endif %}
+    </div>
 
-  <!-- Statistics Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
-      class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-      <div class="card-body p-4 items-center text-center">
-        <i class="ph ph-warning-circle text-3xl text-error"></i>
-        <div class="font-bold text-error text-3xl leading-none">{{ status_count['overdue'] }}</div>
-        <div class="font-semibold text-sm text-error">เลยกำหนด</div>
-        <div class="text-xs text-base-content/50">เลยกำหนดชำระแล้ว</div>
-      </div>
-    </a>
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
-      class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-      <div class="card-body p-4 items-center text-center">
-        <i class="ph ph-clock text-3xl text-warning"></i>
-        <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
-        <div class="font-semibold text-sm text-warning">ใกล้ครบกำหนด</div>
-        <div class="text-xs text-base-content/50">ครบกำหนดใน 7 วัน</div>
-      </div>
-    </a>
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
-      class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-      <div class="card-body p-4 items-center text-center">
-        <i class="ph ph-check-circle text-3xl text-success"></i>
-        <div class="font-bold text-success text-3xl leading-none">{{ status_count['paid'] }}</div>
-        <div class="font-semibold text-sm text-success">ชำระครบ</div>
-        <div class="text-xs text-base-content/50">ชำระเงินครบถ้วนแล้ว</div>
-      </div>
-    </a>
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
-      class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-      <div class="card-body p-4 items-center text-center">
-        <i class="ph ph-x-circle text-3xl text-base-content/40"></i>
-        <div class="font-bold text-base-content/60 text-3xl leading-none">{{ status_count['unpaid'] }}</div>
-        <div class="font-semibold text-sm text-base-content/60">ยังไม่ชำระ</div>
-        <div class="text-xs text-base-content/50">ยังไม่ชำระเงิน</div>
-      </div>
-    </a>
-  </div>
+    <!-- Filter Form -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+      <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+        <input type="hidden" name="organization_id" value="{{ organization_id }}" />
+        {{ renderer.base_render(form.name) }}
+        {{ renderer.render_select_field(form.category) }}
+        {{ renderer.render_select_field(form.payment_status) }}
+        <div>
+          <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
+            <i class="ph ph-magnifying-glass mr-2"></i>
+            ค้นหา
+          </button>
+        </div>
+        <div class="min-w-fit">
+          <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
+             class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
+            <i class="ph ph-x mr-2"></i>
+            ล้างการค้นหา
+          </a>
+        </div>
+      </form>
+    </div>
 
-  <!-- Data Table -->
-  <div class="card bg-base-100 border border-base-200 shadow-sm">
-    <div class="card-body p-0">
-      <div class="overflow-x-auto">
-        {{ render_products_table(procurements, current_user, organization, today) }}
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
+         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-warning-circle text-3xl text-error"></i>
+          <div class="font-bold text-error text-3xl leading-none">{{ status_count['overdue'] }}</div>
+          <div class="font-semibold text-sm text-error">เลยกำหนด</div>
+          <div class="text-xs text-base-content/50">เลยกำหนดชำระแล้ว</div>
+        </div>
+      </a>
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
+         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-clock text-3xl text-warning"></i>
+          <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
+          <div class="font-semibold text-sm text-warning">ใกล้ครบกำหนด</div>
+          <div class="text-xs text-base-content/50">ครบกำหนดใน 7 วัน</div>
+        </div>
+      </a>
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
+         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-check-circle text-3xl text-success"></i>
+          <div class="font-bold text-success text-3xl leading-none">{{ status_count['paid'] }}</div>
+          <div class="font-semibold text-sm text-success">ชำระครบ</div>
+          <div class="text-xs text-base-content/50">ชำระเงินครบถ้วนแล้ว</div>
+        </div>
+      </a>
+      <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
+         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div class="card-body p-4 items-center text-center">
+          <i class="ph ph-x-circle text-3xl text-base-content/40"></i>
+          <div class="font-bold text-base-content/60 text-3xl leading-none">
+            {{ status_count['unpaid'] }}
+          </div>
+          <div class="font-semibold text-sm text-base-content/60">ยังไม่ชำระ</div>
+          <div class="text-xs text-base-content/50">ยังไม่ชำระเงิน</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card bg-base-100 border border-base-200 shadow-sm">
+      <div class="card-body p-0">
+        <div class="overflow-x-auto">
+          {{ render_products_table(procurements, current_user, organization, today) }}
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Legend -->
-  <div class="mt-4 flex flex-wrap gap-4 text-sm px-1 justify-center">
-    <div class="flex items-center gap-2">
-      <span class="badge badge-error badge-sm"></span>
-      <span class="font-medium text-base-content/70">เลยกำหนด</span>
+    <!-- Legend -->
+    <div class="mt-4 flex flex-wrap gap-4 text-sm px-1 justify-center">
+      <div class="flex items-center gap-2">
+        <span class="badge badge-error badge-sm"></span>
+        <span class="font-medium text-base-content/70">เลยกำหนด</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-warning badge-sm"></span>
+        <span class="font-medium text-base-content/70">ใกล้ครบกำหนด</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-success badge-sm"></span>
+        <span class="font-medium text-base-content/70">ชำระครบ</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-ghost badge-sm"></span>
+        <span class="font-medium text-base-content/70">ยังไม่ชำระ</span>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <span class="badge badge-warning badge-sm"></span>
-      <span class="font-medium text-base-content/70">ใกล้ครบกำหนด</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <span class="badge badge-success badge-sm"></span>
-      <span class="font-medium text-base-content/70">ชำระครบ</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <span class="badge badge-ghost badge-sm"></span>
-      <span class="font-medium text-base-content/70">ยังไม่ชำระ</span>
-    </div>
-  </div>
 
-  <!-- Pagination -->
-  {% set params = dict(request.args) %}
-  {% if 'page' in params %}
-  {% set _dummy = params.pop('page') %}
-  {% endif %}
-  {% if 'organization_id' not in params %}
-  {% set _dummy = params.update({"organization_id": organization.id}) %}
-  {% endif %}
-  {% if paginated_procurements.pages > 1 %}
-  <div class="mt-6 flex justify-center">
-    {{ paginated.render_pagination(paginated_procurements, "procurement.products.index", params) }}
-  </div>
-  {% endif %}
+    <!-- Pagination -->
+    {% set params = dict(request.args) %}
+    {% if 'page' in params %}
+      {% set _dummy = params.pop('page') %}
+    {% endif %}
+    {% if 'organization_id' not in params %}
+      {% set _dummy = params.update({"organization_id": organization.id}) %}
+    {% endif %}
+    {% if paginated_procurements.pages > 1 %}
+      <div class="mt-6 flex justify-center">
+        {{ paginated.render_pagination(paginated_procurements, "procurement.products.index", params) }}
+      </div>
+    {% endif %}
 
-</div>
+  </div>
 {% endblock content %}

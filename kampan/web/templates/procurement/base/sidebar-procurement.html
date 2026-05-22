@@ -234,32 +234,34 @@
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
-                    <i class="ph ph-scroll flex-shrink-0"></i>
-                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                    <i class="ph ph-check-circle flex-shrink-0"></i>
+                    <span class="truncate">การอนุมัติรายการขอซื้อขอจ้าง</span>
                   </summary>
                   <ul class="w-full">
                     <li class="w-full">
                       <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
                         title="รายการขอซื้อขอจ้าง">
-                        <i class="ph ph-arrow-clockwise flex-shrink-0"></i>
+                        <i class="ph ph-list flex-shrink-0"></i>
                         <span class="truncate">รายการขอซื้อขอจ้าง</span>
                       </a>
                     </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-scroll flex-shrink-0"></i>
+                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                  </summary>
+                  <ul class="w-full">
                     <li class="w-full">
                       <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
                         <i class="ph ph-clipboard-text flex-shrink-0"></i>
                         <span class="truncate">รายการรอดำเนินการ</span>
-                      </a>
-                    </li>
-                    <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
-                        title="อนุมัติรายการขอซื้อขอจ้าง">
-                        <i class="ph ph-list flex-shrink-0"></i>
-                        <span class="truncate">อนุมัติรายการขอซื้อขอจ้าง</span>
                       </a>
                     </li>
                   </ul>
@@ -322,32 +324,34 @@
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
-                    <i class="ph ph-scroll flex-shrink-0"></i>
-                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                    <i class="ph ph-check-circle flex-shrink-0"></i>
+                    <span class="truncate">การอนุมัติรายการขอซื้อขอจ้าง</span>
                   </summary>
                   <ul class="w-full">
                     <li class="w-full">
                       <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
                         title="รายการขอซื้อขอจ้าง">
-                        <i class="ph ph-arrow-clockwise flex-shrink-0"></i>
+                        <i class="ph ph-list flex-shrink-0"></i>
                         <span class="truncate">รายการขอซื้อขอจ้าง</span>
                       </a>
                     </li>
+                  </ul>
+                </details>
+              </li>
+              <li class="w-full">
+                <details open>
+                  <summary class="w-full whitespace-nowrap overflow-hidden">
+                    <i class="ph ph-scroll flex-shrink-0"></i>
+                    <span class="truncate">ขอซื้อขอจ้าง</span>
+                  </summary>
+                  <ul class="w-full">
                     <li class="w-full">
                       <a class="{{ 'menu-active' if ('/procurement/requisition_timeline' in request.path) and ('/procurement/requisition_timeline_items' not in request.path) else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                         href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
                         title="รายการรอดำเนินการ">
                         <i class="ph ph-clipboard-text flex-shrink-0"></i>
                         <span class="truncate">รายการรอดำเนินการ</span>
-                      </a>
-                    </li>
-                    <li class="w-full">
-                      <a class="{{ 'menu-active' if '/procurement/requisitions/renewal_requested' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
-                        href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
-                        title="อนุมัติรายการขอซื้อขอจ้าง">
-                        <i class="ph ph-list flex-shrink-0"></i>
-                        <span class="truncate">อนุมัติรายการขอซื้อขอจ้าง</span>
                       </a>
                     </li>
                   </ul>
