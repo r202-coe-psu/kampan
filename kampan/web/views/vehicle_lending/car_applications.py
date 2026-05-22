@@ -252,13 +252,26 @@ def get_car_applications():
                 car_application.return_datetime + datetime.timedelta(days=1)
             ).strftime("%Y-%m-%d")
         time = car_application.departure_datetime.strftime("%H:%M")
+        creator_name = car_application.creator.get_resources_fullname_th() if car_application.creator else '-'
+        start_time_str = car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') if car_application.departure_datetime else "-"
+        return_time_str = car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else "-"
+        
+        description = (
+            f"ผู้ขอ : {creator_name}\n"
+            f"เวลาเริ่ม : {start_time_str} น.\n"
+            f"เวลากลับ : {return_time_str} น.\n"
+            f"ป้ายทะเบียน : {car_application.car.license_plate}\n"
+            f"เหตุผล : {car_application.request_reason}\n"
+            f"สถานที่ที่ต้องการจะไป : {car_application.location}"
+        )
+
         data = {
             "id": str(car_application.id),
-            "title": f"{time} น. : {car_application.car.license_plate} : {car_application.location}",
-            "description": f"เวลาที่ใช้ : {car_application.departure_datetime.strftime('%d/%m/%Y %H:%M')} น. \nป้ายทะเบียน : {car_application.car.license_plate}\nเหตุผล : {car_application.request_reason}\nสถานที่ที่ต้องการจะไป : {car_application.location}",
+            "title": f"{time} น. : ผู้ขอ: {creator_name} : {car_application.car.license_plate}",
+            "description": description,
             "start": start,
             "end": end,
-            "color": color_of_event[car_application.status],
+            "color": color_of_event.get(car_application.status, "gray"),
         }
         datas.append(data)
 

@@ -31,6 +31,22 @@
 <div class="segment my-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm max-sm:h-[calc(100svh-10rem)]">
   <div id='calendar' class="max-sm:h-full"></div>
 </div>
+
+<dialog id="event_modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg text-primary" id="modal_title">รายละเอียดการใช้งาน</h3>
+    <div class="py-4 whitespace-pre-line text-base-content/80 font-medium" id="modal_description"></div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-outline px-8">ปิด</button>
+      </form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
 <style>
   .fc-view-harness {
     display: block !important;
@@ -90,7 +106,9 @@
         list: 'รายการ'    // Rename "List" view
       },
       eventClick: function (info) {
-        alert('การใช้งาน\n' + info.event.extendedProps.description);
+        document.getElementById('modal_title').innerText = info.event.title;
+        document.getElementById('modal_description').innerText = info.event.extendedProps.description;
+        document.getElementById('event_modal').showModal();
 
         info.el.style.borderColor = 'black';
       },
