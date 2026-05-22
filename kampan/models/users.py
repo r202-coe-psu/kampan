@@ -9,9 +9,7 @@ from kampan.models.organizations import ORGANIZATION_ROLES
 
 class UserSetting(me.EmbeddedDocument):
     current_organization = me.ReferenceField("Organization", dbref=True)
-    updated_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now, auto_now=True
-    )
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
 
 
 class TemporaryUser(me.Document):
@@ -38,15 +36,11 @@ class User(me.Document, UserMixin):
     student_id = me.StringField(max_length=10)
 
     picture_url = me.StringField(max_length=500)
-    picture = me.ImageField(
-        thumbnail_size=(800, 600, True), collection_name="user_picture"
-    )
+    picture = me.ImageField(thumbnail_size=(800, 600, True), collection_name="user_picture")
 
     biography = me.StringField(max_length=500)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now, auto_now=True
-    )
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
     last_login_date = me.DateTimeField()
 
     user_setting = me.EmbeddedDocumentField("UserSetting", default=UserSetting)
@@ -90,9 +84,7 @@ class User(me.Document, UserMixin):
 
     def get_picture(self):
         if self.picture:
-            return url_for(
-                "accounts.picture", user_id=self.id, filename=self.picture.filename
-            )
+            return url_for("accounts.picture", user_id=self.id, filename=self.picture.filename)
         # if "google" in self.resources:
         #     return self.resources["google"].get("picture", "")
         # return url_for("static", filename="images/user.png")
@@ -155,12 +147,7 @@ class User(me.Document, UserMixin):
     def get_resources_fullname(self):
         try:
             if self.resources["psu"]["display_name_th"]:
-                fullname = (
-                    self.resources["psu"]["display_name_th"]
-                    + " ( "
-                    + self.resources["psu"]["display_name"]
-                    + " )"
-                )
+                fullname = self.resources["psu"]["display_name_th"] + " ( " + self.resources["psu"]["display_name"] + " )"
             else:
                 fullname = self.resources["psu"]["display_name"]
         except:
@@ -241,8 +228,5 @@ class User(me.Document, UserMixin):
         if division:
             division_name = division.name
 
-        if (
-            "head" in self.get_current_organization_roles()
-            and division_name == "ฝ่ายบริหาร"
-        ):
+        if "head" in self.get_current_organization_roles() and division_name == "ฝ่ายบริหาร":
             return True

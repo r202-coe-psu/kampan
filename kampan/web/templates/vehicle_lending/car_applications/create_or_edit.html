@@ -66,17 +66,18 @@
   <div class="flex flex-row justify-between w-full gap-2" id="location_field_row">
     {{renderer.render_field(form.location)}}
   </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{renderer.render_field(form.passenger_location)}}
-  </div>
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{ renderer.render_select_field(form.car, clearable=false) }}
+  <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+    {{ renderer.render_field(form.passenger_location) }}
     {{ renderer.render_field(form.passenger_number) }}
   </div>
+  <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+    {{ renderer.render_select_field(form.car, clearable=false) }}
+    {{ renderer.render_select_field(form.driver, clearable=false) }}
+  </div>
   
-  <div class="flex flex-row w-full justify-between">
-    <div class="flex justify-start w-full gap-2">
-      <button type="submit" class="btn btn-primary">ยืนยัน</button>
+  <div class="flex flex-row w-full justify-end mt-6">
+    <div class="flex justify-end w-full gap-2">
+      <button type="submit" class="btn btn-primary px-8">ยืนยัน</button>
     </div>
   </div>
 </form>

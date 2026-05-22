@@ -43,28 +43,20 @@ USING_TYPE = [
 
 
 class VehicleApplication:
-    request_reason = me.StringField(
-        default="", max_length=516, required=True
-    )  # เหตุผลที่ต้องการใช้
+    request_reason = me.StringField(default="", max_length=516, required=True)  # เหตุผลที่ต้องการใช้
     approved_reason = me.StringField(default="", max_length=516)  # เหตุผลที่อนุมัติ
     denied_reason = me.StringField(default="", max_length=516)  # เหตุผลที่ไม่อนุมัติ
 
-    location = me.StringField(
-        default="", max_length=516, required=True
-    )  # สถานที่ต้องการจะไป
+    location = me.StringField(default="", max_length=516, required=True)  # สถานที่ต้องการจะไป
 
-    departure_datetime = me.DateTimeField(
-        required=True, default=datetime.datetime.now
-    )  # วันเวลาออกเดินทาง
+    departure_datetime = me.DateTimeField(required=True, default=datetime.datetime.now)  # วันเวลาออกเดินทาง
     return_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลากลับ
 
     creator = me.ReferenceField("User", dbref=True)
     updater = me.ReferenceField("User", dbref=True)
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now, auto_now=True
-    )
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
 
@@ -72,23 +64,18 @@ class VehicleApplication:
 class CarApplication(VehicleApplication, me.Document):
     meta = {"collection": "car_applications"}
     using_type = me.StringField(default="", choices=USING_TYPE)  # ประเภทการใช้รถ
-    travel_type = me.StringField(
-        default="one way", choices=TRAVEL_TYPE
-    )  # ประเภทการเดินทาง
-    airport_transfer_type = (
-        me.StringField()
-    )  # ประเภทการรับส่งสนามบิน (ตัวเลือกเสริม ไม่ตรวจสอบค่า)
+    travel_type = me.StringField(default="one way", choices=TRAVEL_TYPE)  # ประเภทการเดินทาง
+    airport_transfer_type = me.StringField()  # ประเภทการรับส่งสนามบิน (ตัวเลือกเสริม ไม่ตรวจสอบค่า)
     passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
     flight_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินไป
-    flight_return_datetime = me.DateTimeField(
-        default=datetime.datetime.now
-    )  # วันเวลาบินกลับ
+    flight_return_datetime = me.DateTimeField(default=datetime.datetime.now)  # วันเวลาบินกลับ
     flight_number = me.StringField(max_length=128, default="")
     flight_return_number = me.StringField(max_length=128, default="")
 
     passenger_number = me.IntField(min_value=0, required=True, default=0)
 
     car = me.ReferenceField("Car", dbref=True, required=True)
+    driver = me.ReferenceField("User", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
 
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
@@ -181,8 +168,4 @@ class MotorcycleApplication(VehicleApplication, me.Document):
         return self.last_mileage
 
     def get_reason(self):
-        return (
-            self.approved_reason
-            if self.status == "active" or self.status == "returned"
-            else self.denied_reason
-        )
+        return self.approved_reason if self.status == "active" or self.status == "returned" else self.denied_reason

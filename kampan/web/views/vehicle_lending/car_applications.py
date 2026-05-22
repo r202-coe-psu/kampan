@@ -59,9 +59,11 @@ def create_or_edit(car_application_id):
     car_application = None
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(id=organization_id, status="active").first()
+
     form = forms.vehicle_applications.CarApplicationForm()
 
     form.car.choices = [(str(car.id), car.license_plate) for car in models.vehicles.Car.objects(organization=organization)]
+    form.driver.choices = [(str(user.id), user.get_resources_fullname_th()) for user in organization.get_all_drivers()]
     if not form.validate_on_submit():
         if car_application_id:
             car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id).first()
@@ -99,7 +101,11 @@ def create_or_edit(car_application_id):
             form.flight_time.data = car_application.flight_datetime.time()
             form.flight_return_time.data = car_application.flight_return_datetime.time()
 
+            if car_application.driver:
+                form.driver.data = str(car_application.driver.id)
+
         form.car.choices = [(str(car.id), car.license_plate) for car in models.vehicles.Car.objects(organization=organization)]
+        form.driver.choices = [(str(user.id), user.get_resources_fullname_th()) for user in organization.get_all_drivers()]
 
         print(form.errors)
         return render_template(
@@ -114,6 +120,12 @@ def create_or_edit(car_application_id):
 
     form.populate_obj(car_application)
     car_application.car = models.vehicles.Car.objects(id=form.car.data).first()
+
+    if form.driver.data:
+        car_application.driver = models.User.objects(id=form.driver.data).first()
+    else:
+        car_application.driver = None
+
     if not car_application.car:
         return render_template(
             "/vehicle_lending/car_applications/create_or_edit.html",

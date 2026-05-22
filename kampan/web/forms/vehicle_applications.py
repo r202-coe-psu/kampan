@@ -42,6 +42,7 @@ BaseCarApplicationForm = model_form(
 
 class CarApplicationForm(BaseCarApplicationForm):
     car = fields.SelectField("รถยนต์", validate_choice=True)
+    driver = fields.SelectField("พนักงานขับรถ", validators=[validators.DataRequired()], choices=[])
     using_type = fields.RadioField(
         "ประเภทการใช้รถ",
         choices=models.vehicle_applications.USING_TYPE,
@@ -197,7 +198,6 @@ BaseReturnMotorcycleApplicationForm = model_form(
 
 
 class ReturnMotorcycleApplicationForm(BaseReturnMotorcycleApplicationForm):
-
     return_date = fields.DateField(
         "วันกลับ",
         validators=[validators.InputRequired()],
