@@ -177,35 +177,35 @@ class RequisitionTimelineItemForm(FlaskForm):
     requisition_item_id = HiddenField()
     # section ข้างบนตาราง
     insurance_start_date = fields.DateField(
-        "วันที่เริ่มประกัน", validators=[validators.DataRequired()]
+        "วันที่เริ่มประกัน", validators=[validators.Optional()]
     )
-    seller = fields.StringField("ชื่อผู้ขาย", validators=[validators.DataRequired()])
+    seller = fields.StringField("ชื่อผู้ขาย", validators=[validators.Optional()])
     insurance_end_date = fields.DateField(
-        "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
+        "วันที่สิ้นสุดประกัน", validators=[validators.Optional()]
     )
     # section ข้อมูลในตาราง
     responder_user = fields.SelectField(
-        "ผู้รับผิดชอบ", validators=[validators.DataRequired()], choices=[]
+        "ผู้รับผิดชอบ", validators=[validators.Optional()], choices=[]
     )
     serial_number = fields.StringField(
-        "เลขที่สินค้า", validators=[validators.DataRequired()]
+        "เลขที่สินค้า", validators=[validators.Optional()]
     )
     requisition_item_code = fields.StringField(
-        "เลขที่ใบเบิก", validators=[validators.DataRequired()]
+        "เลขที่ใบเบิก", validators=[validators.Optional()]
     )
-    location = fields.StringField("สถานที่ใช้งาน", validators=[validators.DataRequired()])
+    location = fields.StringField("สถานที่ใช้งาน", validators=[validators.Optional()])
 
 
 class RequisitionTimelineItemSharedForm(FlaskForm):
     class Meta:
         csrf = False
 
-    seller = fields.StringField("ชื่อผู้ขาย", validators=[validators.DataRequired()])
+    seller = fields.StringField("ชื่อผู้ขาย", validators=[validators.Optional()])
     insurance_start_date = fields.DateField(
-        "วันที่เริ่มประกัน", validators=[validators.DataRequired()]
+        "วันที่เริ่มประกัน", validators=[validators.Optional()]
     )
     insurance_end_date = fields.DateField(
-        "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
+        "วันที่สิ้นสุดประกัน", validators=[validators.Optional()]
     )
     insurance_duration = fields.StringField(
         "ระยะเวลาประกัน",
