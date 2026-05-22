@@ -6,9 +6,7 @@ from .email_utils import PSUSMTP
 logger = logging.getLogger(__name__)
 
 # แจ้งเตือนอีเมลว่ามี นัดหมายการใช้รถยนต์ไปยังคนขับ เมื่อมีการอนุมัติคำขอใช้รถยนต์
-email_subject_template = (
-    "นัดหมายการใช้รถยนต์ใหม่ ณ {{ appointment_datetime }} จาก {{ car_application_creator }}"
-)
+email_subject_template = "นัดหมายการใช้รถยนต์ใหม่ ณ {{ appointment_datetime }} จาก {{ car_application_creator }}"
 
 email_body_template = """
 สวัสดี {{ driver_name }},
@@ -22,9 +20,7 @@ email_body_template = """
 """
 
 
-def get_driver_text_format(
-    sender, driver, car_application, appointment_datetime, destination
-):
+def get_driver_text_format(sender, driver, car_application, appointment_datetime, destination):
 
     text_format = {
         "sender_name": sender.get_name(),
@@ -45,16 +41,18 @@ def force_send_email_to_driver(
     logger.debug("use send_email_to_driver ")
 
     creator = car_application.creator
-    organization = car_application.division.organization
-    drivers = organization.get_all_drivers()
+    driver = car_application.driver
     appointment_datetime = car_application.departure_datetime.strftime("%d/%m/%Y %H:%M")
     destination = car_application.location
 
     if not creator.email:
         logger.debug(f"attendant {creator.name} email is required")
         return False
-    if not drivers:
-        logger.debug("no active drivers found")
+    if not driver:
+        logger.debug("no assigned driver found for this application")
+        return False
+    if not driver.email:
+        logger.debug("assigned driver does not have an email")
         return False
 
     psu_smtp = PSUSMTP(setting)
@@ -62,21 +60,18 @@ def force_send_email_to_driver(
         return False
 
     sender = user
-    for driver in drivers:
-        text_format = get_driver_text_format(
-            sender, driver, car_application, appointment_datetime, destination
-        )
+    text_format = get_driver_text_format(sender, driver, car_application, appointment_datetime, destination)
 
-        subject_template = Template(email_subject_template)
-        email_subject = subject_template.render(text_format)
+    subject_template = Template(email_subject_template)
+    email_subject = subject_template.render(text_format)
 
-        body_template = Template(email_body_template)
-        email_body = body_template.render(text_format)
+    body_template = Template(email_body_template)
+    email_body = body_template.render(text_format)
 
-        success = psu_smtp.send_email(
-            receiver=driver.email,
-            subject=email_subject,
-            body=email_body,
-        )
+    success = psu_smtp.send_email(
+        receiver=driver.email,
+        subject=email_subject,
+        body=email_body,
+    )
     psu_smtp.quit()
     return success
