@@ -32,20 +32,7 @@
   <div id='calendar' class="max-sm:h-full"></div>
 </div>
 
-<dialog id="event_modal" class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg text-primary" id="modal_title">รายละเอียดการใช้งาน</h3>
-    <div class="py-4 whitespace-pre-line text-base-content/80 font-medium" id="modal_description"></div>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn btn-outline px-8">ปิด</button>
-      </form>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
+<div id="modal_container"></div>
 
 <style>
   .fc-view-harness {
@@ -105,12 +92,17 @@
         day: 'วัน',       // Rename "Day" view
         list: 'รายการ'    // Rename "List" view
       },
-      eventClick: function (info) {
-        document.getElementById('modal_title').innerText = info.event.title;
-        document.getElementById('modal_description').innerText = info.event.extendedProps.description;
-        document.getElementById('event_modal').showModal();
-
+      eventClick: async function (info) {
         info.el.style.borderColor = 'black';
+
+        try {
+            const response = await fetch(`{{ url_for('vehicle_lending.car_applications.event_modal', car_application_id='CAR_APP_ID') }}`.replace('CAR_APP_ID', info.event.id));
+            if (!response.ok) throw new Error('Network response was not ok');
+            const html = await response.text();
+            document.getElementById('modal_container').innerHTML = html;
+        } catch (error) {
+            console.error('Error loading modal:', error);
+        }
       },
       {% if current_user.get_current_division() %}
       dateClick: function (info) {

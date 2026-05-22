@@ -1,0 +1,92 @@
+<dialog class="modal modal-open">
+  <div class="modal-box w-11/12 max-w-2xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="this.closest('dialog').remove()">✕</button>
+    </form>
+    <h3 class="font-bold text-xl text-primary mb-4 border-b pb-2 flex items-center gap-2">
+      <i class="ph ph-car-profile text-2xl"></i>
+      <span>รายละเอียดการขอใช้รถยนต์</span>
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+      <!-- Creator -->
+      <div class="flex items-start gap-3 col-span-full bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+          <i class="ph ph-user text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">ผู้ขอ</div>
+          <div class="font-semibold text-base">{{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}</div>
+        </div>
+      </div>
+      
+      <!-- Start Time -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-green-500/10 p-2 rounded-full text-green-600 flex items-center justify-center">
+          <i class="ph ph-calendar-plus text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">วัน-เวลา เริ่ม</div>
+          <div class="font-semibold text-base">
+            <span>{{ car_application.departure_datetime.strftime('%d/%m/%Y') if car_application.departure_datetime else '-' }}</span> 
+            <span class="ml-1">{{ car_application.departure_datetime.strftime('%H:%M น.') if car_application.departure_datetime else '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Return Time -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-orange-500/10 p-2 rounded-full text-orange-600 flex items-center justify-center">
+          <i class="ph ph-calendar-check text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">วัน-เวลา กลับ</div>
+          <div class="font-semibold text-base">
+            <span>{{ car_application.return_datetime.strftime('%d/%m/%Y') if car_application.return_datetime else '-' }}</span> 
+            <span class="ml-1">{{ car_application.return_datetime.strftime('%H:%M น.') if car_application.return_datetime else '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- License Plate -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
+        <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
+          <i class="ph ph-identification-card text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">ป้ายทะเบียน</div>
+          <div class="font-semibold text-base">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-purple-500/10 p-2 rounded-full text-purple-600 flex items-center justify-center">
+          <i class="ph ph-text-align-left text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">เหตุผล</div>
+          <div class="font-medium text-base break-words">{{ car_application.request_reason or '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Location -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
+          <i class="ph ph-map-pin text-xl"></i>
+        </div>
+        <div>
+          <div class="text-sm text-base-content/70">สถานที่ที่ต้องการจะไป</div>
+          <div class="font-medium text-base break-words">{{ car_application.location or '-' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-primary px-8" onclick="this.closest('dialog').remove()">ปิด</button>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop" onclick="this.closest('dialog').remove()"></div>
+</dialog>
