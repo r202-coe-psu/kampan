@@ -94,12 +94,10 @@
     </script>
     {% endif %}
 
-    {# ── Section ข้อมูลในตาราง (one row per duplicated item, scrollable) ── #}
+    {# ── Section ข้อมูลในตาราง ── #}
     <div class="rounded-xl border border-gray-200 overflow-visible">
-      <div class="overflow-visible">
-        <div class="max-h-72 overflow-visible">
-          <table class="table table-sm w-full">
-            <thead class="sticky top-0 z-10">
+      <table class="table table-sm w-full">
+        <thead class="sticky top-0 z-10">
               <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wide">
                 <th class="text-center w-10">#</th>
                 <th>ผู้รับผิดชอบ</th>
@@ -141,8 +139,6 @@
               {% endfor %}
             </tbody>
           </table>
-        </div>
-      </div>
     </div>
 
   </div>
