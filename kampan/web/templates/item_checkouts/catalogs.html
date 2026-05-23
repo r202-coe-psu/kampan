@@ -54,7 +54,7 @@
     {{ renderer.render_field(form.item_name) }}
     {{ renderer.render_select_field(form.categories) }}
   </div>
-  <div class="flex flex-row w-full justify-between">
+  <div class="flex flex-row w-full justify-between mt-4">
     <div class="flex justify-end w-full gap-2">
       <a class="btn"
         href='{{  url_for("item_checkouts.catalogs",organization_id=organization.id, order_id=order.id, )}}'>
