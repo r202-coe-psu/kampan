@@ -96,7 +96,7 @@
         info.el.style.borderColor = 'black';
 
         try {
-            const response = await fetch(`{{ url_for('vehicle_lending.car_applications.event_modal', car_application_id='CAR_APP_ID') }}`.replace('CAR_APP_ID', info.event.id));
+            const response = await fetch(`{{ url_for('vehicle_lending.car_applications.event_modal', car_application_id='CAR_APP_ID', organization_id=organization.id) }}`.replace('CAR_APP_ID', info.event.id));
             if (!response.ok) throw new Error('Network response was not ok');
             const html = await response.text();
             document.getElementById('modal_container').innerHTML = html;
