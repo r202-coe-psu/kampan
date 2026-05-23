@@ -648,6 +648,7 @@ def requisition_action(requisition_id):
                 mas=mas,
                 amount=amt,
                 reserved_by=current_user._get_current_object(),
+                organization=organization,
             )
             res.save()
 
