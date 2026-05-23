@@ -58,6 +58,7 @@ class FundAllocation(me.EmbeddedDocument):
 
 class RequisitionTimeline(me.Document):
     meta = {"collection": "requisition_timeline"}
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
@@ -95,6 +96,7 @@ class RequisitionTimelineLogs(me.Document):
 class RequisitionTimelineItem(me.Document):
     meta = {"collection": "requisition_timeline_items"}
     # reference field
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     running_number = me.IntField(required=True)
     requisition_timeline = me.ReferenceField("RequisitionTimeline", dbref=True, required=True)
     requisition = me.ReferenceField("Requisition", dbref=True, required=True)

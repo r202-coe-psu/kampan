@@ -42,11 +42,9 @@ def index():
     form = forms.mas.MASSearchForm(request.args)
     organization_id = request.args.get("organization_id")
 
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
 
-    mas = models.MAS.objects(status="active", **query).order_by("created_date")
+    mas = models.MAS.objects(status="active", organization=organization, **query).order_by("created_date")
 
     page = request.args.get("page", default=1, type=int)
     paginated_mas = Pagination(mas, page=page, per_page=20)
@@ -72,11 +70,9 @@ def index():
 @acl.organization_roles_required("admin")
 def create_or_edit(mas_id=None):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
 
-    mas = models.MAS.objects(id=mas_id).first() if mas_id else None
+    mas = models.MAS.objects(id=mas_id, organization=organization).first() if mas_id else None
     form = forms.mas.MASForm(obj=mas)
 
     if not form.validate_on_submit():
@@ -89,7 +85,7 @@ def create_or_edit(mas_id=None):
         )
 
     if not mas:
-        mas = models.MAS()
+        mas = models.MAS(organization=organization)
         mas.created_by = current_user._get_current_object()
 
     form.populate_obj(mas)
@@ -105,11 +101,9 @@ def create_or_edit(mas_id=None):
 @acl.organization_roles_required("admin")
 def delete(mas_id):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
 
-    mas = models.MAS.objects(id=mas_id).first()
+    mas = models.MAS.objects(id=mas_id, organization=organization).first()
     if mas:
         mas.status = "closed"
         mas.save()
@@ -128,9 +122,7 @@ def reservation(mas_id):
 
     # Requisition search (must fetch IDs because MongoDB doesn't support joins)
     if form.requisition_code.data:
-        requisition_ids = models.Requisition.objects(
-            requisition_code__icontains=form.requisition_code.data
-        ).values_list("id")
+        requisition_ids = models.Requisition.objects(requisition_code__icontains=form.requisition_code.data).values_list("id")
         query["requisition__in"] = requisition_ids
 
     # Reserved by search (must fetch IDs because MongoDB doesn't support joins)
@@ -138,8 +130,7 @@ def reservation(mas_id):
         from mongoengine.queryset.visitor import Q
 
         user_ids = models.User.objects(
-            Q(first_name__icontains=form.reserved_by.data)
-            | Q(last_name__icontains=form.reserved_by.data)
+            Q(first_name__icontains=form.reserved_by.data) | Q(last_name__icontains=form.reserved_by.data)
         ).values_list("id")
         query["reserved_by__in"] = user_ids
 
@@ -156,14 +147,12 @@ def reservation(mas_id):
     if form.actual_amount.data:
         query["actual_amount"] = form.actual_amount.data
 
-    organization = models.Organization.objects(
-        id=organization.id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization.id, status="active").first()
 
-    mas = models.MAS.objects(id=mas_id).first()
-    reservations = models.Reservation.objects(
-        mas=mas, status="active", **query
-    ).order_by("-reserved_date")
+    mas = models.MAS.objects(id=mas_id, organization=organization).first()
+    reservations = models.Reservation.objects(mas=mas, status="active", organization=organization, **query).order_by(
+        "-reserved_date"
+    )
     page = request.args.get("page", default=1, type=int)
     paginated_reservations = Pagination(reservations, page=page, per_page=20)
 
@@ -183,9 +172,7 @@ def export_excel_modal():
     modal_id = uuid4()
     form = forms.mas.ExportMASExcelForm()
     organization_id = request.args.get("organization_id")
-    exported_file = models.export_file.ExportFile.objects(
-        created_by=current_user._get_current_object(), type_="mas_export"
-    ).first()
+    exported_file = models.export_file.ExportFile.objects(created_by=current_user._get_current_object(), type_="mas_export").first()
 
     return render_template(
         "procurement/components/export_excel_modal.html",

@@ -14,6 +14,7 @@ RESERVATION_STATUS_CHOICES = [
 
 class MAS(me.Document):
     meta = {"collection": "mas", "strict": False}
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
 
     year = me.IntField(required=True, min_value=2500, max_value=2700)
     mas_code = me.StringField(required=True, max_length=50)
@@ -39,6 +40,7 @@ class MAS(me.Document):
 
 class Reservation(me.Document):
     meta = {"collection": "reservations"}
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     requisition = me.ReferenceField("Requisition", required=True, dbref=True)
     mas = me.ReferenceField(MAS, required=True, dbref=True)
     amount = me.DecimalField(

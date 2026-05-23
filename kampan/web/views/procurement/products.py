@@ -58,6 +58,7 @@ def index():
         query["category"] = category
     if payment_status:
         query["payment_status"] = payment_status
+    query["organization"] = organization
 
     procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
 
@@ -82,7 +83,7 @@ def index():
 
     # --- Status count section ---
     # Count all procurements for this organization/user role (not paginated, not filtered by category/payment_status)
-    base_qs = models.Procurement.objects()
+    base_qs = models.Procurement.objects(organization=organization)
 
     if (
         org_user_role
@@ -107,7 +108,7 @@ def index():
         p.duration_days = days
 
     # Choices for filters
-    all_procurements = models.Procurement.objects()
+    all_procurements = models.Procurement.objects(organization=organization)
 
     category_choices = models.procurement.CATEGORY_CHOICES
     payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
@@ -229,10 +230,10 @@ def image(procurement_id, filename):
 @module.route("/<procurement_id>/edit_image", methods=["GET", "POST"])
 @login_required
 def edit_image(procurement_id):
-    procurement = models.Procurement.objects(id=procurement_id).first()
+    organization = current_user.user_setting.current_organization
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
-    organization = current_user.user_setting.current_organization
 
     form = forms.procurement.EditImageForm(obj=procurement)
     if not form.validate_on_submit():

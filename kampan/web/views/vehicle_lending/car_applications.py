@@ -182,7 +182,7 @@ def create_or_edit(car_application_id):
 def delete(car_application_id):
     organization_id = request.args.get("organization_id")
 
-    car_application = models.vehicle_applications.CarApplication.objects().get(id=car_application_id)
+    car_application = models.vehicle_applications.CarApplication.objects().get(id=car_application_id, organization=organization_id)
     car_application.status = "disactive"
     car_application.save()
 
@@ -195,6 +195,7 @@ def get_car_applications():
     organization_id = request.args.get("organization_id")
 
     car_applications = models.vehicle_applications.CarApplication.objects(
+        organization=organization_id,
         status__in=[
             "pending on header",
             "pending on director",
@@ -234,7 +235,8 @@ def get_car_applications():
 @module.route("/<car_application_id>/modal")
 @login_required
 def event_modal(car_application_id):
-    car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id).first()
+    organization_id = request.args.get("organization_id")
+    car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id, organization=organization_id).first()
     return render_template(
         "/vehicle_lending/car_applications/components/event_modal.html",
         car_application=car_application,

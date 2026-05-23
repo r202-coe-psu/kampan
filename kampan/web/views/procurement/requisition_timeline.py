@@ -180,7 +180,7 @@ def index():
         user=current_user._get_current_object()
     ).first()
     # query เเรกของ requisition timeline
-    requisition_timeline = models.RequisitionTimeline.objects.order_by("-updated_date")
+    requisition_timeline = models.RequisitionTimeline.objects(organization=organization).order_by("-updated_date")
     is_admin = current_user.has_organization_roles("admin")
 
     if progress:
@@ -251,7 +251,7 @@ def add_progress(requisition_timeline_id):
     ).first()
 
     requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
+        id=requisition_timeline_id, organization=organization
     )
     new_progress_status = request.form.get("progress")
 
@@ -290,7 +290,7 @@ def cancel(requisition_timeline_id):
         id=organization_id, status="active"
     ).first()
     requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
+        id=requisition_timeline_id, organization=organization
     )
     note = form.note.data
     if not note:
@@ -342,7 +342,7 @@ def billing_modal(requisition_timeline_id):
         id=organization_id, status="active"
     ).first()
     requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
+        id=requisition_timeline_id, organization=organization
     )
     reservations = list(
         models.Reservation.objects(requisition=requisition_timeline.requisition)
@@ -690,7 +690,7 @@ def completed_submit(requisition_timeline_id):
     ).first()
 
     requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
+        id=requisition_timeline_id, organization=organization
     )
 
     responder_user_choices = []

@@ -82,6 +82,7 @@ class Requisition(me.Document):
     meta = {"collection": "requisitions"}
 
     requisition_code = me.StringField(max_length=50, unique=True, required=True)
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     project_name = me.StringField(max_length=255)
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True, required=True)
     selected_manager = me.EmbeddedDocumentField(SelectedManager)

@@ -39,15 +39,14 @@ def index():
     form = forms.requisition_timeline_items.RequisitionTimelineItemFilterForm(
         request.args
     )
-    # get users สําหรับทํา filter choice
-    users = models.User.objects()
-    form.user.choices = [(str(user.id), f"{user.get_name()}") for user in users]
+    members = organization.get_organization_users()
+    form.user.choices = [(str(member.user.id), f"{member.display_user_fullname()}") for member in members if member.user]
     # เเสดง items เเค่ของเฉพาะรายการ timeline ที่ completed เเล้วเท่านั้น
     # scalar("id") จะทําการกรองเเค่ id ที่ get มา
-    completed_timelines = models.RequisitionTimeline.objects(status="completed").scalar(
+    completed_timelines = models.RequisitionTimeline.objects(status="completed", organization=organization).scalar(
         "id"
     )
-    query = {"requisition_timeline__in": list(completed_timelines)}
+    query = {"requisition_timeline__in": list(completed_timelines), "organization": organization}
     if form.start_date.data and form.end_date.data:
         query["created_date__gte"] = form.start_date.data
         query["created_date__lte"] = form.end_date.data

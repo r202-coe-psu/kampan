@@ -92,6 +92,7 @@ def index():
         query["asset_code__icontains"] = asset_code
     if procurement_id:
         query["id__icontains"] = procurement_id
+    query["organization"] = organization
 
     procurements = models.Procurement.objects(**query)
     procurements = apply_expiration_date_filter(procurements, expiration_date_range)
@@ -159,7 +160,7 @@ def non_renewal(requisition_procurement_id):
         )
     else:
         category = request.args.get("category", "")
-        query = {"status": "disactive"}
+        query = {"status": "disactive", "organization": organization}
         procurements = models.Procurement.objects(**query)
         org_user_role = models.OrganizationUserRole.objects(
             user=current_user._get_current_object()
@@ -248,6 +249,7 @@ def renewal_requested(requisition_procurement_id):
         )
     else:
         category = request.args.get("category", "")
+        query["organization"] = organization
         requisitions = models.Requisition.objects(**query)
 
         # Determine user role hierarchy
@@ -332,8 +334,10 @@ def renewal_requested(requisition_procurement_id):
 
 
 @module.route("/<requisition_procurement_id>/document")
+@login_required
 def document(requisition_procurement_id):
-    requisition = models.Requisition.objects(id=requisition_procurement_id).first()
+    organization = current_user.user_setting.current_organization
+    requisition = models.Requisition.objects(id=requisition_procurement_id, organization=organization).first()
     if not requisition:
         abort(404)
 
@@ -368,7 +372,7 @@ def create_or_edit(requisition_procurement_id):
     requisition = None
 
     if requisition_procurement_id:
-        requisition = models.Requisition.objects(id=requisition_procurement_id).first()
+        requisition = models.Requisition.objects(id=requisition_procurement_id, organization=organization).first()
         form = forms.requisitions.RequisitionForm(obj=requisition)
     else:
         form = forms.requisitions.RequisitionForm()
@@ -415,6 +419,7 @@ def create_or_edit(requisition_procurement_id):
     if not requisition:
         requisition = models.Requisition(
             created_by=current_user._get_current_object(),
+            organization=organization,
         )
 
     # Create items from form
@@ -515,7 +520,8 @@ def create_or_edit(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/download/all")
 @login_required
 def download(requisition_procurement_id):
-    document = models.Requisition.objects(id=requisition_procurement_id).first()
+    organization = current_user.user_setting.current_organization
+    document = models.Requisition.objects(id=requisition_procurement_id, organization=organization).first()
     pdf_streams = []
 
     # ToR
@@ -579,8 +585,8 @@ def requisition_action(requisition_id):
     print(fund_ids)
     manager_id = request.form.get("manager")
 
-    requisition = models.Requisition.objects(id=requisition_id).first()
     organization = current_user.user_setting.current_organization
+    requisition = models.Requisition.objects(id=requisition_id, organization=organization).first()
     members = organization.get_organization_users()
     member_obj = next(
         (m for m in members if str(getattr(m.user, "id", "")) == str(current_user.id)),

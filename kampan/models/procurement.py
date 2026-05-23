@@ -53,6 +53,7 @@ class Procurement(me.Document):
     status = me.StringField(choices=RENEWAL_STATUS_CHOICES, default="active")
 
     # References
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     company = me.StringField(max_length=255, required=True)
     payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
     responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
