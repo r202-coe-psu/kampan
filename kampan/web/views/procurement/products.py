@@ -153,6 +153,7 @@ def create():
     procurement.created_by = procurement.last_updated_by = (
         current_user._get_current_object()
     )
+    procurement.organization = organization
 
     # Save image if uploaded
     if image:

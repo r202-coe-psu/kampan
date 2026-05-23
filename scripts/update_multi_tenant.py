@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import kampan
 from kampan import models
@@ -12,9 +12,10 @@ import mongoengine as me
 from flask import Flask
 
 app = Flask(__name__)
-app.config.from_pyfile(os.path.join(os.path.dirname(__file__), '..', 'kampan-development.cfg'))
+app.config.from_pyfile(os.path.join(os.path.dirname(__file__), "..", "kampan-development.cfg"))
 
 models.init_mongoengine(app.config)
+
 
 def migrate():
     org_id = "6661c367df36be9c312058ae"
@@ -77,9 +78,20 @@ def migrate():
         r.organization = org
         r.save()
         count += 1
+
     print(f"Updated {count} reservations.")
+
+    print("Updating Documents...")
+    documents = models.Document.objects(organization__exists=False)
+    count = 0
+    for d in documents:
+        d.organization = org
+        d.save()
+        count += 1
+    print(f"Updated {count} documents.")
 
     print("Migration complete.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     migrate()

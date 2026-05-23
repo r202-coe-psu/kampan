@@ -18,6 +18,7 @@ CATEGORY_CHOICES = [
 
 class Document(me.Document):
     meta = {"collection": "documents"}
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     file = me.FileField()
     category = me.StringField(
         choices=CATEGORY_CHOICES, default=CATEGORY_CHOICES[2][0], required=True

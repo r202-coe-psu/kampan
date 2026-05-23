@@ -45,4 +45,11 @@ res = db.reservations.updateMany(
 );
 print("Reservations matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
 
+print("Updating documents...");
+res = db.documents.updateMany(
+  { organization: { $exists: false } },
+  { $set: { organization: orgRef } }
+);
+print("Documents matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
+
 print("Done.");

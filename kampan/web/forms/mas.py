@@ -13,11 +13,11 @@ BaseMASForm = model_form(
         "updated_date",
         "created_by",
         "last_updated_by",
-        "reservable_amount",
         "status",
         "editable",
         "remaining_amount",
         "reservable_amount",
+        "organization",
     ],
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
@@ -30,7 +30,7 @@ BaseMASForm = model_form(
 
 
 class MASForm(BaseMASForm):
-    pass
+    organization = None
 
 
 class MASSearchForm(FlaskForm):

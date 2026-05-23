@@ -238,6 +238,7 @@ def renewal_requested(requisition_procurement_id):
             fund=None,
             created_by=current_user._get_current_object(),
             last_updated_by=current_user._get_current_object(),
+            organization=organization,
         )
         requisition.save()
         procurement.status = "renewal-requested"
@@ -748,6 +749,7 @@ def requisition_action(requisition_id):
             last_updated_by=current_user._get_current_object(),
             created_date=datetime.datetime.now(),
             created_by=current_user._get_current_object(),
+            organization=organization,
         )
         requisition_timeline.save()
         return redirect(

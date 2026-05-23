@@ -258,7 +258,7 @@ def validate_mas_file(document) -> list:
             errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงินว่างเปล่า")
             continue
 
-        if models.MAS.objects(mas_code=mas_code, status="active").first():
+        if models.MAS.objects(mas_code=mas_code, status="active", organization=document.organization).first():
             errors.append(f"แถวที่ {row_num}: รหัสแหล่งเงิน '{mas_code}' มีอยู่ในระบบแล้ว")
 
         year = safe_str(row.get("year"))
@@ -451,7 +451,7 @@ def save_mas_db(document, mas, user_id):
             print(msg)
             continue
 
-        existing = models.MAS.objects(mas_code=mas_code, status="active").first()
+        existing = models.MAS.objects(mas_code=mas_code, status="active", organization=document.organization).first()
         if existing:
             msg = f"แถวที่ {row_num}: รหัสแหล่งเงิน '{mas_code}' มีอยู่ในระบบแล้ว"
             errors.append(msg)
@@ -463,6 +463,7 @@ def save_mas_db(document, mas, user_id):
         reservable_amount = to_decimal(row.get("reservable_amount"))
 
         mas_obj = models.MAS(
+            organization=document.organization,
             year=year,
             mas_code=mas_code,
             description=description,
@@ -648,6 +649,7 @@ def save_ma_db(document, ma, user_id):
                     errors.append(msg)
 
             duplicate_query = {
+                "organization": document.organization,
                 "name": data.get("name"),
                 "asset_code": data.get("asset_code"),
                 "start_date": data.get("start_date"),
@@ -665,6 +667,7 @@ def save_ma_db(document, ma, user_id):
                 continue
 
             procurement = models.Procurement(
+                organization=document.organization,
                 **data,
                 created_by=processed_user,
                 last_updated_by=processed_user,

@@ -40,7 +40,7 @@ class Procurement(me.Document):
 
     # Core fields
     image = me.ImageField()
-    product_number = me.StringField(max_length=50, unique=True, required=True)
+    product_number = me.StringField(max_length=50, required=True)
     asset_code = me.StringField(max_length=50, required=True)
     name = me.StringField(max_length=255, required=True)
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
@@ -62,36 +62,19 @@ class Procurement(me.Document):
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now, auto_now=True
-    )
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
     paid_period_index = me.IntField(default=-1)  # เปลี่ยนกลับเป็น -1
-    payment_records = me.ListField(
-        me.EmbeddedDocumentField(PaymentRecord)
-    )  # ประวัติการจ่ายเงิน
+    payment_records = me.ListField(me.EmbeddedDocumentField(PaymentRecord))  # ประวัติการจ่ายเงิน
 
     def get_payment_due_dates(self):
         """
         Return a list of due dates (datetime.date) for each payment period.
         """
-        if (
-            not self.start_date
-            or not self.end_date
-            or not self.period
-            or self.period < 1
-        ):
+        if not self.start_date or not self.end_date or not self.period or self.period < 1:
             return []
 
-        start = (
-            self.start_date.date()
-            if isinstance(self.start_date, datetime.date)
-            else self.start_date
-        )
-        end = (
-            self.end_date.date()
-            if isinstance(self.end_date, datetime.date)
-            else self.end_date
-        )
+        start = self.start_date.date() if isinstance(self.start_date, datetime.date) else self.start_date
+        end = self.end_date.date() if isinstance(self.end_date, datetime.date) else self.end_date
 
         total_days = (end - start).days + 1  # รวมวันสุดท้าย
         days_per_period = total_days // self.period
@@ -165,18 +148,14 @@ class Procurement(me.Document):
         due_dates = self.get_payment_due_dates()
         due_date = None
         if 0 <= period_index < len(due_dates):
-            due_date = datetime.datetime.combine(
-                due_dates[period_index], datetime.time.min
-            )
+            due_date = datetime.datetime.combine(due_dates[period_index], datetime.time.min)
         payment_record = PaymentRecord(
             period_index=period_index,
             paid_date=datetime.datetime.now(),
             paid_by=paid_by,
             due_date=due_date,
             amount=amount,
-            product_number=(
-                product_number if product_number is not None else self.product_number
-            ),
+            product_number=(product_number if product_number is not None else self.product_number),
         )
         self.payment_records.append(payment_record)
 

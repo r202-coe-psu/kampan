@@ -23,6 +23,7 @@ BaseRequisitionForm = model_form(
         "committees",
         "selected_manager",
         "type",
+        "organization",
     ],
     field_args={
         "phone": {"label": "เบอร์โทรศัพท์"},
@@ -62,6 +63,7 @@ class CommitteeForm(Form):
 
 
 class RequisitionForm(BaseRequisitionForm):
+    organization = None
     type = fields.StringField("ประเภท")
     phone = fields.StringField("เบอร์โทรศัพท์")
     start_date = fields.DateField(

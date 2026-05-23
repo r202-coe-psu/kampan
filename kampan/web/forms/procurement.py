@@ -13,6 +13,7 @@ BaseProcurementForm = model_form(
         "last_updated_by",
         "image",
         "status",
+        "organization",
     ],
     field_args={
         "product_number": {"label": "เลขที่สินค้า/เลขที่เอกสาร"},
@@ -28,6 +29,7 @@ BaseProcurementForm = model_form(
 
 
 class ProcurementForm(BaseProcurementForm):
+    organization = None
     start_date = fields.DateField(
         "วันที่เริ่มต้น",
         validators=[validators.Optional()],
@@ -38,16 +40,17 @@ class ProcurementForm(BaseProcurementForm):
     )
 
     def validate_product_number(self, field):
-        # ตรวจสอบ uniqueness ของ product_number
+        # ตรวจสอบ uniqueness ของ product_number เฉพาะในองค์กรเดียวกัน
         if field.data:
-
-            existing = models.Procurement.objects(product_number=field.data)
+            from flask_login import current_user
+            organization = current_user.user_setting.current_organization
+            existing = models.Procurement.objects(product_number=field.data, organization=organization)
             # ถ้าเป็นการแก้ไข (edit) จะมี id อยู่ใน form
             form_id = getattr(self, "id", None)
             if form_id and form_id.data:
                 existing = existing.filter(id__ne=form_id.data)
             if existing.first():
-                raise ValidationError("เลขที่สินค้า/เลขที่เอกสารนี้ถูกใช้ไปแล้ว กรุณาใช้เลขที่อื่น")
+                raise ValidationError("เลขที่สินค้า/เลขที่เอกสารนี้ถูกใช้ไปแล้วในองค์กรนี้ กรุณาใช้เลขที่อื่น")
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data:

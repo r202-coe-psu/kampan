@@ -37,7 +37,7 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    documents_query = models.Document.objects(status__ne="disable")
+    documents_query = models.Document.objects(status__ne="disable", organization=organization)
 
     return render_template(
         "procurement/upload_files/index.html",
@@ -58,7 +58,7 @@ def upload_or_edit(document_id):
 
     document = None
     if document_id:
-        document = models.Document.objects(id=document_id).first()
+        document = models.Document.objects(id=document_id, organization=organization).first()
 
     form = forms.upload_files.FileForm(obj=document)
 
@@ -77,6 +77,7 @@ def upload_or_edit(document_id):
                 continue
 
             new_doc = models.Document()
+            new_doc.organization = organization
             new_doc.created_by = current_user
             new_doc.updated_by = current_user
             new_doc.status = "waiting"
@@ -214,7 +215,7 @@ def delete(document_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    document = models.Document.objects.get(id=document_id)
+    document = models.Document.objects.get(id=document_id, organization=organization)
     if document:
         document.status = "disable"
         document.save()
@@ -229,9 +230,10 @@ def delete(document_id):
 @acl.organization_roles_required("admin")
 def download(document_id, filename):
     response = Response()
+    organization = current_user.user_setting.current_organization
     response.status_code = 404
 
-    document = models.Document.objects(id=document_id).first()
+    document = models.Document.objects(id=document_id, organization=organization).first()
 
     if document:
         response = send_file(
@@ -251,7 +253,7 @@ def processing(document_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    document = models.Document.objects.get(id=document_id)
+    document = models.Document.objects.get(id=document_id, organization=organization)
 
     category = document.category or "unknown"
 
