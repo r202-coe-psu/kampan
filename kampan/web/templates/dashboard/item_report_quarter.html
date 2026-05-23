@@ -21,7 +21,7 @@ search_quarter=search_quarter if search_quarter else form.quarter.data, item_id=
     {{ renderer.render_select_field(form.quarter) }}
 
   </div>
-  <div class="flex flex-row w-full justify-end gap-2">
+  <div class="flex flex-row w-full justify-end gap-2 mt-4">
     <a class="btn" href='{{  url_for("dashboard.item_report_quarter",organization_id=organization.id )}}'>
       ล้างการค้นหา
     </a>
