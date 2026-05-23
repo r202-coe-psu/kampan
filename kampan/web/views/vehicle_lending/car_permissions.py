@@ -55,6 +55,10 @@ def header_approve():
         id=car_application_id
     ).first()
     car_application.status = "pending on admin"
+    car_application.header_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_car_application_to_endorser,
@@ -133,6 +137,10 @@ def director_approve():
         id=car_application_id
     ).first()
     car_application.status = "pending on admin"
+    car_application.director_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_car_application_to_endorser,
@@ -212,6 +220,10 @@ def admin_approve():
         id=car_application_id
     ).first()
     car_application.status = "active"
+    car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
 
     job = redis_rq.redis_queue.queue.enqueue(

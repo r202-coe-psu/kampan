@@ -72,6 +72,12 @@
             {{ car_application.get_reason() }}
           </td>
           <td class="table-style">
+            <a class="btn btn-circle btn-ghost"
+               data-tip="ใบขอใช้รถยนต์"
+               href="{{ url_for('vehicle_lending.car_applications.paper', car_application_id=car_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-file-text"></i>
+            </a>
+
             {% if 'pending' in car_application.status %}
             <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
               href="{{ url_for('vehicle_lending.car_applications.create_or_edit', car_application_id=car_application.id, organization_id=organization.id) }}">
@@ -117,6 +123,11 @@
           {% endif %}
         </div>
         <div class="flex flex-wrap gap-2 mt-3 justify-end">
+          <a class="btn btn-sm btn-ghost"
+             href="{{ url_for('vehicle_lending.car_applications.paper', car_application_id=car_application.id, organization_id=organization.id) }}">
+            <i class="ph ph-file-text"></i>
+            ใบขอใช้รถยนต์
+          </a>
           {% if 'pending' in car_application.status %}
           <a class="btn btn-sm btn-primary"
             href="{{ url_for('vehicle_lending.car_applications.create_or_edit', car_application_id=car_application.id, organization_id=organization.id) }}">

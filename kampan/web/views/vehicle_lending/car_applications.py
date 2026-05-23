@@ -6,6 +6,7 @@ from flask import (
     request,
     jsonify,
     current_app,
+    abort,
 )
 from flask_login import login_required, current_user
 import mongoengine as me
@@ -70,6 +71,7 @@ def create_or_edit(car_application_id):
             form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
 
         else:
+            form.phone.data = current_user.get_phone()
             date = request.args.get("date", type=str, default=None)
             if date:
                 date = datetime.datetime.strptime(date, "%Y-%m-%d")
@@ -241,3 +243,30 @@ def event_modal(car_application_id):
         "/vehicle_lending/car_applications/components/event_modal.html",
         car_application=car_application,
     )
+
+
+@module.route("/<car_application_id>/paper", methods=["GET"])
+@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+def paper(car_application_id):
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(id=organization_id, status="active").first()
+    if not organization:
+        return abort(404)
+
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization
+    ).first()
+
+    if not car_application:
+        return abort(404)
+
+    if not current_user.has_organization_roles("admin", "supervisor supplier"):
+        if car_application.creator != current_user:
+            return abort(403)
+
+    return render_template(
+        "/vehicle_lending/car_applications/paper.html",
+        car_application=car_application,
+        organization=organization
+    )
+
