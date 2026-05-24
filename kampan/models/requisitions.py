@@ -1,4 +1,5 @@
 import datetime
+
 import mongoengine as me
 from bson.objectid import ObjectId
 
@@ -25,6 +26,14 @@ STATUS_CHOICES = [
 SHOW_ITEM_CHOICES = [
     ("all", "แสดงทั้งหมด"),
     ("me", "แสดงเฉพาะของฉัน"),
+]
+
+FUND_CHOICES = [
+    ("budget", "เงินงบประมาณ"),
+    ("income_institute", "เงินรายได้สานักฯ"),
+    ("income_central_university", "เงินรายได้ส่วนกลางมหาวิทยาลัย"),
+    ("income_sno", "เงินรายได้ สนอ."),
+    ("income_central_smartu", "เงินรายได้ส่วนกลาง (Smart U)"),
 ]
 
 
@@ -93,11 +102,10 @@ class Requisition(me.Document):
     qt_document = me.FileField(collection_name="qt_documents")
 
     # require at least 1 item and allow at most 4 items
-    items = me.EmbeddedDocumentListField(
-        "RequisitionItem", required=True, min_length=1, max_length=4
-    )
+    items = me.EmbeddedDocumentListField("RequisitionItem", required=True, min_length=1, max_length=4)
     committees = me.EmbeddedDocumentListField("Committees")
     approval_history = me.EmbeddedDocumentListField("ApprovalHistory")
+    fund_source = me.StringField(max_length=255)
 
     status = me.StringField(default=STATUS_CHOICES[0][0])
     type = me.StringField(max_length=50)
@@ -105,9 +113,7 @@ class Requisition(me.Document):
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    updated_date = me.DateTimeField(
-        required=True, default=datetime.datetime.now, auto_now=True
-    )
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.requisition_code:
@@ -116,11 +122,7 @@ class Requisition(me.Document):
             buddhist_year = now.year + 543
             # หาเลขรันนิ้งล่าสุดของปีนี้
             suffix = f"/{buddhist_year}"
-            last = (
-                Requisition.objects(requisition_code__endswith=suffix)
-                .order_by("-requisition_code")
-                .first()
-            )
+            last = Requisition.objects(requisition_code__endswith=suffix).order_by("-requisition_code").first()
             if last and last.requisition_code:
                 last_number = int(last.requisition_code.split("/")[0])
                 next_number = last_number + 1

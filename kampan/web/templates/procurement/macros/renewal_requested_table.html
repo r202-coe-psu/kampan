@@ -387,6 +387,24 @@
                                         {% endfor %}
                                       </select>
                                     </div>
+                                    <div class="form-control flex flex-col gap-2 mt-2">
+                                      <label class="label">
+                                        <span class="label-text font-semibold">เลือกแหล่งเงิน (Fund Source)</span>
+                                      </label>
+                                      <select name="fund_source" class="select select-bordered w-full" required>
+                                        <option value="" disabled selected>-- เลือกแหล่งเงิน --</option>
+                                        {% set fund_choices = [
+                                            ("budget", "เงินงบประมาณ"),
+                                            ("income_institute", "เงินรายได้สานักฯ"),
+                                            ("income_central_university", "เงินรายได้ส่วนกลางมหาวิทยาลัย"),
+                                            ("income_sno", "เงินรายได้ สนอ."),
+                                            ("income_central_smartu", "เงินรายได้ส่วนกลาง (Smart U)")
+                                        ] %}
+                                        {% for value, label in fund_choices %}
+                                          <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                      </select>
+                                    </div>
                                   {% else %}
                                     <div class="alert alert-warning">
                                       <span>ไม่พบข้อมูลองค์กร (organization) สำหรับการเลือกผู้บริหาร</span>

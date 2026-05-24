@@ -1,25 +1,25 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    send_file,
-    abort,
-    Response,
-    current_app,
-)
-from io import BytesIO
-from PyPDF2 import PdfMerger
-from flask_login import login_required, current_user
-from flask_mongoengine import Pagination
-from kampan.web import forms, acl
-from kampan import models, utils
-from ... import redis_rq
-
 import datetime
 from decimal import Decimal  # เพิ่ม
+from io import BytesIO
 
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user, login_required
+from flask_mongoengine import Pagination
+from PyPDF2 import PdfMerger
+
+from kampan import models, utils
+from kampan.web import forms
+
+from ... import redis_rq
 
 module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 
@@ -55,11 +55,7 @@ def generate_next_requisition_code():
     now = datetime.datetime.now()
     buddhist_year = now.year + 543
     suffix = f"/{buddhist_year}"
-    last = (
-        models.Requisition.objects(requisition_code__endswith=suffix)
-        .order_by("-requisition_code")
-        .first()
-    )
+    last = models.Requisition.objects(requisition_code__endswith=suffix).order_by("-requisition_code").first()
     if last and last.requisition_code:
         last_number = int(last.requisition_code.split("/")[0])
         next_number = last_number + 1
@@ -107,14 +103,8 @@ def index():
             product_number = procurement.product_number
 
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object()
-    ).first()
-    if (
-        org_user_role
-        and current_user.has_organization_roles("staff")
-        and not current_user.has_organization_roles("admin")
-    ):
+    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
         procurements = procurements.filter(responsible_by=org_user_role)
 
     # Order by expiration date (earliest first)
@@ -147,29 +137,17 @@ def non_renewal(requisition_procurement_id):
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
         if not procurement:
-            return redirect(
-                url_for(
-                    "procurement.requisitions.index", organization_id=organization.id
-                )
-            )
+            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
         procurement.status = "disactive"
         procurement.last_updated_by = current_user._get_current_object()
         procurement.save()
-        return redirect(
-            url_for("procurement.requisitions.index", organization_id=organization.id)
-        )
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
     else:
         category = request.args.get("category", "")
         query = {"status": "disactive", "organization": organization}
         procurements = models.Procurement.objects(**query)
-        org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object()
-        ).first()
-        if (
-            org_user_role
-            and current_user.has_organization_roles("staff")
-            and not current_user.has_organization_roles("admin")
-        ):
+        org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+        if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
             procurements = procurements.filter(responsible_by=org_user_role)
         procurements = procurements.order_by("-end_date")
         category_choices = models.procurement.CATEGORY_CHOICES
@@ -188,9 +166,7 @@ def non_renewal(requisition_procurement_id):
 def renewal_requested(requisition_procurement_id):
     organization = current_user.user_setting.current_organization
     form = forms.requisitions.RenewalRequestedFilterForm(request.args)
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object()
-    ).first()
+    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
 
     query = {}
 
@@ -207,19 +183,13 @@ def renewal_requested(requisition_procurement_id):
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
         if not procurement:
-            return redirect(
-                url_for(
-                    "procurement.requisitions.index", organization_id=organization.id
-                )
-            )
+            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
         # สร้างรหัส requisition_code ใหม่
         requisition_code = generate_next_requisition_code()
         # สร้าง Requisition ใหม่
         requisition = models.Requisition(
             requisition_code=requisition_code,
-            purchaser=(
-                procurement.responsible_by[0] if procurement.responsible_by else None
-            ),
+            purchaser=(procurement.responsible_by[0] if procurement.responsible_by else None),
             phone=None,
             reason=f"Renewal requested for procurement {procurement.name}",
             start_date=procurement.end_date,
@@ -245,9 +215,7 @@ def renewal_requested(requisition_procurement_id):
         procurement.last_updated_by = current_user._get_current_object()
         procurement.save()
 
-        return redirect(
-            url_for("procurement.requisitions.index", organization_id=organization.id)
-        )
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
     else:
         category = request.args.get("category", "")
         query["organization"] = organization
@@ -268,11 +236,7 @@ def renewal_requested(requisition_procurement_id):
             # Filter by purchaser.user matching current_user
             staff_requisitions = []
             for req in requisitions:
-                if (
-                    req.purchaser
-                    and req.purchaser.user
-                    and req.purchaser.user.id == current_user.id
-                ):
+                if req.purchaser and req.purchaser.user and req.purchaser.user.id == current_user.id:
                     staff_requisitions.append(req.id)
             requisitions = requisitions.filter(id__in=staff_requisitions)
 
@@ -285,9 +249,7 @@ def renewal_requested(requisition_procurement_id):
             )
 
         elif is_head and not (is_admin or is_manager):
-            purchaser_ids = models.OrganizationUserRole.objects(
-                division=org_user_role.division
-            ).only("id")
+            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
 
             requisitions = requisitions.filter(purchaser__in=purchaser_ids)
         # Admin and head see all (no filter)
@@ -311,19 +273,13 @@ def renewal_requested(requisition_procurement_id):
         paginated_manager_requisitions = None
         if manager_requisitions:
             manager_page = request.args.get("manager_page", default=1, type=int)
-            paginated_manager_requisitions = Pagination(
-                manager_requisitions, page=manager_page, per_page=per_page
-            )
+            paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
 
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=paginated_requisitions.items,
             paginated_requisitions=paginated_requisitions,
-            manager_requisitions=(
-                paginated_manager_requisitions.items
-                if paginated_manager_requisitions
-                else []
-            ),
+            manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
             form=form,
             paginated_manager_requisitions=paginated_manager_requisitions,
             organization=organization,
@@ -362,9 +318,7 @@ def document(requisition_procurement_id):
     )
 
 
-@module.route(
-    "/create", methods=["GET", "POST"], defaults=dict(requisition_procurement_id=None)
-)
+@module.route("/create", methods=["GET", "POST"], defaults=dict(requisition_procurement_id=None))
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
 def create_or_edit(requisition_procurement_id):
@@ -387,11 +341,7 @@ def create_or_edit(requisition_procurement_id):
         committee_form.member.choices.extend(member_choices)
 
     current_org_user_role = next(
-        (
-            member
-            for member in members
-            if str(getattr(member.user, "id", "")) == str(current_user.id)
-        ),
+        (member for member in members if str(getattr(member.user, "id", "")) == str(current_user.id)),
         None,
     )
 
@@ -439,9 +389,7 @@ def create_or_edit(requisition_procurement_id):
     requisition.committees = []
     for committee_form in form.committees:
         if committee_form.member.data != "-":
-            member_obj = models.OrganizationUserRole.objects(
-                id=committee_form.member.data
-            ).first()
+            member_obj = models.OrganizationUserRole.objects(id=committee_form.member.data).first()
             committee = models.requisitions.Committees(
                 member=member_obj,
                 committee_type=committee_form.committee_type.data,
@@ -469,9 +417,7 @@ def create_or_edit(requisition_procurement_id):
                 content_type=tor_file.content_type,
             )
         else:
-            requisition.tor_document.put(
-                tor_file, filename=tor_file.filename, content_type=tor_file.content_type
-            )
+            requisition.tor_document.put(tor_file, filename=tor_file.filename, content_type=tor_file.content_type)
 
     # Handle qt_document (ใบเสนอราคา)
     if qt_files:
@@ -483,16 +429,12 @@ def create_or_edit(requisition_procurement_id):
                 content_type=qt_files.content_type,
             )
         else:
-            requisition.qt_document.put(
-                qt_files, filename=qt_files.filename, content_type=qt_files.content_type
-            )
+            requisition.qt_document.put(qt_files, filename=qt_files.filename, content_type=qt_files.content_type)
     # Convert SelectField id to document instance for ReferenceField
     if current_org_user_role:
         requisition.purchaser = current_org_user_role
     elif form.purchaser.data and form.purchaser.data != "-":
-        requisition.purchaser = models.OrganizationUserRole.objects(
-            id=form.purchaser.data
-        ).first()
+        requisition.purchaser = models.OrganizationUserRole.objects(id=form.purchaser.data).first()
 
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
@@ -526,11 +468,7 @@ def download(requisition_procurement_id):
     pdf_streams = []
 
     # ToR
-    if (
-        document
-        and document.tor_document
-        and getattr(document.tor_document, "filename", None)
-    ):
+    if document and document.tor_document and getattr(document.tor_document, "filename", None):
         try:
             tor_bytes = BytesIO(document.tor_document.read())
             pdf_streams.append(tor_bytes)
@@ -544,9 +482,7 @@ def download(requisition_procurement_id):
         if not isinstance(qt_docs, list):
             qt_docs = [qt_docs]
         for qt_file in qt_docs:
-            if hasattr(qt_file, "filename") and str(qt_file.filename).lower().endswith(
-                ".pdf"
-            ):
+            if hasattr(qt_file, "filename") and str(qt_file.filename).lower().endswith(".pdf"):
                 try:
                     qt_bytes = BytesIO(qt_file.read())
                     pdf_streams.append(qt_bytes)
@@ -628,9 +564,7 @@ def requisition_action(requisition_id):
 
         if not fund_ids and fund_id:
             fund_ids = [fund_id]
-            input_amounts.setdefault(
-                fund_id, input_amounts.get(fund_id, Decimal("0.00"))
-            )
+            input_amounts.setdefault(fund_id, input_amounts.get(fund_id, Decimal("0.00")))
 
         fund_list = []
         for fid in set(fund_ids or []):
@@ -652,9 +586,7 @@ def requisition_action(requisition_id):
             )
             res.save()
 
-            fund_list.append(
-                models.requisitions.Funds(mas=mas, amount=amt, reservation=res)
-            )
+            fund_list.append(models.requisitions.Funds(mas=mas, amount=amt, reservation=res))
 
             mas.reservable_amount -= amt
             mas.last_updated_by = current_user._get_current_object()
@@ -662,6 +594,10 @@ def requisition_action(requisition_id):
             mas.save()
 
         requisition.fund = fund_list
+
+        fund_source = request.form.get("fund_source")
+        if fund_source:
+            requisition.fund_source = fund_source
 
         # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:
@@ -695,12 +631,8 @@ def requisition_action(requisition_id):
     requisition.approval_history.append(approval)
 
     required_roles = {"head", "admin", "manager"}
-    approved_roles = set(
-        h.approver_role for h in requisition.approval_history if h.action == "approved"
-    )
-    rejected_roles = set(
-        h.approver_role for h in requisition.approval_history if h.action == "rejected"
-    )
+    approved_roles = set(h.approver_role for h in requisition.approval_history if h.action == "approved")
+    rejected_roles = set(h.approver_role for h in requisition.approval_history if h.action == "rejected")
 
     if rejected_roles:
         requisition.status = "incomplete"
@@ -737,9 +669,7 @@ def requisition_action(requisition_id):
                 models.Progress(
                     progress_status="request_created",
                     created_by=current_user._get_current_object(),
-                    last_ip_address=request.headers.get(
-                        "X-Forwarded-For", request.remote_addr
-                    ),
+                    last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
                     user_agent=request.headers.get("User-Agent"),
                     timestamp=datetime.datetime.now(),
                 )
