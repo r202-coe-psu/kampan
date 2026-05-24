@@ -24,12 +24,12 @@ res = db.requisition_timeline.updateMany(
 );
 print("Requisition Timeline matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
 
-print("Updating requisition_timeline_item...");
-res = db.requisition_timeline_item.updateMany(
+print("Updating requisition_timeline_items...");
+res = db.requisition_timeline_items.updateMany(
   { organization: { $exists: false } },
   { $set: { organization: orgRef } }
 );
-print("Requisition Timeline Item matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
+print("Requisition Timeline Items matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
 
 print("Updating mas...");
 res = db.mas.updateMany(
@@ -51,5 +51,53 @@ res = db.documents.updateMany(
   { $set: { organization: orgRef } }
 );
 print("Documents matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
+
+print("Updating suppliers...");
+res = db.suppliers.updateMany(
+  { organization: { $exists: false } },
+  { $set: { organization: orgRef } }
+);
+print("Suppliers matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
+
+print("Updating requisition_timeline_logs...");
+res = db.requisition_timeline_logs.updateMany(
+  { organization: { $exists: false } },
+  { $set: { organization: orgRef } }
+);
+print("Requisition Timeline Logs matched: " + res.matchedCount + ", modified: " + res.modifiedCount);
+
+const remainingCollections = [
+  "categories",
+  "divisions",
+  "email_templates",
+  "inventories",
+  "inventory_engagement_file",
+  "checkout_items",
+  "order_items",
+  "registration_items",
+  "items",
+  "item_positions",
+  "item_snapshots",
+  "lost_break_items",
+  "organization_user_roles",
+  "logos",
+  "car_applications",
+  "motorcycle_applications",
+  "cars",
+  "motorcycles",
+  "car_feedbacks",
+  "warehouses",
+  "approved_checkout_items"
+];
+
+for (let i = 0; i < remainingCollections.length; i++) {
+  let collName = remainingCollections[i];
+  print("Updating " + collName + "...");
+  let resColl = db[collName].updateMany(
+    { organization: { $exists: false } },
+    { $set: { organization: orgRef } }
+  );
+  print(collName + " matched: " + resColl.matchedCount + ", modified: " + resColl.modifiedCount);
+}
 
 print("Done.");

@@ -83,6 +83,7 @@ class RequisitionTimeline(me.Document):
 
 class RequisitionTimelineLogs(me.Document):
     meta = {"collection": "requisition_timeline_logs"}
+    organization = me.ReferenceField("Organization", dbref=True)
     requisition_timeline = me.ReferenceField("RequisitionTimeline", dbref=True, required=True)
     progress_status = me.StringField(required=True, max_length=20)
     metadata = me.DictField()

@@ -142,6 +142,7 @@ def generate_requisition_items(requisition_timeline):
         # Create missing items up to the quantity
         while len(existing) < req_item.quantity:
             new_item = models.RequisitionTimelineItem(
+                organization=requisition_timeline.organization,
                 requisition_timeline=requisition_timeline,
                 requisition=requisition,
                 requisition_item_id=item_id,
@@ -263,6 +264,7 @@ def add_progress(requisition_timeline_id):
             request,
         )
         requisition_timeline_logs = models.RequisitionTimelineLogs(
+            organization=organization,
             requisition_timeline=requisition_timeline,
             metadata=requisition_timeline.to_mongo().to_dict(),
             hashed_metadata=hash_mongo_metadata(requisition_timeline),
