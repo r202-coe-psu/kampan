@@ -1,14 +1,30 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 
-{% block title %}ใบขอใช้รถยนต์_{{ car_application.creator.get_resources_fullname_th().replace(' ', '_') if car_application.creator else '' }}_{{ car_application.created_date.strftime('%Y%m%d_%H%M') if car_application.created_date else '' }}{% endblock %}
-{% block dashboard_title %}ใบขอใช้รถยนต์{% endblock %}
-
-{% block breadcrumbs %}
-{{ RenderBreadcrumb([
-  ("การขอใช้รถยนต์", url_for('vehicle_lending.car_applications.index', organization_id=organization.id) ),
-  ("ใบขอใช้รถยนต์", "")
-]) }}
+{% block title %}
+  {% if is_bulk %}
+    ใบขอใช้รถยนต์_หลายฉบับ_{{ start_date_str.replace('-', '') if start_date_str else '' }}_{{ end_date_str.replace('-', '') if end_date_str else '' }}
+  {% else %}
+    {% set app = car_applications[0] if car_applications else None %}
+    ใบขอใช้รถยนต์_{{ app.creator.get_resources_fullname_th().replace(' ', '_') if (app and app.creator) else '' }}_{{ app.created_date.strftime('%Y%m%d_%H%M') if (app and app.created_date) else '' }}
+  {% endif %}
 {% endblock %}
+
+{% block dashboard_title %}
+  {% if is_bulk %}
+    ใบขอใช้รถยนต์หลายฉบับ
+  {% else %}
+    ใบขอใช้รถยนต์
+  {% endif %}
+
+  <h2 class="text-xl pt-3 font-bold">
+    {% if is_bulk %}
+      พิมพ์ใบขอใช้รถยนต์ทั้งหมด ({{ car_applications|length }} ฉบับ)
+    {% else %}
+      เอกสารใบขอใช้รถยนต์
+    {% endif %}  
+  </h2>
+{% endblock %}
+
 
 {% block additional_head %}
 <style>
@@ -30,7 +46,9 @@
     background-color: transparent;
     padding: 20px 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
     width: 100%;
   }
 
@@ -197,20 +215,17 @@
   @media print {
     @page {
       size: A4;
-      margin: 0 !important; /* Hides browser default header (title/date) and footer (URL/page number) */
+      margin: 0 !important;
     }
     
-    /* Hide the entire website layout, sidebar, navbar, and other pages chrome cleanly */
     body * {
       visibility: hidden !important;
     }
     
-    /* Make ONLY the A4 paper container and its fields visible on print */
     .paper-page-wrapper, .paper-page-wrapper * {
       visibility: visible !important;
     }
     
-    /* Position the visible paper wrapper absolutely at the top-left of the canvas */
     .paper-page-wrapper {
       position: absolute !important;
       left: 0 !important;
@@ -219,10 +234,14 @@
       margin: 0 !important;
       padding: 0 !important;
       background: #ffffff !important;
-      display: block !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0 !important; /* Stack vertically without margins inside print canvas */
     }
 
     .paper-sheet {
+      page-break-after: always !important;
+      break-after: page !important;
       border: none !important;
       box-shadow: none !important;
       margin: 0 !important;
@@ -232,6 +251,11 @@
       box-sizing: border-box !important;
       font-size: 17px !important; /* Fits perfectly on A4 */
       background: #ffffff !important;
+    }
+
+    .paper-sheet:last-child {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
 
     /* Print-specific spacing overrides to save vertical height */
@@ -269,373 +293,383 @@
     <a href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id) }}" class="btn btn-sm btn-ghost gap-1">
       <i class="ph ph-arrow-left"></i> ย้อนกลับ
     </a>
-    <h2 class="text-xl font-bold">เอกสารใบขอใช้รถยนต์</h2>
   </div>
   <button onclick="window.print()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
     <i class="ph ph-printer"></i>
-    พิมพ์เอกสาร (PDF)
+    {% if is_bulk %}
+      พิมพ์เอกสารทั้งหมด (PDF)
+    {% else %}
+      พิมพ์เอกสาร (PDF)
+    {% endif %}
   </button>
 </div>
 
 <div class="paper-page-wrapper">
-  <div class="paper-sheet">
-    {% if 'denied' in car_application.status %}
-    <div class="denied-banner no-print">
-      คำขอถูกปฏิเสธ: {{ car_application.denied_reason }}
+  {% if not car_applications %}
+    <div class="bg-base-100 p-8 rounded-2xl border border-base-300 text-center w-full max-w-lg shadow-sm no-print">
+      <i class="ph ph-warning-circle text-warning text-5xl mb-2"></i>
+      <h3 class="text-xl font-bold">ไม่พบข้อมูล</h3>
+      <p class="text-base-content/70 mt-1">ไม่พบคำขอใช้รถยนต์ที่ออกเดินทางระหว่างวันที่ {{ start_date_str }} ถึง {{ end_date_str }}</p>
     </div>
-    {% endif %}
-
-    <!-- Title -->
-    <div class="title">ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</div>
-
-    <!-- Date Row -->
+  {% else %}
     {% set thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"] %}
-    {% set created = car_application.created_date %}
-    <div class="date-row">
-      <span>วันที่</span>
-      <span class="dotted-fill w-[50px] mx-1">{{ created.day if created else '' }}</span> 
-      <span>เดือน</span>
-      <span class="dotted-fill w-[140px] mx-1">{{ thai_months[created.month - 1] if created else '' }}</span> 
-      <span>พ.ศ.</span>
-      <span class="dotted-fill w-[70px] ml-1">{{ created.year + 543 if created else '' }}</span>
-    </div>
-
-    <!-- Attention -->
-    <div class="to-row">เรียน ผู้ควบคุมยานพาหนะ</div>
-
-    <!-- Requestor line -->
-    {% set creator = car_application.creator %}
-    <div class="form-row mb-2.5">
-      <span>ข้าพเจ้า</span>
-      <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ creator.get_resources_fullname_th() if creator else '' }}</span> 
-      <span>ฝ่าย</span>
-      <span class="dotted-fill w-[180px] mx-1.5">{{ car_application.division.name if car_application.division else '' }}</span> 
-      <span>โทร</span>
-      <span class="dotted-fill w-[140px] ml-1.5">{{ car_application.phone if car_application.phone else (creator.get_phone() if creator else '') }}</span>
-    </div>
-    <div class="form-row mb-3.5">
-      มีความประสงค์จะขอใช้รถยนต์ เพื่อเดินทางไปปฏิบัติงาน ตามรายละเอียดดังต่อไปนี้
-    </div>
-
-    <!-- Section 1: General Duty -->
-    {% set is_general = (car_application.using_type == 'general') %}
-    <div class="form-row">
-      <span class="circle-checkbox {{ 'checked' if is_general else '' }}"></span> 
-      <span>ไปปฏิบัติงานที่</span>
-      <span class="dotted-fill grow min-w-[300px] ml-1.5">{{ car_application.location if is_general else '' }}</span>
-    </div>
     
-    <div class="section-indent">
-      <div class="form-row">
-        <span>ไปปฏิบัติงานเรื่อง</span>
-        <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ car_application.request_reason if is_general else '' }}</span> 
-        <span>จำนวนผู้โดยสาร</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.passenger_number if (is_general and car_application.passenger_number > 0) else '' }}</span> 
-        <span>คน</span>
-      </div>
-      
-      {% set dep = car_application.departure_datetime %}
-      {% set ret = car_application.return_datetime %}
-      
-      <div class="form-row">
-        <span>ในวันที่</span>
-        <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if (is_general and dep) else '' }}</span> 
-        <span>เวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_general and dep) else '' }}</span> 
-        <span>น. ถึงเวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ ret.strftime('%H:%M') if (is_general and ret and car_application.travel_type != 'one way') else '' }}</span> 
-        <span>น.</span>
-      </div>
-      
-      <div class="form-row">
-        <span>สถานที่ให้รถไปรับ</span>
-        <span class="dotted-fill grow min-w-[200px] mx-1.5">{{ car_application.passenger_location if is_general else '' }}</span> 
-        <span>เวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_general and dep) else '' }}</span> 
-        <span>น.</span>
-      </div>
-    </div>
+    {% for car_application in car_applications %}
+      <div class="paper-sheet">
+        {% if 'denied' in car_application.status %}
+        <div class="denied-banner no-print">
+          คำขอถูกปฏิเสธ: {{ car_application.denied_reason }}
+        </div>
+        {% endif %}
 
-    <!-- Section 2: Airport Transfer -->
-    {% set is_airport = (car_application.using_type == 'airport transfer') %}
-    {% set is_dropoff = (is_airport and car_application.airport_transfer_type == 'dropoff') %}
-    {% set is_pickup = (is_airport and car_application.airport_transfer_type == 'pickup') %}
-    
-    <div class="form-row mt-2.5">
-      <span class="circle-checkbox {{ 'checked' if is_airport else '' }}"></span> 
-      <span>รับ-ส่งที่สนามบิน</span>
-    </div>
-    
-    <div class="section-indent">
-      <!-- 2.1 Dropoff -->
-      <div class="form-row">
-        <span class="square-checkbox {{ 'checked' if is_dropoff else '' }}"></span> 
-        <span>ไปส่งที่สนามบิน วันที่</span>
-        <span class="dotted-fill grow min-w-[150px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if is_dropoff else '' }}</span> 
-        <span>เวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if is_dropoff else '' }}</span> 
-        <span>น. จำนวนผู้โดยสาร</span>
-        <span class="dotted-fill w-[60px] mx-1.5">{{ car_application.passenger_number if (is_dropoff and car_application.passenger_number > 0) else '' }}</span> 
-        <span>คน</span>
-      </div>
-      <div class="section-indent pl-5">
-        <div class="form-row">
-          <span>เที่ยวบิน</span>
-          <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_number if is_dropoff else '' }}</span> 
-          <span>เครื่องออกจากสนามบินหาดใหญ่ เวลา</span>
-          <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_datetime.strftime('%H:%M') if (is_dropoff and car_application.flight_datetime) else '' }}</span> 
-          <span>น.</span>
-        </div>
-        <div class="form-row">
-          <span>สถานที่ให้รถไปรับ</span>
-          <span class="dotted-fill grow min-w-[250px] ml-1.5">{{ car_application.passenger_location if is_dropoff else '' }}</span>
-        </div>
-      </div>
+        <!-- Title -->
+        <div class="title">ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</div>
 
-      <!-- 2.2 Pickup -->
-      <div class="form-row mt-1.5">
-        <span class="square-checkbox {{ 'checked' if is_pickup else '' }}"></span> 
-        <span>ไปรับที่สนามบิน วันที่</span>
-        <span class="dotted-fill grow min-w-[150px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if is_pickup else '' }}</span> 
-        <span>เวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if is_pickup else '' }}</span> 
-        <span>น. จำนวนผู้โดยสาร</span>
-        <span class="dotted-fill w-[60px] mx-1.5">{{ car_application.passenger_number if (is_pickup and car_application.passenger_number > 0) else '' }}</span> 
-        <span>คน</span>
-      </div>
-      <div class="section-indent pl-5">
-        <div class="form-row">
-          <span>เที่ยวบิน</span>
-          <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_number if is_pickup else '' }}</span> 
-          <span>เครื่องถึงสนามบินหาดใหญ่ เวลา</span>
-          <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_datetime.strftime('%H:%M') if (is_pickup and car_application.flight_datetime) else '' }}</span> 
-          <span>น.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 3: Out of Town -->
-    {% set is_out_town = (car_application.using_type == 'out of town') %}
-    <div class="form-row mt-2.5">
-      <span class="circle-checkbox {{ 'checked' if is_out_town else '' }}"></span> 
-      <span>ไปปฏิบัติงานต่างจังหวัด ที่</span>
-      <span class="dotted-fill grow min-w-[300px] ml-1.5">{{ car_application.location if is_out_town else '' }}</span>
-    </div>
-    
-    <div class="section-indent">
-      <div class="form-row">
-        <span>ไปปฏิบัติงานเรื่อง</span>
-        <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ car_application.request_reason if is_out_town else '' }}</span> 
-        <span>จำนวนผู้โดยสาร</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.passenger_number if (is_out_town and car_application.passenger_number > 0) else '' }}</span> 
-        <span>คน</span>
-      </div>
-      <div class="form-row">
-        <span>เดินทางไปวันที่</span>
-        <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if (is_out_town and dep) else '' }}</span> 
-        <span>รถออกเวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_out_town and dep) else '' }}</span> 
-        <span>น.</span>
-      </div>
-      <div class="form-row">
-        <span>สถานที่ให้รถไปรับ</span>
-        <span class="dotted-fill grow min-w-[250px] ml-1.5">{{ car_application.passenger_location if is_out_town else '' }}</span>
-      </div>
-      <div class="form-row">
-        <span>เดินทางกลับวันที่</span>
-        <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ ret.day ~ ' ' ~ thai_months[ret.month - 1] ~ ' ' ~ (ret.year + 543) if (is_out_town and ret and car_application.travel_type != 'one way') else '' }}</span> 
-        <span>รถออกเวลา</span>
-        <span class="dotted-fill w-[70px] mx-1.5">{{ ret.strftime('%H:%M') if (is_out_town and ret and car_application.travel_type != 'one way') else '' }}</span> 
-        <span>น.</span>
-      </div>
-    </div>
-
-    <!-- Requisition Signatures (Aligned vertically on the right hand side using Tailwind classes) -->
-    <div class="flex flex-col items-end w-full mt-4 pr-8 gap-2">
-      <!-- Creator Signature -->
-      <div class="flex flex-col items-center w-[260px]">
-        <div class="form-row mb-0 flex w-full items-end">
-          <span>ลงชื่อ</span>
-          <span class="dotted-fill grow min-w-[150px] mx-1">{{ creator.get_resources_fullname_th() if creator else '' }}</span>
-          <span>ผู้ขอใช้</span>
-        </div>
-      </div>
-      
-      <!-- Header Approval Signature -->
-      {% set h_app = car_application.header_approval %}
-      {% set h_day = h_app.approved_at.day if h_app else "" %}
-      {% set h_month = thai_months[h_app.approved_at.month - 1] if h_app else "" %}
-      {% set h_year = h_app.approved_at.year + 543 if h_app else "" %}
-      
-      <div class="flex flex-col items-center w-[260px] mt-1">
-        <div class="form-row flex w-full items-end">
-          <span>ลงชื่อ</span>
-          <span class="dotted-fill grow min-w-[150px] mx-1">
-            {% if h_app %}
-              {{ h_app.approved_by.get_resources_fullname_th() }}
-            {% endif %}
-          </span>
-          <span>หัวหน้าฝ่าย</span>
-        </div>
-        <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-0.5 leading-relaxed w-full justify-center text-[15px]">
+        <!-- Date Row -->
+        {% set created = car_application.created_date %}
+        <div class="date-row">
           <span>วันที่</span>
-          <span class="dotted-fill min-h-0">{{ h_day }}</span>
+          <span class="dotted-fill w-[50px] mx-1">{{ created.day if created else '' }}</span> 
           <span>เดือน</span>
-          <span class="dotted-fill min-h-0">{{ h_month }}</span>
+          <span class="dotted-fill w-[140px] mx-1">{{ thai_months[created.month - 1] if created else '' }}</span> 
           <span>พ.ศ.</span>
-          <span class="dotted-fill min-h-0">{{ h_year }}</span>
+          <span class="dotted-fill w-[70px] ml-1">{{ created.year + 543 if created else '' }}</span>
         </div>
-      </div>
-    </div>
 
-    <!-- Bottom Layout (Two Columns) -->
-    {% set admin_app = car_application.admin_approval %}
-    {% set dir_app = car_application.director_approval %}
-    
-    {% set admin_day = admin_app.approved_at.day if admin_app else "" %}
-    {% set admin_month = thai_months[admin_app.approved_at.month - 1] if admin_app else "" %}
-    {% set admin_year = admin_app.approved_at.year + 543 if admin_app else "" %}
+        <!-- Attention -->
+        <div class="to-row">เรียน ผู้ควบคุมยานพาหนะ</div>
 
-    {% set dir_day = dir_app.approved_at.day if dir_app else "" %}
-    {% set dir_month = thai_months[dir_app.approved_at.month - 1] if dir_app else "" %}
-    {% set dir_year = dir_app.approved_at.year + 543 if dir_app else "" %}
+        <!-- Requestor line -->
+        {% set creator = car_application.creator %}
+        <div class="form-row mb-2.5">
+          <span>ข้าพเจ้า</span>
+          <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ creator.get_resources_fullname_th() if creator else '' }}</span> 
+          <span>ฝ่าย</span>
+          <span class="dotted-fill w-[180px] mx-1.5">{{ car_application.division.name if car_application.division else '' }}</span> 
+          <span>โทร</span>
+          <span class="dotted-fill w-[140px] ml-1.5">{{ car_application.phone if car_application.phone else '' }}</span>
+        </div>
+        <div class="form-row mb-3.5">
+          มีความประสงค์จะขอใช้รถยนต์ เพื่อเดินทางไปปฏิบัติงาน ตามรายละเอียดดังต่อไปนี้
+        </div>
 
-    <div class="bottom-grid">
-      <!-- Left Column (ความเห็นของผู้ควบคุมยานพาหนะ) -->
-      <div class="left-col">
-        <div class="bottom-title">ความเห็นของผู้ควบคุมยานพาหนะ</div>
-        
-        <!-- Checks for admin approved status -->
-        {% set is_approved_by_admin = (admin_app is not none) %}
-        {% set is_denied_by_admin = (car_application.status == 'denied by admin') %}
-        
+        <!-- Section 1: General Duty -->
+        {% set is_general = (car_application.using_type == 'general') %}
         <div class="form-row">
-          <span class="circle-checkbox {{ 'checked' if is_approved_by_admin else '' }}"></span> 
-          <span>อนุญาตให้ใช้รถยนต์</span>
+          <span class="circle-checkbox {{ 'checked' if is_general else '' }}"></span> 
+          <span>ไปปฏิบัติงานที่</span>
+          <span class="dotted-fill grow min-w-[300px] ml-1.5">{{ car_application.location if is_general else '' }}</span>
         </div>
         
-        <div class="pl-4.5 box-border">
-          {% set has_innova = (car_application.car and 'กษ-9318' in car_application.car.license_plate) %}
-          {% set has_wuling = (car_application.car and 'บล-5746' in car_application.car.license_plate) %}
+        <div class="section-indent">
           <div class="form-row">
-            <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_innova) else '' }}"></span> 
-            <span>INNOVA กษ-9318</span>
+            <span>ไปปฏิบัติงานเรื่อง</span>
+            <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ car_application.request_reason if is_general else '' }}</span> 
+            <span>จำนวนผู้โดยสาร</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.passenger_number if (is_general and car_application.passenger_number > 0) else '' }}</span> 
+            <span>คน</span>
           </div>
+          
+          {% set dep = car_application.departure_datetime %}
+          {% set ret = car_application.return_datetime %}
+          
           <div class="form-row">
-            <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_wuling) else '' }}"></span> 
-            <span>WULING บล-5746</span>
+            <span>ในวันที่</span>
+            <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if (is_general and dep) else '' }}</span> 
+            <span>เวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_general and dep) else '' }}</span> 
+            <span>น. ถึงเวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ ret.strftime('%H:%M') if (is_general and ret and car_application.travel_type != 'one way') else '' }}</span> 
+            <span>น.</span>
           </div>
+          
           <div class="form-row">
-            <span>โดยมี</span>
-            <span class="dotted-fill grow min-w-[150px] mx-1">{{ car_application.driver.get_resources_fullname_th() if (is_approved_by_admin and car_application.driver) else '' }}</span> 
-            <span>เป็นผู้ขับ</span>
-          </div>
-          <div class="form-row">
-            <span class="circle-checkbox"></span> 
-            <span>ขอใช้รถ สนอ เพราะ</span>
-            <span class="dotted-fill grow min-w-[100px] ml-1"></span>
-          </div>
-          <div class="form-row">
-            <span class="circle-checkbox"></span> 
-            <span>ขอเช่ารถ เพราะ</span>
-            <span class="dotted-fill grow min-w-[100px] ml-1"></span>
+            <span>สถานที่ให้รถไปรับ</span>
+            <span class="dotted-fill grow min-w-[200px] mx-1.5">{{ car_application.passenger_location if is_general else '' }}</span> 
+            <span>เวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_general and dep) else '' }}</span> 
+            <span>น.</span>
           </div>
         </div>
-        
-        <div class="form-row mt-2">
-          <span class="circle-checkbox {{ 'checked' if is_denied_by_admin else '' }}"></span> 
-          <span>ไม่อนุญาต เพราะ</span>
-          <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.denied_reason if is_denied_by_admin else '' }}</span>
-        </div>
-        
-        <!-- Supervisor Signature Block Aligned via Grid -->
-        <div class="flex flex-col items-end mt-5 w-full pr-2.5">
-          <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
-            <span>ลงชื่อ</span>
-            <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if admin_app else '' }}</span>
-            <span>ผู้ควบคุม</span>
-          </div>
-          <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
-            <span>วันที่</span>
-            <span class="dotted-fill">{{ admin_day }}</span>
-            <span>เดือน</span>
-            <span class="dotted-fill">{{ admin_month }}</span>
-            <span>พ.ศ.</span>
-            <span class="dotted-fill">{{ admin_year }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Right Column (กรณีขอใช้รถยนต์ไปต่างจังหวัด) -->
-      <div class="right-col">
-        <div class="bottom-title" style="text-decoration: none;">กรณีขอใช้รถยนต์ไปต่างจังหวัด</div>
-        <div class="leading-relaxed mb-2">เรียน ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</div>
+        <!-- Section 2: Airport Transfer -->
+        {% set is_airport = (car_application.using_type == 'airport transfer') %}
+        {% set is_dropoff = (is_airport and car_application.airport_transfer_type == 'dropoff') %}
+        {% set is_pickup = (is_airport and car_application.airport_transfer_type == 'pickup') %}
         
-        <div class="pl-5">
-          <div class="form-row">
-            <span>เพื่อโปรดพิจารณาอนุมัติการขอใช้รถยนต์</span>
-            <span class="dotted-fill grow min-w-[100px] ml-1">{{ car_application.car.license_plate if (is_out_town and car_application.car) else '' }}</span>
-          </div>
-          <div class="form-row">
-            <span>พร้อมพนักงานขับรถ</span>
-            <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.driver.get_resources_fullname_th() if (is_out_town and car_application.driver) else '' }}</span>
-          </div>
-          <div class="form-row">
-            <span>ไปปฏิบัติงานที่</span>
-            <span class="dotted-fill grow min-w-[120px] mx-1">{{ car_application.location if is_out_town else '' }}</span> 
-            <span>ด้วย จักขอบคุณยิ่ง</span>
-          </div>
+        <div class="form-row mt-2.5">
+          <span class="circle-checkbox {{ 'checked' if is_airport else '' }}"></span> 
+          <span>รับ-ส่งที่สนามบิน</span>
         </div>
         
-        <!-- Out-of-town Supervisor Signature Block Aligned via Grid -->
-        <div class="flex flex-col items-end mt-2.5 w-full pr-2.5">
-          <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
-            <span>ลงชื่อ</span>
-            <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if (is_out_town and admin_app) else '' }}</span>
-            <span>ผู้ควบคุม</span>
-          </div>
-          <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
-            <span>วันที่</span>
-            <span class="dotted-fill">{{ admin_day if is_out_town else '' }}</span>
-            <span>เดือน</span>
-            <span class="dotted-fill">{{ admin_month if is_out_town else '' }}</span>
-            <span>พ.ศ.</span>
-            <span class="dotted-fill">{{ admin_year if is_out_town else '' }}</span>
-          </div>
-        </div>
-        
-        <div class="bottom-divider border-t border-black mt-2.5 pt-2">
-          {% set is_approved_by_dir = (dir_app is not none) %}
-          {% set is_denied_by_dir = (car_application.status == 'denied by director') %}
-          
+        <div class="section-indent">
+          <!-- 2.1 Dropoff -->
           <div class="form-row">
-            <span class="circle-checkbox {{ 'checked' if is_approved_by_dir else '' }}"></span> 
-            <span>อนุมัติ</span> 
-            <span class="circle-checkbox {{ 'checked' if is_denied_by_dir else '' }} ml-5"></span> 
-            <span>ไม่อนุญาต เนื่องจาก</span>
-            <span class="dotted-fill grow min-w-[80px] ml-1">{{ car_application.denied_reason if is_denied_by_dir else '' }}</span>
+            <span class="square-checkbox {{ 'checked' if is_dropoff else '' }}"></span> 
+            <span>ไปส่งที่สนามบิน วันที่</span>
+            <span class="dotted-fill grow min-w-[150px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if is_dropoff else '' }}</span> 
+            <span>เวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if is_dropoff else '' }}</span> 
+            <span>น. จำนวนผู้โดยสาร</span>
+            <span class="dotted-fill w-[60px] mx-1.5">{{ car_application.passenger_number if (is_dropoff and car_application.passenger_number > 0) else '' }}</span> 
+            <span>คน</span>
           </div>
-          
-          <!-- Director Signature Block Aligned via Grid -->
-          <div class="flex flex-col items-end mt-4 w-full pr-2.5">
-            <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
-              <span>ลงชื่อ</span>
-              <span class="dotted-fill">{{ dir_app.approved_by.get_resources_fullname_th() if dir_app else '' }}</span>
-              <span>ผู้อนุมัติ</span>
+          <div class="section-indent pl-5">
+            <div class="form-row">
+              <span>เที่ยวบิน</span>
+              <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_number if is_dropoff else '' }}</span> 
+              <span>เครื่องออกจากสนามบินหาดใหญ่ เวลา</span>
+              <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_datetime.strftime('%H:%M') if (is_dropoff and car_application.flight_datetime) else '' }}</span> 
+              <span>น.</span>
             </div>
-            <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
+            <div class="form-row">
+              <span>สถานที่ให้รถไปรับ</span>
+              <span class="dotted-fill grow min-w-[250px] ml-1.5">{{ car_application.passenger_location if is_dropoff else '' }}</span>
+            </div>
+          </div>
+
+          <!-- 2.2 Pickup -->
+          <div class="form-row mt-1.5">
+            <span class="square-checkbox {{ 'checked' if is_pickup else '' }}"></span> 
+            <span>ไปรับที่สนามบิน วันที่</span>
+            <span class="dotted-fill grow min-w-[150px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if is_pickup else '' }}</span> 
+            <span>เวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if is_pickup else '' }}</span> 
+            <span>น. จำนวนผู้โดยสาร</span>
+            <span class="dotted-fill w-[60px] mx-1.5">{{ car_application.passenger_number if (is_pickup and car_application.passenger_number > 0) else '' }}</span> 
+            <span>คน</span>
+          </div>
+          <div class="section-indent pl-5">
+            <div class="form-row">
+              <span>เที่ยวบิน</span>
+              <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_number if is_pickup else '' }}</span> 
+              <span>เครื่องถึงสนามบินหาดใหญ่ เวลา</span>
+              <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_datetime.strftime('%H:%M') if (is_pickup and car_application.flight_datetime) else '' }}</span> 
+              <span>น.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Out of Town -->
+        {% set is_out_town = (car_application.using_type == 'out of town') %}
+        <div class="form-row mt-2.5">
+          <span class="circle-checkbox {{ 'checked' if is_out_town else '' }}"></span> 
+          <span>ไปปฏิบัติงานต่างจังหวัด ที่</span>
+          <span class="dotted-fill grow min-w-[300px] ml-1.5">{{ car_application.location if is_out_town else '' }}</span>
+        </div>
+        
+        <div class="section-indent">
+          <div class="form-row">
+            <span>ไปปฏิบัติงานเรื่อง</span>
+            <span class="dotted-fill grow min-w-[250px] mx-1.5">{{ car_application.request_reason if is_out_town else '' }}</span> 
+            <span>จำนวนผู้โดยสาร</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.passenger_number if (is_out_town and car_application.passenger_number > 0) else '' }}</span> 
+            <span>คน</span>
+          </div>
+          <div class="form-row">
+            <span>เดินทางไปวันที่</span>
+            <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ dep.day ~ ' ' ~ thai_months[dep.month - 1] ~ ' ' ~ (dep.year + 543) if (is_out_town and dep) else '' }}</span> 
+            <span>รถออกเวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ dep.strftime('%H:%M') if (is_out_town and dep) else '' }}</span> 
+            <span>น.</span>
+          </div>
+          <div class="form-row">
+            <span>สถานที่ให้รถไปรับ</span>
+            <span class="dotted-fill grow min-w-[250px] ml-1.5">{{ car_application.passenger_location if is_out_town else '' }}</span>
+          </div>
+          <div class="form-row">
+            <span>เดินทางกลับวันที่</span>
+            <span class="dotted-fill grow min-w-[180px] mx-1.5">{{ ret.day ~ ' ' ~ thai_months[ret.month - 1] ~ ' ' ~ (ret.year + 543) if (is_out_town and ret and car_application.travel_type != 'one way') else '' }}</span> 
+            <span>รถออกเวลา</span>
+            <span class="dotted-fill w-[70px] mx-1.5">{{ ret.strftime('%H:%M') if (is_out_town and ret and car_application.travel_type != 'one way') else '' }}</span> 
+            <span>น.</span>
+          </div>
+        </div>
+
+        <!-- Requisition Signatures -->
+        <div class="flex flex-col items-end w-full mt-4 pr-8 gap-2">
+          <!-- Creator Signature -->
+          <div class="flex flex-col items-center w-[260px]">
+            <div class="form-row mb-0 flex w-full items-end">
+              <span>ลงชื่อ</span>
+              <span class="dotted-fill grow min-w-[150px] mx-1">{{ creator.get_resources_fullname_th() if creator else '' }}</span>
+              <span>ผู้ขอใช้</span>
+            </div>
+          </div>
+          
+          <!-- Header Approval Signature -->
+          {% set h_app = car_application.header_approval %}
+          {% set h_day = h_app.approved_at.day if h_app else "" %}
+          {% set h_month = thai_months[h_app.approved_at.month - 1] if h_app else "" %}
+          {% set h_year = h_app.approved_at.year + 543 if h_app else "" %}
+          
+          <div class="flex flex-col items-center w-[260px] mt-1">
+            <div class="form-row flex w-full items-end">
+              <span>ลงชื่อ</span>
+              <span class="dotted-fill grow min-w-[150px] mx-1">
+                {% if h_app %}
+                  {{ h_app.approved_by.get_resources_fullname_th() }}
+                {% endif %}
+              </span>
+              <span>หัวหน้าฝ่าย</span>
+            </div>
+            <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-0.5 leading-relaxed w-full justify-center text-[15px]">
               <span>วันที่</span>
-              <span class="dotted-fill">{{ dir_day }}</span>
+              <span class="dotted-fill min-h-0">{{ h_day }}</span>
               <span>เดือน</span>
-              <span class="dotted-fill">{{ dir_month }}</span>
+              <span class="dotted-fill min-h-0">{{ h_month }}</span>
               <span>พ.ศ.</span>
-              <span class="dotted-fill">{{ dir_year }}</span>
+              <span class="dotted-fill min-h-0">{{ h_year }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Layout (Two Columns) -->
+        {% set admin_app = car_application.admin_approval %}
+        {% set dir_app = car_application.director_approval %}
+        
+        {% set admin_day = admin_app.approved_at.day if admin_app else "" %}
+        {% set admin_month = thai_months[admin_app.approved_at.month - 1] if admin_app else "" %}
+        {% set admin_year = admin_app.approved_at.year + 543 if admin_app else "" %}
+
+        {% set dir_day = dir_app.approved_at.day if dir_app else "" %}
+        {% set dir_month = thai_months[dir_app.approved_at.month - 1] if dir_app else "" %}
+        {% set dir_year = dir_app.approved_at.year + 543 if dir_app else "" %}
+
+        <div class="bottom-grid">
+          <!-- Left Column -->
+          <div class="left-col">
+            <div class="bottom-title">ความเห็นของผู้ควบคุมยานพาหนะ</div>
+            
+            {% set is_approved_by_admin = (admin_app is not none) %}
+            {% set is_denied_by_admin = (car_application.status == 'denied by admin') %}
+            
+            <div class="form-row">
+              <span class="circle-checkbox {{ 'checked' if is_approved_by_admin else '' }}"></span> 
+              <span>อนุญาตให้ใช้รถยนต์</span>
+            </div>
+            
+            <div class="pl-4.5 box-border">
+              {% set has_innova = (car_application.car and 'กษ-9318' in car_application.car.license_plate) %}
+              {% set has_wuling = (car_application.car and 'บล-5746' in car_application.car.license_plate) %}
+              <div class="form-row">
+                <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_innova) else '' }}"></span> 
+                <span>INNOVA กษ-9318</span>
+              </div>
+              <div class="form-row">
+                <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_wuling) else '' }}"></span> 
+                <span>WULING บล-5746</span>
+              </div>
+              <div class="form-row">
+                <span>โดยมี</span>
+                <span class="dotted-fill grow min-w-[150px] mx-1">{{ car_application.driver.get_resources_fullname_th() if (is_approved_by_admin and car_application.driver) else '' }}</span> 
+                <span>เป็นผู้ขับ</span>
+              </div>
+              <div class="form-row">
+                <span class="circle-checkbox"></span> 
+                <span>ขอใช้รถ สนอ เพราะ</span>
+                <span class="dotted-fill grow min-w-[100px] ml-1"></span>
+              </div>
+              <div class="form-row">
+                <span class="circle-checkbox"></span> 
+                <span>ขอเช่ารถ เพราะ</span>
+                <span class="dotted-fill grow min-w-[100px] ml-1"></span>
+              </div>
+            </div>
+            
+            <div class="form-row mt-2">
+              <span class="circle-checkbox {{ 'checked' if is_denied_by_admin else '' }}"></span> 
+              <span>ไม่อนุญาต เพราะ</span>
+              <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.denied_reason if is_denied_by_admin else '' }}</span>
+            </div>
+            
+            <div class="flex flex-col items-end mt-5 w-full pr-2.5">
+              <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
+                <span>ลงชื่อ</span>
+                <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if admin_app else '' }}</span>
+                <span>ผู้ควบคุม</span>
+              </div>
+              <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
+                <span>วันที่</span>
+                <span class="dotted-fill">{{ admin_day }}</span>
+                <span>เดือน</span>
+                <span class="dotted-fill">{{ admin_month }}</span>
+                <span>พ.ศ.</span>
+                <span class="dotted-fill">{{ admin_year }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="right-col">
+            <div class="bottom-title" style="text-decoration: none;">กรณีขอใช้รถยนต์ไปต่างจังหวัด</div>
+            <div class="leading-relaxed mb-2">เรียน ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</div>
+            
+            <div class="pl-5">
+              <div class="form-row">
+                <span>เพื่อโปรดพิจารณาอนุมัติการขอใช้รถยนต์</span>
+                <span class="dotted-fill grow min-w-[100px] ml-1">{{ car_application.car.license_plate if (is_out_town and car_application.car) else '' }}</span>
+              </div>
+              <div class="form-row">
+                <span>พร้อมพนักงานขับรถ</span>
+                <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.driver.get_resources_fullname_th() if (is_out_town and car_application.driver) else '' }}</span>
+              </div>
+              <div class="form-row">
+                <span>ไปปฏิบัติงานที่</span>
+                <span class="dotted-fill grow min-w-[120px] mx-1">{{ car_application.location if is_out_town else '' }}</span> 
+                <span>ด้วย จักขอบคุณยิ่ง</span>
+              </div>
+            </div>
+            
+            <div class="flex flex-col items-end mt-2.5 w-full pr-2.5">
+              <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
+                <span>ลงชื่อ</span>
+                <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if (is_out_town and admin_app) else '' }}</span>
+                <span>ผู้ควบคุม</span>
+              </div>
+              <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
+                <span>วันที่</span>
+                <span class="dotted-fill">{{ admin_day if is_out_town else '' }}</span>
+                <span>เดือน</span>
+                <span class="dotted-fill">{{ admin_month if is_out_town else '' }}</span>
+                <span>พ.ศ.</span>
+                <span class="dotted-fill">{{ admin_year if is_out_town else '' }}</span>
+              </div>
+            </div>
+            
+            <div class="bottom-divider border-t border-black mt-2.5 pt-2">
+              {% set is_approved_by_dir = (dir_app is not none) %}
+              {% set is_denied_by_dir = (car_application.status == 'denied by director') %}
+              
+              <div class="form-row">
+                <span class="circle-checkbox {{ 'checked' if is_approved_by_dir else '' }}"></span> 
+                <span>อนุมัติ</span> 
+                <span class="circle-checkbox {{ 'checked' if is_denied_by_dir else '' }} ml-5"></span> 
+                <span>ไม่อนุญาต เนื่องจาก</span>
+                <span class="dotted-fill grow min-w-[80px] ml-1">{{ car_application.denied_reason if is_denied_by_dir else '' }}</span>
+              </div>
+              
+              <div class="flex flex-col items-end mt-4 w-full pr-2.5">
+                <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
+                  <span>ลงชื่อ</span>
+                  <span class="dotted-fill">{{ dir_app.approved_by.get_resources_fullname_th() if dir_app else '' }}</span>
+                  <span>ผู้อนุมัติ</span>
+                </div>
+                <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
+                  <span>วันที่</span>
+                  <span class="dotted-fill">{{ dir_day }}</span>
+                  <span>เดือน</span>
+                  <span class="dotted-fill">{{ dir_month }}</span>
+                  <span>พ.ศ.</span>
+                  <span class="dotted-fill">{{ dir_year }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    {% endfor %}
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -655,9 +689,15 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const formattedNow = `${year}${month}${day}_${hours}${minutes}`;
       
-      const creatorName = "{{ car_application.creator.get_resources_fullname_th().replace(' ', '_') if car_application.creator else '' }}";
-      
-      document.title = `ใบขอใช้รถยนต์_${creatorName}_${formattedNow}`;
+      {% if is_bulk %}
+        const startDate = "{{ start_date_str }}".replace(/-/g, '');
+        const endDate = "{{ end_date_str }}".replace(/-/g, '');
+        document.title = `ใบขอใช้รถยนต์_หลายฉบับ_${startDate}_${endDate}_${formattedNow}`;
+      {% else %}
+        {% set app = car_applications[0] if car_applications else None %}
+        const creatorName = "{{ app.creator.get_resources_fullname_th().replace(' ', '_') if (app and app.creator) else '' }}";
+        document.title = `ใบขอใช้รถยนต์_${creatorName}_${formattedNow}`;
+      {% endif %}
     });
 
     window.addEventListener('afterprint', () => {

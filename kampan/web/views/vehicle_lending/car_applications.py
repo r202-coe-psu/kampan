@@ -266,7 +266,57 @@ def paper(car_application_id):
 
     return render_template(
         "/vehicle_lending/car_applications/paper.html",
-        car_application=car_application,
-        organization=organization
+        car_applications=[car_application],
+        organization=organization,
+        is_bulk=False
+    )
+
+
+@module.route("/combine_paper", methods=["GET"])
+@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+def combine_paper():
+    organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(id=organization_id, status="active").first()
+    if not organization:
+        return abort(404)
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    if not start_date_str or not end_date_str:
+        return abort(400, "กรุณาระบุวันที่เริ่มต้นและวันที่สิ้นสุด")
+
+    try:
+        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d")
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d")
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    except ValueError:
+        return abort(400, "รูปแบบวันที่ไม่ถูกต้อง")
+
+    if current_user.has_organization_roles("admin", "supervisor supplier"):
+        car_applications = models.vehicle_applications.CarApplication.objects(
+            organization=organization,
+            departure_datetime__gte=start_date,
+            departure_datetime__lte=end_date,
+            status__ne="disactive"
+        ).order_by("departure_datetime")
+    else:
+        car_applications = models.vehicle_applications.CarApplication.objects(
+            organization=organization,
+            creator=current_user,
+            departure_datetime__gte=start_date,
+            departure_datetime__lte=end_date,
+            status__ne="disactive"
+        ).order_by("departure_datetime")
+
+    return render_template(
+        "/vehicle_lending/car_applications/paper.html",
+        car_applications=car_applications,
+        organization=organization,
+        is_bulk=True,
+        start_date_str=start_date_str,
+        end_date_str=end_date_str
     )
 

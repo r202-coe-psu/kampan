@@ -14,6 +14,10 @@
 {% block content %}
 <div class="flex flex-row w-full justify-between">
   <div class="flex justify-end w-full gap-2">
+    <button class="btn btn-outline btn-primary gap-2" onclick="showExportModal()">
+      <i class="ph ph-file-pdf"></i>
+      พิมพ์ใบขอใช้รถหลายฉบับ (PDF)
+    </button>
     <a class="btn btn-primary"
       href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
@@ -162,4 +166,64 @@
   {% endfor %}
 {% endif %}
 
+<!-- Bulk/Combined Export Modal -->
+<dialog id="export_modal" class="modal">
+  <div class="modal-box max-w-md border border-base-300">
+    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+      <i class="ph ph-file-pdf text-primary text-2xl animate-pulse"></i>
+      พิมพ์ใบขอใช้รถหลายฉบับ (PDF)
+    </h3>
+    <p class="text-sm text-base-content/70 mb-4">กรุณาระบุช่วงเวลาเพื่อรวบรวมใบขอใช้รถยนต์ทั้งหมดที่ออกเดินทางในช่วงเวลาดังกล่าวเข้าเป็นเอกสาร PDF หน้าเดียวหลายแผ่นสำหรับพิมพ์</p>
+    <form id="export_form" method="GET" action="{{ url_for('vehicle_lending.car_applications.combine_paper') }}">
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      
+      <div class="flex flex-col gap-4">
+        <div class="form-control w-full">
+          <label class="label pb-1">
+            <span class="label-text font-semibold">จากวันที่ (เริ่มต้น)</span>
+          </label>
+          <input type="date" id="export_start_date" name="start_date" class="input input-bordered w-full" required>
+        </div>
+        
+        <div class="form-control w-full">
+          <label class="label pb-1">
+            <span class="label-text font-semibold">ถึงวันที่ (สิ้นสุด)</span>
+          </label>
+          <input type="date" id="export_end_date" name="end_date" class="input input-bordered w-full" required>
+        </div>
+      </div>
+      
+      <div class="modal-action flex justify-end gap-2 mt-6">
+        <button type="button" class="btn btn-ghost" onclick="closeExportModal()">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary gap-2" onclick="closeExportModal()">
+          <i class="ph ph-printer"></i>
+          พิมพ์/ส่งออก
+        </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button onclick="closeExportModal()">ปิด</button>
+  </form>
+</dialog>
+
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  function showExportModal() {
+    const today = new Date().toISOString().split('T')[0];
+    if (!document.getElementById('export_start_date').value) {
+      document.getElementById('export_start_date').value = today;
+    }
+    if (!document.getElementById('export_end_date').value) {
+      document.getElementById('export_end_date').value = today;
+    }
+    document.getElementById('export_modal').showModal();
+  }
+
+  function closeExportModal() {
+    document.getElementById('export_modal').close();
+  }
+</script>
 {% endblock %}
