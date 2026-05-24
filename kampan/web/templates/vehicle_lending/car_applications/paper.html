@@ -541,11 +541,11 @@
           <div class="left-col">
             <div class="bottom-title">ความเห็นของผู้ควบคุมยานพาหนะ</div>
             
-            {% set is_approved_by_admin = (admin_app is not none) %}
+            {% set is_approved_by_admin = (admin_app is not none and car_application.status != 'denied by admin') %}
             {% set is_denied_by_admin = (car_application.status == 'denied by admin') %}
             
             <div class="form-row">
-              <span class="circle-checkbox {{ 'checked' if is_approved_by_admin else '' }}"></span> 
+              <span class="circle-checkbox {{ 'checked' if (not is_out_town and is_approved_by_admin) else '' }}"></span> 
               <span>อนุญาตให้ใช้รถยนต์</span>
             </div>
             
@@ -553,16 +553,16 @@
               {% set has_innova = (car_application.car and 'กษ-9318' in car_application.car.license_plate) %}
               {% set has_wuling = (car_application.car and 'บล-5746' in car_application.car.license_plate) %}
               <div class="form-row">
-                <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_innova) else '' }}"></span> 
+                <span class="circle-checkbox {{ 'checked' if (not is_out_town and is_approved_by_admin and has_innova) else '' }}"></span> 
                 <span>INNOVA กษ-9318</span>
               </div>
               <div class="form-row">
-                <span class="circle-checkbox {{ 'checked' if (is_approved_by_admin and has_wuling) else '' }}"></span> 
+                <span class="circle-checkbox {{ 'checked' if (not is_out_town and is_approved_by_admin and has_wuling) else '' }}"></span> 
                 <span>WULING บล-5746</span>
               </div>
               <div class="form-row">
                 <span>โดยมี</span>
-                <span class="dotted-fill grow min-w-[150px] mx-1">{{ car_application.driver.get_resources_fullname_th() if (is_approved_by_admin and car_application.driver) else '' }}</span> 
+                <span class="dotted-fill grow min-w-[150px] mx-1">{{ car_application.driver.get_resources_fullname_th() if (not is_out_town and is_approved_by_admin and car_application.driver) else '' }}</span> 
                 <span>เป็นผู้ขับ</span>
               </div>
               <div class="form-row">
@@ -578,24 +578,24 @@
             </div>
             
             <div class="form-row mt-2">
-              <span class="circle-checkbox {{ 'checked' if is_denied_by_admin else '' }}"></span> 
+              <span class="circle-checkbox {{ 'checked' if (not is_out_town and is_denied_by_admin) else '' }}"></span> 
               <span>ไม่อนุญาต เพราะ</span>
-              <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.denied_reason if is_denied_by_admin else '' }}</span>
+              <span class="dotted-fill grow min-w-[120px] ml-1">{{ car_application.denied_reason if (not is_out_town and is_denied_by_admin) else '' }}</span>
             </div>
             
             <div class="flex flex-col items-end mt-5 w-full pr-2.5">
               <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
                 <span>ลงชื่อ</span>
-                <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if admin_app else '' }}</span>
+                <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if (not is_out_town and admin_app) else '' }}</span>
                 <span>ผู้ควบคุม</span>
               </div>
               <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
                 <span>วันที่</span>
-                <span class="dotted-fill">{{ admin_day }}</span>
+                <span class="dotted-fill">{{ admin_day if not is_out_town else '' }}</span>
                 <span>เดือน</span>
-                <span class="dotted-fill">{{ admin_month }}</span>
+                <span class="dotted-fill">{{ admin_month if not is_out_town else '' }}</span>
                 <span>พ.ศ.</span>
-                <span class="dotted-fill">{{ admin_year }}</span>
+                <span class="dotted-fill">{{ admin_year if not is_out_town else '' }}</span>
               </div>
             </div>
           </div>
@@ -624,44 +624,44 @@
             <div class="flex flex-col items-end mt-2.5 w-full pr-2.5">
               <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
                 <span>ลงชื่อ</span>
-                <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if (is_out_town and admin_app) else '' }}</span>
+                <span class="dotted-fill">{{ dir_app.approved_by.get_resources_fullname_th() if (is_out_town and dir_app) else '' }}</span>
                 <span>ผู้ควบคุม</span>
               </div>
               <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
                 <span>วันที่</span>
-                <span class="dotted-fill">{{ admin_day if is_out_town else '' }}</span>
+                <span class="dotted-fill">{{ dir_day if is_out_town else '' }}</span>
                 <span>เดือน</span>
-                <span class="dotted-fill">{{ admin_month if is_out_town else '' }}</span>
+                <span class="dotted-fill">{{ dir_month if is_out_town else '' }}</span>
                 <span>พ.ศ.</span>
-                <span class="dotted-fill">{{ admin_year if is_out_town else '' }}</span>
+                <span class="dotted-fill">{{ dir_year if is_out_town else '' }}</span>
               </div>
             </div>
             
             <div class="">
-              {% set is_approved_by_dir = (dir_app is not none) %}
-              {% set is_denied_by_dir = (car_application.status == 'denied by director') %}
+              {% set is_approved_by_admin = (admin_app is not none and car_application.status != 'denied by admin') %}
+              {% set is_denied_by_admin = (car_application.status == 'denied by admin') %}
               
               <div class="form-row">
-                <span class="circle-checkbox {{ 'checked' if is_approved_by_dir else '' }}"></span> 
+                <span class="circle-checkbox {{ 'checked' if (is_out_town and is_approved_by_admin) else '' }}"></span> 
                 <span>อนุมัติ</span> 
-                <span class="circle-checkbox {{ 'checked' if is_denied_by_dir else '' }} ml-5"></span> 
+                <span class="circle-checkbox {{ 'checked' if (is_out_town and is_denied_by_admin) else '' }} ml-5"></span> 
                 <span>ไม่อนุญาต เนื่องจาก</span>
-                <span class="dotted-fill grow min-w-[80px] ml-1">{{ car_application.denied_reason if is_denied_by_dir else '' }}</span>
+                <span class="dotted-fill grow min-w-[80px] ml-1">{{ car_application.denied_reason if (is_out_town and is_denied_by_admin) else '' }}</span>
               </div>
               
               <div class="flex flex-col items-end mt-4 w-full pr-2.5">
                 <div class="grid grid-cols-[auto_130px_auto] gap-1 items-end leading-relaxed">
                   <span>ลงชื่อ</span>
-                  <span class="dotted-fill">{{ dir_app.approved_by.get_resources_fullname_th() if dir_app else '' }}</span>
+                  <span class="dotted-fill">{{ admin_app.approved_by.get_resources_fullname_th() if (is_out_town and admin_app) else '' }}</span>
                   <span>ผู้อนุมัติ</span>
                 </div>
                 <div class="grid grid-cols-[auto_25px_auto_75px_auto_40px] gap-1 items-baseline mt-1.5 leading-relaxed">
                   <span>วันที่</span>
-                  <span class="dotted-fill">{{ dir_day }}</span>
+                  <span class="dotted-fill">{{ admin_day if is_out_town else '' }}</span>
                   <span>เดือน</span>
-                  <span class="dotted-fill">{{ dir_month }}</span>
+                  <span class="dotted-fill">{{ admin_month if is_out_town else '' }}</span>
                   <span>พ.ศ.</span>
-                  <span class="dotted-fill">{{ dir_year }}</span>
+                  <span class="dotted-fill">{{ admin_year if is_out_town else '' }}</span>
                 </div>
               </div>
             </div>

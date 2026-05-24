@@ -265,26 +265,43 @@ class HistoryCarLendingRepository:
             if current_user
             else "____________________________"
         )
-
         appointment = position.center(len("____________________________"), "_")
-        full_name = name.center(len("____________________________"), "_")
+        sig_cell_style = ParagraphStyle(
+            "SigCell",
+            parent=normal_style,
+            alignment=TA_CENTER,
+        )
+
+        raw_name = current_user.get_name() if current_user else "......................................................"
+
+        sig_table_data = [
+            [Paragraph("......................................................", sig_cell_style)],
+            [Spacer(1, 12)],
+            [Paragraph(f"( {raw_name} )", sig_cell_style)],
+            [Spacer(1, 12)],
+            [Paragraph(f"ตำแหน่ง: {appointment}", sig_cell_style)],
+            [Spacer(1, 0.2 * inch)],
+            [Paragraph("วันที่: ____/____/________", sig_cell_style)],
+        ]
+
+        sig_table = Table(sig_table_data, colWidths=[3.2 * inch], hAlign='RIGHT')
+        sig_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
 
         elements.append(
             KeepTogether(
                 [
-                    Paragraph(
-                        "ข้าพเจ้าขอรับรองความถูกต้องของข้อมูลดังกล่าว", right_style
-                    ),
+                    Paragraph("ข้าพเจ้าขอรับรองความถูกต้องของข้อมูลดังกล่าว", right_style),
                     Spacer(1, 0.5 * inch),
-                    Paragraph(
-                        "......................................................",
-                        right_style,
-                    ),
-                    Spacer(1, 12),
-                    Paragraph(f"( {full_name} )", right_style),
-                    Spacer(1, 12),
-                    Spacer(1, 0.2 * inch),
-                    Paragraph("วันที่: ____/____/________", right_style),
+                    sig_table
                 ]
             )
         )
