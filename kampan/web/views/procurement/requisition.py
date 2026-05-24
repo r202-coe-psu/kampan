@@ -232,6 +232,7 @@ def renewal_requested(requisition_procurement_id):
 
         # Apply filters based on role (lowest privilege first)
         manager_requisitions = None
+        manager_submitted_requisitions = None
         if is_staff and not (is_admin or is_manager or is_head):
             # Filter by purchaser.user matching current_user
             staff_requisitions = []
@@ -244,6 +245,12 @@ def renewal_requested(requisition_procurement_id):
             manager_requisitions = requisitions.filter(
                 selected_manager__manager=org_user_role,
                 approval_history__not__elemMatch={
+                    "approver_role": "manager",
+                },
+            )
+            manager_submitted_requisitions = requisitions.filter(
+                selected_manager__manager=org_user_role,
+                approval_history__elemMatch={
                     "approver_role": "manager",
                 },
             )
@@ -261,6 +268,12 @@ def renewal_requested(requisition_procurement_id):
                     "approver_role": "manager",
                 },
             )
+            manager_submitted_requisitions = requisitions.filter(
+                selected_manager__manager=org_user_role,
+                approval_history__elemMatch={
+                    "approver_role": "manager",
+                },
+            )
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
@@ -271,17 +284,28 @@ def renewal_requested(requisition_procurement_id):
         paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
 
         paginated_manager_requisitions = None
-        if manager_requisitions:
+        if manager_requisitions is not None:
             manager_page = request.args.get("manager_page", default=1, type=int)
             paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
+
+        paginated_manager_submitted_requisitions = None
+        if manager_submitted_requisitions is not None:
+            manager_submitted_page = request.args.get("manager_submitted_page", default=1, type=int)
+            paginated_manager_submitted_requisitions = Pagination(
+                manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
+            )
 
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=paginated_requisitions.items,
             paginated_requisitions=paginated_requisitions,
             manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
+            manager_submitted_requisitions=(
+                paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
+            ),
             form=form,
             paginated_manager_requisitions=paginated_manager_requisitions,
+            paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
             organization=organization,
             selected_category=category,
             status_choices=models.requisitions.STATUS_CHOICES,

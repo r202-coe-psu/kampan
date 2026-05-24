@@ -44,11 +44,15 @@
   </div>
   {% if current_user.has_organization_roles("manager") %}
   <h1 class="text-xl font-bold">รายการขอซื้อขอจ้างที่รอการพิจารณา</h1>
-  {{ render_renewal_requested_items_table(manager_requisitions,current_user, mas_list, organization,
-  manager_action=true) }}
+  {{ render_renewal_requested_items_table(manager_requisitions,current_user, mas_list, organization, manager_action=true) }}
   {% if paginated_manager_requisitions %}
-  {{ paginated.render_pagination(paginated_manager_requisitions, "procurement.requisitions.renewal_requested",
-  request.args) }}
+  {{ paginated.render_pagination(paginated_manager_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
+  {% endif %}
+
+  <h1 class="text-xl font-bold mt-6">รายการที่พิจารณาแล้ว</h1>
+  {{ render_renewal_requested_items_table(manager_submitted_requisitions,current_user, mas_list, organization, manager_action=true) }}
+  {% if paginated_manager_submitted_requisitions %}
+  {{ paginated.render_pagination(paginated_manager_submitted_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
   {% endif %}
   {% endif %}
   <h1 class="text-xl font-bold mt-6">รายการขอซื้อขอจ้างทั้งหมด</h1>

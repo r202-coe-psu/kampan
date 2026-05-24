@@ -539,9 +539,46 @@
                         <dialog id="modal-approve-manager-{{ item.id }}" class="modal">
                           <form method="post"
                                 action="{{ url_for('procurement.requisitions.requisition_action', requisition_id=item.id) }}"
-                                class="modal-box text-start">
+                                class="modal-box w-full max-w-3xl text-start">
                             <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติรายการขอซื้อ/ขอจ้าง</h3>
                             <p class="py-4">ต้องการอนุมัติรายการขอซื้อ/ขอจ้างเลขที่  {{ item.requisition_code }} หรือไม่</p>
+                            
+                            {% if item.fund %}
+                            <div class="mb-6">
+                              <h4 class="font-semibold text-lg mb-2">รายละเอียดแหล่งเงิน (MAS) ที่ได้รับการจัดสรร</h4>
+                              {% if item.fund_source %}
+                                {% set fund_map = {
+                                    "budget": "เงินงบประมาณ",
+                                    "income_institute": "เงินรายได้สานักฯ",
+                                    "income_central_university": "เงินรายได้ส่วนกลางมหาวิทยาลัย",
+                                    "income_sno": "เงินรายได้ สนอ.",
+                                    "income_central_smartu": "เงินรายได้ส่วนกลาง (Smart U)"
+                                } %}
+                                <p class="text-gray-700 mb-3"><span class="font-semibold text-gray-900">แหล่งเงิน:</span> {{ fund_map.get(item.fund_source, item.fund_source) }}</p>
+                              {% endif %}
+                              <div class="overflow-x-auto">
+                                <table class="table w-full border border-base-200">
+                                  <thead class="bg-base-200">
+                                    <tr>
+                                      <th>รหัส MAS</th>
+                                      <th>ชื่อโครงการ</th>
+                                      <th class="text-right">จำนวนเงินที่จอง (บาท)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for fund in item.fund %}
+                                    <tr>
+                                      <td class="font-mono">{{ fund.mas.mas_code if fund.mas else '-' }}</td>
+                                      <td>{{ fund.mas.description if fund.mas else '-' }}</td>
+                                      <td class="text-right font-medium text-blue-600">{{ fund.amount | format_amount }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                            {% endif %}
+
                             <input type="hidden" name="approver_role" value="manager" />
                             <input type="hidden" name="action" value="approved" />
                             <div class="modal-action">
