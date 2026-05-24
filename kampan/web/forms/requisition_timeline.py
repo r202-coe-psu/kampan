@@ -15,20 +15,35 @@ ACCOUNT_TYPE_CHOICES = [
     ),
     ("1204010101 สินทรัพย์ไม่มีตัวตน", "1204010101 สินทรัพย์ไม่มีตัวตน"),
     ("12070101 ถนน", "12070101 ถนน"),
-    ("12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น", "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น"),
+    (
+        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
+        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
+    ),
     (
         "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
         "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
     ),
     ("51010208 งานเบี้ยประกันสุขภาพ", "51010208 งานเบี้ยประกันสุขภาพ"),
-    ("51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ", "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ"),
-    ("51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก", "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก"),
+    (
+        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
+        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
+    ),
+    (
+        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
+        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
+    ),
     ("51040301 ค่าซ่อมแซมและค่าบำรุงรักษา", "51040301 ค่าซ่อมแซมและค่าบำรุงรักษา"),
-    ("5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก", "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก"),
+    (
+        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
+        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
+    ),
     ("51040601 ค่าจ้างที่ปรึกษา", "51040601 ค่าจ้างที่ปรึกษา"),
     ("51040701 ค่าเบี้ยประกันภัย", "51040701 ค่าเบี้ยประกันภัย"),
     ("51040901 ค่ารับรองและพิธีการ", "51040901 ค่ารับรองและพิธีการ"),
-    ("51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก", "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก"),
+    (
+        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
+        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
+    ),
     ("51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก", "51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก"),
     ("51041101 ค่าประชาสัมพันธ์", "51041101 ค่าประชาสัมพันธ์"),
     ("51041301 ค่าเชื้อเพลิง", "51041301 ค่าเชื้อเพลิง"),
@@ -72,14 +87,49 @@ class RequisitionInspectionForm(FlaskForm):
     )
 
 
+class RequisitionDeliveryForm(FlaskForm):
+    delivery_date = fields.DateField(
+        "วันที่ส่งมอบ",
+        [validators.DataRequired()],
+    )
+
+
 class ReservationPaymentForm(Form):
+    class Meta:
+        csrf = False
+
     reservation_id = HiddenField()
+    is_selected = fields.BooleanField("Is Selected", default=False)
     amount = DecimalField(
         places=2,
         rounding=None,
         default=0,
-        validators=[validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
     )
+    item_amount = fields.IntegerField(
+        default=0,
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
+    )
+
+
+class BillingItemForm(Form):
+    class Meta:
+        csrf = False
+
+    item_id = HiddenField()
+    is_multi_source = fields.BooleanField("Multi source", default=False)
+    source_id = fields.StringField("Source", validators=[validators.Optional()])
+    single_amount = DecimalField(
+        places=2,
+        rounding=None,
+        default=0,
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
+    )
+    single_qty = fields.IntegerField(
+        default=0,
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
+    )
+    multi_sources = fields.FieldList(fields.FormField(ReservationPaymentForm))
 
 
 class BillingForm(FlaskForm):
@@ -96,6 +146,7 @@ class BillingForm(FlaskForm):
     quotation_winner = fields.StringField(
         "ผู้ชนะการเสนอราคา", validators=[validators.Optional()]
     )
+    items = fields.FieldList(fields.FormField(BillingItemForm))
 
 
 class RequisitionTimelineFilterForm(FlaskForm):
@@ -115,7 +166,9 @@ class MasForm(FlaskForm):
 
 class ItemListForm(FlaskForm):
     product_name = fields.StringField("ชื่อสินค้า", validators=[validators.Optional()])
-    serial_number = fields.StringField("เลขที่สินค้า", validators=[validators.Optional()])
+    serial_number = fields.StringField(
+        "เลขที่สินค้า", validators=[validators.Optional()]
+    )
     price_per_piece = fields.DecimalField(
         "ราคาต่อชิ้น", validators=[validators.Optional()]
     )
@@ -143,7 +196,9 @@ class CompletedForm(FlaskForm):
             ("รายได้", "รายได้"),
         ],
     )
-    seller_name = fields.StringField("ชื่อผู้ขาย", validators=[validators.DataRequired()])
+    seller_name = fields.StringField(
+        "ชื่อผู้ขาย", validators=[validators.DataRequired()]
+    )
     contract_number = fields.StringField(
         "เลขที่สัญญา", validators=[validators.DataRequired()]
     )
@@ -160,9 +215,15 @@ class CompletedForm(FlaskForm):
     warranty_period = fields.IntegerField(
         "ระยะเวลาประกัน", validators=[validators.DataRequired()]
     )
-    product_number = fields.StringField("เลขที่สินค้า", validators=[validators.Optional()])
-    asset_code = fields.StringField("รหัสครุภัณฑ์", validators=[validators.DataRequired()])
-    account_code = fields.StringField("รหัสบัญชี", validators=[validators.DataRequired()])
+    product_number = fields.StringField(
+        "เลขที่สินค้า", validators=[validators.Optional()]
+    )
+    asset_code = fields.StringField(
+        "รหัสครุภัณฑ์", validators=[validators.DataRequired()]
+    )
+    account_code = fields.StringField(
+        "รหัสบัญชี", validators=[validators.DataRequired()]
+    )
     usage_location = fields.StringField(
         "สถานที่ใช้งาน", validators=[validators.DataRequired()]
     )
@@ -228,7 +289,7 @@ class DetailsSpecifiedItemForm(FlaskForm):
         "จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)]
     )
     amount = fields.DecimalField(
-        "ราคาทั้งหมด (บาท)",
+        "ราคาต่อชิ้น (บาท)",
         places=2,
         rounding=None,
         validators=[validators.DataRequired(), validators.NumberRange(min=0)],
