@@ -442,9 +442,9 @@
           <div class="section-indent pl-5">
             <div class="form-row">
               <span>เที่ยวบิน</span>
-              <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_number if is_pickup else '' }}</span> 
+              <span class="dotted-fill grow min-w-[120px] mx-1.5">{{ car_application.flight_return_number if is_pickup else '' }}</span> 
               <span>เครื่องถึงสนามบินหาดใหญ่ เวลา</span>
-              <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_datetime.strftime('%H:%M') if (is_pickup and car_application.flight_datetime) else '' }}</span> 
+              <span class="dotted-fill w-[70px] mx-1.5">{{ car_application.flight_return_datetime.strftime('%H:%M') if (is_pickup and car_application.flight_return_datetime) else '' }}</span> 
               <span>น.</span>
             </div>
           </div>
@@ -637,7 +637,7 @@
               </div>
             </div>
             
-            <div class="bottom-divider border-t border-black mt-2.5 pt-2">
+            <div class="">
               {% set is_approved_by_dir = (dir_app is not none) %}
               {% set is_denied_by_dir = (car_application.status == 'denied by director') %}
               

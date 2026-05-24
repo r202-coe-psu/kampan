@@ -71,7 +71,6 @@ def create_or_edit(car_application_id):
             form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
 
         else:
-            form.phone.data = current_user.get_phone()
             date = request.args.get("date", type=str, default=None)
             if date:
                 date = datetime.datetime.strptime(date, "%Y-%m-%d")

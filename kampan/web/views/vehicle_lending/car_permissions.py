@@ -94,6 +94,10 @@ def header_denied():
     ).first()
     car_application.status = "denied by header"
     car_application.denied_reason = denied_reason
+    car_application.header_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
 
     return redirect(
@@ -176,6 +180,10 @@ def director_denied():
     ).first()
     car_application.status = "denied by director"
     car_application.denied_reason = denied_reason
+    car_application.director_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
 
     return redirect(
@@ -260,6 +268,10 @@ def admin_denied():
     ).first()
     car_application.status = "denied by admin"
     car_application.denied_reason = denied_reason
+    car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=current_user._get_current_object(),
+        approved_at=datetime.datetime.now()
+    )
     car_application.save()
 
     return redirect(
