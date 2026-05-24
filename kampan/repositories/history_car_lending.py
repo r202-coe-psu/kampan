@@ -272,16 +272,17 @@ class HistoryCarLendingRepository:
         elements.append(
             KeepTogether(
                 [
-                    Paragraph("ข้าพเจ้าขอรับรองความถูกต้องของข้อมูลดังกล่าว", right_style),
+                    Paragraph(
+                        "ข้าพเจ้าขอรับรองความถูกต้องของข้อมูลดังกล่าว", right_style
+                    ),
                     Spacer(1, 0.5 * inch),
                     Paragraph(
                         "......................................................",
                         right_style,
                     ),
                     Spacer(1, 12),
-                    Paragraph(f"ชื่อ-สกุล: {full_name}", right_style),
+                    Paragraph(f"( {full_name} )", right_style),
                     Spacer(1, 12),
-                    Paragraph(f"ตำแหน่ง: {appointment}", right_style),
                     Spacer(1, 0.2 * inch),
                     Paragraph("วันที่: ____/____/________", right_style),
                 ]
