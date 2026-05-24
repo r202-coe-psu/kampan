@@ -24,6 +24,9 @@ BaseCarApplicationForm = model_form(
         "flight_return_datetime",
         "division",
         "last_mileage",
+        "header_approval",
+        "director_approval",
+        "admin_approval",
     ],
     field_args={
         "request_reason": {"label": "เหตุผลที่ต้องการใช้"},
@@ -41,6 +44,11 @@ BaseCarApplicationForm = model_form(
 
 
 class CarApplicationForm(BaseCarApplicationForm):
+    phone = fields.StringField(
+        "เบอร์โทรศัพท์ผู้ขอใช้รถ",
+        validators=[validators.DataRequired(), validators.Length(max=32)],
+        render_kw={"placeholder": "ระบุเบอร์โทรศัพท์ที่ติดต่อได้ เช่น 081-234-5678"},
+    )
     car = fields.SelectField("รถยนต์", validate_choice=True)
     driver = fields.SelectField("พนักงานขับรถ", validators=[validators.DataRequired()], choices=[])
     using_type = fields.RadioField(
