@@ -25,22 +25,6 @@
           <span class="badge badge-warning badge-lg ml-2">ใกล้ครบกำหนด</span>
           {% endif %}
         </h3>
-        <p class="text-white/80 text-xl mt-1">
-          เลขที่สินค้า/เลขที่เอกสาร (S/N): 
-          {% if item.product_numbers %}
-            {{ item.product_numbers | join(', ') }}
-          {% else %}
-            {{ item.product_number }}
-          {% endif %}
-        </p>
-        <p class="text-white/80 text-xl mt-1">
-          รหัสครุภัณฑ์: 
-          {% if item.asset_codes %}
-            {{ item.asset_codes | join(', ') }}
-          {% else %}
-            {{ item.asset_code }}
-          {% endif %}
-        </p>
       </div>
       <form method="dialog" class="mt-2 md:mt-0">
         <button
@@ -146,28 +130,69 @@
           </div>
         </div>
       </div>
-      <!-- Responsible Party Card -->
-      <div class="card bg-base-100 border border-base-200 shadow-sm">
-        <div class="card-body p-4">
-          <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
-            <i class="ph ph-users text-xl"></i>
-            ผู้รับผิดชอบ
-          </h4>
-          <div class="space-y-2 text-sm">
-            <span class="text-base-content/70">บริษัท:</span>
-            <div class="flex justify-between">
-              <span class="font-medium">{{ item.company }}</span>
-            </div>
-            <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
-            <div class="flex flex-col gap-1">
-              {% if item.responsible_by %}
-              <div class="flex flex-wrap gap-1">
-                {% for u in item.responsible_by %}
-                <span class="font-medium text-primary inline-block max-w-full truncate">{{ u.display_user_fullname()
-                  }}</span>
-                {% endfor %}
+      <!-- Right Column Wrapper -->
+      <div class="flex flex-col gap-6">
+        <!-- Identifiers Card -->
+        <div class="card bg-base-100 border border-base-200 shadow-sm">
+          <div class="card-body p-4">
+            <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+              <i class="ph ph-barcode text-xl"></i>
+              ข้อมูลรหัสและเลขที่สินค้า
+            </h4>
+            
+            <div class="space-y-4 text-sm">
+              <div>
+                <span class="text-base-content/70 font-medium block mb-2">เลขที่สินค้า/เลขที่เอกสาร (S/N):</span>
+                {% if item.product_numbers %}
+                  <div class="flex flex-wrap gap-2">
+                    {% for sn in item.product_numbers %}
+                      <span class="badge badge-outline badge-primary badge-lg">{{ sn }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="badge badge-outline badge-primary badge-lg">{{ item.product_number or '-' }}</span>
+                {% endif %}
               </div>
-              {% endif %}
+              
+              <div>
+                <span class="text-base-content/70 font-medium block mb-2">รหัสครุภัณฑ์:</span>
+                {% if item.asset_codes %}
+                  <div class="flex flex-wrap gap-2">
+                    {% for ac in item.asset_codes %}
+                      <span class="badge badge-outline badge-secondary badge-lg">{{ ac }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="badge badge-outline badge-secondary badge-lg">{{ item.asset_code or '-' }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Responsible Party Card -->
+        <div class="card bg-base-100 border border-base-200 shadow-sm">
+          <div class="card-body p-4">
+            <h4 class="font-bold text-lg text-primary mb-3 flex items-center gap-2">
+              <i class="ph ph-users text-xl"></i>
+              ผู้รับผิดชอบ
+            </h4>
+            <div class="space-y-2 text-sm">
+              <span class="text-base-content/70">บริษัท:</span>
+              <div class="flex justify-between">
+                <span class="font-medium">{{ item.company }}</span>
+              </div>
+              <span class="text-base-content/70">ผู้รับผิดชอบ:</span>
+              <div class="flex flex-col gap-1">
+                {% if item.responsible_by %}
+                <div class="flex flex-wrap gap-1">
+                  {% for u in item.responsible_by %}
+                  <span class="font-medium text-primary inline-block max-w-full truncate">{{ u.display_user_fullname()
+                    }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>
