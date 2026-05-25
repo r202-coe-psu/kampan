@@ -55,10 +55,7 @@
   <!-- Desktop and Mobile View -->
   <div class="mt-4">
     {{ table_macros.requisition_timeline_table(paginated_requisition_timeline,
-    requisition_timeline_list,
-    current_user, organization,
-    PROGRESS_STATUS_ORDER, reservations_map, inspection_form)
-    }}
+    requisition_timeline_list, current_user, organization, PROGRESS_STATUS_ORDER, reservations_map, inspection_form=inspection_form, delivery_form=delivery_form) }}
   </div>
   {% set params = {"organization_id": organization.id} %}
   {% if request.args.get('progress') %}

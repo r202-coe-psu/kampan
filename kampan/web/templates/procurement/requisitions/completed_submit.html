@@ -40,17 +40,19 @@
     {# ══════════════════════════════════════════ #}
     {# TOP SECTION — ข้อมูลสรุปจากระบบ #}
     {# ══════════════════════════════════════════ #}
+    {# ══════════════════════════════════════════ #}
+    {# ข้อมูลสรุปจากระบบ & บันทึกเสร็จสิ้นการจัดซื้อ #}
+    {# ══════════════════════════════════════════ #}
     <div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
       <div class="card-body p-5">
         <h2 class="card-title text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
           <i class="ph ph-database text-blue-500"></i>
-          ข้อมูลสรุปจากระบบ
+          ข้อมูลสรุปจากระบบ & บันทึกเสร็จสิ้นการจัดซื้อ
         </h2>
 
         {# Budget / MAS rows #}
         <div class="mb-4">
-          <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">ปีงบประมาณ /
-            แหล่งงบ</label>
+          <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">ปีงบประมาณ / แหล่งงบ</label>
           <div class="bg-gray-50 border rounded-xl p-3 space-y-1 text-sm">
             {% if item.requisition.fund %}
             {% for fund in item.requisition.fund %}
@@ -66,41 +68,162 @@
           </div>
         </div>
 
-        {# Summary grid #}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.requisition_code, value=item.requisition.requisition_code, readonly=True) }}
+        {# 14-Field Grid #}
+        <div class="space-y-4">
+          {# Row 1: ปีงบประมาณ / รหัสงบประมาณ #}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.year, readonly=True) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.mas_code, readonly=True) }}
+            </div>
           </div>
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.total_amount, value=(form.total_amount.data | format_amount) ~ ' บาท',
-            readonly=True) }}
+
+          {# Row 2: ชื่อผู้ขอซื้อ/ขอจ้าง / ชื่อโครงการ #}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.requisition_creator, readonly=True) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.product_name, readonly=True) }}
+            </div>
           </div>
-          <div class="form-control w-full">
-            {{ renderer.render_field(form.requisition_creator,
-            value=item.requisition.created_by.get_resources_fullname_th() if item.requisition.created_by else '-',
-            readonly=True) }}
+
+          {# Row 3: เลขที่สัญญา/ใบสั่งซื้อ / กำหนดส่งมอบ(วัน) / วันที่ครบกำหนดส่งมอบ #}
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.contract_number, readonly=readonly) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.delivery_period, readonly=readonly) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.date_field(form.delivery_due_date, readonly=readonly) }}
+            </div>
           </div>
-          <div class="form-control w-full">
-            {{ renderer.date_field(form.paid_date, readonly=True) }}
+
+          {# Row 4: วันที่ส่งมอบ / วันที่ตรวจรับ #}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.date_field(form.delivered_date, readonly=True) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.date_field(form.inspection_date, readonly=True) }}
+            </div>
           </div>
-          <div class="form-control w-full">
-            {{ renderer.date_field(form.delivered_date, readonly=True) }}
+
+          {# Row 5: เลขที่ มอ เบิกจ่าย / วันที่เบิกจ่าย / จำนวนเงินที่จ่ายจริง #}
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.requisition_code, readonly=readonly) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.date_field(form.paid_date, readonly=readonly) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.total_amount, value=(form.total_amount.data | format_amount) ~ ' บาท' if form.total_amount.data else '0 บาท', readonly=True) }}
+            </div>
           </div>
-          <div class="form-control w-full">
-            {{ renderer.date_field(form.inspection_date, readonly=True) }}
+
+          {# Row 6: เลขที่ใบแจ้งหนี้/ใบเสร็จ / ผังบัญชี #}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.receipt_number, readonly=readonly) }}
+            </div>
+            <div class="form-control w-full">
+              {{ renderer.render_field(form.account_code, readonly=True) }}
+            </div>
           </div>
         </div>
+
       </div>
     </div>
+
+
+    {# ══════════════════════════════════════════ #}
+    {# ผังบัญชีและการจัดสรรงบประมาณ #}
+    {# ══════════════════════════════════════════ #}
+    <div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
+      <div class="card-body p-5">
+        <h2 class="card-title text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+          <i class="ph ph-chart-pie-slice text-purple-500"></i>
+          ผังบัญชีและการจัดสรรงบประมาณ (ยอดจ่ายจริง)
+        </h2>
+
+        {% if item.fund_allocations %}
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full border border-gray-100 rounded-xl overflow-hidden">
+            <thead>
+              <tr class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase tracking-wide">
+                <th>รายการพัสดุ</th>
+                <th>รหัสบัญชี</th>
+                <th>ปีงบประมาณ / แหล่งเงิน</th>
+                <th class="text-right">ยอดจอง (บาท)</th>
+                <th class="text-right">ยอดจ่ายจริง (บาท)</th>
+                <th class="text-center">จำนวนจ่ายจริง</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for alloc in item.fund_allocations %}
+                {# Find requisition item for name #}
+                {% set req_item = namespace(found=None) %}
+                {% for ri in item.requisition.items %}
+                  {% if ri._id | string == alloc.item_id | string %}
+                    {% set req_item.found = ri %}
+                  {% endif %}
+                {% endfor %}
+                
+                {% for source in alloc.allocations %}
+                  {# Find fund for reservation_id #}
+                  {% set fund_item = namespace(found=None) %}
+                  {% for f in item.requisition.fund %}
+                    {% if f.id | string == source.reservation_id | string %}
+                      {% set fund_item.found = f %}
+                    {% endif %}
+                  {% endfor %}
+                  
+                  <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-none transition-colors">
+                    <td class="font-medium text-gray-700 py-3">{{ req_item.found.product_name if req_item.found else 'ไม่ทราบรายการ' }}</td>
+                    <td class="font-mono text-gray-600">{{ alloc.account_code or '-' }}</td>
+                    <td>
+                      <span class="text-gray-700 font-semibold">{{ fund_item.found.mas.year if fund_item.found and fund_item.found.mas else '-' }}</span>
+                      <span class="text-gray-400 font-mono text-xs">({{ fund_item.found.mas.mas_code if fund_item.found and fund_item.found.mas else '-' }})</span>
+                    </td>
+                    <td class="text-right text-gray-500 font-semibold">{{ (fund_item.found.amount | format_amount) if fund_item.found else '-' }} บาท</td>
+                    <td class="text-right font-bold text-emerald-600">{{ source.amount | format_amount }} บาท</td>
+                    <td class="text-center text-gray-600 font-semibold">{{ source.item_amount }} ชิ้น</td>
+                  </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-6 text-gray-400 text-sm">
+          <i class="ph ph-info text-2xl block mb-1.5 text-gray-300"></i>
+          ไม่มีข้อมูลการจัดสรรแหล่งเงิน (ยอดจ่ายจริง)
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
 
 
     {# ══════════════════════════════════════════════════════════════ #}
     {# PER-ITEM TABLES — one card per requisition item type #}
     {# ══════════════════════════════════════════════════════════════ #}
     {% for req_item in item.requisition.items %}
-    {{ item_table.render_item_table(req_item, items_by_type.get(req_item._id | string, []),
-    shared_forms_by_type.get(req_item._id | string), row_forms_by_type.get(req_item._id | string, []), readonly,
-    responder_user_choices) }}
+    {{ item_table.render_item_table(
+        req_item, 
+        items_by_type.get(req_item._id | string, []),
+        shared_forms_by_type.get(req_item._id | string), 
+        row_forms_by_type.get(req_item._id | string, []), 
+        readonly,
+        responder_user_choices,
+        requisition_timeline_id=item.id | string,
+        organization=organization
+    ) }}
     {% endfor %}
 
     {# ── Action Bar ── #}
@@ -109,7 +232,16 @@
         class="btn btn-ghost">
         {% if readonly %}ปิด{% else %}ยกเลิก{% endif %}
       </a>
-      {% if not readonly %}
+      {% if readonly %}
+      <button type="button" onclick="ma_modal.showModal()" class="btn btn-primary bg-purple-600 hover:bg-purple-700 border-none text-white px-6 gap-2">
+        <i class="ph ph-rocket-launch"></i>
+        ส่งข้อมูลไปสร้างครุภัณฑ์ (REQUISITION TO MA)
+      </button>
+      <button type="submit" class="btn btn-success text-white px-6 gap-2">
+        <i class="ph ph-floppy-disk"></i>
+        บันทึกการแก้ไขครุภัณฑ์
+      </button>
+      {% else %}
       <button type="submit" class="btn btn-success px-8 text-white gap-2">
         <i class="ph ph-check"></i>
         บันทึกเสร็จสิ้นโครงการ
@@ -118,5 +250,178 @@
     </div>
 
   </form>
+
+  {# ══════════════════════════════════════════════════════════════ #}
+  {# REQUISITION TO MA MODAL #}
+  {# ══════════════════════════════════════════════════════════════ #}
+  <dialog id="ma_modal" class="modal modal-bottom w-full items-center justify-center">
+    <div class="modal-box  max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between border-b pb-4 mb-4">
+        <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+          <i class="ph ph-rocket-launch text-purple-500 text-2xl"></i>
+          ส่งข้อมูลไปสร้างครุภัณฑ์ (REQUISITION TO MA)
+        </h3>
+        <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="ma_modal.close()">✕</button>
+      </div>
+      
+      <p class="text-sm text-gray-500 mb-4">
+        เลือกรายการจัดซื้อด้านล่างที่ต้องการส่งข้อมูลไปลงทะเบียนเป็นครุภัณฑ์ (MA) ในระบบ (เฉพาะรายการที่ใส่วันที่เริ่มต้นและสิ้นสุดแล้ว):
+      </p>
+
+      <div class="space-y-6 max-h-[75vh] overflow-y-auto pr-2 mb-4">
+        {% for req_item in item.requisition.items %}
+          {% set timeline_items = items_by_type.get(req_item._id | string, []) %}
+          
+          {# Get shared seller and insurance dates from first timeline item if exists #}
+          {% set first_ti = timeline_items[0] if timeline_items else none %}
+          {% set start_date = first_ti.insurance_start_date if first_ti else "" %}
+          {% set end_date = first_ti.insurance_end_date if first_ti else "" %}
+          {% set seller = first_ti.seller if first_ti else "" %}
+          {% set has_dates = start_date and end_date %}
+
+          <div class="border rounded-2xl p-4 bg-gray-50 border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 border-b border-gray-200 pb-2">
+              <div>
+                <h4 class="font-bold text-gray-800 flex items-center gap-2">
+                  <i class="ph ph-package text-purple-500"></i>
+                  {{ req_item.product_name }}
+                </h4>
+                <p class="text-xs text-gray-500 mt-1">
+                  ผู้ขาย: <span class="font-medium text-gray-700">{{ seller or '-' }}</span> | 
+                  ประกัน: <span class="font-medium text-gray-700">{% if has_dates %}{{ start_date }} ถึง {{ end_date }}{% else %}<span class="text-amber-600 font-semibold">ไม่ได้ระบุวันที่ประกัน</span>{% endif %}</span>
+                </p>
+              </div>
+              <div class="mt-2 sm:mt-0">
+                <button type="button" 
+                        onclick="redirectToCreateProduct('{{ req_item._id }}', '{{ req_item.product_name | escape }}', '{{ start_date }}', '{{ end_date }}', '{{ seller | escape }}', '{{ req_item.amount | default(0.0) }}', '{{ (item.completed_progress_detail.contract_number if item.completed_progress_detail else '') | escape }}')"
+                        class="btn btn-sm btn-primary bg-purple-600 hover:bg-purple-700 border-none text-white gap-1 rounded-xl {% if not has_dates %}btn-disabled{% endif %}">
+                  <i class="ph ph-rocket-launch"></i>
+                  สร้างครุภัณฑ์ (MA)
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+              <table class="table table-sm w-full">
+                <thead>
+                  <tr class="bg-gray-100 text-gray-600 text-xs font-semibold uppercase tracking-wide">
+                    <th class="w-10 text-center">
+                      <input type="checkbox" 
+                             id="check_all_{{ req_item._id }}" 
+                             class="checkbox checkbox-xs checkbox-primary" 
+                             {% if has_dates %}onchange="toggleCheckAll('{{ req_item._id }}')"{% else %}disabled{% endif %}>
+                    </th>
+                    <th class="text-center w-10">ชิ้นที่</th>
+                    <th>เลขที่สินค้า (S/N)</th>
+                    <th>รหัสครุภัณฑ์</th>
+                    <th>สถานที่ใช้งาน</th>
+                    <th class="text-center">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ti in timeline_items %}
+                    {% set ti_has_dates = ti.insurance_start_date and ti.insurance_end_date %}
+                    <tr class="hover:bg-purple-50/50 align-middle">
+                      <td class="text-center">
+                        <input type="checkbox" 
+                               class="checkbox checkbox-xs checkbox-primary asset-checkbox-{{ req_item._id }}" 
+                               value="{{ ti.requisition_item_code }}" 
+                               data-serial="{{ ti.serial_number or '' }}"
+                               {% if ti_has_dates %}checked{% else %}disabled{% endif %}
+                               onchange="updateHeaderCheckbox('{{ req_item._id }}')">
+                      </td>
+                      <td class="text-center text-gray-500 font-mono text-xs">#{{ ti.running_number }}</td>
+                      <td class="font-mono text-xs text-gray-700">{{ ti.serial_number or '-' }}</td>
+                      <td class="font-mono text-xs text-gray-700">{{ ti.requisition_item_code or '-' }}</td>
+                      <td class="text-xs text-gray-700">{{ ti.location or '-' }}</td>
+                      <td class="text-center">
+                        {% if ti_has_dates %}
+                          <span class="badge badge-success text-white badge-xs py-2 px-2.5">
+                            พร้อมส่ง
+                          </span>
+                        {% else %}
+                          <span class="badge badge-warning text-amber-900 badge-xs py-2 px-2.5">
+                            ขาดวันประกัน
+                          </span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="flex justify-end gap-2 border-t pt-4">
+        <button type="button" class="btn btn-sm btn-ghost" onclick="ma_modal.close()">ปิด</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    function toggleCheckAll(reqItemId) {
+        const checkAll = document.getElementById('check_all_' + reqItemId);
+        const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId);
+        checkboxes.forEach(cb => {
+            if (!cb.disabled) {
+                cb.checked = checkAll.checked;
+            }
+        });
+    }
+
+    function updateHeaderCheckbox(reqItemId) {
+        const checkAll = document.getElementById('check_all_' + reqItemId);
+        const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId);
+        const activeCheckboxes = Array.from(checkboxes).filter(cb => !cb.disabled);
+        
+        if (activeCheckboxes.length === 0) {
+            checkAll.checked = false;
+            return;
+        }
+
+        const allChecked = activeCheckboxes.every(cb => cb.checked);
+        checkAll.checked = allChecked;
+    }
+
+    function redirectToCreateProduct(reqItemId, reqItemName, startDate, endDate, seller, pricePerPiece, contractNumber) {
+        const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId + ':checked');
+        if (checkboxes.length === 0) {
+            alert('กรุณาเลือกรายการครุภัณฑ์อย่างน้อย 1 รายการเพื่อส่งข้อมูลไปสร้างครุภัณฑ์');
+            return;
+        }
+        
+        const codes = Array.from(checkboxes).map(cb => cb.value).filter(val => val.trim() !== "");
+        const serials = Array.from(checkboxes).map(cb => cb.dataset.serial).filter(val => val && val.trim() !== "");
+        
+        // Calculate total amount = pricePerPiece * number of selected items
+        const totalAmount = parseFloat(pricePerPiece) * checkboxes.length;
+        
+        // Build the URL
+        const baseUrl = "{{ url_for('procurement.products.create', organization_id=organization.id) }}";
+        const params = new URLSearchParams({
+            name: reqItemName,
+            start_date: startDate,
+            end_date: endDate,
+            company: seller,
+            amount: totalAmount,
+            product_number: contractNumber || "-",
+            category: 'product',
+            asset_codes: codes.join(','),
+            product_numbers: serials.join(',')
+        });
+        
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        window.open(baseUrl + separator + params.toString(), '_blank');
+    }
+
+    // Set initial header checkboxes state on modal show
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for req_item in item.requisition.items %}
+            updateHeaderCheckbox('{{ req_item._id }}');
+        {% endfor %}
+    });
+  </script>
 </div>
 {% endblock %}

@@ -1,36 +1,37 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}
-ระบุรายละเอียด
-{% endblock %}
+{% block title %}ระบุรายละเอียด{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6 max-w-[1400px]">
+  <div class="container mx-auto px-4 py-6 max-w-[1400px]">
 
-  <div class="flex items-center gap-3 mb-6">
-    <div class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-700">
-      <i class="ph ph-list-details text-xl"></i>
-    </div>
-    <div>
-      <h1 class="text-2xl font-bold text-blue-700">
-        {% if readonly %}
-        ระบุรายละเอียดพัสดุ (ดูอย่างเดียว)
-        {% else %}
-        ระบุรายละเอียดพัสดุ
-        {% endif %}
-      </h1>
-      <p class="text-sm text-gray-500">เลขที่คำขอ: <span class="font-semibold text-gray-700">{{
-          item.requisition.requisition_code }}</span></p>
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-700">
+        <i class="ph ph-list-details text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-blue-700">
+          {% if readonly %}
+            ระบุรายละเอียดพัสดุ (ดูอย่างเดียว)
+          {% else %}
+            ระบุรายละเอียดพัสดุ
+          {% endif %}
+        </h1>
+        <p class="text-sm text-gray-500">
+          เลขที่คำขอ: <span class="font-semibold text-gray-700">{{
+        item.requisition.requisition_code }}</span>
+      </p>
     </div>
     <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-      class="btn btn-ghost btn-sm ml-auto gap-1">
+       class="btn btn-ghost btn-sm ml-auto gap-1">
       <i class="ph ph-arrow-left"></i> กลับ
     </a>
   </div>
 
-  <form id="details-specified-form" method="post"
-    action="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+  <form id="details-specified-form"
+        method="post"
+        action="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}">
     {{ form.hidden_tag() }}
 
     {% set total_fund = item.requisition.fund | sum(attribute='amount') %}
@@ -41,9 +42,7 @@
           <i class="ph ph-clipboard-text text-blue-500"></i>
           ข้อมูลโครงการ
         </h2>
-        <div class="w-full max-w-lg mb-4">
-          {{ renderer.render_field(form.project_name) }}
-        </div>
+        <div class="w-full max-w-lg mb-4">{{ renderer.render_field(form.project_name) }}</div>
       </div>
     </div>
 
@@ -53,125 +52,117 @@
         รายการพัสดุ
       </h2>
       {% if not readonly %}
-      <button type="button" class="btn btn-primary btn-sm gap-2 shadow-sm" id="add-item-btn">
-        <i class="ph ph-plus"></i> เพิ่มรายการ
-      </button>
+        <button type="button" class="btn btn-primary btn-sm gap-2 shadow-sm" id="add-item-btn">
+          <i class="ph ph-plus"></i> เพิ่มรายการ
+        </button>
       {% endif %}
     </div>
 
     <div id="items-container" class="space-y-4 mb-6">
       {% for item_form in form.items %}
-      <div
-        class="item-card bg-white border border-gray-200 rounded-2xl shadow-sm relative transition-all hover:border-blue-300">
+        <div class="item-card bg-white border border-gray-200 rounded-2xl shadow-sm relative transition-all hover:border-blue-300">
 
-        <!-- Card Header with Index -->
-        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
-          <div class="flex items-center gap-2">
-            <span
-              class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs item-index-badge">
-              {{ loop.index }}
-            </span>
-            <span class="text-sm font-semibold text-gray-700 item-index-text">รายการที่ {{ loop.index }}</span>
-          </div>
-          {% if not readonly %}
-          <div class="flex items-center gap-1">
-            <button type="button"
-              class="btn btn-ghost btn-sm w-8 h-8 p-0 clone-btn text-blue-600 hover:text-blue-800 hover:bg-blue-100 tooltip rounded-lg"
-              data-tip="คัดลอกลงแถวใหม่">
-              <i class="ph ph-copy text-lg pointer-events-none"></i>
-            </button>
-            <button type="button"
-              class="btn btn-ghost btn-sm w-8 h-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 tooltip delete-btn rounded-lg"
-              data-tip="ลบรายการ">
-              <i class="ph ph-trash text-lg pointer-events-none"></i>
-            </button>
-          </div>
-          {% endif %}
-        </div>
-
-        <div class="p-5">
-          <!-- Hidden Fields -->
-          {% for f in item_form %}
-          {% if f.type == 'HiddenField' or f.type == 'CSRFTokenField' %}
-          {{ f() }}
-          {% endif %}
-          {% endfor %}
-
-          <!-- Form Rows -->
-          <div class="flex flex-col gap-4">
-            <div class="overflow-x-auto w-full">
-              <table class="table w-full table-fixed mb-0">
-                <tbody>
-                  <!-- Row 1: ชื่อรายการ, ยี่ห้อ, รุ่น, จำนวน, ราคา -->
-                  <tr>
-                    <td class="p-2 w-[30%] align-top border-none">
-                      {{ renderer.render_field(item_form.product_name, class_="input input-bordered w-full",
-                      readonly=readonly) }}
-                    </td>
-                    <td class="p-2 w-[20%] align-top border-none">
-                      {{ renderer.render_field(item_form.brand, class_="input input-bordered w-full", readonly=readonly)
-                      }}
-                    </td>
-                    <td class="p-2 w-[20%] align-top border-none">
-                      {{ renderer.render_field(item_form.model_name, class_="input input-bordered w-full",
-                      readonly=readonly) }}
-                    </td>
-                    <td class="p-2 w-[15%] align-top border-none">
-                      {{ renderer.render_number_field(item_form.quantity, class_="input input-bordered w-full
-                      text-center", min=1, readonly=readonly) }}
-                    </td>
-                    <td class="p-2 w-[15%] align-top border-none">
-                      {{ renderer.render_number_field(item_form.amount, class_="input input-bordered w-full text-right",
-                      min=0, readonly=readonly) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- Card Header with Index -->
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs item-index-badge">
+                {{ loop.index }}
+              </span>
+              <span class="text-sm font-semibold text-gray-700 item-index-text">รายการที่ {{ loop.index }}</span>
             </div>
+            {% if not readonly %}
+              <div class="flex items-center gap-1">
+                <button type="button"
+                        class="btn btn-ghost btn-sm w-8 h-8 p-0 clone-btn text-blue-600 hover:text-blue-800 hover:bg-blue-100 tooltip rounded-lg"
+                        data-tip="คัดลอกลงแถวใหม่">
+                  <i class="ph ph-copy text-lg pointer-events-none"></i>
+                </button>
+                <button type="button"
+                        class="btn btn-ghost btn-sm w-8 h-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 tooltip delete-btn rounded-lg"
+                        data-tip="ลบรายการ">
+                  <i class="ph ph-trash text-lg pointer-events-none"></i>
+                </button>
+              </div>
+            {% endif %}
+          </div>
 
-            <!-- Row 2: ผู้ชนะ, ผังบัญชี, หมายเหตุ -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full px-2 pb-2">
-              <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.winner, class_="input input-bordered w-full", readonly=readonly) }}
+          <div class="p-5">
+            <!-- Hidden Fields -->
+            {% for f in item_form %}
+              {% if f.type == 'HiddenField' or f.type == 'CSRFTokenField' %}{{ f() }}{% endif %}
+            {% endfor %}
+
+            <!-- Form Rows -->
+            <div class="flex flex-col gap-4">
+              <div class="overflow-x-auto w-full">
+                <table class="table w-full table-fixed mb-0">
+                  <tbody>
+                    <!-- Row 1: ชื่อรายการ, ยี่ห้อ, รุ่น, จำนวน, ราคา -->
+                    <tr>
+                      <td class="p-2 w-[30%] align-top border-none">
+                        {{ renderer.render_field(item_form.product_name, class_="input input-bordered w-full",
+                                                readonly=readonly) }}
+                      </td>
+                      <td class="p-2 w-[20%] align-top border-none">
+                        {{ renderer.render_field(item_form.brand, class_="input input-bordered w-full", readonly=readonly) 
+                        }}
+                      </td>
+                      <td class="p-2 w-[20%] align-top border-none">
+                        {{ renderer.render_field(item_form.model_name, class_="input input-bordered w-full",
+                                                readonly=readonly) }}
+                      </td>
+                      <td class="p-2 w-[15%] align-top border-none">
+                        {{ renderer.render_number_field(item_form.quantity, class_="input input-bordered w-full
+                                                text-center", min=1, readonly=readonly) }}
+                      </td>
+                      <td class="p-2 w-[15%] align-top border-none">
+                        {{ renderer.render_number_field(item_form.amount, class_="input input-bordered w-full text-right",
+                                                min=0, readonly=readonly) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div class="md:col-span-1">
-                {{ renderer.render_search_select_field(item_form.account_code, readonly=readonly,
-                placeholder='ค้นหาผังบัญชี') }}
-              </div>
-              <div class="md:col-span-1">
-                {{ renderer.render_field(item_form.note, class_="input input-bordered w-full", readonly=readonly) }}
+
+              <!-- Row 2: ผู้ชนะ, ผังบัญชี, หมายเหตุ -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full px-2 pb-2">
+                <div class="md:col-span-1">
+                  {{ renderer.render_field(item_form.winner, class_="input input-bordered w-full", readonly=readonly) }}
+                </div>
+                <div class="md:col-span-1">
+                  {{ renderer.render_search_select_field(item_form.account_code, readonly=readonly,
+                                    placeholder='ค้นหาผังบัญชี') }}
+                </div>
+                <div class="md:col-span-1">
+                  {{ renderer.render_field(item_form.note, class_="input input-bordered w-full", readonly=readonly) }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       {% endfor %}
     </div>
 
     {% if not form.items %}
-    <div
-      class="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 pointer-events-none mb-6"
-      id="empty-state">
-      <div
-        class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-gray-400">
-        <i class="ph ph-package text-3xl"></i>
+      <div class="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50 pointer-events-none mb-6"
+           id="empty-state">
+        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-gray-400">
+          <i class="ph ph-package text-3xl"></i>
+        </div>
+        <p class="text-gray-600 font-medium">ไม่มีรายการพัสดุ</p>
+        <p class="text-gray-400 text-sm mt-1">กรุณาเพิ่มรายการเพื่อระบุรายละเอียด</p>
       </div>
-      <p class="text-gray-600 font-medium">ไม่มีรายการพัสดุ</p>
-      <p class="text-gray-400 text-sm mt-1">กรุณาเพิ่มรายการเพื่อระบุรายละเอียด</p>
-    </div>
     {% endif %}
 
     {% if error %}
-    <div class="alert alert-error mb-6 shadow-sm rounded-xl">
-      <i class="ph ph-warning-circle text-xl"></i>
-      <span>{{ error }}</span>
-    </div>
+      <div class="alert alert-error mb-6 shadow-sm rounded-xl">
+        <i class="ph ph-warning-circle text-xl"></i>
+        <span>{{ error }}</span>
+      </div>
     {% endif %}
 
-    {% if not readonly %}
     <!-- Summary block before bottom bar -->
-    <div
-      class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
         <h3 class="font-bold text-gray-700">สรุปยอดรวมงบประมาณ</h3>
         <p class="text-sm text-gray-500">กรุณาตรวจสอบยอดรวมรายการทั้งหมดให้ไม่เกินงบประมาณที่รองรับ</p>
@@ -188,181 +179,183 @@
       </div>
     </div>
 
-    <div id="price-error-msg" class="hidden alert alert-error mb-4 shadow-sm rounded-xl">
-      <i class="ph ph-warning-circle text-xl"></i>
-      <span>ยอดรวมทั้งหมดเกินกว่างบประมาณที่รองรับ ไม่สามารถบันทึกได้</span>
-    </div>
+    {% if not readonly %}
+      <div id="price-error-msg" class="hidden alert alert-error mb-4 shadow-sm rounded-xl">
+        <i class="ph ph-warning-circle text-xl"></i>
+        <span>ยอดรวมทั้งหมดเกินกว่างบประมาณที่รองรับ ไม่สามารถบันทึกได้</span>
+      </div>
 
-    <div
-      class="flex justify-end gap-3 mt-4 bg-white p-4 rounded-xl border shadow-sm sticky bottom-4 z-10 transition-shadow">
-      <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-        class="btn btn-ghost px-6">
-        ยกเลิก
-      </a>
-      <button type="submit" id="submit-btn" class="btn btn-success text-white px-8 gap-2 shadow-md hover:shadow-lg">
-        <i class="ph ph-floppy-disk text-lg"></i>
-        บันทึกข้อมูลรายละเอียด
-      </button>
-    </div>
+      <div class="flex justify-end gap-3 mt-4 bg-white p-4 rounded-xl border shadow-sm sticky bottom-4 z-10 transition-shadow">
+        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+           class="btn btn-ghost px-6">ยกเลิก</a>
+        <button type="submit"
+                id="submit-btn"
+                class="btn btn-success text-white px-8 gap-2 shadow-md hover:shadow-lg">
+          <i class="ph ph-floppy-disk text-lg"></i>
+          บันทึกข้อมูลรายละเอียด
+        </button>
+      </div>
     {% else %}
-    <div class="flex justify-end gap-3 mt-8">
-      <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-        class="btn btn-ghost px-6">
-        <i class="ph ph-arrow-left"></i> กลับ
-      </a>
-    </div>
+      <div class="flex justify-end gap-3 mt-8">
+        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
+           class="btn btn-ghost px-6">
+          <i class="ph ph-arrow-left"></i> กลับ
+        </a>
+      </div>
     {% endif %}
   </form>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const container = document.getElementById('items-container');
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('items-container');
 
-    function updateItemIndices() {
-      if (!container) return;
-      const cards = container.querySelectorAll('.item-card');
-      cards.forEach((card, index) => {
-        // Update index number in UI
-        const indexBadge = card.querySelector('.item-index-badge');
-        if (indexBadge) indexBadge.textContent = index + 1;
-        const indexText = card.querySelector('.item-index-text');
-        if (indexText) indexText.textContent = `รายการที่ ${index + 1}`;
+        function updateItemIndices() {
+            if (!container) return;
+            const cards = container.querySelectorAll('.item-card');
+            cards.forEach((card, index) => {
+                // Update index number in UI
+                const indexBadge = card.querySelector('.item-index-badge');
+                if (indexBadge) indexBadge.textContent = index + 1;
+                const indexText = card.querySelector('.item-index-text');
+                if (indexText) indexText.textContent = `รายการที่ ${index + 1}`;
 
-        card.querySelectorAll('*').forEach(el => {
-          if (el.id) {
-            el.id = el.id.replace(/items-\d+-/, `items-${index}-`);
-          }
-          if (el.name) {
-            el.name = el.name.replace(/items-\d+-/, `items-${index}-`);
-          }
-          if (el.hasAttribute('for')) {
-            el.setAttribute('for', el.getAttribute('for').replace(/items-\d+-/, `items-${index}-`));
-          }
-          ['oninput', 'onfocus', 'onblur', 'onclick', 'onchange'].forEach(attr => {
-            if (el.hasAttribute(attr)) {
-              el.setAttribute(attr, el.getAttribute(attr).replace(/items-\d+-/, `items-${index}-`));
+                card.querySelectorAll('*').forEach(el => {
+                    if (el.id) {
+                        el.id = el.id.replace(/items-\d+-/, `items-${index}-`);
+                    }
+                    if (el.name) {
+                        el.name = el.name.replace(/items-\d+-/, `items-${index}-`);
+                    }
+                    if (el.hasAttribute('for')) {
+                        el.setAttribute('for', el.getAttribute('for').replace(/items-\d+-/, `items-${index}-`));
+                    }
+                    ['oninput', 'onfocus', 'onblur', 'onclick', 'onchange'].forEach(attr => {
+                        if (el.hasAttribute(attr)) {
+                            el.setAttribute(attr, el.getAttribute(attr).replace(/items-\d+-/, `items-${index}-`));
+                        }
+                    });
+                });
+            });
+        }
+
+        const addBtn = document.getElementById('add-item-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                if (!container) return;
+                const cards = container.querySelectorAll('.item-card');
+                if (cards.length === 0) {
+                    alert("ไม่สามารถเพิ่มด้วยปุ่มนี้ได้เนื่องจากไม่มี Template เริ่มต้นให้คัดลอก");
+                    return;
+                }
+
+                const firstCard = cards[0];
+                const newCard = firstCard.cloneNode(true);
+
+                // Clear input values
+                newCard.querySelectorAll('input, textarea').forEach(input => {
+                    if (input.type !== 'hidden' || input.name.includes('item_id') || input.name.includes('csrf')) {
+                        if (input.name.includes('item_id')) {
+                            input.value = '';
+                        } else if (input.type !== 'hidden') {
+                            if (input.name.includes('quantity')) {
+                                input.value = '1';
+                            } else if (input.name.includes('amount')) {
+                                input.value = '0';
+                            } else {
+                                input.value = '';
+                            }
+                        }
+                    }
+                });
+
+                container.appendChild(newCard);
+                updateItemIndices();
+
+                // Hide empty state if it exists
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) emptyState.style.display = 'none';
+            });
+        }
+
+        if (container) {
+            container.addEventListener('click', function(e) {
+                let btn = e.target.closest('button');
+                if (!btn) return;
+                0
+
+                const card = btn.closest('.item-card');
+                if (!card) return;
+
+                if (btn.classList.contains('delete-btn')) {
+                    if (container.querySelectorAll('.item-card').length > 1) {
+                        card.remove();
+                        updateItemIndices();
+                    } else {
+                        alert("ต้องมีอย่างน้อย 1 รายการ");
+                    }
+                } else if (btn.classList.contains('clone-btn')) {
+                    const newCard = card.cloneNode(true);
+
+                    // clean item ID mapping
+                    const idInput = newCard.querySelector('input[name$="item_id"]');
+                    if (idInput) idInput.value = "";
+
+                    card.parentNode.insertBefore(newCard, card.nextSibling);
+                    updateItemIndices();
+                }
+            });
+        }
+
+        // Budget limitation checking
+        const maxFund = parseFloat("{{ total_fund or 0 }}");
+        const submitBtn = document.getElementById('submit-btn');
+        const priceErrorMsg = document.getElementById('price-error-msg');
+        const totalPriceText = document.getElementById('total-price-text');
+
+        function calculateTotal() {
+            let total = 0;
+            if (container) {
+                const cards = container.querySelectorAll('.item-card');
+                cards.forEach(card => {
+                    let qs = card.querySelector('input[name*="quantity"]');
+                    let as = card.querySelector('input[name*="amount"]');
+                    if (qs && as) {
+                        let qty = parseInt(qs.value) || 0;
+                        let val = parseFloat(as.value) || 0;
+                        total += (qty * val);
+                    }
+                });
             }
-          });
-        });
-      });
-    }
 
-    const addBtn = document.getElementById('add-item-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', function () {
-        if (!container) return;
-        const cards = container.querySelectorAll('.item-card');
-        if (cards.length === 0) {
-          alert("ไม่สามารถเพิ่มด้วยปุ่มนี้ได้เนื่องจากไม่มี Template เริ่มต้นให้คัดลอก");
-          return;
-        }
-
-        const firstCard = cards[0];
-        const newCard = firstCard.cloneNode(true);
-
-        // Clear input values
-        newCard.querySelectorAll('input, textarea').forEach(input => {
-          if (input.type !== 'hidden' || input.name.includes('item_id') || input.name.includes('csrf')) {
-            if (input.name.includes('item_id')) {
-              input.value = '';
-            } else if (input.type !== 'hidden') {
-              if (input.name.includes('quantity')) {
-                input.value = '1';
-              } else if (input.name.includes('amount')) {
-                input.value = '0';
-              } else {
-                input.value = '';
-              }
+            if (totalPriceText) {
+                totalPriceText.textContent = '฿' + total.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             }
-          }
-        });
 
-        container.appendChild(newCard);
-        updateItemIndices();
-
-        // Hide empty state if it exists
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) emptyState.style.display = 'none';
-      });
-    }
-
-    if (container) {
-      container.addEventListener('click', function (e) {
-        let btn = e.target.closest('button');
-        if (!btn) return; 0
-
-        const card = btn.closest('.item-card');
-        if (!card) return;
-
-        if (btn.classList.contains('delete-btn')) {
-          if (container.querySelectorAll('.item-card').length > 1) {
-            card.remove();
-            updateItemIndices();
-          } else {
-            alert("ต้องมีอย่างน้อย 1 รายการ");
-          }
+            if (total > maxFund) {
+                if (totalPriceText) totalPriceText.classList.replace('text-gray-800', 'text-red-500');
+                if (submitBtn) submitBtn.disabled = true;
+                if (priceErrorMsg) priceErrorMsg.classList.remove('hidden');
+            } else {
+                if (totalPriceText) totalPriceText.classList.replace('text-red-500', 'text-gray-800');
+                if (submitBtn) submitBtn.disabled = false;
+                if (priceErrorMsg) priceErrorMsg.classList.add('hidden');
+            }
         }
-        else if (btn.classList.contains('clone-btn')) {
-          const newCard = card.cloneNode(true);
 
-          // clean item ID mapping
-          const idInput = newCard.querySelector('input[name$="item_id"]');
-          if (idInput) idInput.value = "";
-
-          card.parentNode.insertBefore(newCard, card.nextSibling);
-          updateItemIndices();
+        if (container) {
+            container.addEventListener('input', function(e) {
+                if (e.target.name && (e.target.name.includes('quantity') || e.target.name.includes('amount'))) {
+                    calculateTotal();
+                }
+            });
+            // Initial calc
+            calculateTotal();
         }
-      });
-    }
 
-    // Budget limitation checking
-    const maxFund = parseFloat("{{ total_fund or 0 }}");
-    const submitBtn = document.getElementById('submit-btn');
-    const priceErrorMsg = document.getElementById('price-error-msg');
-    const totalPriceText = document.getElementById('total-price-text');
-
-    function calculateTotal() {
-      let total = 0;
-      if (container) {
-        const cards = container.querySelectorAll('.item-card');
-        cards.forEach(card => {
-          let qs = card.querySelector('input[name*="quantity"]');
-          let as = card.querySelector('input[name*="amount"]');
-          if (qs && as) {
-            let qty = parseInt(qs.value) || 0;
-            let val = parseFloat(as.value) || 0;
-            total += (qty * val);
-          }
-        });
-      }
-
-      if (totalPriceText) {
-        totalPriceText.textContent = '฿' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-
-      if (total > maxFund) {
-        if (totalPriceText) totalPriceText.classList.replace('text-gray-800', 'text-red-500');
-        if (submitBtn) submitBtn.disabled = true;
-        if (priceErrorMsg) priceErrorMsg.classList.remove('hidden');
-      } else {
-        if (totalPriceText) totalPriceText.classList.replace('text-red-500', 'text-gray-800');
-        if (submitBtn) submitBtn.disabled = false;
-        if (priceErrorMsg) priceErrorMsg.classList.add('hidden');
-      }
-    }
-
-    if (container) {
-      container.addEventListener('input', function (e) {
-        if (e.target.name && (e.target.name.includes('quantity') || e.target.name.includes('amount'))) {
-          calculateTotal();
-        }
-      });
-      // Initial calc
-      calculateTotal();
-    }
-
-  });
-
+    });
 </script>
 {% endblock %}

@@ -135,14 +135,32 @@ def create():
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
 
-    form = forms.procurement.ProcurementForm()
+    form = forms.procurement.ProcurementForm(request.form if request.method == "POST" else request.args)
     form.responsible_by.queryset = members
+    if form.responsible_by.data is None:
+        form.responsible_by.data = []
+
+    if request.method == "POST":
+        asset_codes = request.form.getlist("asset_codes")
+        asset_codes = [c.strip() for c in asset_codes if c.strip()]
+        product_numbers = request.form.getlist("product_numbers")
+        product_numbers = [c.strip() for c in product_numbers if c.strip()]
+    else:
+        asset_codes_str = request.args.get("asset_codes", "")
+        asset_codes = [c.strip() for c in asset_codes_str.split(",") if c.strip()]
+        
+        product_numbers_str = request.args.get("product_numbers", "")
+        if not product_numbers_str:
+            product_numbers_str = request.args.get("product_number", "")
+        product_numbers = [c.strip() for c in product_numbers_str.split(",") if c.strip()]
 
     if not form.validate_on_submit():
         return render_template(
             "/procurement/products/create.html",
             form=form,
             organization=organization,
+            asset_codes=asset_codes,
+            product_numbers=product_numbers,
         )
 
     procurement = models.Procurement()
@@ -150,6 +168,20 @@ def create():
     del form.image
 
     form.populate_obj(procurement)
+    
+    # Save the array of asset codes and set quantity
+    procurement.asset_codes = asset_codes
+    if asset_codes:
+        procurement.asset_code = asset_codes[0]
+    
+    # Save the array of product numbers
+    procurement.product_numbers = product_numbers
+    if product_numbers:
+        procurement.product_number = product_numbers[0]
+
+    # set quantity based on max of asset_codes or product_numbers
+    procurement.quantity = max(len(asset_codes), len(product_numbers), 1)
+
     procurement.created_by = procurement.last_updated_by = (
         current_user._get_current_object()
     )

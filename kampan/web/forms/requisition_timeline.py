@@ -175,58 +175,33 @@ class ItemListForm(FlaskForm):
 
 
 class CompletedForm(FlaskForm):
-    requisition_code = fields.StringField(
-        "เลขที่ มอ.เบิกจ่าย", render_kw={"readonly": True}
-    )
-    paid_date = fields.DateField("วันที่เบิกจ่าย", render_kw={"readonly": True})
-    product_name = fields.StringField("ชื่อรายการ", render_kw={"readonly": True})
-    total_amount = fields.StringField(
-        "เงินทั้งหมดตามเลขที่ มอ เบิกจ่าย", render_kw={"readonly": True}
-    )
-    delivered_date = fields.DateField("วันที่ส่งของ", render_kw={"readonly": True})
+    # Row 1
+    year = fields.StringField("ปีงบประมาณ", render_kw={"readonly": True})
+    mas_code = fields.StringField("รหัสงบประมาณ", render_kw={"readonly": True})
+
+    # Row 2
+    requisition_creator = fields.StringField("ชื่อผู้ขอซื้อ/ขอจ้าง", render_kw={"readonly": True})
+    product_name = fields.StringField("ชื่อโครงการ", render_kw={"readonly": True})
+
+    # Row 3
+    contract_number = fields.StringField("เลขที่สัญญา/ใบสั่งซื้อ", validators=[validators.Optional()])
+    delivery_period = fields.IntegerField("กำหนดส่งมอบ(วัน)", validators=[validators.Optional()])
+    delivery_due_date = fields.DateField("วันที่ครบกำหนดส่งมอบ", validators=[validators.Optional()])
+
+    # Row 4
+    delivered_date = fields.DateField("วันที่ส่งมอบ", render_kw={"readonly": True})
     inspection_date = fields.DateField("วันที่ตรวจรับ", render_kw={"readonly": True})
-    requisition_creator = fields.StringField(
-        "ชื่อผู้เบิกครุภัณฑ์", render_kw={"readonly": True}
-    )
-    money_type = fields.SelectField(
-        "ประเภทเงิน",
-        validators=[validators.DataRequired()],
-        choices=[
-            ("งบประมาณ", "งบประมาณ"),
-            ("รายได้", "รายได้"),
-        ],
-    )
-    seller_name = fields.StringField(
-        "ชื่อผู้ขาย", validators=[validators.DataRequired()]
-    )
-    contract_number = fields.StringField(
-        "เลขที่สัญญา", validators=[validators.DataRequired()]
-    )
-    purchase_method = fields.StringField(
-        "วิธีการจัดซื้อ",
-        validators=[validators.DataRequired()],
-    )
-    start_warranty_date = fields.DateField(
-        "วันที่เริ่มประกัน", validators=[validators.DataRequired()]
-    )
-    end_warranty_date = fields.DateField(
-        "วันที่สิ้นสุดประกัน", validators=[validators.DataRequired()]
-    )
-    warranty_period = fields.IntegerField(
-        "ระยะเวลาประกัน", validators=[validators.DataRequired()]
-    )
-    product_number = fields.StringField(
-        "เลขที่สินค้า", validators=[validators.Optional()]
-    )
-    asset_code = fields.StringField(
-        "รหัสครุภัณฑ์", validators=[validators.DataRequired()]
-    )
-    account_code = fields.StringField(
-        "รหัสบัญชี", validators=[validators.DataRequired()]
-    )
-    usage_location = fields.StringField(
-        "สถานที่ใช้งาน", validators=[validators.DataRequired()]
-    )
+
+    # Row 5
+    requisition_code = fields.StringField("เลขที่ มอ เบิกจ่าย", validators=[validators.Optional()])
+    paid_date = fields.DateField("วันที่เบิกจ่าย", validators=[validators.Optional()])
+    total_amount = fields.StringField("จำนวนเงินที่จ่ายจริง", render_kw={"readonly": True})
+
+    # Row 6
+    receipt_number = fields.StringField("เลขที่ใบแจ้งหนี้/ใบเสร็จ", validators=[validators.Optional()])
+    account_code = fields.StringField("ผังบัญชี", render_kw={"readonly": True})
+
+
 
 
 class RequisitionTimelineItemForm(FlaskForm):

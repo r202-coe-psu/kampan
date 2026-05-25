@@ -34,12 +34,12 @@
             <div class="flex items-center gap-2 flex-wrap">
               <i class="ph ph-file-text text-base md:text-lg"></i>
               <span class="text-white/90 font-medium">เลขที่ใบจ่ายเงิน:</span>
-              <span class="text-white/90 break-all">{{ item.product_number }}</span>
+              <span class="text-white/90 break-all">{{ item.product_numbers | join(', ') if item.product_numbers else item.product_number }}</span>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
               <i class="ph ph-barcode text-base md:text-lg"></i>
               <span class="text-white/90 font-medium">รหัสครุภัณฑ์:</span>
-              <span class="text-white/90 break-all">{{ item.asset_code }}</span>
+              <span class="text-white/90 break-all">{{ item.asset_codes | join(', ') if item.asset_codes else item.asset_code }}</span>
             </div>
           </div>
         </div>

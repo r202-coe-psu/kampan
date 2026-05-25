@@ -50,9 +50,9 @@
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900">{{ item.product_number }}</div>
+                    <div class="text-sm font-semibold text-gray-900">{{ item.product_numbers | join(', ') if item.product_numbers else item.product_number }}</div>
                     <div class="text-xs text-gray-500 flex items-center gap-1">
-                      <i class="ph ph-barcode"></i>{{ item.asset_code }}
+                      <i class="ph ph-barcode"></i>{{ item.asset_codes | join(', ') if item.asset_codes else item.asset_code }}
                     </div>
                   </td>
                   <td class="px-6 py-4">

@@ -1,5 +1,5 @@
 {% import '/base/html-renderer.html' as renderer %}
-{% macro render_item_table(req_item, timeline_items, shared_form, row_forms, readonly, responder_user_choices=[]) %}
+{% macro render_item_table(req_item, timeline_items, shared_form, row_forms, readonly, responder_user_choices=[], requisition_timeline_id=none, organization=none) %}
 {% set item_id = req_item._id | string %}
 <div class="card bg-white shadow-sm border border-gray-200 rounded-2xl mb-6">
   <div class="card-body p-5">
@@ -11,7 +11,7 @@
         {{ req_item.product_name }}
       </h3>
       <span class="badge badge-lg badge-outline badge-primary">
-        {{ req_item.quantity }} {{ req_item.currency | default('ชิ้น') }}
+        {{ timeline_items | length }} ชิ้น
       </span>
     </div>
 
@@ -23,13 +23,13 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {% if shared_form %}
         <div class="form-control w-full">
-          {{ renderer.render_field(shared_form.seller, readonly=readonly) }}
+          {{ renderer.render_field(shared_form.seller, readonly=False) }}
         </div>
         <div class="form-control w-full">
-          {{ renderer.render_field(shared_form.insurance_start_date, type='date', readonly=readonly) }}
+          {{ renderer.render_field(shared_form.insurance_start_date, type='date', readonly=False) }}
         </div>
         <div class="form-control w-full">
-          {{ renderer.render_field(shared_form.insurance_end_date, type='date', readonly=readonly) }}
+          {{ renderer.render_field(shared_form.insurance_end_date, type='date', readonly=False) }}
         </div>
         <div class="form-control w-full">
           {{ renderer.render_field(shared_form.insurance_duration, readonly=True) }}
@@ -104,6 +104,9 @@
                 <th>เลขที่สินค้า (Serial)</th>
                 <th>เลขที่ใบเบิก</th>
                 <th>สถานที่ใช้งาน</th>
+                {% if requisition_timeline_id and organization %}
+                <th class="text-center w-16">การจัดการ</th>
+                {% endif %}
               </tr>
             </thead>
             <tbody>
@@ -113,33 +116,54 @@
                 <td class="text-center text-xs font-semibold text-gray-400">{{ loop.index }}</td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.render_search_select_field(row_form.responder_user, readonly=readonly,
+                  {{ renderer.render_search_select_field(row_form.responder_user, readonly=False,
                   disabled_optional_text=False, placeholder='ค้นหาผู้รับผิดชอบ', hide_label=True) }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.base_render(row_form.serial_number, placeholder='S/N', readonly=readonly, hide_label=True)
+                  {{ renderer.base_render(row_form.serial_number, placeholder='S/N', readonly=False, hide_label=True)
                   }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
                   {{ renderer.base_render(row_form.requisition_item_code, placeholder='เลขที่ใบเบิก.',
-                  readonly=readonly, hide_label=True) }}
+                  readonly=False, hide_label=True) }}
                   {% endif %}
                 </td>
                 <td class="py-2">
                   {% if row_form %}
-                  {{ renderer.base_render(row_form.location, placeholder='ห้อง / อาคาร', readonly=readonly,
+                  {{ renderer.base_render(row_form.location, placeholder='ห้อง / อาคาร', readonly=False,
                   hide_label=True) }}
                   {% endif %}
                 </td>
+                {% if requisition_timeline_id and organization %}
+                <td class="py-2 text-center align-middle">
+                  <button type="submit" 
+                          formaction="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=requisition_timeline_id, organization_id=organization.id, action='delete_item', timeline_item_id=ti.id | string) }}"
+                          class="btn btn-ghost btn-xs text-red-500 hover:text-red-700 p-1"
+                          title="ลบรายการ">
+                    <i class="ph ph-trash text-base"></i>
+                  </button>
+                </td>
+                {% endif %}
               </tr>
               {% endfor %}
             </tbody>
           </table>
     </div>
+
+    {% if requisition_timeline_id and organization %}
+    <div class="flex justify-end mt-4">
+      <button type="submit"
+              formaction="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=requisition_timeline_id, organization_id=organization.id, action='add_item', requisition_item_id=item_id) }}"
+              class="btn btn-sm btn-outline border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 gap-1 rounded-xl">
+        <i class="ph ph-plus-circle"></i>
+        เพิ่มรายการครุภัณฑ์
+      </button>
+    </div>
+    {% endif %}
 
   </div>
 </div>

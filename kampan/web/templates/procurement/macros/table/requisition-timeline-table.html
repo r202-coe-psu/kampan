@@ -1,7 +1,7 @@
 {% import '/base/html-renderer.html' as renderer %}
 
 
-{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label, confirm_id, inspection_form=None) %}
+{% macro _step_nav_form(url, step_key, btn_cls, icon_cls, label, confirm_id, inspection_form=None, delivery_form=None) %}
   <form id="form-{{ confirm_id }}" method="post" action="{{ url }}" class="inline">
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
     <input type="hidden" name="progress" value="{{ step_key }}" />
@@ -25,6 +25,13 @@
           </div>
         {% endif %}
 
+        <!-- เช็คว่า step ต่อไปเป็น inspection ไหม (step ปัจจุบันคือ awaiting_delivery) -->
+        {% if step_key == 'inspection' and delivery_form %}
+          <div class="form-control w-full mb-4">
+            {{ renderer.date_field_js(delivery_form.delivery_date) }}
+          </div>
+        {% endif %}
+
         <div class="modal-action">
           <button type="button" class="btn" onclick="document.getElementById('{{ confirm_id }}').close()">
             ยกเลิก
@@ -39,7 +46,7 @@
   </form>
 {% endmacro %}
 
-{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user, inspection_form=None) %}
+{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user, inspection_form=None, delivery_form=None) %}
   {% set billing_done = item.fund_usage_amounts and item.fund_usage_amounts|length > 0 %}
   {% set action_url = url_for('procurement.requisition_timeline.add_progress',
     requisition_timeline_id=item.id, organization_id=organization.id) %}
@@ -68,28 +75,32 @@
       {% if
         can_go_back %}
         {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step -
-                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id, inspection_form) }}
+                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id, inspection_form, delivery_form) }}
       {% endif
       %}
 
       {% if current_step < PROGRESS_STATUS_ORDER|length %}
         {{ _step_nav_form(action_url,
                 PROGRESS_STATUS_ORDER[current_step], 'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md'
-                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id, inspection_form) }}
+                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id, inspection_form, delivery_form) }}
       {% endif %}
 
     {% endif %}
 
-    {% if
-      item.status=='completed' %}
-
+    {% if item.status == 'completed' %}
+      <button type="button"
+              class="btn btn-sm btn-primary bg-purple-600 hover:bg-purple-700 border-none text-white ml-2 gap-1 shadow-md rounded-lg font-medium"
+              onclick="document.getElementById('ma_modal_{{ item.id }}').showModal();">
+        <i class="ph ph-rocket-launch"></i>
+        ส่งข้อมูลไปสร้างครุภัณฑ์
+      </button>
+    {% else %}
+      <button type="button"
+              class="btn btn-sm btn-error ml-2"
+              onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
+        <i class="ph ph-x-circle"></i> ยกเลิก
+      </button>
     {% endif %}
-
-    <button type="button"
-            class="btn btn-sm btn-error ml-2"
-            onclick="document.getElementById('modal-cancel-{{ item.id }}').showModal();">
-      <i class="ph ph-x-circle"></i> ยกเลิก
-    </button>
   {% endif %}
   {% if item.status == 'cancelled' %}
     <button type="button"
@@ -101,7 +112,7 @@
 {% endmacro %}
 
 {% macro requisition_timeline_table(paginated_requisition_timeline, requisition_timeline_list, current_user,
-  organization, PROGRESS_STATUS_ORDER, reservations_map={}, inspection_form=None) %}
+  organization, PROGRESS_STATUS_ORDER, reservations_map={}, inspection_form=None, delivery_form=None) %}
   {# steps is identical for every item — define once here, shared by desktop, mobile, and any future loop #}
   {% set steps = [
     {
@@ -264,7 +275,7 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                        current_user, inspection_form) }}
+                                        current_user, inspection_form, delivery_form) }}
                   </td>
                 </tr>
                 <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
@@ -324,14 +335,14 @@
                                         </h5>
                                         <div class="flex items-center gap-2">
                                           {% if step.key == 'details_specified' and is_done %}
-                                            <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                            <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                                class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
                                                title="ดูรายละเอียดที่ระบุ">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
                                           {% endif %}
                                           {% if step.key == 'order_confirmed' and is_done %}
-                                            <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                            <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                                class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
                                                title="ดูข้อมูลการยืนยันแหล่งเงิน">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
@@ -437,6 +448,12 @@
                                             <span>วันที่ตรวจรับ: {{ item.inspection_date|format_thai_date }}</span>
                                           </div>
                                         {% endif %}
+                                        {% if step.key == 'awaiting_delivery' and is_done and item.delivery_date %}
+                                          <div class="flex items-center gap-1 font-semibold text-blue-600">
+                                            <i class="ph ph-calendar"></i>
+                                            <span>วันที่ส่งมอบ: {{ item.delivery_date|format_thai_date }}</span>
+                                          </div>
+                                        {% endif %}
                                       </div>
                                     </div>
                                   </div>
@@ -487,7 +504,7 @@
               </div>
               <div class="flex gap-2 flex-wrap items-end justify-end">
                 {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                current_user, inspection_form) }}
+                                current_user, inspection_form, delivery_form) }}
               </div>
             </div>
             {% if item.status == 'cancelled' %}
@@ -558,7 +575,7 @@
                                 {% endif %}
                                 {% if step.key == 'details_specified' and is_done %}
                                   <div class="mt-2 text-left">
-                                    <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                    <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                        class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
                                        title="ดูรายละเอียดที่ระบุ">
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
@@ -567,7 +584,7 @@
                                 {% endif %}
                                 {% if step.key == 'order_confirmed' and is_done %}
                                   <div class="mt-2 text-left">
-                                    <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id, readonly=1) }}"
+                                    <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}"
                                        class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
                                        title="ดูข้อมูลการยืนยันแหล่งเงิน">
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
@@ -637,6 +654,18 @@
                                 {% endif %}
                               </span>
                             </div>
+                            {% if step.key == 'inspection' and is_done and item.inspection_date %}
+                              <div class="flex items-center gap-1 font-semibold text-blue-600">
+                                <i class="ph ph-calendar"></i>
+                                <span>วันที่ตรวจรับ: {{ item.inspection_date|format_thai_date }}</span>
+                              </div>
+                            {% endif %}
+                            {% if step.key == 'awaiting_delivery' and is_done and item.delivery_date %}
+                              <div class="flex items-center gap-1 font-semibold text-blue-600">
+                                <i class="ph ph-calendar"></i>
+                                <span>วันที่ส่งมอบ: {{ item.delivery_date|format_thai_date }}</span>
+                              </div>
+                            {% endif %}
                           </div>
                         </div>
                       {% endfor %}
@@ -812,113 +841,311 @@
             <button>close</button>
           </form>
         </dialog>
-      {% endfor %}
 
-      <!-- Completed modal is injected into document.body via openCompletedModal -->
+        {% if item.status == 'completed' %}
+          <dialog id="ma_modal_{{ item.id }}" class="modal modal-bottom w-full items-center justify-center">
+            <div class="modal-box max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 p-6 text-left">
+              <div class="flex items-center justify-between border-b pb-4 mb-4">
+                <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                  <i class="ph ph-rocket-launch text-purple-500 text-2xl"></i>
+                  ส่งข้อมูลไปสร้างครุภัณฑ์ (REQUISITION TO MA)
+                </h3>
+                <button type="button"
+                        class="btn btn-sm btn-circle btn-ghost"
+                        onclick="document.getElementById('ma_modal_{{ item.id }}').close()">
+                  ✕
+                </button>
+              </div>
 
-    {% endif %}
-    <script>
-        function recalcUsageTotal(itemId) {
-            var inputs = document.querySelectorAll('input[data-usage-item-id="' + itemId + '"]');
-            var total = 0;
-            inputs.forEach(function(input) {
-                var v = parseFloat(input.value);
-                if (!isNaN(v)) {
-                    total += v;
-                }
+              <p class="text-sm text-gray-500 mb-4">
+                เลือกรายการจัดซื้อด้านล่างที่ต้องการส่งข้อมูลไปลงทะเบียนเป็นครุภัณฑ์ (MA) ในระบบ (เฉพาะรายการที่ใส่วันที่เริ่มต้นและสิ้นสุดแล้ว):
+              </p>
+
+              <div class="space-y-6 max-h-[75vh] overflow-y-auto pr-2 mb-4">
+                {% for req_item in item.requisition.items %}
+                  {% set timeline_items = [] %}
+                  {% for ti in item.get_timeline_items() %}
+                    {% if ti.requisition_item_id | string == req_item._id | string %}
+                      {% set _dummy = timeline_items.append(ti) %}
+                    {% endif %}
+                  {% endfor %}
+
+                  {# Get shared seller and insurance dates from first timeline item if exists #}
+                  {% set first_ti = timeline_items[0] if timeline_items else none %}
+                  {% set start_date = first_ti.insurance_start_date if first_ti else "" %}
+                  {% set end_date = first_ti.insurance_end_date if first_ti else "" %}
+                  {% set seller = first_ti.seller if first_ti else "" %}
+                  {% set has_dates = start_date and end_date %}
+
+                  <div class="border rounded-2xl p-4 bg-gray-50 border-gray-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 border-b border-gray-200 pb-2">
+                      <div>
+                        <h4 class="font-bold text-gray-800 flex items-center gap-2">
+                          <i class="ph ph-package text-purple-500"></i>
+                          {{ req_item.product_name }}
+                        </h4>
+                        <p class="text-xs text-gray-500 mt-1">
+                          ผู้ขาย: <span class="font-medium text-gray-700">{{ seller or '-' }}</span> |
+                          ประกัน: <span class="font-medium text-gray-700">
+                          {% if has_dates %}
+                            {{ start_date }} ถึง {{ end_date }}
+                          {% else %}
+                            <span class="text-amber-600 font-semibold">ไม่ได้ระบุวันที่ประกัน</span>
+                          {% endif %}
+                        </span>
+                      </p>
+                    </div>
+                    <div class="mt-2 sm:mt-0">
+                      <button type="button"
+                              onclick="redirectToCreateProduct('{{ item.id }}_{{ req_item._id }}', '{{ req_item.product_name | escape }}', '{{ start_date }}', '{{ end_date }}', '{{ seller | escape }}', '{{ req_item.amount | default(0.0) }}', '{{ (item.completed_progress_detail.contract_number if item.completed_progress_detail else '') | escape }}')"
+                              class="btn btn-sm btn-primary bg-purple-600 hover:bg-purple-700 border-none text-white gap-1 rounded-xl
+                                     {% if not has_dates %}btn-disabled{% endif %}">
+                        <i class="ph ph-rocket-launch"></i>
+                        สร้างครุภัณฑ์ (MA)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                    <table class="table table-sm w-full">
+                      <thead>
+                        <tr class="bg-gray-100 text-gray-600 text-xs font-semibold uppercase tracking-wide">
+                          <th class="w-10 text-center">
+                            <input type="checkbox"
+                                   id="check_all_{{ item.id }}_{{ req_item._id }}"
+                                   class="checkbox checkbox-xs checkbox-primary"
+                                   {% if has_dates %}
+                                     onchange="toggleCheckAll('{{ item.id }}_{{ req_item._id }}')"
+                                   {% else %}
+                                     disabled
+                                   {% endif %} />
+                          </th>
+                          <th class="text-center w-10">ชิ้นที่</th>
+                          <th>เลขที่สินค้า (S/N)</th>
+                          <th>รหัสครุภัณฑ์</th>
+                          <th>สถานที่ใช้งาน</th>
+                          <th class="text-center">สถานะ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for ti in timeline_items %}
+                          {% set ti_has_dates = ti.insurance_start_date and ti.insurance_end_date %}
+                          <tr class="hover:bg-purple-50/50 align-middle">
+                            <td class="text-center">
+                              <input type="checkbox"
+                                     class="checkbox checkbox-xs checkbox-primary asset-checkbox-{{ item.id }}_{{ req_item._id }}"
+                                     value="{{ ti.requisition_item_code }}"
+                                     data-serial="{{ ti.serial_number or '' }}"
+                                     {% if ti_has_dates %}
+                                       checked
+                                     {% else %}
+                                       disabled
+                                     {% endif %}
+                                     onchange="updateHeaderCheckbox('{{ item.id }}_{{ req_item._id }}')" />
+                            </td>
+                            <td class="text-center text-gray-500 font-mono text-xs">#{{ ti.running_number }}</td>
+                            <td class="font-mono text-xs text-gray-700">{{ ti.serial_number or '-' }}</td>
+                            <td class="font-mono text-xs text-gray-700">{{ ti.requisition_item_code or '-' }}</td>
+                            <td class="text-xs text-gray-700">{{ ti.location or '-' }}</td>
+                            <td class="text-center">
+                              {% if ti_has_dates %}
+                                <span class="badge badge-success text-white badge-xs py-2 px-2.5">พร้อมส่ง</span>
+                              {% else %}
+                                <span class="badge badge-warning text-amber-900 badge-xs py-2 px-2.5">ขาดวันประกัน</span>
+                              {% endif %}
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="flex justify-end gap-2 border-t pt-4">
+              <button type="button"
+                      class="btn btn-sm btn-ghost"
+                      onclick="document.getElementById('ma_modal_{{ item.id }}').close()">
+                ปิด
+              </button>
+            </div>
+          </div>
+          <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+          </form>
+        </dialog>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for req_item in item.requisition.items %}
+                updateHeaderCheckbox('{{ item.id }}_{{ req_item._id }}');
+                {% endfor %}
             });
+        </script>
+      {% endif %}
+    {% endfor %}
 
-            var amountInput = document.getElementById('payment-amount-' + itemId);
-            if (amountInput) {
-                amountInput.value = total.toFixed(2);
-            }
+    <!-- Completed modal is injected into document.body via openCompletedModal -->
 
-            var totalText = document.getElementById('usage-total-text-' + itemId);
-            if (totalText) {
-                totalText.textContent = '฿' + total.toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
-            }
-        }
+  {% endif %}
+  <script>
+      function toggleCheckAll(reqItemId) {
+          const checkAll = document.getElementById('check_all_' + reqItemId);
+          const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId);
+          checkboxes.forEach(cb => {
+              if (!cb.disabled) {
+                  cb.checked = checkAll.checked;
+              }
+          });
+      }
 
-        function toggleSubtable(itemId) {
-            var subtable = document.getElementById('subtable-' + itemId);
-            var icon = document.getElementById('toggle-icon-' + itemId);
-            if (subtable.style.display === 'none') {
-                subtable.style.display = '';
-                icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
-            } else {
-                subtable.style.display = 'none';
-                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
-            }
-        }
+      function updateHeaderCheckbox(reqItemId) {
+          const checkAll = document.getElementById('check_all_' + reqItemId);
+          const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId);
+          const activeCheckboxes = Array.from(checkboxes).filter(cb => !cb.disabled);
 
-        function toggleMobileCollapse(collapseId) {
-            var content = document.getElementById(collapseId);
-            var icon = document.getElementById(collapseId + '-icon');
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.classList.remove('ph-caret-down');
-                icon.classList.add('ph-caret-up');
-            } else {
-                content.classList.add('hidden');
-                icon.classList.remove('ph-caret-up');
-                icon.classList.add('ph-caret-down');
-            }
-        }
+          if (activeCheckboxes.length === 0) {
+              if (checkAll) checkAll.checked = false;
+              return;
+          }
 
-        function openCompletedModal(url) {
-            var prev = document.getElementById('completed-modal-dialog');
-            if (prev) prev.parentNode.remove();
-            var tempDlg = document.createElement('dialog');
-            tempDlg.className = 'modal';
-            tempDlg.innerHTML = '<div class="modal-box flex items-center justify-center p-16"><span class="loading loading-spinner loading-lg text-green-500"></span></div>';
-            document.body.appendChild(tempDlg);
-            tempDlg.showModal();
-            fetch(url, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(function(r) {
-                    return r.text();
-                })
-                .then(function(html) {
-                    tempDlg.remove();
-                    var container = document.createElement('div');
-                    container.innerHTML = html;
-                    document.body.appendChild(container);
-                    container.querySelectorAll('script').forEach(function(oldScript) {
-                        var newScript = document.createElement('script');
-                        Array.from(oldScript.attributes).forEach(function(attr) {
-                            newScript.setAttribute(attr.name, attr.value);
-                        });
-                        newScript.textContent = oldScript.textContent;
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
-                    });
-                })
-                .catch(function() {
-                    tempDlg.innerHTML = '<div class="modal-box"><p class="text-error p-4">เกิดข้อผิดพลาด กรุณาลองใหม่</p></div>';
-                });
-        }
+          const allChecked = activeCheckboxes.every(cb => cb.checked);
+          if (checkAll) checkAll.checked = allChecked;
+      }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('[id^="subtable-"]').forEach(function(row) {
-                row.style.display = 'none';
-            });
-            document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
-                icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
-            });
+      function redirectToCreateProduct(reqItemId, reqItemName, startDate, endDate, seller, pricePerPiece, contractNumber) {
+          const checkboxes = document.querySelectorAll('.asset-checkbox-' + reqItemId + ':checked');
+          if (checkboxes.length === 0) {
+              alert('กรุณาเลือกรายการครุภัณฑ์อย่างน้อย 1 รายการเพื่อส่งข้อมูลไปสร้างครุภัณฑ์');
+              return;
+          }
 
-            var usageInputs = document.querySelectorAll('input[data-usage-item-id]');
-            var itemIds = new Set();
-            usageInputs.forEach(function(input) {
-                itemIds.add(input.getAttribute('data-usage-item-id'));
-            });
-            itemIds.forEach(function(itemId) {
-                recalcUsageTotal(itemId);
-            });
-        });
-    </script>
-  {% endmacro %}
+          const codes = Array.from(checkboxes).map(cb => cb.value).filter(val => val.trim() !== "");
+          const serials = Array.from(checkboxes).map(cb => cb.dataset.serial).filter(val => val && val.trim() !== "");
+
+          // Calculate total amount = pricePerPiece * number of selected items
+          const totalAmount = parseFloat(pricePerPiece) * checkboxes.length;
+
+          // Build the URL
+          const baseUrl = "{{ url_for('procurement.products.create', organization_id=organization.id) }}";
+          const params = new URLSearchParams({
+              name: reqItemName,
+              start_date: startDate,
+              end_date: endDate,
+              company: seller,
+              amount: totalAmount,
+              product_number: contractNumber || "-",
+              category: 'product',
+              asset_codes: codes.join(','),
+              product_numbers: serials.join(',')
+          });
+
+          const separator = baseUrl.includes('?') ? '&' : '?';
+          window.open(baseUrl + separator + params.toString(), '_blank');
+      }
+
+      function recalcUsageTotal(itemId) {
+          var inputs = document.querySelectorAll('input[data-usage-item-id="' + itemId + '"]');
+          var total = 0;
+          inputs.forEach(function(input) {
+              var v = parseFloat(input.value);
+              if (!isNaN(v)) {
+                  total += v;
+              }
+          });
+
+          var amountInput = document.getElementById('payment-amount-' + itemId);
+          if (amountInput) {
+              amountInput.value = total.toFixed(2);
+          }
+
+          var totalText = document.getElementById('usage-total-text-' + itemId);
+          if (totalText) {
+              totalText.textContent = '฿' + total.toLocaleString('th-TH', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+              });
+          }
+      }
+
+      function toggleSubtable(itemId) {
+          var subtable = document.getElementById('subtable-' + itemId);
+          var icon = document.getElementById('toggle-icon-' + itemId);
+          if (subtable.style.display === 'none') {
+              subtable.style.display = '';
+              icon.innerHTML = '<i class="ph ph-caret-circle-down"></i>';
+          } else {
+              subtable.style.display = 'none';
+              icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+          }
+      }
+
+      function toggleMobileCollapse(collapseId) {
+          var content = document.getElementById(collapseId);
+          var icon = document.getElementById(collapseId + '-icon');
+          if (content.classList.contains('hidden')) {
+              content.classList.remove('hidden');
+              icon.classList.remove('ph-caret-down');
+              icon.classList.add('ph-caret-up');
+          } else {
+              content.classList.add('hidden');
+              icon.classList.remove('ph-caret-up');
+              icon.classList.add('ph-caret-down');
+          }
+      }
+
+      function openCompletedModal(url) {
+          var prev = document.getElementById('completed-modal-dialog');
+          if (prev) prev.parentNode.remove();
+          var tempDlg = document.createElement('dialog');
+          tempDlg.className = 'modal';
+          tempDlg.innerHTML = '<div class="modal-box flex items-center justify-center p-16"><span class="loading loading-spinner loading-lg text-green-500"></span></div>';
+          document.body.appendChild(tempDlg);
+          tempDlg.showModal();
+          fetch(url, {
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest'
+                  }
+              })
+              .then(function(r) {
+                  return r.text();
+              })
+              .then(function(html) {
+                  tempDlg.remove();
+                  var container = document.createElement('div');
+                  container.innerHTML = html;
+                  document.body.appendChild(container);
+                  container.querySelectorAll('script').forEach(function(oldScript) {
+                      var newScript = document.createElement('script');
+                      Array.from(oldScript.attributes).forEach(function(attr) {
+                          newScript.setAttribute(attr.name, attr.value);
+                      });
+                      newScript.textContent = oldScript.textContent;
+                      oldScript.parentNode.replaceChild(newScript, oldScript);
+                  });
+              })
+              .catch(function() {
+                  tempDlg.innerHTML = '<div class="modal-box"><p class="text-error p-4">เกิดข้อผิดพลาด กรุณาลองใหม่</p></div>';
+              });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('[id^="subtable-"]').forEach(function(row) {
+              row.style.display = 'none';
+          });
+          document.querySelectorAll('[id^="toggle-icon-"]').forEach(function(icon) {
+              icon.innerHTML = '<i class="ph ph-caret-circle-up"></i>';
+          });
+
+          var usageInputs = document.querySelectorAll('input[data-usage-item-id]');
+          var itemIds = new Set();
+          usageInputs.forEach(function(input) {
+              itemIds.add(input.getAttribute('data-usage-item-id'));
+          });
+          itemIds.forEach(function(itemId) {
+              recalcUsageTotal(itemId);
+          });
+      });
+  </script>
+{% endmacro %}

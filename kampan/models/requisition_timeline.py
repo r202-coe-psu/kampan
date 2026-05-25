@@ -29,17 +29,24 @@ class Progress(me.EmbeddedDocument):
 
 
 class CompletedProgressDetail(me.EmbeddedDocument):
-    seller_name = me.StringField(required=True, max_length=200)
-    money_type = me.StringField(required=True, max_length=50)
-    contract_number = me.StringField(required=True, max_length=200)
-    purchase_method = me.StringField(required=True, max_length=20)
-    start_warranty_date = me.DateField(required=True)
-    end_warranty_date = me.DateField(required=True)
-    warranty_period = me.IntField(required=True, max_length=20)
-    product_number = me.StringField(required=True, max_length=200)
-    asset_code = me.StringField(required=True, max_length=200)
-    usage_location = me.StringField(required=True, max_length=200)
-    account_code = me.StringField(required=True, max_length=200)
+    seller_name = me.StringField(required=False, max_length=200)
+    money_type = me.StringField(required=False, max_length=50)
+    contract_number = me.StringField(required=False, max_length=200)
+    purchase_method = me.StringField(required=False, max_length=20)
+    start_warranty_date = me.DateField(required=False)
+    end_warranty_date = me.DateField(required=False)
+    warranty_period = me.IntField(required=False, max_length=20)
+    product_number = me.StringField(required=False, max_length=200)
+    asset_code = me.StringField(required=False, max_length=200)
+    usage_location = me.StringField(required=False, max_length=200)
+    account_code = me.StringField(required=False, max_length=200)
+    requisition_creator = me.StringField(required=False, max_length=200)
+    receipt_number = me.StringField(required=False, max_length=200)
+    invoice_number = me.StringField(required=False, max_length=200)
+    delivery_period = me.IntField(required=False)
+    delivery_due_date = me.DateField(required=False)
+
+
 
 
 class FundAllocationSource(me.EmbeddedDocument):
@@ -63,6 +70,7 @@ class RequisitionTimeline(me.Document):
     purchaser = me.ReferenceField("OrganizationUserRole", dbref=True)
     progress = me.EmbeddedDocumentListField(Progress)
     inspection_date = me.DateTimeField()
+    delivery_date = me.DateTimeField()
     note = me.StringField()
     quotation_winner = me.StringField()
     purchase_method = me.StringField(max_length=50)
@@ -79,6 +87,9 @@ class RequisitionTimeline(me.Document):
 
     def find_progress(self, progress_status):
         return self.progress.filter(progress_status=progress_status).first()
+
+    def get_timeline_items(self):
+        return RequisitionTimelineItem.objects(requisition_timeline=self).order_by("created_date")
 
 
 class RequisitionTimelineLogs(me.Document):

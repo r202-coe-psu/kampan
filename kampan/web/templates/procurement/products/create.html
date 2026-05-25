@@ -27,20 +27,194 @@
             </h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div>
-                    {{ renderer.base_render(form.product_number) }}
-                </div>
-                <div>
                     {{ renderer.base_render(form.name) }}
                 </div>
                 <div>
                     {{ renderer.render_select_field(form.category) }}
                 </div>
-                <div class="lg:col-span-2">
-                    {{ renderer.base_render(form.asset_code) }}
-                </div>
                 <div>
                     {{ renderer.base_render(form.company) }}
                 </div>
+
+                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- product_numbers section -->
+                    <div class="form-control w-full">
+                        <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
+                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">เลขที่สินค้า/เลขที่เอกสาร (S/N) (ระบุได้หลายรายการ)</span>
+                            <span id="product_number_count_badge" class="badge badge-secondary badge-md font-bold text-white">จำนวน 1 รายการ</span>
+                        </label>
+                        
+                        <!-- Hidden field to satisfy WTForms/MongoEngine product_number validation -->
+                        <input type="hidden" id="{{ form.product_number.id }}" name="{{ form.product_number.name }}" value="">
+
+                        <div id="product_numbers_container" class="space-y-2">
+                            <!-- Dynamic inputs will be inserted here -->
+                        </div>
+
+                        <div class="mt-2 flex justify-start">
+                            <button type="button" onclick="addProductNumberInput()" class="btn btn-xs btn-outline btn-secondary gap-1 rounded-lg">
+                                <i class="ph ph-plus-circle"></i>
+                                เพิ่มเลขที่สินค้า (S/N)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- asset_codes section -->
+                    <div class="form-control w-full">
+                        <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
+                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">รหัสครุภัณฑ์ (ระบุได้หลายรายการ)</span>
+                            <span id="asset_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
+                        </label>
+                        
+                        <!-- Hidden field to satisfy WTForms/MongoEngine asset_code validation -->
+                        <input type="hidden" id="{{ form.asset_code.id }}" name="{{ form.asset_code.name }}" value="">
+
+                        <div id="asset_codes_container" class="space-y-2">
+                            <!-- Dynamic inputs will be inserted here -->
+                        </div>
+
+                        <div class="mt-2 flex justify-start">
+                            <button type="button" onclick="addAssetCodeInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
+                                <i class="ph ph-plus-circle"></i>
+                                เพิ่มรหัสครุภัณฑ์
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        // Pre-populate asset codes list
+                        const initialCodes = [
+                            {% if asset_codes %}
+                                {% for code in asset_codes %}
+                                    "{{ code | safe }}",
+                                {% endfor %}
+                            {% endif %}
+                        ];
+
+                        if (initialCodes.length === 0) {
+                            addAssetCodeInput("");
+                        } else {
+                            initialCodes.forEach(code => addAssetCodeInput(code));
+                        }
+
+                        // Pre-populate product numbers list
+                        const initialProductNumbers = [
+                            {% if product_numbers %}
+                                {% for num in product_numbers %}
+                                    "{{ num | safe }}",
+                                {% endfor %}
+                            {% endif %}
+                        ];
+
+                        if (initialProductNumbers.length === 0) {
+                            addProductNumberInput("");
+                        } else {
+                            initialProductNumbers.forEach(num => addProductNumberInput(num));
+                        }
+                    });
+
+                    let assetCodeIndex = 0;
+                    function addAssetCodeInput(value = "") {
+                        const container = document.getElementById('asset_codes_container');
+                        const index = assetCodeIndex++;
+
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center gap-2 transition-all duration-300';
+                        row.id = `asset_code_row_${index}`;
+
+                        row.innerHTML = `
+                            <input type="text" name="asset_codes" value="${value}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
+                                class="input input-bordered w-full asset-code-input text-sm" oninput="updateAssetCodeState()">
+                            <button type="button" onclick="removeAssetCodeInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        `;
+
+                        container.appendChild(row);
+                        updateAssetCodeState();
+                    }
+
+                    function removeAssetCodeInput(index) {
+                        const container = document.getElementById('asset_codes_container');
+                        if (container.children.length <= 1) {
+                            alert('ต้องมีรหัสครุภัณฑ์อย่างน้อย 1 รายการ');
+                            return;
+                        }
+                        const row = document.getElementById(`asset_code_row_${index}`);
+                        if (row) {
+                            row.remove();
+                        }
+                        updateAssetCodeState();
+                    }
+
+                    function updateAssetCodeState() {
+                        const inputs = document.querySelectorAll('.asset-code-input');
+                        const hiddenInput = document.getElementById('{{ form.asset_code.id }}');
+                        
+                        if (inputs.length > 0) {
+                            hiddenInput.value = inputs[0].value;
+                        } else {
+                            hiddenInput.value = "";
+                        }
+
+                        const badge = document.getElementById('asset_count_badge');
+                        if (badge) {
+                            badge.innerText = `จำนวน ${inputs.length} รายการ`;
+                        }
+                    }
+
+                    let productNumberIndex = 0;
+                    function addProductNumberInput(value = "") {
+                        const container = document.getElementById('product_numbers_container');
+                        const index = productNumberIndex++;
+
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center gap-2 transition-all duration-300';
+                        row.id = `product_number_row_${index}`;
+
+                        row.innerHTML = `
+                            <input type="text" name="product_numbers" value="${value}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
+                                class="input input-bordered w-full product-number-input text-sm" oninput="updateProductNumberState()">
+                            <button type="button" onclick="removeProductNumberInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        `;
+
+                        container.appendChild(row);
+                        updateProductNumberState();
+                    }
+
+                    function removeProductNumberInput(index) {
+                        const container = document.getElementById('product_numbers_container');
+                        if (container.children.length <= 1) {
+                            alert('ต้องมีเลขที่สินค้า/เลขที่เอกสารอย่างน้อย 1 รายการ');
+                            return;
+                        }
+                        const row = document.getElementById(`product_number_row_${index}`);
+                        if (row) {
+                            row.remove();
+                        }
+                        updateProductNumberState();
+                    }
+
+                    function updateProductNumberState() {
+                        const inputs = document.querySelectorAll('.product-number-input');
+                        const hiddenInput = document.getElementById('{{ form.product_number.id }}');
+                        
+                        if (inputs.length > 0) {
+                            hiddenInput.value = inputs[0].value;
+                        } else {
+                            hiddenInput.value = "";
+                        }
+
+                        const badge = document.getElementById('product_number_count_badge');
+                        if (badge) {
+                            badge.innerText = `จำนวน ${inputs.length} รายการ`;
+                        }
+                    }
+                </script>
             </div>
         </div>
 
@@ -77,8 +251,7 @@
             <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
                 {% for user in form.responsible_by.queryset %}
                 <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
-                    <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if user.id|string in
-                        form.responsible_by.data or user in form.responsible_by.data %}checked{% endif %}>
+                    <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if form.responsible_by.data and (user.id|string in form.responsible_by.data or user in form.responsible_by.data) %}checked{% endif %}>
                     <span>
                         {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
                     </span>

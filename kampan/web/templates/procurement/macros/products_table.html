@@ -25,8 +25,22 @@
           <span class="badge badge-warning badge-lg ml-2">ใกล้ครบกำหนด</span>
           {% endif %}
         </h3>
-        <p class="text-white/80 text-xl mt-1">เลขที่เบิกจ่าย: {{ item.product_number }}</p>
-        <p class="text-white/80 text-xl mt-1">รหัสครุภัณฑ์: {{ item.asset_code }}</p>
+        <p class="text-white/80 text-xl mt-1">
+          เลขที่สินค้า/เลขที่เอกสาร (S/N): 
+          {% if item.product_numbers %}
+            {{ item.product_numbers | join(', ') }}
+          {% else %}
+            {{ item.product_number }}
+          {% endif %}
+        </p>
+        <p class="text-white/80 text-xl mt-1">
+          รหัสครุภัณฑ์: 
+          {% if item.asset_codes %}
+            {{ item.asset_codes | join(', ') }}
+          {% else %}
+            {{ item.asset_code }}
+          {% endif %}
+        </p>
       </div>
       <form method="dialog" class="mt-2 md:mt-0">
         <button
