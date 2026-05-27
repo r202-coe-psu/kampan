@@ -37,7 +37,36 @@
         <tr>
           <td class="table-style"> {{ loop.index }}</td>
           <td class="table-style" data-label="Created Date">
-            {{ car_application.get_departure_datetime() }}
+            <div class="flex flex-col gap-1 text-sm min-w-[140px]">
+              <div>
+                <span class="text-base-content/50">วันไป:</span>
+                <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%d/%m/%Y') }}</span>
+              </div>
+              <div>
+                <span class="text-base-content/50">เวลาไป:</span>
+                <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</span>
+              </div>
+              <div>
+                <span class="text-base-content/50">วันถึง:</span>
+                <span class="font-semibold text-base-content">
+                  {% if car_application.travel_type == 'round trip' %}
+                    {{ car_application.return_datetime.strftime('%d/%m/%Y') }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="text-base-content/50">เวลาถึง:</span>
+                <span class="font-semibold text-base-content">
+                  {% if car_application.travel_type == 'round trip' %}
+                    {{ car_application.return_datetime.strftime('%H:%M') }} น.
+                  {% else %}
+                    -
+                  {% endif %}
+                </span>
+              </div>
+            </div>
           </td>
           <td class="table-style"> {{ car_application.car.license_plate }}</td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
