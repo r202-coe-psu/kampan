@@ -95,3 +95,25 @@ All user interfaces in the application must follow clean, responsive styling gui
   * Utilize DaisyUI semantic themes and color classes (`btn-primary`, `text-base-content`, `bg-base-200`) instead of hardcoding raw color hexes or ad-hoc style tags.
   * Ensure the design is fully responsive using Tailwind's layout modifiers (`sm:`, `md:`, `lg:`).
 
+---
+
+## 🤖 9. AI Multi-Agent Workflows & Roles
+To scale development and maintain system integrity, Kampan uses specialized AI subagents designed to work concurrently:
+
+1. **`frontend_agent` (Frontend & Style Specialist)**
+   * **Task**: Audit and update JavaScript, HTML templates, CSS, and styling components.
+   * **Guidelines**: Ensures strict compliance with Tailwind CSS and DaisyUI styling guidelines (responsive designs, theme classes).
+2. **`backend_agent` (Backend & Route Specialist)**
+   * **Task**: Manage MongoEngine models, Flask blueprints, WTForms schemas, and backend logic pipelines.
+   * **Guidelines**: Ensures implementation details align with frontend components and follow codebase architecture patterns.
+3. **`security_agent` (Security Auditor)**
+   * **Task**: Perform security audits on forms, views, and models.
+   * **Guidelines**: Identifies security concerns such as multi-tenancy access leaks, missing CSRF validations, and parameter sanitization issues.
+4. **`test_agent` (Verification & Regression Specialist)**
+   * **Task**: Draft, maintain, and execute unit/integration test scripts and verification files.
+   * **Guidelines**: Confirms system stability, verifying that changes do not break existing components or templates.
+
+### Asynchronous Operations
+All agents can be spawned and run concurrently. When allocating complex tasks, decouple tasks across individual agents (e.g., delegating template updates to `frontend_agent` and logic updates to `backend_agent` simultaneously) to expedite execution and validation.
+
+

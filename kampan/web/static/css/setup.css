@@ -75,3 +75,11 @@ fieldset {
 .input-readonly {
   @apply !bg-base-300 border-base-300;
 }
+
+.btn-download-mas {
+  @apply btn-outline btn-success;
+}
+
+.btn-download-procurement {
+  @apply btn-outline btn-primary;
+}
