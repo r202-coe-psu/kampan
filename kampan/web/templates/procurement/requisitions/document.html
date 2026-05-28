@@ -31,7 +31,7 @@
 
         body {
             font-family: 'THSarabunNew', 'Sarabun', sans-serif;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 400;
             width: 210mm;
             height: 297mm;
@@ -153,7 +153,7 @@
                     margin-top: 2rem">
           <p style="margin: 2;">
             เลขที่ ........................
-            <span style="position: absolute; left: 40rem; top: 2rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
+            <span style="position: absolute; left: 44rem; top: 2rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
           </p>
           <p style="margin: 2;">วันที่รับ .............................</p>
         </div>
@@ -184,7 +184,7 @@
         <span>ข้าพเจ้า</span>
         <span style="position: relative;">
           นาย/นาง/นางสาว ................................................
-          <span style="position: absolute; left: 10rem; top: -0.3rem; white-space: nowrap">
+          <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
             {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
                         requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
             {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
@@ -199,7 +199,7 @@
         </span>
         <span style="position: relative;">
           โทร .........................
-          <span style="position: absolute; top: -0.3rem; left: 3rem; white-space: nowrap">{{ requisitions.phone if requisitions.phone else '' }}</span>
+          <span style="position: absolute; top: -0.3rem; left: 2rem; white-space: nowrap">{{ requisitions.phone if requisitions.phone else '' }}</span>
         </span>
       </div>
       <div>
