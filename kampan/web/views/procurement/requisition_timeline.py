@@ -351,7 +351,7 @@ def cancel(requisition_timeline_id):
 
 
 @module.route("/<requisition_timeline_id>/billing_modal", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
 def billing_modal(requisition_timeline_id):
     def _to_object_id(value):
         if value is None:
@@ -417,6 +417,19 @@ def billing_modal(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id, organization=organization
     )
+
+    is_admin = current_user.has_organization_roles("admin")
+    is_manager = current_user.has_organization_roles("manager")
+    is_owner = (
+        requisition_timeline.requisition.purchaser
+        and requisition_timeline.requisition.purchaser.user
+        and requisition_timeline.requisition.purchaser.user.id == current_user.id
+    )
+
+    if not (is_admin or is_manager or is_owner):
+        from flask import abort
+        abort(403)
+
     reservations = list(
         models.Reservation.objects(requisition=requisition_timeline.requisition)
     )
@@ -488,7 +501,7 @@ def billing_modal(requisition_timeline_id):
 
     target_idx = PROGRESS_STATUS_ORDER.index("order_confirmed")
     last_idx = PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status) if requisition_timeline.progress else -1
-    is_readonly = last_idx != target_idx
+    is_readonly = (last_idx != target_idx) or (not is_admin)
 
     def _render_page(errors=None):
         item_source_map = {}
@@ -729,7 +742,7 @@ def billing_modal(requisition_timeline_id):
     )
 
 @module.route("/<requisition_timeline_id>/completed_submit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
 def completed_submit(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -739,6 +752,18 @@ def completed_submit(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id, organization=organization
     )
+
+    is_admin = current_user.has_organization_roles("admin")
+    is_manager = current_user.has_organization_roles("manager")
+    is_owner = (
+        requisition_timeline.requisition.purchaser
+        and requisition_timeline.requisition.purchaser.user
+        and requisition_timeline.requisition.purchaser.user.id == current_user.id
+    )
+
+    if not (is_admin or is_manager or is_owner):
+        from flask import abort
+        abort(403)
 
     responder_user_choices = []
     seen_user_ids = set()
@@ -753,7 +778,7 @@ def completed_submit(requisition_timeline_id):
         responder_user_choices.append((user_id, member.display_user_fullname()))
 
     form = forms.requisition_timeline.CompletedForm()
-    is_view_only = requisition_timeline.status == "completed"
+    is_view_only = (requisition_timeline.status == "completed") or (not is_admin)
     items_by_type = generate_requisition_items(requisition_timeline)
 
     def _parse_date(value):
@@ -868,7 +893,7 @@ def completed_submit(requisition_timeline_id):
             row_forms_by_type=row_forms_by_type,
         )
 
-    if request.method == "POST":
+    if request.method == "POST" and not is_view_only:
         for item_id, timeline_items in items_by_type.items():
             shared_form = shared_forms_by_type[item_id]
             insurance_start = request.form.get(
@@ -1080,8 +1105,7 @@ def completed_submit(requisition_timeline_id):
 
 
 @module.route("/<requisition_timeline_id>/details_specified", methods=["GET", "POST"])
-
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
 def details_specified(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -1090,12 +1114,25 @@ def details_specified(requisition_timeline_id):
     requisition_timeline = models.RequisitionTimeline.objects.get(
         id=requisition_timeline_id
     )
+
+    is_admin = current_user.has_organization_roles("admin")
+    is_manager = current_user.has_organization_roles("manager")
+    is_owner = (
+        requisition_timeline.requisition.purchaser
+        and requisition_timeline.requisition.purchaser.user
+        and requisition_timeline.requisition.purchaser.user.id == current_user.id
+    )
+
+    if not (is_admin or is_manager or is_owner):
+        from flask import abort
+        abort(403)
+
     requisition = requisition_timeline.requisition
 
     form = forms.requisition_timeline.DetailsSpecifiedForm()
     target_idx = PROGRESS_STATUS_ORDER.index("order_confirmed")
     last_idx = PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status) if requisition_timeline.progress else -1
-    is_readonly = last_idx >= target_idx
+    is_readonly = last_idx >= target_idx or (not is_admin)
 
     if request.method == "GET":
         form.project_name.data = requisition.project_name or ""
