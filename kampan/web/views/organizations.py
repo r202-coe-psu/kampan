@@ -194,6 +194,15 @@ def edit_roles(organization_id, org_user_id):
     org_user = models.OrganizationUserRole.objects(
         id=org_user_id, status="active"
     ).first()
+
+    if org_user and org_user.user:
+        if not org_user.first_name:
+            org_user.first_name = org_user.user.first_name
+        if not org_user.last_name:
+            org_user.last_name = org_user.user.last_name
+        if not org_user.email:
+            org_user.email = org_user.user.email
+
     form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
 
     if not form.validate_on_submit():

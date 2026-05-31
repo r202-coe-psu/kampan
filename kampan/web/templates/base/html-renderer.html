@@ -469,20 +469,10 @@ file_input -->
     {% set list_of_tuples = field.choices %}
     {% set list_of_lists = list_of_tuples | map('list') | list %}
     <script type="application/json" id="{{ id_prefix }}options" data-field-name="{{ field.name }}">
-        {
-            {
-                list_of_lists | tojson
-            }
-        }
+        {{ list_of_lists | tojson }}
     </script>
     <script type="application/json" id="{{ id_prefix }}selectedData">
-        {
-            {
-                field.data | tojson
-                if field.data
-                else '[]'
-            }
-        }
+        {{ field.data | tojson if field.data else '[]' }}
     </script>
     <fieldset class="fieldset" id="field-{{ field.id }}">
       <legend class="fieldset-legend">
