@@ -1,4 +1,5 @@
 {% import '/procurement/macros/items_sub_table.html' as items_table %}
+{% import '/base/html-renderer.html' as renderer %}
 {% macro render_renewal_requested_items_table(renewal_requested_items, current_user, mas_list, organization, manager_action) %}
   <div class="mt-6">
     <div class="mb-6 flex justify-center">
@@ -130,7 +131,7 @@
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% set document_url = url_for('procurement.requisitions.document', requisition_procurement_id=item.id) %}
                     <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
-                            onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime('%Y-%m-%d') if item.created_date else '' }}')">
+                            onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime("%Y-%m-%d") if item.created_date else '' }}')">
                       <i class="ph ph-file-arrow-down"></i>
                     </button>
                     <!-- Date picker modal (per row) -->
@@ -356,10 +357,6 @@
                                     {# Determine purchaser's division for filtering #}
                                     {% set purchaser_division_id = (item.purchaser.division.id | string) if item.purchaser and item.purchaser.division else '' %}
                                     <div class="form-control flex flex-col gap-2">
-                                      <label class="label">
-                                        <span class="label-text font-semibold">เลือกผู้บริหาร (manager Supplier)</span>
-                                      </label>
-
                                       {# Acting checkbox #}
                                       <label class="flex items-center gap-2 cursor-pointer w-fit mb-1">
                                         <input type="checkbox"
@@ -373,37 +370,36 @@
                                       {# Hidden Acting field — updated by JS #}
                                       <input type="hidden" name="Acting" id="acting-{{ item.id }}" value="False" />
 
-                                      <select name="manager" id="manager-{{ item.id }}" class="select select-bordered w-full" required>
-                                        <option value="" disabled selected>-- เลือกผู้บริหาร --</option>
-                                        {% for user in organization.get_organization_users() %}
-                                          {% if 'manager' in user.roles %}
-                                            {% set mgr_division_id = (user.division.id | string) if user.division else '' %}
-                                            {% set is_same = (mgr_division_id == purchaser_division_id and mgr_division_id != '' and purchaser_division_id != '') %}
-                                            <option value="{{ user.id }}"
-                                                    data-same="{{ 'true' if is_same else 'false' }}">
-                                              {{ user.display_fullname() }}
-                                            </option>
-                                          {% endif %}
-                                        {% endfor %}
-                                      </select>
+                                      {% set manager_choices = [] %}
+                                      {% for user in organization.get_organization_users() %}
+                                        {% if 'manager' in user.roles %}
+                                          {% set mgr_division_id = (user.division.id | string) if user.division else '' %}
+                                          {% set is_same = (mgr_division_id == purchaser_division_id and mgr_division_id != '' and purchaser_division_id != '') %}
+                                          {% set _ = manager_choices.append((user.id | string, user.display_fullname(), is_same)) %}
+                                        {% endif %}
+                                      {% endfor %}
+
+                                      {{ renderer.render_search_select_name(name="manager",
+                                                                            choices=manager_choices,
+                                                                            label="เลือกผู้บริหาร (manager Supplier)",
+                                                                            placeholder="-- เลือกผู้บริหาร --",
+                                                                            field_id="manager-" ~ item.id,
+                                                                            required=True) }}
                                     </div>
-                                    <div class="form-control flex flex-col gap-2 mt-2">
-                                      <label class="label">
-                                        <span class="label-text font-semibold">เลือกแหล่งเงิน (Fund Source)</span>
-                                      </label>
-                                      <select name="fund_source" class="select select-bordered w-full" required>
-                                        <option value="" disabled selected>-- เลือกแหล่งเงิน --</option>
-                                        {% set fund_choices = [
-                                            ("budget", "เงินงบประมาณ"),
-                                            ("income_institute", "เงินรายได้สานักฯ"),
-                                            ("income_central_university", "เงินรายได้ส่วนกลางมหาวิทยาลัย"),
-                                            ("income_sno", "เงินรายได้ สนอ."),
-                                            ("income_central_smartu", "เงินรายได้ส่วนกลาง (Smart U)")
-                                        ] %}
-                                        {% for value, label in fund_choices %}
-                                          <option value="{{ value }}">{{ label }}</option>
-                                        {% endfor %}
-                                      </select>
+                                    <div class="mt-2">
+                                      {{ renderer.render_search_select_name(name="fund_source",
+                                                                            choices=[
+                                                                            ("budget", "เงินงบประมาณ") ,
+                                      ("income_institute", "เงินรายได้สานักฯ"),
+                                      ("income_central_university", "เงินรายได้ส่วนกลางมหาวิทยาลัย"),
+                                      ("income_sno", "เงินรายได้ สนอ."),
+                                      ("income_central_smartu", "เงินรายได้ส่วนกลาง (Smart U)")
+                                      ],
+                                      label="เลือกแหล่งเงิน (Fund Source)",
+                                      placeholder="-- เลือกแหล่งเงิน --",
+                                      field_id="fund_source-" ~ item.id,
+                                      required=True
+                                      ) }}
                                     </div>
                                   {% else %}
                                     <div class="alert alert-warning">
@@ -466,7 +462,7 @@
                                                    step="0.01"
                                                    min="0"
                                                    placeholder="0.00"
-                                                   class="input input-bordered input-sm w-36 text-right fund-amount-{{ item.id }}"
+                                                   class="input input-bordered input-sm w-36 text-right fund-amount-{{ item.id }} border-gray-400 disabled:border-gray-400 disabled:bg-gray-500  placeholder-gray-400 text-gray-900"
                                                    name="fund_amounts[{{ mas.id }}]"
                                                    data-item-id="{{ item.id }}"
                                                    data-mas-id="{{ mas.id }}"
@@ -542,41 +538,43 @@
                                 class="modal-box w-full max-w-3xl text-start">
                             <h3 class="font-bold text-xl text-green-700 ">ยืนยันการอนุมัติรายการขอซื้อ/ขอจ้าง</h3>
                             <p class="py-4">ต้องการอนุมัติรายการขอซื้อ/ขอจ้างเลขที่  {{ item.requisition_code }} หรือไม่</p>
-                            
+
                             {% if item.fund %}
-                            <div class="mb-6">
-                              <h4 class="font-semibold text-lg mb-2">รายละเอียดแหล่งเงิน (MAS) ที่ได้รับการจัดสรร</h4>
-                              {% if item.fund_source %}
-                                {% set fund_map = {
+                              <div class="mb-6">
+                                <h4 class="font-semibold text-lg mb-2">รายละเอียดแหล่งเงิน (MAS) ที่ได้รับการจัดสรร</h4>
+                                {% if item.fund_source %}
+                                  {% set fund_map = {
                                     "budget": "เงินงบประมาณ",
                                     "income_institute": "เงินรายได้สานักฯ",
                                     "income_central_university": "เงินรายได้ส่วนกลางมหาวิทยาลัย",
                                     "income_sno": "เงินรายได้ สนอ.",
                                     "income_central_smartu": "เงินรายได้ส่วนกลาง (Smart U)"
-                                } %}
-                                <p class="text-gray-700 mb-3"><span class="font-semibold text-gray-900">แหล่งเงิน:</span> {{ fund_map.get(item.fund_source, item.fund_source) }}</p>
-                              {% endif %}
-                              <div class="overflow-x-auto">
-                                <table class="table w-full border border-base-200">
-                                  <thead class="bg-base-200">
-                                    <tr>
-                                      <th>รหัส MAS</th>
-                                      <th>ชื่อโครงการ</th>
-                                      <th class="text-right">จำนวนเงินที่จอง (บาท)</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {% for fund in item.fund %}
-                                    <tr>
-                                      <td class="font-mono">{{ fund.mas.mas_code if fund.mas else '-' }}</td>
-                                      <td>{{ fund.mas.description if fund.mas else '-' }}</td>
-                                      <td class="text-right font-medium text-blue-600">{{ fund.amount | format_amount }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                  </tbody>
-                                </table>
+                                  } %}
+                                  <p class="text-gray-700 mb-3">
+                                    <span class="font-semibold text-gray-900">แหล่งเงิน:</span> {{ fund_map.get(item.fund_source, item.fund_source) }}
+                                  </p>
+                                {% endif %}
+                                <div class="overflow-x-auto">
+                                  <table class="table w-full border border-base-200">
+                                    <thead class="bg-base-200">
+                                      <tr>
+                                        <th>รหัส MAS</th>
+                                        <th>ชื่อโครงการ</th>
+                                        <th class="text-right">จำนวนเงินที่จอง (บาท)</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {% for fund in item.fund %}
+                                        <tr>
+                                          <td class="font-mono">{{ fund.mas.mas_code if fund.mas else '-' }}</td>
+                                          <td>{{ fund.mas.description if fund.mas else '-' }}</td>
+                                          <td class="text-right font-medium text-blue-600">{{ fund.amount | format_amount }}</td>
+                                        </tr>
+                                      {% endfor %}
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
-                            </div>
                             {% endif %}
 
                             <input type="hidden" name="approver_role" value="manager" />
@@ -824,22 +822,55 @@
                 if (actingInput) actingInput.value = isActing ? 'True' : 'False';
 
                 var select = document.getElementById('manager-' + itemId);
-                if (!select) return;
-                select.value = '';
-                Array.from(select.options).forEach(function(opt) {
-                    if (!opt.value) return;
-                    var isSame = opt.getAttribute('data-same') === 'true';
-                    var show;
-                    if (!purchaserDivision) {
-                        show = true;
-                    } else if (isActing) {
-                        show = !isSame;
-                    } else {
-                        show = isSame;
-                    }
-                    opt.hidden = !show;
-                    opt.disabled = !show;
-                });
+                if (select && select.options) {
+                    select.value = '';
+                    Array.from(select.options).forEach(function(opt) {
+                        if (!opt.value) return;
+                        var isSame = opt.getAttribute('data-same') === 'true';
+                        var show;
+                        if (!purchaserDivision) {
+                            show = true;
+                        } else if (isActing) {
+                            show = !isSame;
+                        } else {
+                            show = isSame;
+                        }
+                        opt.hidden = !show;
+                        opt.disabled = !show;
+                    });
+                }
+
+                // Reset searchable select inputs
+                var hiddenInput = document.getElementById('manager-' + itemId);
+                var visibleInput = document.getElementById('manager-' + itemId + '-input');
+                if (hiddenInput && !hiddenInput.options) {
+                    hiddenInput.value = '';
+                    if (visibleInput) visibleInput.value = '';
+                }
+
+                // Filter searchable select dropdown items
+                var dropdown = document.getElementById('manager-' + itemId + '-dropdown');
+                if (dropdown) {
+                    var items = dropdown.getElementsByTagName('li');
+                    Array.from(items).forEach(function(li) {
+                        var p = li.querySelector('p');
+                        if (!p) return;
+                        var isSame = p.getAttribute('data-same') === 'true';
+                        var show;
+                        if (!purchaserDivision) {
+                            show = true;
+                        } else if (isActing) {
+                            show = !isSame;
+                        } else {
+                            show = isSame;
+                        }
+                        if (show) {
+                            li.style.display = '';
+                        } else {
+                            li.style.display = 'none';
+                        }
+                    });
+                }
             }
 
             document.querySelectorAll('input.manager-acting-checkbox').forEach(function(cb) {

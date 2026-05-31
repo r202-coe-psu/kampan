@@ -518,9 +518,16 @@ file_input -->
     readonly=False, required=False, hide_label=False, disabled=False) %}
     {% set input_id = field_id if field_id else name %}
     {% set selected_label = namespace(value='') %}
-    {% for value, text in choices %}
-      {% if (value | string) == (selected_value | string) %}
-        {% set selected_label.value = text %}
+    {% for choice in choices %}
+      {% if choice is iterable and choice | length >= 2 %}
+        {% set val = choice[0] %}
+        {% set txt = choice[1] %}
+      {% else %}
+        {% set val = choice %}
+        {% set txt = choice %}
+      {% endif %}
+      {% if (val | string) == (selected_value | string) %}
+        {% set selected_label.value = txt %}
       {% endif %}
     {% endfor %}
     {% if not placeholder %}
@@ -548,12 +555,26 @@ file_input -->
           <ul id="{{ input_id }}-dropdown" tabindex="0"
             class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
             readonly or disabled %}hidden{% endif %}>
-            {% for value, text in choices %}
+            {% for choice in choices %}
+              {% if choice is iterable and choice | length >= 3 %}
+                {% set val = choice[0] %}
+                {% set txt = choice[1] %}
+                {% set extra = choice[2] %}
+              {% elif choice is iterable and choice | length >= 2 %}
+                {% set val = choice[0] %}
+                {% set txt = choice[1] %}
+                {% set extra = None %}
+              {% else %}
+                {% set val = choice %}
+                {% set txt = choice %}
+                {% set extra = None %}
+              {% endif %}
               <li>
                 <p class="break-words"
-                   data-value="{{ value }}"
-                   onclick="kampanSelectSearchValue('{{ input_id }}', '{{ value }}', '{{ text }}')">
-                  {{ text }}
+                   data-value="{{ val }}"
+                   {% if extra is not none %}data-same="{{ 'true' if extra else 'false' }}"{% endif %}
+                   onclick="kampanSelectSearchValue('{{ input_id }}', '{{ val }}', '{{ txt }}')">
+                  {{ txt }}
                 </p>
               </li>
             {% endfor %}
