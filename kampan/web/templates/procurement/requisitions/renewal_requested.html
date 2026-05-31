@@ -55,8 +55,10 @@
   {{ paginated.render_pagination(paginated_manager_submitted_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
   {% endif %}
   {% endif %}
+  {% if not current_user.has_organization_roles("manager") %}
   <h1 class="text-xl font-bold mt-6">รายการขอซื้อขอจ้างทั้งหมด</h1>
   {{ render_renewal_requested_items_table(requisitions,current_user, mas_list, organization, manager_action=false) }}
   {{ paginated.render_pagination(paginated_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
+  {% endif %}
 </div>
 {% endblock %}
