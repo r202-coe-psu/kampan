@@ -21,12 +21,18 @@ module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
 
 @module.route("", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def index():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(id=organization_id, status="active").first()
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     if current_user.has_organization_roles("admin", "supervisor supplier"):
-        car_applications = models.vehicle_applications.CarApplication.objects(organization=organization).order_by("-created_date")
+        car_applications = models.vehicle_applications.CarApplication.objects(
+            organization=organization
+        ).order_by("-created_date")
     else:
         car_applications = models.vehicle_applications.CarApplication.objects(
             organization=organization, creator=current_user
@@ -40,11 +46,17 @@ def index():
 
 
 @module.route("/calendar", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def calendar():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(id=organization_id, status="active").first()
-    car_applications = models.vehicle_applications.CarApplication.objects(organization=organization)
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
+    car_applications = models.vehicle_applications.CarApplication.objects(
+        organization=organization
+    )
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
     return render_template(
         "/vehicle_lending/car_applications/calendar.html",
@@ -55,19 +67,31 @@ def calendar():
 
 @module.route("/create", methods=["GET", "POST"], defaults={"car_application_id": None})
 @module.route("/<car_application_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def create_or_edit(car_application_id):
     car_application = None
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(id=organization_id, status="active").first()
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
 
     form = forms.vehicle_applications.CarApplicationForm()
 
-    form.car.choices = [(str(car.id), car.license_plate) for car in models.vehicles.Car.objects(organization=organization)]
-    form.driver.choices = [(str(user.id), user.get_resources_fullname_th()) for user in organization.get_all_drivers()]
+    form.car.choices = [
+        (str(car.id), car.license_plate)
+        for car in models.vehicles.Car.objects(organization=organization)
+    ]
+    form.driver.choices = [
+        (str(user.id), user.get_resources_fullname_th())
+        for user in organization.get_all_drivers()
+    ]
     if not form.validate_on_submit():
         if car_application_id:
-            car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id).first()
+            car_application = models.vehicle_applications.CarApplication.objects(
+                id=car_application_id
+            ).first()
             form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
 
         else:
@@ -105,8 +129,14 @@ def create_or_edit(car_application_id):
             if car_application.driver:
                 form.driver.data = str(car_application.driver.id)
 
-        form.car.choices = [(str(car.id), car.license_plate) for car in models.vehicles.Car.objects(organization=organization)]
-        form.driver.choices = [(str(user.id), user.get_resources_fullname_th()) for user in organization.get_all_drivers()]
+        form.car.choices = [
+            (str(car.id), car.license_plate)
+            for car in models.vehicles.Car.objects(organization=organization)
+        ]
+        form.driver.choices = [
+            (str(user.id), user.get_resources_fullname_th())
+            for user in organization.get_all_drivers()
+        ]
 
         print(form.errors)
         return render_template(
@@ -117,7 +147,9 @@ def create_or_edit(car_application_id):
 
     car_application = models.vehicle_applications.CarApplication()
     if car_application_id:
-        car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id).first()
+        car_application = models.vehicle_applications.CarApplication.objects(
+            id=car_application_id
+        ).first()
 
     form.populate_obj(car_application)
     car_application.car = models.vehicles.Car.objects(id=form.car.data).first()
@@ -133,17 +165,25 @@ def create_or_edit(car_application_id):
             organization=organization,
             form=form,
         )
-    car_application.departure_datetime = datetime.datetime.combine(form.departure_date.data, form.departure_time.data)
+    car_application.departure_datetime = datetime.datetime.combine(
+        form.departure_date.data, form.departure_time.data
+    )
     if form.travel_type.data != "one way":
-        car_application.return_datetime = datetime.datetime.combine(form.return_date.data, form.return_time.data)
+        car_application.return_datetime = datetime.datetime.combine(
+            form.return_date.data, form.return_time.data
+        )
     car_application.status = "pending on header"
 
     if form.using_type.data == "out of town":
         car_application.status = "pending on director"
     if form.using_type.data == "airport transfer":
-        car_application.flight_datetime = datetime.datetime.combine(form.departure_date.data, form.flight_time.data)
+        car_application.flight_datetime = datetime.datetime.combine(
+            form.departure_date.data, form.flight_time.data
+        )
         if form.travel_type.data != "one way":
-            car_application.flight_return_datetime = datetime.datetime.combine(form.return_date.data, form.flight_return_time.data)
+            car_application.flight_return_datetime = datetime.datetime.combine(
+                form.return_date.data, form.flight_return_time.data
+            )
 
     car_application.organization = current_user.get_current_organization()
     car_application.division = current_user.get_current_division()
@@ -175,15 +215,23 @@ def create_or_edit(car_application_id):
         timeout=600,
         job_timeout=600,
     )
-    return redirect(url_for("vehicle_lending.car_applications.index", organization_id=organization_id))
+    return redirect(
+        url_for(
+            "vehicle_lending.car_applications.index", organization_id=organization_id
+        )
+    )
 
 
 @module.route("/<car_application_id>/delete")
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier", "supervisor supplier"
+)
 def delete(car_application_id):
     organization_id = request.args.get("organization_id")
 
-    car_application = models.vehicle_applications.CarApplication.objects().get(id=car_application_id, organization=organization_id)
+    car_application = models.vehicle_applications.CarApplication.objects().get(
+        id=car_application_id, organization=organization_id
+    )
     car_application.status = "disactive"
     car_application.save()
 
@@ -203,7 +251,7 @@ def get_car_applications():
             "pending on admin",
             "active",
             "completed",
-        ]
+        ],
     )
 
     color_of_event = {
@@ -216,14 +264,22 @@ def get_car_applications():
     datas = []
     for car_application in car_applications:
         start = car_application.departure_datetime.strftime("%Y-%m-%d")
-        end = (car_application.departure_datetime + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        end = (
+            car_application.departure_datetime + datetime.timedelta(days=1)
+        ).strftime("%Y-%m-%d")
         if car_application.travel_type == "round trip":
-            end = (car_application.return_datetime + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            end = (
+                car_application.return_datetime + datetime.timedelta(days=1)
+            ).strftime("%Y-%m-%d")
         time = car_application.departure_datetime.strftime("%H:%M")
-        creator_name = car_application.creator.get_resources_fullname_th() if car_application.creator else "-"
+        creator_name = (
+            car_application.creator.get_resources_fullname_th()
+            if car_application.creator
+            else "-"
+        )
         data = {
             "id": str(car_application.id),
-            "title": f"{time} น. : ผู้ขอ: {creator_name} : {car_application.car.license_plate}",
+            "title": f"{time} น. , {creator_name} , {car_application.location}",
             "start": start,
             "end": end,
             "color": color_of_event.get(car_application.status, "gray"),
@@ -237,7 +293,9 @@ def get_car_applications():
 @login_required
 def event_modal(car_application_id):
     organization_id = request.args.get("organization_id")
-    car_application = models.vehicle_applications.CarApplication.objects(id=car_application_id, organization=organization_id).first()
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization_id
+    ).first()
     return render_template(
         "/vehicle_lending/car_applications/components/event_modal.html",
         car_application=car_application,
@@ -245,10 +303,14 @@ def event_modal(car_application_id):
 
 
 @module.route("/<car_application_id>/paper", methods=["GET"])
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def paper(car_application_id):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(id=organization_id, status="active").first()
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     if not organization:
         return abort(404)
 
@@ -267,15 +329,19 @@ def paper(car_application_id):
         "/vehicle_lending/car_applications/paper.html",
         car_applications=[car_application],
         organization=organization,
-        is_bulk=False
+        is_bulk=False,
     )
 
 
 @module.route("/combine_paper", methods=["GET"])
-@acl.organization_roles_required("admin", "endorser", "staff", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "staff", "head", "supervisor supplier"
+)
 def combine_paper():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(id=organization_id, status="active").first()
+    organization = models.Organization.objects(
+        id=organization_id, status="active"
+    ).first()
     if not organization:
         return abort(404)
 
@@ -299,7 +365,7 @@ def combine_paper():
             organization=organization,
             departure_datetime__gte=start_date,
             departure_datetime__lte=end_date,
-            status__ne="disactive"
+            status__ne="disactive",
         ).order_by("departure_datetime")
     else:
         car_applications = models.vehicle_applications.CarApplication.objects(
@@ -307,7 +373,7 @@ def combine_paper():
             creator=current_user,
             departure_datetime__gte=start_date,
             departure_datetime__lte=end_date,
-            status__ne="disactive"
+            status__ne="disactive",
         ).order_by("departure_datetime")
 
     return render_template(
@@ -316,6 +382,5 @@ def combine_paper():
         organization=organization,
         is_bulk=True,
         start_date_str=start_date_str,
-        end_date_str=end_date_str
+        end_date_str=end_date_str,
     )
-

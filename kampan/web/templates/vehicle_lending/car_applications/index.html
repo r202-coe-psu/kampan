@@ -33,9 +33,9 @@
       <thead>
         <tr>
           <th class="table-style"></th>
+          <th class="table-style">วันที่ขอใช้รถ</th>
           <th class="table-style">วันที่ต้องการใช้</th>
           <th class="table-style">ป้ายทะเบียนรถ</th>
-          <th class="table-style">ประเภทการใช้รถ</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
@@ -51,6 +51,7 @@
         {% for car_application in paginated_car_applications.items %}
         <tr>
           <td class="table-style"> {{ loop.index }}</td>
+          <td class="table-style"> {{ car_application.created_date.strftime('%d/%m/%Y') }}</td>
           <td class="table-style" data-label="Created Date">
             <div class="flex flex-col gap-1 text-sm min-w-[140px]">
               <div>
@@ -84,21 +85,10 @@
             </div>
           </td>
           <td class="table-style"> {{ car_application.car.license_plate }}</td>
-          <td class="table-style">
-            {{ car_application.get_using_type_display() }}
-            {% if car_application.using_type == 'airport transfer' %}
-            ({{ car_application.get_airport_transfer_type_display() }})
-            {% endif %}
-          </td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
           <td class="table-style">{{ car_application.location }}</td>
-
           <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
-
-
-
           {{ car_application.get_status()|safe }}
-
           <td class="table-style">
             {{ car_application.get_reason() }}
           </td>

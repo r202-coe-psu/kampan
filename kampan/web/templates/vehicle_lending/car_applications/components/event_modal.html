@@ -48,19 +48,19 @@
         </div>
       </div>
 
-      <!-- License Plate -->
+      <!-- Location -->
       <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
-        <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
-          <i class="ph ph-identification-card text-xl"></i>
+        <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
+          <i class="ph ph-map-pin text-xl"></i>
         </div>
         <div>
-          <div class="text-sm text-base-content/70">ป้ายทะเบียน</div>
-          <div class="font-semibold text-base">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
+          <div class="text-sm text-base-content/70">สถานที่ที่ต้องการจะไป</div>
+          <div class="font-medium text-base break-words">{{ car_application.location or '-' }}</div>
         </div>
       </div>
 
       <!-- Reason -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
         <div class="bg-purple-500/10 p-2 rounded-full text-purple-600 flex items-center justify-center">
           <i class="ph ph-text-align-left text-xl"></i>
         </div>
@@ -70,16 +70,16 @@
         </div>
       </div>
 
-      <!-- Location -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
-        <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
-          <i class="ph ph-map-pin text-xl"></i>
+      <!-- License Plate -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
+        <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
+          <i class="ph ph-identification-card text-xl"></i>
         </div>
         <div>
-          <div class="text-sm text-base-content/70">สถานที่ที่ต้องการจะไป</div>
-          <div class="font-medium text-base break-words">{{ car_application.location or '-' }}</div>
+          <div class="text-sm text-base-content/70">ป้ายทะเบียน</div>
+          <div class="font-semibold text-base">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
         </div>
-      </div>
+      </div>      
     </div>
 
     <div class="modal-action">
