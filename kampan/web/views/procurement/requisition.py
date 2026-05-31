@@ -274,6 +274,10 @@ def renewal_requested(requisition_procurement_id):
                     "approver_role": "manager",
                 },
             )
+        if manager_requisitions:
+            manager_req_ids = [req.id for req in manager_requisitions]
+            requisitions = requisitions.filter(id__nin=manager_req_ids)
+
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
         mas_list = models.MAS.objects()
