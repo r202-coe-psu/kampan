@@ -337,14 +337,9 @@
       }
 
       function toggleSourceAllocation(itemId, reservationId, checked) {
-          {
-              %
-              if readonly %
-          }
+          {%if readonly %}
           return;
-          {
-              % endif %
-          }
+          {% endif %}
           const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           if (!amountInput) {
@@ -367,13 +362,25 @@
               if (qtyInput && !qtyInput.value) {
                   qtyInput.value = qtyInput.max || '';
               }
+              updateAmountFromQty(itemId, reservationId);
           }
           updateItemTotal(itemId);
           updateSummaryTable();
       }
 
       function updateAmountFromQty(itemId, reservationId) {
-          // No longer auto-calculate amount from quantity
+          const priceInput = document.getElementById('item-price-' + itemId);
+          const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+          const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
+          
+          if (priceInput && qtyInput && amountInput) {
+              const price = parseFloat(priceInput.value) || 0;
+              const qty = parseFloat(qtyInput.value) || 0;
+              const computedAmount = price * qty;
+              
+              amountInput.value = computedAmount ? computedAmount.toFixed(2) : '';
+              updateItemTotal(itemId);
+          }
       }
 
       function updateItemTotal(itemId) {
@@ -485,21 +492,20 @@
               });
           });
           document.querySelectorAll('.source-item-qty').forEach(function(input) {
-              // Quantity input listener removed
+              input.addEventListener('input', function() {
+                  const itemId = this.getAttribute('data-item-id');
+                  const reservationId = this.getAttribute('data-reservation-id');
+                  updateAmountFromQty(itemId, reservationId);
+              });
           });
           updateSummaryTable();
 
-          {
-              %
-              if readonly %
-          }
+          {%if readonly %}
           document.querySelectorAll('input, select, textarea').forEach(function(el) {
               el.setAttribute('disabled', 'disabled');
               el.classList.add('cursor-not-allowed');
           });
-          {
-              % endif %
-          }
+          {% endif %}
       });
   </script>
 {% endblock content %}
