@@ -83,7 +83,7 @@
             {% if reservations %}
               {% for reservation in reservations %}
                 <div class="flex items-center justify-between text-base">
-                  <div class="font-medium">{{ reservation.mas_name or reservation.mas_code }}</div>
+                  <div class="font-medium">{{ reservation.mas_code }}</div>
                   <div class="font-semibold">
                     {{ reservation.reserved_amount | format_amount }} <span class="text-sm">฿</span>
                   </div>
@@ -337,9 +337,14 @@
       }
 
       function toggleSourceAllocation(itemId, reservationId, checked) {
-          {% if readonly %}
+          {
+              %
+              if readonly %
+          }
           return;
-          {% endif %}
+          {
+              % endif %
+          }
           const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           if (!amountInput) {
@@ -484,12 +489,17 @@
           });
           updateSummaryTable();
 
-          {% if readonly %}
+          {
+              %
+              if readonly %
+          }
           document.querySelectorAll('input, select, textarea').forEach(function(el) {
               el.setAttribute('disabled', 'disabled');
               el.classList.add('cursor-not-allowed');
           });
-          {% endif %}
+          {
+              % endif %
+          }
       });
   </script>
 {% endblock content %}
