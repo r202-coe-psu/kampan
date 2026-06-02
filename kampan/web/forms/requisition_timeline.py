@@ -180,28 +180,40 @@ class CompletedForm(FlaskForm):
     mas_code = fields.StringField("รหัสงบประมาณ", render_kw={"readonly": True})
 
     # Row 2
-    requisition_creator = fields.StringField("ชื่อผู้ขอซื้อ/ขอจ้าง", render_kw={"readonly": True})
+    requisition_creator = fields.StringField(
+        "ชื่อผู้ขอซื้อ/ขอจ้าง", render_kw={"readonly": True}
+    )
     product_name = fields.StringField("ชื่อโครงการ", render_kw={"readonly": True})
 
     # Row 3
-    contract_number = fields.StringField("เลขที่สัญญา/ใบสั่งซื้อ", validators=[validators.Optional()])
-    delivery_period = fields.IntegerField("กำหนดส่งมอบ(วัน)", validators=[validators.Optional()])
-    delivery_due_date = fields.DateField("วันที่ครบกำหนดส่งมอบ", validators=[validators.Optional()])
+    contract_number = fields.StringField(
+        "เลขที่สัญญา/ใบสั่งซื้อ", validators=[validators.Optional()]
+    )
+    delivery_period = fields.IntegerField(
+        "กำหนดส่งมอบ(วัน)", validators=[validators.Optional()]
+    )
+    delivery_due_date = fields.DateField(
+        "วันที่ครบกำหนดส่งมอบ", validators=[validators.Optional()]
+    )
 
     # Row 4
     delivered_date = fields.DateField("วันที่ส่งมอบ", render_kw={"readonly": True})
     inspection_date = fields.DateField("วันที่ตรวจรับ", render_kw={"readonly": True})
 
     # Row 5
-    requisition_code = fields.StringField("เลขที่ มอ เบิกจ่าย", validators=[validators.Optional()])
+    requisition_code = fields.StringField(
+        "เลขที่ มอ เบิกจ่าย", validators=[validators.Optional()]
+    )
     paid_date = fields.DateField("วันที่เบิกจ่าย", validators=[validators.Optional()])
-    total_amount = fields.StringField("จำนวนเงินที่จ่ายจริง", render_kw={"readonly": True})
+    total_amount = fields.StringField(
+        "จำนวนเงินที่จ่ายจริง", render_kw={"readonly": True}
+    )
 
     # Row 6
-    receipt_number = fields.StringField("เลขที่ใบแจ้งหนี้/ใบเสร็จ", validators=[validators.Optional()])
+    receipt_number = fields.StringField(
+        "เลขที่ใบแจ้งหนี้/ใบเสร็จ", validators=[validators.Optional()]
+    )
     account_code = fields.StringField("ผังบัญชี", render_kw={"readonly": True})
-
-
 
 
 class RequisitionTimelineItemForm(FlaskForm):
@@ -264,7 +276,7 @@ class DetailsSpecifiedItemForm(FlaskForm):
         "จำนวน", validators=[validators.DataRequired(), validators.NumberRange(min=1)]
     )
     amount = fields.DecimalField(
-        "ราคาต่อชิ้น (บาท)",
+        "ราคาต่อหน่วย (บาท)",
         places=2,
         rounding=None,
         validators=[validators.DataRequired(), validators.NumberRange(min=0)],

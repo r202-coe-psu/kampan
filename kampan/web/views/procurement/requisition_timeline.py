@@ -22,7 +22,6 @@ import json
 import hashlib
 from bson.objectid import ObjectId
 
-
 module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_timeline")
 
 PROGRESS_STATUS_ORDER = [
@@ -194,7 +193,9 @@ def index():
         user=current_user._get_current_object()
     ).first()
     # query เเรกของ requisition timeline
-    requisition_timeline = models.RequisitionTimeline.objects(organization=organization).order_by("-updated_date")
+    requisition_timeline = models.RequisitionTimeline.objects(
+        organization=organization
+    ).order_by("-updated_date")
     is_admin = current_user.has_organization_roles("admin")
 
     if progress:
@@ -351,7 +352,9 @@ def cancel(requisition_timeline_id):
 
 
 @module.route("/<requisition_timeline_id>/billing_modal", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "manager", "staff", "head", "endorser", "supervisor supplier"
+)
 def billing_modal(requisition_timeline_id):
     def _to_object_id(value):
         if value is None:
@@ -430,15 +433,23 @@ def billing_modal(requisition_timeline_id):
     is_same_division = False
     if is_head:
         org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object(), organization=organization, status="active"
+            user=current_user._get_current_object(),
+            organization=organization,
+            status="active",
         ).first()
         purchaser = requisition_timeline.requisition.purchaser
-        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+        if (
+            org_user_role
+            and org_user_role.division
+            and purchaser
+            and purchaser.division
+        ):
             if purchaser.division.id == org_user_role.division.id:
                 is_same_division = True
 
     if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
+
         abort(403)
 
     reservations = list(
@@ -462,7 +473,9 @@ def billing_modal(requisition_timeline_id):
             }
         )
 
-    form = forms.requisition_timeline.BillingForm(request.form if request.method == "POST" else None)
+    form = forms.requisition_timeline.BillingForm(
+        request.form if request.method == "POST" else None
+    )
 
     if request.method == "GET":
         item_source_map = {}
@@ -476,12 +489,15 @@ def billing_modal(requisition_timeline_id):
         for item in requisition_timeline.requisition.items:
             item_id = str(item._id)
             sources = item_source_map.get(item_id, [])
-            
+
             # Find the saved single source info (if any)
             is_multi = False
             if requisition_timeline.fund_allocations:
                 for alloc in requisition_timeline.fund_allocations:
-                    if str(getattr(alloc, "item_id", getattr(alloc, "_id", None))) == item_id:
+                    if (
+                        str(getattr(alloc, "item_id", getattr(alloc, "_id", None)))
+                        == item_id
+                    ):
                         is_multi = getattr(alloc, "multi_source", False)
                         break
 
@@ -492,26 +508,43 @@ def billing_modal(requisition_timeline_id):
                 source_id = str(sources[0].get("reservation_id", ""))
                 single_amount = sources[0].get("amount", 0)
                 single_qty = sources[0].get("item_amount", 0)
-            
-            form.items.append_entry({
-                "item_id": item_id,
-                "is_multi_source": is_multi,
-                "source_id": source_id,
-                "single_amount": single_amount,
-                "single_qty": single_qty
-            })
+
+            form.items.append_entry(
+                {
+                    "item_id": item_id,
+                    "is_multi_source": is_multi,
+                    "source_id": source_id,
+                    "single_amount": single_amount,
+                    "single_qty": single_qty,
+                }
+            )
             item_form = form.items[-1]
             for reservation in reservations:
-                found_source = next((s for s in sources if str(s["reservation_id"]) == str(reservation.id)), None)
-                item_form.multi_sources.append_entry({
-                    "reservation_id": str(reservation.id),
-                    "is_selected": bool(found_source),
-                    "amount": found_source["amount"] if found_source else 0,
-                    "item_amount": found_source["item_amount"] if found_source else 0,
-                })
+                found_source = next(
+                    (
+                        s
+                        for s in sources
+                        if str(s["reservation_id"]) == str(reservation.id)
+                    ),
+                    None,
+                )
+                item_form.multi_sources.append_entry(
+                    {
+                        "reservation_id": str(reservation.id),
+                        "is_selected": bool(found_source),
+                        "amount": found_source["amount"] if found_source else 0,
+                        "item_amount": (
+                            found_source["item_amount"] if found_source else 0
+                        ),
+                    }
+                )
 
     target_idx = PROGRESS_STATUS_ORDER.index("order_confirmed")
-    last_idx = PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status) if requisition_timeline.progress else -1
+    last_idx = (
+        PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status)
+        if requisition_timeline.progress
+        else -1
+    )
     is_readonly = (last_idx != target_idx) or (not is_admin)
 
     def _render_page(errors=None):
@@ -581,10 +614,17 @@ def billing_modal(requisition_timeline_id):
 
     for item_form in form.items:
         item_id = item_form.item_id.data
-        item = next((i for i in requisition_timeline.requisition.items if str(i._id) == item_id), None)
+        item = next(
+            (
+                i
+                for i in requisition_timeline.requisition.items
+                if str(i._id) == item_id
+            ),
+            None,
+        )
         if not item:
             continue
-            
+
         item_reserved_qty = int(item.quantity or 0)
         is_multi_source = item_form.is_multi_source.data
         allocations = []
@@ -592,7 +632,9 @@ def billing_modal(requisition_timeline_id):
         item_qty_total = 0
 
         if is_multi_source:
-            selected_sources = [s for s in item_form.multi_sources if s.is_selected.data]
+            selected_sources = [
+                s for s in item_form.multi_sources if s.is_selected.data
+            ]
             if not selected_sources:
                 errors.append(
                     f"กรุณาเลือกแหล่งเงินอย่างน้อย 1 รายการสำหรับ {item.product_name}"
@@ -602,14 +644,16 @@ def billing_modal(requisition_timeline_id):
                 reservation = reservation_map.get(source_id)
                 amount = source_form.amount.data or 0
                 item_amount = source_form.item_amount.data or 0
-                
+
                 if amount <= 0:
                     errors.append(
                         f"กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกสำหรับ {item.product_name}"
                     )
                     continue
                 if not reservation:
-                    errors.append(f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                    errors.append(
+                        f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}"
+                    )
                     continue
                 reserved_money = float(reservation.amount or 0)
                 if amount > reserved_money:
@@ -644,15 +688,19 @@ def billing_modal(requisition_timeline_id):
             reservation = reservation_map.get(source_id) if source_id else None
             amount = item_form.single_amount.data or 0
             item_amount = item_form.single_qty.data or 0
-            
+
             if not source_id:
                 errors.append(f"กรุณาเลือกแหล่งเงินสำหรับ {item.product_name}")
             else:
                 if amount <= 0:
-                    errors.append(f"กรุณากรอกจำนวนเงินที่ใช้จริงของ {item.product_name}")
+                    errors.append(
+                        f"กรุณากรอกจำนวนเงินที่ใช้จริงของ {item.product_name}"
+                    )
                 else:
                     if not reservation:
-                        errors.append(f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}")
+                        errors.append(
+                            f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}"
+                        )
                         continue
                     reserved_money = float(reservation.amount or 0)
                     if amount > reserved_money:
@@ -661,7 +709,9 @@ def billing_modal(requisition_timeline_id):
                         )
                         continue
                     if item_amount < 0:
-                        errors.append(f"กรุณากรอกจำนวนสิ่งของสำหรับ {item.product_name}")
+                        errors.append(
+                            f"กรุณากรอกจำนวนสิ่งของสำหรับ {item.product_name}"
+                        )
                     if item_amount > item_reserved_qty:
                         errors.append(
                             f"จำนวนสิ่งของของ {item.product_name} ต้องไม่เกินจำนวนที่จองไว้ ({item_reserved_qty})"
@@ -678,7 +728,6 @@ def billing_modal(requisition_timeline_id):
                     )
                     item_total += float(amount)
                     item_qty_total += int(item_amount) if item_amount >= 0 else 0
-
 
         item_allocations.append(
             models.FundAllocation(
@@ -752,8 +801,11 @@ def billing_modal(requisition_timeline_id):
         )
     )
 
+
 @module.route("/<requisition_timeline_id>/completed_submit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "manager", "staff", "head", "endorser", "supervisor supplier"
+)
 def completed_submit(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -776,15 +828,23 @@ def completed_submit(requisition_timeline_id):
     is_same_division = False
     if is_head:
         org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object(), organization=organization, status="active"
+            user=current_user._get_current_object(),
+            organization=organization,
+            status="active",
         ).first()
         purchaser = requisition_timeline.requisition.purchaser
-        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+        if (
+            org_user_role
+            and org_user_role.division
+            and purchaser
+            and purchaser.division
+        ):
             if purchaser.division.id == org_user_role.division.id:
                 is_same_division = True
 
     if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
+
         abort(403)
 
     responder_user_choices = []
@@ -881,11 +941,18 @@ def completed_submit(requisition_timeline_id):
 
         payment_processed_p = requisition_timeline.find_progress("payment_processed")
         if payment_processed_p:
-            form.paid_date.data = payment_processed_p.created_date.date() if isinstance(payment_processed_p.created_date, datetime.datetime) else payment_processed_p.created_date
+            form.paid_date.data = (
+                payment_processed_p.created_date.date()
+                if isinstance(payment_processed_p.created_date, datetime.datetime)
+                else payment_processed_p.created_date
+            )
         else:
             order_confirmed_p = requisition_timeline.find_progress("order_confirmed")
             form.paid_date.data = (
-                order_confirmed_p.created_date.date() if order_confirmed_p and isinstance(order_confirmed_p.created_date, datetime.datetime) else (order_confirmed_p.created_date if order_confirmed_p else None)
+                order_confirmed_p.created_date.date()
+                if order_confirmed_p
+                and isinstance(order_confirmed_p.created_date, datetime.datetime)
+                else (order_confirmed_p.created_date if order_confirmed_p else None)
             )
 
         account_codes = []
@@ -945,7 +1012,7 @@ def completed_submit(requisition_timeline_id):
         cpd = models.CompletedProgressDetail()
         cpd.contract_number = request.form.get("contract_number", "")
         cpd.receipt_number = request.form.get("receipt_number", "")
-        
+
         delivery_period_str = request.form.get("delivery_period", "")
         if delivery_period_str:
             try:
@@ -954,11 +1021,13 @@ def completed_submit(requisition_timeline_id):
                 cpd.delivery_period = None
         else:
             cpd.delivery_period = None
-                
+
         delivery_due_date_str = request.form.get("delivery_due_date", "")
         if delivery_due_date_str:
             try:
-                cpd.delivery_due_date = datetime.datetime.strptime(delivery_due_date_str, "%Y-%m-%d").date()
+                cpd.delivery_due_date = datetime.datetime.strptime(
+                    delivery_due_date_str, "%Y-%m-%d"
+                ).date()
             except ValueError:
                 cpd.delivery_due_date = None
         else:
@@ -980,25 +1049,27 @@ def completed_submit(requisition_timeline_id):
             cpd.invoice_number = old_cpd.invoice_number
 
         requisition_timeline.completed_progress_detail = cpd
-        
+
         # Determine the action
         action = request.args.get("action") or request.form.get("action")
-        
+
         if action == "add_item":
             requisition_timeline.save()
-            req_item_id = request.args.get("requisition_item_id") or request.form.get("requisition_item_id")
+            req_item_id = request.args.get("requisition_item_id") or request.form.get(
+                "requisition_item_id"
+            )
             if req_item_id:
                 req_item_name = ""
                 for req_item in requisition_timeline.requisition.items:
                     if str(req_item._id) == str(req_item_id):
                         req_item_name = req_item.product_name
                         break
-                        
+
                 existing_count = models.RequisitionTimelineItem.objects(
                     requisition_timeline=requisition_timeline,
                     requisition_item_id=req_item_id,
                 ).count()
-                
+
                 new_item = models.RequisitionTimelineItem(
                     organization=requisition_timeline.organization,
                     requisition_timeline=requisition_timeline,
@@ -1015,7 +1086,7 @@ def completed_submit(requisition_timeline_id):
                     created_by=current_user._get_current_object(),
                 )
                 new_item.save()
-                
+
             return redirect(
                 url_for(
                     "procurement.requisition_timeline.completed_submit",
@@ -1026,7 +1097,9 @@ def completed_submit(requisition_timeline_id):
 
         if action == "delete_item":
             requisition_timeline.save()
-            ti_id = request.args.get("timeline_item_id") or request.form.get("timeline_item_id")
+            ti_id = request.args.get("timeline_item_id") or request.form.get(
+                "timeline_item_id"
+            )
             if ti_id:
                 ti_to_delete = models.RequisitionTimelineItem.objects(
                     id=ti_id,
@@ -1035,7 +1108,7 @@ def completed_submit(requisition_timeline_id):
                 if ti_to_delete:
                     req_item_id = ti_to_delete.requisition_item_id
                     ti_to_delete.delete()
-                    
+
                     # Re-number remaining items
                     remaining = models.RequisitionTimelineItem.objects(
                         requisition_timeline=requisition_timeline,
@@ -1044,7 +1117,7 @@ def completed_submit(requisition_timeline_id):
                     for r_idx, r_item in enumerate(remaining):
                         r_item.running_number = r_idx + 1
                         r_item.save()
-                        
+
             return redirect(
                 url_for(
                     "procurement.requisition_timeline.completed_submit",
@@ -1063,11 +1136,13 @@ def completed_submit(requisition_timeline_id):
                 if new_code:
                     requisition.requisition_code = new_code
                     requisition.save()
-            
+
             paid_date_str = request.form.get("paid_date")
             if paid_date_str:
                 try:
-                    paid_date_val = datetime.datetime.strptime(paid_date_str, "%Y-%m-%d")
+                    paid_date_val = datetime.datetime.strptime(
+                        paid_date_str, "%Y-%m-%d"
+                    )
                     p = requisition_timeline.find_progress("payment_processed")
                     if p:
                         p.created_date = paid_date_val
@@ -1077,7 +1152,7 @@ def completed_submit(requisition_timeline_id):
                     requisition_timeline.save()
                 except ValueError:
                     pass
-                    
+
             return redirect(
                 url_for(
                     "procurement.requisition_timeline.completed_submit",
@@ -1127,7 +1202,9 @@ def completed_submit(requisition_timeline_id):
 
 
 @module.route("/<requisition_timeline_id>/details_specified", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "manager", "staff", "head", "endorser", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "manager", "staff", "head", "endorser", "supervisor supplier"
+)
 def details_specified(requisition_timeline_id):
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -1149,22 +1226,34 @@ def details_specified(requisition_timeline_id):
     is_same_division = False
     if is_head:
         org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object(), organization=organization, status="active"
+            user=current_user._get_current_object(),
+            organization=organization,
+            status="active",
         ).first()
         purchaser = requisition_timeline.requisition.purchaser
-        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+        if (
+            org_user_role
+            and org_user_role.division
+            and purchaser
+            and purchaser.division
+        ):
             if purchaser.division.id == org_user_role.division.id:
                 is_same_division = True
 
     if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
+
         abort(403)
 
     requisition = requisition_timeline.requisition
 
     form = forms.requisition_timeline.DetailsSpecifiedForm()
     target_idx = PROGRESS_STATUS_ORDER.index("order_confirmed")
-    last_idx = PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status) if requisition_timeline.progress else -1
+    last_idx = (
+        PROGRESS_STATUS_ORDER.index(requisition_timeline.progress[-1].progress_status)
+        if requisition_timeline.progress
+        else -1
+    )
     is_readonly = last_idx >= target_idx or (not is_admin)
 
     if request.method == "GET":
@@ -1179,7 +1268,7 @@ def details_specified(requisition_timeline_id):
                     "brand": item.brand or "",
                     "model_name": item.model_name or "",
                     "quantity": item.quantity,
-                    "amount": item.amount,
+                    "amount": 0,
                     "winner": item.winner or "",
                     "account_code": item.account_code or "",
                     "note": item.note or "",

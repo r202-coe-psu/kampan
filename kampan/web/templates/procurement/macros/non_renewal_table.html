@@ -17,7 +17,7 @@
           <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-6 animate-pulse">
             <i class="ph ph-check-circle text-rose-500 text-3xl"></i>
           </div>
-          <h4 class="text-xl font-semibold text-rose-700 mb-2">ยังไม่มีรายการที่ไม่ต่ออายุ</h4>
+          <h4 class="text-xl font-semibold text-rose-700 mb-2">ยังไม่มีรายการ</h4>
           <p class="text-rose-600 max-w-md mb-6">ทุกรายการยังคงอยู่ในสถานะรอการดำเนินการ</p>
           <div class="inline-flex items-center gap-2 text-sm text-rose-500 bg-white px-4 py-2 rounded-full shadow-sm">
             <i class="ph ph-info"></i>
@@ -50,9 +50,11 @@
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900">{{ item.product_numbers | join(', ') if item.product_numbers else item.product_number }}</div>
+                    <div class="text-sm font-semibold text-gray-900">
+                      {{ item.product_numbers | join(", ") if item.product_numbers else item.product_number }}
+                    </div>
                     <div class="text-xs text-gray-500 flex items-center gap-1">
-                      <i class="ph ph-barcode"></i>{{ item.asset_codes | join(', ') if item.asset_codes else item.asset_code }}
+                      <i class="ph ph-barcode"></i>{{ item.asset_codes | join(", ") if item.asset_codes else item.asset_code }}
                     </div>
                   </td>
                   <td class="px-6 py-4">
