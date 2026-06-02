@@ -95,8 +95,16 @@
     {% endif %}
 
     {# ── Section ข้อมูลในตาราง ── #}
-    <div class="rounded-xl border border-gray-200 overflow-visible">
-      <table class="table table-sm w-full">
+    <details class="group rounded-xl border border-gray-200 overflow-visible" open>
+      <summary class="flex cursor-pointer items-center justify-between p-3 bg-gray-50 rounded-xl group-open:rounded-b-none group-open:border-b border-gray-200 font-semibold text-gray-700 hover:bg-gray-100 transition-colors list-none [&::-webkit-details-marker]:hidden">
+        <div class="flex items-center gap-2 text-sm">
+          <i class="ph ph-table"></i>
+          แสดง/ซ่อน รายการครุภัณฑ์ในตาราง
+        </div>
+        <i class="ph ph-caret-down transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="overflow-visible">
+        <table class="table table-sm w-full">
         <thead class="sticky top-0 z-10">
               <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wide">
                 <th class="text-center w-10">#</th>
@@ -152,18 +160,18 @@
               {% endfor %}
             </tbody>
           </table>
-    </div>
-
-    {% if requisition_timeline_id and organization %}
-    <div class="flex justify-end mt-4">
-      <button type="submit"
-              formaction="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=requisition_timeline_id, organization_id=organization.id, action='add_item', requisition_item_id=item_id) }}"
-              class="btn btn-sm btn-outline border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 gap-1 rounded-xl">
-        <i class="ph ph-plus-circle"></i>
-        เพิ่มรายการครุภัณฑ์
-      </button>
-    </div>
-    {% endif %}
+      </div>
+      {% if requisition_timeline_id and organization %}
+      <div class="flex justify-end p-3 border-t border-gray-200">
+        <button type="submit"
+                formaction="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=requisition_timeline_id, organization_id=organization.id, action='add_item', requisition_item_id=item_id) }}"
+                class="btn btn-sm btn-outline border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 gap-1 rounded-xl">
+          <i class="ph ph-plus-circle"></i>
+          เพิ่มรายการครุภัณฑ์
+        </button>
+      </div>
+      {% endif %}
+    </details>
 
   </div>
 </div>
