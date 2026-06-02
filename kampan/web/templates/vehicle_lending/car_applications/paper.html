@@ -294,7 +294,7 @@
       <i class="ph ph-arrow-left"></i> ย้อนกลับ
     </a>
   </div>
-  <button onclick="window.print()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
+  <button onclick="window.print()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all" {% if not car_applications %}disabled{% endif %}>
     <i class="ph ph-printer"></i>
     {% if is_bulk %}
       พิมพ์เอกสารทั้งหมด (PDF)
