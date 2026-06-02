@@ -1,865 +1,960 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 
-{% block title %}
-  ใบแจ้งขอซื้อ/จ้างวัสดุ_{{ requisitions.requisition_code }}
-{% endblock %}
+{% block title %}ใบแจ้งขอซื้อ/จ้างวัสดุ_{{ requisitions.requisition_code }}{% endblock %}
 
-{% block dashboard_title %}
-  พิมพ์ใบแจ้งขอซื้อ/จ้างวัสดุ
-{% endblock %}
+{% block dashboard_title %}พิมพ์ใบแจ้งขอซื้อ/จ้างวัสดุ{% endblock %}
 
 {% block additional_head %}
-<style>
-  @font-face {
-    font-family: 'THSarabunNew';
-    src: local('THSarabunNew'),
-         url("{{ url_for('static', filename='fonts/THSarabunNew.ttf') }}") format('truetype'),
-         url("{{ url_for('static', filename='fonts/Sarabun_Regular.ttf') }}") format('truetype');
-    font-weight: normal;
-    font-style: normal;
-  }
+  <style>
+      @font-face {
+          font-family: 'THSarabunNew';
+          src: local('THSarabunNew'),
+          url("{{ url_for('static', filename='fonts/THSarabunNew.ttf') }}") format('truetype'),
+          url("{{ url_for('static', filename='fonts/Sarabun_Regular.ttf') }}") format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
 
-  @font-face {
-    font-family: 'THSarabunNew';
-    src: local('THSarabunNew-Bold'),
-         url("{{ url_for('static', filename='fonts/THSarabunNew Bold.ttf') }}") format('truetype'),
-         url("{{ url_for('static', filename='fonts/Sarabun_Bold.ttf') }}") format('truetype');
-    font-weight: bold;
-    font-style: normal;
-  }
+      @font-face {
+          font-family: 'THSarabunNew';
+          src: local('THSarabunNew-Bold'),
+          url("{{ url_for('static', filename='fonts/THSarabunNew Bold.ttf') }}") format('truetype'),
+          url("{{ url_for('static', filename='fonts/Sarabun_Bold.ttf') }}") format('truetype');
+          font-weight: bold;
+          font-style: normal;
+      }
 
-  /* Screen Styling: Render like an elegant physical paper sheet on the browser desk */
-  .paper-page-wrapper {
-    background-color: transparent;
-    padding: 10px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-  }
+      /* Screen Styling: Render like an elegant physical paper sheet on the browser desk */
+      .paper-page-wrapper {
+          background-color: transparent;
+          padding: 10px 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          width: 100%;
+      }
 
-  .paper-sheet {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 10mm 15mm;
-    box-sizing: border-box;
-    background: #ffffff;
-    position: relative;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    font-size: 18px;
-    line-height: 1.35;
-  }
+      .paper-sheet {
+          width: 210mm;
+          min-height: 297mm;
+          padding: 10mm 15mm;
+          box-sizing: border-box;
+          background: #ffffff;
+          position: relative;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          font-size: 18px;
+          line-height: 1.35;
+      }
 
-  /* Force natural dark text colors and THSarabunNew font inside paper sheet even on dark themes */
-  .paper-sheet,
-  .paper-sheet * {
-    font-family: 'THSarabunNew', 'Sarabun', sans-serif !important;
-    color: #000000 !important;
-  }
+      /* Force natural dark text colors and THSarabunNew font inside paper sheet even on dark themes */
+      .paper-sheet,
+      .paper-sheet * {
+          font-family: 'THSarabunNew', 'Sarabun', sans-serif !important;
+          color: #000000 !important;
+      }
 
-  .paper-sheet b,
-  .paper-sheet strong {
-    font-weight: 700;
-  }
+      .paper-sheet b,
+      .paper-sheet strong {
+          font-weight: 700;
+      }
 
-  /* Firefox print border fixes */
-  .paper-sheet table {
-    border-collapse: collapse !important;
-    border: 1.5px dotted #000 !important;
-  }
+      /* Firefox print border fixes */
+      .paper-sheet table {
+          border-collapse: collapse !important;
+          border: 1.5px dotted #000 !important;
+      }
 
-  .paper-sheet td,
-  .paper-sheet th {
-    border: 1.5px dotted #000 !important;
-  }
+      .paper-sheet td,
+      .paper-sheet th {
+          border: 1.5px dotted #000 !important;
+      }
 
-  .paper-sheet td:first-child {
-    border-left: none !important;
-  }
+      .paper-sheet td:first-child {
+          border-left: none !important;
+      }
 
-  .paper-sheet td:last-child {
-    border-right: none !important;
-  }
+      .paper-sheet td:last-child {
+          border-right: none !important;
+      }
 
-  .paper-sheet tr:last-child td {
-    border-bottom: none !important;
-  }
+      .paper-sheet tr:last-child td {
+          border-bottom: none !important;
+      }
 
-  .paper-sheet table p {
-    margin: 0.15rem 0 !important;
-  }
+      .paper-sheet table p {
+          margin: 0.15rem 0 !important;
+      }
 
-  /* Specific fix for your document border box */
-  .doc-border-box {
-    border: 2px solid #000 !important;
-    box-shadow: none !important;
-  }
+      /* Specific fix for your document border box */
+      .doc-border-box {
+          border: 2px solid #000 !important;
+          box-shadow: none !important;
+      }
 
-  /* Printing Overrides */
-  @media print {
-    @page {
-      size: A4;
-      margin: 0 !important;
-    }
-    
-    body * {
-      visibility: hidden !important;
-    }
-    
-    .paper-page-wrapper, .paper-page-wrapper * {
-      visibility: visible !important;
-    }
-    
-    .paper-page-wrapper {
-      position: absolute !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 0 !important;
-    }
+      /* Printing Overrides */
+      @media print {
+          @page {
+              size: A4;
+              margin: 0 !important;
+          }
 
-    .paper-sheet {
-      page-break-after: always !important;
-      break-after: page !important;
-      border: none !important;
-      box-shadow: none !important;
-      margin: 0 !important;
-      padding: 10mm 15mm !important; /* Match screen preview padding */
-      width: 210mm !important;
-      height: 297mm !important; /* Force exact A4 page height */
-      box-sizing: border-box !important;
-      background: #ffffff !important;
-    }
+          body * {
+              visibility: hidden !important;
+          }
 
-    /* Match screen preview font size and line height when printing */
-    .paper-sheet {
-      font-size: 18px !important;
-      line-height: 1.35 !important;
-    }
+          .paper-page-wrapper,
+          .paper-page-wrapper * {
+              visibility: visible !important;
+          }
 
-    .paper-sheet:last-child {
-      page-break-after: avoid !important;
-      break-after: avoid !important;
-    }
+          .paper-page-wrapper {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 0 !important;
+          }
 
-    .paper-sheet table,
-    .paper-sheet td,
-    .paper-sheet th {
-      border: 1.5px dotted #000 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      color-adjust: exact;
-    }
+          .paper-sheet {
+              page-break-after: always !important;
+              break-after: page !important;
+              border: none !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+              padding: 10mm 15mm !important;
+              /* Match screen preview padding */
+              width: 210mm !important;
+              height: 297mm !important;
+              /* Force exact A4 page height */
+              box-sizing: border-box !important;
+              background: #ffffff !important;
+          }
 
-    .doc-border-box {
-      border: 2px solid #000 !important;
-      background: transparent !important;
-    }
+          /* Match screen preview font size and line height when printing */
+          .paper-sheet {
+              font-size: 18px !important;
+              line-height: 1.35 !important;
+          }
 
-    /* Force border rendering */
-    .paper-sheet * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      color-adjust: exact;
-    }
-  }
-</style>
+          .paper-sheet:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+          }
+
+          .paper-sheet table,
+          .paper-sheet td,
+          .paper-sheet th {
+              border: 1.5px dotted #000 !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              color-adjust: exact;
+          }
+
+          .doc-border-box {
+              border: 2px solid #000 !important;
+              background: transparent !important;
+          }
+
+          /* Force border rendering */
+          .paper-sheet * {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              color-adjust: exact;
+          }
+      }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="no-print flex justify-between items-center mb-6 bg-base-100 p-4 rounded-2xl border border-base-300 shadow-sm">
-  <div class="flex items-center gap-3">
-    <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}" class="btn btn-sm btn-ghost gap-1">
-      <i class="ph ph-arrow-left"></i> ย้อนกลับ
-    </a>
+  <div class="no-print flex justify-between items-center mb-6 bg-base-100 p-4 rounded-2xl border border-base-300 shadow-sm">
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
+         class="btn btn-sm btn-ghost gap-1">
+        <i class="ph ph-arrow-left"></i> ย้อนกลับ
+      </a>
+    </div>
+    <button id="download-btn"
+            onclick="downloadPDF()"
+            class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
+      <i class="ph ph-download"></i>
+      ดาวน์โหลดเอกสาร (PDF)
+    </button>
   </div>
-  <button id="download-btn" onclick="downloadPDF()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
-    <i class="ph ph-download"></i>
-    ดาวน์โหลดเอกสาร (PDF)
-  </button>
-</div>
 
-<div class="paper-page-wrapper">
-  <div class="paper-sheet">
-    <div class="content">
+  <div class="paper-page-wrapper">
+    <div class="paper-sheet">
+      <div class="content">
 
-      <div style="display: grid;
-                  grid-template-columns: 1fr 1.5fr 1.2fr;
-                  align-items: end;
-                  margin-top: -0.5rem;">
-        <div></div>
+        <div style="display: grid;
+                    grid-template-columns: 1fr 1.5fr 1.2fr;
+                    align-items: end;
+                    margin-top: -0.5rem">
+          <div></div>
+          <div>
+            <p style="text-align: center; font-weight: 700; font-size: 20px; margin-bottom: 0.5rem;">
+              ใบแจ้งขอซื้อ/จ้างวัสดุ
+            </p>
+          </div>
+          <div class="doc-border-box"
+               style="border-radius: 6px;
+                      padding: 12px;
+                      margin: 0 8px 0.5rem 8px;
+                      text-align: right;
+                      margin-top: 1rem">
+            <p style="margin: 2;">
+              เลขที่ ........................
+              <span style="position: absolute; left: 40.5rem; top: 3.5rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
+            </p>
+            <p style="margin: 2;">วันที่รับ .............................</p>
+          </div>
+        </div>
+        <div style="text-align: right; position: relative; margin-top: 1rem; margin-bottom: 0.5rem;">
+          <span style="margin: 2; display: inline-block; position: relative;">
+            วันที่ ........
+            <span id="doc-day" style="position: absolute; right: 0.25rem; top: -0.3rem;">{{ requisitions.created_date.day }}</span>
+          </span>
+          <span style="margin: 2; display: inline-block; position: relative;">
+            เดือน .........................
+            <span id="doc-month" style="position: absolute; right: 1rem; top: -0.3rem;">
+              {{ ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"][requisitions.created_date.month-1] }}
+            </span>
+          </span>
+          <span style="margin: 2; display: inline-block; position: relative;">
+            พ.ศ. ............
+            <span id="doc-year" style="position: absolute; right: 0.5rem; top: -0.3rem;">
+              {{ requisitions.created_date.year + 543 }}
+            </span>
+          </span>
+        </div>
         <div>
-          <p style="text-align: center; font-weight: 700; font-size: 20px; margin-bottom: 0.5rem;">ใบแจ้งขอซื้อ/จ้างวัสดุ</p>
+          <span>เรียน</span>
+          <span>ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</span>
         </div>
-        <div class="doc-border-box"
-             style="border-radius: 6px;
-                    padding: 12px;
-                    margin: 0 8px 0.5rem 8px;
-                    text-align: right;
-                    margin-top: 1rem;">
-          <p style="margin: 2;">
-            เลขที่ ........................
-            <span style="position: absolute; left: 44rem; top: 1.5rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
-          </p>
-          <p style="margin: 2;">วันที่รับ .............................</p>
+        <div style="text-align: left;">
+          <span>ข้าพเจ้า</span>
+          <span style="position: relative;">
+            นาย/นาง/นางสาว ..........................................................
+            <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
+              {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                            requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+              {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+            </span>
+          </span>
+          <span style="position: relative;">
+            ฝ่าย ...............................................
+            <span style="position: absolute; left: 2rem; top: -0.3rem; white-space: nowrap">
+              {{ requisitions.purchaser.division.name[4:] if
+              requisitions.purchaser.division.name.startswith("ฝ่าย") else requisitions.purchaser.division.name }}
+            </span>
+          </span>
+          <span style="position: relative;">
+            โทร ............................
+            <span style="position: absolute; top: -0.3rem; left: 2rem; white-space: nowrap">{{ requisitions.phone if requisitions.phone else '' }}</span>
+          </span>
         </div>
-      </div>
-      <div style="text-align: right; position: relative; margin-top: 1rem; margin-bottom: 0.5rem;">
-        <span style="margin: 2; display: inline-block; position: relative;">
-          วันที่ ........
-          <span id="doc-day" style="position: absolute; right: 0.25rem; top: -0.3rem;">{{ requisitions.created_date.day }}</span>
-        </span>
-        <span style="margin: 2; display: inline-block; position: relative;">
-          เดือน .........................
-          <span id="doc-month" style="position: absolute; right: 1rem; top: -0.3rem;">
-            {{ ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"][requisitions.created_date.month-1] }}
-          </span>
-        </span>
-        <span style="margin: 2; display: inline-block; position: relative;">
-          พ.ศ. ............
-          <span id="doc-year" style="position: absolute; right: 0.5rem; top: -0.3rem;">
-            {{ requisitions.created_date.year + 543 }}
-          </span>
-        </span>
-      </div>
-      <div>
-        <span>เรียน</span>
-        <span>ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ</span>
-      </div>
-      <div style="text-align: left;">
-        <span>ข้าพเจ้า</span>
-        <span style="position: relative;">
-          นาย/นาง/นางสาว ..........................................................
-          <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
-            {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
-                        requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
-            {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-          </span>
-        </span>
-        <span style="position: relative;">
-          ฝ่าย ...............................................
-          <span style="position: absolute; left: 2rem; top: -0.3rem; white-space: nowrap">
-            {{ requisitions.purchaser.division.name[4:] if
-            requisitions.purchaser.division.name.startswith("ฝ่าย") else requisitions.purchaser.division.name }}
-          </span>
-        </span>
-        <span style="position: relative;">
-          โทร ............................
-          <span style="position: absolute; top: -0.3rem; left: 2rem; white-space: nowrap">{{ requisitions.phone if requisitions.phone else '' }}</span>
-        </span>
-      </div>
-      <div>
-        <span>มีความต้องการ</span>
-        {% set categories = requisitions.items | map(attribute='category') | list %}
-        <span>
-          <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-            if 'software' in categories %}checked{% endif %}>
-            <span style="vertical-align: middle;">ซื้อวัสดุ</span>
-          </span>
+        <div>
+          <span>มีความต้องการ</span>
+          {% set categories = requisitions.items | map(attribute='category') | list %}
           <span>
             <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-              if 'product' in categories %}checked{% endif %}>
-              <span style="vertical-align: middle;">ซื้อครุภัณฑ์</span>
+              if 'software' in categories %}checked{% endif %}>
+              <span style="vertical-align: middle;">ซื้อวัสดุ</span>
             </span>
             <span>
               <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-                if 'service' in categories %}checked{% endif %}>
-                <span style="vertical-align: middle;">จ้างเหมา</span>
+                if 'product' in categories %}checked{% endif %}>
+                <span style="vertical-align: middle;">ซื้อครุภัณฑ์</span>
               </span>
-              <span>ดังรายการต่อไปนี้</span>
-            </div>
-            {% set sorted_items = requisitions.items|sort(attribute='product_name') %}
-            {% for i in range(sorted_items|length) %}
-              <div>
-                <span>{{ i+1 }}</span>
-                <span style="position: relative;">
-                  <span style="position: absolute;
-                               left: 13;
-                               top: -0.3rem;
-                               white-space: normal;
-                               max-width: 450px;
-                               overflow-wrap: break-word;
-                               line-height: 1.6">
-                    {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].product_name }}{% endif %}
-                  </span>
-                  .........................................................................................................
+              <span>
+                <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
+                  if 'service' in categories %}checked{% endif %}>
+                  <span style="vertical-align: middle;">จ้างเหมา</span>
                 </span>
-                <span style="position: relative;">
-                  <span style="position: absolute; left: 4rem; top: -0.3rem; white-space: nowrap">
-                    {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].quantity }}{% endif %}
+                <span>ดังรายการต่อไปนี้</span>
+              </div>
+              {% set sorted_items = requisitions.items|sort(attribute='product_name') %}
+              {% for i in range(sorted_items|length) %}
+                <div>
+                  <span>{{ i+1 }}</span>
+                  <span style="position: relative;">
+                    <span style="position: absolute;
+                                 left: 13;
+                                 top: -0.3rem;
+                                 white-space: normal;
+                                 max-width: 450px;
+                                 overflow-wrap: break-word;
+                                 line-height: 1.6">
+                      {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].product_name }}{% endif %}
+                    </span>
+                    .........................................................................................................
                   </span>
-                  จำนวน ..............
-                </span>
-                <span style="position: relative;">
-                  <span style="position: absolute; left: 6.1rem; top: -0.3rem; white-space: nowrap">
-                    {% if sorted_items and sorted_items|length > i %}
-                      {{ "{:,.2f}".format(sorted_items[i].amount) }}
-                    {% endif %}
+                  <span style="position: relative;">
+                    <span style="position: absolute; left: 4rem; top: -0.3rem; white-space: nowrap">
+                      {% if sorted_items and sorted_items|length > i %}{{ sorted_items[i].quantity }}{% endif %}
+                    </span>
+                    จำนวน ..............
                   </span>
-                  ราคาประมาณ .............................
+                  <span style="position: relative;">
+                    <span style="position: absolute; left: 6.1rem; top: -0.3rem; white-space: nowrap">
+                      {% if sorted_items and sorted_items|length > i %}
+                        {{ "{:,.2f}".format(sorted_items[i].amount) }}
+                      {% endif %}
+                    </span>
+                    ราคาประมาณ .............................
+                  </span>
+                  <span>บาท</span>
+                </div>
+              {% endfor %}
+              <div style="text-align: right;">
+                <span style="position: relative;">
+                  <span style="position: absolute; left: 8.4rem; top: -0.3rem; white-space: nowrap">
+                    {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
+                  </span>
+                  รวมเป็นเงินประมาณ ..................................
                 </span>
                 <span>บาท</span>
               </div>
-            {% endfor %}
-            <div style="text-align: right;">
-              <span style="position: relative;">
-                <span style="position: absolute; left: 8.4rem; top: -0.3rem; white-space: nowrap">
-                  {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
-                </span>
-                รวมเป็นเงินประมาณ ..................................
+            </div>
+            <div>
+              <span>เหตุผลที่ต้องการใช้
+                <span style="position: absolute;
+                             left: 7rem;
+                             white-space: normal;
+                             max-width: 550px;
+                             overflow-wrap: break-word;
+                             line-height: 1.2">{{ requisitions.reason }}</span>
               </span>
-              <span>บาท</span>
+              <span>...............................................................................................................................................................</span>
+              <span>...............................................................................................................................................................</span>
             </div>
-          </div>
-          <div>
-            <span>เหตุผลที่ต้องการใช้
-              <span style="position: absolute;
-                           left: 7rem;
-                           white-space: normal;
-                           max-width: 550px;
-                           overflow-wrap: break-word;
-                           line-height: 1.2">{{ requisitions.reason }}</span>
-            </span>
-            <span>...............................................................................................................................................................</span>
-            <span>...............................................................................................................................................................</span>
-          </div>
-          <div>
-            <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
-            <span style="position: relative;">........
-              <span style="position: absolute; right: 0.6rem; top: -0.3rem;">
-                {{ requisitions.start_date.day if requisitions.start_date }}
+            <div>
+              <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
+              <span style="position: relative;">........
+                <span style="position: absolute; right: 0.6rem; top: -0.3rem;">
+                  {{ requisitions.start_date.day if requisitions.start_date }}
+                </span>
               </span>
-            </span>
-            <span style="position: relative;">เดือน .......................
-              <span style="position: absolute; right: 1rem; top: -0.3rem;">
-                {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
-                "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.start_date.month-1] if requisitions.start_date
-                }}
+              <span style="position: relative;">เดือน .......................
+                <span style="position: absolute; right: 1rem; top: -0.3rem;">
+                  {{ ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+                  "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"][requisitions.start_date.month-1] if requisitions.start_date
+                  }}
+                </span>
               </span>
-            </span>
-            <span style="position: relative;">พ.ศ. ..............
-              <span style="position: absolute; right: 1rem; top: -0.3rem;">
-                {{ requisitions.start_date.year + 543 if requisitions.start_date }}
+              <span style="position: relative;">พ.ศ. ..............
+                <span style="position: absolute; right: 1rem; top: -0.3rem;">
+                  {{ requisitions.start_date.year + 543 if requisitions.start_date }}
+                </span>
               </span>
-            </span>
-          </div>
-          <div style="text-align: center;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
-          <div style="display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 0.5rem;">
-            <span>(ลงชื่อ)</span>
-            <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 220px; display: inline-block; margin: 0 8px;">
-              {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
-                              requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
-              {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-            </span>
-            <span>ผู้ใช้บริการ</span>
-          </div>
-          <div style="display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 0.5rem;">
-            <span>(ลงชื่อ)</span>
-            <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 220px; display: inline-block; margin: 0 8px;">
-              {%- set head_approval = requisitions.approval_history | selectattr('approver_role', 'equalto', 'head') | list -%}
-              {%- if head_approval and head_approval[-1].approver -%}
-                {{ head_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
-                head_approval[-1].approver.display_fullname() else head_approval[-1].approver.display_fullname() }}
-              {%- else -%}
-                &nbsp;
-              {%- endif -%}
-            </span>
-            <span>หัวหน้าฝ่าย</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; margin-top: 0.5rem; gap: 2rem;">
-            <div style="text-align: left;">
-              <p>
-                <b>คณะกรรมการตรวจรับ</b>
-              </p>
-              <p style="font-size: 15px; margin-bottom: 0.25rem;">(วงเงินไม่เกิน 100,000.- บาท กรรมการตรวจรับ 1 คน)</p>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>1</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set chairman = inspection_committees | selectattr('committee_position', 'equalto',
-                                        'chairman') | list -%}
-                  {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
-                    {%- set fullname = chairman[0].member.display_fullname() -%}
-                  {%- elif chairman and chairman[0].member -%}
-                    {%- set fullname = chairman[0].member|string -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>ประธานกรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>2</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 0 -%}
-                    {%- set member = members[0].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>3</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 1 -%}
-                    {%- set member = members[1].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
             </div>
-            <div style="text-align: left;">
-              <p>
-                <b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b>
-              </p>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>1</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
-                                        'chairman') | list -%}
-                  {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
-                    {%- set fullname = chairman[0].member.display_fullname() -%}
-                  {%- elif chairman and chairman[0].member -%}
-                    {%- set fullname = chairman[0].member|string -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>ประธานกรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>2</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = specification_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 0 -%}
-                    {%- set member = members[0].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>3</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = specification_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 1 -%}
-                    {%- set member = members[1].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
+            <div style="text-align: center;">จึงเรียนมาเพื่อโปรดพิจารณา</div>
+            <div style="display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 0.5rem;">
+              <span>(ลงชื่อ)</span>
+              <span style="border-bottom: 1px dotted #000;
+                           text-align: center;
+                           min-width: 220px;
+                           display: inline-block;
+                           margin: 0 8px">
+                {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                                requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+              </span>
+              <span>ผู้ใช้บริการ</span>
             </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; margin-top: 0.5rem; gap: 2rem;">
-            <div style="text-align: left;">
-              <p>
-                <b>คณะกรรมการจัดซื้อ</b><span style="margin-left: 0.3rem; font-size: 15px;">(วงเงินมากกว่า 500,000.- บาท)</span>
-              </p>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>1</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set chairman = procurement_committees | selectattr('committee_position', 'equalto',
-                                        'chairman') | list -%}
-                  {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
-                    {%- set fullname = chairman[0].member.display_fullname() -%}
-                  {%- elif chairman and chairman[0].member -%}
-                    {%- set fullname = chairman[0].member|string -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>ประธานกรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>2</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 0 -%}
-                    {%- set member = members[0].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>3</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 1 -%}
-                    {%- set member = members[1].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
+            <div style="display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 0.5rem;">
+              <span>(ลงชื่อ)</span>
+              <span style="border-bottom: 1px dotted #000;
+                           text-align: center;
+                           min-width: 220px;
+                           display: inline-block;
+                           margin: 0 8px">
+                {%- set head_approval = requisitions.approval_history | selectattr('approver_role', 'equalto', 'head') | list -%}
+                {%- if head_approval and head_approval[-1].approver -%}
+                  {{ head_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
+                  head_approval[-1].approver.display_fullname() else head_approval[-1].approver.display_fullname() }}
+                {%- else -%}
+                  &nbsp;
+                {%- endif -%}
+              </span>
+              <span>หัวหน้าฝ่าย</span>
             </div>
-            <div style="text-align: left;">
-              <p>
-                <b>คณะกรรมการราคากลาง</b>
-              </p>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>1</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
+            <div style="display: grid; grid-template-columns: 1fr 1fr; margin-top: 0.5rem; gap: 2rem;">
+              <div style="text-align: left;">
+                <p>
+                  <b>คณะกรรมการตรวจรับ</b>
+                </p>
+                <p style="font-size: 15px; margin-bottom: 0.25rem;">
+                  (วงเงินไม่เกิน 100,000.- บาท กรรมการตรวจรับ 1 คน)
+                </p>
+                <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                  <span>1</span>
+                  <span style="border-bottom: 1px dotted #000;
+                               text-align: center;
+                               min-width: 180px;
+                               display: inline-block;
+                               margin: 0 4px">
+                    {%- set chairman = inspection_committees | selectattr('committee_position', 'equalto',
                                         'chairman') | list -%}
-                  {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
-                    {%- set fullname = chairman[0].member.display_fullname() -%}
-                  {%- elif chairman and chairman[0].member -%}
-                    {%- set fullname = chairman[0].member|string -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>ประธานกรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>2</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = specification_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 0 -%}
-                    {%- set member = members[0].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
+                    {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                      {%- set fullname = chairman[0].member.display_fullname() -%}
+                    {%- elif chairman and chairman[0].member -%}
+                      {%- set fullname = chairman[0].member|string -%}
                     {%- else -%}
-                      {%- set fullname = member|string -%}
+                      {%- set fullname = "" -%}
                     {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
-              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
-                <span>3</span>
-                <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin: 0 4px;">
-                  {%- set members = specification_committees | selectattr('committee_position', 'equalto',
-                                        'member') | list -%}
-                  {%- if members and members|length > 1 -%}
-                    {%- set member = members[1].member -%}
-                    {%- if member and member.display_fullname is defined -%}
-                      {%- set fullname = member.display_fullname() -%}
-                    {%- else -%}
-                      {%- set fullname = member|string -%}
-                    {%- endif -%}
-                  {%- else -%}
-                    {%- set fullname = "" -%}
-                  {%- endif -%}
-                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
-                  {%- if not fullname -%}&nbsp;{%- endif -%}
-                </span>
-                <span>กรรมการ</span>
-              </div>
-            </div>
-          </div>
-            <table style="width: 100%;
-                          min-width: 100%;
-                          max-width: 100%;
-                          height: 200px;
-                          table-layout: fixed;
-                          border-collapse: collapse;
-                          margin: 0.75rem 0 0 0">
-              <tr>
-                <td style="border: 1px solid #333;
-                           border-left: none;
-                           padding: 8px;
-                           vertical-align: top">
-                  <p style="margin: 0 0 0.5rem 0; font-weight: bold;">(สำหรับเจ้าหน้าที่พัสดุ)</p>
-                  <p style="margin: 0.5rem 0; display: flex; align-items: center;">
-                    <span>แหล่งเงินที่ใช้</span>
-                    <span style="margin-left: 0.5rem; display: inline-flex; align-items: center;">
-                      <input type="checkbox" style="width: 18px; height: 18px; margin-right: 6px;" />
-                      <span>เงินรายได้ ......................................</span>
+                    {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                    {%- if not fullname -%}&nbsp;{%- endif -%}
                     </span>
-                  </p>
-                  <p style="margin: 0.5rem 0; padding-left: 5.4rem; display: flex; align-items: center;">
-                    <input type="checkbox"
-                      style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                      requisitions.fund %}checked{% endif %}>
-                    <span>เงินงบประมาณ</span>
-                    <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 120px; display: inline-block; margin-left: 6px;">
-                      {{ requisitions.fund.mas_code if requisitions.fund else '&nbsp;'|safe }}
-                    </span>
-                  </p>
-                  <p style="margin: 0.5rem 0; padding-left: 13.5rem;">
-                    <span style="color: #666; font-size: 15px;">
-                      {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
-                                                'equalto', 'admin') | list %}
-                      {% if admin_approval and admin_approval[-1].timestamp %}
-                        {{ admin_approval[-1].timestamp.strftime("%d/%m/") ~ (admin_approval[-1].timestamp.year + 543) }}
-                      {% else %}
-                        ........../........./...........
-                      {% endif %}
-                    </span>
-                  </p>
-                </td>
-                <td style="border: 1px solid #333; border-right: none; padding: 8px; vertical-align: top">
-                  <p style="margin: 0 0 0.5rem 0;">ได้รับทราบผลพิจารณาแล้ว</p>
-                  {% if requisitions.status == 'complete' %}
-                    <p style="margin: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; align-items: flex-end;">
-                      <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin-right: 6px;">
-                        {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
-                                                    requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
-                        {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                    <span>ประธานกรรมการ</span>
+                  </div>
+                  <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                    <span>2</span>
+                    <span style="border-bottom: 1px dotted #000;
+                                 text-align: center;
+                                 min-width: 180px;
+                                 display: inline-block;
+                                 margin: 0 4px">
+                      {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
+                                            'member') | list -%}
+                      {%- if members and members|length > 0 -%}
+                        {%- set member = members[0].member -%}
+                        {%- if member and member.display_fullname is defined -%}
+                          {%- set fullname = member.display_fullname() -%}
+                        {%- else -%}
+                          {%- set fullname = member|string -%}
+                        {%- endif -%}
+                      {%- else -%}
+                        {%- set fullname = "" -%}
+                      {%- endif -%}
+                      {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                      {%- if not fullname -%}&nbsp;{%- endif -%}
                       </span>
-                      <span>ผู้ใช้บริการ</span>
-                    </p>
-                    <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
-                      {% if requisitions.updated_date %}
-                        {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) ~ requisitions.updated_date.strftime(" %H:%M") }}
-                      {% endif %}
-                    </p>
-                  {% else %}
-                    <p style="margin: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; align-items: flex-end;">
-                      <span style="border-bottom: 1px dotted #000; min-width: 180px; display: inline-block; margin-right: 6px;">&nbsp;</span>
-                      <span>ผู้ใช้บริการ</span>
-                    </p>
-                    <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
-                      .............../.............../...............
-                    </p>
-                  {% endif %}
-                </td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #333;
-                           border-left: none;
-                           border-bottom: none;
-                           padding: 8px;
-                           vertical-align: top">
-                  <span style="font-size: 15px;">
-                    {% set supervisor_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
-                                          'manager') | list %}
-                  </span>
-                  <p style="margin: 0 0 0.5rem 0;">
-                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                      <input type="checkbox"
-                        style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                        supervisor_approval and supervisor_approval[-1].action=='approved' %}checked{% endif %}>
-                      <span>อนุมัติ</span>
-                    </label>
-                  </p>
-                  <p style="margin: 0.5rem 0; display: flex; align-items: center;">
-                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                      <input type="checkbox"
-                        style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                        supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
-                      <span>ไม่อนุมัติ เพราะ</span>
-                    </label>
-                    <span style="border-bottom: 1px dotted #000; min-width: 180px; display: inline-block; margin-left: 6px; text-align: center;">
-                      {%- if supervisor_approval and supervisor_approval[-1].reason -%}
-                        {{ supervisor_approval[-1].reason }}
-                      {%- else -%}&nbsp;{%- endif -%}
-                    </span>
-                  </p>
-                  <p style="margin: 0.75rem 0 0.25rem 0; text-align: right; display: flex; justify-content: flex-end; align-items: flex-end;">
-                    <span style="border-bottom: 1px dotted #000; text-align: center; min-width: 180px; display: inline-block; margin-right: 6px;">
-                      {%- if supervisor_approval and supervisor_approval[-1].approver -%}
-                        {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
-                        supervisor_approval[-1].approver.display_fullname() else
-                        supervisor_approval[-1].approver.display_fullname() }}
-                      {%- else -%}&nbsp;{%- endif -%}
-                    </span>
-                    <span>ผู้อนุมัติ</span>
-                  </p>
-                  <p style="margin: 0.25rem 0; text-align: right; color: #666; font-size: 15px;">
-                    {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
-                      {{ supervisor_approval[-1].timestamp.strftime("%d/%m/") ~ (supervisor_approval[-1].timestamp.year + 543) }}
-                    {%- else -%}
-                      .............../.............../...............
-                    {%- endif -%}</p>
-                  </td>
-                  <td style="border: 1px solid #333;
-                             border-right: none;
-                             border-bottom: none;
-                             padding: 8px;
-                             vertical-align: top">
-                    <p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                      <span>จัดซื้อเรียบร้อยแล้ว</span>
-                      <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" style="width: 18px; height: 18px; margin-right: 4px;" />
-                        <span>ทันเวลา</span>
-                      </label>
-                      <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" style="width: 18px; height: 18px; margin-right: 4px;" />
-                        <span>ไม่ทันเวลา</span>
-                      </label>
-                    </p>
-                    <p style="margin: 0.5rem 0;">
-                      <span>เนื่องจาก .......................................................................</span>
-                    </p>
-                    <p style="margin: 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                      <span>เบิกจ่าย มอ. 011/ ................</span>
-                      <span>วันที่อนุมัติเบิกจ่าย ...............</span>
-                    </p>
-                    <p style="margin: 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                      <span>ร้าน .......................................</span>
-                      <span>จำนวนเงิน .......................</span>
-                    </p>
-                    <p style="margin: 0.5rem 0;">
-                      <span>ตรวจรับวันที่ .............../.............../...............</span>
-                    </p>
-                  </td>
-                    </tr>
-                  </table>
-    </div>
-  </div>
-</div>
-{% endblock %}
+                      <span>กรรมการ</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                      <span>3</span>
+                      <span style="border-bottom: 1px dotted #000;
+                                   text-align: center;
+                                   min-width: 180px;
+                                   display: inline-block;
+                                   margin: 0 4px">
+                        {%- set members = inspection_committees | selectattr('committee_position', 'equalto',
+                                                'member') | list -%}
+                        {%- if members and members|length > 1 -%}
+                          {%- set member = members[1].member -%}
+                          {%- if member and member.display_fullname is defined -%}
+                            {%- set fullname = member.display_fullname() -%}
+                          {%- else -%}
+                            {%- set fullname = member|string -%}
+                          {%- endif -%}
+                        {%- else -%}
+                          {%- set fullname = "" -%}
+                        {%- endif -%}
+                        {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                        {%- if not fullname -%}&nbsp;{%- endif -%}
+                        </span>
+                        <span>กรรมการ</span>
+                      </div>
+                    </div>
+                    <div style="text-align: left;">
+                      <p>
+                        <b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b>
+                      </p>
+                      <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                        <span>1</span>
+                        <span style="border-bottom: 1px dotted #000;
+                                     text-align: center;
+                                     min-width: 180px;
+                                     display: inline-block;
+                                     margin: 0 4px">
+                          {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
+                                                    'chairman') | list -%}
+                          {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                            {%- set fullname = chairman[0].member.display_fullname() -%}
+                          {%- elif chairman and chairman[0].member -%}
+                            {%- set fullname = chairman[0].member|string -%}
+                          {%- else -%}
+                            {%- set fullname = "" -%}
+                          {%- endif -%}
+                          {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                          {%- if not fullname -%}&nbsp;{%- endif -%}
+                          </span>
+                          <span>ประธานกรรมการ</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                          <span>2</span>
+                          <span style="border-bottom: 1px dotted #000;
+                                       text-align: center;
+                                       min-width: 180px;
+                                       display: inline-block;
+                                       margin: 0 4px">
+                            {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                                                        'member') | list -%}
+                            {%- if members and members|length > 0 -%}
+                              {%- set member = members[0].member -%}
+                              {%- if member and member.display_fullname is defined -%}
+                                {%- set fullname = member.display_fullname() -%}
+                              {%- else -%}
+                                {%- set fullname = member|string -%}
+                              {%- endif -%}
+                            {%- else -%}
+                              {%- set fullname = "" -%}
+                            {%- endif -%}
+                            {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                            {%- if not fullname -%}&nbsp;{%- endif -%}
+                            </span>
+                            <span>กรรมการ</span>
+                          </div>
+                          <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                            <span>3</span>
+                            <span style="border-bottom: 1px dotted #000;
+                                         text-align: center;
+                                         min-width: 180px;
+                                         display: inline-block;
+                                         margin: 0 4px">
+                              {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                                                            'member') | list -%}
+                              {%- if members and members|length > 1 -%}
+                                {%- set member = members[1].member -%}
+                                {%- if member and member.display_fullname is defined -%}
+                                  {%- set fullname = member.display_fullname() -%}
+                                {%- else -%}
+                                  {%- set fullname = member|string -%}
+                                {%- endif -%}
+                              {%- else -%}
+                                {%- set fullname = "" -%}
+                              {%- endif -%}
+                              {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                              {%- if not fullname -%}&nbsp;{%- endif -%}
+                              </span>
+                              <span>กรรมการ</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; margin-top: 0.5rem; gap: 2rem;">
+                          <div style="text-align: left;">
+                            <p>
+                              <b>คณะกรรมการจัดซื้อ</b><span style="margin-left: 0.3rem; font-size: 15px;">(วงเงินมากกว่า 500,000.- บาท)</span>
+                            </p>
+                            <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                              <span>1</span>
+                              <span style="border-bottom: 1px dotted #000;
+                                           text-align: center;
+                                           min-width: 180px;
+                                           display: inline-block;
+                                           margin: 0 4px">
+                                {%- set chairman = procurement_committees | selectattr('committee_position', 'equalto',
+                                                                'chairman') | list -%}
+                                {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                                  {%- set fullname = chairman[0].member.display_fullname() -%}
+                                {%- elif chairman and chairman[0].member -%}
+                                  {%- set fullname = chairman[0].member|string -%}
+                                {%- else -%}
+                                  {%- set fullname = "" -%}
+                                {%- endif -%}
+                                {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                {%- if not fullname -%}&nbsp;{%- endif -%}
+                                </span>
+                                <span>ประธานกรรมการ</span>
+                              </div>
+                              <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                                <span>2</span>
+                                <span style="border-bottom: 1px dotted #000;
+                                             text-align: center;
+                                             min-width: 180px;
+                                             display: inline-block;
+                                             margin: 0 4px">
+                                  {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
+                                                                    'member') | list -%}
+                                  {%- if members and members|length > 0 -%}
+                                    {%- set member = members[0].member -%}
+                                    {%- if member and member.display_fullname is defined -%}
+                                      {%- set fullname = member.display_fullname() -%}
+                                    {%- else -%}
+                                      {%- set fullname = member|string -%}
+                                    {%- endif -%}
+                                  {%- else -%}
+                                    {%- set fullname = "" -%}
+                                  {%- endif -%}
+                                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                  {%- if not fullname -%}&nbsp;{%- endif -%}
+                                  </span>
+                                  <span>กรรมการ</span>
+                                </div>
+                                <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                                  <span>3</span>
+                                  <span style="border-bottom: 1px dotted #000;
+                                               text-align: center;
+                                               min-width: 180px;
+                                               display: inline-block;
+                                               margin: 0 4px">
+                                    {%- set members = procurement_committees | selectattr('committee_position', 'equalto',
+                                                                        'member') | list -%}
+                                    {%- if members and members|length > 1 -%}
+                                      {%- set member = members[1].member -%}
+                                      {%- if member and member.display_fullname is defined -%}
+                                        {%- set fullname = member.display_fullname() -%}
+                                      {%- else -%}
+                                        {%- set fullname = member|string -%}
+                                      {%- endif -%}
+                                    {%- else -%}
+                                      {%- set fullname = "" -%}
+                                    {%- endif -%}
+                                    {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                    {%- if not fullname -%}&nbsp;{%- endif -%}
+                                    </span>
+                                    <span>กรรมการ</span>
+                                  </div>
+                                </div>
+                                <div style="text-align: left;">
+                                  <p>
+                                    <b>คณะกรรมการราคากลาง</b>
+                                  </p>
+                                  <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                                    <span>1</span>
+                                    <span style="border-bottom: 1px dotted #000;
+                                                 text-align: center;
+                                                 min-width: 180px;
+                                                 display: inline-block;
+                                                 margin: 0 4px">
+                                      {%- set chairman = specification_committees | selectattr('committee_position', 'equalto',
+                                                                            'chairman') | list -%}
+                                      {%- if chairman and chairman[0].member and chairman[0].member.display_fullname is defined -%}
+                                        {%- set fullname = chairman[0].member.display_fullname() -%}
+                                      {%- elif chairman and chairman[0].member -%}
+                                        {%- set fullname = chairman[0].member|string -%}
+                                      {%- else -%}
+                                        {%- set fullname = "" -%}
+                                      {%- endif -%}
+                                      {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                      {%- if not fullname -%}&nbsp;{%- endif -%}
+                                      </span>
+                                      <span>ประธานกรรมการ</span>
+                                    </div>
+                                    <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                                      <span>2</span>
+                                      <span style="border-bottom: 1px dotted #000;
+                                                   text-align: center;
+                                                   min-width: 180px;
+                                                   display: inline-block;
+                                                   margin: 0 4px">
+                                        {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                                                                                'member') | list -%}
+                                        {%- if members and members|length > 0 -%}
+                                          {%- set member = members[0].member -%}
+                                          {%- if member and member.display_fullname is defined -%}
+                                            {%- set fullname = member.display_fullname() -%}
+                                          {%- else -%}
+                                            {%- set fullname = member|string -%}
+                                          {%- endif -%}
+                                        {%- else -%}
+                                          {%- set fullname = "" -%}
+                                        {%- endif -%}
+                                        {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                        {%- if not fullname -%}&nbsp;{%- endif -%}
+                                        </span>
+                                        <span>กรรมการ</span>
+                                      </div>
+                                      <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                                        <span>3</span>
+                                        <span style="border-bottom: 1px dotted #000;
+                                                     text-align: center;
+                                                     min-width: 180px;
+                                                     display: inline-block;
+                                                     margin: 0 4px">
+                                          {%- set members = specification_committees | selectattr('committee_position', 'equalto',
+                                                                                    'member') | list -%}
+                                          {%- if members and members|length > 1 -%}
+                                            {%- set member = members[1].member -%}
+                                            {%- if member and member.display_fullname is defined -%}
+                                              {%- set fullname = member.display_fullname() -%}
+                                            {%- else -%}
+                                              {%- set fullname = member|string -%}
+                                            {%- endif -%}
+                                          {%- else -%}
+                                            {%- set fullname = "" -%}
+                                          {%- endif -%}
+                                          {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                          {%- if not fullname -%}&nbsp;{%- endif -%}
+                                          </span>
+                                          <span>กรรมการ</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <table style="width: 100%;
+                                                  min-width: 100%;
+                                                  max-width: 100%;
+                                                  height: 200px;
+                                                  table-layout: fixed;
+                                                  border-collapse: collapse;
+                                                  margin: 0.75rem 0 0 0">
+                                      <tr>
+                                        <td style="border: 1px solid #333; border-left: none; padding: 8px; vertical-align: top">
+                                          <p style="margin: 0 0 0.5rem 0; font-weight: bold;">(สำหรับเจ้าหน้าที่พัสดุ)</p>
+                                          <p style="margin: 0.5rem 0; display: flex; align-items: center;">
+                                            <span>แหล่งเงินที่ใช้</span>
+                                            <span style="margin-left: 0.5rem; display: inline-flex; align-items: center;">
+                                              <input type="checkbox" style="width: 18px; height: 18px; margin-right: 6px;" />
+                                              <span>เงินรายได้ ......................................</span>
+                                            </span>
+                                          </p>
+                                          <p style="margin: 0.5rem 0; padding-left: 5.4rem; display: flex; align-items: center;">
+                                            <input type="checkbox"
+                                              style="width: 18px; height: 18px; margin-right: 6px;" {% if
+                                              requisitions.fund %}checked{% endif %}>
+                                              <span>เงินงบประมาณ</span>
+                                              <span style="border-bottom: 1px dotted #000;
+                                                           text-align: center;
+                                                           min-width: 120px;
+                                                           display: inline-block;
+                                                           margin-left: 6px">
+                                                {{ requisitions.fund.mas_code if requisitions.fund else '&nbsp;'|safe }}
+                                              </span>
+                                            </p>
+                                            <p style="margin: 0.5rem 0; padding-left: 13.5rem;">
+                                              <span style="color: #666; font-size: 15px;">
+                                                {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
+                                                                                                'equalto', 'admin') | list %}
+                                                {% if admin_approval and admin_approval[-1].timestamp %}
+                                                  {{ admin_approval[-1].timestamp.strftime("%d/%m/") ~ (admin_approval[-1].timestamp.year + 543) }}
+                                                {% else %}
+                                                  ........../........./...........
+                                                {% endif %}
+                                              </span>
+                                            </p>
+                                          </td>
+                                          <td style="border: 1px solid #333; border-right: none; padding: 8px; vertical-align: top">
+                                            <p style="margin: 0 0 0.5rem 0;">ได้รับทราบผลพิจารณาแล้ว</p>
+                                            {% if requisitions.status == 'complete' %}
+                                              <p style="margin: 0.75rem 0;
+                                                        text-align: right;
+                                                        display: flex;
+                                                        justify-content: flex-end;
+                                                        align-items: flex-end">
+                                                <span style="border-bottom: 1px dotted #000;
+                                                             text-align: center;
+                                                             min-width: 180px;
+                                                             display: inline-block;
+                                                             margin-right: 6px">
+                                                  {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
+                                                                                                    requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                                                  {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                                </span>
+                                                <span>ผู้ใช้บริการ</span>
+                                              </p>
+                                              <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
+                                                {% if requisitions.updated_date %}
+                                                  {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) ~ requisitions.updated_date.strftime(" %H:%M") }}
+                                                {% endif %}
+                                              </p>
+                                            {% else %}
+                                              <p style="margin: 0.75rem 0;
+                                                        text-align: right;
+                                                        display: flex;
+                                                        justify-content: flex-end;
+                                                        align-items: flex-end">
+                                                <span style="border-bottom: 1px dotted #000; min-width: 180px; display: inline-block; margin-right: 6px;">&nbsp;</span>
+                                                <span>ผู้ใช้บริการ</span>
+                                              </p>
+                                              <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
+                                                .............../.............../...............
+                                              </p>
+                                            {% endif %}
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td style="border: 1px solid #333;
+                                                     border-left: none;
+                                                     border-bottom: none;
+                                                     padding: 8px;
+                                                     vertical-align: top">
+                                            <span style="font-size: 15px;">
+                                              {% set supervisor_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
+                                                                                            'manager') | list %}
+                                            </span>
+                                            <p style="margin: 0 0 0.5rem 0;">
+                                              <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                                                <input type="checkbox"
+                                                  style="width: 18px; height: 18px; margin-right: 6px;" {% if
+                                                  supervisor_approval and supervisor_approval[-1].action=='approved' %}checked{% endif %}>
+                                                  <span>อนุมัติ</span>
+                                                </label>
+                                              </p>
+                                              <p style="margin: 0.5rem 0; display: flex; align-items: center;">
+                                                <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                                                  <input type="checkbox"
+                                                    style="width: 18px; height: 18px; margin-right: 6px;" {% if
+                                                    supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
+                                                    <span>ไม่อนุมัติ เพราะ</span>
+                                                  </label>
+                                                  <span style="border-bottom: 1px dotted #000;
+                                                               min-width: 180px;
+                                                               display: inline-block;
+                                                               margin-left: 6px;
+                                                               text-align: center">
+                                                    {%- if supervisor_approval and supervisor_approval[-1].reason -%}
+                                                      {{ supervisor_approval[-1].reason }}
+                                                    {%- else -%}&nbsp;{%- endif -%}
+                                                    </span>
+                                                  </p>
+                                                  <p style="margin: 0.75rem 0 0.25rem 0;
+                                                            text-align: right;
+                                                            display: flex;
+                                                            justify-content: flex-end;
+                                                            align-items: flex-end">
+                                                    <span style="border-bottom: 1px dotted #000;
+                                                                 text-align: center;
+                                                                 min-width: 180px;
+                                                                 display: inline-block;
+                                                                 margin-right: 6px">
+                                                      {%- if supervisor_approval and supervisor_approval[-1].approver -%}
+                                                        {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
+                                                        supervisor_approval[-1].approver.display_fullname() else
+                                                        supervisor_approval[-1].approver.display_fullname() }}
+                                                      {%- else -%}&nbsp;{%- endif -%}
+                                                      </span>
+                                                      <span>ผู้อนุมัติ</span>
+                                                    </p>
+                                                    <p style="margin: 0.25rem 0; text-align: right; color: #666; font-size: 15px;">
+                                                      {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
+                                                        {{ supervisor_approval[-1].timestamp.strftime("%d/%m/") ~ (supervisor_approval[-1].timestamp.year + 543) }}
+                                                      {%- else -%}
+                                                        .............../.............../...............
+                                                      {%- endif -%}
+                                                    </p>
+                                                  </td>
+                                                  <td style="border: 1px solid #333;
+                                                             border-right: none;
+                                                             border-bottom: none;
+                                                             padding: 8px;
+                                                             vertical-align: top">
+                                                    <p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                                      <span>จัดซื้อเรียบร้อยแล้ว</span>
+                                                      <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                                                        <input type="checkbox" style="width: 18px; height: 18px; margin-right: 4px;" />
+                                                        <span>ทันเวลา</span>
+                                                      </label>
+                                                      <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                                                        <input type="checkbox" style="width: 18px; height: 18px; margin-right: 4px;" />
+                                                        <span>ไม่ทันเวลา</span>
+                                                      </label>
+                                                    </p>
+                                                    <p style="margin: 0.5rem 0;">
+                                                      <span>เนื่องจาก .......................................................................</span>
+                                                    </p>
+                                                    <p style="margin: 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                                      <span>เบิกจ่าย มอ. 011/ ................</span>
+                                                      <span>วันที่อนุมัติเบิกจ่าย ...............</span>
+                                                    </p>
+                                                    <p style="margin: 0.5rem 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                                      <span>ร้าน .......................................</span>
+                                                      <span>จำนวนเงิน .......................</span>
+                                                    </p>
+                                                    <p style="margin: 0.5rem 0;">
+                                                      <span>ตรวจรับวันที่ .............../.............../...............</span>
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      {% endblock %}
 
-{% block additional_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-  function downloadPDF() {
-      const element = document.querySelector('.paper-sheet');
-      const reqCode = "{{ requisitions.requisition_code }}".replace(/\//g, '_');
-      const filename = `ใบแจ้งขอซื้อ_จ้างวัสดุ_${reqCode}.pdf`;
-      
-      const opt = {
-          margin:       0,
-          filename:     filename,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { 
-              scale: 2.5, 
-              useCORS: true,
-              logging: false,
-              letterRendering: true
-          },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+                                      {% block additional_js %}
+                                        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+                                        <script>
+                                            function downloadPDF() {
+                                                const element = document.querySelector('.paper-sheet');
+                                                const reqCode = "{{ requisitions.requisition_code }}".replace(/\//g, '_');
+                                                const filename = `ใบแจ้งขอซื้อ_จ้างวัสดุ_${reqCode}.pdf`;
 
-      const btn = document.getElementById('download-btn');
-      const originalHTML = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> กำลังดาวน์โหลด...';
+                                                const opt = {
+                                                    margin: 0,
+                                                    filename: filename,
+                                                    image: {
+                                                        type: 'jpeg',
+                                                        quality: 0.98
+                                                    },
+                                                    html2canvas: {
+                                                        scale: 2.5,
+                                                        useCORS: true,
+                                                        logging: false,
+                                                        letterRendering: true
+                                                    },
+                                                    jsPDF: {
+                                                        unit: 'mm',
+                                                        format: 'a4',
+                                                        orientation: 'portrait'
+                                                    }
+                                                };
 
-      // Temporarily monkeypatch window.getComputedStyle to bypass oklch parsing error in html2canvas
-      const originalGetComputedStyle = window.getComputedStyle;
-      window.getComputedStyle = function(el, pseudoElt) {
-          const style = originalGetComputedStyle(el, pseudoElt);
-          return new Proxy(style, {
-              get(target, prop) {
-                  if (prop === 'getPropertyValue') {
-                      return function(propertyName) {
-                          const val = target.getPropertyValue(propertyName);
-                          if (typeof val === 'string' && val.includes('oklch')) {
-                              return val.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
-                          }
-                          return val;
-                      };
-                  }
-                  const value = target[prop];
-                  if (typeof value === 'string' && value.includes('oklch')) {
-                      return value.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
-                  }
-                  if (typeof value === 'function') {
-                      return value.bind(target);
-                  }
-                  return value;
-              }
-          });
-      };
+                                                const btn = document.getElementById('download-btn');
+                                                const originalHTML = btn.innerHTML;
+                                                btn.disabled = true;
+                                                btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> กำลังดาวน์โหลด...';
 
-      html2pdf().set(opt).from(element).save().then(() => {
-          window.getComputedStyle = originalGetComputedStyle;
-          btn.disabled = false;
-          btn.innerHTML = originalHTML;
-      }).catch(err => {
-          console.error(err);
-          window.getComputedStyle = originalGetComputedStyle;
-          btn.disabled = false;
-          btn.innerHTML = originalHTML;
-          alert('เกิดข้อผิดพลาดในการดาวน์โหลด PDF');
-      });
-  }
+                                                // Temporarily monkeypatch window.getComputedStyle to bypass oklch parsing error in html2canvas
+                                                const originalGetComputedStyle = window.getComputedStyle;
+                                                window.getComputedStyle = function(el, pseudoElt) {
+                                                    const style = originalGetComputedStyle(el, pseudoElt);
+                                                    return new Proxy(style, {
+                                                        get(target, prop) {
+                                                            if (prop === 'getPropertyValue') {
+                                                                return function(propertyName) {
+                                                                    const val = target.getPropertyValue(propertyName);
+                                                                    if (typeof val === 'string' && val.includes('oklch')) {
+                                                                        return val.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
+                                                                    }
+                                                                    return val;
+                                                                };
+                                                            }
+                                                            const value = target[prop];
+                                                            if (typeof value === 'string' && value.includes('oklch')) {
+                                                                return value.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
+                                                            }
+                                                            if (typeof value === 'function') {
+                                                                return value.bind(target);
+                                                            }
+                                                            return value;
+                                                        }
+                                                    });
+                                                };
 
-  (function() {
-      const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-      const params = new URLSearchParams(location.search);
-      const dateStr = params.get('date');
+                                                html2pdf().set(opt).from(element).save().then(() => {
+                                                    window.getComputedStyle = originalGetComputedStyle;
+                                                    btn.disabled = false;
+                                                    btn.innerHTML = originalHTML;
+                                                }).catch(err => {
+                                                    console.error(err);
+                                                    window.getComputedStyle = originalGetComputedStyle;
+                                                    btn.disabled = false;
+                                                    btn.innerHTML = originalHTML;
+                                                    alert('เกิดข้อผิดพลาดในการดาวน์โหลด PDF');
+                                                });
+                                            }
 
-      if (dateStr) {
-          const d = new Date(dateStr);
-          if (!isNaN(d)) {
-              document.getElementById('doc-day').textContent = d.getDate();
-              document.getElementById('doc-month').textContent = TH_MONTHS[d.getMonth()];
-              document.getElementById('doc-year').textContent = d.getFullYear() + 543;
-          }
-      }
-  })();
-</script>
-{% endblock %}
+                                            (function() {
+                                                const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                                                const params = new URLSearchParams(location.search);
+                                                const dateStr = params.get('date');
+
+                                                if (dateStr) {
+                                                    const d = new Date(dateStr);
+                                                    if (!isNaN(d)) {
+                                                        document.getElementById('doc-day').textContent = d.getDate();
+                                                        document.getElementById('doc-month').textContent = TH_MONTHS[d.getMonth()];
+                                                        document.getElementById('doc-year').textContent = d.getFullYear() + 543;
+                                                    }
+                                                }
+                                            })();
+                                        </script>
+                                      {% endblock %}
