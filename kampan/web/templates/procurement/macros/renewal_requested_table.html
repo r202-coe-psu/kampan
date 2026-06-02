@@ -897,11 +897,11 @@
             const picked = input.value;
 
             dlg.close();
-            if (useDefault || !picked) {
-                printDocument(baseUrl);
-            } else {
-                printDocument(baseUrl + '?date=' + encodeURIComponent(picked));
+            let destUrl = baseUrl;
+            if (!useDefault && picked) {
+                destUrl += '?date=' + encodeURIComponent(picked);
             }
+            window.open(destUrl, '_blank');
         }
     </script>
     <script>

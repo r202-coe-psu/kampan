@@ -343,6 +343,7 @@ def document(requisition_procurement_id):
         procurement_committees=committees_by_type["procurement"],
         inspection_committees=committees_by_type["inspection"],
         datetime=datetime,
+        organization=organization,
     )
 
 
