@@ -420,13 +420,24 @@ def billing_modal(requisition_timeline_id):
 
     is_admin = current_user.has_organization_roles("admin")
     is_manager = current_user.has_organization_roles("manager")
+    is_head = current_user.has_organization_roles("head")
     is_owner = (
         requisition_timeline.requisition.purchaser
         and requisition_timeline.requisition.purchaser.user
         and requisition_timeline.requisition.purchaser.user.id == current_user.id
     )
 
-    if not (is_admin or is_manager or is_owner):
+    is_same_division = False
+    if is_head:
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object(), organization=organization, status="active"
+        ).first()
+        purchaser = requisition_timeline.requisition.purchaser
+        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+            if purchaser.division.id == org_user_role.division.id:
+                is_same_division = True
+
+    if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
         abort(403)
 
@@ -755,13 +766,24 @@ def completed_submit(requisition_timeline_id):
 
     is_admin = current_user.has_organization_roles("admin")
     is_manager = current_user.has_organization_roles("manager")
+    is_head = current_user.has_organization_roles("head")
     is_owner = (
         requisition_timeline.requisition.purchaser
         and requisition_timeline.requisition.purchaser.user
         and requisition_timeline.requisition.purchaser.user.id == current_user.id
     )
 
-    if not (is_admin or is_manager or is_owner):
+    is_same_division = False
+    if is_head:
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object(), organization=organization, status="active"
+        ).first()
+        purchaser = requisition_timeline.requisition.purchaser
+        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+            if purchaser.division.id == org_user_role.division.id:
+                is_same_division = True
+
+    if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
         abort(403)
 
@@ -1117,13 +1139,24 @@ def details_specified(requisition_timeline_id):
 
     is_admin = current_user.has_organization_roles("admin")
     is_manager = current_user.has_organization_roles("manager")
+    is_head = current_user.has_organization_roles("head")
     is_owner = (
         requisition_timeline.requisition.purchaser
         and requisition_timeline.requisition.purchaser.user
         and requisition_timeline.requisition.purchaser.user.id == current_user.id
     )
 
-    if not (is_admin or is_manager or is_owner):
+    is_same_division = False
+    if is_head:
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object(), organization=organization, status="active"
+        ).first()
+        purchaser = requisition_timeline.requisition.purchaser
+        if org_user_role and org_user_role.division and purchaser and purchaser.division:
+            if purchaser.division.id == org_user_role.division.id:
+                is_same_division = True
+
+    if not (is_admin or is_manager or is_owner or is_same_division):
         from flask import abort
         abort(403)
 
