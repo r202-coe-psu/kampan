@@ -207,10 +207,15 @@ def admin_page():
     ).order_by("-created_date")
     paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
 
+    cars = models.vehicles.Car.objects(organization=organization)
+    drivers = organization.get_all_drivers()
+
     return render_template(
         "/vehicle_lending/car_permissions/admin_page.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
+        cars=cars,
+        drivers=drivers,
     )
 
 
@@ -227,6 +232,15 @@ def admin_approve():
     car_application = models.vehicle_applications.CarApplication.objects(
         id=car_application_id
     ).first()
+
+    car_id = request.form.get("car")
+    driver_id = request.form.get("driver")
+
+    if car_id:
+        car_application.car = models.vehicles.Car.objects(id=car_id).first()
+    if driver_id:
+        car_application.driver = models.User.objects(id=driver_id).first()
+
     car_application.status = "active"
     car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
         approved_by=current_user._get_current_object(),

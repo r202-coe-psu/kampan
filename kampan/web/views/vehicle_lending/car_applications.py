@@ -79,11 +79,11 @@ def create_or_edit(car_application_id):
 
     form = forms.vehicle_applications.CarApplicationForm()
 
-    form.car.choices = [
+    form.car.choices = [("", "ไม่ได้ระบุ")] + [
         (str(car.id), car.license_plate)
         for car in models.vehicles.Car.objects(organization=organization)
     ]
-    form.driver.choices = [
+    form.driver.choices = [("", "ไม่ได้ระบุ")] + [
         (str(user.id), user.get_resources_fullname_th())
         for user in organization.get_all_drivers()
     ]
@@ -129,11 +129,11 @@ def create_or_edit(car_application_id):
             if car_application.driver:
                 form.driver.data = str(car_application.driver.id)
 
-        form.car.choices = [
+        form.car.choices = [("", "ไม่ได้ระบุ")] + [
             (str(car.id), car.license_plate)
             for car in models.vehicles.Car.objects(organization=organization)
         ]
-        form.driver.choices = [
+        form.driver.choices = [("", "ไม่ได้ระบุ")] + [
             (str(user.id), user.get_resources_fullname_th())
             for user in organization.get_all_drivers()
         ]
@@ -152,19 +152,15 @@ def create_or_edit(car_application_id):
         ).first()
 
     form.populate_obj(car_application)
-    car_application.car = models.vehicles.Car.objects(id=form.car.data).first()
+    if form.car.data:
+        car_application.car = models.vehicles.Car.objects(id=form.car.data).first()
+    else:
+        car_application.car = None
 
     if form.driver.data:
         car_application.driver = models.User.objects(id=form.driver.data).first()
     else:
         car_application.driver = None
-
-    if not car_application.car:
-        return render_template(
-            "/vehicle_lending/car_applications/create_or_edit.html",
-            organization=organization,
-            form=form,
-        )
     car_application.departure_datetime = datetime.datetime.combine(
         form.departure_date.data, form.departure_time.data
     )

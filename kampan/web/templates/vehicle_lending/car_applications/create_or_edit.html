@@ -73,10 +73,6 @@
     {{ renderer.render_field(form.passenger_number) }}
     {{ renderer.render_field(form.phone) }}
   </div>
-  <div class="flex flex-col md:flex-row justify-between w-full gap-2">
-    {{ renderer.render_select_field(form.car, clearable=false) }}
-    {{ renderer.render_select_field(form.driver, clearable=false) }}
-  </div>
   
   <div class="flex flex-row w-full justify-end mt-6">
     <div class="flex justify-end w-full gap-2">

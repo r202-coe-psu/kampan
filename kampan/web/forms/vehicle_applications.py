@@ -49,8 +49,8 @@ class CarApplicationForm(BaseCarApplicationForm):
         validators=[validators.DataRequired(), validators.Length(max=32)],
         render_kw={"placeholder": "ระบุเบอร์โทรศัพท์ที่ติดต่อได้ เช่น 081-234-5678"},
     )
-    car = fields.SelectField("รถยนต์", validate_choice=True)
-    driver = fields.SelectField("พนักงานขับรถ", validators=[validators.DataRequired()], choices=[])
+    car = fields.SelectField("รถยนต์", validators=[validators.Optional()], validate_choice=False)
+    driver = fields.SelectField("พนักงานขับรถ", validators=[validators.Optional()], choices=[])
     using_type = fields.RadioField(
         "ประเภทการใช้รถ",
         choices=models.vehicle_applications.USING_TYPE,
