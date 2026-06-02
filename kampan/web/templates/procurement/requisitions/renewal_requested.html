@@ -26,7 +26,6 @@
       <input type="hidden" name="organization_id" value="{{ organization_id }}">
       {{ renderer.base_render(form.requisition_code, placeholder="ค้นหาเลขที่คำขอ") }}
       {{ renderer.render_select_field(form.status) }}
-      {{ renderer.render_select_field(form.show_item) }}
       <div>
         <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
           <i class="ph ph-magnifying-glass mr-2"></i>
@@ -47,6 +46,14 @@
   {{ render_renewal_requested_items_table(manager_requisitions,current_user, mas_list, organization, manager_action=true) }}
   {% if paginated_manager_requisitions %}
   {{ paginated.render_pagination(paginated_manager_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
+  {% endif %}
+  {% endif %}
+
+  {% if current_user.has_organization_roles("head") %}
+  <h1 class="text-xl font-bold mt-6">รายการขอซื้อขอจ้างที่รอการพิจารณา</h1>
+  {{ render_renewal_requested_items_table(head_pending_requisitions, current_user, mas_list, organization, manager_action=false) }}
+  {% if paginated_head_pending_requisitions %}
+  {{ paginated.render_pagination(paginated_head_pending_requisitions, "procurement.requisitions.renewal_requested", request.args) }}
   {% endif %}
   {% endif %}
 

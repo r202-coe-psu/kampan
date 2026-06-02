@@ -172,13 +172,18 @@ def renewal_requested(requisition_procurement_id):
 
     requisition_code = request.args.get("requisition_code", "")
     status = request.args.get("status", "")
-    show_item = request.args.get("show_item", "")
     if requisition_code:
         query["requisition_code__icontains"] = requisition_code
     if status:
-        query["status"] = status
-    if show_item == "me":
-        query["selected_manager__manager"] = org_user_role
+        if status == "wait_admin":
+            query["status"] = "progress"
+            query["approval_history__not__elemMatch"] = {"approver_role": "admin", "action": "approved"}
+        elif status == "wait_manager":
+            query["status"] = "progress"
+            query["approval_history__elemMatch"] = {"approver_role": "admin", "action": "approved"}
+            query["approval_history__not__elemMatch"] = {"approver_role": "manager", "action": "approved"}
+        else:
+            query["status"] = status
 
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
@@ -233,6 +238,8 @@ def renewal_requested(requisition_procurement_id):
         # Apply filters based on role (lowest privilege first)
         manager_requisitions = None
         manager_submitted_requisitions = None
+        head_pending_requisitions = None
+
         if is_staff and not (is_admin or is_manager or is_head):
             # Filter by purchaser.user matching current_user
             staff_requisitions = []
@@ -257,9 +264,7 @@ def renewal_requested(requisition_procurement_id):
 
         elif is_head and not (is_admin or is_manager):
             purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-
             requisitions = requisitions.filter(purchaser__in=purchaser_ids)
-        # Admin and head see all (no filter)
 
         elif is_manager and is_staff and is_head and is_admin:
             manager_requisitions = requisitions.filter(
@@ -274,9 +279,27 @@ def renewal_requested(requisition_procurement_id):
                     "approver_role": "manager",
                 },
             )
+
+        # Retrieve division-scoped pending requisitions for the head role
+        if is_head and org_user_role and org_user_role.division:
+            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
+            # Enforce that all shown requisitions belong to the user's own division
+            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
+            head_pending_requisitions = requisitions.filter(
+                approval_history__not__elemMatch={
+                    "approver_role": "head",
+                },
+            )
+
+        # Exclude pending/submitted lists from the bottom list to avoid duplicates
+        excluded_ids = []
         if manager_requisitions:
-            manager_req_ids = [req.id for req in manager_requisitions]
-            requisitions = requisitions.filter(id__nin=manager_req_ids)
+            excluded_ids.extend([req.id for req in manager_requisitions])
+        if head_pending_requisitions:
+            excluded_ids.extend([req.id for req in head_pending_requisitions])
+        
+        if excluded_ids:
+            requisitions = requisitions.filter(id__nin=excluded_ids)
 
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
@@ -299,6 +322,13 @@ def renewal_requested(requisition_procurement_id):
                 manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
             )
 
+        paginated_head_pending_requisitions = None
+        if head_pending_requisitions is not None:
+            head_page = request.args.get("head_page", default=1, type=int)
+            paginated_head_pending_requisitions = Pagination(
+                head_pending_requisitions, page=head_page, per_page=per_page
+            )
+
         return render_template(
             "procurement/requisitions/renewal_requested.html",
             requisitions=paginated_requisitions.items,
@@ -307,13 +337,14 @@ def renewal_requested(requisition_procurement_id):
             manager_submitted_requisitions=(
                 paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
             ),
+            head_pending_requisitions=(paginated_head_pending_requisitions.items if paginated_head_pending_requisitions else []),
+            paginated_head_pending_requisitions=paginated_head_pending_requisitions,
             form=form,
             paginated_manager_requisitions=paginated_manager_requisitions,
             paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
             organization=organization,
             selected_category=category,
             status_choices=models.requisitions.STATUS_CHOICES,
-            show_item_choices=models.requisitions.SHOW_ITEM_CHOICES,
             mas_list=mas_list,
         )
 

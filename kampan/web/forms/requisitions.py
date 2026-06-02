@@ -136,11 +136,14 @@ class RenewalRequestedFilterForm(FlaskForm):
     )
     status = fields.SelectField(
         "สถานะ",
-        choices=[("", "ทั้งหมด")] + STATUS_CHOICES,
-        validators=[validators.Optional()],
-    )
-    show_item = fields.SelectField(
-        "แสดงรายการ",
-        choices=[("", "ทั้งหมด"), ("me", "เฉพาะของฉัน")],
+        choices=[
+            ("", "ทั้งหมด"),
+            ("pending", "รอหัวหน้าฝ่ายอนุมัติ"),
+            ("wait_admin", "รอเจ้าหน้าที่พัสดุจัดสรรแหล่งเงิน"),
+            ("wait_manager", "รอผู้บริหารอนุมัติ"),
+            ("progress", "กำลังดำเนินการ (ทั้งหมด)"),
+            ("complete", "อนุมัติ"),
+            ("cancelled", "ยกเลิก"),
+        ],
         validators=[validators.Optional()],
     )
