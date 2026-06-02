@@ -181,9 +181,9 @@
       <i class="ph ph-arrow-left"></i> ย้อนกลับ
     </a>
   </div>
-  <button onclick="window.print()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
-    <i class="ph ph-printer"></i>
-    พิมพ์เอกสาร (PDF)
+  <button id="download-btn" onclick="downloadPDF()" class="btn btn-primary gap-2 shadow hover:scale-105 transition-all">
+    <i class="ph ph-download"></i>
+    ดาวน์โหลดเอกสาร (PDF)
   </button>
 </div>
 
@@ -782,7 +782,71 @@
 {% endblock %}
 
 {% block additional_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+  function downloadPDF() {
+      const element = document.querySelector('.paper-sheet');
+      const reqCode = "{{ requisitions.requisition_code }}".replace(/\//g, '_');
+      const filename = `ใบแจ้งขอซื้อ_จ้างวัสดุ_${reqCode}.pdf`;
+      
+      const opt = {
+          margin:       0,
+          filename:     filename,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { 
+              scale: 2.5, 
+              useCORS: true,
+              logging: false,
+              letterRendering: true
+          },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      const btn = document.getElementById('download-btn');
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> กำลังดาวน์โหลด...';
+
+      // Temporarily monkeypatch window.getComputedStyle to bypass oklch parsing error in html2canvas
+      const originalGetComputedStyle = window.getComputedStyle;
+      window.getComputedStyle = function(el, pseudoElt) {
+          const style = originalGetComputedStyle(el, pseudoElt);
+          return new Proxy(style, {
+              get(target, prop) {
+                  if (prop === 'getPropertyValue') {
+                      return function(propertyName) {
+                          const val = target.getPropertyValue(propertyName);
+                          if (typeof val === 'string' && val.includes('oklch')) {
+                              return val.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
+                          }
+                          return val;
+                      };
+                  }
+                  const value = target[prop];
+                  if (typeof value === 'string' && value.includes('oklch')) {
+                      return value.replace(/oklch\([^)]+\)/g, 'rgb(0, 0, 0)');
+                  }
+                  if (typeof value === 'function') {
+                      return value.bind(target);
+                  }
+                  return value;
+              }
+          });
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+          window.getComputedStyle = originalGetComputedStyle;
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+      }).catch(err => {
+          console.error(err);
+          window.getComputedStyle = originalGetComputedStyle;
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          alert('เกิดข้อผิดพลาดในการดาวน์โหลด PDF');
+      });
+  }
+
   (function() {
       const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
       const params = new URLSearchParams(location.search);
