@@ -25,6 +25,11 @@
             <i class="ph ph-file-plus text-4xl text-blue-500"></i>
           </div>
           <h4 class="text-xl font-semibold text-blue-700 mb-2">ยังไม่มีรายการ</h4>
+          <p class="text-blue-600 max-w-md mb-6">เมื่อมีรายการจะปรากฏที่นี่</p>
+          <div class="inline-flex items-center gap-2 text-sm text-blue-500 bg-white px-4 py-2 rounded-full shadow-sm">
+            <i class="ph ph-info"></i>
+            <span>รอการขอต่ออายุจากผู้ใช้งาน</span>
+          </div>
         </div>
       </div>
     {% else %}
@@ -448,7 +453,7 @@
                                                    onchange="toggleFundAmount('{{ item.id }}','{{ mas.id }}', this.checked)" />
                                           </td>
                                           <td class="font-mono text-md">{{ mas.mas_code }}</td>
-                                          <td class="font-semibold">{{ mas.description }}</td>
+                                          <td class="font-semibold max-w-sm truncate">{{ mas.description }}</td>
                                           <td class="text-right">
                                             {{ mas.reservable_amount | format_amount if mas.reservable_amount is not none else '0.00' }}
                                           </td>
