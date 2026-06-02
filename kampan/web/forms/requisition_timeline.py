@@ -201,7 +201,7 @@ class CompletedForm(FlaskForm):
     inspection_date = fields.DateField("วันที่ตรวจรับ", render_kw={"readonly": True})
 
     # Row 5
-    requisition_code = fields.StringField(
+    payment_number = fields.StringField(
         "เลขที่ มอ เบิกจ่าย", validators=[validators.Optional()]
     )
     paid_date = fields.DateField("วันที่เบิกจ่าย", validators=[validators.Optional()])

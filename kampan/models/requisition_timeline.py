@@ -45,6 +45,7 @@ class CompletedProgressDetail(me.EmbeddedDocument):
     invoice_number = me.StringField(required=False, max_length=200)
     delivery_period = me.IntField(required=False)
     delivery_due_date = me.DateField(required=False)
+    payment_number = me.StringField(required=False, max_length=200)
 
 
 

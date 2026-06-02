@@ -936,7 +936,10 @@ def completed_submit(requisition_timeline_id):
 
         form.delivered_date.data = requisition_timeline.delivery_date
         form.inspection_date.data = requisition_timeline.inspection_date
-        form.requisition_code.data = requisition_timeline.requisition.requisition_code
+        if requisition_timeline.completed_progress_detail:
+            form.payment_number.data = requisition_timeline.completed_progress_detail.payment_number
+        else:
+            form.payment_number.data = ""
         form.total_amount.data = requisition_timeline.payment_amount or 0.0
 
         payment_processed_p = requisition_timeline.find_progress("payment_processed")
@@ -1012,6 +1015,7 @@ def completed_submit(requisition_timeline_id):
         cpd = models.CompletedProgressDetail()
         cpd.contract_number = request.form.get("contract_number", "")
         cpd.receipt_number = request.form.get("receipt_number", "")
+        cpd.payment_number = request.form.get("payment_number", "")
 
         delivery_period_str = request.form.get("delivery_period", "")
         if delivery_period_str:
@@ -1132,10 +1136,12 @@ def completed_submit(requisition_timeline_id):
                 id=requisition_timeline.requisition.id
             ).first()
             if requisition:
-                new_code = request.form.get("requisition_code")
-                if new_code:
-                    requisition.requisition_code = new_code
-                    requisition.save()
+                new_payment = request.form.get("payment_number")
+                if new_payment is not None:
+                    if not requisition_timeline.completed_progress_detail:
+                        requisition_timeline.completed_progress_detail = models.CompletedProgressDetail()
+                    requisition_timeline.completed_progress_detail.payment_number = new_payment
+                    requisition_timeline.save()
 
             paid_date_str = request.form.get("paid_date")
             if paid_date_str:
@@ -1173,9 +1179,6 @@ def completed_submit(requisition_timeline_id):
             id=requisition_timeline.requisition.id
         ).first()
         if requisition:
-            new_code = request.form.get("requisition_code")
-            if new_code:
-                requisition.requisition_code = new_code
             requisition.status = "completed"
             requisition.save()
 
