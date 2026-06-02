@@ -978,14 +978,9 @@
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                {
-                    %
-                    for req_item in item.requisition.items %
-                }
+                {% for req_item in item.requisition.items %}
                 updateHeaderCheckbox('{{ item.id }}_{{ req_item._id }}');
-                {
-                    % endfor %
-                }
+                {% endfor %}
             });
         </script>
       {% endif %}
