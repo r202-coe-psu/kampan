@@ -18,44 +18,98 @@
   </div>
 
   <!-- MAS Info Card -->
-  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
+  <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 mb-6">
     <div class="flex flex-col md:flex-row md:justify-between md:items-start">
-      <div class="flex-1">
-        <div class="flex items-center mb-4">
-          <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center mr-4">
+      <div class="flex-1 w-full">
+        <!-- Card Header with Badges -->
+        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-5 border-b border-gray-100 pb-4">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
             <i class="ph ph-folder-open text-2xl text-blue-700"></i>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-800">{{ mas.description }}</h1>
-            <p class="text-gray-600 mt-1">
-              รหัส MAS: <span class="font-mono font-semibold">{{ mas.mas_code }}</span>
-            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight">รหัสงบประมาณ: {{ mas.mas_code }}</h1>
+              <span class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ปีงบประมาณ {{ mas.year }}
+              </span>
+            </div>
+            <div class="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 text-sm text-gray-600">
+              <div class="flex items-start gap-2">
+                <span class="font-semibold text-gray-500 min-w-[80px]">รายละเอียด:</span>
+                <span class="text-gray-800 font-medium">{{ mas.description }}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="font-semibold text-gray-500 min-w-[80px]">ทิศทาง:</span>
+                <span class="text-gray-800 font-medium">{{ mas.direction }}</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
-          <div class="bg-gray-50 rounded-lg p-4 transition-all hover:bg-gray-100">
-            <p class="text-xs text-gray-500 uppercase font-bold mb-1">งบประมาณทั้งหมด</p>
-            <p class="text-lg font-bold text-gray-800">{{ mas.amount | format_amount }}</p>
+
+        <!-- Dashboard-style Financial Scorecards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Card 1: Total Budget -->
+          <div class="bg-gray-50 border border-gray-200/60 rounded-xl p-4 transition-all duration-300 hover:shadow-md hover:border-gray-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">งบประมาณทั้งหมด</span>
+              <span class="w-7 h-7 rounded-full bg-gray-200/50 flex items-center justify-center text-gray-600">
+                <i class="ph ph-wallet text-sm"></i>
+              </span>
+            </div>
+            <p class="text-xl font-extrabold text-gray-900">{{ mas.amount | format_amount }}</p>
+            <p class="text-xs text-gray-400 mt-1">งบประมาณที่จัดตั้งเริ่มต้น</p>
           </div>
-          <div class="bg-blue-50 rounded-lg p-4 transition-all hover:bg-blue-100">
-            <p class="text-xs text-blue-500 uppercase font-bold mb-1">งบประมาณที่เหลือ</p>
-            <p class="text-lg font-bold text-blue-800">{{ mas.remaining_amount | format_amount }}</p>
+
+          <!-- Card 2: Remaining -->
+          <div class="bg-blue-50/50 border border-blue-100/70 rounded-xl p-4 transition-all duration-300 hover:shadow-md hover:border-blue-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-blue-600 uppercase font-bold tracking-wider">งบประมาณคงเหลือ</span>
+              <span class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                <i class="ph ph-bank text-sm"></i>
+              </span>
+            </div>
+            <p class="text-xl font-extrabold text-blue-800">{{ mas.remaining_amount | format_amount }}</p>
+            <p class="text-xs text-blue-500/70 mt-1">งบที่เหลือหลังหักการเบิกจ่าย</p>
           </div>
-          <div class="bg-teal-50 rounded-lg p-4 transition-all hover:bg-teal-100 border border-teal-100">
-            <p class="text-xs text-teal-600 uppercase font-bold mb-1">จำนวนเงินที่จองได้</p>
-            <p class="text-lg font-bold text-teal-700">{{ mas.reservable_amount | format_amount }}</p>
+
+          <!-- Card 3: Reservable -->
+          <div class="bg-teal-50/50 border border-teal-100/70 rounded-xl p-4 transition-all duration-300 hover:shadow-md hover:border-teal-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-teal-600 uppercase font-bold tracking-wider">จำนวนเงินที่จองได้</span>
+              <span class="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center text-teal-700">
+                <i class="ph ph-lock-key-open text-sm"></i>
+              </span>
+            </div>
+            <p class="text-xl font-extrabold text-teal-800">{{ mas.reservable_amount | format_amount }}</p>
+            <p class="text-xs text-teal-500/70 mt-1">งบประมาณที่สามารถเปิดจองได้</p>
           </div>
-          <div class="bg-yellow-50 rounded-lg p-4 transition-all hover:bg-yellow-100">
-            <p class="text-xs text-yellow-600 uppercase font-bold mb-1">จองไปแล้ว</p>
-            <p class="text-lg font-bold text-yellow-700">
+
+          <!-- Card 4: Reserved -->
+          <div class="bg-amber-50/50 border border-amber-100/70 rounded-xl p-4 transition-all duration-300 hover:shadow-md hover:border-amber-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-amber-600 uppercase font-bold tracking-wider">จองไปแล้ว</span>
+              <span class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                <i class="ph ph-hand-coins text-sm"></i>
+              </span>
+            </div>
+            <p class="text-xl font-extrabold text-amber-800">
               {{ (mas.remaining_amount - mas.reservable_amount) | format_amount }}
             </p>
+            <p class="text-xs text-amber-500/70 mt-1">งบประมาณที่ถูกจอง/ผูกพัน</p>
           </div>
-          <div class="bg-orange-50 rounded-lg p-4 transition-all hover:bg-orange-100">
-            <p class="text-xs text-orange-600 uppercase font-bold mb-1">ใช้ไปแล้ว</p>
-            <p class="text-lg font-bold text-orange-700">
+
+          <!-- Card 5: Spent -->
+          <div class="bg-rose-50/50 border border-rose-100/70 rounded-xl p-4 transition-all duration-300 hover:shadow-md hover:border-rose-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-rose-600 uppercase font-bold tracking-wider">ใช้ไปแล้ว</span>
+              <span class="w-7 h-7 rounded-full bg-rose-100 flex items-center justify-center text-rose-700">
+                <i class="ph ph-check-square text-sm"></i>
+              </span>
+            </div>
+            <p class="text-xl font-extrabold text-rose-800">
               {{ (mas.amount - mas.remaining_amount) | format_amount }}
             </p>
+            <p class="text-xs text-rose-500/70 mt-1">งบประมาณที่ได้ทำการเบิกจ่ายจริง</p>
           </div>
         </div>
       </div>
@@ -64,35 +118,26 @@
 
   <!-- Search bar -->
   <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-    <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
+    <div class="flex items-center gap-2 mb-4 text-gray-700 font-semibold border-b border-gray-100 pb-3">
+      <i class="ph ph-sliders-horizontal text-lg text-blue-700"></i>
+      <span>ตัวกรองการค้นหา</span>
+    </div>
+    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      <div class="w-full search-field-wrapper">
-        {{ renderer.render_field(form.requisition_code, placeholder="เลขที่ใบขอซื้อ") }}
-      </div>
-      <div class="w-full search-field-wrapper">
-        {{ renderer.render_field(form.reserved_by, placeholder="ผู้จอง") }}
-      </div>
-      <div class="w-full search-field-wrapper">
-        {{ renderer.render_select_field(form.reservation_status, placeholder="สถานะการจอง") }}
-      </div>
-      <div class="w-full search-field-wrapper">
-        {# Removed the stray comma here #}
-        {{ renderer.render_field(form.reserved_date, placeholder="วันที่จอง") }}
-      </div>
-      <div class="w-full search-field-wrapper">
-        {{ renderer.render_field(form.amount, placeholder="จำนวนเงินที่จอง") }}
-      </div>
-      <div class="w-full search-field-wrapper">
-        {{ renderer.render_field(form.actual_amount, placeholder="จำนวนเงินที่ใช้จริง") }}
-      </div>
-      <div class="flex gap-2 lg:col-span-1 xl:col-span-2 ">
-        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md flex-1 h-[3rem]">
-          <i class="ph ph-magnifying-glass mr-1"></i>
+      {{ renderer.render_field(form.requisition_code, placeholder="เลขที่ใบขอซื้อ") }}
+      {{ renderer.render_field(form.reserved_by, placeholder="ผู้จอง") }}
+      {{ renderer.render_select_field(form.reservation_status, placeholder="สถานะการจอง") }}
+      {{ renderer.date_field(form.reserved_date, placeholder="วันที่จอง") }}
+      <div>
+        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+          <i class="ph ph-magnifying-glass mr-2"></i>
           ค้นหา
         </button>
-        <a href="{{ url_for('admin.mas.reservation', mas_id=mas.id, organization_id=organization_id) }}"
-          class="btn bg-gray-200 hover:bg-gray-400 text-gray-700 border-none search-field-wrapper shadow-md flex-1 h-[3rem]">
-          <i class="ph ph-arrows-counter-clockwise mr-1"></i>
+      </div>
+      <div class="min-w-fit">
+        <a href="{{ url_for('admin.mas.reservation', mas_id=mas.id, organization_id=organization.id) }}"
+          class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
+          <i class="ph ph-x mr-2"></i>
           ล้างการค้นหา
         </a>
       </div>
