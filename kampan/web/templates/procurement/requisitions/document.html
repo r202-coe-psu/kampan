@@ -213,7 +213,15 @@
               เลขที่ ........................
               <span style="position: absolute; left: 40.5rem; top: 3.5rem; white-space: nowrap">{{ requisitions.requisition_code }}</span>
             </p>
-            <p style="margin: 2;">วันที่รับ .............................</p>
+            <p style="margin: 2;">
+              วันที่รับ .............................
+              <span style="position: absolute; left: 40.5rem; top: 5rem; white-space: nowrap">
+                {% set admin_approval = requisitions.approval_history | selectattr('approver_role', 'equalto', 'admin') | list %}
+                {% if admin_approval and admin_approval[-1].timestamp %}
+                  {{ admin_approval[-1].timestamp.strftime("%d/%m/") ~ (admin_approval[-1].timestamp.year + 543) }}
+                {% endif %}
+              </span>
+            </p>
           </div>
         </div>
         <div style="text-align: right; position: relative; margin-top: 1rem; margin-bottom: 0.5rem;">
@@ -265,7 +273,7 @@
           {% set categories = requisitions.items | map(attribute='category') | list %}
           <span>
             <input type="checkbox" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 6px;" {%
-              if 'software' in categories %}checked{% endif %}>
+              if 'material' in categories %}checked{% endif %}>
               <span style="vertical-align: middle;">ซื้อวัสดุ</span>
             </span>
             <span>
@@ -313,9 +321,9 @@
                   <span>บาท</span>
                 </div>
               {% endfor %}
-              <div style="text-align: right;">
+              <div style="text-align: right; margin-right: 3.1rem; position: relative;">
                 <span style="position: relative;">
-                  <span style="position: absolute; left: 8.4rem; top: -0.3rem; white-space: nowrap">
+                  <span style="position: absolute; left: 7rem; top: -0.3rem; white-space: nowrap">
                     {{ "{:,.2f}".format(sorted_items | map(attribute='amount') | sum) if sorted_items else '0.00' }}
                   </span>
                   รวมเป็นเงินประมาณ ..................................
@@ -324,16 +332,17 @@
               </div>
             </div>
             <div>
-              <span>เหตุผลที่ต้องการใช้
+              <span>เหตุผลที่ต้องการใช้</span>
+              <span style="position: relative;">.......................................................................................................................................................................................
                 <span style="position: absolute;
-                             left: 7rem;
+                             left: 0rem;
+                             top: -0.2rem;
                              white-space: normal;
-                             max-width: 550px;
+                             max-width: 540px;
                              overflow-wrap: break-word;
                              line-height: 1.2">{{ requisitions.reason }}</span>
               </span>
-              <span>...............................................................................................................................................................</span>
-              <span>...............................................................................................................................................................</span>
+              <span>.......................................................................................................................................................................................................................</span>
             </div>
             <div>
               <span>ข้าพเจ้าต้องการใช้วัสดุ/ ครุภัณฑ์/ จ้างเหมา งานแล้วเสร็จ ภายในวันที่</span>
@@ -468,7 +477,7 @@
                       <p>
                         <b>คณะกรรมการกำหนดคุณลักษณะเฉพาะวัสดุ</b>
                       </p>
-                      <div style="display: flex; align-items: flex-end; margin-top: 0.25rem;">
+                      <div style="display: flex; align-items: flex-end; margin-top: 1.25rem;">
                         <span>1</span>
                         <span style="border-bottom: 1px dotted #000;
                                      text-align: center;
@@ -697,124 +706,127 @@
                                                   border-collapse: collapse;
                                                   margin: 0.75rem 0 0 0">
                                       <tr>
-                                        <td style="border: 1px solid #333; border-left: none; padding: 8px; vertical-align: top">
+                                        <td style=style="border: 1px solid #333; border-right: none; padding: 8px; vertical-align: top">
                                           <p style="margin: 0 0 0.5rem 0; font-weight: bold;">(สำหรับเจ้าหน้าที่พัสดุ)</p>
+                                          {% set fund_source_map = {
+                                            "budget": "เงินงบประมาณ",
+                                            "income_institute": "เงินรายได้สำนักฯ",
+                                            "income_central_university": "เงินรายได้ส่วนกลางมหาวิทยาลัย",
+                                            "income_sno": "เงินรายได้ สนอ.",
+                                            "income_central_smartu": "เงินรายได้ส่วนกลาง (Smart U)"
+                                          } %}
                                           <p style="margin: 0.5rem 0; display: flex; align-items: center;">
                                             <span>แหล่งเงินที่ใช้</span>
                                             <span style="margin-left: 0.5rem; display: inline-flex; align-items: center;">
-                                              <input type="checkbox" style="width: 18px; height: 18px; margin-right: 6px;" />
-                                              <span>เงินรายได้ ......................................</span>
-                                            </span>
-                                          </p>
-                                          <p style="margin: 0.5rem 0; padding-left: 5.4rem; display: flex; align-items: center;">
-                                            <input type="checkbox"
-                                              style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                                              requisitions.fund %}checked{% endif %}>
-                                              <span>เงินงบประมาณ</span>
-                                              <span style="border-bottom: 1px dotted #000;
-                                                           text-align: center;
-                                                           min-width: 120px;
-                                                           display: inline-block;
-                                                           margin-left: 6px">
-                                                {{ requisitions.fund.mas_code if requisitions.fund else '&nbsp;'|safe }}
-                                              </span>
-                                            </p>
-                                            <p style="margin: 0.5rem 0; padding-left: 13.5rem;">
-                                              <span style="color: #666; font-size: 15px;">
-                                                {% set admin_approval = requisitions.approval_history | selectattr('approver_role',
-                                                                                                'equalto', 'admin') | list %}
-                                                {% if admin_approval and admin_approval[-1].timestamp %}
-                                                  {{ admin_approval[-1].timestamp.strftime("%d/%m/") ~ (admin_approval[-1].timestamp.year + 543) }}
+                                              <input type="checkbox"
+                                                     style="width: 18px;
+                                                            height: 18px;
+                                                            margin-right: 6px"
+                                                     {% if requisitions.fund_source and requisitions.fund_source != 'budget' %}checked{% endif %} />
+                                              <span>
+                                                {% if requisitions.fund_source and requisitions.fund_source != 'budget' %}
+                                                  {{ fund_source_map.get(requisitions.fund_source, "เงินรายได้") }}
                                                 {% else %}
-                                                  ........../........./...........
+                                                  เงินรายได้ ......................................
                                                 {% endif %}
                                               </span>
+                                            </span>
+                                          </p>
+                                          <div style="margin: 0.5rem 0; padding-left: 1rem;">
+                                            {% if requisitions.fund and requisitions.fund|length > 0 %}
+                                              {% for f in requisitions.fund %}
+                                                <p style="margin: ;">{{ loop.index }}. {{ f.mas.mas_code if f.mas else f.mas_code }}</p>
+                                              {% endfor %}
+                                            {% else %}
+                                              <p style="margin: 0.25rem 0;">1. ....................................................</p>
+                                              <p style="margin: 0.25rem 0;">2. ....................................................</p>
+                                            {% endif %}
+                                          </div>
+                                          <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
+                                            <span style="border-bottom: 1px dotted #000;
+                                                         text-align: center;
+                                                         min-width: 180px;
+                                                         display: inline-block;
+                                                         margin-right: 6px">
+                                              {%- if requisitions.status == 'complete' -%}
+                                                {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                                                {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                              {%- else -%}&nbsp;{%- endif -%}
+                                              </span>
+                                              <span>เจ้าหน้าที่พัสดุ</span>
+                                            </p>
+                                            <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
+                                              {%- if requisitions.status == 'complete' and requisitions.updated_date -%}
+                                                {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) }}
+                                              {%- else -%}
+                                                .............../.............../...............
+                                              {%- endif -%}
                                             </p>
                                           </td>
                                           <td style="border: 1px solid #333; border-right: none; padding: 8px; vertical-align: top">
                                             <p style="margin: 0 0 0.5rem 0;">ได้รับทราบผลพิจารณาแล้ว</p>
-                                            {% if requisitions.status == 'complete' %}
-                                              <p style="margin: 0.75rem 0;
-                                                        text-align: right;
-                                                        display: flex;
-                                                        justify-content: flex-end;
-                                                        align-items: flex-end">
-                                                <span style="border-bottom: 1px dotted #000;
-                                                             text-align: center;
-                                                             min-width: 180px;
-                                                             display: inline-block;
-                                                             margin-right: 6px">
-                                                  {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and
-                                                                                                    requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
+                                            <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
+                                              <span style="border-bottom: 1px dotted #000;
+                                                           text-align: center;
+                                                           min-width: 180px;
+                                                           display: inline-block;
+                                                           margin-right: 6px;
+                                                           margin-top: 1rem">
+                                                {%- if requisitions.status == 'complete' -%}
+                                                  {%- set fullname = requisitions.purchaser.display_fullname() if requisitions.purchaser and requisitions.purchaser.display_fullname is defined else requisitions.purchaser|string -%}
                                                   {{ fullname.split("(")[0] .strip() if '(' in fullname else fullname }}
+                                                {%- else -%}&nbsp;{%- endif -%}
                                                 </span>
                                                 <span>ผู้ใช้บริการ</span>
                                               </p>
-                                              <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
-                                                {% if requisitions.updated_date %}
-                                                  {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) ~ requisitions.updated_date.strftime(" %H:%M") }}
-                                                {% endif %}
+                                              <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
+                                                {%- if requisitions.status == 'complete' and requisitions.updated_date -%}
+                                                  {{ requisitions.updated_date.strftime("%d/%m/") ~ (requisitions.updated_date.year + 543) }}
+                                                {%- else -%}
+                                                  .............../.............../...............
+                                                {%- endif -%}
                                               </p>
-                                            {% else %}
-                                              <p style="margin: 0.75rem 0;
-                                                        text-align: right;
-                                                        display: flex;
-                                                        justify-content: flex-end;
-                                                        align-items: flex-end">
-                                                <span style="border-bottom: 1px dotted #000; min-width: 180px; display: inline-block; margin-right: 6px;">&nbsp;</span>
-                                                <span>ผู้ใช้บริการ</span>
-                                              </p>
-                                              <p style="text-align: right; margin: 0.25rem 0; color: #666; font-size: 15px;">
-                                                .............../.............../...............
-                                              </p>
-                                            {% endif %}
-                                          </td>
-                                        </tr>
-                                        <tr>
-                                          <td style="border: 1px solid #333;
-                                                     border-left: none;
-                                                     border-bottom: none;
-                                                     padding: 8px;
-                                                     vertical-align: top">
-                                            <span style="font-size: 15px;">
-                                              {% set supervisor_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
-                                                                                            'manager') | list %}
-                                            </span>
-                                            <p style="margin: 0 0 0.5rem 0;">
-                                              <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                                                <input type="checkbox"
-                                                  style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                                                  supervisor_approval and supervisor_approval[-1].action=='approved' %}checked{% endif %}>
-                                                  <span>อนุมัติ</span>
-                                                </label>
-                                              </p>
-                                              <p style="margin: 0.5rem 0; display: flex; align-items: center;">
+                                            </td>
+                                          </tr>
+                                          <tr>
+                                            <td style="border: 1px solid #333;
+                                                       border-left: none;
+                                                       border-bottom: none;
+                                                       padding: 8px;
+                                                       vertical-align: top">
+                                              <span style="font-size: 15px;">
+                                                {% set supervisor_approval = requisitions.approval_history | selectattr('approver_role', 'equalto',
+                                                                                                'manager') | list %}
+                                              </span>
+                                              <p style="margin: 0 0 0.5rem 0;">
                                                 <label style="display: inline-flex; align-items: center; cursor: pointer;">
                                                   <input type="checkbox"
                                                     style="width: 18px; height: 18px; margin-right: 6px;" {% if
-                                                    supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
-                                                    <span>ไม่อนุมัติ เพราะ</span>
+                                                    supervisor_approval and supervisor_approval[-1].action=='approved' %}checked{% endif %}>
+                                                    <span>อนุมัติ</span>
                                                   </label>
-                                                  <span style="border-bottom: 1px dotted #000;
-                                                               min-width: 180px;
-                                                               display: inline-block;
-                                                               margin-left: 6px;
-                                                               text-align: center">
-                                                    {%- if supervisor_approval and supervisor_approval[-1].reason -%}
-                                                      {{ supervisor_approval[-1].reason }}
-                                                    {%- else -%}&nbsp;{%- endif -%}
-                                                    </span>
+                                                </p>
+                                                <p style="margin: 0.5rem 0; display: flex; align-items: center;">
+                                                  <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                                                    <input type="checkbox"
+                                                      style="width: 18px; height: 18px; margin-right: 6px;" {% if
+                                                      supervisor_approval and supervisor_approval[-1].action=='rejected' %}checked{% endif %}>
+                                                      <span>ไม่อนุมัติ เพราะ</span>
+                                                    </label>
+                                                    <span style="border-bottom: 1px dotted #000; min-width: 180px; display: inline-block; text-align: center">
+                                                      {%- if supervisor_approval and supervisor_approval[-1].reason -%}
+                                                        {{ supervisor_approval[-1].reason }}
+                                                      {%- else -%}&nbsp;{%- endif -%}
+                                                      </span>
+                                                    </p>
                                                   </p>
-                                                  <p style="margin: 0.75rem 0 0.25rem 0;
-                                                            text-align: right;
-                                                            display: flex;
-                                                            justify-content: flex-end;
-                                                            align-items: flex-end">
+                                                  <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
                                                     <span style="border-bottom: 1px dotted #000;
                                                                  text-align: center;
                                                                  min-width: 180px;
                                                                  display: inline-block;
-                                                                 margin-right: 6px">
+                                                                 margin-right: 6px;
+                                                                 margin-top: 1rem">
                                                       {%- if supervisor_approval and supervisor_approval[-1].approver -%}
                                                         {{ supervisor_approval[-1].approver.display_fullname().split('(')[0].strip() if '(' in
                                                         supervisor_approval[-1].approver.display_fullname() else
@@ -823,7 +835,7 @@
                                                       </span>
                                                       <span>ผู้อนุมัติ</span>
                                                     </p>
-                                                    <p style="margin: 0.25rem 0; text-align: right; color: #666; font-size: 15px;">
+                                                    <p style="margin: 0.25rem 0;  text-align: center; color: #666; font-size: 15px;">
                                                       {%- if supervisor_approval and supervisor_approval[-1].timestamp -%}
                                                         {{ supervisor_approval[-1].timestamp.strftime("%d/%m/") ~ (supervisor_approval[-1].timestamp.year + 543) }}
                                                       {%- else -%}
