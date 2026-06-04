@@ -209,12 +209,16 @@
                     {% set reservation = reservation.found %}
                     <tr class="multi-source-subtable-row bg-base-100" data-item-id="{{ item_id }}">
                       <td>
-                        <label class="inline-flex items-center gap-2 cursor-pointer pl-4">
-                          {{ source_form.is_selected(class_="checkbox checkbox-success checkbox-sm source-toggle",
-                                                    disabled=readonly,
-                                                    **{'data-item-id': item_id, 'data-reservation-id': reservation.id, 'onchange': "toggleSourceAllocation('" ~ item_id ~ "', '" ~ reservation.id ~ "', this.checked)"}) }}
-                          <span class="font-mono text-xs">{{ reservation.mas_code }}</span>
-                          <span class="text-sm text-base-content/70">{{ reservation.mas_name }}</span>
+                        <label class="inline-flex items-start gap-2 cursor-pointer pl-4 pt-1">
+                          <div class="mt-1">
+                            {{ source_form.is_selected(class_="checkbox checkbox-success checkbox-sm source-toggle",
+                                                        disabled=readonly,
+                                                        **{'data-item-id': item_id, 'data-reservation-id': reservation.id, 'onchange': "toggleSourceAllocation('" ~ item_id ~ "', '" ~ reservation.id ~ "', this.checked)"}) }}
+                          </div>
+                          <div class="flex flex-col">
+                            <span class="font-mono text-xs font-semibold">{{ reservation.mas_code }}</span>
+                            <span class="text-sm text-base-content/70 truncate min-w-0 max-w-xl">{{ reservation.mas_name }}</span>
+                          </div>
                         </label>
                       </td>
                       <td class="text-right">
@@ -290,8 +294,12 @@
               <tbody>
                 {% for reservation in reservations %}
                   <tr>
-                    <td class="font-mono text-xs">{{ reservation.mas_code }}</td>
-                    <td>{{ reservation.mas_name }}</td>
+                    <td class="font-mono text-xs ">
+                      <div class="flex flex-col gap-0.5 ml-1 ">
+                        <span>{{ reservation.mas_code }}</span>
+                        <span class="text-sm text-base-content/80 max-w-xs line-clamp-1 ">{{ reservation.mas_name }}</span>
+                      </div>
+                    </td>
                     <td class="text-right font-semibold">{{ reservation.reserved_amount | format_amount }}</td>
                     <td class="text-right font-semibold text-emerald-700" id="summary-used-{{ reservation.id }}">
                       {{ reservation.used_amount | format_amount }}
@@ -337,9 +345,14 @@
       }
 
       function toggleSourceAllocation(itemId, reservationId, checked) {
-          {%if readonly %}
+          {
+              %
+              if readonly %
+          }
           return;
-          {% endif %}
+          {
+              % endif %
+          }
           const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           if (!amountInput) {
@@ -372,12 +385,12 @@
           const priceInput = document.getElementById('item-price-' + itemId);
           const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
-          
+
           if (priceInput && qtyInput && amountInput) {
               const price = parseFloat(priceInput.value) || 0;
               const qty = parseFloat(qtyInput.value) || 0;
               const computedAmount = price * qty;
-              
+
               amountInput.value = computedAmount ? computedAmount.toFixed(2) : '';
               updateItemTotal(itemId);
           }
@@ -500,12 +513,17 @@
           });
           updateSummaryTable();
 
-          {%if readonly %}
+          {
+              %
+              if readonly %
+          }
           document.querySelectorAll('input, select, textarea').forEach(function(el) {
               el.setAttribute('disabled', 'disabled');
               el.classList.add('cursor-not-allowed');
           });
-          {% endif %}
+          {
+              % endif %
+          }
       });
   </script>
 {% endblock content %}
