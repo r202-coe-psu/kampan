@@ -275,7 +275,7 @@ def get_car_applications():
         )
         data = {
             "id": str(car_application.id),
-            "title": f"{time} น. , {car_application.passenger_location or '-'}",
+            "title": f"{time} น. , {car_application.location or '-'}",
             "start": start,
             "end": end,
             "color": color_of_event.get(car_application.status, "gray"),
