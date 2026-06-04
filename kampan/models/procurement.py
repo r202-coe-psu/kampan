@@ -1,6 +1,6 @@
 import datetime
+
 import mongoengine as me
-from dateutil.relativedelta import relativedelta
 
 CATEGORY_CHOICES = [
     ("material", "วัสดุ"),
@@ -40,9 +40,7 @@ class Procurement(me.Document):
 
     # Core fields
     image = me.ImageField()
-    product_number = me.StringField(max_length=50, required=True)
     product_numbers = me.ListField(me.StringField(), default=list)
-    asset_code = me.StringField(max_length=50, required=True)
     asset_codes = me.ListField(me.StringField(), default=list)
     name = me.StringField(max_length=255, required=True)
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)

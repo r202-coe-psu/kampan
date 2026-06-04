@@ -1,21 +1,21 @@
+import datetime
+from io import BytesIO
+
+import pandas as pd
 from flask import (
     Blueprint,
-    render_template,
+    abort,
     redirect,
-    url_for,
+    render_template,
     request,
     send_file,
-    abort,
+    url_for,
 )
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 from flask_mongoengine import Pagination
-from io import BytesIO
-from kampan.web import forms, acl
-from kampan import models, utils
-from ... import redis_rq
 
-import datetime
-import pandas as pd
+from kampan import models
+from kampan.web import acl, forms
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
@@ -63,9 +63,7 @@ def index():
     procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
 
     # Filter for staff role (not admin)
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object()
-    ).first()
+    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
 
     is_staff = current_user.has_organization_roles("staff")
     is_admin = current_user.has_organization_roles("admin")
@@ -76,20 +74,14 @@ def index():
         procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
 
     if org_user_role and is_head and not (is_admin or is_manager):
-        division_procurements = models.OrganizationUserRole.objects(
-            division=org_user_role.division
-        ).only("id")
+        division_procurements = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
         procurement_qs = procurement_qs.filter(responsible_by__in=division_procurements)
 
     # --- Status count section ---
     # Count all procurements for this organization/user role (not paginated, not filtered by category/payment_status)
     base_qs = models.Procurement.objects(organization=organization)
 
-    if (
-        org_user_role
-        and current_user.has_organization_roles("staff")
-        and not current_user.has_organization_roles("admin")
-    ):
+    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
         base_qs = base_qs.filter(responsible_by=org_user_role)
     status_count = {}
     for status, _ in models.procurement.PAYEMENT_STATUS_CHOICES:
@@ -135,32 +127,30 @@ def create():
     organization = current_user.user_setting.current_organization
     members = organization.get_organization_users()
 
-    form = forms.procurement.ProcurementForm(request.form if request.method == "POST" else request.args)
+    if request.method == "POST":
+        form = forms.procurement.ProcurementForm(request.form)
+    else:
+        asset_codes_str = request.args.get("asset_codes", "")
+        asset_codes = [c.strip() for c in asset_codes_str.split(",") if c.strip()]
+        product_numbers_str = request.args.get("product_numbers", "")
+        product_numbers = [c.strip() for c in product_numbers_str.split(",") if c.strip()]
+        
+        form = forms.procurement.ProcurementForm(
+            request.args,
+            asset_codes=asset_codes or [""],
+            product_numbers=product_numbers or [""]
+        )
+
     form.responsible_by.queryset = members
     if form.responsible_by.data is None:
         form.responsible_by.data = []
 
-    if request.method == "POST":
-        asset_codes = request.form.getlist("asset_codes")
-        asset_codes = [c.strip() for c in asset_codes if c.strip()]
-        product_numbers = request.form.getlist("product_numbers")
-        product_numbers = [c.strip() for c in product_numbers if c.strip()]
-    else:
-        asset_codes_str = request.args.get("asset_codes", "")
-        asset_codes = [c.strip() for c in asset_codes_str.split(",") if c.strip()]
-        
-        product_numbers_str = request.args.get("product_numbers", "")
-        if not product_numbers_str:
-            product_numbers_str = request.args.get("product_number", "")
-        product_numbers = [c.strip() for c in product_numbers_str.split(",") if c.strip()]
-
     if not form.validate_on_submit():
+        print(form.errors)
         return render_template(
             "/procurement/products/create.html",
             form=form,
             organization=organization,
-            asset_codes=asset_codes,
-            product_numbers=product_numbers,
         )
 
     procurement = models.Procurement()
@@ -168,23 +158,18 @@ def create():
     del form.image
 
     form.populate_obj(procurement)
+
+    # Save the array of asset codes and product numbers from form data
+    asset_codes = [c.strip() for c in form.asset_codes.data if c and c.strip()]
+    product_numbers = [c.strip() for c in form.product_numbers.data if c and c.strip()]
     
-    # Save the array of asset codes and set quantity
     procurement.asset_codes = asset_codes
-    if asset_codes:
-        procurement.asset_code = asset_codes[0]
-    
-    # Save the array of product numbers
     procurement.product_numbers = product_numbers
-    if product_numbers:
-        procurement.product_number = product_numbers[0]
 
     # set quantity based on max of asset_codes or product_numbers
     procurement.quantity = max(len(asset_codes), len(product_numbers), 1)
 
-    procurement.created_by = procurement.last_updated_by = (
-        current_user._get_current_object()
-    )
+    procurement.created_by = procurement.last_updated_by = current_user._get_current_object()
     procurement.organization = organization
 
     # Save image if uploaded
@@ -209,9 +194,7 @@ def create():
 @login_required
 @acl.organization_roles_required("admin")
 def download_template(organization_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     template_data = {
         "product_number": ["มอ. 011/2567-0001"],
         "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],
@@ -247,11 +230,7 @@ def download_template(organization_id):
 @module.route("/<procurement_id>/picture/<filename>")
 def image(procurement_id, filename):
     procurement = models.Procurement.objects.get(id=procurement_id)
-    if (
-        not procurement
-        or not procurement.image
-        or procurement.image.filename != filename
-    ):
+    if not procurement or not procurement.image or procurement.image.filename != filename:
         return abort(403)
     return send_file(
         procurement.image,

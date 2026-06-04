@@ -1,6 +1,7 @@
-from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
-from wtforms import fields, validators, ValidationError
+from flask_wtf import FlaskForm, file
+from wtforms import ValidationError, fields, validators
+
 from kampan import models
 
 BaseProcurementForm = model_form(
@@ -16,10 +17,8 @@ BaseProcurementForm = model_form(
         "organization",
     ],
     field_args={
-        "product_number": {"label": "เลขที่สินค้า/เลขที่เอกสาร"},
         "name": {"label": "ชื่อรายการ"},
         "category": {"label": "ประเภท"},
-        "asset_code": {"label": "รหัสครุภัณฑ์"},
         "amount": {"label": "จำนวนเงินทั้งหมด (บาท)"},
         "period": {"label": "จำนวนงวด"},
         "company": {"label": "บริษัท"},
@@ -38,19 +37,14 @@ class ProcurementForm(BaseProcurementForm):
         "วันที่สิ้นสุด",
         validators=[validators.Optional()],
     )
-
-    def validate_product_number(self, field):
-        # ตรวจสอบ uniqueness ของ product_number เฉพาะในองค์กรเดียวกัน
-        if field.data:
-            from flask_login import current_user
-            organization = current_user.user_setting.current_organization
-            existing = models.Procurement.objects(product_number=field.data, organization=organization)
-            # ถ้าเป็นการแก้ไข (edit) จะมี id อยู่ใน form
-            form_id = getattr(self, "id", None)
-            if form_id and form_id.data:
-                existing = existing.filter(id__ne=form_id.data)
-            if existing.first():
-                raise ValidationError("เลขที่สินค้า/เลขที่เอกสารนี้ถูกใช้ไปแล้วในองค์กรนี้ กรุณาใช้เลขที่อื่น")
+    asset_codes = fields.FieldList(
+        fields.StringField("รหัสครุภัณฑ์", validators=[validators.InputRequired("กรุณาระบุรหัสครุภัณฑ์")]),
+        min_entries=1,
+    )
+    product_numbers = fields.FieldList(
+        fields.StringField("เลขที่สินค้า/เลขที่เอกสาร", validators=[validators.InputRequired("กรุณาระบุเลขที่เอกสาร")]),
+        min_entries=1,
+    )
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data:
@@ -67,18 +61,14 @@ class ProcurementForm(BaseProcurementForm):
 
     image = fields.FileField(
         "รูปภาพ",
-        validators=[
-            file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
-        ],
+        validators=[file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
 
 
 class EditImageForm(FlaskForm):
     image = fields.FileField(
         "รูปภาพใหม่",
-        validators=[
-            file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")
-        ],
+        validators=[file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
     )
 
 
@@ -105,9 +95,7 @@ class PaymentRecordForm(BasePaymentRecordForm):
         rounding=None,
         validators=[
             validators.InputRequired(),
-            validators.NumberRange(
-                min=0, max=1e12, message="จำนวนเงินต้องอยู่ระหว่าง 0 ถึง 1,000,000,000,000"
-            ),
+            validators.NumberRange(min=0, max=1e12, message="จำนวนเงินต้องอยู่ระหว่าง 0 ถึง 1,000,000,000,000"),
         ],
     )
 

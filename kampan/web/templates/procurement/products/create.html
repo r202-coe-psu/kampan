@@ -44,12 +44,21 @@
                             <span id="product_number_count_badge" class="badge badge-secondary badge-md font-bold text-white">จำนวน 1 รายการ</span>
                         </label>
                         
-                        <!-- Hidden field to satisfy WTForms/MongoEngine product_number validation -->
-                        <input type="hidden" id="{{ form.product_number.id }}" name="{{ form.product_number.name }}" value="">
-
                         <div id="product_numbers_container" class="space-y-2">
-                            <!-- Dynamic inputs will be inserted here -->
+                            {% for subfield in form.product_numbers %}
+                            <div class="flex items-center gap-2 transition-all duration-300" id="product_number_row_{{ loop.index0 }}">
+                                <input type="text" name="{{ subfield.name }}" value="{{ subfield.data or '' }}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
+                                    class="input input-bordered w-full product-number-input text-sm" oninput="updateProductNumberState()">
+                                <button type="button" onclick="removeProductNumberInput({{ loop.index0 }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
                         </div>
+
+                        {% if form.product_numbers.errors %}
+                        <p class="text-error text-xs mt-1.5 font-medium">{{ form.product_numbers.errors[0] }}</p>
+                        {% endif %}
 
                         <div class="mt-2 flex justify-start">
                             <button type="button" onclick="addProductNumberInput()" class="btn btn-xs btn-outline btn-secondary gap-1 rounded-lg">
@@ -66,12 +75,21 @@
                             <span id="asset_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
                         </label>
                         
-                        <!-- Hidden field to satisfy WTForms/MongoEngine asset_code validation -->
-                        <input type="hidden" id="{{ form.asset_code.id }}" name="{{ form.asset_code.name }}" value="">
-
                         <div id="asset_codes_container" class="space-y-2">
-                            <!-- Dynamic inputs will be inserted here -->
+                            {% for subfield in form.asset_codes %}
+                            <div class="flex items-center gap-2 transition-all duration-300" id="asset_code_row_{{ loop.index0 }}">
+                                <input type="text" name="{{ subfield.name }}" value="{{ subfield.data or '' }}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
+                                    class="input input-bordered w-full asset-code-input text-sm" oninput="updateAssetCodeState()">
+                                <button type="button" onclick="removeAssetCodeInput({{ loop.index0 }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
                         </div>
+
+                        {% if form.asset_codes.errors %}
+                        <p class="text-error text-xs mt-1.5 font-medium">{{ form.asset_codes.errors[0] }}</p>
+                        {% endif %}
 
                         <div class="mt-2 flex justify-start">
                             <button type="button" onclick="addAssetCodeInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
@@ -83,39 +101,14 @@
                 </div>
 
                 <script>
+                    let assetCodeIndex = {{ form.asset_codes|length }};
+                    let productNumberIndex = {{ form.product_numbers|length }};
+
                     document.addEventListener('DOMContentLoaded', function () {
-                        // Pre-populate asset codes list
-                        const initialCodes = [
-                            {% if asset_codes %}
-                                {% for code in asset_codes %}
-                                    "{{ code | safe }}",
-                                {% endfor %}
-                            {% endif %}
-                        ];
-
-                        if (initialCodes.length === 0) {
-                            addAssetCodeInput("");
-                        } else {
-                            initialCodes.forEach(code => addAssetCodeInput(code));
-                        }
-
-                        // Pre-populate product numbers list
-                        const initialProductNumbers = [
-                            {% if product_numbers %}
-                                {% for num in product_numbers %}
-                                    "{{ num | safe }}",
-                                {% endfor %}
-                            {% endif %}
-                        ];
-
-                        if (initialProductNumbers.length === 0) {
-                            addProductNumberInput("");
-                        } else {
-                            initialProductNumbers.forEach(num => addProductNumberInput(num));
-                        }
+                        updateAssetCodeState();
+                        updateProductNumberState();
                     });
 
-                    let assetCodeIndex = 0;
                     function addAssetCodeInput(value = "") {
                         const container = document.getElementById('asset_codes_container');
                         const index = assetCodeIndex++;
@@ -125,7 +118,7 @@
                         row.id = `asset_code_row_${index}`;
 
                         row.innerHTML = `
-                            <input type="text" name="asset_codes" value="${value}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
+                            <input type="text" name="asset_codes-${index}" value="${value}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
                                 class="input input-bordered w-full asset-code-input text-sm" oninput="updateAssetCodeState()">
                             <button type="button" onclick="removeAssetCodeInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
                                 <i class="ph ph-trash text-lg"></i>
@@ -151,13 +144,6 @@
 
                     function updateAssetCodeState() {
                         const inputs = document.querySelectorAll('.asset-code-input');
-                        const hiddenInput = document.getElementById('{{ form.asset_code.id }}');
-                        
-                        if (inputs.length > 0) {
-                            hiddenInput.value = inputs[0].value;
-                        } else {
-                            hiddenInput.value = "";
-                        }
 
                         const badge = document.getElementById('asset_count_badge');
                         if (badge) {
@@ -165,7 +151,6 @@
                         }
                     }
 
-                    let productNumberIndex = 0;
                     function addProductNumberInput(value = "") {
                         const container = document.getElementById('product_numbers_container');
                         const index = productNumberIndex++;
@@ -175,7 +160,7 @@
                         row.id = `product_number_row_${index}`;
 
                         row.innerHTML = `
-                            <input type="text" name="product_numbers" value="${value}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
+                            <input type="text" name="product_numbers-${index}" value="${value}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
                                 class="input input-bordered w-full product-number-input text-sm" oninput="updateProductNumberState()">
                             <button type="button" onclick="removeProductNumberInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
                                 <i class="ph ph-trash text-lg"></i>
@@ -201,13 +186,6 @@
 
                     function updateProductNumberState() {
                         const inputs = document.querySelectorAll('.product-number-input');
-                        const hiddenInput = document.getElementById('{{ form.product_number.id }}');
-                        
-                        if (inputs.length > 0) {
-                            hiddenInput.value = inputs[0].value;
-                        } else {
-                            hiddenInput.value = "";
-                        }
 
                         const badge = document.getElementById('product_number_count_badge');
                         if (badge) {
@@ -244,19 +222,27 @@
                 <i class="ph ph-users text-xl text-purple-600 mr-2"></i>
                 ผู้รับผิดชอบ
             </h2>
-            <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label
-                }}</label>
-            <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
-            <div id="responsible_by_list" class="max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
-                {% for user in form.responsible_by.queryset %}
-                <label class="flex items-center space-x-2 py-1 px-2 rounded hover:bg-blue-50 cursor-pointer">
-                    <input type="checkbox" name="responsible_by" value="{{ user.id }}" {% if form.responsible_by.data and (user.id|string in form.responsible_by.data or user in form.responsible_by.data) %}checked{% endif %}>
-                    <span>
-                        {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
-                    </span>
-                </label>
-                {% endfor %}
+            <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label }}</label>
+            
+            <div class="dropdown w-full">
+                <div tabindex="0" role="button" class="select select-bordered w-full h-auto min-h-12 flex flex-wrap gap-1.5 p-2 items-center bg-base-100" id="selected_users_trigger">
+                    <span class="text-base-content/50" id="no_users_placeholder">เลือกผู้รับผิดชอบ...</span>
+                </div>
+                <div tabindex="0" class="dropdown-content z-[2] menu p-4 shadow-lg bg-base-100 border border-base-200 rounded-box w-full mt-1">
+                    <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
+                        class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
+                    <div id="responsible_by_list" class="max-h-48 overflow-y-auto border border-base-200 rounded p-2 bg-base-50 flex flex-col gap-1">
+                        {% for user in form.responsible_by.queryset %}
+                        {% set is_checked = form.responsible_by.data and (user.id|string in form.responsible_by.data or user in form.responsible_by.data) %}
+                        <label class="flex items-center space-x-2 py-1.5 px-2 rounded hover:bg-primary/10 cursor-pointer">
+                            <input type="checkbox" name="responsible_by" value="{{ user.id }}" class="checkbox checkbox-primary checkbox-sm user-checkbox" data-name="{{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}" {% if is_checked %}checked{% endif %} onchange="updateSelectedUsersBadge()">
+                            <span class="text-sm font-medium text-base-content">
+                                {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             {% if form.responsible_by.errors %}
             <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
@@ -350,6 +336,48 @@
             labels[i].style.display = text.includes(filter) ? '' : 'none';
         }
     }
+
+    function updateSelectedUsersBadge() {
+        const trigger = document.getElementById('selected_users_trigger');
+        const placeholder = document.getElementById('no_users_placeholder');
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        
+        // Remove existing badges
+        const badges = trigger.querySelectorAll('.badge');
+        badges.forEach(b => b.remove());
+        
+        let selectedCount = 0;
+        
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedCount++;
+                const name = cb.getAttribute('data-name');
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-primary gap-1 font-medium py-2.5 px-3 text-white rounded-lg text-xs';
+                badge.innerHTML = `${name} <span class="cursor-pointer font-bold hover:text-red-200 ml-1 text-sm leading-none" onclick="removeUserSelection(event, '${cb.value}')">×</span>`;
+                trigger.appendChild(badge);
+            }
+        });
+        
+        if (selectedCount > 0) {
+            placeholder.classList.add('hidden');
+        } else {
+            placeholder.classList.remove('hidden');
+        }
+    }
+    
+    function removeUserSelection(event, userId) {
+        event.stopPropagation(); // Prevent opening/closing dropdown
+        const checkbox = document.querySelector(`.user-checkbox[value="${userId}"]`);
+        if (checkbox) {
+            checkbox.checked = false;
+            updateSelectedUsersBadge();
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedUsersBadge();
+    });
 </script>
 
 
