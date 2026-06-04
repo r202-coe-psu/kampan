@@ -345,14 +345,9 @@
       }
 
       function toggleSourceAllocation(itemId, reservationId, checked) {
-          {
-              %
-              if readonly %
-          }
+          {% if readonly %}
           return;
-          {
-              % endif %
-          }
+          {% endif %}
           const amountInput = document.querySelector('.source-amount[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           const qtyInput = document.querySelector('.source-item-qty[data-item-id="' + itemId + '"][data-reservation-id="' + reservationId + '"]');
           if (!amountInput) {
@@ -513,17 +508,12 @@
           });
           updateSummaryTable();
 
-          {
-              %
-              if readonly %
-          }
+          {% if readonly %}
           document.querySelectorAll('input, select, textarea').forEach(function(el) {
               el.setAttribute('disabled', 'disabled');
               el.classList.add('cursor-not-allowed');
           });
-          {
-              % endif %
-          }
+          {% endif %}
       });
   </script>
 {% endblock content %}
