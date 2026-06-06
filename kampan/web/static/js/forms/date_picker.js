@@ -5,7 +5,12 @@ function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
   const buttonText = document.getElementById(buttonTextId);
 
   if (input.value) {
-    buttonText.innerText = new Date(input.value).toLocaleDateString('en-GB');
+    const parts = input.value.split('-');
+    if (parts.length === 3) {
+      buttonText.innerText = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    } else {
+      buttonText.innerText = input.value;
+    }
   }
 
   button.addEventListener("click", function () {
@@ -27,9 +32,11 @@ function initDateRange(buttonId, popoverId, startId, endId, buttonTextId) {
   const buttonText = document.getElementById(buttonTextId);
 
   if (start_input.value && end_input.value) {
-    const start_date = new Date(start_input.value);
-    const end_date = new Date(end_input.value);
-    buttonText.innerText = `${start_date.toLocaleDateString('en-GB')} - ${end_date.toLocaleDateString('en-GB')}`;
+    const startParts = start_input.value.split('-');
+    const endParts = end_input.value.split('-');
+    const startStr = startParts.length === 3 ? `${startParts[2]}/${startParts[1]}/${startParts[0]}` : start_input.value;
+    const endStr = endParts.length === 3 ? `${endParts[2]}/${endParts[1]}/${endParts[0]}` : end_input.value;
+    buttonText.innerText = `${startStr} - ${endStr}`;
   }
 
   button.addEventListener("click", function () {

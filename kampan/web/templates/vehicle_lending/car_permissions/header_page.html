@@ -19,9 +19,9 @@
 
     {{ renderer.render_search_select_field(form.creator) }}
     {{ renderer.base_render(form.location) }}
-    {{ renderer.base_render(form.departure_date) }}
-    {{ renderer.base_render(form.return_date) }}
-    {{ renderer.base_render(form.created_date) }}
+    {{ renderer.date_field(form.departure_date) }}
+    {{ renderer.date_field(form.return_date) }}
+    {{ renderer.date_field(form.created_date) }}
 
     <div class="flex gap-2 min-w-fit mt-4 md:mt-0">
       <button type="submit" class="btn btn-primary shadow-md">

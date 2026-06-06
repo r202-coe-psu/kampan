@@ -264,7 +264,7 @@ file_input -->
              style="max-height: 400px;
                     overflow-y: auto"
              {% if readonly or disabled %}hidden{% endif %}>
-          <calendar-date class="cally" onchange="{ const callyData = document.getElementById('cally-data-{{ field.id }}'); callyData.innerText = new Date(this.value).toLocaleDateString('en-GB'); document.getElementById('{{ field.id }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ field.id }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }" value="{{ field.data.strftime("%Y-%m-%d") if field.data else '' }}">
+          <calendar-date class="cally" onchange="{ const callyData = document.getElementById('cally-data-{{ field.id }}'); const parts = this.value.split('-'); callyData.innerText = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : this.value; document.getElementById('{{ field.id }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ field.id }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }" value="{{ field.data.strftime("%Y-%m-%d") if field.data else '' }}">
           <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
           <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
           <calendar-month></calendar-month>
@@ -339,7 +339,7 @@ file_input -->
         <div id="cally-popover-{{ start_field.id }}"
              class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
              {% if readonly or disabled %}hidden{% endif %}>
-          <calendar-range months="2" class="cally" onchange="{ const [start_date, end_date] = this.value.split('/'); const callyData = document.getElementById('cally-data-{{ start_field.id }}'); callyData.innerText = `${new Date(start_date).toLocaleDateString('en-GB')} - ${new Date(end_date).toLocaleDateString('en-GB')}`; document.getElementById('{{ start_field.id }}').value = start_date; document.getElementById('{{ end_field.id }}').value = end_date; document.getElementById('cally-popover-{{ start_field.id }}').classList.add('hidden'); const valueChangeEvent = new Event('change', { bubbles: true }); callyData.dispatchEvent(valueChangeEvent); }" value="{{ start_date }}/{{ end_date }}">
+          <calendar-range months="2" class="cally" onchange="{ const [start_date, end_date] = this.value.split('/'); const callyData = document.getElementById('cally-data-{{ start_field.id }}'); const startParts = start_date.split('-'); const endParts = end_date.split('-'); const startStr = startParts.length === 3 ? `${startParts[2]}/${startParts[1]}/${startParts[0]}` : start_date; const endStr = endParts.length === 3 ? `${endParts[2]}/${endParts[1]}/${endParts[0]}` : end_date; callyData.innerText = `${startStr} - ${endStr}`; document.getElementById('{{ start_field.id }}').value = start_date; document.getElementById('{{ end_field.id }}').value = end_date; document.getElementById('cally-popover-{{ start_field.id }}').classList.add('hidden'); const valueChangeEvent = new Event('change', { bubbles: true }); callyData.dispatchEvent(valueChangeEvent); }" value="{{ start_date }}/{{ end_date }}">
           <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
           <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
           <div class="flex flex-col lg:flex-row">
