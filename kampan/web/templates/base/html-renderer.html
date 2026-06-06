@@ -705,6 +705,7 @@ file_input -->
             class="w-full select gap-2 items-center flex validator {% if readonly %}input-readonly{% endif %} {% if field.errors %}select-error{% endif %}"
             autocomplete="off" oninput="updateHiddenValue('{{ field_id }}'); filterDropdown('{{ field_id }}')"
             onfocus="showDropdown('{{ field_id }}')" onblur="validateInputValue('{{ field_id }}')"
+            onkeydown="handleKeyDown(event, '{{ field_id }}')"
             value="{{ unique_choices.get(selected_value) if unique_choices.get(selected_value) else selected_value }}" {% if
             disabled %}disabled{% endif %} {% if readonly %}readonly{% endif %} {% if field.flags.required %}required="true"{% endif %}>
 
@@ -784,7 +785,7 @@ file_input -->
                 let input = document.getElementById(fieldId + "-input");
                 let hiddenInput = document.getElementById(fieldId);
 
-                hiddenInput.value = input.value;
+                hiddenInput.value = "";
 
                 // ✅ ล้างข้อความ validation ตอนพิมพ์
                 input.setCustomValidity("");
@@ -818,6 +819,24 @@ file_input -->
                     }
                 } else {
                     input.setCustomValidity(""); // ล้าง error เมื่อถูกต้องหรือยังพิมพ์
+                }
+            }
+
+            function handleKeyDown(event, fieldId) {
+                if (event.key === "Enter") {
+                    let input = document.getElementById(fieldId + "-input");
+                    let dropdown = document.getElementById(fieldId + "-dropdown");
+                    
+                    validateInputValue(fieldId);
+                    
+                    if (!input.checkValidity()) {
+                        event.preventDefault();
+                        input.reportValidity();
+                    } else {
+                        if (dropdown) {
+                            dropdown.style.display = "none";
+                        }
+                    }
                 }
             }
 

@@ -1,5 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
+{% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 
@@ -10,6 +11,30 @@
 
 {% endblock %}
 {% block content %}
+<!-- Filter Form -->
+<div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm mb-4">
+  <form method="GET" action="{{ url_for('vehicle_lending.car_permissions.admin_page') }}" class="flex flex-col md:flex-row md:items-end gap-4">
+    <input type="hidden" name="organization_id" value="{{ organization.id }}">
+
+    {{ renderer.render_search_select_field(form.creator) }}
+    {{ renderer.base_render(form.location) }}
+    {{ renderer.base_render(form.departure_date) }}
+    {{ renderer.base_render(form.return_date) }}
+    {{ renderer.base_render(form.created_date) }}
+
+    <div class="flex gap-2 min-w-fit mt-4 md:mt-0">
+      <button type="submit" class="btn btn-primary shadow-md">
+        <i class="ph ph-magnifying-glass mr-2"></i>
+        ค้นหา
+      </button>
+      <a href="?organization_id={{ organization.id }}" class="btn btn-outline shadow-md">
+        <i class="ph ph-x mr-2"></i>
+        ล้างการค้นหา
+      </a>
+    </div>
+  </form>
+</div>
+
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
   <div class="overflow-x-auto mt-2 rounded-xl">
     {% if paginated_car_applications.total %}
@@ -301,6 +326,10 @@
         {% endfor %}
       </tbody>
     </table>
+
+    <div class="mt-4">
+      {{ paginated.render_pagination(paginated_car_applications, "vehicle_lending.car_permissions.admin_page", kwargs=request.args) }}
+    </div>
 
     {% else %}
     <div class="flex w-full justify-center py-6 text-xl"> ไม่พบข้อมูลในขณะนี้</div>

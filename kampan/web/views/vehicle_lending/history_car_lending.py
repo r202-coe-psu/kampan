@@ -1,24 +1,22 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    send_file,
-    abort,
-)
 import calendar
-from flask_login import login_required, current_user
-import mongoengine as me
-from flask_mongoengine import Pagination
 import datetime
 from uuid import uuid4
-import pandas as pd
+
+from flask import (
+    Blueprint,
+    abort,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask_login import current_user
+from flask_mongoengine import Pagination
 from mongoengine.queryset.visitor import Q
 
-from kampan.web import forms, acl
 from kampan import models
 from kampan.repositories.history_car_lending import HistoryCarLendingRepository
+from kampan.web import acl, forms
 
 module = Blueprint("history_car_lending", __name__, url_prefix="/history_car_lending")
 
@@ -30,19 +28,63 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    date_str = request.args.get("date")
-    target_date = None
-    sort_by = request.args.get("sort_by", "departure_datetime")
-    order_dir = request.args.get("order", "asc")
+
+    form = forms.vehicle_applications.CarLendingHistoryFilterForm(request.args)
+    org_users = models.OrganizationUserRole.objects(
+        organization=organization, status="active"
+    )
+    user_choices = [("", "-- ทั้งหมด --")]
+    for org_user in org_users:
+        if org_user.user:
+            user_choices.append(
+                (
+                    str(org_user.user.id),
+                    org_user.user.get_resources_fullname_th()
+                    or org_user.user.get_name(),
+                )
+            )
+    form.creator.choices = user_choices
+
+    creator_id = form.creator.data
+    location = form.location.data or ""
+    departure_date = form.departure_date.data
+    return_date = form.return_date.data
+    created_date = form.created_date.data
+    sort_by = form.sort_by.data or "departure_datetime"
+    order_dir = form.order.data or "asc"
 
     query = Q(organization=organization, status="completed")
+    if creator_id:
+        query &= Q(creator=creator_id)
+    if location:
+        query &= Q(location__icontains=location)
 
-    if date_str:
-        target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-        start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
-        end_of_day = datetime.datetime.combine(target_date, datetime.time.max)
+    if departure_date:
         query &= Q(
-            departure_datetime__gte=start_of_day, departure_datetime__lte=end_of_day
+            departure_datetime__gte=datetime.datetime.combine(
+                departure_date, datetime.time.min
+            ),
+            departure_datetime__lte=datetime.datetime.combine(
+                departure_date, datetime.time.max
+            ),
+        )
+    if return_date:
+        query &= Q(
+            return_datetime__gte=datetime.datetime.combine(
+                return_date, datetime.time.min
+            ),
+            return_datetime__lte=datetime.datetime.combine(
+                return_date, datetime.time.max
+            ),
+        )
+    if created_date:
+        query &= Q(
+            created_date__gte=datetime.datetime.combine(
+                created_date, datetime.time.min
+            ),
+            created_date__lte=datetime.datetime.combine(
+                created_date, datetime.time.max
+            ),
         )
 
     sort_field = sort_by if order_dir == "asc" else f"-{sort_by}"
@@ -54,17 +96,13 @@ def index():
     paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
     today_date = datetime.date.today()
 
-    page = request.args.get("page", 1, type=int)
-    paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
     return render_template(
         "/vehicle_lending/history_car_lending/index.html",
         organization=organization,
         car_lendings=car_lendings,
-        target_date=target_date,
         today_date=today_date,
-        sort_by=sort_by,
-        order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
+        form=form,
     )
 
 

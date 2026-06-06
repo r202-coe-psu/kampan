@@ -1,9 +1,8 @@
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed
 from flask_mongoengine.wtf import model_form
+from flask_wtf import FlaskForm
 from wtforms import fields, validators, widgets
-from kampan import models
 
+from kampan import models
 
 BaseCarApplicationForm = model_form(
     models.vehicle_applications.CarApplication,
@@ -49,8 +48,12 @@ class CarApplicationForm(BaseCarApplicationForm):
         validators=[validators.DataRequired(), validators.Length(max=32)],
         render_kw={"placeholder": "ระบุเบอร์โทรศัพท์ที่ติดต่อได้ เช่น 081-234-5678"},
     )
-    car = fields.SelectField("รถยนต์", validators=[validators.Optional()], validate_choice=False)
-    driver = fields.SelectField("พนักงานขับรถ", validators=[validators.Optional()], choices=[])
+    car = fields.SelectField(
+        "รถยนต์", validators=[validators.Optional()], validate_choice=False
+    )
+    driver = fields.SelectField(
+        "พนักงานขับรถ", validators=[validators.Optional()], choices=[]
+    )
     using_type = fields.RadioField(
         "ประเภทการใช้รถ",
         choices=models.vehicle_applications.USING_TYPE,
@@ -214,4 +217,57 @@ class ReturnMotorcycleApplicationForm(BaseReturnMotorcycleApplicationForm):
         "เวลากลับ",
         # format="%I:%M %p",
         validators=[validators.InputRequired()],
+    )
+
+
+class CarPermissionFilterForm(FlaskForm):
+    creator = fields.SelectField(
+        "ผู้ขอใช้รถยนต์",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+    location = fields.StringField(
+        "สถานที่ต้องการจะไป",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "ค้นหาสถานที่"},
+    )
+
+    departure_date = fields.DateField(
+        "วันที่ไป",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "เลือกวันที่"},
+    )
+    return_date = fields.DateField(
+        "วันที่ถึง",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "เลือกวันที่"},
+    )
+    created_date = fields.DateField(
+        "วันที่ขอ",
+        validators=[validators.Optional()],
+        render_kw={"placeholder": "เลือกวันที่"},
+    )
+
+
+class CarLendingHistoryFilterForm(CarPermissionFilterForm):
+    sort_by = fields.SelectField(
+        "เรียงลำดับตาม",
+        choices=[
+            ("departure_datetime", "วันเวลาออกเดินทาง"),
+            ("return_datetime", "วันเวลากลับ"),
+            ("created_date", "วันที่สร้าง"),
+        ],
+        default="departure_datetime",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+    order = fields.SelectField(
+        "ลำดับ",
+        choices=[
+            ("asc", "น้อยไปมาก"),
+            ("desc", "มากไปน้อย"),
+        ],
+        default="asc",
+        validators=[validators.Optional()],
+        validate_choice=False,
     )

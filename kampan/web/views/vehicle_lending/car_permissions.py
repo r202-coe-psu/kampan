@@ -1,20 +1,20 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    send_file,
-    abort,
-    current_app,
-)
-from flask_login import login_required, current_user
-import mongoengine as me
-from flask_mongoengine import Pagination
 import datetime
 
-from kampan.web import forms, acl
+import mongoengine as me
+from flask import (
+    Blueprint,
+    current_app,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask_login import current_user
+from flask_mongoengine import Pagination
+
 from kampan import models, utils
+from kampan.web import acl, forms
+
 from ... import redis_rq
 
 module = Blueprint("car_permissions", __name__, url_prefix="/car_permissions")
@@ -27,17 +27,80 @@ def header_page():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    car_applications = models.vehicle_applications.CarApplication.objects(
-        organization=organization,
-        status="pending on header",
-        division=current_user.get_current_division(),
+
+    form = forms.vehicle_applications.CarPermissionFilterForm(request.args)
+    org_users = models.OrganizationUserRole.objects(
+        organization=organization, status="active"
     )
-    paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
+    user_choices = []
+    for org_user in org_users:
+        if org_user.user:
+            user_choices.append(
+                (
+                    str(org_user.user.id),
+                    org_user.user.get_resources_fullname_th()
+                    or org_user.user.get_name(),
+                )
+            )
+    form.creator.choices = user_choices
+
+    creator_id = form.creator.data
+    location = form.location.data or ""
+    departure_date = form.departure_date.data
+    return_date = form.return_date.data
+    created_date = form.created_date.data
+
+    query = me.Q(organization=organization, status="pending on header")
+    if creator_id:
+        query &= me.Q(creator=creator_id)
+
+    if current_user.get_current_division():
+        query &= me.Q(division=current_user.get_current_division())
+
+    if location:
+        query &= me.Q(location__icontains=location)
+
+    if departure_date:
+        query &= me.Q(
+            departure_datetime__gte=datetime.datetime.combine(
+                departure_date, datetime.time.min
+            ),
+            departure_datetime__lte=datetime.datetime.combine(
+                departure_date, datetime.time.max
+            ),
+        )
+
+    if return_date:
+        query &= me.Q(
+            return_datetime__gte=datetime.datetime.combine(
+                return_date, datetime.time.min
+            ),
+            return_datetime__lte=datetime.datetime.combine(
+                return_date, datetime.time.max
+            ),
+        )
+
+    if created_date:
+        query &= me.Q(
+            created_date__gte=datetime.datetime.combine(
+                created_date, datetime.time.min
+            ),
+            created_date__lte=datetime.datetime.combine(
+                created_date, datetime.time.max
+            ),
+        )
+
+    car_applications = models.vehicle_applications.CarApplication.objects(
+        query
+    ).order_by("-created_date")
+    page = request.args.get("page", 1, type=int)
+    paginated_car_applications = Pagination(car_applications, page=page, per_page=50)
 
     return render_template(
         "/vehicle_lending/car_permissions/header_page.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
+        form=form,
     )
 
 
@@ -55,9 +118,11 @@ def header_approve():
         id=car_application_id
     ).first()
     car_application.status = "pending on admin"
-    car_application.header_approval = models.vehicle_applications.CarApplicationApproval(
-        approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+    car_application.header_approval = (
+        models.vehicle_applications.CarApplicationApproval(
+            approved_by=current_user._get_current_object(),
+            approved_at=datetime.datetime.now(),
+        )
     )
     car_application.save()
     job = redis_rq.redis_queue.queue.enqueue(
@@ -94,9 +159,11 @@ def header_denied():
     ).first()
     car_application.status = "denied by header"
     car_application.denied_reason = denied_reason
-    car_application.header_approval = models.vehicle_applications.CarApplicationApproval(
-        approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+    car_application.header_approval = (
+        models.vehicle_applications.CarApplicationApproval(
+            approved_by=current_user._get_current_object(),
+            approved_at=datetime.datetime.now(),
+        )
     )
     car_application.save()
 
@@ -115,15 +182,77 @@ def director_page():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    car_applications = models.vehicle_applications.CarApplication.objects(
-        organization=organization, status="pending on director"
+
+    form = forms.vehicle_applications.CarPermissionFilterForm(request.args)
+    org_users = models.OrganizationUserRole.objects(
+        organization=organization, status="active"
     )
-    paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
+    user_choices = []
+    for org_user in org_users:
+        if org_user.user:
+            user_choices.append(
+                (
+                    str(org_user.user.id),
+                    org_user.user.get_resources_fullname_th()
+                    or org_user.user.get_name(),
+                )
+            )
+    form.creator.choices = user_choices
+
+    creator_id = form.creator.data
+    location = form.location.data or ""
+    departure_date = form.departure_date.data
+    return_date = form.return_date.data
+    created_date = form.created_date.data
+
+    query = me.Q(organization=organization, status="pending on director")
+    if creator_id:
+        query &= me.Q(creator=creator_id)
+
+    if location:
+        query &= me.Q(location__icontains=location)
+
+    if departure_date:
+        query &= me.Q(
+            departure_datetime__gte=datetime.datetime.combine(
+                departure_date, datetime.time.min
+            ),
+            departure_datetime__lte=datetime.datetime.combine(
+                departure_date, datetime.time.max
+            ),
+        )
+
+    if return_date:
+        query &= me.Q(
+            return_datetime__gte=datetime.datetime.combine(
+                return_date, datetime.time.min
+            ),
+            return_datetime__lte=datetime.datetime.combine(
+                return_date, datetime.time.max
+            ),
+        )
+
+    if created_date:
+        query &= me.Q(
+            created_date__gte=datetime.datetime.combine(
+                created_date, datetime.time.min
+            ),
+            created_date__lte=datetime.datetime.combine(
+                created_date, datetime.time.max
+            ),
+        )
+
+    car_applications = models.vehicle_applications.CarApplication.objects(
+        query
+    ).order_by("-created_date")
+    page = request.args.get("page", 1, type=int)
+    paginated_car_applications = Pagination(car_applications, page=page, per_page=50)
 
     return render_template(
         "/vehicle_lending/car_permissions/director_page.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
+        form=form,
     )
 
 
@@ -141,9 +270,11 @@ def director_approve():
         id=car_application_id
     ).first()
     car_application.status = "pending on admin"
-    car_application.director_approval = models.vehicle_applications.CarApplicationApproval(
-        approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+    car_application.director_approval = (
+        models.vehicle_applications.CarApplicationApproval(
+            approved_by=current_user._get_current_object(),
+            approved_at=datetime.datetime.now(),
+        )
     )
     car_application.save()
     job = redis_rq.redis_queue.queue.enqueue(
@@ -180,9 +311,11 @@ def director_denied():
     ).first()
     car_application.status = "denied by director"
     car_application.denied_reason = denied_reason
-    car_application.director_approval = models.vehicle_applications.CarApplicationApproval(
-        approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+    car_application.director_approval = (
+        models.vehicle_applications.CarApplicationApproval(
+            approved_by=current_user._get_current_object(),
+            approved_at=datetime.datetime.now(),
+        )
     )
     car_application.save()
 
@@ -201,11 +334,75 @@ def admin_page():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    car_applications = models.vehicle_applications.CarApplication.objects(
+
+    form = forms.vehicle_applications.CarPermissionFilterForm(request.args)
+    org_users = models.OrganizationUserRole.objects(
+        organization=organization, status="active"
+    )
+    user_choices = []
+    for org_user in org_users:
+        if org_user.user:
+            user_choices.append(
+                (
+                    str(org_user.user.id),
+                    org_user.user.get_resources_fullname_th()
+                    or org_user.user.get_name(),
+                )
+            )
+    form.creator.choices = user_choices
+
+    creator_id = form.creator.data
+    location = form.location.data or ""
+
+    departure_date = form.departure_date.data
+    return_date = form.return_date.data
+    created_date = form.created_date.data
+
+    query = me.Q(
         organization=organization,
         status__in=["pending on admin", "denied by admin", "active"],
+    )
+    if creator_id:
+        query &= me.Q(creator=creator_id)
+
+    if location:
+        query &= me.Q(location__icontains=location)
+
+    if departure_date:
+        query &= me.Q(
+            departure_datetime__gte=datetime.datetime.combine(
+                departure_date, datetime.time.min
+            ),
+            departure_datetime__lte=datetime.datetime.combine(
+                departure_date, datetime.time.max
+            ),
+        )
+
+    if return_date:
+        query &= me.Q(
+            return_datetime__gte=datetime.datetime.combine(
+                return_date, datetime.time.min
+            ),
+            return_datetime__lte=datetime.datetime.combine(
+                return_date, datetime.time.max
+            ),
+        )
+
+    if created_date:
+        query &= me.Q(
+            created_date__gte=datetime.datetime.combine(
+                created_date, datetime.time.min
+            ),
+            created_date__lte=datetime.datetime.combine(
+                created_date, datetime.time.max
+            ),
+        )
+
+    car_applications = models.vehicle_applications.CarApplication.objects(
+        query
     ).order_by("-created_date")
-    paginated_car_applications = Pagination(car_applications, page=1, per_page=50)
+    page = request.args.get("page", 1, type=int)
+    paginated_car_applications = Pagination(car_applications, page=page, per_page=50)
 
     cars = models.vehicles.Car.objects(organization=organization)
     drivers = organization.get_all_drivers()
@@ -216,6 +413,7 @@ def admin_page():
         paginated_car_applications=paginated_car_applications,
         cars=cars,
         drivers=drivers,
+        form=form,
     )
 
 
@@ -244,7 +442,7 @@ def admin_approve():
     car_application.status = "active"
     car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
         approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+        approved_at=datetime.datetime.now(),
     )
     car_application.save()
 
@@ -284,7 +482,7 @@ def admin_denied():
     car_application.denied_reason = denied_reason
     car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
         approved_by=current_user._get_current_object(),
-        approved_at=datetime.datetime.now()
+        approved_at=datetime.datetime.now(),
     )
     car_application.save()
 
