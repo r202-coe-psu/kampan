@@ -109,65 +109,127 @@
                     <i class="ph ph-info"></i> ข้อมูลคำขอใช้รถยนต์
                   </h4>
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">ผู้ขอใช้รถ</span>
-                      <span class="font-semibold text-base-content">{{ car_application.creator.get_resources_fullname_th() }}</span>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Creator -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+                        <i class="ph ph-user text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">ผู้ขอใช้รถ</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.creator.get_resources_fullname_th() }}</div>
+                      </div>
                     </div>
 
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">แผนก</span>
-                      <span class="font-semibold text-base-content">{{ car_application.division.name if car_application.division else "ไม่มีข้อมูล" }}</span>
+                    <!-- Division -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+                        <i class="ph ph-users text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">แผนก</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.division.name if car_application.division else "ไม่มีข้อมูล" }}</div>
+                      </div>
                     </div>
 
-                    <div class="flex flex-col md:col-span-2">
-                      <span class="text-xs text-base-content/50 font-medium">เหตุผลที่ต้องการใช้</span>
-                      <span class="font-semibold text-base-content bg-base-100 p-2.5 rounded-lg border border-base-200 mt-1 block">
-                        {{ car_application.request_reason or "ไม่มีข้อมูล" }}
-                      </span>
+                    <!-- Departure Datetime -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-green-500/10 p-2 rounded-full text-green-600 flex items-center justify-center">
+                        <i class="ph ph-calendar-plus text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">วันเวลาออกเดินทาง</div>
+                        <div class="font-semibold text-base text-base-content">
+                          {{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.
+                        </div>
+                      </div>
                     </div>
 
-                    <div class="flex flex-col md:col-span-2">
-                      <span class="text-xs text-base-content/50 font-medium">สถานที่ปลายทาง</span>
-                      <span class="font-semibold text-base-content">{{ car_application.location }}</span>
-                    </div>
-
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">วันเวลาออกเดินทาง</span>
-                      <span class="font-semibold text-base-content flex items-center gap-1.5 mt-0.5">
-                        <i class="ph ph-calendar-blank text-base-content/60 text-base"></i>
-                        {{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.
-                      </span>
-                    </div>
-
+                    <!-- Return Datetime -->
                     {% if car_application.travel_type == "round trip" %}
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">วันเวลากลับ</span>
-                      <span class="font-semibold text-base-content flex items-center gap-1.5 mt-0.5">
-                        <i class="ph ph-calendar-blank text-base-content/60 text-base"></i>
-                        {{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else "ไม่ระบุ" }} น.
-                      </span>
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-orange-500/10 p-2 rounded-full text-orange-600 flex items-center justify-center">
+                        <i class="ph ph-calendar-check text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">วันเวลากลับ</div>
+                        <div class="font-semibold text-base text-base-content">
+                          {{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else "ไม่ระบุ" }} น.
+                        </div>
+                      </div>
                     </div>
                     {% endif %}
 
+                    <!-- Flight Datetime -->
                     {% if car_application.using_type == "airport transfer" %}
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">วันเวลาบิน</span>
-                      <span class="font-semibold text-base-content flex items-center gap-1.5 mt-0.5">
-                        <i class="ph ph-airplane text-base-content/60 text-base"></i>
-                        {{ car_application.flight_datetime.strftime('%d/%m/%Y %H:%M') if car_application.flight_datetime else "ไม่ระบุ" }} น.
-                      </span>
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
+                        <i class="ph ph-airplane text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">วันเวลาบิน</div>
+                        <div class="font-semibold text-base text-base-content">
+                          {{ car_application.flight_datetime.strftime('%d/%m/%Y %H:%M') if car_application.flight_datetime else "ไม่ระบุ" }} น.
+                        </div>
+                      </div>
                     </div>
                     {% endif %}
 
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">จำนวนผู้โดยสาร</span>
-                      <span class="font-semibold text-base-content">{{ car_application.passenger_number }} คน</span>
+                    <!-- Location -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200 md:col-span-2">
+                      <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
+                        <i class="ph ph-map-pin text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">สถานที่ปลายทาง</div>
+                        <div class="font-semibold text-base text-base-content break-words">{{ car_application.location }}</div>
+                      </div>
                     </div>
 
-                    <div class="flex flex-col">
-                      <span class="text-xs text-base-content/50 font-medium">วันที่ส่งคำขอ</span>
-                      <span class="font-semibold text-base-content/70">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M') }} น.</span>
+                    <!-- Passenger Location -->
+                    {% if car_application.passenger_location %}
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200 md:col-span-2">
+                      <div class="bg-indigo-500/10 p-2 rounded-full text-indigo-600 flex items-center justify-center">
+                        <i class="ph ph-map-pin-line text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">สถานที่ที่ต้องการไปรับ</div>
+                        <div class="font-semibold text-base text-base-content break-words">{{ car_application.passenger_location }}</div>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Request Reason -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200 md:col-span-2">
+                      <div class="bg-purple-500/10 p-2 rounded-full text-purple-600 flex items-center justify-center">
+                        <i class="ph ph-text-align-left text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">เหตุผลที่ต้องการใช้</div>
+                        <div class="font-semibold text-base text-base-content break-words">{{ car_application.request_reason or "ไม่มีข้อมูล" }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Passenger Number -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-indigo-500/10 p-2 rounded-full text-indigo-600 flex items-center justify-center">
+                        <i class="ph ph-users-three text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">จำนวนผู้โดยสาร</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.passenger_number }} คน</div>
+                      </div>
+                    </div>
+
+                    <!-- Created Date -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-base-300/50 p-2 rounded-full text-base-content/70 flex items-center justify-center">
+                        <i class="ph ph-clock text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">วันที่ส่งคำขอ</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M') }} น.</div>
+                      </div>
                     </div>
                   </div>
                 </div>
