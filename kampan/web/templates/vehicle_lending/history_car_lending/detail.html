@@ -1,36 +1,109 @@
-{% set modal_header = "รายละเอียด" %}
+{% set modal_header = "รายละเอียดการขอใช้รถยนต์" %}
 
 <dialog class="modal modal-open" id="{{ modal_id }}">
-  <div class="modal-box">
-    <h3 class="text-lg font-bold">{{ modal_header }}</h3>
-    <form method="post">
-      <div>
-        <span class="font-semibold">ผู้ขอใช้:</span>
-        <span>{{ car_application.creator.get_name() }}</span>
-      </div>
-      <div>
-        <span class="font-semibold">ลักษณะงาน:</span>
-        <span>{{ car_application.request_reason }}</span>
-      </div>
-      <div>
-        <span class="font-semibold">สถานที่ไป:</span>
-        <span>{{ car_application.location }}</span>
-      </div>
-      <div>
-        <span class="font-semibold">รถยนต์:</span>
-        <span>{{ car_application.car.license_plate }}</span>
-      </div>
-      <div>
-        <span class="font-semibold">ออกเดินทางเวลา:</span>
-        <span>{{ car_application.departure_datetime|format_thai_datetime_short_month }}</span>
-      </div>
-      <div class="modal-action justify-end">
-        <button type="button" class="btn"
-          onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
-          ปิด
-        </button>
+  <div class="modal-box w-11/12 max-w-2xl">
+    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">✕</button>
+    
+    <h3 class="font-bold text-xl text-primary mb-4 border-b pb-2 flex items-center gap-2">
+      <i class="ph ph-car-profile text-2xl"></i>
+      <span>{{ modal_header }}</span>
+    </h3>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 py-4">
+      <!-- Creator -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+          <i class="ph ph-user text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">ผู้ขอใช้</div>
+          <div class="font-semibold text-base">
+            {% if car_application.creator %}
+              {{ car_application.creator.get_resources_fullname_th() or car_application.creator.get_name() }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
       </div>
-    </form>
+
+      <!-- Car -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
+          <i class="ph ph-identification-card text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">รถยนต์</div>
+          <div class="font-semibold text-base">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Departure Datetime -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-green-500/10 p-2 rounded-full text-green-600 flex items-center justify-center">
+          <i class="ph ph-calendar-plus text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">ออกเดินทางเวลา</div>
+          <div class="font-semibold text-base">{{ car_application.departure_datetime|format_thai_datetime_short_month if car_application.departure_datetime else '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Return Datetime -->
+      {% if car_application.travel_type == "round trip" and car_application.return_datetime %}
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
+        <div class="bg-orange-500/10 p-2 rounded-full text-orange-600 flex items-center justify-center">
+          <i class="ph ph-calendar-check text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">เดินทางกลับเวลา</div>
+          <div class="font-semibold text-base">{{ car_application.return_datetime|format_thai_datetime_short_month }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Passenger Location -->
+      {% if car_application.passenger_location %}
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
+        <div class="bg-indigo-500/10 p-2 rounded-full text-indigo-600 flex items-center justify-center">
+          <i class="ph ph-map-pin-line text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">สถานที่ที่ต้องการไปรับ</div>
+          <div class="font-medium text-base break-words">{{ car_application.passenger_location }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Location -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
+        <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
+          <i class="ph ph-map-pin text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">สถานที่ไป</div>
+          <div class="font-medium text-base break-words">{{ car_application.location or '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Request Reason -->
+      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
+        <div class="bg-purple-500/10 p-2 rounded-full text-purple-600 flex items-center justify-center">
+          <i class="ph ph-text-align-left text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs text-base-content/50 font-medium">ลักษณะงาน</div>
+          <div class="font-medium text-base break-words">{{ car_application.request_reason or '-' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-action">
+      <button type="button" class="btn btn-primary px-8"
+        onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')">
+        ปิด
+      </button>
+    </div>
   </div>
+  <div class="modal-backdrop" onclick="document.getElementById('{{ modal_id }}').classList.remove('modal-open')"></div>
 </dialog>
