@@ -63,7 +63,7 @@ def set_paid(procurement_id):
         )
 
     amount = form.amount.data
-    new_product_number = form.product_number.data
+    new_payment_number = form.payment_number.data
 
     # --- ตรวจสอบจำนวนเงิน ---
     if procurement.amount is not None and amount > procurement.amount:
@@ -83,24 +83,26 @@ def set_paid(procurement_id):
         )
 
     # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ ---
-    existing = models.Procurement.objects(
-        product_number=new_product_number, id__ne=procurement.id
-    ).first()
-    if existing:
-        form.product_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
-        return render_template(
-            "procurement/payment/index.html",
-            item=procurement,
+    if new_payment_number:
+        existing = models.Procurement.objects(
             organization=organization,
-            form=form,
-            today=datetime.date.today(),
-            is_last_period=procurement.is_last_period(),
-            remaining_amount=(
-                procurement.get_remaining_amount()
-                if procurement.is_last_period()
-                else None
-            ),
-        )
+            payment_records__payment_number=new_payment_number
+        ).first()
+        if existing:
+            form.payment_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
+            return render_template(
+                "procurement/payment/index.html",
+                item=procurement,
+                organization=organization,
+                form=form,
+                today=datetime.date.today(),
+                is_last_period=procurement.is_last_period(),
+                remaining_amount=(
+                    procurement.get_remaining_amount()
+                    if procurement.is_last_period()
+                    else None
+                ),
+            )
 
     # --- บันทึกข้อมูลการจ่าย ---
     next_period_index = len(procurement.payment_records)
@@ -114,7 +116,7 @@ def set_paid(procurement_id):
         period_index=next_period_index,
         paid_by=current_user._get_current_object(),
         amount=final_amount,
-        product_number=procurement.product_number,
+        payment_number=new_payment_number,
     )
 
     procurement.paid_period_index = next_period_index
@@ -123,13 +125,10 @@ def set_paid(procurement_id):
     )
     procurement.last_updated_by = current_user._get_current_object()
 
-    if new_product_number:
-        procurement.product_number = new_product_number
-
     try:
         procurement.save()
     except Exception:
-        form.product_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
+        form.payment_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
         return render_template(
             "procurement/payment/index.html",
             item=procurement,

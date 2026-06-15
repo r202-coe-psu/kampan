@@ -83,9 +83,9 @@ def index():
     if name:
         query["name__icontains"] = name
     if product_number:
-        query["product_number__icontains"] = product_number
+        query["product_numbers__icontains"] = product_number
     if asset_code:
-        query["asset_code__icontains"] = asset_code
+        query["asset_codes__icontains"] = asset_code
     if procurement_id:
         query["id__icontains"] = procurement_id
     query["organization"] = organization
@@ -99,8 +99,8 @@ def index():
         if procurement:
             category = procurement.category
             name = procurement.name
-            asset_code = procurement.asset_code
-            product_number = procurement.product_number
+            asset_code = ", ".join(procurement.asset_codes) if procurement.asset_codes else ""
+            product_number = ", ".join(procurement.product_numbers) if procurement.product_numbers else ""
 
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
     org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()

@@ -41,13 +41,11 @@
           <div class="mt-2 md:mt-3 space-y-1 text-sm md:text-base">
             <div class="flex items-center gap-2 flex-wrap">
               <i class="ph ph-file-text text-base md:text-lg text-base-content/70"></i>
-              <span class="text-base-content/70 font-medium">เลขที่ใบจ่ายเงิน:</span>
-              <span class="text-base-content/90 break-all">{{ item.product_numbers | join(', ') if item.product_numbers else item.product_number }}</span>
-            </div>
+              </div>
             <div class="flex items-center gap-2 flex-wrap">
               <i class="ph ph-barcode text-base md:text-lg text-base-content/70"></i>
               <span class="text-base-content/70 font-medium">รหัสครุภัณฑ์:</span>
-              <span class="text-base-content/90 break-all">{{ item.asset_codes | join(', ') if item.asset_codes else item.asset_code }}</span>
+              <span class="text-base-content/90 break-all">{{ item.asset_codes | join(', ') if item.asset_codes else '-' }}</span>
             </div>
           </div>
         </div>
@@ -194,7 +192,8 @@
                 {% else %}
                   {{ renderer.render_number_field(form.amount, min=0) }}
                 {% endif %}
-                {{ renderer.base_render(form.product_number) }}
+                {{ renderer.base_render(form.payment_number) }}
+
                 <button type="submit" class="btn btn-success w-full mt-2 text-white">บันทึกการจ่าย</button>
               </form>
             </div>
@@ -213,7 +212,8 @@
                       <th class="text-xs text-base-content/60">งวดที่</th>
                       <th class="text-xs text-base-content/60">วันที่จ่าย</th>
                       <th class="text-xs text-base-content/60">ผู้จ่าย</th>
-                      <th class="text-xs text-base-content/60">เลขที่ใบจ่าย</th>
+                      <th class="text-xs text-base-content/60">เลขที่ใบจ่ายเงิน</th>
+
                       <th class="text-xs text-right text-base-content/60">จํานวน</th>
                     </tr>
                   </thead>
@@ -229,8 +229,9 @@
                           else '-' }}
                         </td>
                         <td class="text-xs truncate max-w-xs">
-                          {{ record.product_number if record.product_number else '-' }}
+                          {{ record.payment_number if record.payment_number else '-' }}
                         </td>
+
                         <td class="text-xs text-right font-semibold text-base-content">฿{{ record.amount | format_amount }}</td>
                       </tr>
                     {% endfor %}
