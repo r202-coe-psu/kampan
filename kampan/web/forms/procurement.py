@@ -38,11 +38,11 @@ class ProcurementForm(BaseProcurementForm):
         validators=[validators.Optional()],
     )
     asset_codes = fields.FieldList(
-        fields.StringField("รหัสครุภัณฑ์", validators=[validators.InputRequired("กรุณาระบุรหัสครุภัณฑ์")]),
+        fields.StringField("รหัสครุภัณฑ์", validators=[validators.Optional()]),
         min_entries=1,
     )
     product_numbers = fields.FieldList(
-        fields.StringField("เลขที่สินค้า/เลขที่เอกสาร", validators=[validators.InputRequired("กรุณาระบุเลขที่เอกสาร")]),
+        fields.StringField("เลขที่สินค้า/เลขที่เอกสาร", validators=[validators.Optional()]),
         min_entries=1,
     )
 

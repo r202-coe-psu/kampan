@@ -135,11 +135,57 @@ def create():
         product_numbers_str = request.args.get("product_numbers", "")
         product_numbers = [c.strip() for c in product_numbers_str.split(",") if c.strip()]
         
-        form = forms.procurement.ProcurementForm(
-            request.args,
-            asset_codes=asset_codes or [""],
-            product_numbers=product_numbers or [""]
-        )
+        kwargs = {}
+        if asset_codes:
+            kwargs["asset_codes"] = asset_codes
+        else:
+            kwargs["asset_codes"] = [""]
+            
+        if product_numbers:
+            kwargs["product_numbers"] = product_numbers
+        else:
+            kwargs["product_numbers"] = [""]
+        
+        form = forms.procurement.ProcurementForm(formdata=None, **kwargs)
+
+        project_name = request.args.get("project_name", "").strip()
+        product_name = request.args.get("product_name", "").strip()
+        req_name = request.args.get("name", "").strip()
+
+        if project_name:
+            form.name.data = project_name
+        elif product_name:
+            form.name.data = product_name
+        elif req_name:
+            form.name.data = req_name
+
+        start_date = request.args.get("start_date", "").strip()
+        if start_date:
+            try:
+                import datetime
+                form.start_date.data = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+                
+        end_date = request.args.get("end_date", "").strip()
+        if end_date:
+            try:
+                import datetime
+                form.end_date.data = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        if request.args.get("company"):
+            form.company.data = request.args.get("company").strip()
+            
+        if request.args.get("amount"):
+            try:
+                form.amount.data = float(request.args.get("amount"))
+            except ValueError:
+                pass
+                
+        if request.args.get("category"):
+            form.category.data = request.args.get("category").strip()
 
     form.responsible_by.queryset = members
     if form.responsible_by.data is None:

@@ -36,160 +36,101 @@
                     {{ renderer.base_render(form.company) }}
                 </div>
 
-                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- product_numbers section -->
+                <div class="lg:col-span-3">
                     <div class="form-control w-full">
                         <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
-                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">เลขที่สินค้า/เลขที่เอกสาร (S/N) (ระบุได้หลายรายการ)</span>
-                            <span id="product_number_count_badge" class="badge badge-secondary badge-md font-bold text-white">จำนวน 1 รายการ</span>
+                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">เลขที่สินค้า (S/N) & รหัสครุภัณฑ์ (ระบุได้หลายรายการ)</span>
+                            <span id="paired_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
                         </label>
                         
-                        <div id="product_numbers_container" class="space-y-2">
-                            {% for subfield in form.product_numbers %}
-                            <div class="flex items-center gap-2 transition-all duration-300" id="product_number_row_{{ loop.index0 }}">
-                                <input type="text" name="{{ subfield.name }}" value="{{ subfield.data or '' }}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
-                                    class="input input-bordered w-full product-number-input text-sm" oninput="updateProductNumberState()">
-                                <button type="button" onclick="removeProductNumberInput({{ loop.index0 }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <div id="paired_container" class="space-y-2">
+                            {% set max_len = [form.asset_codes|length, form.product_numbers|length]|max %}
+                            {% if max_len == 0 %}
+                                {% set max_len = 1 %}
+                            {% endif %}
+                            {% for i in range(max_len) %}
+                            {% set sn_field = form.product_numbers[i] if i < form.product_numbers|length else None %}
+                            {% set ac_field = form.asset_codes[i] if i < form.asset_codes|length else None %}
+                            <div class="flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row" id="paired_row_{{ i }}">
+                                {% if sn_field %}
+                                    {{ sn_field(class="input input-bordered w-full text-sm", placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)") }}
+                                {% else %}
+                                    <input type="text" name="product_numbers-{{ i }}" value="" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)" class="input input-bordered w-full text-sm">
+                                {% endif %}
+                                
+                                {% if ac_field %}
+                                    {{ ac_field(class="input input-bordered w-full text-sm", placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz") }}
+                                {% else %}
+                                    <input type="text" name="asset_codes-{{ i }}" value="" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz" class="input input-bordered w-full text-sm">
+                                {% endif %}
+                                
+                                <button type="button" onclick="removePairedInput({{ i }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
                                     <i class="ph ph-trash text-lg"></i>
                                 </button>
                             </div>
                             {% endfor %}
                         </div>
 
-                        {% if form.product_numbers.errors %}
-                        <p class="text-error text-xs mt-1.5 font-medium">{{ form.product_numbers.errors[0] }}</p>
+                        {% if form.product_numbers.errors or form.asset_codes.errors %}
+                        <p class="text-error text-xs mt-1.5 font-medium">มีข้อผิดพลาดในข้อมูล S/N หรือรหัสครุภัณฑ์</p>
                         {% endif %}
 
                         <div class="mt-2 flex justify-start">
-                            <button type="button" onclick="addProductNumberInput()" class="btn btn-xs btn-outline btn-secondary gap-1 rounded-lg">
+                            <button type="button" onclick="addPairedInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
                                 <i class="ph ph-plus-circle"></i>
-                                เพิ่มเลขที่สินค้า (S/N)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- asset_codes section -->
-                    <div class="form-control w-full">
-                        <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
-                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">รหัสครุภัณฑ์ (ระบุได้หลายรายการ)</span>
-                            <span id="asset_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
-                        </label>
-                        
-                        <div id="asset_codes_container" class="space-y-2">
-                            {% for subfield in form.asset_codes %}
-                            <div class="flex items-center gap-2 transition-all duration-300" id="asset_code_row_{{ loop.index0 }}">
-                                <input type="text" name="{{ subfield.name }}" value="{{ subfield.data or '' }}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
-                                    class="input input-bordered w-full asset-code-input text-sm" oninput="updateAssetCodeState()">
-                                <button type="button" onclick="removeAssetCodeInput({{ loop.index0 }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
-                                    <i class="ph ph-trash text-lg"></i>
-                                </button>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if form.asset_codes.errors %}
-                        <p class="text-error text-xs mt-1.5 font-medium">{{ form.asset_codes.errors[0] }}</p>
-                        {% endif %}
-
-                        <div class="mt-2 flex justify-start">
-                            <button type="button" onclick="addAssetCodeInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
-                                <i class="ph ph-plus-circle"></i>
-                                เพิ่มรหัสครุภัณฑ์
+                                เพิ่มรายการ
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <script>
-                    let assetCodeIndex = {{ form.asset_codes|length }};
-                    let productNumberIndex = {{ form.product_numbers|length }};
+                    let pairedIndex = {{ [form.asset_codes|length, form.product_numbers|length, 1]|max }};
 
                     document.addEventListener('DOMContentLoaded', function () {
-                        updateAssetCodeState();
-                        updateProductNumberState();
+                        updatePairedState();
                     });
 
-                    function addAssetCodeInput(value = "") {
-                        const container = document.getElementById('asset_codes_container');
-                        const index = assetCodeIndex++;
+                    function addPairedInput(snValue = "", acValue = "") {
+                        const container = document.getElementById('paired_container');
+                        const index = pairedIndex++;
 
                         const row = document.createElement('div');
-                        row.className = 'flex items-center gap-2 transition-all duration-300';
-                        row.id = `asset_code_row_${index}`;
+                        row.className = 'flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row';
+                        row.id = `paired_row_${index}`;
 
                         row.innerHTML = `
-                            <input type="text" name="asset_codes-${index}" value="${value}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
-                                class="input input-bordered w-full asset-code-input text-sm" oninput="updateAssetCodeState()">
-                            <button type="button" onclick="removeAssetCodeInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <input type="text" name="product_numbers-${index}" value="${snValue}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
+                                class="input input-bordered w-full text-sm">
+                            <input type="text" name="asset_codes-${index}" value="${acValue}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
+                                class="input input-bordered w-full text-sm">
+                            <button type="button" onclick="removePairedInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
                                 <i class="ph ph-trash text-lg"></i>
                             </button>
                         `;
 
                         container.appendChild(row);
-                        updateAssetCodeState();
+                        updatePairedState();
                     }
 
-                    function removeAssetCodeInput(index) {
-                        const container = document.getElementById('asset_codes_container');
-                        if (container.children.length <= 1) {
-                            alert('ต้องมีรหัสครุภัณฑ์อย่างน้อย 1 รายการ');
+                    function removePairedInput(index) {
+                        const container = document.getElementById('paired_container');
+                        if (container.querySelectorAll('.paired-row').length <= 1) {
+                            alert('ต้องมีรายการอย่างน้อย 1 รายการ');
                             return;
                         }
-                        const row = document.getElementById(`asset_code_row_${index}`);
+                        const row = document.getElementById(`paired_row_${index}`);
                         if (row) {
                             row.remove();
                         }
-                        updateAssetCodeState();
+                        updatePairedState();
                     }
 
-                    function updateAssetCodeState() {
-                        const inputs = document.querySelectorAll('.asset-code-input');
-
-                        const badge = document.getElementById('asset_count_badge');
+                    function updatePairedState() {
+                        const rows = document.querySelectorAll('.paired-row');
+                        const badge = document.getElementById('paired_count_badge');
                         if (badge) {
-                            badge.innerText = `จำนวน ${inputs.length} รายการ`;
-                        }
-                    }
-
-                    function addProductNumberInput(value = "") {
-                        const container = document.getElementById('product_numbers_container');
-                        const index = productNumberIndex++;
-
-                        const row = document.createElement('div');
-                        row.className = 'flex items-center gap-2 transition-all duration-300';
-                        row.id = `product_number_row_${index}`;
-
-                        row.innerHTML = `
-                            <input type="text" name="product_numbers-${index}" value="${value}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
-                                class="input input-bordered w-full product-number-input text-sm" oninput="updateProductNumberState()">
-                            <button type="button" onclick="removeProductNumberInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
-                        `;
-
-                        container.appendChild(row);
-                        updateProductNumberState();
-                    }
-
-                    function removeProductNumberInput(index) {
-                        const container = document.getElementById('product_numbers_container');
-                        if (container.children.length <= 1) {
-                            alert('ต้องมีเลขที่สินค้า/เลขที่เอกสารอย่างน้อย 1 รายการ');
-                            return;
-                        }
-                        const row = document.getElementById(`product_number_row_${index}`);
-                        if (row) {
-                            row.remove();
-                        }
-                        updateProductNumberState();
-                    }
-
-                    function updateProductNumberState() {
-                        const inputs = document.querySelectorAll('.product-number-input');
-
-                        const badge = document.getElementById('product_number_count_badge');
-                        if (badge) {
-                            badge.innerText = `จำนวน ${inputs.length} รายการ`;
+                            badge.innerText = `จำนวน ${rows.length} รายการ`;
                         }
                     }
                 </script>
