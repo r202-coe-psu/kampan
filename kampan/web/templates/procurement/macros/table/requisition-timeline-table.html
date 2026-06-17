@@ -88,6 +88,11 @@
     {% endif %}
 
     {% if item.status == 'completed' %}
+      <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id, edit='true') }}"
+         class="btn btn-sm btn-warning border-none ml-2 mb-1 gap-1 shadow-md rounded-lg font-medium">
+        <i class="ph ph-pencil"></i>
+        แก้ไขข้อมูล
+      </a>
       <button type="button"
               class="btn btn-sm btn-primary bg-purple-600 hover:bg-purple-700 border-none text-white ml-2 gap-1 shadow-md rounded-lg font-medium"
               onclick="document.getElementById('ma_modal_{{ item.id }}').showModal();">
@@ -273,7 +278,7 @@
                       </div>
                     </div>
                   </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <td class="px-4 py-3 flex flex-col gap-0.5 w-64 h-32 items-center justify-center ">
                     {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
                                         current_user, inspection_form, delivery_form) }}
                   </td>

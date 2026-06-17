@@ -34,7 +34,7 @@
   </div>
 
   <form id="completed-page-form" method="post"
-    action="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}">
+    action="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id, edit=request.args.get('edit')) }}">
     {{ form.hidden_tag() }}
 
     {# ══════════════════════════════════════════ #}
@@ -230,6 +230,8 @@
         <i class="ph ph-rocket-launch"></i>
         ส่งข้อมูลไปสร้างครุภัณฑ์ (REQUISITION TO MA)
       </button>
+      {% else %}
+      {% if item.status == "completed" %}
       <button type="submit" class="btn btn-success text-white px-6 gap-2">
         <i class="ph ph-floppy-disk"></i>
         บันทึกการแก้ไขครุภัณฑ์
@@ -239,6 +241,7 @@
         <i class="ph ph-check"></i>
         บันทึกเสร็จสิ้นโครงการ
       </button>
+      {% endif %}
       {% endif %}
     </div>
 
