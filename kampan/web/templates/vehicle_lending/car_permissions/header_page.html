@@ -65,6 +65,31 @@
           <td class="table-style"> {{ car_application.created_date.strftime('%d/%m/%Y') }}</td>
           <td class="table-style" data-label="Created Date">
             <div class="flex flex-col gap-1 text-sm min-w-[140px]">
+              {% if car_application.using_type == 'airport transfer' %}
+              <div>
+                <span class="text-base-content/50">ประเภท:</span>
+                <span class="font-semibold text-base-content">รับส่งสนามบิน ({{ car_application.get_airport_transfer_type_display() }})</span>
+              </div>
+              <div>
+                <span class="text-base-content/50">วันไป:</span>
+                <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%d/%m/%Y') }}</span>
+              </div>
+              <div>
+                <span class="text-base-content/50">เวลาไป:</span>
+                <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</span>
+              </div>
+              {% if car_application.airport_transfer_type == 'pickup' %}
+              <div>
+                <span class="text-base-content/50">เครื่องถึงสนามบิน:</span>
+                <span class="font-semibold text-base-content">{{ car_application.flight_return_datetime.strftime('%H:%M') }} น.</span>
+              </div>
+              {% elif car_application.airport_transfer_type == 'dropoff' %}
+              <div>
+                <span class="text-base-content/50">เครื่องออกจากสนามบิน:</span>
+                <span class="font-semibold text-base-content">{{ car_application.flight_datetime.strftime('%H:%M') }} น.</span>
+              </div>
+              {% endif %}
+              {% else %}
               <div>
                 <span class="text-base-content/50">วันไป:</span>
                 <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%d/%m/%Y') }}</span>
@@ -74,7 +99,7 @@
                 <span class="font-semibold text-base-content">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</span>
               </div>
               <div>
-                <span class="text-base-content/50">วันถึง:</span>
+                <span class="text-base-content/50">วันกลับ:</span>
                 <span class="font-semibold text-base-content">
                   {% if car_application.travel_type == 'round trip' %}
                     {{ car_application.return_datetime.strftime('%d/%m/%Y') }}
@@ -84,7 +109,7 @@
                 </span>
               </div>
               <div>
-                <span class="text-base-content/50">เวลาถึง:</span>
+                <span class="text-base-content/50">เวลากลับ:</span>
                 <span class="font-semibold text-base-content">
                   {% if car_application.travel_type == 'round trip' %}
                     {{ car_application.return_datetime.strftime('%H:%M') }} น.
@@ -93,6 +118,7 @@
                   {% endif %}
                 </span>
               </div>
+              {% endif %}
             </div>
           </td>
           <td class="table-style"> {{ car_application.car.license_plate if car_application.car else "-" }}</td>

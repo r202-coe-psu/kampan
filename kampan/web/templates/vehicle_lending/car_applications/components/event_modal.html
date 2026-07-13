@@ -26,25 +26,38 @@
           <i class="ph ph-calendar-plus text-xl"></i>
         </div>
         <div>
-          <div class="text-sm text-base-content/70">วัน-เวลา เริ่ม</div>
+          <div class="text-sm text-base-content/70">{{ 'วัน-เวลา ไป' if car_application.using_type == 'airport transfer' else 'วัน-เวลา เริ่ม' }}</div>
           <div class="font-semibold text-base">
-            <span>{{ car_application.departure_datetime.strftime('%d/%m/%Y') if car_application.departure_datetime else '-' }}</span> 
+            <span>{{ car_application.departure_datetime.strftime('%d/%m/%Y') if car_application.departure_datetime else '-' }}</span>
             <span class="ml-1">{{ car_application.departure_datetime.strftime('%H:%M น.') if car_application.departure_datetime else '-' }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Return Time -->
+      <!-- Return Time / Flight Time -->
       <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
         <div class="bg-orange-500/10 p-2 rounded-full text-orange-600 flex items-center justify-center">
-          <i class="ph ph-calendar-check text-xl"></i>
+          <i class="ph {{ 'ph-airplane-tilt' if car_application.using_type == 'airport transfer' else 'ph-calendar-check' }} text-xl"></i>
         </div>
         <div>
+          {% if car_application.using_type == 'airport transfer' %}
+          <div class="text-sm text-base-content/70">รับส่งสนามบิน ({{ car_application.get_airport_transfer_type_display() }})</div>
+          <div class="font-semibold text-base">
+            {% if car_application.airport_transfer_type == 'pickup' %}
+            <span>เครื่องถึงสนามบิน {{ car_application.flight_return_datetime.strftime('%H:%M น.') if car_application.flight_return_datetime else '-' }}</span>
+            {% elif car_application.airport_transfer_type == 'dropoff' %}
+            <span>เครื่องออกจากสนามบิน {{ car_application.flight_datetime.strftime('%H:%M น.') if car_application.flight_datetime else '-' }}</span>
+            {% else %}
+            <span>-</span>
+            {% endif %}
+          </div>
+          {% else %}
           <div class="text-sm text-base-content/70">วัน-เวลา กลับ</div>
           <div class="font-semibold text-base">
-            <span>{{ car_application.return_datetime.strftime('%d/%m/%Y') if car_application.return_datetime else '-' }}</span> 
+            <span>{{ car_application.return_datetime.strftime('%d/%m/%Y') if car_application.return_datetime else '-' }}</span>
             <span class="ml-1">{{ car_application.return_datetime.strftime('%H:%M น.') if car_application.return_datetime else '-' }}</span>
           </div>
+          {% endif %}
         </div>
       </div>
 
