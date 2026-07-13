@@ -574,9 +574,9 @@ def save_ma_db(document, ma, user_id):
         return False
 
     column_map = {
-        "product_number": "product_number",
+        "product_number": "product_numbers",
         "name": "name",
-        "asset_code": "asset_code",
+        "asset_code": "asset_codes",
         "start_date": "start_date",
         "end_date": "end_date",
         "amount": "amount",
@@ -620,8 +620,10 @@ def save_ma_db(document, ma, user_id):
                         )
                     if model_field == "period":
                         value = int(value) if pd.notnull(value) else 1
-                    if model_field == "asset_code":
-                        value = str(value) if pd.notnull(value) else ""
+                    if model_field == "asset_codes":
+                        value = [str(value).strip()] if pd.notnull(value) and str(value).strip() else []
+                    if model_field == "product_numbers":
+                        value = [str(value).strip()] if pd.notnull(value) and str(value).strip() else []
                     if model_field == "category":
                         value = category_map.get(str(value).strip(), "other")
                     if model_field == "responsible_by":
@@ -651,7 +653,7 @@ def save_ma_db(document, ma, user_id):
             duplicate_query = {
                 "organization": document.organization,
                 "name": data.get("name"),
-                "asset_code": data.get("asset_code"),
+                "asset_codes": data.get("asset_codes"),
                 "start_date": data.get("start_date"),
                 "end_date": data.get("end_date"),
                 "amount": data.get("amount"),
@@ -675,7 +677,7 @@ def save_ma_db(document, ma, user_id):
             )
             procurement.save()
             created_count += 1
-            print(f"Saved procurement: {procurement.product_number}")
+            print(f"Saved procurement: {', '.join(procurement.product_numbers) if procurement.product_numbers else 'N/A'}")
         except Exception as e:
             msg = f"แถวที่ {row_num}: เกิดข้อผิดพลาด: {e}"
             print(msg)

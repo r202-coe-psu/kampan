@@ -91,8 +91,8 @@ def get_procurement_email_context(procurement):
             )
 
     text_format = {
-        "product_number": procurement.product_number,
-        "asset_code": procurement.asset_code,
+        "product_number": ", ".join(procurement.product_numbers) if procurement.product_numbers else "",
+        "asset_code": ", ".join(procurement.asset_codes) if procurement.asset_codes else "",
         "name": procurement.name,
         "category": procurement.category,
         "company": procurement.company,

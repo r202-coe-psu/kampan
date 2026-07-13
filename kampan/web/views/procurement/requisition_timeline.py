@@ -860,7 +860,9 @@ def completed_submit(requisition_timeline_id):
         responder_user_choices.append((user_id, member.display_user_fullname()))
 
     form = forms.requisition_timeline.CompletedForm()
-    is_view_only = (requisition_timeline.status == "completed") or (not is_admin)
+    is_view_only = (requisition_timeline.status == "completed")
+    if request.args.get("edit") == "true":
+        is_view_only = False
     items_by_type = generate_requisition_items(requisition_timeline)
 
     def _parse_date(value):
@@ -985,7 +987,7 @@ def completed_submit(requisition_timeline_id):
             row_forms_by_type=row_forms_by_type,
         )
 
-    if request.method == "POST" and not is_view_only:
+    if request.method == "POST":
         for item_id, timeline_items in items_by_type.items():
             shared_form = shared_forms_by_type[item_id]
             insurance_start = request.form.get(

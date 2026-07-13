@@ -38,11 +38,11 @@ class ProcurementForm(BaseProcurementForm):
         validators=[validators.Optional()],
     )
     asset_codes = fields.FieldList(
-        fields.StringField("รหัสครุภัณฑ์", validators=[validators.InputRequired("กรุณาระบุรหัสครุภัณฑ์")]),
+        fields.StringField("รหัสครุภัณฑ์", validators=[validators.Optional()]),
         min_entries=1,
     )
     product_numbers = fields.FieldList(
-        fields.StringField("เลขที่สินค้า/เลขที่เอกสาร", validators=[validators.InputRequired("กรุณาระบุเลขที่เอกสาร")]),
+        fields.StringField("เลขที่สินค้า/เลขที่เอกสาร", validators=[validators.Optional()]),
         min_entries=1,
     )
 
@@ -82,7 +82,7 @@ BasePaymentRecordForm = model_form(
         "paid_by",
     ],
     field_args={
-        "product_number": {"label": "เลขที่สินค้า/เลขที่เอกสาร"},
+        "payment_number": {"label": "เลขที่ใบจ่ายเงิน"},
         "amount": {"label": "จำนวนเงิน"},
     },
 )
@@ -109,8 +109,8 @@ class PaymentForm(FlaskForm):
             validators.NumberRange(min=0, message="จำนวนเงินต้องมากกว่าหรือเท่ากับ 0"),
         ],
     )
-    product_number = fields.StringField(
-        "เลขที่สินค้า/เลขที่เอกสาร",
+    payment_number = fields.StringField(
+        "เลขที่ใบจ่ายเงิน",
         validators=[validators.Optional(), validators.Length(max=128)],
     )
 
