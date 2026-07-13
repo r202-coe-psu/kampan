@@ -105,18 +105,25 @@
       let locationField = $("#location");
       let locationFieldRow = $("#location_field_row");
 
-      function setReturnDateRequiredMark(required) {
-        let legend = $("#field-return_date legend");
+      function setRequiredMark(legendSelector, required) {
+        let legend = $(legendSelector);
         legend.find(".required-mark").remove();
         if (required) {
           legend.append(' <span class="text-error required-mark">*</span>');
         }
       }
 
+      function setReturnDateRequiredMark(required) {
+        setRequiredMark("#field-return_date legend", required);
+      }
+
       [returnDateField, returnTimeField, flightNumberField, flightTimeField, flightReturnNumberField, flightReturnTimeField].forEach(function(field) {
         field.prop("required", false);
       });
       setReturnDateRequiredMark(false);
+      setRequiredMark("#airport_transfer_type_field legend", false);
+      setRequiredMark("#field-flight_time legend", false);
+      setRequiredMark("#field-flight_return_time legend", false);
 
       if (usingType === "airport transfer") {
         travelTypeField.hide();
@@ -125,17 +132,20 @@
         locationFieldRow.hide();
         locationField.val("สนามบินหาดใหญ่");
         returnDatetime.hide();
+        setRequiredMark("#airport_transfer_type_field legend", true);
 
         if (airportTransferType === "pickup") {
             flightDatetime.hide();
             flightReturnField.show();
             flightReturnNumberField.prop("required", true);
             flightReturnTimeField.prop("required", true);
+            setRequiredMark("#field-flight_return_time legend", true);
         } else if (airportTransferType === "dropoff") {
             flightDatetime.show();
             flightReturnField.hide();
             flightNumberField.prop("required", true);
             flightTimeField.prop("required", true);
+            setRequiredMark("#field-flight_time legend", true);
         } else {
             flightDatetime.hide();
             flightReturnField.hide();
