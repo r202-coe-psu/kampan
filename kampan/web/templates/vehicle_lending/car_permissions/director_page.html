@@ -44,7 +44,7 @@
         <tr>
           <th class="table-style"></th>
           <th class="table-style">วันที่ขอ</th>
-          <th class="table-style">วันที่ต้องการใช้</th>
+          <th class="table-style min-w-[200px]">วันที่ต้องการใช้</th>
           <th class="table-style">ป้ายทะเบียนรถ</th>
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
@@ -63,7 +63,7 @@
           <td class="table-style"> {{ loop.index }}</td>
           <td class="table-style"> {{ car_application.created_date.strftime('%d/%m/%Y') }}</td>
           <td class="table-style" data-label="Created Date">
-            <div class="flex flex-col gap-1 text-sm min-w-[140px]">
+            <div class="flex flex-col gap-1 text-sm min-w-[200px]">
               {% if car_application.using_type == 'airport transfer' %}
               <div>
                 <span class="text-base-content/50">ประเภท:</span>
