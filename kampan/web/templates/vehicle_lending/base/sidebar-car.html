@@ -76,6 +76,13 @@
     {% endif %}
 
     <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_manuals' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_manuals.index', organization_id=organization.id ) }}">
+        <i class="ph ph-book-open-text"></i> คู่มือการใช้งาน
+      </a>
+    </li>
+
+    <li>
       <a class="{{ 'menu-active' if '/-----' in request.path else '' }}"
         href="{{ url_for('site.select_system', organization_id=organization.id) }}">
         <i class="ph ph-swap"></i> เปลี่ยนระบบ

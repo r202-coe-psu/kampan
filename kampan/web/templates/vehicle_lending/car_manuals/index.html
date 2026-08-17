@@ -1,0 +1,1047 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% block title %}คู่มือการใช้งาน ระบบขอใช้รถยนต์{% endblock %}
+{% block dashboard_title %}คู่มือการใช้งาน ระบบขอใช้รถยนต์{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block additional_head %}
+<style>
+  /* สารบัญคู่มือ: ไฮไลต์หัวข้อที่กำลังอ่านอยู่ตามตำแหน่งการเลื่อนหน้า */
+  .toc-link {
+    border-inline-start: 3px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  /* หัวข้อที่เลื่อนผ่านไปแล้ว - จางลงเล็กน้อย */
+  .toc-link.is-passed {
+    color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+  }
+
+  /* หัวข้อที่กำลังอ่านอยู่ - พื้นเงาอ่อน + ขีดสีด้านซ้าย */
+  .toc-link.is-active {
+    background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+    border-inline-start-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ---------------------------------------------------------------------------
+   หมายเหตุสำหรับผู้พัฒนา: ชื่อคลาสของ tailwind ต้องเขียนเต็มเป็นข้อความจริง
+   (ห้ามประกอบชื่อคลาสจากตัวแปร) ไม่เช่นนั้นตัว scanner จะไม่สร้าง css ให้
+   จึงใช้ตารางแปลง tone -> คลาส ด้านล่างนี้
+--------------------------------------------------------------------------- #}
+{% set badge_tone = {
+  'primary': 'badge-primary',
+  'success': 'badge-success',
+  'neutral': 'badge-neutral',
+} %}
+{% set node_tone = {
+  'primary': 'border-primary',
+  'secondary': 'border-secondary',
+  'success': 'border-success',
+  'warning': 'border-warning',
+  'neutral': 'border-neutral',
+  'base': 'border-base-300',
+} %}
+{% set note_tone = {
+  'info': 'border-info/40 bg-info/10',
+  'success': 'border-success/40 bg-success/10',
+  'warning': 'border-warning/40 bg-warning/10',
+  'error': 'border-error/40 bg-error/10',
+} %}
+{% set note_icon_tone = {
+  'info': 'text-info',
+  'success': 'text-success',
+  'warning': 'text-warning',
+  'error': 'text-error',
+} %}
+
+{# ---------------------------------------------------------------- macros #}
+{% macro RoleBadge(text, tone='neutral') %}
+<span class="badge badge-sm {{ badge_tone.get(tone, 'badge-neutral') }} badge-outline whitespace-nowrap">{{ text }}</span>
+{%- endmacro %}
+
+{% macro SectionHeader(no, icon, title, subtitle) %}
+<div class="flex items-start gap-3 border-b border-base-300 pb-4">
+  <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <i class="ph {{ icon }}"></i>
+  </div>
+  <div class="flex flex-col">
+    {% if no %}<span class="text-xs font-bold text-primary">โมดูลย่อยที่ {{ no }}</span>{% endif %}
+    <h2 class="text-xl font-bold text-base-content">{{ title }}</h2>
+    <p class="text-sm text-base-content/60">{{ subtitle }}</p>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro MetaRow(label, value, icon='ph-caret-right') %}
+<div class="flex flex-wrap items-start gap-2 text-sm">
+  <span class="flex w-40 shrink-0 items-center gap-1 font-semibold text-base-content/60">
+    <i class="ph ph-size {{ icon }}"></i>{{ label }}
+  </span>
+  <span class="flex-1 text-base-content">{{ value|safe }}</span>
+</div>
+{%- endmacro %}
+
+{% macro Note(text, tone='info', icon='ph-info', title='') %}
+<div class="mt-4 flex gap-3 rounded-xl border {{ note_tone.get(tone, note_tone['info']) }} p-4">
+  <i class="ph ph-size {{ icon }} mt-0.5 shrink-0 {{ note_icon_tone.get(tone, 'text-info') }}"></i>
+  <div class="text-sm text-base-content/80">
+    {% if title %}<span class="font-bold text-base-content">{{ title }}</span> {% endif %}{{ text|safe }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro FlowNode(text, tone='base', sub='') %}
+<div class="flex min-w-[9.5rem] flex-col items-center justify-center gap-1 rounded-xl border-2 {{ node_tone.get(tone, 'border-base-300') }} bg-base-100 px-3 py-2 text-center">
+  <span class="text-sm font-bold text-base-content">{{ text }}</span>
+  {% if sub %}<span class="text-xs text-base-content/50">{{ sub }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro FlowArrow() %}
+<i class="ph ph-arrow-right shrink-0 text-base-content/30"></i>
+{%- endmacro %}
+
+{# ---------------------------------------------------------------- toc data #}
+{% set toc = [
+  ('overview',         'ph-users-three',    'ภาพรวม & บทบาทผู้ใช้งาน'),
+  ('flow-main',        'ph-flow-arrow',     'Flow ภาพรวมทั้งระบบ'),
+  ('cars',             'ph-car',            '1. รถยนต์'),
+  ('car-feedback',     'ph-files',          '2. แบบประเมินรถยนต์'),
+  ('car-applications', 'ph-hand-arrow-up',  '3. การขอใช้รถยนต์'),
+  ('calendar',         'ph-calendar-blank', '4. ปฏิทินการขอใช้รถยนต์'),
+  ('header-approve',   'ph-shield-check',   '5. หัวหน้าฝ่ายอนุมัติ'),
+  ('director-approve', 'ph-signpost',       '6. ผอ. อนุมัติ'),
+  ('admin-approve',    'ph-check-square',   '7. พัสดุอนุมัติ'),
+  ('car-tasks',        'ph-steering-wheel', '8. รายการงาน (พนักงานขับรถ)'),
+  ('history',          'ph-clock',          '9. ประวัติการใช้รถยนต์'),
+  ('status',           'ph-path',           'ตารางสถานะคำขอ'),
+] %}
+
+<div class="flex flex-col gap-4">
+
+  {# ============================================================ hero #}
+  <div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex items-start gap-4">
+      <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-content">
+        <i class="ph ph-book-open-text text-3xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-base-content">คู่มือการใช้งานระบบขอใช้รถยนต์</h1>
+        <p class="mt-1 text-sm text-base-content/70">
+          รวมขั้นตอนการใช้งานของทุกเมนูในระบบขอใช้รถยนต์ แยกตามโมดูลย่อย พร้อม Flow การทำงานตั้งแต่สร้างคำขอ
+          จนถึงปิดงานและเก็บประวัติ &mdash; หน่วยงาน <span class="font-semibold">{{ organization.name }}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+
+    {# ============================================================ toc menu #}
+    <aside class="xl:sticky xl:top-4 xl:w-[300px] xl:shrink-0 print:hidden">
+      <div class="segment border border-base-300 bg-base-100 rounded-2xl p-4 shadow-sm">
+        <div class="mb-2 border-b border-base-300 pb-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i class="ph ph-size ph-list text-primary"></i>
+              <span class="font-bold text-base-content">สารบัญคู่มือ</span>
+            </div>
+            <span id="manual-progress-text" class="text-xs font-semibold text-base-content/50">0%</span>
+          </div>
+          <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-base-300">
+            <div id="manual-progress-bar"
+                 class="h-full w-0 rounded-full bg-primary transition-[width] duration-150"></div>
+          </div>
+        </div>
+        <ul id="toc-list" class="menu w-full gap-1 p-0 xl:max-h-[calc(100vh-13rem)] xl:overflow-y-auto">
+          {% for anchor, icon, label in toc %}
+          <li>
+            <a href="#{{ anchor }}" class="toc-link text-sm" data-toc-link="{{ anchor }}">
+              <i class="ph ph-size {{ icon }}"></i>{{ label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </aside>
+
+    {# ============================================================ body #}
+    <div class="flex min-w-0 flex-1 flex-col gap-4">
+
+      {# ------------------------------------------------ 0. overview #}
+      <section id="overview" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-users-three', 'ภาพรวม & บทบาทผู้ใช้งาน',
+                         'ระบบขอใช้รถยนต์แบ่งการทำงานตามบทบาท (role) ในหน่วยงาน เมนูที่เห็นในแถบด้านซ้ายจะต่างกันตามบทบาทของแต่ละคน') }}
+
+        <p class="mt-4 text-sm text-base-content/80">
+          ระบบนี้ประกอบด้วยโมดูลย่อย 9 โมดูล แบ่งเป็น 3 กลุ่มงาน คือ
+          <span class="font-semibold">กลุ่มตั้งค่าข้อมูลพื้นฐาน</span> (รถยนต์, แบบประเมิน),
+          <span class="font-semibold">กลุ่มขอใช้และอนุมัติ</span> (คำขอ, ปฏิทิน, อนุมัติ 3 ระดับ) และ
+          <span class="font-semibold">กลุ่มปฏิบัติงานและรายงาน</span> (รายการงาน, ประวัติการใช้รถ)
+        </p>
+
+        <div class="mt-4 overflow-x-auto rounded-xl">
+          <table class="table-auto w-full text-sm">
+            <thead>
+              <tr>
+                <th class="table-style text-left">บทบาท</th>
+                <th class="table-style text-left">หน้าที่ในระบบ</th>
+                <th class="table-style text-left">เมนูที่ใช้งาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="table-style font-semibold">พนักงาน<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
+                <td class="table-style">สร้างคำขอใช้รถยนต์ของตนเอง ติดตามสถานะ และพิมพ์ใบขอใช้รถ</td>
+                <td class="table-style">การขอใช้รถยนต์, ปฏิทินการขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head / endorser</span></td>
+                <td class="table-style">อนุมัติคำขอของคนในฝ่าย (division) เดียวกันกับตน</td>
+                <td class="table-style">หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style font-semibold">หัวหน้าฝ่ายบริหารจัดการ<br><span class="text-xs font-normal text-base-content/50">supervisor supplier</span></td>
+                <td class="table-style">ดูคำขอของทั้งหน่วยงาน และร่วมอนุมัติในขั้นหัวหน้าฝ่าย</td>
+                <td class="table-style">การขอใช้รถยนต์ (เห็นทุกคำขอ), หัวหน้าฝ่ายอนุมัติ</td>
+              </tr>
+              <tr>
+                <td class="table-style font-semibold">ผู้อำนวยการ<br><span class="text-xs font-normal text-base-content/50">director</span></td>
+                <td class="table-style">อนุมัติคำขอประเภท &ldquo;ไปต่างจังหวัด&rdquo; ที่ต้องเสนอ ผอ.</td>
+                <td class="table-style">ผอ. อนุมัติขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
+                <td class="table-style">ตั้งค่าข้อมูลรถ, สร้างแบบประเมิน, จ่ายรถและพนักงานขับรถ, อนุมัติขั้นสุดท้าย, ดูรายงาน</td>
+                <td class="table-style">ทุกเมนู</td>
+              </tr>
+              <tr>
+                <td class="table-style font-semibold">พนักงานขับรถ<br><span class="text-xs font-normal text-base-content/50">driver</span></td>
+                <td class="table-style">ดูงานที่ได้รับมอบหมาย ปิดงานพร้อมบันทึกเลขไมล์</td>
+                <td class="table-style">รายการงาน, ประวัติการใช้รถยนต์</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {{ Note('ถ้าไม่เห็นเมนูใดในแถบด้านซ้าย แสดงว่าบทบาทของบัญชีคุณในหน่วยงานนี้ยังไม่ได้รับสิทธิ์ในเมนูนั้น
+                 กรุณาติดต่อเจ้าหน้าที่พัสดุ (admin) เพื่อกำหนดบทบาทและฝ่าย (division) ให้ถูกต้อง',
+                'info', 'ph-info', 'ข้อสังเกต:') }}
+      </section>
+
+      {# ------------------------------------------------ 0.1 main flow #}
+      <section id="flow-main" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-flow-arrow', 'Flow ภาพรวมทั้งระบบ',
+                         'เส้นทางของคำขอ 1 ใบ ตั้งแต่สร้างจนถึงเก็บเป็นประวัติ') }}
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ก. เตรียมข้อมูลก่อนเปิดใช้งาน (ทำครั้งเดียว โดยพัสดุ)</h3>
+        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+          {{ FlowNode('เพิ่มรถยนต์', 'primary', 'เมนู รถยนต์') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('ตั้งเลขไมล์เริ่มต้น', 'primary', 'ในฟอร์มรถยนต์') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('สร้างแบบประเมิน', 'primary', 'เมนู แบบประเมินรถยนต์') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('พิมพ์ QR ติดในรถ', 'primary', 'ปุ่ม QR Code') }}
+        </div>
+
+        <h3 class="mt-6 text-base font-bold text-base-content">ข. วงจรคำขอใช้รถ 1 ใบ (ใช้งานประจำวัน)</h3>
+
+        <div class="mt-3 space-y-3">
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-primary">กรณีที่ 1</span>
+              <span class="text-sm font-bold">ใช้รถทั่วไป / รับส่งสนามบิน</span>
+            </div>
+            <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+              {{ FlowNode('ผู้ขอสร้างคำขอ', 'primary', 'พนักงาน') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('รอหัวหน้าฝ่ายอนุมัติ', 'warning', 'pending on header') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('รอพัสดุอนุมัติ', 'warning', 'pending on admin') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติสำเร็จ', 'success', 'active + จ่ายรถ/คนขับ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('เสร็จสิ้น', 'neutral', 'completed + เลขไมล์') }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-secondary">กรณีที่ 2</span>
+              <span class="text-sm font-bold">ไปต่างจังหวัด (ข้ามขั้นหัวหน้าฝ่าย ไปเสนอ ผอ. โดยตรง)</span>
+            </div>
+            <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+              {{ FlowNode('ผู้ขอสร้างคำขอ', 'secondary', 'พนักงาน') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('รอพัสดุเสนอ ผอ.', 'warning', 'pending on director') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('รอพัสดุอนุมัติ', 'warning', 'pending on admin') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติสำเร็จ', 'success', 'active + จ่ายรถ/คนขับ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('เสร็จสิ้น', 'neutral', 'completed + เลขไมล์') }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-error/40 bg-error/5 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-error">กรณีไม่อนุมัติ</span>
+              <span class="text-sm font-bold">ผู้อนุมัติแต่ละขั้นสามารถกดไม่อนุมัติได้ พร้อมระบุเหตุผล</span>
+            </div>
+            <p class="text-sm text-base-content/80">
+              เมื่อไม่อนุมัติ คำขอจะเปลี่ยนเป็นสถานะ <span class="font-semibold text-error">ปฏิเสธ</span> และหยุดอยู่ตรงนั้น
+              ผู้ขอจะเห็นเหตุผลในคอลัมน์ &ldquo;เหตุผลในการอนุมัติ/ไม่อนุมัติ&rdquo; ที่หน้าการขอใช้รถยนต์
+              และต้องสร้างคำขอใบใหม่หากยังต้องการใช้รถ
+            </p>
+          </div>
+        </div>
+
+        {{ Note('ระบบส่งอีเมลอัตโนมัติทุกครั้งที่คำขอเปลี่ยนขั้น &mdash; แจ้งผู้อนุมัติขั้นถัดไปเมื่อสร้างคำขอและเมื่ออนุมัติผ่านแต่ละขั้น
+                 และแจ้ง <span class="font-semibold">พนักงานขับรถ</span> เมื่อพัสดุอนุมัติและจ่ายรถแล้ว',
+                'success', 'ph-envelope-simple', 'อีเมลแจ้งเตือน:') }}
+      </section>
+
+      {# ------------------------------------------------ 1. cars #}
+      <section id="cars" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(1, 'ph-car', 'รถยนต์',
+                         'ทะเบียนรถทั้งหมดของหน่วยงาน เป็นข้อมูลตั้งต้นที่ทุกโมดูลอื่นเรียกใช้') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'รถยนต์', 'ph-list') }}
+          {{ MetaRow('ใช้เมื่อ', 'ซื้อรถใหม่ / แก้ป้ายทะเบียน / ปรับเลขไมล์ / ยกเลิกการใช้รถคันนั้น', 'ph-info') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดเมนู &ldquo;รถยนต์&rdquo;</span>
+            <p class="text-base-content/70">ระบบแสดงรายการรถทั้งหมดของหน่วยงาน พร้อมรูปรถ ป้ายทะเบียน เลขไมล์ล่าสุด และสถานะ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กด &ldquo;เพิ่มรถยนต์&rdquo;</span>
+            <p class="text-base-content/70">
+              กรอก <span class="font-semibold">ป้ายทะเบียน</span> (บังคับ),
+              <span class="font-semibold">เลขไมล์ล่าสุด</span>,
+              คำอธิบายรถ, สถานะการใช้งาน และอัปโหลดรูปรถ
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. บันทึก</span>
+            <p class="text-base-content/70">รถคันนี้จะไปปรากฏเป็นตัวเลือกในหน้า &ldquo;พัสดุอนุมัติขอใช้รถยนต์&rdquo; และในฟอร์มขอใช้รถทันที</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ปุ่ม QR Code (ถ้าต้องการ)</span>
+            <p class="text-base-content/70">ดาวน์โหลดรูป QR ของรถคันนั้นเป็นไฟล์ PNG สำหรับพิมพ์ติดในรถ ให้ผู้โดยสารสแกนเพื่อทำแบบประเมิน</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">5. แก้ไข / ลบ</span>
+            <p class="text-base-content/70">
+              การลบเป็นการเปลี่ยนสถานะเป็น &ldquo;ไม่สามารถใช้งานได้&rdquo; ไม่ได้ลบข้อมูลจริง
+              ประวัติการใช้รถคันนั้นในอดีตจะยังอยู่ครบ
+            </p>
+          </li>
+        </ol>
+
+        {{ Note('เลขไมล์ที่กรอกในหน้านี้คือค่าตั้งต้นเท่านั้น หลังจากนั้นระบบจะอัปเดตเลขไมล์ของรถให้อัตโนมัติ
+                 ทุกครั้งที่พนักงานขับรถปิดงานในเมนู &ldquo;รายการงาน&rdquo;',
+                'warning', 'ph-gauge', 'เรื่องเลขไมล์:') }}
+
+        {% if current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.cars.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารถยนต์
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 2. car feedback #}
+      <section id="car-feedback" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(2, 'ph-files', 'แบบประเมินรถยนต์',
+                         'สร้างแบบสอบถามความพึงพอใจ แจกผ่าน QR Code และดูผลสรุปเป็นสถิติ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน',
+                     RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary') ~ ' ' ~ RoleBadge('ผู้โดยสารทั่วไป (ไม่ต้องล็อกอิน)', 'success'),
+                     'ph-users-three') }}
+          {{ MetaRow('เมนู', 'แบบประเมินรถยนต์', 'ph-list') }}
+          {{ MetaRow('ใช้เมื่อ', 'ต้องการเก็บความเห็นผู้ใช้บริการเกี่ยวกับรถและพนักงานขับรถ', 'ph-info') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">Flow ย่อย</h3>
+        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+          {{ FlowNode('สร้างแบบประเมิน', 'primary', 'พัสดุ') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('ผูกกับรถ', 'primary', 'เลือกได้หลายคัน') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('พิมพ์ QR ติดในรถ', 'primary') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('ผู้โดยสารสแกน + ตอบ', 'success', 'ไม่ต้องล็อกอิน') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('ดูผลสรุป', 'primary', 'ปุ่มดูคำตอบ') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. กด &ldquo;สร้างแบบประเมิน&rdquo;</span>
+            <p class="text-base-content/70">ตั้งชื่อแบบประเมิน ใส่คำอธิบาย และเลือกรถที่จะใช้แบบประเมินชุดนี้ (เลือกได้หลายคัน)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. เพิ่มคำถาม</span>
+            <div class="mt-1 text-base-content/70">
+              เลือกชนิดคำถามได้ 5 แบบ และกำหนดได้ว่าข้อไหนบังคับตอบ
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="badge badge-sm badge-outline">ให้คะแนน 1&ndash;5</span>
+                <span class="badge badge-sm badge-outline">ข้อความ</span>
+                <span class="badge badge-sm badge-outline">ใช่ / ไม่ใช่</span>
+                <span class="badge badge-sm badge-outline">เลือกตอบข้อเดียว</span>
+                <span class="badge badge-sm badge-outline">เลือกตอบหลายข้อ</span>
+              </div>
+            </div>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. บันทึก แล้วกดปุ่ม QR Code</span>
+            <p class="text-base-content/70">
+              ระบบสร้าง QR ต่อรถ 1 คัน เมื่อสแกนจะเปิดหน้าแบบประเมินของรถคันนั้นโดยตรง
+              <span class="font-semibold">ผู้ตอบไม่ต้องเข้าสู่ระบบ</span>
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ดูผลสรุป</span>
+            <p class="text-base-content/70">
+              ระบบสรุปให้อัตโนมัติ: คำถามแบบคะแนนแสดงค่าเฉลี่ยและการกระจายคะแนน 1&ndash;5,
+              คำถามแบบตัวเลือกแสดงจำนวนครั้งที่แต่ละตัวเลือกถูกเลือก, คำถามแบบข้อความแสดงรายการคำตอบทั้งหมด
+              และกรองดูเฉพาะรถคันใดคันหนึ่งได้
+            </p>
+          </li>
+        </ol>
+
+        {{ Note('การลบแบบประเมินเป็นการ <span class="font-semibold">ลบถาวร</span> (ไม่เหมือนการลบรถที่เป็นการปิดสถานะ)
+                 กรุณาดูผลสรุปหรือบันทึกข้อมูลไว้ก่อนลบ',
+                'error', 'ph-warning-circle', 'ระวัง:') }}
+
+        {% if current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าแบบประเมินรถยนต์
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 3. car applications #}
+      <section id="car-applications" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(3, 'ph-hand-arrow-up', 'การขอใช้รถยนต์',
+                         'หน้าหลักของผู้ขอใช้รถ ใช้สร้างคำขอ ติดตามสถานะ และพิมพ์ใบขอใช้รถ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', 'พนักงาน, หัวหน้าฝ่าย, ผู้มีสิทธิ์อนุมัติ, หัวหน้าฝ่ายบริหารจัดการ, พัสดุ', 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การขอใช้รถยนต์', 'ph-list') }}
+          {{ MetaRow('เงื่อนไข', 'บัญชีต้องถูกกำหนด <span class="font-semibold">ฝ่าย (division)</span> ไว้แล้ว เมนูนี้จึงจะแสดง', 'ph-warning-circle') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">สิ่งที่เห็นในหน้ารายการ</h3>
+        <ul class="mt-2 list-disc space-y-1 pl-6 text-sm text-base-content/80">
+          <li>พนักงานทั่วไป &mdash; เห็นเฉพาะคำขอที่ <span class="font-semibold">ตนเองเป็นผู้สร้าง</span></li>
+          <li>พัสดุ (admin) และหัวหน้าฝ่ายบริหารจัดการ &mdash; เห็น <span class="font-semibold">คำขอทั้งหมดของหน่วยงาน</span></li>
+          <li>รายการเรียงจากคำขอที่สร้างล่าสุดขึ้นก่อน</li>
+        </ul>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนสร้างคำขอ</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. กด &ldquo;เพิ่มคำขอใช้รถยนต์&rdquo;</span>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. เลือกประเภทการใช้รถ &mdash; ตัวเลือกนี้กำหนดเส้นทางการอนุมัติ</span>
+            <div class="mt-2 overflow-x-auto rounded-xl">
+              <table class="table-auto w-full text-sm">
+                <thead>
+                  <tr>
+                    <th class="table-style text-left">ประเภทการใช้รถ</th>
+                    <th class="table-style text-left">ฟิลด์ที่ต้องกรอกเพิ่ม</th>
+                    <th class="table-style text-left">ส่งเข้าขั้นอนุมัติ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="table-style font-semibold">ใช้รถทั่วไป</td>
+                    <td class="table-style">&ndash;</td>
+                    <td class="table-style"><span class="badge badge-sm badge-warning">รอหัวหน้าฝ่ายอนุมัติ</span></td>
+                  </tr>
+                  <tr>
+                    <td class="table-style font-semibold">รับส่งสนามบิน</td>
+                    <td class="table-style">
+                      เลือก <span class="font-semibold">รับ</span> หรือ <span class="font-semibold">ส่ง</span>,
+                      สถานที่รับผู้โดยสาร, หมายเลขเที่ยวบิน,
+                      เวลาเครื่องออกจาก/มาถึงสนามบินหาดใหญ่
+                    </td>
+                    <td class="table-style"><span class="badge badge-sm badge-warning">รอหัวหน้าฝ่ายอนุมัติ</span></td>
+                  </tr>
+                  <tr>
+                    <td class="table-style font-semibold">ไปต่างจังหวัด</td>
+                    <td class="table-style">&ndash;</td>
+                    <td class="table-style"><span class="badge badge-sm badge-warning">รอพัสดุเสนอ ผอ.</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. เลือกประเภทการเดินทาง</span>
+            <p class="text-base-content/70">
+              <span class="font-semibold">ไป-กลับ</span> ต้องกรอกวัน-เวลากลับด้วย /
+              <span class="font-semibold">เที่ยวเดียว</span> กรอกเฉพาะวัน-เวลาออกเดินทาง (ช่องวันกลับจะถูกซ่อนให้เอง)
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. กรอกรายละเอียดการเดินทาง</span>
+            <p class="text-base-content/70">
+              เหตุผลที่ต้องการใช้, สถานที่ต้องการจะไป, จำนวนผู้โดยสาร,
+              เบอร์โทรศัพท์ผู้ขอใช้รถ, วัน-เวลาออกเดินทาง (และวัน-เวลากลับ)
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">5. รถยนต์ / พนักงานขับรถ (ไม่บังคับ)</span>
+            <p class="text-base-content/70">
+              เว้นเป็น &ldquo;ไม่ได้ระบุ&rdquo; ได้ ปกติพัสดุจะเป็นผู้จ่ายรถและพนักงานขับรถให้ในขั้นอนุมัติสุดท้าย
+              การเลือกไว้ถือเป็นการแจ้งความประสงค์เท่านั้น
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">6. บันทึก</span>
+            <p class="text-base-content/70">
+              ระบบบันทึกฝ่าย (division) ของผู้ขอไว้กับคำขอโดยอัตโนมัติ (ใช้ในการกรองของหัวหน้าฝ่าย)
+              และส่งอีเมลแจ้งผู้อนุมัติขั้นถัดไปทันที
+            </p>
+          </li>
+        </ol>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">การจัดการคำขอที่มีอยู่</h3>
+        <div class="mt-3 grid gap-3 md:grid-cols-2">
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-pen text-primary"></i>แก้ไข</div>
+            <p class="mt-1 text-sm text-base-content/70">
+              ปุ่มแก้ไขจะแสดง <span class="font-semibold">เฉพาะคำขอที่ยังอยู่ในสถานะรออนุมัติ</span>
+              เมื่อผ่านอนุมัติแล้วหรือถูกปฏิเสธแล้วจะแก้ไขไม่ได้
+            </p>
+          </div>
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-trash text-error"></i>ลบ / ยกเลิก</div>
+            <p class="mt-1 text-sm text-base-content/70">
+              เปลี่ยนสถานะเป็น &ldquo;ยกเลิก&rdquo; ไม่ได้ลบข้อมูลจริง
+              ปุ่มจะถูกปิดการใช้งานเมื่อคำขออนุมัติสำเร็จแล้ว
+            </p>
+          </div>
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-file-text text-primary"></i>ใบขอใช้รถยนต์</div>
+            <p class="mt-1 text-sm text-base-content/70">
+              เปิดใบขอใช้รถของคำขอนั้นในรูปแบบเอกสารสำหรับพิมพ์หรือเสนอเซ็นกำกับ
+            </p>
+          </div>
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-file-pdf text-primary"></i>พิมพ์หลายฉบับ (PDF)</div>
+            <p class="mt-1 text-sm text-base-content/70">
+              ระบุช่วง &ldquo;จากวันที่ &ndash; ถึงวันที่&rdquo; ระบบจะรวบรวมใบขอใช้รถทุกใบที่
+              <span class="font-semibold">ออกเดินทาง</span> ในช่วงนั้นมาเป็นเอกสารชุดเดียว
+              (พนักงานทั่วไปจะได้เฉพาะใบของตนเอง)
+            </p>
+          </div>
+        </div>
+
+        {% if current_user.get_current_division() %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าการขอใช้รถยนต์
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 4. calendar #}
+      <section id="calendar" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(4, 'ph-calendar-blank', 'ปฏิทินการขอใช้รถยนต์',
+                         'ดูภาพรวมการใช้รถทั้งหน่วยงานเป็นรายเดือน เพื่อเลี่ยงวันที่รถถูกจองแล้ว') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', 'ทุกคนที่มีสิทธิ์ขอใช้รถ', 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ปฏิทินการขอใช้รถยนต์', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ความหมายของสีในปฏิทิน</h3>
+        <div class="mt-3 flex flex-wrap gap-3 text-sm">
+          <div class="flex items-center gap-2 rounded-lg border border-base-300 px-3 py-2">
+            <span class="size-3 rounded-full" style="background: orange"></span> รออนุมัติ (ทุกขั้น)
+          </div>
+          <div class="flex items-center gap-2 rounded-lg border border-base-300 px-3 py-2">
+            <span class="size-3 rounded-full" style="background: green"></span> อนุมัติสำเร็จ
+          </div>
+          <div class="flex items-center gap-2 rounded-lg border border-base-300 px-3 py-2">
+            <span class="size-3 rounded-full" style="background: gray"></span> เสร็จสิ้น
+          </div>
+        </div>
+        <p class="mt-2 text-sm text-base-content/60">
+          รายการที่ถูกยกเลิกหรือไม่อนุมัติจะไม่แสดงในปฏิทิน &mdash; ป้ายกำกับแต่ละรายการแสดงเป็น &ldquo;เวลาออกเดินทาง, สถานที่&rdquo;
+        </p>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดปฏิทิน แล้วเลื่อนดูเดือนที่ต้องการ</span>
+            <p class="text-base-content/70">รายการที่เป็นการเดินทางแบบไป-กลับจะแสดงคร่อมช่วงตั้งแต่วันไปถึงวันกลับ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. คลิกที่รายการในปฏิทิน</span>
+            <p class="text-base-content/70">เปิดหน้าต่างสรุปรายละเอียดคำขอใบนั้น (ผู้ขอ, สถานที่, เวลา, สถานะ)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. คลิกที่ช่องวันว่าง</span>
+            <p class="text-base-content/70">
+              ระบบพาไปหน้าสร้างคำขอ และเติมวันที่ที่คลิกให้ในช่องวันออกเดินทาง/วันกลับอัตโนมัติ
+            </p>
+          </li>
+        </ol>
+
+        {{ Note('ปฏิทินนี้แสดงคำขอ <span class="font-semibold">ของทุกคนในหน่วยงาน</span>
+                 ต่างจากหน้ารายการคำขอที่พนักงานทั่วไปเห็นเฉพาะของตนเอง
+                 จึงเหมาะกับการเช็กก่อนว่าวันที่ต้องการมีคนจองรถไว้แล้วหรือยัง',
+                'info', 'ph-lightbulb', 'เคล็ดลับ:') }}
+
+        {% if current_user.get_current_division() %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าปฏิทิน
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 5. header approve #}
+      <section id="header-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(5, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์',
+                         'อนุมัติขั้นที่ 1 สำหรับคำขอประเภทใช้รถทั่วไปและรับส่งสนามบิน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', 'หัวหน้าฝ่าย, ผู้มีสิทธิ์อนุมัติ, หัวหน้าฝ่ายบริหารจัดการ, พัสดุ', 'ph-users-three') }}
+          {{ MetaRow('รายการที่แสดง', 'เฉพาะคำขอสถานะ <span class="font-semibold">รอหัวหน้าฝ่ายอนุมัติ</span> ที่อยู่ใน <span class="font-semibold">ฝ่ายเดียวกับผู้ล็อกอิน</span>', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. กรองหาคำขอ (ถ้ารายการเยอะ)</span>
+            <p class="text-base-content/70">
+              กรองได้ด้วย ผู้ขอใช้รถ, สถานที่ (ค้นหาจากบางส่วนของชื่อได้), วันออกเดินทาง, วันกลับ และวันที่สร้างคำขอ
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ตรวจรายละเอียดคำขอ</span>
+            <p class="text-base-content/70">ดูเหตุผลการใช้รถ สถานที่ วัน-เวลา จำนวนผู้โดยสาร และผู้ขอ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3ก. กด &ldquo;อนุมัติ&rdquo;</span>
+            <p class="text-base-content/70">
+              สถานะเปลี่ยนเป็น <span class="badge badge-sm badge-warning">รอพัสดุอนุมัติ</span>
+              ระบบบันทึกชื่อผู้อนุมัติพร้อมวันเวลาไว้ในคำขอ และส่งอีเมลแจ้งพัสดุ
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3ข. กด &ldquo;ไม่อนุมัติ&rdquo;</span>
+            <p class="text-base-content/70">
+              ต้องระบุเหตุผล สถานะเปลี่ยนเป็น <span class="badge badge-sm badge-error">ปฏิเสธ</span>
+              และผู้ขอจะเห็นเหตุผลนี้ในหน้ารายการคำขอของตน
+            </p>
+          </li>
+        </ol>
+
+        {{ Note('คำขอประเภท <span class="font-semibold">ไปต่างจังหวัด</span> จะไม่ปรากฏในหน้านี้
+                 เพราะระบบข้ามขั้นหัวหน้าฝ่ายและส่งไปที่หน้า &ldquo;ผอ. อนุมัติขอใช้รถยนต์&rdquo; โดยตรง',
+                'info', 'ph-info') }}
+
+        {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_permissions.header_page', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าหัวหน้าฝ่ายอนุมัติ
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 6. director approve #}
+      <section id="director-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(6, 'ph-signpost', 'ผอ. อนุมัติขอใช้รถยนต์',
+                         'อนุมัติคำขอที่ต้องเสนอผู้อำนวยการ คือคำขอประเภทไปต่างจังหวัด') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', 'ผู้อำนวยการ / หัวหน้าฝ่ายบริหาร, พัสดุ', 'ph-users-three') }}
+          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">รอพัสดุเสนอ ผอ.</span> ของทั้งหน่วยงาน (ไม่กรองตามฝ่าย)', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดเมนู &ldquo;ผอ. อนุมัติขอใช้รถยนต์&rdquo;</span>
+            <p class="text-base-content/70">พัสดุใช้หน้านี้ประกอบการเสนอเรื่องต่อ ผอ. ได้ด้วย</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กรองรายการ</span>
+            <p class="text-base-content/70">ใช้ตัวกรองชุดเดียวกับหน้าหัวหน้าฝ่าย (ผู้ขอ, สถานที่, วันไป, วันกลับ, วันที่สร้าง)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3ก. อนุมัติ</span>
+            <p class="text-base-content/70">
+              สถานะเปลี่ยนเป็น <span class="badge badge-sm badge-warning">รอพัสดุอนุมัติ</span>
+              เพื่อให้พัสดุจ่ายรถและพนักงานขับรถต่อ
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3ข. ไม่อนุมัติ</span>
+            <p class="text-base-content/70">ระบุเหตุผล คำขอเปลี่ยนเป็น <span class="badge badge-sm badge-error">ปฏิเสธ</span></p>
+          </li>
+        </ol>
+
+        {% if current_user.is_directer_organization() or current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_permissions.director_page', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้า ผอ. อนุมัติ
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 7. admin approve #}
+      <section id="admin-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(7, 'ph-check-square', 'พัสดุอนุมัติขอใช้รถยนต์',
+                         'อนุมัติขั้นสุดท้าย พร้อมจ่ายรถและพนักงานขับรถให้คำขอ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">รอพัสดุอนุมัติ</span>, <span class="font-semibold">อนุมัติสำเร็จ</span> และ <span class="font-semibold">ที่พัสดุปฏิเสธไว้</span> รวมอยู่ในหน้าเดียว', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน &mdash; ขั้นสำคัญที่สุดของ Flow</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-primary pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เลือกคำขอที่ผ่านการอนุมัติต้นทางมาแล้ว</span>
+            <p class="text-base-content/70">
+              คำขออาจมาจากหัวหน้าฝ่าย (ใช้รถทั่วไป / รับส่งสนามบิน) หรือจาก ผอ. (ไปต่างจังหวัด)
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. เช็กว่าวันเวลานั้นรถว่างจริง</span>
+            <p class="text-base-content/70">แนะนำเปิดเมนูปฏิทินการขอใช้รถยนต์ประกอบ เพื่อไม่ให้จ่ายรถคันเดียวกันซ้อนกัน</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. เลือกรถยนต์และพนักงานขับรถในแบบฟอร์มอนุมัติ</span>
+            <p class="text-base-content/70">
+              ตัวเลือกรถมาจากเมนู &ldquo;รถยนต์&rdquo; และตัวเลือกคนขับมาจากผู้ใช้ที่มีบทบาท
+              <span class="font-semibold">พนักงานขับรถ (driver)</span> ในหน่วยงานนี้
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. กด &ldquo;อนุมัติ&rdquo;</span>
+            <div class="text-base-content/70">
+              จะเกิด 3 อย่างพร้อมกัน:
+              <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                <li>สถานะเปลี่ยนเป็น <span class="badge badge-sm badge-success">อนุมัติสำเร็จ</span></li>
+                <li>คำขอไปปรากฏใน &ldquo;รายการงาน&rdquo; ของพนักงานขับรถที่ถูกจ่ายงาน</li>
+                <li>ระบบส่งอีเมลแจ้งพนักงานขับรถทันที</li>
+              </ul>
+            </div>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">5. หรือกด &ldquo;ไม่อนุมัติ&rdquo;</span>
+            <p class="text-base-content/70">
+              ระบุเหตุผล คำขอเปลี่ยนเป็น <span class="badge badge-sm badge-error">ปฏิเสธ</span>
+              และยังคงแสดงในหน้านี้เพื่อการตรวจย้อนหลัง
+            </p>
+          </li>
+        </ol>
+
+        {{ Note('ถ้าไม่เลือกพนักงานขับรถ คำขอจะยังถือว่าอนุมัติสำเร็จ แต่จะไม่มีใครเห็นงานนี้ในเมนู &ldquo;รายการงาน&rdquo; ของตน
+                 และจะไม่มีอีเมลแจ้งคนขับ &mdash; จึงควรเลือกคนขับทุกครั้งที่อนุมัติ',
+                'warning', 'ph-warning-circle', 'ข้อควรระวัง:') }}
+
+        {% if current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_permissions.admin_page', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าพัสดุอนุมัติ
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 8. car tasks #}
+      <section id="car-tasks" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(8, 'ph-steering-wheel', 'รายการงาน',
+                         'หน้าทำงานของพนักงานขับรถ ดูงานที่ได้รับมอบหมาย และปิดงานพร้อมบันทึกเลขไมล์') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน',
+                     RoleBadge('พนักงานขับรถ (driver)', 'success') ~ ' ' ~ RoleBadge('พัสดุ (admin)', 'primary'),
+                     'ph-users-three') }}
+          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">อนุมัติสำเร็จ</span> ที่ยังไม่ปิดงาน', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">Flow ย่อย</h3>
+        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+          {{ FlowNode('พัสดุจ่ายงาน', 'primary') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('งานเข้ารายการงาน', 'success', 'status = active') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('ขับรถตามคำขอ', 'success') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('กรอกเลขไมล์หลังกลับ', 'warning') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('งานย้ายไปประวัติ', 'neutral', 'status = completed') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดเมนู &ldquo;รายการงาน&rdquo;</span>
+            <p class="text-base-content/70">
+              กดปุ่ม <span class="font-semibold">วันนี้</span> เพื่อดูงานของวันนี้อย่างเร็ว
+              หรือเลือกวันที่เอง แล้วเลือกการเรียงลำดับตามวันเวลาออกเดินทาง / วันเวลากลับ / วันที่สร้าง
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ตรวจรายละเอียดงาน</span>
+            <p class="text-base-content/70">
+              การ์ดงานแสดงวัน-เวลาออกเดินทาง ประเภทการใช้รถ ป้ายทะเบียนรถ ผู้ขอใช้ เหตุผล
+              และรายละเอียดเที่ยวบินหากเป็นงานรับส่งสนามบิน
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. เมื่อกลับถึงที่แล้ว กดปิดงาน</span>
+            <p class="text-base-content/70">กรอก <span class="font-semibold">เลขไมล์หลังกลับ</span> จากหน้าปัดรถ แล้วยืนยัน</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ระบบบันทึกให้อัตโนมัติ</span>
+            <ul class="mt-1 list-disc space-y-0.5 pl-5 text-base-content/70">
+              <li>เก็บเลขไมล์เดิมของรถไว้เป็น &ldquo;เลขไมล์ก่อนออกเดินทาง&rdquo;</li>
+              <li>อัปเดตเลขไมล์ล่าสุดของรถคันนั้นเป็นค่าที่กรอก</li>
+              <li>บันทึกวันเวลากลับเป็นเวลาที่กดปิดงาน</li>
+              <li>เปลี่ยนสถานะเป็น <span class="badge badge-sm">เสร็จสิ้น</span> งานจะหายจากรายการงานและไปอยู่ในประวัติการใช้รถยนต์</li>
+            </ul>
+          </li>
+        </ol>
+
+        {{ Note('กรอกเลขไมล์ให้ตรงกับหน้าปัดจริง เพราะระบบใช้ค่านี้เป็นเลขไมล์ตั้งต้นของงานถัดไปของรถคันเดียวกัน
+                 ถ้ากรอกผิด ให้พัสดุแก้ไขย้อนหลังได้ที่เมนู &ldquo;ประวัติการใช้รถยนต์&rdquo;',
+                'warning', 'ph-gauge', 'สำคัญ:') }}
+
+        {% if current_user.has_organization_roles("admin", "driver") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการงาน
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 9. history #}
+      <section id="history" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(9, 'ph-clock', 'ประวัติการใช้รถยนต์',
+                         'คลังข้อมูลงานที่ปิดแล้ว ใช้ตรวจย้อนหลัง แก้ไขข้อมูลที่คลาดเคลื่อน และออกรายงาน PDF') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน',
+                     RoleBadge('พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงานขับรถ (driver)', 'success'),
+                     'ph-users-three') }}
+          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">เสร็จสิ้น</span> เท่านั้น', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ค้นหาและเรียงลำดับ</span>
+            <p class="text-base-content/70">
+              กรองด้วยผู้ขอใช้รถ, สถานที่, วันออกเดินทาง, วันกลับ, วันที่สร้างคำขอ
+              และเลือกเรียงลำดับจากน้อยไปมากหรือมากไปน้อยได้
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กด &ldquo;รายละเอียด&rdquo;</span>
+            <p class="text-base-content/70">
+              ดูข้อมูลครบใบ ทั้งผู้อนุมัติแต่ละขั้น รถและคนขับที่ใช้จริง เลขไมล์ก่อน-หลัง และระยะทางที่ใช้ไป
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. กด &ldquo;แก้ไข&rdquo; เมื่อข้อมูลคลาดเคลื่อน</span>
+            <p class="text-base-content/70">
+              แก้ <span class="font-semibold">เลขไมล์หลังกลับ</span> และ <span class="font-semibold">วัน-เวลากลับ</span> ได้
+              การแก้เลขไมล์จะอัปเดตเลขไมล์ล่าสุดของรถคันนั้นตามไปด้วย
+            </p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ออกรายงาน PDF</span>
+            <p class="text-base-content/70">
+              เลือกช่วง &ldquo;จากวันที่ &ndash; ถึงวันที่&rdquo; และเลือกรถ 1 คัน
+              ระบบตั้งค่าเริ่มต้นเป็นวันแรกถึงวันสุดท้ายของเดือนปัจจุบัน แล้วสร้างไฟล์ PDF สรุปการใช้รถคันนั้นให้ดาวน์โหลด
+            </p>
+          </li>
+        </ol>
+
+        {% if current_user.has_organization_roles("admin", "driver") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าประวัติการใช้รถยนต์
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ status table #}
+      <section id="status" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-path', 'ตารางสถานะคำขอ',
+                         'ความหมายของทุกสถานะ ใครทำให้เปลี่ยน และคำขออยู่ที่หน้าไหน') }}
+
+        <div class="mt-4 overflow-x-auto rounded-xl">
+          <table class="table-auto w-full text-sm">
+            <thead>
+              <tr>
+                <th class="table-style text-left">สถานะที่แสดง</th>
+                <th class="table-style text-left">ความหมาย</th>
+                <th class="table-style text-left">ใครทำให้เปลี่ยนสถานะต่อไป</th>
+                <th class="table-style text-left">คำขออยู่ที่เมนู</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-primary">รอหัวหน้าฝ่ายอนุมัติ</span></td>
+                <td class="table-style">คำขอใช้รถทั่วไป / รับส่งสนามบิน ที่เพิ่งสร้าง</td>
+                <td class="table-style">หัวหน้าฝ่ายของฝ่ายเดียวกับผู้ขอ</td>
+                <td class="table-style">หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-primary">รอพัสดุเสนอ ผอ.</span></td>
+                <td class="table-style">คำขอไปต่างจังหวัด ที่เพิ่งสร้าง</td>
+                <td class="table-style">ผู้อำนวยการ (พัสดุเป็นผู้เสนอ)</td>
+                <td class="table-style">ผอ. อนุมัติขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-primary">รอพัสดุอนุมัติ</span></td>
+                <td class="table-style">ผ่านอนุมัติต้นทางแล้ว รอจ่ายรถและคนขับ</td>
+                <td class="table-style">เจ้าหน้าที่พัสดุ</td>
+                <td class="table-style">พัสดุอนุมัติขอใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-green-500">อนุมัติสำเร็จ</span></td>
+                <td class="table-style">อนุมัติครบทุกขั้น มีรถและคนขับแล้ว รอออกเดินทาง</td>
+                <td class="table-style">พนักงานขับรถ (ปิดงาน)</td>
+                <td class="table-style">รายการงาน</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-gray-500">เสร็จสิ้น</span></td>
+                <td class="table-style">ปิดงานและบันทึกเลขไมล์เรียบร้อย</td>
+                <td class="table-style">&ndash; (สิ้นสุด Flow)</td>
+                <td class="table-style">ประวัติการใช้รถยนต์</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-error">ปฏิเสธ</span></td>
+                <td class="table-style">ผู้อนุมัติขั้นใดขั้นหนึ่งไม่อนุมัติ พร้อมเหตุผล</td>
+                <td class="table-style">&ndash; (ผู้ขอสร้างใบใหม่)</td>
+                <td class="table-style">การขอใช้รถยนต์ (ของผู้ขอ)</td>
+              </tr>
+              <tr>
+                <td class="table-style"><span class="font-semibold text-error">ยกเลิก</span></td>
+                <td class="table-style">ผู้ขอกดลบคำขอเอง</td>
+                <td class="table-style">&ndash;</td>
+                <td class="table-style">&ndash; (ไม่แสดงในรายการและปฏิทิน)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  (function () {
+    const links = Array.from(document.querySelectorAll("[data-toc-link]"));
+    if (!links.length) return;
+
+    const items = links
+      .map(function (link) {
+        return { link: link, section: document.getElementById(link.dataset.tocLink) };
+      })
+      .filter(function (item) {
+        return item.section;
+      });
+    if (!items.length) return;
+
+    const list = document.getElementById("toc-list");
+    const progressBar = document.getElementById("manual-progress-bar");
+    const progressText = document.getElementById("manual-progress-text");
+
+    // ระยะจากขอบบนจอ ที่ถือว่าเลื่อนเข้าหัวข้อนั้นแล้ว
+    const OFFSET = 140;
+    let activeIndex = -1;
+    let ticking = false;
+
+    function currentIndex() {
+      const doc = document.documentElement;
+      // เลื่อนถึงท้ายหน้าแล้ว ให้ถือว่าอยู่หัวข้อสุดท้ายเสมอ
+      if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
+        return items.length - 1;
+      }
+      let index = 0;
+      items.forEach(function (item, i) {
+        if (item.section.getBoundingClientRect().top <= OFFSET) index = i;
+      });
+      return index;
+    }
+
+    // เลื่อนสารบัญเองเมื่อหัวข้อที่กำลังอ่านอยู่นอกกรอบ (ไม่แตะ scroll ของหน้า)
+    function keepLinkVisible(link) {
+      if (!list || list.scrollHeight <= list.clientHeight) return;
+      const listRect = list.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      if (linkRect.top < listRect.top) {
+        list.scrollTop -= listRect.top - linkRect.top + 8;
+      } else if (linkRect.bottom > listRect.bottom) {
+        list.scrollTop += linkRect.bottom - listRect.bottom + 8;
+      }
+    }
+
+    function render() {
+      ticking = false;
+
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      const percent = scrollable > 0 ? Math.round((window.scrollY / scrollable) * 100) : 100;
+      const clamped = Math.min(100, Math.max(0, percent));
+      if (progressBar) progressBar.style.width = clamped + "%";
+      if (progressText) progressText.textContent = clamped + "%";
+
+      const index = currentIndex();
+      if (index === activeIndex) return;
+      activeIndex = index;
+
+      items.forEach(function (item, i) {
+        item.link.classList.toggle("is-active", i === index);
+        item.link.classList.toggle("is-passed", i < index);
+      });
+      keepLinkVisible(items[index].link);
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(render);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    render();
+  })();
+</script>
+{% endblock %}
