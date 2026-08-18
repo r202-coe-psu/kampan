@@ -26,6 +26,14 @@
     color: var(--color-primary);
     font-weight: 700;
   }
+
+  /* ตัวอย่างหน้าจอที่ลอกมาจาก modal จริง: daisyui ตั้ง .modal-box ให้ opacity:0 scale:.95
+     ไว้ตอนที่ modal ยังไม่เปิด ในคู่มือไม่มี .modal-open ครอบ จึงต้องเปิดให้เห็นเอง */
+  [data-demo] .modal-box {
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
 </style>
 {% endblock %}
 
@@ -107,6 +115,23 @@
 
 {% macro FlowArrow() %}
 <i class="ph ph-arrow-right shrink-0 text-base-content/30"></i>
+{%- endmacro %}
+
+{# กรอบตัวอย่างหน้าจอ - มาร์กอัปข้างในลอกมาจากเทมเพลตจริงของแต่ละฟอร์ม
+   ทั้งก้อนกดไม่ได้ (pointer-events-none) ไม่มี <form> ครอบ และไม่มี name/id
+   จึงไม่มีทางส่งข้อมูลหรือชน id กับของจริง #}
+{% macro Demo(title, sub='') %}
+<div class="mt-4 overflow-hidden rounded-xl border border-base-300" data-demo>
+  <div class="flex flex-wrap items-center gap-2 border-b border-base-300 bg-base-200 px-4 py-2">
+    <i class="ph ph-size ph-frame-corners text-base-content/50"></i>
+    <span class="text-xs font-bold text-base-content/70">{{ title }}</span>
+    {% if sub %}<span class="text-xs text-base-content/50">{{ sub|safe }}</span>{% endif %}
+    <span class="badge badge-xs badge-outline ml-auto">ตัวอย่างหน้าจอ (กดไม่ได้)</span>
+  </div>
+  <div class="overflow-x-auto bg-base-100 p-4">
+    <div class="pointer-events-none min-w-[20rem] select-none" aria-hidden="true">{{ caller() }}</div>
+  </div>
+</div>
 {%- endmacro %}
 
 {# ---------------------------------------------------------------- toc data #}
@@ -352,6 +377,73 @@
           </li>
         </ol>
 
+        {% call Demo('ฟอร์มเพิ่ม / แก้ไขรถยนต์', 'รถยนต์ &rarr; เพิ่มรถยนต์') %}
+        <div class="ui secondary" style="padding-bottom: 10px;">
+          <div class="flex justify-start w-full gap-2">
+            <span class="btn btn-primary">
+              <i class="ph ph-arrow-u-up-left"></i>
+              ย้อนกลับ
+            </span>
+          </div>
+        </div>
+        <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">ป้ายทะเบียนรถ <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="กข 1234 สงขลา" readonly>
+              </label>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">เลขไมล์สุดท้าย <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="number" value="128450" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-row w-full gap-2">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend">รายละเอียด/ลักษณะ</legend>
+              <textarea class="w-full h-24 textarea" placeholder="กรอกรายละเอียด/ลักษณะที่นี่" readonly>รถตู้ 12 ที่นั่ง สีขาว</textarea>
+              <div class="fieldset-label">
+                <p class="validator-hint"></p>
+              </div>
+            </fieldset>
+          </div>
+          <div class="flex flex-row justify-between w-full gap-2">
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">
+                  <div class="flex gap-1">
+                    <label class="fieldset fieldset-legend">รูปภาพ</label>
+                  </div>
+                  <p class="text-gray-500">รองรับเฉพาะไฟล์ png, jpg, jpeg เท่านั้น</p>
+                </span>
+              </label>
+              <div class="relative h-48 border-slate-50">
+                <input type="file" class="absolute hidden left-1/2 mt-2 z-[1] transform -translate-x-1/2">
+                <label class="z-[10] top-0 bottom-0 absolute w-full bg-primary/5 rounded border-primary border-dotted border-2 px-4 flex flex-col items-center justify-center cursor-pointer mx-auto h-40 bg-white hover:bg-gray-100">
+                  <div class="flex flex-col gap-2 items-center">
+                    <p class="btn btn-default bg-black text-white px-10">เลือกไฟล์</p>
+                    <p class="text-gray-500">หรือ ลากและวางไฟล์ที่นี่</p>
+
+                    <div class="flex text-sm items-center gap-2 hidden bg-primary/5 p-2 rounded-box">
+                      <span class="text-primary icon-[mdi--file-image]" style="width: 1.25em; height: 1.25em;"></span>
+                      <span class="text-primary font-bold"></span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-row w-full justify-between">
+            <div class="flex justify-start w-full gap-2">
+              <span class="btn btn-primary">ยืนยัน</span>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+
         {{ Note('เลขไมล์ที่กรอกในหน้านี้คือค่าตั้งต้นเท่านั้น หลังจากนั้นระบบจะอัปเดตเลขไมล์ของรถให้อัตโนมัติ
                  ทุกครั้งที่พนักงานขับรถปิดงานในเมนู &ldquo;รายการงาน&rdquo;',
                 'warning', 'ph-gauge', 'เรื่องเลขไมล์:') }}
@@ -425,6 +517,131 @@
             </p>
           </li>
         </ol>
+
+        {% call Demo('ฟอร์มสร้างแบบประเมิน', 'แบบประเมินรถยนต์ &rarr; สร้างแบบประเมิน') %}
+        <div class="flex flex-col gap-6">
+          <div class="card bg-base-100 shadow-sm border-t-4 border-t-primary">
+            <div class="card-body">
+              <h2 class="card-title text-lg mb-4">ข้อมูลเบื้องต้น</h2>
+
+              <div class="form-control mb-4">
+                <fieldset class="w-full fieldset">
+                  <legend class="fieldset-legend">ชื่อแบบประเมิน <span class="text-error">*</span></legend>
+                  <label class="input flex items-center gap-2 w-full validator">
+                    <input type="text" value="ประเมินความพึงพอใจการใช้บริการรถยนต์" readonly>
+                  </label>
+                </fieldset>
+              </div>
+
+              <div class="form-control mb-4">
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">รถยนต์ <span class="text-error">*</span></legend>
+                  <div class="relative w-full max-w-full min-w-full">
+                    <div class="input input-bordered w-full h-auto min-h-12 flex flex-wrap items-center gap-2 p-2 cursor-pointer transition-all focus-within:ring-2 focus-within:ring-primary/20">
+                      <div class="flex flex-wrap gap-2">
+                        <div class="badge badge-primary h-auto py-1 px-3 gap-2">
+                          กข 1234 สงขลา
+                          <span class="hover:text-error transition-colors"><i class="ph ph-x-circle text-lg"></i></span>
+                        </div>
+                        <div class="badge badge-primary h-auto py-1 px-3 gap-2">
+                          งจ 5678 สงขลา
+                          <span class="hover:text-error transition-colors"><i class="ph ph-x-circle text-lg"></i></span>
+                        </div>
+                      </div>
+                      <input type="text" placeholder="ค้นหาหรือเลือก..." class="focus:outline-none flex-1 min-w-[120px] h-8 bg-transparent" readonly />
+                    </div>
+                  </div>
+                  <div class="fieldset-label">
+                    <p class="validator-hint"></p>
+                  </div>
+                </fieldset>
+              </div>
+
+              <div class="form-control mb-4">
+                <fieldset class="fieldset w-full">
+                  <legend class="fieldset-legend">รายละเอียด</legend>
+                  <textarea class="w-full h-24 textarea" placeholder="กรอกรายละเอียดที่นี่" readonly></textarea>
+                  <div class="fieldset-label">
+                    <p class="validator-hint"></p>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <div class="card bg-base-100 shadow-sm relative group border border-base-200 hover:border-primary/30 transition-colors">
+              <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                      <i class="ph ph-radio-button text-info"></i>
+                      <span class="text-xs font-bold text-base-content/50 uppercase tracking-wider">เลือกได้ข้อเดียว</span>
+                    </div>
+                    <input type="text" class="input input-bordered w-full text-md" placeholder="ตั้งคำถาม..."
+                           value="พนักงานขับรถสุภาพและตรงต่อเวลาหรือไม่" readonly>
+                    <div class="mt-4 pl-4 flex flex-col gap-2">
+                      <div class="flex items-center gap-2">
+                        <i class="ph ph-circle text-base-content/30 text-lg"></i>
+                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm"
+                               placeholder="ตัวเลือกที่ 1" value="สุภาพมาก" readonly>
+                        <span class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error"><i class="ph ph-x"></i></span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <i class="ph ph-circle text-base-content/30 text-lg"></i>
+                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm"
+                               placeholder="ตัวเลือกที่ 2" value="พอใช้" readonly>
+                        <span class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error"><i class="ph ph-x"></i></span>
+                      </div>
+                      <span class="btn btn-ghost btn-sm mt-2 text-primary w-fit">
+                        <i class="ph ph-plus"></i> เพิ่มตัวเลือก
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col items-end gap-2 border-l border-base-200 pl-4">
+                    <div class="form-control">
+                      <label class="label cursor-pointer gap-2">
+                        <span class="label-text text-xs">บังคับ</span>
+                        <input type="checkbox" class="toggle toggle-sm toggle-primary" checked />
+                      </label>
+                    </div>
+                    <div class="divider my-0"></div>
+                    <span class="btn btn-ghost btn-sm text-error h-10 px-2">
+                      <i class="ph ph-trash text-lg"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap justify-center gap-2 mt-4">
+            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
+              <i class="ph ph-star text-warning text-lg"></i> คะแนน (1-5)
+            </span>
+            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
+              <i class="ph ph-text-t text-lg"></i> ข้อความสั้น
+            </span>
+            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
+              <i class="ph ph-toggle-left text-primary text-lg"></i> ใช่/ไม่ใช่
+            </span>
+            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
+              <i class="ph ph-radio-button text-info text-lg"></i> เลือกข้อเดียว
+            </span>
+            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
+              <i class="ph ph-check-square text-success text-lg"></i> เลือกหลายข้อ
+            </span>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-8 py-4 border-t bg-base-100 px-4 rounded-box shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.1)]">
+            <span class="btn btn-ghost">ยกเลิก</span>
+            <span class="btn btn-primary">
+              <i class="ph ph-floppy-disk"></i> บันทึกข้อมูล
+            </span>
+          </div>
+        </div>
+        {% endcall %}
 
         {{ Note('การลบแบบประเมินเป็นการ <span class="font-semibold">ลบถาวร</span> (ไม่เหมือนการลบรถที่เป็นการปิดสถานะ)
                  กรุณาดูผลสรุปหรือบันทึกข้อมูลไว้ก่อนลบ',
@@ -525,6 +742,233 @@
             </p>
           </li>
         </ol>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">หน้าตาฟอร์มจริง</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          ฟอร์มนี้ซ่อน/แสดงช่องกรอกเองตามประเภทที่เลือก ด้านล่างคือหน้าตาจริงของทั้ง 2 กรณีที่พบบ่อย
+        </p>
+
+        {% call Demo('กรณีใช้รถทั่วไป + ไป-กลับ', 'ค่าเริ่มต้นเมื่อเปิดฟอร์มใหม่') %}
+        <div class="ui secondary" style="padding-bottom: 10px;">
+          <div class="flex justify-start w-full gap-2">
+            <span class="btn btn-primary">
+              <i class="ph ph-arrow-u-up-left"></i>
+              ย้อนกลับ
+            </span>
+          </div>
+        </div>
+        <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend w-fit">ประเภทการใช้รถ</legend>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary" checked>
+                <span class="label-text ml-2">ใช้รถทั่วไป</span>
+              </label>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary">
+                <span class="label-text ml-2">รับส่งสนามบิน</span>
+              </label>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary">
+                <span class="label-text ml-2">ไปต่างจังหวัด</span>
+              </label>
+            </fieldset>
+            <div class="w-full">
+              <fieldset class="fieldset w-full">
+                <legend class="fieldset-legend w-fit">ประเภทการเดินทาง</legend>
+                <label class="label cursor-pointer">
+                  <input type="radio" class="radio radio-primary" checked>
+                  <span class="label-text ml-2">ไป-กลับ</span>
+                </label>
+                <label class="label cursor-pointer">
+                  <input type="radio" class="radio radio-primary">
+                  <span class="label-text ml-2">เที่ยวเดียว</span>
+                </label>
+              </fieldset>
+            </div>
+          </div>
+
+          <div class="flex flex-col w-full gap-2 md:flex-row">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">วันออกเดินทาง <span class="text-error">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-17" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">เวลา <b>** กรุณากรอกในรูปแบบ 00:00 </b> <span class="text-error">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="time-local" value="08:30" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-col justify-between w-full gap-2 items-end md:flex-row">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">วันกลับ <span class="text-error required-mark">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-17" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">เวลากลับ <b>** กรุณากรอกในรูปแบบ 00:00 </b></legend>
+              <div class="relative w-full"><input class="input w-full" type="time-local" value="16:30" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">เหตุผลที่ต้องการใช้ <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="ประชุมความร่วมมือทางวิชาการ" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">สถานที่ต้องการจะไป <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="ศาลากลางจังหวัดสงขลา" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">สถานที่รับผู้โดยสาร</legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="หน้าอาคารคณะวิศวกรรมศาสตร์" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">จำนวนผู้โดยสาร <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="number" value="4" readonly>
+              </label>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">เบอร์โทรศัพท์ผู้ขอใช้รถ <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" placeholder="ระบุเบอร์โทรศัพท์ที่ติดต่อได้ เช่น 081-234-5678" value="081-234-5678" readonly>
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-row w-full justify-end mt-6">
+            <div class="flex justify-end w-full gap-2">
+              <span class="btn btn-primary px-8">ยืนยัน</span>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+
+        {% call Demo('กรณีรับส่งสนามบิน + รับ', 'ช่องวันกลับและสถานที่ถูกซ่อน มีช่องเที่ยวบินขึ้นมาแทน') %}
+        <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend w-fit">ประเภทการใช้รถ</legend>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary">
+                <span class="label-text ml-2">ใช้รถทั่วไป</span>
+              </label>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary" checked>
+                <span class="label-text ml-2">รับส่งสนามบิน</span>
+              </label>
+              <label class="label cursor-pointer">
+                <input type="radio" class="radio radio-primary">
+                <span class="label-text ml-2">ไปต่างจังหวัด</span>
+              </label>
+            </fieldset>
+            <div class="w-full">
+              <fieldset class="fieldset w-full">
+                <legend class="fieldset-legend w-fit">ประเภทการเดินทางรับส่งสนามบิน <span class="text-error required-mark">*</span></legend>
+                <label class="label cursor-pointer">
+                  <input type="radio" class="radio radio-primary" checked>
+                  <span class="label-text ml-2">รับ</span>
+                </label>
+                <label class="label cursor-pointer">
+                  <input type="radio" class="radio radio-primary">
+                  <span class="label-text ml-2">ส่ง</span>
+                </label>
+              </fieldset>
+            </div>
+          </div>
+
+          <div class="flex flex-col w-full gap-2 md:flex-row">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">วันออกเดินทาง <span class="text-error">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-20" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">เวลา <b>** กรุณากรอกในรูปแบบ 00:00 </b> <span class="text-error">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="time-local" value="13:00" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-col justify-between w-full gap-2 md:flex-row">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">หมายเลขเที่ยวบินกลับ</legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="TG262" readonly>
+              </label>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend w-fit">เครื่องมาถึงสนามบินหาดใหญ่เวลา <b>** กรุณากรอกในรูปแบบ 00:00 </b> <span class="text-error required-mark">*</span></legend>
+              <div class="relative w-full"><input class="input w-full" type="time-local" value="14:20" readonly></div>
+              <p class="validator-hint text-error"></p>
+            </fieldset>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="flex flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">เหตุผลที่ต้องการใช้ <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="รับวิทยากรจากสนามบินหาดใหญ่" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">สถานที่รับผู้โดยสาร</legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" value="ประตูผู้โดยสารขาเข้า สนามบินหาดใหญ่" readonly>
+              </label>
+            </fieldset>
+          </div>
+          <div class="flex flex-col md:flex-row justify-between w-full gap-2">
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">จำนวนผู้โดยสาร <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="number" value="2" readonly>
+              </label>
+            </fieldset>
+            <fieldset class="w-full fieldset">
+              <legend class="fieldset-legend">เบอร์โทรศัพท์ผู้ขอใช้รถ <span class="text-error">*</span></legend>
+              <label class="input flex items-center gap-2 w-full validator">
+                <input type="text" placeholder="ระบุเบอร์โทรศัพท์ที่ติดต่อได้ เช่น 081-234-5678" value="089-876-5432" readonly>
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-row w-full justify-end mt-6">
+            <div class="flex justify-end w-full gap-2">
+              <span class="btn btn-primary px-8">ยืนยัน</span>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('เมื่อเลือก &ldquo;รับส่งสนามบิน&rdquo; ระบบจะเติมสถานที่เป็น <span class="font-semibold">สนามบินหาดใหญ่</span> ให้เองและซ่อนช่องสถานที่ไว้
+                 ถ้าเลือก <span class="font-semibold">รับ</span> จะขึ้นช่องเที่ยวบินกลับ/เวลาเครื่องมาถึง
+                 ถ้าเลือก <span class="font-semibold">ส่ง</span> จะขึ้นช่องเที่ยวบินไป/เวลาเครื่องออกแทน',
+                'info', 'ph-airplane-takeoff', 'สังเกต:') }}
 
         <h3 class="mt-5 text-base font-bold text-base-content">การจัดการคำขอที่มีอยู่</h3>
         <div class="mt-3 grid gap-3 md:grid-cols-2">
@@ -763,6 +1207,58 @@
           </li>
         </ol>
 
+        {% call Demo('หน้าต่างอนุมัติของพัสดุ', 'กดที่คำขอในตาราง แล้วเลื่อนลงมาส่วนล่างของหน้าต่าง') %}
+        <div class="modal-box max-w-2xl rounded-2xl border border-base-300 bg-base-100 p-6 shadow-xl text-left">
+          <div class="space-y-4">
+            <div class="border-t border-base-200 pt-4">
+              <h4 class="font-bold text-sm text-base-content/80 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <i class="ph ph-identification-badge"></i> จัดสรรรถยนต์และพนักงานขับรถ
+              </h4>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control w-full">
+                  <label class="label py-1">
+                    <span class="label-text font-semibold text-xs text-base-content/70">เลือกรถยนต์ <span class="text-error">*</span></span>
+                  </label>
+                  <select class="select select-bordered w-full">
+                    <option>กข 1234 สงขลา</option>
+                  </select>
+                </div>
+
+                <div class="form-control w-full">
+                  <label class="label py-1">
+                    <span class="label-text font-semibold text-xs text-base-content/70">เลือกพนักงานขับรถ <span class="text-error">*</span></span>
+                  </label>
+                  <select class="select select-bordered w-full">
+                    <option>นายสมชาย ใจดี</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-control border-t border-base-200 pt-4">
+              <label class="label py-1">
+                <span class="label-text font-semibold text-xs text-base-content/70">หมายเหตุ (กรณีที่ปฏิเสธ)</span>
+              </label>
+              <textarea class="textarea textarea-bordered w-full h-20"
+                        placeholder="โปรดระบุเหตุผลหากต้องการปฏิเสธคำขอใช้รถยนต์" readonly></textarea>
+            </div>
+          </div>
+
+          <div class="modal-action border-t border-base-200 pt-4 mt-6 flex justify-end gap-2">
+            <span class="btn btn-ghost">ยกเลิก</span>
+            <span class="btn btn-error flex items-center gap-1.5">
+              <i class="ph ph-x-circle text-lg"></i>
+              ปฏิเสธ
+            </span>
+            <span class="btn btn-success flex items-center gap-1.5 text-white">
+              <i class="ph ph-check-circle text-lg"></i>
+              อนุมัติ
+            </span>
+          </div>
+        </div>
+        {% endcall %}
+
         {{ Note('ถ้าไม่เลือกพนักงานขับรถ คำขอจะยังถือว่าอนุมัติสำเร็จ แต่จะไม่มีใครเห็นงานนี้ในเมนู &ldquo;รายการงาน&rdquo; ของตน
                  และจะไม่มีอีเมลแจ้งคนขับ &mdash; จึงควรเลือกคนขับทุกครั้งที่อนุมัติ',
                 'warning', 'ph-warning-circle', 'ข้อควรระวัง:') }}
@@ -831,6 +1327,22 @@
           </li>
         </ol>
 
+        {% call Demo('หน้าต่างปิดงาน', 'รายการงาน &rarr; กดปิดงานที่การ์ดงาน') %}
+        <div class="modal-box w-11/12 max-w-lg">
+          <h3 class="text-lg font-bold">บันทึกการกลับ / กรอกไมล์</h3>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend">เลขไมล์หลังกลับ <span class="text-error">*</span></legend>
+            <label class="input flex items-center gap-2 w-full validator">
+              <input type="number" value="128612" readonly>
+            </label>
+          </fieldset>
+          <div class="modal-action flex-col sm:flex-row gap-2 justify-end w-full">
+            <span class="btn w-full sm:w-auto">ปิด</span>
+            <span class="btn btn-primary w-full sm:w-auto m-0">ยืนยัน</span>
+          </div>
+        </div>
+        {% endcall %}
+
         {{ Note('กรอกเลขไมล์ให้ตรงกับหน้าปัดจริง เพราะระบบใช้ค่านี้เป็นเลขไมล์ตั้งต้นของงานถัดไปของรถคันเดียวกัน
                  ถ้ากรอกผิด ให้พัสดุแก้ไขย้อนหลังได้ที่เมนู &ldquo;ประวัติการใช้รถยนต์&rdquo;',
                 'warning', 'ph-gauge', 'สำคัญ:') }}
@@ -885,6 +1397,61 @@
             </p>
           </li>
         </ol>
+
+        {% call Demo('หน้าต่างแก้ไขประวัติ', 'ประวัติการใช้รถยนต์ &rarr; แก้ไข') %}
+        <div class="modal-box">
+          <h3 class="text-lg font-bold">แก้ไข</h3>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend w-fit">วันกลับ <span class="text-error">*</span></legend>
+            <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-17" readonly></div>
+            <p class="validator-hint text-error"></p>
+          </fieldset>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend w-fit">เวลากลับ <b>** กรุณากรอกในรูปแบบ 00:00 </b> <span class="text-error">*</span></legend>
+            <div class="relative w-full"><input class="input w-full" type="time-local" value="16:45" readonly></div>
+            <p class="validator-hint text-error"></p>
+          </fieldset>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend">เลขไมล์หลังกลับ <span class="text-error">*</span></legend>
+            <label class="input flex items-center gap-2 w-full validator">
+              <input type="number" value="128612" readonly>
+            </label>
+          </fieldset>
+          <div class="modal-action justify-end">
+            <span class="btn">ปิด</span>
+            <span class="btn btn-primary">ยืนยัน</span>
+          </div>
+        </div>
+        {% endcall %}
+
+        {% call Demo('หน้าต่างส่งออกรายงาน PDF', 'ประวัติการใช้รถยนต์ &rarr; ส่งออกข้อมูลใบขอใช้รถ') %}
+        <div class="modal-box">
+          <h3 class="text-lg font-bold">ส่งออกข้อมูลใบขอใช้รถ</h3>
+          <p>กำหนดช่วงวันที่จากวันที่ออกเดินทาง</p>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend w-fit">จากวันที่</legend>
+            <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-01" readonly></div>
+            <p class="validator-hint text-error"></p>
+          </fieldset>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend w-fit">ถึงวันที่</legend>
+            <div class="relative w-full"><input class="input w-full" type="date" value="2026-08-31" readonly></div>
+            <p class="validator-hint text-error"></p>
+          </fieldset>
+          <fieldset class="w-full fieldset">
+            <legend class="fieldset-legend">รถยนต์</legend>
+            <label class="w-full select validator">
+              <select class="w-full bg-transparent appearance-none outline-none border-none">
+                <option>กข 1234 สงขลา</option>
+              </select>
+            </label>
+          </fieldset>
+          <div class="modal-action justify-end">
+            <span class="btn">ปิด</span>
+            <span class="btn btn-primary">ดาวน์โหลด</span>
+          </div>
+        </div>
+        {% endcall %}
 
         {% if current_user.has_organization_roles("admin", "driver") %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
@@ -1042,6 +1609,16 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     render();
+  })();
+
+  // ตัวอย่างหน้าจอเป็นภาพนิ่ง ไม่ให้ tab เข้าไปโฟกัสได้
+  // (กดด้วยเมาส์ถูกกันไว้แล้วด้วย pointer-events-none)
+  (function () {
+    document
+      .querySelectorAll("[data-demo] input, [data-demo] select, [data-demo] textarea, [data-demo] button, [data-demo] a")
+      .forEach(function (el) {
+        el.setAttribute("tabindex", "-1");
+      });
   })();
 </script>
 {% endblock %}
