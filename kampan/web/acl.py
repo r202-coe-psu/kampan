@@ -37,7 +37,7 @@ def init_acl(app):
         if not organization_id:
             # ตรวจสมาชิกภาพของหน่วยงานตั้งต้นด้วย เพราะค่าที่จำไว้ใน user_setting
             # อาจเป็นหน่วยงานที่ผู้ใช้ถูกนำออกไปแล้ว
-            organization = current_user.get_current_organization()
+            organization = current_user.get_default_organization()
             if organization and current_user.is_member_of(organization):
                 g.organization = organization
             return

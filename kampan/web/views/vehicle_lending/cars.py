@@ -44,13 +44,13 @@ def create_or_edit(car_id):
     ).first()
     form = forms.vehicles.CarForm()
     if car_id:
-        car = models.vehicles.Car.objects(id=car_id).first()
+        car = models.vehicles.Car.objects(id=car_id, organization=organization).first()
+        if not car:
+            return abort(404)
 
         form = forms.vehicles.CarForm(obj=car)
 
     if not form.validate_on_submit():
-        print(form.errors)
-
         return render_template(
             "/vehicle_lending/cars/create_or_edit.html",
             organization=organization,
@@ -59,7 +59,9 @@ def create_or_edit(car_id):
 
     car = models.vehicles.Car()
     if car_id:
-        car = models.vehicles.Car.objects(id=car_id).first()
+        car = models.vehicles.Car.objects(id=car_id, organization=organization).first()
+        if not car:
+            return abort(404)
     if form.upload_image.data:
         if car.image:
             car.image.replace(
@@ -74,10 +76,10 @@ def create_or_edit(car_id):
                 content_type=form.upload_image.data.content_type,
             )
     form.populate_obj(car)
-    car.organization = current_user.get_current_organization()
+    car.organization = current_user.get_viewing_organization()
     if not car_id:
-        car.creator = current_user
-    car.updater = current_user
+        car.creator = current_user._get_current_object()
+    car.updater = current_user._get_current_object()
     car.updated_date = datetime.datetime.now()
 
     car.save()

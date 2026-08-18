@@ -74,7 +74,7 @@ def add_member(organization_id):
         )
     user_id = form.members.data
     user = models.User.objects(id=user_id).first()
-    if not user.get_current_organization():
+    if user and not user.get_default_organization():
         user.user_setting.current_organization = organization
         user.save()
 

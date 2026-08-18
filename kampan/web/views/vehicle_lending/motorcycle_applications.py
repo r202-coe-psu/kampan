@@ -101,9 +101,11 @@ def create_or_edit(motorcycle_application_id):
         if motorcycle_application_id:
             motorcycle_application = (
                 models.vehicle_applications.MotorcycleApplication.objects(
-                    id=motorcycle_application_id
+                    id=motorcycle_application_id, organization=organization
                 ).first()
             )
+            if not motorcycle_application:
+                return abort(404)
             form = forms.vehicle_applications.MotorcycleApplicationForm(
                 obj=motorcycle_application
             )
@@ -128,7 +130,6 @@ def create_or_edit(motorcycle_application_id):
             )
         ]
 
-        print(form.errors)
         return render_template(
             "/vehicle_lending/motorcycle_applications/create_or_edit.html",
             organization=organization,
@@ -138,9 +139,11 @@ def create_or_edit(motorcycle_application_id):
     if motorcycle_application_id:
         motorcycle_application = (
             models.vehicle_applications.MotorcycleApplication.objects(
-                id=motorcycle_application_id
+                id=motorcycle_application_id, organization=organization
             ).first()
         )
+        if not motorcycle_application:
+            return abort(404)
 
     form.populate_obj(motorcycle_application)
     motorcycle_application.motorcycle = models.vehicles.Motorcycle.objects(
@@ -156,11 +159,11 @@ def create_or_edit(motorcycle_application_id):
         form.departure_date.data, form.departure_time.data
     )
 
-    motorcycle_application.organization = current_user.get_current_organization()
+    motorcycle_application.organization = current_user.get_viewing_organization()
     motorcycle_application.division = current_user.get_current_division()
     if not motorcycle_application_id:
-        motorcycle_application.creator = current_user
-    motorcycle_application.updater = current_user
+        motorcycle_application.creator = current_user._get_current_object()
+    motorcycle_application.updater = current_user._get_current_object()
     motorcycle_application.updated_date = datetime.datetime.now()
     motorcycle_application.save()
     if not motorcycle_application_id:
@@ -231,7 +234,7 @@ def return_motorcycle(motorcycle_application_id):
         form.return_date.data, form.return_time.data
     )
 
-    motorcycle_application.updater = current_user
+    motorcycle_application.updater = current_user._get_current_object()
     motorcycle_application.updated_date = datetime.datetime.now()
     motorcycle_application.motorcycle.last_mileage = form.last_mileage.data
     motorcycle_application.motorcycle.save()

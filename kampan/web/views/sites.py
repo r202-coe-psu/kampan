@@ -21,12 +21,12 @@ def switch_organization():
     except Exception:
         organization = None
 
-    if not organization or not current_user.is_member_of(organization):
+    if not organization:
         return abort(403)
 
     user = current_user._get_current_object()
-    user.user_setting.current_organization = organization
-    user.save()
+    if not user.switch_organization(organization):
+        return abort(403)
 
     next_url = request.args.get("next")
     # รับเฉพาะ path ภายในเว็บ กันการถูกพาไปเว็บอื่น

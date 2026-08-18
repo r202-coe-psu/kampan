@@ -44,12 +44,14 @@ def create_or_edit(motorcycle_id):
     ).first()
     form = forms.vehicles.MotorcycleForm()
     if motorcycle_id:
-        motorcycle = models.vehicles.Motorcycle.objects(id=motorcycle_id).first()
+        motorcycle = models.vehicles.Motorcycle.objects(
+            id=motorcycle_id, organization=organization
+        ).first()
+        if not motorcycle:
+            return abort(404)
         form = forms.vehicles.MotorcycleForm(obj=motorcycle)
 
     if not form.validate_on_submit():
-        print(form.errors)
-
         return render_template(
             "/vehicle_lending/motorcycles/create_or_edit.html",
             organization=organization,
@@ -58,7 +60,11 @@ def create_or_edit(motorcycle_id):
 
     motorcycle = models.vehicles.Motorcycle()
     if motorcycle_id:
-        motorcycle = models.vehicles.Motorcycle.objects(id=motorcycle_id).first()
+        motorcycle = models.vehicles.Motorcycle.objects(
+            id=motorcycle_id, organization=organization
+        ).first()
+        if not motorcycle:
+            return abort(404)
     if form.upload_image.data:
         if motorcycle.image:
             motorcycle.image.replace(
@@ -73,10 +79,10 @@ def create_or_edit(motorcycle_id):
                 content_type=form.upload_image.data.content_type,
             )
     form.populate_obj(motorcycle)
-    motorcycle.organization = current_user.get_current_organization()
+    motorcycle.organization = current_user.get_viewing_organization()
     if not motorcycle_id:
-        motorcycle.creator = current_user
-    motorcycle.updater = current_user
+        motorcycle.creator = current_user._get_current_object()
+    motorcycle.updater = current_user._get_current_object()
     motorcycle.updated_date = datetime.datetime.now()
 
     motorcycle.save()

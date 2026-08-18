@@ -172,7 +172,7 @@ def index():
 @module.route("/accounts/edit-profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
-    organization = current_user.get_current_organization()
+    organization = current_user.get_default_organization()
     form = forms.accounts.ProfileForm(
         obj=current_user,
     )

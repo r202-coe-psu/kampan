@@ -90,8 +90,10 @@ def create_or_edit(car_application_id):
     if not form.validate_on_submit():
         if car_application_id:
             car_application = models.vehicle_applications.CarApplication.objects(
-                id=car_application_id
+                id=car_application_id, organization=organization
             ).first()
+            if not car_application:
+                return abort(404)
             form = forms.vehicle_applications.CarApplicationForm(obj=car_application)
 
         else:
@@ -138,7 +140,6 @@ def create_or_edit(car_application_id):
             for user in organization.get_all_drivers()
         ]
 
-        print(form.errors)
         return render_template(
             "/vehicle_lending/car_applications/create_or_edit.html",
             organization=organization,
@@ -148,8 +149,10 @@ def create_or_edit(car_application_id):
     car_application = models.vehicle_applications.CarApplication()
     if car_application_id:
         car_application = models.vehicle_applications.CarApplication.objects(
-            id=car_application_id
+            id=car_application_id, organization=organization
         ).first()
+        if not car_application:
+            return abort(404)
 
     form.populate_obj(car_application)
     if form.car.data:
@@ -181,10 +184,10 @@ def create_or_edit(car_application_id):
                 form.return_date.data, form.flight_return_time.data
             )
 
-    car_application.organization = current_user.get_current_organization()
+    car_application.organization = current_user.get_viewing_organization()
     car_application.division = current_user.get_current_division()
     if not car_application_id:
-        car_application.creator = current_user
+        car_application.creator = current_user._get_current_object()
     division = None
     member = models.OrganizationUserRole.objects(
         user=current_user,
@@ -195,7 +198,7 @@ def create_or_edit(car_application_id):
         division = member.division
 
     car_application.division = division
-    car_application.updater = current_user
+    car_application.updater = current_user._get_current_object()
     car_application.updated_date = datetime.datetime.now()
     car_application.save()
 

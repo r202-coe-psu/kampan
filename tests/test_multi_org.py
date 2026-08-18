@@ -25,6 +25,58 @@ def test_user_is_member_of_disactive(app, create_org, create_user, assign_user_t
         assert user.is_member_of(org_a) is False
 
 
+def test_user_switch_organization(app, create_org, create_user, assign_user_to_org):
+    with app.app_context():
+        org_a = create_org("Org A")
+        org_b = create_org("Org B")
+        user = create_user("Alice", "Switcher")
+
+        assign_user_to_org(user, org_a, roles=["staff"])
+        assign_user_to_org(user, org_b, roles=["staff"])
+
+        assert user.switch_organization(org_b) is True
+        assert user.user_setting.current_organization == org_b
+
+        reloaded_user = models.User.objects(id=user.id).first()
+        assert reloaded_user.user_setting.current_organization == org_b
+
+
+def test_user_switch_organization_denies_non_member(app, create_org, create_user, assign_user_to_org):
+    with app.app_context():
+        org_a = create_org("Org A")
+        org_b = create_org("Org B")
+        user = create_user("Bob", "Switcher")
+
+        assign_user_to_org(user, org_a, roles=["staff"])
+
+        assert user.switch_organization(org_b) is False
+        assert user.user_setting.current_organization != org_b
+
+        reloaded_user = models.User.objects(id=user.id).first()
+        assert reloaded_user.user_setting.current_organization != org_b
+
+
+def test_get_default_organization_falls_back_when_stale(app, create_org, create_user, assign_user_to_org):
+    with app.app_context():
+        org_a = create_org("Org A")
+        org_b = create_org("Org B")
+        user = create_user("Eve", "Stale")
+
+        org_role_a = assign_user_to_org(user, org_a, roles=["staff"])
+        assign_user_to_org(user, org_b, roles=["staff"])
+
+        user.user_setting.current_organization = org_a
+        user.save()
+
+        assert user.get_default_organization() == org_a
+
+        # User is removed from Org A after having selected it as their default.
+        org_role_a.status = "disactive"
+        org_role_a.save()
+
+        assert user.get_default_organization() == org_b
+
+
 def test_user_get_organization_roles_isolated_per_org(app, create_org, create_user, assign_user_to_org):
     with app.app_context():
         org_a = create_org("Org A")

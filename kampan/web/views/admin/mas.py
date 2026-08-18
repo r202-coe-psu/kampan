@@ -24,7 +24,6 @@ module = Blueprint("mas", __name__, url_prefix="/mas")
 @login_required
 @acl.organization_roles_required("admin")
 def index():
-    organization = current_user.user_setting.current_organization
     year = request.args.get("year")
     mas_code = request.args.get("mas_code")
     description = request.args.get("description")
@@ -76,7 +75,6 @@ def create_or_edit(mas_id=None):
     form = forms.mas.MASForm(obj=mas)
 
     if not form.validate_on_submit():
-        print(form.errors)
         return render_template(
             "procurement/mas/create_or_edit.html",
             form=form,
@@ -115,7 +113,10 @@ def delete(mas_id):
 @login_required
 @acl.organization_roles_required("admin")
 def reservation(mas_id):
-    organization = current_user.user_setting.current_organization
+    organization = current_user.get_viewing_organization()
+    if not organization:
+        return abort(404)
+
     form = forms.reservations.SearchReservationForm(request.args)
 
     query = {}
@@ -148,6 +149,8 @@ def reservation(mas_id):
         query["actual_amount"] = form.actual_amount.data
 
     organization = models.Organization.objects(id=organization.id, status="active").first()
+    if not organization:
+        return abort(404)
 
     mas = models.MAS.objects(id=mas_id, organization=organization).first()
     reservations = models.Reservation.objects(mas=mas, status="active", organization=organization, **query).order_by(

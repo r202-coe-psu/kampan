@@ -230,7 +230,7 @@ def delete(document_id):
 @acl.organization_roles_required("admin")
 def download(document_id, filename):
     response = Response()
-    organization = current_user.user_setting.current_organization
+    organization = current_user.get_viewing_organization()
     response.status_code = 404
 
     document = models.Document.objects(id=document_id, organization=organization).first()

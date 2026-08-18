@@ -34,7 +34,7 @@
 
 {% if current_user.is_authenticated %}
   {% set selectable_organizations = current_user.get_selectable_organizations() %}
-  {% set viewing_organization = g.organization %}
+  {% set viewing_organization = current_user.get_viewing_organization() %}
 
   {% if viewing_organization or selectable_organizations %}
     {% set can_switch = selectable_organizations | length > 1 %}

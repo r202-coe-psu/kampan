@@ -100,7 +100,18 @@ class User(me.Document, UserMixin):
             if organization:
                 return organization
 
-        return self.get_current_organization()
+        return self.get_default_organization()
+
+    def switch_organization(self, organization):
+        if not organization or organization.status != "active":
+            return False
+
+        if not self.is_member_of(organization):
+            return False
+
+        self.user_setting.current_organization = organization
+        self.save()
+        return True
 
     def get_organization_roles(self, organization=None):
         from . import OrganizationUserRole
@@ -148,14 +159,16 @@ class User(me.Document, UserMixin):
         #     return self.resources["google"].get("picture", "")
         # return url_for("static", filename="images/user.png")
 
-    def get_current_organization(self):
+    def get_default_organization(self):
         if not self.organizations:
             return
 
-        if not self.user_setting.current_organization and self.organizations:
-            return self.organizations[0]
+        if self.user_setting.current_organization and self.is_member_of(
+            self.user_setting.current_organization
+        ):
+            return self.user_setting.current_organization
 
-        return self.user_setting.current_organization
+        return self.organizations[0]
 
     def get_current_organization_roles(self):
 
@@ -173,7 +186,7 @@ class User(me.Document, UserMixin):
         try:
             organization_user_role = OrganizationUserRole.objects(
                 user=self,
-                organization=self.get_current_organization(),
+                organization=self.get_default_organization(),
                 status="active",
             ).first()
             return organization_user_role.created_date
@@ -247,7 +260,7 @@ class User(me.Document, UserMixin):
         try:
             organization_user_role = OrganizationUserRole.objects(
                 user=self,
-                organization=self.get_current_organization(),
+                organization=self.get_default_organization(),
                 status="active",
             ).first()
             return organization_user_role
