@@ -53,6 +53,23 @@
         </a>
 
       {% endif %}
+
+      {# ระบบผู้ดูแลระบบ - เฉพาะผู้ดูแลระบบระดับ global เท่านั้น
+         ต้องใช้ has_roles(['admin']) ไม่ใช่ has_organization_roles('admin')
+         เพราะ /admin ป้องกันด้วย acl.roles_required("admin") ที่ดู roles ระดับผู้ใช้
+         ถ้าใช้สิทธิ์ระดับหน่วยงาน เจ้าหน้าที่พัสดุจะเห็นการ์ดแล้วกดเข้าไปเจอ 403 #}
+      {% if current_user.has_roles(['admin']) %}
+        <a href="{{ url_for('admin.index') }}"
+           class="block col-span-2 min-h-[140px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+          <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #DCE3EC;">
+            <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="ph ph-user-gear text-2xl sm:text-3xl text-slate-700"></i>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-slate-900">ระบบผู้ดูแลระบบ</h3>
+            <p class="mt-1 text-sm text-slate-700/80">จัดการผู้ใช้ หน่วยงาน และข้อมูลตั้งต้นของระบบ</p>
+          </div>
+        </a>
+      {% endif %}
     </div>
   </div>
 {% endblock content %}
