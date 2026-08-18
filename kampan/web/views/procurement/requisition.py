@@ -104,7 +104,11 @@ def index():
             product_number = ", ".join(procurement.product_numbers) if procurement.product_numbers else ""
 
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
     if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
         procurements = procurements.filter(responsible_by=org_user_role)
 
@@ -147,7 +151,11 @@ def non_renewal(requisition_procurement_id):
         category = request.args.get("category", "")
         query = {"status": "disactive", "organization": organization}
         procurements = models.Procurement.objects(**query)
-        org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object(),
+            organization=organization,
+            status="active",
+        ).first()
         if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
             procurements = procurements.filter(responsible_by=org_user_role)
         procurements = procurements.order_by("-end_date")
@@ -167,7 +175,11 @@ def non_renewal(requisition_procurement_id):
 def renewal_requested(requisition_procurement_id):
     organization = g.organization
     form = forms.requisitions.RenewalRequestedFilterForm(request.args)
-    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
 
     query = {}
 
@@ -580,7 +592,6 @@ def requisition_action(requisition_id):
     reason = request.form.get("reason")
     fund_id = request.form.get("fund")  # fallback เดิม
     fund_ids = request.form.getlist("fund_ids")  # ใหม่: เลือกหลายแหล่งเงิน
-    print(fund_ids)
     manager_id = request.form.get("manager")
 
     organization = g.organization

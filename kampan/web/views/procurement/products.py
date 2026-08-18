@@ -64,7 +64,11 @@ def index():
     procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
 
     # Filter for staff role (not admin)
-    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
 
     is_staff = current_user.has_organization_roles("staff")
     is_admin = current_user.has_organization_roles("admin")
@@ -126,6 +130,11 @@ def index():
 @acl.organization_roles_required("admin")
 def create():
     organization = g.organization
+    # ผู้ดูแลระบบระดับ global ผ่าน decorator ไปก่อนที่จะมีการตรวจหน่วยงาน
+    # ถ้าไม่มีหน่วยงานที่กำลังดูอยู่ จะเรียก method ของ organization ไม่ได้
+    if not organization:
+        return abort(403)
+
     members = organization.get_organization_users()
 
     if request.method == "POST":

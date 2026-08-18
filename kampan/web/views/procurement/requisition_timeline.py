@@ -191,7 +191,9 @@ def index():
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
     organization = g.organization
     org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object()
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
     ).first()
     # query เเรกของ requisition timeline
     requisition_timeline = models.RequisitionTimeline.objects(

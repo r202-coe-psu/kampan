@@ -58,7 +58,7 @@ def select_system():
                 url_for(
                     "accounts.index",
                     organization_id=organization.id,
-                    errors="กรุณาติดตต่อผู้ดูแลระบบเพื่อตั้งต่าแผนก (Please contact the administrator to select a division.)",
+                    errors="กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าแผนก (Please contact the administrator to select a division.)",
                 )
             )
 
