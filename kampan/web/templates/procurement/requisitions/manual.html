@@ -1,0 +1,1670 @@
+{% extends '/procurement/base/default-procurement-page.html' %}
+
+{% block title %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% endblock %}
+{% block dashboard_title %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block additional_head %}
+<style>
+  /* สารบัญคู่มือ: ไฮไลต์หัวข้อที่กำลังอ่านอยู่ตามตำแหน่งการเลื่อนหน้า */
+  .toc-link {
+    border-inline-start: 3px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  /* หัวข้อที่เลื่อนผ่านไปแล้ว - จางลงเล็กน้อย */
+  .toc-link.is-passed {
+    color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+  }
+
+  /* หัวข้อที่กำลังอ่านอยู่ - พื้นเงาอ่อน + ขีดสีด้านซ้าย */
+  .toc-link.is-active {
+    background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+    border-inline-start-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  /* ตัวอย่างหน้าจอที่ลอกมาจาก modal จริง: daisyui ตั้ง .modal-box ให้ opacity:0 scale:.95
+     ไว้ตอนที่ modal ยังไม่เปิด ในคู่มือไม่มี .modal-open ครอบ จึงต้องเปิดให้เห็นเอง */
+  [data-demo] .modal-box {
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
+
+  /* การจัดระเบียบแถวข้อมูล MetaRow */
+  .meta-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+  }
+  @media (min-width: 640px) {
+    .meta-row {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+  .meta-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 10.5rem;
+    min-width: 10.5rem;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ---------------------------------------------------------------------------
+   หมายเหตุสำหรับผู้พัฒนา: ชื่อคลาสของ tailwind ต้องเขียนเต็มเป็นข้อความจริง
+   (ห้ามประกอบชื่อคลาสจากตัวแปร) ไม่เช่นนั้นตัว scanner จะไม่สร้าง css ให้
+   จึงใช้ตารางแปลง tone -> คลาส ด้านล่างนี้
+--------------------------------------------------------------------------- #}
+{% set badge_tone = {
+  'primary': 'badge-primary',
+  'secondary': 'badge-secondary',
+  'success': 'badge-success',
+  'warning': 'badge-warning',
+  'error': 'badge-error',
+  'neutral': 'badge-neutral',
+} %}
+{% set node_tone = {
+  'primary': 'border-primary',
+  'secondary': 'border-secondary',
+  'success': 'border-success',
+  'warning': 'border-warning',
+  'error': 'border-error',
+  'neutral': 'border-neutral',
+  'base': 'border-base-300',
+} %}
+{% set note_tone = {
+  'info': 'border-info/40 bg-info/10',
+  'success': 'border-success/40 bg-success/10',
+  'warning': 'border-warning/40 bg-warning/10',
+  'error': 'border-error/40 bg-error/10',
+} %}
+{% set note_icon_tone = {
+  'info': 'text-info',
+  'success': 'text-success',
+  'warning': 'text-warning',
+  'error': 'text-error',
+} %}
+
+{# ---------------------------------------------------------------- macros #}
+{% macro RoleBadge(text, tone='neutral') %}
+<span class="badge badge-sm {{ badge_tone.get(tone, 'badge-neutral') }} badge-outline whitespace-nowrap">{{ text }}</span>
+{%- endmacro %}
+
+{% macro SectionHeader(no, icon, title, subtitle) %}
+<div class="flex items-start gap-3 border-b border-base-300 pb-4">
+  <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <i class="ph {{ icon }} text-2xl"></i>
+  </div>
+  <div class="flex flex-col">
+    {% if no %}<span class="text-xs font-bold text-primary">โมดูลที่ {{ no }}</span>{% endif %}
+    <h2 class="text-xl font-bold text-base-content">{{ title }}</h2>
+    <p class="text-sm text-base-content/60">{{ subtitle }}</p>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro MetaRow(label, value, icon='ph-caret-right') %}
+<div class="meta-row">
+  <div class="meta-label text-base-content/60">
+    <i class="ph ph-size {{ icon }} shrink-0 text-base"></i>
+    <span>{{ label }}</span>
+  </div>
+  <div class="flex-1 text-base-content leading-relaxed">{{ value|safe }}</div>
+</div>
+{%- endmacro %}
+
+{% macro Note(text, tone='info', icon='ph-info', title='') %}
+<div class="mt-4 flex items-start gap-3 rounded-xl border {{ note_tone.get(tone, note_tone['info']) }} p-4">
+  <i class="ph ph-size {{ icon }} shrink-0 text-lg {{ note_icon_tone.get(tone, 'text-info') }} mt-0.5"></i>
+  <div class="flex-1 text-sm leading-relaxed text-base-content/80">
+    {% if title %}<strong class="font-bold text-base-content mr-1.5">{{ title }}</strong>{% endif %}{{ text|safe }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro FlowNode(text, tone='base', sub='') %}
+<div class="flex min-w-[9.5rem] flex-col items-center justify-center gap-1 rounded-xl border-2 {{ node_tone.get(tone, 'border-base-300') }} bg-base-100 px-3 py-2 text-center">
+  <span class="text-sm font-bold text-base-content">{{ text }}</span>
+  {% if sub %}<span class="text-xs text-base-content/50">{{ sub }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro FlowArrow() %}
+<i class="ph ph-arrow-right shrink-0 text-base-content/30"></i>
+{%- endmacro %}
+
+{# กรอบตัวอย่างหน้าจอ - มาร์กอัปข้างในลอกมาจากเทมเพลตจริงของแต่ละฟอร์ม
+   ทั้งก้อนกดไม่ได้ (pointer-events-none) ไม่มี <form> ครอบ และไม่มี name/id
+   จึงไม่มีทางส่งข้อมูลหรือชน id กับของจริง #}
+{% macro Demo(title, sub='') %}
+<div class="mt-4 overflow-hidden rounded-xl border border-base-300" data-demo>
+  <div class="flex flex-wrap items-center gap-2 border-b border-base-300 bg-base-200 px-4 py-2">
+    <i class="ph ph-size ph-frame-corners text-base-content/50"></i>
+    <span class="text-xs font-bold text-base-content/70">{{ title }}</span>
+    {% if sub %}<span class="text-xs text-base-content/50">{{ sub|safe }}</span>{% endif %}
+    <span class="badge badge-xs badge-outline ml-auto">ตัวอย่างหน้าจอ (กดไม่ได้)</span>
+  </div>
+  <div class="overflow-x-auto bg-base-100 p-4">
+    <div class="pointer-events-none min-w-[20rem] select-none" aria-hidden="true">{{ caller() }}</div>
+  </div>
+</div>
+{%- endmacro %}
+
+{# ---------------------------------------------------------------- toc data #}
+{% set toc = [
+  ('overview',           'ph-users-three',     'ภาพรวมและบทบาทผู้ใช้งาน'),
+  ('flow-main',          'ph-flow-arrow',      'ขั้นตอนการทำงานภาพรวมทั้งระบบ'),
+  ('upload-files',       'ph-upload-simple',   '1. อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ'),
+  ('products',           'ph-package',         '2. รายการสินค้าและสัญญาบริการ'),
+  ('payment',            'ph-credit-card',     '3. บันทึกการชำระเงินสินค้า'),
+  ('procurement-list',   'ph-clipboard-text',  '4. รายการสัญญาบริการที่ใกล้หมดอายุ'),
+  ('renewal-requested',  'ph-arrow-clockwise', '5. รายการขอซื้อขอจ้าง'),
+  ('non-renewal',        'ph-x-circle',        '6. รายการสัญญาบริการที่ไม่ต่ออายุ'),
+  ('mas',                'ph-bank',            '7. แหล่งเงินงบประมาณระบบ MAS'),
+  ('create-requisition', 'ph-file-plus',       '8. สร้างและแก้ไขคำขอซื้อขอจ้าง'),
+  ('head-approve',       'ph-shield-check',    '9. หัวหน้าฝ่ายอนุมัติขั้นที่ 1'),
+  ('admin-approve',      'ph-stamp',           '10. เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ'),
+  ('manager-approve',    'ph-user-check',      '11. ผู้จัดการอนุมัติขั้นสุดท้าย'),
+  ('timeline',           'ph-list-checks',     '12. ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน'),
+  ('timeline-items',     'ph-shopping-bag',    '13. รายการสินค้าในการดำเนินงานและส่งออกข้อมูล'),
+  ('billing',            'ph-receipt',         '14. บันทึกการเบิกจ่ายงบประมาณ'),
+  ('document',           'ph-file-pdf',        '15. เอกสารคำขอและพิมพ์รายงาน'),
+  ('status',             'ph-path',            'ตารางสรุปสถานะคำขอและขั้นตอนการดำเนินงาน'),
+] %}
+
+<div class="flex flex-col gap-4">
+
+  {# ============================================================ hero #}
+  <div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex items-start gap-4">
+      <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-content">
+        <i class="ph ph-book-open-text text-3xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-base-content">คู่มือการใช้งานระบบขอซื้อขอจ้างและบริหารสัญญา (MA)</h1>
+        <p class="mt-1 text-sm text-base-content/70">
+          คู่มือแนะนำการใช้งานฟังก์ชันและฟอร์มทั้งหมดของระบบขอซื้อขอจ้าง ตั้งแต่การอัปโหลดไฟล์นำเข้าข้อมูล, ทะเบียนสินค้าและสัญญาบริการ,
+          การบริหารแหล่งเงินงบประมาณ (MAS), การขอต่ออายุ, กระบวนการอนุมัติ 3 ลำดับขั้น, ไปจนถึงติดตามความคืบหน้า 8 ขั้นตอน, การเบิกจ่ายงบประมาณ และพิมพ์เอกสารราชการ &mdash; หน่วยงาน <span class="font-semibold">{{ organization.name }}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+
+    {# ============================================================ toc menu #}
+    <aside class="xl:sticky xl:top-4 xl:w-[320px] xl:shrink-0 print:hidden">
+      <div class="segment border border-base-300 bg-base-100 rounded-2xl p-4 shadow-sm">
+        <div class="mb-2 border-b border-base-300 pb-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i class="ph ph-size ph-list text-primary"></i>
+              <span class="font-bold text-base-content">สารบัญคู่มือ</span>
+            </div>
+            <span id="manual-progress-text" class="text-xs font-semibold text-base-content/50">0%</span>
+          </div>
+          <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-base-300">
+            <div id="manual-progress-bar"
+                 class="h-full w-0 rounded-full bg-primary transition-[width] duration-150"></div>
+          </div>
+        </div>
+        <ul id="toc-list" class="menu w-full gap-1 p-0 xl:max-h-[calc(100vh-13rem)] xl:overflow-y-auto">
+          {% for anchor, icon, label in toc %}
+          <li>
+            <a href="#{{ anchor }}" class="toc-link text-sm" data-toc-link="{{ anchor }}">
+              <i class="ph ph-size {{ icon }}"></i>{{ label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </aside>
+
+    {# ============================================================ body #}
+    <div class="flex min-w-0 flex-1 flex-col gap-4">
+
+      {# ------------------------------------------------ 0. overview #}
+      <section id="overview" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-users-three', 'ภาพรวมและบทบาทผู้ใช้งาน',
+                         'ระบบขอซื้อขอจ้างแบ่งหน้าที่ตามบทบาทในหน่วยงาน สิทธิ์การเข้าถึงข้อมูลและการอนุมัติจะสอดคล้องกับตำแหน่งของผู้ใช้งาน') }}
+
+        <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
+          <i class="ph ph-squares-four text-primary text-lg"></i> โครงสร้างและกลุ่มงานหลักในระบบ (15 โมดูล)
+        </h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          ระบบขอซื้อขอจ้างและบริหารสัญญา (MA) ครอบคลุมการทำงานครบวงจร โดยแบ่งออกเป็น 5 กลุ่มงานหลักดังนี้:
+        </p>
+
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-upload-simple text-base"></i> 1. กลุ่มนำเข้าและเตรียมข้อมูล
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">การอัปโหลดไฟล์นำเข้าข้อมูล Excel สำหรับ MAS และ MA รวมถึงการดาวน์โหลดแม่แบบเอกสารมาตรฐาน (โมดูล 1)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-package text-base"></i> 2. กลุ่มทะเบียนสินค้าและสัญญาบริการ
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">ทะเบียนพัสดุ ซอฟต์แวร์ สัญญาบริการ (MA) การบันทึกการชำระเงิน และการติดตามสัญญาที่ใกล้หมดอายุ (โมดูล 2-6)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-bank text-base"></i> 3. กลุ่มงบประมาณและแหล่งเงิน
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">การจัดการแหล่งเงินงบประมาณระบบ MAS การจัดสรรวงเงินงบประมาณ และการตรวจสอบการจองงบประมาณ (โมดูล 7)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-stamp text-base"></i> 4. กลุ่มคำขอและการอนุมัติ 3 ระดับ
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">การสร้างคำขอจัดซื้อจัดจ้าง และสายการอนุมัติ 3 ขั้นตอน (หัวหน้าฝ่าย &rarr; เจ้าหน้าที่พัสดุ &rarr; ผู้จัดการ) (โมดูล 8-11)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 md:col-span-2 lg:col-span-2">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-list-checks text-base"></i> 5. กลุ่มจัดซื้อและติดตามผลการดำเนินงาน
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">การติดตามความคืบหน้า 8 ขั้นตอน รายการสินค้าในการดำเนินงาน การบันทึกการเบิกจ่ายงบประมาณ (Billing) และการออกเอกสารคำขอรวม PDF (โมดูล 12-15)</p>
+          </div>
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
+          <i class="ph ph-identification-badge text-primary text-lg"></i> บทบาทและหน้าที่ของผู้ใช้งาน (Roles & Permissions)
+        </h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          ผู้ใช้งานแต่ละบทบาทจะมีหน้าที่และสิทธิ์การเข้าถึงเมนูที่แตกต่างกัน เพื่อความปลอดภัยและความโปร่งใสในการดำเนินงาน:
+        </p>
+
+        <div class="mt-3 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-48">บทบาท</th>
+                <th>หน้าที่ในระบบ</th>
+                <th class="w-64">เมนูและสิทธิ์ที่ใช้งาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">พนักงาน / บุคลากร<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
+                <td>สร้างคำขอซื้อ/จ้าง, แก้ไขคำขอของตน, กดขอต่ออายุสัญญาที่ตนรับผิดชอบ, ติดตามความคืบหน้า, พิมพ์เอกสาร</td>
+                <td>รายการขอซื้อขอจ้าง, รายการ MA, รายการสินค้า, รายการรอดำเนินการ (ดู)</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head</span></td>
+                <td>ตรวจสอบและอนุมัติคำขอซื้อขอจ้างขั้นที่ 1 สำหรับบุคลากรในฝ่าย (division) เดียวกัน หรือกดปฏิเสธพร้อมระบุเหตุผล</td>
+                <td>รายการขอซื้อขอจ้าง (ส่วนรออนุมัติหัวหน้าฝ่าย)</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
+                <td>อัปโหลดไฟล์ Excel, จัดการ MAS, อนุมัติขั้นที่ 2 & จองเงิน, มอบหมายผู้จัดการ, ขับเคลื่อนการดำเนินงาน 8 ขั้นตอน, บันทึกการเบิกจ่ายงบประมาณ, บันทึกการจ่ายเงิน</td>
+                <td>ทุกเมนูในระบบ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ผู้จัดการ / ทีมบริหาร<br><span class="text-xs font-normal text-base-content/50">manager</span></td>
+                <td>อนุมัติขั้นสุดท้าย (ขั้นที่ 3) สำหรับคำขอที่ได้รับมอบหมาย เพื่อเปลี่ยนสถานะเป็นสมบูรณ์ และเปิดการดำเนินงานอัตโนมัติ</td>
+                <td>รายการขอซื้อขอจ้าง (ส่วนรออนุมัติผู้จัดการ)</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">หัวหน้าฝ่ายบริหารจัดการ<br><span class="text-xs font-normal text-base-content/50">supervisor supplier</span></td>
+                <td>ตรวจสอบและดูภาพรวมของคำขอจัดซื้อจัดจ้างทั้งหมดในหน่วยงาน</td>
+                <td>รายการขอซื้อขอจ้าง, รายการรอดำเนินการ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {{ Note('บัญชีผู้ใช้งานต้องได้รับการกำหนดสังกัดฝ่าย (division) ก่อน จึงจะสามารถสร้างคำขอและเข้าสู่สายการอนุมัติของหัวหน้าฝ่ายได้อย่างถูกต้อง',
+                'warning', 'ph-warning-circle', 'ข้อกำหนดบัญชีผู้ใช้:') }}
+      </section>
+
+      {# ------------------------------------------------ 0.1 main flow #}
+      <section id="flow-main" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-flow-arrow', 'ขั้นตอนการทำงานภาพรวมทั้งระบบ',
+                         'เส้นทางของกระบวนการจัดซื้อจัดจ้าง ตั้งแต่เตรียมแหล่งเงินจนถึงเสร็จสิ้นโครงการ') }}
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ก. เตรียมข้อมูลก่อนเปิดใช้งาน (ทำโดยเจ้าหน้าที่พัสดุ)</h3>
+        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+          {{ FlowNode('อัปโหลดไฟล์นำเข้า / เพิ่ม MAS', 'primary', 'เมนู อัพโหลดไฟล์ / MAS') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('กำหนดวงเงินงบประมาณ', 'primary', 'ยอดเงินจัดสรร') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('นำเข้ารายการสินค้าและสัญญา', 'primary', 'เมนู รายการสินค้า') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ข. วงจรคำขอจัดซื้อจัดจ้าง 1 ใบ (กระบวนการอนุมัติ 3 ขั้นตอนและการดำเนินงาน)</h3>
+
+        <div class="mt-3 space-y-3">
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-primary">ขั้นตอนที่ 1-3</span>
+              <span class="text-sm font-bold">การเสนอคำขอและอนุมัติ 3 ระดับ</span>
+            </div>
+            <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+              {{ FlowNode('สร้างคำขอซื้อ/จ้าง', 'primary', 'สถานะ: รออนุมัติ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('หัวหน้าฝ่ายอนุมัติ', 'warning', 'สถานะ: กำลังดำเนินการ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('พัสดุอนุมัติ & จอง MAS', 'warning', 'เลือกผู้จัดการ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('ผู้จัดการอนุมัติ', 'success', 'สถานะ: สมบูรณ์') }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-secondary">ขั้นตอนที่ 4-5</span>
+              <span class="text-sm font-bold">การดำเนินการจัดซื้อและเบิกจ่าย</span>
+            </div>
+            <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+              {{ FlowNode('สร้างการดำเนินงาน', 'secondary', 'สถานะ: เริ่มโครงการ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('ดำเนินการตาม 8 ขั้น', 'secondary', 'ติดต่อผู้ขาย & ระบุรายละเอียด') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('บันทึกการเบิกจ่ายงบประมาณ', 'primary', 'ขั้นยืนยันคำสั่งซื้อ') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('ตรวจรับ & ชำระเงิน', 'success', 'ตรวจรับและจ่ายเงิน') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('เสร็จสิ้นโครงการ', 'neutral', 'สถานะ: เสร็จสิ้น') }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-error/40 bg-error/5 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-error">กรณีถูกปฏิเสธ</span>
+              <span class="text-sm font-bold">ผู้อนุมัติในแต่ละขั้นสามารถกดปฏิเสธคำขอได้พร้อมระบุเหตุผล</span>
+            </div>
+            <p class="text-sm text-base-content/80">
+              เมื่อคำขอถูกปฏิเสธ สถานะจะเปลี่ยนเป็น <span class="font-semibold text-error">ไม่สมบูรณ์</span>
+              ผู้ขอจะได้รับอีเมลแจ้งเตือนพร้อมเหตุผล และสามารถแก้ไขเพื่อส่งใหม่ได้
+            </p>
+          </div>
+        </div>
+
+        {{ Note('ระบบจะส่งอีเมลแจ้งเตือนอัตโนมัติไปยังผู้เกี่ยวข้องทุกครั้งที่มีการเปลี่ยนสถานะ เช่น แจ้งหัวหน้าฝ่ายเมื่อมีคำขอใหม่, แจ้งผู้จัดการเมื่อพัสดุมอบหมาย, และแจ้งผู้ขอเมื่อคำขอได้รับการอนุมัติหรือปฏิเสธ',
+                'success', 'ph-envelope-simple', 'อีเมลแจ้งเตือนอัตโนมัติ:') }}
+      </section>
+
+      {# ------------------------------------------------ 1. upload-files #}
+      <section id="upload-files" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(1, 'ph-upload-simple', 'อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ',
+                         'การนำเข้าข้อมูลแหล่งเงิน MAS และสัญญาบริการ MA จำนวนมากด้วยไฟล์ Excel พร้อมระบบคิวงานประมวลผลเบื้องหลัง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ &rarr; อัพโหลดไฟล์', 'ph-list') }}
+          {{ MetaRow('การประมวลผล', 'ทำงานเบื้องหลังผ่าน Redis Worker (ป้องกันหน้าเว็บค้างเมื่อไฟล์มีขนาดใหญ่)', 'ph-cpu') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ฟังก์ชันและการใช้งานของโมดูลอัปโหลดไฟล์</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ดาวน์โหลดไฟล์แม่แบบ</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ดาวน์โหลดเทมเพลต&rdquo; เพื่อเปิดหน้าต่างเลือกประเภทเทมเพลต จากนั้นกดเลือก &ldquo;Template แหล่งเงิน (MAS)&rdquo; หรือ &ldquo;Template MA (Procurement)&rdquo; เพื่อรับไฟล์ Excel ที่จัดหัวตารางมาตรฐานไว้อย่างถูกต้อง</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ฟอร์มอัปโหลดไฟล์นำเข้าข้อมูล</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;อัปโหลดไฟล์&rdquo; เลือกประเภทเอกสาร (MAS หรืองบประมาณ หรือ MA สัญญาบริการ) แนบไฟล์ <code>.xlsx</code> (รองรับการเลือกหลายไฟล์พร้อมกัน) แล้วกดบันทึก เอกสารจะถูกนำเข้าสู่ระบบและแสดงในตาราง</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ตรวจสอบความถูกต้องและประมวลผล</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ประมวลผล&rdquo; ในตาราง ระบบจะตรวจสอบความถูกต้องของข้อมูล หากมีข้อผิดพลาดจะแจ้งเตือนให้ทราบ หากถูกต้องระบบจะประมวลผลนำเข้าข้อมูลเข้าสู่ระบบโดยอัตโนมัติ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ลบไฟล์เอกสาร</span>
+            <p class="mt-1 text-base-content/70">สามารถกดลบประวัติไฟล์ที่ไม่ต้องการได้</p>
+          </li>
+        </ol>
+
+        {% call Demo('หน้าจออัปโหลดไฟล์และประวัติการประมวลผล', 'สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ &rarr; อัพโหลดไฟล์') %}
+        <div class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+            <div class="flex gap-2">
+              <button class="btn btn-xs btn-success"><i class="ph ph-file-xls"></i> ดาวน์โหลดเทมเพลต</button>
+            </div>
+            <button class="btn btn-xs btn-primary"><i class="ph ph-upload-simple"></i> อัปโหลดไฟล์</button>
+          </div>
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th>ชื่อไฟล์</th>
+                <th>หมวดหมู่</th>
+                <th>วันที่อัปโหลด</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">MAS_Budget_2568.xlsx</td>
+                <td><span class="badge badge-sm badge-primary badge-outline">MAS</span></td>
+                <td>18 ส.ค. 2568 09:30</td>
+                <td><span class="badge badge-sm badge-success text-white">เสร็จสมบูรณ์</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button class="btn btn-xs btn-outline"><i class="ph ph-download"></i> ดาวน์โหลด</button>
+                    <button class="btn btn-xs btn-error text-white"><i class="ph ph-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="font-semibold">MA_Contracts_Batch1.xlsx</td>
+                <td><span class="badge badge-sm badge-secondary badge-outline">MA</span></td>
+                <td>18 ส.ค. 2568 10:15</td>
+                <td><span class="badge badge-sm badge-warning">รอดำเนินการ</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button class="btn btn-xs btn-primary"><i class="ph ph-play"></i> ประมวลผล</button>
+                    <button class="btn btn-xs btn-error text-white"><i class="ph ph-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+
+        {{ Note('หากพบข้อผิดพลาด ให้คลิกดูข้อความแจ้งเตือน (Error) เพื่อตรวจสอบว่าข้อมูลแถวใดในไฟล์ Excel ขาดหายไปหรือไม่ตรงรูปแบบ เช่น ขาดรหัส MAS หรือรูปแบบวันที่ไม่ถูกต้อง',
+                'info', 'ph-info', 'คำแนะนำการแก้ไขข้อผิดพลาด:') }}
+      </section>
+
+      {# ------------------------------------------------ 2. products #}
+      <section id="products" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(2, 'ph-package', 'รายการสินค้าและสัญญาบริการ',
+                         'ทะเบียนพัสดุ ซอฟต์แวร์ และบริการที่จัดซื้อแล้วทั้งหมดของหน่วยงาน พร้อมฟอร์มเพิ่มแก้ไข และระบบติดตามสถานะการชำระเงิน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('พนักงาน (staff)', 'neutral') ~ ' ' ~ RoleBadge('หัวหน้าฝ่าย (head)', 'neutral') ~ ' ' ~ RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('ผู้จัดการ (manager)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า (หรือ จัดการ MA &rarr; รายการ MA)', 'ph-list') }}
+          {{ MetaRow('การมองเห็น', 'staff เห็นเฉพาะที่ตนรับผิดชอบ, head เห็นของฝ่ายตน, admin/manager เห็นทั้งหมด', 'ph-eye') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ฟังก์ชันและการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตารางแสดงรายการและการกรองข้อมูล</span>
+            <p class="mt-1 text-base-content/70">ค้นหาตามชื่อ, หมวดหมู่ (ซอฟต์แวร์, ครุภัณฑ์, จ้างเหมาบริการ, วัสดุ), และสถานะการชำระเงิน พร้อม Status Count Badges สรุปภาพรวมยอดทั้งหมด</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ฟอร์มเพิ่มสินค้าใหม่</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;เพิ่มสินค้า&rdquo; เพื่อเปิดแบบฟอร์ม แล้วกรอกข้อมูล:</p>
+            <ul class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-base-content/70 pl-2">
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">ชื่อรายการ / โครงการ:</strong> ระบุชื่อพัสดุหรือบริการ</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">หมวดหมู่:</strong> เลือกประเภทพัสดุ</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">เลขที่เบิกจ่าย:</strong> สามารถเพิ่มได้หลายเลข</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">เลขที่ครุภัณฑ์:</strong> สามารถเพิ่มได้หลายเลข</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">วันที่เริ่มต้น - สิ้นสุด:</strong> เพื่อคำนวณระยะเวลาสัญญา</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">วงเงินและบริษัทคู่ค้า:</strong> จำนวนเงิน และชื่อผู้จำหน่าย</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">ผู้รับผิดชอบ:</strong> เลือกรายชื่อบุคลากรได้หลายท่าน</span></li>
+              <li class="flex items-start gap-1.5"><i class="ph ph-check-circle text-primary mt-0.5"></i> <span><strong class="text-base-content/90">รูปภาพสินค้า:</strong> อัปโหลดรูปภาพตัวอย่าง</span></li>
+            </ul>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ฟอร์มเปลี่ยนรูปภาพสินค้า</span>
+            <p class="mt-1 text-base-content/70">สามารถคลิกปุ่ม &ldquo;เปลี่ยนรูป&rdquo; เพื่ออัปเดตรูปภาพของพัสดุได้ตลอดเวลา</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ดาวน์โหลดแม่แบบ Excel</span>
+            <p class="mt-1 text-base-content/70">กด &ldquo;ดาวน์โหลด Template&rdquo; เพื่อรับไฟล์ Excel แม่แบบสำหรับกรอกข้อมูลสินค้านำเข้า</p>
+          </li>
+        </ol>
+
+        {% call Demo('ตารางรายการสินค้าและสถานะการจ่ายเงิน', 'รายการสินค้า') %}
+        <div class="space-y-4">
+          <div class="flex flex-wrap gap-2">
+            <div class="badge badge-lg badge-neutral gap-2">ทั้งหมด <span class="font-bold">128</span></div>
+            <div class="badge badge-lg badge-success gap-2 text-white">จ่ายแล้ว <span class="font-bold">95</span></div>
+            <div class="badge badge-lg badge-warning gap-2">รอจ่าย <span class="font-bold">24</span></div>
+            <div class="badge badge-lg badge-error gap-2 text-white">เกินกำหนด <span class="font-bold">9</span></div>
+          </div>
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th>ชื่อรายการ</th>
+                <th>ประเภท</th>
+                <th>ผู้รับผิดชอบ</th>
+                <th>จำนวนเงิน</th>
+                <th>สถานะจ่ายเงิน</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-bold">ระบบบริการคลาวด์ประจำปี 2568<br><span class="text-xs font-normal text-base-content/50">มอ. 011/2568-0012</span></td>
+                <td><span class="badge badge-sm badge-info badge-outline">ซอฟต์แวร์</span></td>
+                <td>นายสมชาย ใจดี</td>
+                <td class="font-semibold text-emerald-600">฿120,000.00</td>
+                <td><span class="badge badge-sm badge-success text-white">จ่ายแล้ว</span></td>
+                <td>
+                  <div class="flex gap-1">
+                    <button class="btn btn-xs btn-primary">จ่ายเงิน</button>
+                    <button class="btn btn-xs btn-outline">เปลี่ยนรูป</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+
+        {% call Demo('แบบฟอร์มเพิ่มรายการสินค้าและสัญญาบริการใหม่', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า &rarr; เพิ่มสินค้า') %}
+        <div class="space-y-4">
+          <!-- ข้อมูลพื้นฐาน -->
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <h4 class="text-xs font-bold text-base-content flex items-center gap-1.5 text-primary">
+              <i class="ph ph-info text-sm"></i> ข้อมูลพื้นฐาน
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">ชื่อรายการ / โครงการ <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full" value="ระบบบริการคลาวด์ประจำปี 2568" readonly>
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">หมวดหมู่ <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full" value="ซอฟต์แวร์ (Software)" readonly>
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">บริษัทคู่ค้า / ผู้จำหน่าย <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full" value="บริษัท คลาวด์ เซอร์วิสเซส จำกัด" readonly>
+              </fieldset>
+            </div>
+
+            <div class="pt-2 border-t border-base-300/60">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-semibold text-base-content/70">เลขที่สินค้า (S/N) & รหัสครุภัณฑ์</span>
+                <span class="badge badge-primary badge-xs text-white">จำนวน 1 รายการ</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                <input type="text" class="input input-xs w-full" value="มอ. 011/2568-0012" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)" readonly>
+                <input type="text" class="input input-xs w-full" value="CC/011-2-68/01" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- ข้อมูลระยะเวลาและการเงิน -->
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <h4 class="text-xs font-bold text-base-content flex items-center gap-1.5 text-success">
+              <i class="ph ph-calendar-check text-sm"></i> ข้อมูลระยะเวลาและการเงิน
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">วันที่เริ่มต้น <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full" value="01/10/2567" readonly>
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">วันที่สิ้นสุด <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full" value="30/09/2568" readonly>
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">วงเงิน (บาท) <span class="text-error">*</span></legend>
+                <input type="text" class="input input-xs w-full font-bold text-emerald-600" value="120,000.00" readonly>
+              </fieldset>
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend">ระยะเวลา (ปี/งวด)</legend>
+                <input type="text" class="input input-xs w-full" value="1" readonly>
+              </fieldset>
+            </div>
+          </div>
+
+          <!-- ผู้รับผิดชอบและรูปภาพ -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-2">
+              <h4 class="text-xs font-bold text-base-content flex items-center gap-1.5 text-secondary">
+                <i class="ph ph-users text-sm"></i> ผู้รับผิดชอบ <span class="text-error">*</span>
+              </h4>
+              <div class="flex flex-wrap gap-1.5 p-2 bg-base-100 rounded-lg border border-base-300 min-h-9 items-center">
+                <span class="badge badge-primary badge-sm gap-1 text-white">นายสมชาย ใจดี <span class="font-bold">×</span></span>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-2">
+              <h4 class="text-xs font-bold text-base-content flex items-center gap-1.5 text-warning">
+                <i class="ph ph-image text-sm"></i> รูปภาพประกอบ
+              </h4>
+              <div class="flex flex-col items-center justify-center p-3 border-2 border-dashed border-base-300 rounded-lg bg-base-100 text-center">
+                <i class="ph ph-cloud-arrow-up text-xl text-base-content/40 mb-1"></i>
+                <span class="text-xs text-base-content/60">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวาง (PNG, JPG ขนาดไม่เกิน 5MB)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-base-300">
+            <button class="btn btn-xs btn-ghost">ยกเลิก</button>
+            <button class="btn btn-xs btn-primary"><i class="ph ph-check"></i> บันทึกรายการ</button>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('สินค้าในหน้านี้คือพัสดุและสัญญาที่จัดซื้อสำเร็จแล้ว ต่างจากหน้า "รายการ MA" ซึ่งเน้นติดตามวันหมดอายุสัญญาเพื่อเตรียมขอต่ออายุ',
+                'info', 'ph-info', 'คำแนะนำ:') }}
+
+        {% if current_user.has_organization_roles("admin", "staff", "head", "manager") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('procurement.products.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการสินค้า
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 3. payment #}
+      <section id="payment" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(3, 'ph-credit-card', 'บันทึกการชำระเงินสินค้า',
+                         'การบันทึกงวดการจ่ายเงิน เลขที่ใบสำคัญจ่าย และติดตามสถานะการชำระเงินตามสัญญาของแต่ละรายการสินค้า') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / การเงิน (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เข้าถึงจาก', 'หน้ารายการสินค้า &rarr; คลิกปุ่ม &ldquo;จ่ายเงิน&rdquo; ในแถวรายการ', 'ph-cursor-click') }}
+          {{ MetaRow('สถานะการจ่ายเงิน', 'จ่ายแล้ว, รอจ่าย, เกินกำหนดชำระ', 'ph-tag') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">การบันทึกการชำระเงิน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดหน้ารายละเอียดการชำระเงิน</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;จ่ายเงิน&rdquo; เพื่อเปิดหน้ารายละเอียดการชำระเงิน แสดงข้อมูลสัญญา วงเงินรวม ยอดชำระแล้ว และยอดคงค้าง</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. บันทึกงวดการจ่ายเงิน</span>
+            <p class="mt-1 text-base-content/70">กรอกข้อมูลการจ่ายเงิน: งวดที่ชำระ, วันที่ชำระเงิน, เลขที่ใบสำคัญจ่าย, จำนวนเงินที่ชำระ และหมายเหตุ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. อัปเดตสถานะอัตโนมัติ</span>
+            <p class="mt-1 text-base-content/70">เมื่อบันทึกการชำระเงินครบถ้วน สถานะการชำระเงินของสินค้าจะเปลี่ยนเป็น <span class="badge badge-xs badge-success text-white">จ่ายแล้ว</span></p>
+          </li>
+        </ol>
+
+        {% call Demo('ฟอร์มบันทึกการจ่ายเงินและประวัติการชำระ', 'บันทึกการชำระเงิน') %}
+        <div class="space-y-3">
+          <div class="flex justify-between items-center bg-base-200 p-3 rounded-lg">
+            <div>
+              <div class="font-bold text-sm">สัญญาบำรุงรักษาเครื่องแม่ข่าย ประจำปี 2568</div>
+              <div class="text-xs text-base-content/60">วงเงินสัญญา: ฿85,000.00 | ยอดชำระแล้ว: ฿85,000.00</div>
+            </div>
+            <span class="badge badge-success text-white">ชำระครบถ้วน</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">วันที่จ่ายเงิน</legend>
+              <input type="text" class="input input-xs w-full" value="15 ก.พ. 2568" readonly>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">เลขที่ใบสำคัญจ่าย</legend>
+              <input type="text" class="input input-xs w-full" value="PV-68-02-0041" readonly>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">จำนวนเงินที่จ่าย (บาท)</legend>
+              <input type="text" class="input input-xs w-full font-bold text-emerald-600" value="85,000.00" readonly>
+            </fieldset>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('การบันทึกการชำระเงินที่ถูกต้องจะช่วยให้รายงาน Status Count Badges ในหน้าแรกและ Dashboard มีความแม่นยำตลอดเวลา',
+                'info', 'ph-info', 'ประโยชน์:') }}
+      </section>
+
+      {# ------------------------------------------------ 4. procurement-list #}
+      <section id="procurement-list" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(4, 'ph-clipboard-text', 'รายการสัญญาบริการที่ใกล้หมดอายุ',
+                         'รายการสัญญาบำรุงรักษาและบริการที่หมดอายุหรือใกล้หมดอายุ เพื่อดำเนินการขอต่ออายุสัญญา') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงาน (staff)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'จัดการ MA &rarr; รายการ MA ขอต่ออายุ', 'ph-list') }}
+          {{ MetaRow('การจัดเรียง', 'เรียงลำดับตามวันหมดอายุที่ใกล้ที่สุดขึ้นก่อนโดยอัตโนมัติ', 'ph-sort-ascending') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตรวจสอบสถานะวันหมดอายุ</span>
+            <p class="mt-1 text-base-content/70">การ์ดแต่ละใบแสดงตัวนับถอยหลัง และแถบสีแจ้งเตือน: สีแดง (หมดอายุแล้วหรือเหลือน้อยกว่า 30 วัน), สีเหลือง (เหลือน้อยกว่า 90 วัน)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กรองช่วงเวลาหมดอายุ</span>
+            <p class="mt-1 text-base-content/70">สามารถเลือกกรองเฉพาะรายการที่หมดอายุแล้ว, ภายใน 1 เดือน, 3 เดือน, 6 เดือน หรือ 1 ปี</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. การขอต่ออายุสัญญา</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ต่ออายุ&rdquo; ระบบจะเปิดหน้าต่างยืนยัน และนำท่านไปยังแบบฟอร์มขอซื้อขอจ้าง พร้อมกรอกข้อมูลเดิมให้อัตโนมัติ และเปลี่ยนสถานะรายการเป็น <span class="badge badge-xs badge-info">ต่ออายุแล้ว</span></p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. การไม่ต่ออายุสัญญา</span>
+            <p class="mt-1 text-base-content/70">สำหรับสัญญาที่ไม่ประสงค์จะต่ออายุ รายการจะถูกย้ายไปยังหน้า &ldquo;รายการ MA ไม่ต่ออายุ&rdquo; (สถานะ <span class="badge badge-xs badge-neutral">ไม่ต่ออายุ</span>)</p>
+          </li>
+        </ol>
+
+        {% call Demo('การ์ดรายการ MA พร้อมปุ่มต่ออายุ/ไม่ต่ออายุ', 'จัดการ MA &rarr; รายการ MA') %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+            <div class="flex justify-between items-center border-b pb-2">
+              <span class="font-bold text-sm">สัญญาบำรุงรักษาเครื่องแม่ข่าย</span>
+              <span class="badge badge-error badge-sm text-white">เหลือ 14 วัน</span>
+            </div>
+            <div class="py-2 text-xs text-base-content/70 space-y-1">
+              <div>รหัสครุภัณฑ์: CC/011-2-66/01</div>
+              <div>สิ้นสุด: 31 มี.ค. 2568 | วงเงิน: ฿85,000.00</div>
+              <div>ผู้รับผิดชอบ: นายสมชาย ใจดี</div>
+            </div>
+            <div class="flex gap-2 pt-2 border-t mt-2">
+              <button class="btn btn-sm btn-success text-white flex-1"><i class="ph ph-check"></i> ต่ออายุ</button>
+              <button class="btn btn-sm btn-error text-white flex-1"><i class="ph ph-x"></i> ไม่ต่ออายุ</button>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+
+        {% if current_user.has_organization_roles("admin", "staff") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการ MA
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 5. renewal-requested #}
+      <section id="renewal-requested" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(5, 'ph-arrow-clockwise', 'รายการขอซื้อขอจ้าง',
+                         'หน้าหลักของระบบขอซื้อขอจ้าง แสดงตารางคำขอทั้งหมดและส่วนงานที่รอการอนุมัติแยกตามบทบาท') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท (staff, head, admin, manager)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการขอซื้อขอจ้าง', 'ph-list') }}
+          {{ MetaRow('การทำงานหลัก', 'ศูนย์กลางการติดตามคำขอ, การอนุมัติ 3 ระดับ, และพิมพ์เอกสาร', 'ph-gear') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">โครงสร้างของหน้าจอแยกตามบทบาท</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ส่วนรออนุมัติหัวหน้าฝ่าย (สำหรับหัวหน้าฝ่าย)</span>
+            <p class="mt-1 text-base-content/70">แสดงเฉพาะคำขอของบุคลากรในฝ่ายเดียวกันที่ยังรอการอนุมัติในขั้นที่ 1</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ส่วนรออนุมัติผู้จัดการ (สำหรับผู้จัดการ)</span>
+            <p class="mt-1 text-base-content/70">แสดงเฉพาะคำขอที่เจ้าหน้าที่พัสดุมอบหมายให้ผู้จัดการท่านนั้นพิจารณาอนุมัติขั้นสุดท้าย</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ส่วนรายการที่ผู้จัดการส่งแล้ว</span>
+            <p class="mt-1 text-base-content/70">สรุปประวัติคำขอที่ผู้จัดการได้พิจารณาอนุมัติเรียบร้อยแล้ว</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ตารางรายการคำขอทั้งหมด</span>
+            <p class="mt-1 text-base-content/70">แสดงรายการคำขอซื้อขอจ้างทั้งหมดของหน่วยงาน พร้อมรหัสคำขอ, ผู้ขอ, วันที่, สถานะ และปุ่มพิมพ์เอกสาร</p>
+          </li>
+        </ol>
+
+        {% call Demo('ตารางรายการขอซื้อขอจ้าง', 'ขอซื้อขอจ้าง &rarr; รายการขอซื้อขอจ้าง') %}
+        <table class="table w-full text-sm">
+          <thead>
+            <tr class="bg-base-200">
+              <th>รหัสคำขอ</th>
+              <th>โครงการ / รายการ</th>
+              <th>ผู้ขอซื้อ</th>
+              <th>สถานะ</th>
+              <th>สถานะอนุมัติ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold text-primary">0015/2568</td>
+              <td>จ้างพัฒนาระบบสารสนเทศ</td>
+              <td>นายสมชาย ใจดี</td>
+              <td><span class="badge badge-sm badge-warning">กำลังดำเนินการ</span></td>
+              <td>
+                <div class="flex gap-1 text-xs">
+                  <span class="badge badge-xs badge-success text-white">หัวหน้า: ผ่าน</span>
+                  <span class="badge badge-xs badge-warning">พัสดุ: รอ</span>
+                </div>
+              </td>
+              <td>
+                <div class="flex gap-1">
+                  <button class="btn btn-xs btn-outline"><i class="ph ph-file-text"></i> เอกสาร</button>
+                  <button class="btn btn-xs btn-primary"><i class="ph ph-stamp"></i> อนุมัติ</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {% endcall %}
+
+        {{ Note('หน้านี้คือศูนย์กลางของกระบวนการ 3 ขั้นอนุมัติ แต่ละบทบาทจะเห็นปุ่มและส่วนการอนุมัติที่สอดคล้องกับสิทธิ์ของตนเอง',
+                'info', 'ph-info', 'ข้อสังเกต:') }}
+
+        {% if current_user.has_organization_roles("admin", "staff", "head", "manager") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการขอซื้อขอจ้าง
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 6. non-renewal #}
+      <section id="non-renewal" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(6, 'ph-x-circle', 'รายการสัญญาบริการที่ไม่ต่ออายุ',
+                         'รวบรวมรายการสัญญาและบริการที่หน่วยงานมีมติไม่ต่ออายุ เพื่อเก็บเป็นประวัติอ้างอิง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงาน (staff)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'จัดการ MA &rarr; รายการ MA ไม่ต่ออายุ', 'ph-list') }}
+          {{ MetaRow('สถานะ', 'ไม่ต่ออายุ (บันทึกเป็นประวัติอ้างอิง)', 'ph-tag') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตรวจสอบรายการที่ไม่ต่ออายุ</span>
+            <p class="mt-1 text-base-content/70">ดูรายการสัญญาที่ถูกยกเลิกหรือไม่ประสงค์ต่อสัญญา พร้อมเหตุผล วันที่สิ้นสุด และบริษัทคู่สัญญา</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กรองข้อมูลตามประเภท</span>
+            <p class="mt-1 text-base-content/70">สามารถกรองแยกตามประเภทซอฟต์แวร์, ครุภัณฑ์ หรือจ้างเหมาบริการ เพื่อใช้วิเคราะห์ข้อมูลประวัติในอดีต</p>
+          </li>
+        </ol>
+
+        {% call Demo('ตารางรายการ MA ที่ไม่ต่ออายุ', 'จัดการ MA &rarr; รายการ MA ไม่ต่ออายุ') %}
+        <table class="table w-full text-sm">
+          <thead>
+            <tr class="bg-base-200">
+              <th>ชื่อรายการ</th>
+              <th>ประเภท</th>
+              <th>วันที่สิ้นสุดสัญญา</th>
+              <th>บริษัทผู้ให้บริการ</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold">ระบบอีเมลสำรององค์กร (เก่า)</td>
+              <td><span class="badge badge-sm badge-outline">ซอฟต์แวร์</span></td>
+              <td>31 ธ.ค. 2567</td>
+              <td>บริษัท ไอที โซลูชั่น จำกัด</td>
+              <td><span class="badge badge-sm badge-neutral">ไม่ต่ออายุ</span></td>
+            </tr>
+          </tbody>
+        </table>
+        {% endcall %}
+
+        {{ Note('รายการที่เลือกไม่ต่ออายุจะถูกย้ายมายังหน้านี้ และจะไม่ปรากฏในการแจ้งเตือนของหน้า "รายการ MA" ปกติอีกต่อไป',
+                'warning', 'ph-warning-circle', 'ข้อควรระวัง:') }}
+
+        {% if current_user.has_organization_roles("admin", "staff") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('procurement.requisitions.non_renewal', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการ MA ไม่ต่ออายุ
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 7. mas #}
+      <section id="mas" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(7, 'ph-bank', 'แหล่งเงินงบประมาณระบบ MAS',
+                         'การบริหารจัดการแหล่งเงินงบประมาณ กำหนดวงเงินจัดสรร ตรวจสอบประวัติการจองงบประมาณ และส่งออกข้อมูล Excel') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ระบบ MAS &rarr; แหล่งเงิน', 'ph-list') }}
+          {{ MetaRow('ใช้เมื่อ', 'ก่อนเริ่มปีงบประมาณ หรือเมื่อได้รับจัดสรรงบประมาณโครงการใหม่', 'ph-calendar') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ฟังก์ชันและการใช้งาน</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ฟอร์มเพิ่มและแก้ไขแหล่งเงินงบประมาณ</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;เพิ่มแหล่งเงิน&rdquo; เพื่อเปิดแบบฟอร์ม กรอกรหัส MAS (เช่น <code>MAS-68-001</code>), คำอธิบายงบประมาณ และวงเงินรวม (Total Amount)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ตารางติดตามวงเงินงบประมาณ</span>
+            <p class="mt-1 text-base-content/70">ระบบจะคำนวณวงเงินที่ถูกผูกจอง (Reserved Amount) และวงเงินคงเหลือจริง (Remaining Amount) ให้อัตโนมัติ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ประวัติการจองงบประมาณ</span>
+            <p class="mt-1 text-base-content/70">คลิกที่แหล่งเงินเพื่อดูหน้ารายละเอียดการจองงบประมาณ ตรวจสอบว่ามีคำขอซื้อขอจ้างใบใดบ้างกำลังจองยอดเงินนี้อยู่</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ส่งออกข้อมูล Excel</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ส่งออก Excel&rdquo; เพื่อดาวน์โหลดรายงานสรุปการจัดสรรและยอดการใช้เงิน MAS ทั้งหมด</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">5. ลบแหล่งเงิน</span>
+            <p class="mt-1 text-base-content/70">สามารถลบแหล่งเงินที่ไม่มีการใช้งานได้</p>
+          </li>
+        </ol>
+
+        {% call Demo('ตารางแหล่งเงิน MAS และสรุปวงเงิน', 'ระบบ MAS &rarr; แหล่งเงิน') %}
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-3 bg-base-200 rounded-xl">
+              <div class="text-xs text-base-content/60">งบประมาณรวม</div>
+              <div class="text-lg font-bold text-primary">฿2,500,000.00</div>
+            </div>
+            <div class="p-3 bg-base-200 rounded-xl">
+              <div class="text-xs text-base-content/60">จองแล้ว</div>
+              <div class="text-lg font-bold text-warning">฿850,000.00</div>
+            </div>
+            <div class="p-3 bg-base-200 rounded-xl">
+              <div class="text-xs text-base-content/60">คงเหลือใช้งานได้</div>
+              <div class="text-lg font-bold text-success">฿1,650,000.00</div>
+            </div>
+          </div>
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th>รหัส MAS</th>
+                <th>คำอธิบาย</th>
+                <th>วงเงินรวม</th>
+                <th>จองแล้ว</th>
+                <th>คงเหลือ</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-bold">MAS-68-001</td>
+                <td>งบดำเนินงานพัฒนาเทคโนโลยีสารสนเทศ</td>
+                <td>฿1,000,000.00</td>
+                <td class="text-warning">฿450,000.00</td>
+                <td class="font-bold text-success">฿550,000.00</td>
+                <td>
+                  <div class="flex gap-1">
+                    <button class="btn btn-xs btn-outline">ดูการจอง</button>
+                    <button class="btn btn-xs btn-primary">แก้ไข</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+
+        {{ Note('ต้องสร้างแหล่งเงิน (MAS) และกำหนดยอดเงินไว้ล่วงหน้าก่อน มิฉะนั้นเจ้าหน้าที่พัสดุจะไม่สามารถอนุมัติคำขอและผูกจองวงเงินงบประมาณได้',
+                'warning', 'ph-warning-circle', 'ข้อกำหนดก่อนเริ่มงาน:') }}
+
+        {% if current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('admin.mas.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้าระบบ MAS
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 8. create-requisition #}
+      <section id="create-requisition" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(8, 'ph-file-plus', 'สร้างและแก้ไขคำขอซื้อขอจ้าง',
+                         'แบบฟอร์มยื่นความประสงค์จัดซื้อพัสดุ จัดจ้าง หรือต่ออายุสัญญาบริการ พร้อมแนบเอกสาร TOR, QT และคณะกรรมการ 3 ชุด') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('พนักงาน (staff)', 'primary') ~ ' ' ~ RoleBadge('หัวหน้าฝ่าย (head)', 'neutral') ~ ' ' ~ RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('การสร้างรหัส', 'ระบบออกรหัสคำขออัตโนมัติ เช่น 0001/2568 (running number / ปี พ.ศ.)', 'ph-hash') }}
+          {{ MetaRow('ผลลัพธ์', 'ส่งเรื่องรอหัวหน้าฝ่ายพิจารณา และส่งอีเมลแจ้งเตือนทันที', 'ph-paper-plane') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">รายการฟิลด์ในแบบฟอร์ม</h3>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-48">ชื่อฟิลด์</th>
+                <th class="w-24">จำเป็น</th>
+                <th>คำอธิบาย</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">รหัสคำขอ</td>
+                <td><span class="text-success font-bold">Auto</span></td>
+                <td>สร้างอัตโนมัติแบบ Running number เช่น <code>0018/2568</code></td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ผู้ขอซื้อ</td>
+                <td><span class="text-success font-bold">Auto</span></td>
+                <td>ดึงข้อมูลจากผู้ใช้งานปัจจุบัน (<code>current_user</code>) พร้อมสังกัดฝ่าย</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ชื่อโครงการ / เรื่อง</td>
+                <td><span class="text-error font-bold">*</span></td>
+                <td>ระบุชื่อโครงการจัดซื้อจัดจ้างให้ชัดเจน</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ประเภทการขอ</td>
+                <td><span class="text-error font-bold">*</span></td>
+                <td>เลือกประเภท เช่น ซื้อ, จ้าง, จ้างเหมาบริการ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">รายการสิ่งของ</td>
+                <td><span class="text-error font-bold">*</span></td>
+                <td>กด &ldquo;+ เพิ่มรายการ&rdquo; เพื่อเพิ่มหลายชิ้น: ชื่อสิ่งของ, ประเภท, จำนวน, หน่วยนับ, ราคาต่อหน่วย, ยอดรวม</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">เหตุผลความจำเป็น</td>
+                <td><span class="text-error font-bold">*</span></td>
+                <td>ระบุวัตถุประสงค์และเหตุผลในการจัดซื้อจัดจ้าง</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">เอกสาร TOR</td>
+                <td>-</td>
+                <td>แนบไฟล์ PDF ข้อกำหนดคุณลักษณะและขอบเขตงาน</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ใบเสนอราคา QT</td>
+                <td>-</td>
+                <td>แนบไฟล์ PDF ใบเสนอราคาจากผู้จำหน่าย/ผู้ให้บริการ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">คณะกรรมการ 3 ชุด</td>
+                <td>-</td>
+                <td>กำหนดรายชื่อกรรมการ: 1) กำหนดคุณลักษณะ 2) จัดซื้อ/จัดจ้าง 3) ตรวจรับพัสดุ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {% call Demo('แบบฟอร์มสร้างคำขอซื้อขอจ้าง', 'ขอซื้อขอจ้าง &rarr; เพิ่มคำขอ') %}
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">รหัสคำขอ</legend>
+              <input type="text" class="input input-sm w-full" value="0018/2568" readonly>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">ผู้ขอซื้อ</legend>
+              <input type="text" class="input input-sm w-full" value="นายสมชาย ใจดี (ฝ่ายเทคโนโลยีสารสนเทศ)" readonly>
+            </fieldset>
+          </div>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">ชื่อโครงการจัดซื้อ/จัดจ้าง <span class="text-error">*</span></legend>
+            <input type="text" class="input input-sm w-full" value="จัดซื้ออุปกรณ์สวิตช์เครือข่ายสำหรับห้องแม่ข่าย" readonly>
+          </fieldset>
+          <div class="border rounded-lg p-3 bg-base-200/50">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold">รายการสิ่งของที่ขอซื้อ (Items)</span>
+              <button class="btn btn-xs btn-outline">+ เพิ่มรายการ</button>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-xs">
+              <input type="text" class="input input-xs col-span-2" value="Core Switch 24-Port 10G" readonly>
+              <input type="number" class="input input-xs" value="2" readonly>
+              <input type="text" class="input input-xs" value="฿45,000.00" readonly>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('เมื่อกดบันทึกคำขอ ระบบจะส่งอีเมลแจ้งเตือนไปยังหัวหน้าฝ่ายของท่านโดยอัตโนมัติ เพื่อดำเนินการพิจารณาอนุมัติในขั้นที่ 1',
+                'info', 'ph-info', 'ขั้นตอนถัดไป:') }}
+      </section>
+
+      {# ------------------------------------------------ 9. head-approve #}
+      <section id="head-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(9, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขั้นที่ 1',
+                         'การพิจารณาตรวจสอบความถูกต้องและอนุมัติคำขอของบุคลากรภายในฝ่ายตนเอง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('หัวหน้าฝ่าย (head)', 'primary') ~ ' ' ~ RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติรายการขอซื้อขอจ้าง &rarr; รายการขอซื้อขอจ้าง', 'ph-list') }}
+          {{ MetaRow('เงื่อนไขการเห็น', 'เห็นเฉพาะคำขอของผู้ใช้ในฝ่ายเดียวกันที่รออนุมัติ', 'ph-funnel') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการอนุมัติ</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตรวจสอบรายละเอียดในตาราง &ldquo;รออนุมัติหัวหน้าฝ่าย&rdquo;</span>
+            <p class="mt-1 text-base-content/70">คลิกดูรายละเอียดสิ่งของ, วงเงินงบประมาณที่ขอ, เหตุผลความจำเป็น และตรวจสอบไฟล์แนบ TOR/QT</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กรณีเห็นชอบ (กดอนุมัติ)</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;อนุมัติ&rdquo; เพื่อบันทึกประวัติการอนุมัติ คำขอจะเปลี่ยนสถานะเป็น <span class="badge badge-xs badge-warning">กำลังดำเนินการ</span> และส่งต่อให้เจ้าหน้าที่พัสดุ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. กรณีไม่เห็นชอบ (กดปฏิเสธ)</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ปฏิเสธ&rdquo; พร้อมระบุเหตุผล คำขอจะเปลี่ยนสถานะเป็น <span class="badge badge-xs badge-error text-white">ไม่สมบูรณ์</span> และส่งอีเมลแจ้งผู้ขอทราบ</p>
+          </li>
+        </ol>
+
+        {{ Note('คำขอที่หัวหน้าฝ่ายอนุมัติแล้วจะย้ายเข้าสู่คิวงานของเจ้าหน้าที่พัสดุโดยอัตโนมัติ เพื่อดำเนินการผูกแหล่งเงิน MAS ในขั้นถัดไป',
+                'info', 'ph-info', 'ขั้นตอนถัดไป:') }}
+      </section>
+
+      {# ------------------------------------------------ 10. admin-approve #}
+      <section id="admin-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(10, 'ph-stamp', 'เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ',
+                         'ขั้นตอนสำคัญในการตรวจสอบงบประมาณ ผูกจองวงเงิน MAS และมอบหมายผู้จัดการเพื่ออนุมัติขั้นสุดท้าย') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการขอซื้อขอจ้าง', 'ph-list') }}
+          {{ MetaRow('ผลลัพธ์', 'สร้าง Reservation ในระบบ MAS และส่งเรื่องให้ผู้จัดการที่ได้รับมอบหมาย', 'ph-check-circle') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการดำเนินการ</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดหน้าต่างอนุมัติของเจ้าหน้าที่พัสดุ</span>
+            <p class="mt-1 text-base-content/70">คลิกปุ่ม &ldquo;อนุมัติ (พัสดุ)&rdquo; ในรายการคำขอที่ผ่านหัวหน้าฝ่ายแล้ว</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. เลือกแหล่งเงิน MAS และจัดสรรวงเงิน</span>
+            <p class="mt-1 text-base-content/70">เลือกแหล่งเงินงบประมาณ MAS ที่ต้องการใช้ และกรอกจำนวนเงินที่ต้องการจอง (รองรับการผูกหลายแหล่งเงิน)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. มอบหมายผู้จัดการ</span>
+            <p class="mt-1 text-base-content/70">เลือกรายชื่อผู้จัดการที่จะทำหน้าที่อนุมัติขั้นสุดท้าย พร้อมระบุว่าเป็นผู้ปฏิบัติหน้าที่แทนหรือไม่</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. ยืนยันการอนุมัติ</span>
+            <p class="mt-1 text-base-content/70">ระบบจะสร้างการจองงบประมาณ (Reservation) ล็อกวงเงินใน MAS ทันที และส่งอีเมลแจ้งเตือนผู้จัดการ</p>
+          </li>
+        </ol>
+
+        {% call Demo('หน้าต่างอนุมัติของพัสดุและจัดสรรงบประมาณ MAS', 'การอนุมัติของเจ้าหน้าที่พัสดุ') %}
+        <div class="modal-box max-w-xl mx-auto bg-base-100 p-4 border border-base-300 shadow-md">
+          <h3 class="text-base font-bold text-primary flex items-center gap-2 mb-3">
+            <i class="ph ph-stamp"></i> อนุมัติคำขอและจัดสรรงบประมาณ (เจ้าหน้าที่พัสดุ)
+          </h3>
+          <div class="space-y-3 text-xs">
+            <div class="p-2 bg-base-200 rounded-lg">
+              <div>รหัสคำขอ: <span class="font-bold">0015/2568</span></div>
+              <div>ยอดรวมที่ขอ: <span class="font-bold text-emerald-600">฿90,000.00</span></div>
+            </div>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">เลือกแหล่งเงิน MAS <span class="text-error">*</span></legend>
+              <select class="select select-xs w-full">
+                <option selected>MAS-68-001 (งบดำเนินงานพัฒนาไอที - คงเหลือ ฿550,000.00)</option>
+              </select>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">จำนวนเงินที่จอง (บาท) <span class="text-error">*</span></legend>
+              <input type="text" class="input input-xs w-full font-bold" value="90000.00" readonly>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">มอบหมายผู้จัดการเพื่ออนุมัติขั้นสุดท้าย <span class="text-error">*</span></legend>
+              <select class="select select-xs w-full">
+                <option selected>รศ.ดร. มานะ มั่นคง (รองผู้อำนวยการฝ่ายบริหาร)</option>
+              </select>
+            </fieldset>
+          </div>
+          <div class="modal-action mt-4">
+            <button class="btn btn-xs btn-outline">ยกเลิก</button>
+            <button class="btn btn-xs btn-success text-white">บันทึกอนุมัติ & จองเงิน</button>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('หากภายหลังเจ้าหน้าที่พัสดุกดยกเลิกคำขอที่มีการจอง MAS ไว้นั้น ระบบจะทำการคืนยอดเงินที่จองกลับเข้าสู่วงเงินคงเหลือของ MAS โดยอัตโนมัติ',
+                'error', 'ph-warning-circle', 'ระบบคืนวงเงินอัตโนมัติ:') }}
+      </section>
+
+      {# ------------------------------------------------ 11. manager-approve #}
+      <section id="manager-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(11, 'ph-user-check', 'ผู้จัดการอนุมัติขั้นสุดท้าย',
+                         'การพิจารณาอนุมัติขั้นสุดท้ายโดยทีมบริหาร เพื่อเปิดโครงการจัดซื้อและสร้างขั้นตอนการดำเนินงาน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ผู้จัดการ / ทีมบริหาร (manager)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติรายการขอซื้อขอจ้าง &rarr; ส่วนรออนุมัติผู้จัดการ', 'ph-list') }}
+          {{ MetaRow('ผลลัพธ์', 'อนุมัติสมบูรณ์ และระบบสร้างขั้นตอนการดำเนินงานให้อัตโนมัติ', 'ph-sparkle') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการอนุมัติ</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตรวจสอบคำขอในกล่อง &ldquo;รออนุมัติผู้จัดการ&rdquo;</span>
+            <p class="mt-1 text-base-content/70">ผู้จัดการจะเห็นรายการที่เจ้าหน้าที่พัสดุมอบหมายให้ตน ตรวจสอบความถูกต้อง วงเงิน และแหล่งเงิน MAS</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. กด &ldquo;อนุมัติ&rdquo;</span>
+            <p class="mt-1 text-base-content/70">เมื่ออนุมัติ คำขอจะถือว่าผ่านการอนุมัติครบทั้ง 3 ขั้นตอนโดยสมบูรณ์ (สถานะ <span class="badge badge-xs badge-success text-white">สมบูรณ์</span>)</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ระบบสร้างการดำเนินงานให้อัตโนมัติ</span>
+            <p class="mt-1 text-base-content/70">โครงการจะปรากฏในหน้า &ldquo;รายการรอดำเนินการ&rdquo; ทันทีที่สถานะเริ่มต้น <span class="badge badge-xs badge-info">สร้างคำขอ</span></p>
+          </li>
+        </ol>
+
+        {{ Note('เมื่อผู้จัดการอนุมัติเรียบร้อยแล้ว โครงการจะถูกส่งเข้าสู่กระบวนการจัดซื้อจัดจ้างจริงในหน้ารายการรอดำเนินการทันที',
+                'success', 'ph-check-circle', 'การสร้างขั้นตอนดำเนินงาน:') }}
+      </section>
+
+      {# ------------------------------------------------ 12. timeline #}
+      <section id="timeline" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(12, 'ph-list-checks', 'ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน',
+                         'กระบวนการขับเคลื่อนการจัดซื้อจัดจ้าง 8 ขั้นตอน ตั้งแต่เริ่มติดต่อผู้ขาย ระบุคุณลักษณะ จนถึงตรวจรับพัสดุและชำระเงิน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงาน (staff - ดูอย่างเดียว)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการรอดำเนินการ', 'ph-list') }}
+          {{ MetaRow('ความสามารถ', 'เลื่อนขั้นสถานะ, บันทึกวันส่งมอบ/วันตรวจรับ, กรอกฟอร์มสเปก, บันทึกเบิกจ่ายงบประมาณ, และยกเลิกโครงการ', 'ph-arrows-clockwise') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">8 ขั้นตอนของความคืบหน้าและฟอร์มที่เกี่ยวข้อง</h3>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-16 text-center">ลำดับ</th>
+                <th class="w-48">ขั้นตอนการดำเนินงาน</th>
+                <th>ความหมายและการดำเนินการ / ฟอร์มที่เกี่ยวข้อง</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-center font-bold">1</td>
+                <td><span class="badge badge-sm badge-info">1. สร้างคำขอ</span></td>
+                <td>สร้างคำขอและผ่านการอนุมัติ 3 ขั้นแล้ว (ระบบสร้างขั้นตอนให้อัตโนมัติ)</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">2</td>
+                <td><span class="badge badge-sm badge-outline">2. ติดต่อผู้ขาย</span></td>
+                <td>ติดต่อประสานงานกับผู้ขาย/ผู้รับจ้างเรียบร้อยแล้ว</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">3</td>
+                <td><span class="badge badge-sm badge-outline">3. ระบุรายละเอียด</span></td>
+                <td>ฟอร์มระบุรายละเอียดคุณลักษณะและขอบเขตงาน</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">4</td>
+                <td><span class="badge badge-sm badge-warning">4. ยืนยันคำสั่งซื้อ</span></td>
+                <td>ยืนยันการสั่งซื้อ/สั่งจ้าง (ในขั้นนี้สามารถเปิดกรอกแบบฟอร์มเบิกจ่ายงบประมาณได้)</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">5</td>
+                <td><span class="badge badge-sm badge-outline">5. รอส่งมอบ</span></td>
+                <td>รอการส่งมอบพัสดุ/บริการ (บันทึกวันที่ส่งมอบ)</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">6</td>
+                <td><span class="badge badge-sm badge-outline">6. ตรวจรับพัสดุ</span></td>
+                <td>คณะกรรมการตรวจรับพัสดุ (บันทึกวันที่ตรวจรับ)</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">7</td>
+                <td><span class="badge badge-sm badge-outline">7. ชำระเงิน</span></td>
+                <td>ดำเนินการเบิกเงินและจ่ายชำระเรียบร้อย</td>
+              </tr>
+              <tr>
+                <td class="text-center font-bold">8</td>
+                <td><span class="badge badge-sm badge-success text-white">8. เสร็จสิ้น</span></td>
+                <td>ฟอร์มยืนยันเสร็จสิ้นโครงการ เพื่อปิดโครงการสมบูรณ์</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {% call Demo('หน้าจอติดตามความคืบหน้าและปุ่มเลื่อนขั้นสถานะ', 'ขอซื้อขอจ้าง &rarr; รายการรอดำเนินการ') %}
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-xs text-base-content/50">รหัสคำขอ: 0015/2568</span>
+              <h4 class="font-bold text-sm">จัดซื้ออุปกรณ์สวิตช์เครือข่ายสำหรับห้องแม่ข่าย</h4>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-xs btn-outline btn-error">ยกเลิก</button>
+              <button class="btn btn-xs btn-primary">เลื่อนขั้น &rarr;</button>
+            </div>
+          </div>
+          <ul class="steps steps-horizontal w-full text-xs">
+            <li class="step step-primary">สร้างคำขอ</li>
+            <li class="step step-primary">ติดต่อผู้ขาย</li>
+            <li class="step step-primary">ระบุรายละเอียด</li>
+            <li class="step step-primary">ยืนยันคำสั่งซื้อ</li>
+            <li class="step">รอส่งมอบ</li>
+            <li class="step">ตรวจรับ</li>
+            <li class="step">ชำระเงิน</li>
+            <li class="step">เสร็จสิ้น</li>
+          </ul>
+        </div>
+        {% endcall %}
+
+        {{ Note('เจ้าหน้าที่พัสดุสามารถคลิก "เลื่อนขั้น" เพื่ออัปเดตสถานะของโครงการตามขั้นตอนจริง และกรอกวันที่ส่งมอบหรือวันที่ตรวจรับในขั้นตอนที่เกี่ยวข้อง',
+                'info', 'ph-info', 'การอัปเดตสถานะ:') }}
+
+        {% if current_user.has_organization_roles("admin") %}
+        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
+           href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}">
+          <i class="ph ph-arrow-right"></i> ไปที่หน้ารายการรอดำเนินการ
+        </a>
+        {% endif %}
+      </section>
+
+      {# ------------------------------------------------ 13. timeline-items #}
+      <section id="timeline-items" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(13, 'ph-shopping-bag', 'รายการสินค้าในการดำเนินงานและส่งออกข้อมูล',
+                         'การติดตามรายการพัสดุและสิ่งของทั้งหมดที่อยู่ระหว่างจัดซื้อตามขั้นตอน พร้อมการส่งออกเป็นไฟล์ Excel') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงาน (staff)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า', 'ph-list') }}
+          {{ MetaRow('ความสามารถ', 'ค้นหาตามช่วงเวลา, กรองตามโครงการ, ส่งออกไฟล์ Excel สรุปรายการสิ่งของ', 'ph-file-xls') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งานและส่งออกข้อมูล Excel</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ตรวจสอบรายการสิ่งของในการดำเนินงาน</span>
+            <p class="mt-1 text-base-content/70">ดูตารางรายการสิ่งของทั้งหมดที่กำลังดำเนินการจัดซื้อ พร้อมชื่อโครงการ รหัสคำขอ จำนวน หน่วยนับ และราคาประมาณการ</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. เปิดหน้าต่างส่งออก Excel</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ส่งออก Excel&rdquo; เลือกช่วงวันที่เริ่มต้นและสิ้นสุดที่ต้องการสรุปข้อมูล</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ดาวน์โหลดไฟล์ Excel</span>
+            <p class="mt-1 text-base-content/70">ระบบจะสร้างไฟล์ Excel และดาวน์โหลดลงเครื่องทันที เพื่อนำไปใช้ทำรายงานพัสดุต่อไป</p>
+          </li>
+        </ol>
+
+        {% call Demo('ตารางรายการสินค้าในการดำเนินงาน', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า') %}
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-base-content/70">รายการสิ่งของที่อยู่ระหว่างดำเนินการ</span>
+            <button class="btn btn-xs btn-outline btn-success"><i class="ph ph-file-xls"></i> ส่งออก Excel</button>
+          </div>
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th>ชื่อสิ่งของ</th>
+                <th>รหัสคำขอ</th>
+                <th>จำนวน</th>
+                <th>ราคาต่อหน่วย</th>
+                <th>ราคารวม</th>
+                <th>สถานะขั้นตอน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">Core Switch 24-Port 10G</td>
+                <td>0015/2568</td>
+                <td>2 เครื่อง</td>
+                <td>฿45,000.00</td>
+                <td class="font-bold text-emerald-600">฿90,000.00</td>
+                <td><span class="badge badge-sm badge-warning">ยืนยันคำสั่งซื้อ</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 14. billing #}
+      <section id="billing" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(14, 'ph-receipt', 'บันทึกการเบิกจ่ายงบประมาณ',
+                         'การบันทึกข้อมูลจัดซื้อจริง ผู้ชนะการเสนอราคา และยอดเงินที่เบิกจ่ายจริงจากแต่ละแหล่งเงิน MAS') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เงื่อนไขการเปิด', 'เปิดบันทึกได้เฉพาะเมื่อโครงการอยู่ในขั้นตอน "ยืนยันคำสั่งซื้อ"', 'ph-lock-key') }}
+          {{ MetaRow('ผลลัพธ์', 'ตัดยอดเงินจริงจากงบที่จองไว้ และเลื่อนขั้นตอนไป "รอส่งมอบ" อัตโนมัติ', 'ph-arrow-right') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการบันทึกข้อมูลการเบิกจ่าย</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. เปิดฟอร์มบันทึกการเบิกจ่าย</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;บันทึกเบิกจ่าย&rdquo; จากหน้ารายการรอดำเนินการ ในโครงการที่ยืนยันคำสั่งซื้อแล้ว</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ระบุวิธีการจัดซื้อและผู้ชนะการเสนอราคา</span>
+            <p class="mt-1 text-base-content/70">เลือกวิธีจัดซื้อ (เช่น เฉพาะเจาะจง, ประกวดราคา) และกรอกชื่อบริษัทผู้ชนะการเสนอราคา</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ระบุยอดเงินและจำนวนชิ้นที่จัดซื้อจริง</span>
+            <p class="mt-1 text-base-content/70">กรอกจำนวนเงินที่ใช้จริงสำหรับแต่ละรายการสิ่งของและแหล่งเงิน MAS โดยยอดเงินต้องไม่เกินวงเงินที่จองไว้</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">4. กดบันทึกข้อมูล</span>
+            <p class="mt-1 text-base-content/70">ระบบจะอัปเดตยอดการใช้เงินจริง และเลื่อนขั้นตอนไปยัง &ldquo;รอส่งมอบ&rdquo; โดยอัตโนมัติ</p>
+          </li>
+        </ol>
+
+        {% call Demo('แบบฟอร์มบันทึกการเบิกจ่ายงบประมาณ', 'บันทึกการเบิกจ่าย') %}
+        <div class="space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">วิธีการจัดซื้อ</legend>
+              <input type="text" class="input input-xs w-full" value="วิธีเฉพาะเจาะจง" readonly>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">ผู้ชนะการเสนอราคา</legend>
+              <input type="text" class="input input-xs w-full" value="บริษัท เน็ตเวิร์ค ซิสเต็มส์ จำกัด" readonly>
+            </fieldset>
+          </div>
+          <div class="border border-base-300 rounded p-2 bg-base-200/50">
+            <div class="font-bold mb-1">การจัดสรรแหล่งเงิน (MAS Allocation)</div>
+            <table class="table table-xs w-full">
+              <thead>
+                <tr class="bg-base-200">
+                  <th>รายการสิ่งของ</th>
+                  <th>แหล่งเงิน MAS</th>
+                  <th>วงเงินที่จองไว้</th>
+                  <th>จำนวนเงินที่ใช้จริง</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Core Switch 24-Port 10G</td>
+                  <td>MAS-68-001</td>
+                  <td>฿90,000.00</td>
+                  <td><input type="text" class="input input-xs font-bold text-emerald-600" value="88,500.00" readonly></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endcall %}
+
+        {{ Note('ฟอร์มบันทึกการเบิกจ่ายจะเปิดให้แก้ไขได้เฉพาะเมื่อคำขออยู่ในขั้นตอน "ยืนยันคำสั่งซื้อ" เท่านั้น ในขั้นตอนอื่นจะแสดงเป็นรูปแบบอ่านอย่างเดียว (Readonly)',
+                'info', 'ph-info', 'เงื่อนไขการบันทึก:') }}
+      </section>
+
+      {# ------------------------------------------------ 15. document #}
+      <section id="document" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(15, 'ph-file-pdf', 'เอกสารคำขอและพิมพ์รายงาน',
+                         'การดูเอกสารคำขอจัดซื้อจัดจ้างในรูปแบบพร้อมพิมพ์ และการดาวน์โหลดเอกสารรวม PDF') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท (staff, head, admin, manager)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('การเข้าถึง', 'คลิกปุ่ม &ldquo;เอกสาร&rdquo; ในตารางคำขอขอซื้อขอจ้าง', 'ph-printer') }}
+          {{ MetaRow('คุณสมบัติ', 'จัดหน้ามาตรฐานตามแบบราชการ พร้อมแสดงรายชื่อคณะกรรมการทั้ง 3 ชุด และลายมือชื่ออิเล็กทรอนิกส์', 'ph-signature') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ความสามารถของระบบเอกสาร</h3>
+        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
+          <li class="text-sm">
+            <span class="font-bold text-base-content">1. ดูเอกสารคำขอ (Web Print View)</span>
+            <p class="mt-1 text-base-content/70">แสดงใบขอซื้อขอจ้างในรูปแบบ HTML ที่จัดรูปแบบมาตรฐานราชการ พร้อมสั่งพิมพ์ผ่านเบราว์เซอร์ได้ทันที</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">2. ดาวน์โหลด PDF รวม</span>
+            <p class="mt-1 text-base-content/70">รวมใบคำขอเข้ากับเอกสารแนบ TOR และใบเสนอราคา QT เข้าเป็นไฟล์ PDF ฉบับเดียวอย่างสมบูรณ์</p>
+          </li>
+          <li class="text-sm">
+            <span class="font-bold text-base-content">3. ประวัติการอนุมัติและลายมือชื่อ</span>
+            <p class="mt-1 text-base-content/70">แสดงประวัติการลงนามอนุมัติ วันที่ และเวลาของทั้งหัวหน้าฝ่าย เจ้าหน้าที่พัสดุ และผู้จัดการ</p>
+          </li>
+        </ol>
+      </section>
+
+      {# ------------------------------------------------ 16. status table #}
+      <section id="status" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-path', 'ตารางสรุปสถานะคำขอและขั้นตอนการดำเนินงาน',
+                         'สรุปความหมายของสถานะคำขอซื้อขอจ้างทั้งหมดในระบบ และผู้มีสิทธิ์ปรับเปลี่ยนสถานะ') }}
+
+        <div class="mt-3 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-36">สถานะที่แสดง</th>
+                <th class="w-40">Status Key</th>
+                <th>ความหมาย</th>
+                <th class="w-40">ผู้ทำให้เปลี่ยน</th>
+                <th class="w-36">เมนูที่แสดง</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-sm badge-info">รออนุมัติ</span></td>
+                <td><code>pending</code></td>
+                <td>สร้างคำขอใหม่ รอหัวหน้าฝ่ายพิจารณาขั้นที่ 1</td>
+                <td>ผู้ขอ / หัวหน้าฝ่าย</td>
+                <td>รายการขอซื้อขอจ้าง</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-warning">กำลังดำเนินการ</span></td>
+                <td><code>progress</code></td>
+                <td>ผ่านหัวหน้าฝ่ายแล้ว กำลังอยู่ระหว่างพัสดุจองเงินหรือรอผู้จัดการ</td>
+                <td>พัสดุ / ผู้จัดการ</td>
+                <td>รายการขอซื้อขอจ้าง</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-success text-white">สมบูรณ์</span></td>
+                <td><code>complete</code></td>
+                <td>ผ่านการอนุมัติครบทั้ง 3 ขั้นตอนเรียบร้อยแล้ว</td>
+                <td>ระบบ (อัตโนมัติ)</td>
+                <td>รายการรอดำเนินการ</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-error text-white">ไม่สมบูรณ์</span></td>
+                <td><code>incomplete</code></td>
+                <td>คำขอถูกปฏิเสธในขั้นตอนใดขั้นตอนหนึ่ง</td>
+                <td>ผู้อนุมัติขั้นนั้นๆ</td>
+                <td>รายการขอซื้อขอจ้าง</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-neutral">ยกเลิก</span></td>
+                <td><code>cancelled</code></td>
+                <td>เจ้าหน้าที่พัสดุกดยกเลิกโครงการจัดซื้อ</td>
+                <td>เจ้าหน้าที่พัสดุ</td>
+                <td>รายการรอดำเนินการ</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-primary">ต่ออายุแล้ว</span></td>
+                <td><code>renewal-requested</code></td>
+                <td>รายการ MA ที่ถูกกดขอต่ออายุและสร้าง Requisition แล้ว</td>
+                <td>ระบบ (อัตโนมัติ)</td>
+                <td>รายการ MA</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-sm badge-neutral">ไม่ต่ออายุ</span></td>
+                <td><code>disactive</code></td>
+                <td>รายการ MA ที่ยืนยันว่าจะไม่ต่ออายุสัญญา</td>
+                <td>พนักงาน / พัสดุ</td>
+                <td>รายการ MA ไม่ต่ออายุ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  // TOC scroll-spy + progress bar
+  (function () {
+    const list = document.getElementById("toc-list");
+    const links = document.querySelectorAll(".toc-link");
+    if (!links.length) return;
+
+    const items = Array.from(links)
+      .map(function (link) {
+        const id = link.getAttribute("data-toc-link");
+        const section = document.getElementById(id);
+        return section ? { link: link, section: section } : null;
+      })
+      .filter(Boolean);
+
+    if (!items.length) return;
+
+    const progressBar = document.getElementById("manual-progress-bar");
+    const progressText = document.getElementById("manual-progress-text");
+
+    const OFFSET = 140;
+    let activeIndex = -1;
+    let ticking = false;
+
+    function currentIndex() {
+      const doc = document.documentElement;
+      if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
+        return items.length - 1;
+      }
+      let index = 0;
+      items.forEach(function (item, i) {
+        if (item.section.getBoundingClientRect().top <= OFFSET) index = i;
+      });
+      return index;
+    }
+
+    function keepLinkVisible(link) {
+      if (!list || list.scrollHeight <= list.clientHeight) return;
+      const listRect = list.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      if (linkRect.top < listRect.top) {
+        list.scrollTop -= listRect.top - linkRect.top + 8;
+      } else if (linkRect.bottom > listRect.bottom) {
+        list.scrollTop += linkRect.bottom - listRect.bottom + 8;
+      }
+    }
+
+    function render() {
+      ticking = false;
+
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      const percent = scrollable > 0 ? Math.round((window.scrollY / scrollable) * 100) : 100;
+      const clamped = Math.min(100, Math.max(0, percent));
+      if (progressBar) progressBar.style.width = clamped + "%";
+      if (progressText) progressText.textContent = clamped + "%";
+
+      const index = currentIndex();
+      if (index === activeIndex) return;
+      activeIndex = index;
+
+      items.forEach(function (item, i) {
+        item.link.classList.toggle("is-active", i === index);
+        item.link.classList.toggle("is-passed", i < index);
+      });
+      keepLinkVisible(items[index].link);
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(render);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    render();
+  })();
+
+  // ตัวอย่างหน้าจอเป็นภาพนิ่ง ไม่ให้ tab เข้าไปโฟกัสได้
+  (function () {
+    document
+      .querySelectorAll("[data-demo] input, [data-demo] select, [data-demo] textarea, [data-demo] button, [data-demo] a")
+      .forEach(function (el) {
+        el.setAttribute("tabindex", "-1");
+      });
+  })();
+</script>
+{% endblock %}
