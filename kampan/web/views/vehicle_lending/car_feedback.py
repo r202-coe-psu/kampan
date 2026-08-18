@@ -1,36 +1,189 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    abort,
-    send_file,
-)
-from flask_login import login_required, current_user
-import mongoengine as me
-from bson import ObjectId
-import datetime
 import io
-import qrcode
 import json
 
-from kampan.web import forms, acl
+import qrcode
+from bson import ObjectId
+from flask import (
+    Blueprint,
+    abort,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+
 from kampan import models
+from kampan.web import acl, forms
 
 module = Blueprint("car_feedback", __name__, url_prefix="/car_feedback")
 
 # สถานะเที่ยวรถที่ถือว่าเกิดการใช้งานจริงและมีสิทธิ์มีแบบประเมิน
 FEEDBACK_TRIP_STATUS = ["active", "completed"]
 
+# เพดานข้อมูลที่ดึงมาแสดงในหน้าสถิติ กันไม่ให้ payload บวมตามจำนวนผลตอบรับ
+TEXT_ANSWER_LIMIT = 200
+RESPONSE_LOG_LIMIT = 50
+
+
+def build_stats_pipeline(questions):
+
+    qids_by_type = {}
+    for question in questions:
+        qids_by_type.setdefault(question.question_type, []).append(question.question_id)
+
+    def answer_stage(question_type, answer_match):
+        return [
+            {"$unwind": "$answers"},
+            {
+                "$match": {
+                    "answers.question_id": {"$in": qids_by_type.get(question_type, [])},
+                    **answer_match,
+                }
+            },
+        ]
+
+    def group_by_value(value_field):
+        return {
+            "$group": {
+                "_id": {"q": "$answers.question_id", "value": value_field},
+                "count": {"$sum": 1},
+            }
+        }
+
+    # แต่ละ $match นับเฉพาะข้อที่มีคำตอบจริง ข้อที่เว้นว่างไม่ควรถ่วงค่าเฉลี่ย
+    return [
+        {
+            "$facet": {
+                "summary": [
+                    {
+                        "$group": {
+                            "_id": None,
+                            "total": {"$sum": 1},
+                            "cars": {"$addToSet": "$car"},
+                            "trips": {"$addToSet": "$car_application"},
+                            "latest": {"$max": "$created_date"},
+                        }
+                    }
+                ],
+                "score": answer_stage("score", {"answers.answer_score": {"$ne": None}}) + [group_by_value("$answers.answer_score")],
+                "boolean": answer_stage("boolean", {"answers.answer_boolean": {"$ne": None}})
+                + [group_by_value("$answers.answer_boolean")],
+                "single_choice": answer_stage("single_choice", {"answers.answer_text": {"$nin": [None, ""]}})
+                + [group_by_value("$answers.answer_text")],
+                # multiple_choice ต้องนับ 2 อย่าง: จำนวนคนที่ตอบ และจำนวนครั้งของแต่ละตัวเลือก
+                "multi_respondents": answer_stage("multiple_choice", {"answers.answer_choices.0": {"$exists": True}})
+                + [{"$group": {"_id": "$answers.question_id", "count": {"$sum": 1}}}],
+                "multi_choices": answer_stage("multiple_choice", {"answers.answer_choices.0": {"$exists": True}})
+                + [
+                    {"$unwind": "$answers.answer_choices"},
+                    group_by_value("$answers.answer_choices"),
+                ],
+                # $sort ก่อน $push เพื่อให้ได้ข้อความล่าสุดขึ้นก่อน แล้ว $slice ตัดเพดาน
+                "texts": [{"$sort": {"created_date": -1}}]
+                + answer_stage("text", {"answers.answer_text": {"$nin": [None, ""]}})
+                + [
+                    {
+                        "$group": {
+                            "_id": "$answers.question_id",
+                            "total": {"$sum": 1},
+                            "items": {
+                                "$push": {
+                                    "text": "$answers.answer_text",
+                                    "car": "$car",
+                                    "car_application": "$car_application",
+                                    "created_date": "$created_date",
+                                }
+                            },
+                        }
+                    },
+                    {
+                        "$project": {
+                            "total": 1,
+                            "items": {"$slice": ["$items", TEXT_ANSWER_LIMIT]},
+                        }
+                    },
+                ],
+            }
+        }
+    ]
+
+
+def collect_question_stats(questions, aggregated):
+    """แปลงผลลัพธ์ของ build_stats_pipeline เป็นสถิติต่อคำถามสำหรับ template
+
+    ยังไม่รวมเนื้อหาข้อความ เพราะต้อง resolve ทะเบียนรถกับเที่ยวรถเพิ่มก่อน
+    """
+    stats = {}
+    for question in questions:
+        stat = {
+            "type": question.question_type,
+            "text": question.question_text,
+            "is_required": question.is_required,
+            "responses": 0,
+            "data": {},
+        }
+        if question.question_type == "score":
+            stat["data"] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            stat["average"] = 0
+            stat["sum"] = 0
+        elif question.question_type == "boolean":
+            stat["data"] = {"true": 0, "false": 0}
+        elif question.question_type in ["single_choice", "multiple_choice"]:
+            stat["data"] = {choice: 0 for choice in question.choice_list}
+        elif question.question_type == "text":
+            stat["texts"] = []
+            stat["texts_truncated"] = 0
+        stats[str(question.question_id)] = stat
+
+    for row in aggregated.get("score", []):
+        stat = stats.get(str(row["_id"]["q"]))
+        if not stat:
+            continue
+        score = row["_id"]["value"]
+        stat["data"][score] = stat["data"].get(score, 0) + row["count"]
+        stat["responses"] += row["count"]
+        stat["sum"] += score * row["count"]
+
+    for row in aggregated.get("boolean", []):
+        stat = stats.get(str(row["_id"]["q"]))
+        if not stat:
+            continue
+        stat["data"]["true" if row["_id"]["value"] else "false"] += row["count"]
+        stat["responses"] += row["count"]
+
+    for row in aggregated.get("single_choice", []):
+        stat = stats.get(str(row["_id"]["q"]))
+        if not stat:
+            continue
+        choice = row["_id"]["value"]
+        stat["data"][choice] = stat["data"].get(choice, 0) + row["count"]
+        stat["responses"] += row["count"]
+
+    for row in aggregated.get("multi_respondents", []):
+        stat = stats.get(str(row["_id"]))
+        if stat:
+            stat["responses"] += row["count"]
+
+    for row in aggregated.get("multi_choices", []):
+        stat = stats.get(str(row["_id"]["q"]))
+        if not stat:
+            continue
+        choice = row["_id"]["value"]
+        stat["data"][choice] = stat["data"].get(choice, 0) + row["count"]
+
+    for stat in stats.values():
+        if stat["type"] == "score" and stat["responses"] > 0:
+            stat["average"] = stat["sum"] / stat["responses"]
+
+    return stats
+
 
 @module.route("", methods=["GET"])
 @acl.organization_roles_required("admin")
 def index():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     if not organization:
         return abort(404)
 
@@ -50,9 +203,7 @@ def index():
 @acl.organization_roles_required("admin")
 def create_or_edit(template_id):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     if not organization:
         return abort(404)
 
@@ -60,24 +211,18 @@ def create_or_edit(template_id):
 
     template = None
     if template_id:
-        template = models.CarFeedbackTemplate.objects(
-            id=template_id, cars__in=organization_cars
-        ).first()
+        template = models.CarFeedbackTemplate.objects(id=template_id, cars__in=organization_cars).first()
         if not template:
             return abort(404)
 
     form = forms.car_feedback.CarFeedbackTemplateForm(obj=template)
 
-    cars = models.vehicles.Car.objects(
-        organization=organization, status="active"
-    ).order_by("license_plate")
+    cars = models.vehicles.Car.objects(organization=organization, status="active").order_by("license_plate")
     choice_cars = list(cars)
     if template:
         # คงรถที่เคยเลือกไว้ในตัวเลือกด้วย แม้จะถูกปิดใช้งานไปแล้ว ไม่ให้หลุดหายตอนบันทึกซ้ำ
         active_car_ids = {car.id for car in choice_cars}
-        choice_cars.extend(
-            car for car in template.cars if car.id not in active_car_ids
-        )
+        choice_cars.extend(car for car in template.cars if car.id not in active_car_ids)
     car_choices = [(str(car.id), car.license_plate) for car in choice_cars]
     form.cars.choices = car_choices
 
@@ -104,7 +249,7 @@ def create_or_edit(template_id):
         question_templates = []
         for q in questions:
             qt = models.QuestionTemplate()
-            if "question_id" in q and q["question_id"]:
+            if q.get("question_id"):
                 try:
                     qt.question_id = ObjectId(q["question_id"])
                 except Exception:
@@ -124,11 +269,7 @@ def create_or_edit(template_id):
         template.questions = question_templates
         template.save()
 
-        return redirect(
-            url_for(
-                "vehicle_lending.car_feedback.index", organization_id=organization_id
-            )
-        )
+        return redirect(url_for("vehicle_lending.car_feedback.index", organization_id=organization_id))
 
     return render_template(
         "/vehicle_lending/car_feedback/create_or_edit.html",
@@ -180,24 +321,18 @@ def qr_code(template_id):
 @acl.organization_roles_required("admin")
 def view_responses(template_id):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     if not organization:
         return abort(404)
 
     organization_cars = models.vehicles.Car.objects(organization=organization)
-    template = models.CarFeedbackTemplate.objects(
-        id=template_id, cars__in=organization_cars
-    ).first()
+    template = models.CarFeedbackTemplate.objects(id=template_id, cars__in=organization_cars).first()
     if not template:
         return abort(404)
 
     # เฉพาะรถของ organization นี้ที่ถูกผูกไว้กับแบบประเมิน
     cars = list(
-        models.vehicles.Car.objects(
-            id__in=[car.id for car in template.cars], organization=organization
-        ).order_by("license_plate")
+        models.vehicles.Car.objects(id__in=[car.id for car in template.cars], organization=organization).order_by("license_plate")
     )
     car_by_id = {str(car.id): car for car in cars}
 
@@ -218,23 +353,32 @@ def view_responses(template_id):
         .order_by("-departure_datetime")
     )
 
-    trip_response_counts = {
-        str(row["_id"]): row["count"]
-        for row in models.car_feedback.CarFeedbackResponse.objects(
-            feedback_template=template
-        ).aggregate(
-            [
-                {"$match": {"car_application": {"$ne": None}}},
-                {"$group": {"_id": "$car_application", "count": {"$sum": 1}}},
-            ]
-        )
-    }
-    car_response_counts = {
-        str(row["_id"]): row["count"]
-        for row in models.car_feedback.CarFeedbackResponse.objects(
-            feedback_template=template
-        ).aggregate([{"$group": {"_id": "$car", "count": {"$sum": 1}}}])
-    }
+    # ยอดผลตอบรับสำหรับ label ใน dropdown นับทั้งแบบประเมิน ไม่ผูกกับตัวกรองปัจจุบัน
+    choice_counts = next(
+        iter(
+            models.car_feedback.CarFeedbackResponse.objects(feedback_template=template).aggregate(
+                [
+                    {
+                        "$facet": {
+                            "by_car": [{"$group": {"_id": "$car", "count": {"$sum": 1}}}],
+                            "by_trip": [
+                                {"$match": {"car_application": {"$ne": None}}},
+                                {
+                                    "$group": {
+                                        "_id": "$car_application",
+                                        "count": {"$sum": 1},
+                                    }
+                                },
+                            ],
+                        }
+                    }
+                ]
+            )
+        ),
+        {},
+    )
+    car_response_counts = {str(row["_id"]): row["count"] for row in choice_counts.get("by_car", [])}
+    trip_response_counts = {str(row["_id"]): row["count"] for row in choice_counts.get("by_trip", [])}
 
     trip_by_id = {str(trip.id): trip for trip in trips}
     trip_choices = []
@@ -255,9 +399,7 @@ def view_responses(template_id):
     car_application_id = request.args.get("car_application_id")
     if car_application_id not in trip_by_id:
         car_application_id = None
-    selected_trip = next(
-        (trip for trip in trip_choices if trip["id"] == car_application_id), None
-    )
+    selected_trip = next((trip for trip in trip_choices if trip["id"] == car_application_id), None)
 
     filter_kwargs = {"feedback_template": template}
     if selected_car:
@@ -267,109 +409,98 @@ def view_responses(template_id):
     if car_application_id:
         filter_kwargs["car_application"] = trip_by_id[car_application_id]
 
-    responses = list(
+    aggregated = next(
+        iter(models.car_feedback.CarFeedbackResponse.objects(**filter_kwargs).aggregate(build_stats_pipeline(template.questions))),
+        {},
+    )
+    stats = collect_question_stats(template.questions, aggregated)
+
+    # ตารางรายการตอบกลับดึงเท่าที่แสดงจริง ไม่ต้องโหลดทั้ง collection
+    log_entries = list(
         models.car_feedback.CarFeedbackResponse.objects(**filter_kwargs)
+        .only("created_date", "car", "car_application")
+        .no_dereference()
         .order_by("-created_date")
-        .select_related(max_depth=1)
+        .limit(RESPONSE_LOG_LIMIT)
     )
 
-    stats = {}
-    for q in template.questions:
-        stat = {
-            "type": q.question_type,
-            "text": q.question_text,
-            "is_required": q.is_required,
-            "responses": 0,
-            "data": {},
-        }
-        if q.question_type == "score":
-            stat["data"] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            stat["average"] = 0
-            stat["sum"] = 0
-        elif q.question_type == "boolean":
-            stat["data"] = {"true": 0, "false": 0}
-        elif q.question_type in ["single_choice", "multiple_choice"]:
-            stat["data"] = {choice: 0 for choice in q.choice_list}
-        elif q.question_type == "text":
-            stat["texts"] = []
-        stats[str(q.question_id)] = stat
+    # เที่ยวที่ผลตอบรับอ้างถึงแต่ไม่อยู่ในรายการตัวกรอง (เช่น เที่ยวที่ถูกยกเลิกไปแล้ว)
+    text_rows = aggregated.get("texts", [])
+    trip_lookup = dict(trip_by_id)
+    missing_trip_ids = {
+        item["car_application"]
+        for row in text_rows
+        for item in row["items"]
+        if item.get("car_application") and str(item["car_application"]) not in trip_lookup
+    }
+    missing_trip_ids.update(
+        entry.car_application.id
+        for entry in log_entries
+        if entry.car_application and str(entry.car_application.id) not in trip_lookup
+    )
+    if missing_trip_ids:
+        for trip in (
+            models.vehicle_applications.CarApplication.objects(id__in=list(missing_trip_ids), organization=organization)
+            .only("travel_type", "departure_datetime", "return_datetime", "location")
+            .no_dereference()
+        ):
+            trip_lookup[str(trip.id)] = trip
 
-    for response in responses:
-        for answer in response.answers:
-            stat = stats.get(str(answer.question_id))
-            if not stat:
-                continue
+    for row in text_rows:
+        stat = stats.get(str(row["_id"]))
+        if not stat:
+            continue
+        stat["responses"] += row["total"]
+        stat["texts_truncated"] = row["total"] - len(row["items"])
+        for item in row["items"]:
+            car = car_by_id.get(str(item["car"])) if item.get("car") else None
+            trip = trip_lookup.get(str(item["car_application"])) if item.get("car_application") else None
+            stat["texts"].append(
+                {
+                    "text": item["text"],
+                    "license_plate": car.license_plate if car else "",
+                    "departure": trip.get_departure_datetime() if trip else "",
+                    "created_date": item["created_date"],
+                }
+            )
 
-            # นับเฉพาะข้อที่มีคำตอบจริง ข้อที่เว้นว่างไม่ควรถ่วงค่าเฉลี่ย
-            if stat["type"] == "score":
-                if answer.answer_score:
-                    stat["responses"] += 1
-                    stat["data"][answer.answer_score] += 1
-                    stat["sum"] += answer.answer_score
-            elif stat["type"] == "boolean":
-                if answer.answer_boolean is not None:
-                    stat["responses"] += 1
-                    key = "true" if answer.answer_boolean else "false"
-                    stat["data"][key] += 1
-            elif stat["type"] == "single_choice":
-                if answer.answer_text:
-                    stat["responses"] += 1
-                    stat["data"][answer.answer_text] = (
-                        stat["data"].get(answer.answer_text, 0) + 1
-                    )
-            elif stat["type"] == "multiple_choice":
-                if answer.answer_choices:
-                    stat["responses"] += 1
-                    for choice in answer.answer_choices:
-                        stat["data"][choice] = stat["data"].get(choice, 0) + 1
-            elif stat["type"] == "text":
-                if answer.answer_text:
-                    stat["responses"] += 1
-                    stat["texts"].append(
-                        {
-                            "text": answer.answer_text,
-                            "license_plate": (
-                                response.car.license_plate if response.car else ""
-                            ),
-                            "departure": (
-                                response.car_application.get_departure_datetime()
-                                if response.car_application
-                                else ""
-                            ),
-                            "created_date": response.created_date,
-                        }
-                    )
+    response_log = []
+    for entry in log_entries:
+        car = car_by_id.get(str(entry.car.id)) if entry.car else None
+        trip = trip_lookup.get(str(entry.car_application.id)) if entry.car_application else None
+        response_log.append(
+            {
+                "created_date": entry.created_date,
+                "license_plate": car.license_plate if car else "",
+                "trip_id": str(entry.car_application.id) if entry.car_application else "",
+                "departure": trip.get_departure_datetime() if trip else "",
+                "location": trip.location if trip else "",
+            }
+        )
 
     score_sum = 0
     score_count = 0
     for stat in stats.values():
-        if stat["type"] == "score" and stat["responses"] > 0:
-            stat["average"] = stat["sum"] / stat["responses"]
+        if stat["type"] == "score":
             score_sum += stat["sum"]
             score_count += stat["responses"]
 
+    summary_row = next(iter(aggregated.get("summary", [])), {})
     summary = {
-        "total_responses": len(responses),
+        "total_responses": summary_row.get("total", 0),
         "overall_average": (score_sum / score_count) if score_count else 0,
         "has_score": score_count > 0,
-        "trips_covered": len(
-            {
-                str(response.car_application.id)
-                for response in responses
-                if response.car_application
-            }
-        ),
-        "cars_covered": len(
-            {str(response.car.id) for response in responses if response.car}
-        ),
-        "latest_response_date": responses[0].created_date if responses else None,
+        "trips_covered": len([t for t in summary_row.get("trips", []) if t]),
+        "cars_covered": len([c for c in summary_row.get("cars", []) if c]),
+        "latest_response_date": summary_row.get("latest"),
     }
 
     return render_template(
         "/vehicle_lending/car_feedback/view.html",
         organization=organization,
         template=template,
-        responses=responses,
+        response_log=response_log,
+        response_log_limit=RESPONSE_LOG_LIMIT,
         stats=stats,
         summary=summary,
         cars=cars,
@@ -389,6 +520,4 @@ def delete(template_id):
     template = models.CarFeedbackTemplate.objects(id=template_id).first()
     if template:
         template.delete()
-    return redirect(
-        url_for("vehicle_lending.car_feedback.index", organization_id=organization_id)
-    )
+    return redirect(url_for("vehicle_lending.car_feedback.index", organization_id=organization_id))

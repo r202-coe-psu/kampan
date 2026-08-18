@@ -42,4 +42,12 @@ class CarFeedbackResponse(me.Document):
     answers = me.ListField(me.EmbeddedDocumentField(Answer))
     created_date = me.DateTimeField(default=datetime.datetime.now)
 
-    meta = {"collection": "car_feedback_responses"}
+    meta = {
+        "collection": "car_feedback_responses",
+        "indexes": [
+            "car_application",
+            ("feedback_template", "-created_date"),
+            ("feedback_template", "car", "-created_date"),
+            ("feedback_template", "car_application", "-created_date"),
+        ],
+    }

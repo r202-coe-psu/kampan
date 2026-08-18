@@ -334,6 +334,12 @@
 				</div>
 				{% endfor %}
 			</div>
+			{% if stat.texts_truncated %}
+			<p class="mt-3 text-xs text-base-content/40">
+				แสดง {{ stat.texts|length }} ข้อความล่าสุด อีก {{ stat.texts_truncated }} ข้อความถูกซ่อนไว้
+				ใช้ตัวกรองเที่ยวรถเพื่อดูเฉพาะกลุ่มที่ต้องการ
+			</p>
+			{% endif %}
 			{% endif %}
 		</article>
 		{% endfor %}
@@ -345,7 +351,7 @@
 		<div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-base-300 px-6 py-5">
 			<h2 class="text-lg font-semibold tracking-tight">รายการตอบกลับ</h2>
 			<p class="text-xs text-base-content/45 tabular-nums">
-				{% if responses|length > 50 %}แสดง 50 รายการล่าสุด จาก {{ responses|length }} รายการ{% else %}{{ responses|length }} รายการ{% endif %}
+				{% if summary.total_responses > response_log|length %}แสดง {{ response_log|length }} รายการล่าสุด จาก {{ summary.total_responses }} รายการ{% else %}{{ summary.total_responses }} รายการ{% endif %}
 			</p>
 		</div>
 		<div class="overflow-x-auto">
@@ -360,33 +366,33 @@
 					</tr>
 				</thead>
 				<tbody>
-					{% for response in responses[:50] %}
+					{% for row in response_log %}
 					<tr class="transition-colors hover:bg-base-200/60">
 						<td class="text-sm whitespace-nowrap tabular-nums">
-							{{ response.created_date | format_date('%d/%m/%Y %H:%M') }}
+							{{ row.created_date | format_date('%d/%m/%Y %H:%M') }}
 						</td>
 						<td class="text-sm font-medium whitespace-nowrap">
-							{{ response.car.license_plate if response.car else '—' }}
+							{{ row.license_plate or '—' }}
 						</td>
 						<td class="text-sm whitespace-nowrap text-base-content/70">
-							{% if response.car_application %}
-							{{ response.car_application.get_departure_datetime() }}
+							{% if row.trip_id %}
+							{{ row.departure or '—' }}
 							{% else %}
 							<span class="text-base-content/35">ไม่ระบุเที่ยว</span>
 							{% endif %}
 						</td>
 						<td class="max-w-xs truncate text-sm text-base-content/70">
-							{{ response.car_application.location if response.car_application else '—' }}
+							{{ row.location or '—' }}
 						</td>
 						<td class="text-right whitespace-nowrap">
-							{% if not response.car_application %}
+							{% if not row.trip_id %}
 							<span class="text-xs text-base-content/30">&mdash;</span>
-							{% elif car_application_id == response.car_application.id|string %}
+							{% elif car_application_id == row.trip_id %}
 							<span class="badge badge-primary badge-sm gap-1.5">
 								<i class="ph ph-check text-xs"></i> กำลังดูอยู่
 							</span>
 							{% else %}
-							<a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, car_application_id=response.car_application.id) }}"
+							<a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, car_application_id=row.trip_id) }}"
 								class="btn btn-primary btn-soft btn-sm gap-1.5">
 								<i class="ph ph-chart-bar text-base"></i>
 								ดูเที่ยวนี้
