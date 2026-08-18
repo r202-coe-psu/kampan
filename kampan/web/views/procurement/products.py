@@ -10,6 +10,7 @@ from flask import (
     request,
     send_file,
     url_for,
+    g,
 )
 from flask_login import current_user, login_required
 from flask_mongoengine import Pagination
@@ -44,7 +45,7 @@ def calculate_months_days(start_date, end_date):
 @module.route("", methods=["GET", "POST"])
 def index():
     form = forms.procurement.ProductFilterForm(request.args)
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     today = datetime.date.today()
     name = request.args.get("name")
     category = request.args.get("category")
@@ -124,7 +125,7 @@ def index():
 @login_required
 @acl.organization_roles_required("admin")
 def create():
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     members = organization.get_organization_users()
 
     if request.method == "POST":
@@ -288,7 +289,7 @@ def image(procurement_id, filename):
 @module.route("/<procurement_id>/edit_image", methods=["GET", "POST"])
 @login_required
 def edit_image(procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
     if not procurement:
         abort(404)

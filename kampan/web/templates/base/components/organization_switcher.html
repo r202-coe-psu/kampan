@@ -1,0 +1,124 @@
+{# ตัวแสดง/เลือกมุมมองหน่วยงาน วางไว้ท้าย sidebar เหนือข้อมูลผู้ใช้
+
+   แสดงเสมอเมื่อมีหน่วยงานที่กำลังดูอยู่ เพื่อให้รู้ว่าตอนนี้อยู่หน่วยงานไหนและมีสิทธิ์อะไร
+   - อยู่หลายหน่วยงาน: กดได้ เปิด modal ให้เลือก
+   - อยู่หน่วยงานเดียว: แสดงเป็นข้อมูลเฉย ๆ ไม่ต้องกด เพราะไม่มีอะไรให้สลับ
+
+   ชื่อหน่วยงานยาว: ตัดด้วย truncate + title, ใน modal ใช้ line-clamp-2 + break-words
+#}
+
+{% macro OrganizationSummary(organization, role_labels, is_global_admin, can_switch) %}
+  <span class="flex min-w-0 items-center gap-2">
+    <i class="ph ph-size ph-buildings shrink-0 text-primary"></i>
+    <span class="flex min-w-0 flex-col items-start text-left">
+      <span class="w-full truncate text-sm font-semibold"
+            title="{{ organization.name if organization else '' }}">
+        {{ organization.name if organization else 'ยังไม่ได้เลือกหน่วยงาน' }}
+      </span>
+      <span class="w-full truncate text-xs font-normal text-base-content/60"
+            title="{{ role_labels | join(', ') }}">
+        {% if role_labels %}
+          {{ role_labels | join(', ') }}
+        {% elif is_global_admin %}
+          ผู้ดูแลระบบส่วนกลาง
+        {% else %}
+          ไม่มีสิทธิ์ในหน่วยงานนี้
+        {% endif %}
+      </span>
+    </span>
+  </span>
+  {% if can_switch %}
+    <i class="ph ph-size ph-arrows-left-right shrink-0 text-base-content/50"></i>
+  {% endif %}
+{% endmacro %}
+
+{% if current_user.is_authenticated %}
+  {% set selectable_organizations = current_user.get_selectable_organizations() %}
+  {% set viewing_organization = g.organization %}
+
+  {% if viewing_organization or selectable_organizations %}
+    {% set can_switch = selectable_organizations | length > 1 %}
+    {% set is_global_admin = 'admin' in current_user.roles %}
+    {% set viewing_role_labels = current_user.get_organization_role_labels(viewing_organization) if viewing_organization else [] %}
+
+    <div class="w-full px-2 py-2">
+      {% if can_switch %}
+        <button type="button"
+                class="btn btn-block h-auto justify-between gap-2 border-base-300 bg-base-200 px-3 py-2 font-normal hover:bg-base-300"
+                onclick="document.getElementById('organization_switcher_modal').showModal()">
+          {{ OrganizationSummary(viewing_organization, viewing_role_labels, is_global_admin, true) }}
+        </button>
+      {% else %}
+        {# หน่วยงานเดียว: แสดงข้อมูลเฉย ๆ ไม่ใช่ปุ่ม #}
+        <div class="flex w-full items-center justify-between gap-2 rounded-field border border-base-300 bg-base-200 px-3 py-2">
+          {{ OrganizationSummary(viewing_organization, viewing_role_labels, is_global_admin, false) }}
+        </div>
+      {% endif %}
+    </div>
+
+    {% if can_switch %}
+      <dialog id="organization_switcher_modal" class="modal">
+        <div class="modal-box max-w-xl border border-base-300 p-0">
+          <div class="flex items-start gap-3 border-b border-base-300 px-6 py-4">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <i class="ph ph-buildings"></i>
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-lg font-bold text-base-content">เลือกมุมมองหน่วยงาน</h3>
+              <p class="text-sm text-base-content/60">
+                สิทธิ์และเมนูที่เห็นจะเปลี่ยนตาม role ของคุณในหน่วยงานที่เลือก
+              </p>
+            </div>
+          </div>
+
+          <div class="max-h-[60vh] overflow-y-auto p-3">
+            <ul class="flex flex-col gap-2">
+              {% for selectable_organization in selectable_organizations %}
+                {% set is_viewing = viewing_organization and selectable_organization.id == viewing_organization.id %}
+                {% set role_labels = current_user.get_organization_role_labels(selectable_organization) %}
+                <li>
+                  <a class="flex items-start gap-3 rounded-xl border p-3 transition-colors
+                            {{ 'border-primary bg-primary/5' if is_viewing else 'border-base-300 hover:border-primary/40 hover:bg-base-200' }}"
+                     href="{{ url_for('site.switch_organization',
+                                      organization_id=selectable_organization.id,
+                                      next=switch_organization_next_url(selectable_organization)) }}">
+                    <i class="ph ph-size mt-0.5 shrink-0 {{ 'ph-check-circle text-primary' if is_viewing else 'ph-circle text-base-content/30' }}"></i>
+                    <span class="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <span class="line-clamp-2 break-words text-sm font-semibold text-base-content"
+                            title="{{ selectable_organization.name }}">
+                        {{ selectable_organization.name }}
+                      </span>
+                      <span class="flex flex-wrap gap-1">
+                        {% if role_labels %}
+                          {% for role_label in role_labels %}
+                            <span class="badge badge-sm {{ 'badge-primary' if is_viewing else 'badge-ghost' }}">{{ role_label }}</span>
+                          {% endfor %}
+                        {% elif is_global_admin %}
+                          <span class="badge badge-sm badge-outline">ผู้ดูแลระบบส่วนกลาง</span>
+                        {% else %}
+                          <span class="badge badge-sm badge-ghost">ไม่มีสิทธิ์ในหน่วยงานนี้</span>
+                        {% endif %}
+                      </span>
+                    </span>
+                    {% if is_viewing %}
+                      <span class="badge badge-sm badge-primary shrink-0">กำลังดู</span>
+                    {% endif %}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="flex justify-end border-t border-base-300 px-6 py-4">
+            <form method="dialog">
+              <button class="btn btn-ghost">ปิด</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>ปิด</button>
+        </form>
+      </dialog>
+    {% endif %}
+  {% endif %}
+{% endif %}

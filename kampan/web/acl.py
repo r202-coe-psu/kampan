@@ -1,15 +1,56 @@
-from flask import redirect, url_for, request
-from flask_login import current_user, LoginManager, login_url
-from werkzeug.exceptions import Forbidden
-from . import models
-
 from functools import wraps
+
+from flask import g, redirect, request, url_for
+from flask_login import LoginManager, current_user
+from werkzeug.exceptions import Forbidden
+
+from . import models
 
 login_manager = LoginManager()
 
 
+def get_requested_organization_id():
+    if request.view_args and request.view_args.get("organization_id"):
+        return request.view_args.get("organization_id")
+
+    if request.args.get("organization_id"):
+        return request.args.get("organization_id")
+
+    if request.form and request.form.get("organization_id"):
+        return request.form.get("organization_id")
+
+    return None
+
+
 def init_acl(app):
     login_manager.init_app(app)
+
+    @app.before_request
+    def resolve_viewing_organization():
+        g.organization = None
+        g.organization_denied = False
+
+        if not current_user.is_authenticated:
+            return
+
+        organization_id = get_requested_organization_id()
+        if not organization_id:
+            # ตรวจสมาชิกภาพของหน่วยงานตั้งต้นด้วย เพราะค่าที่จำไว้ใน user_setting
+            # อาจเป็นหน่วยงานที่ผู้ใช้ถูกนำออกไปแล้ว
+            organization = current_user.get_current_organization()
+            if organization and current_user.is_member_of(organization):
+                g.organization = organization
+            return
+
+        try:
+            organization = models.Organization.objects(id=organization_id).first()
+        except Exception:
+            organization = None
+
+        if organization and current_user.is_member_of(organization):
+            g.organization = organization
+        else:
+            g.organization_denied = True
 
     @app.errorhandler(403)
     def page_not_found(e):
@@ -44,35 +85,21 @@ def organization_roles_required(*roles):
             if "admin" in current_user.roles:
                 return func(*args, **kwargs)
 
-            # พยายามดึง organization_id จาก URL หรือ query string
-            organization_id = None
+            # ขอดูหน่วยงานที่ไม่ได้เป็นสมาชิก
+            if getattr(g, "organization_denied", False):
+                raise Forbidden()
 
-            if not organization_id:
-                organization_id = (
-                    request.view_args.get("organization_id")
-                    if request.view_args
-                    else request.args.get("organization_id")
-                )
-            if not organization_id:
-                try:
-                    organization_id = request.view_args["organization_id"]
-                except:
-                    organization_id = request.args.get("organization_id")
+            organization = getattr(g, "organization", None)
+            if not organization:
+                raise Forbidden()  # ไม่มีหน่วยงานให้ตรวจ
 
-            if not organization_id:
-                raise Forbidden()  # ไม่เจอ organization_id
-
-            try:
-                organization = models.Organization.objects.get(id=organization_id)
-            except models.Organization.DoesNotExist:
-                raise Forbidden()  # ไม่มีองค์กรนี้ในระบบ
-
-            user_roles = current_user.get_current_organization_roles()
+            # ตรวจ role ในหน่วยงานที่กำลังดูอยู่ ไม่ใช่หน่วยงานใดก็ได้ที่ผู้ใช้สังกัด
+            user_roles = current_user.get_organization_roles(organization)
 
             if any(role in user_roles for role in roles):
                 return func(*args, **kwargs)
 
-            raise Forbidden()  # ไม่มี role ตรงกับที่กำหนด
+            raise Forbidden()  # ไม่มี role ตรงกับที่กำหนดในหน่วยงานนี้
 
         return wrapped
 

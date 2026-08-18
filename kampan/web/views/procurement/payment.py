@@ -4,6 +4,7 @@ from flask import (
     redirect,
     url_for,
     abort,
+    g,
 )
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
@@ -18,7 +19,7 @@ module = Blueprint("payment", __name__, url_prefix="/payment")
 @module.route("/<procurement_id>", methods=["GET", "POST"])
 def index(procurement_id):
     today = datetime.date.today()
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     procurement = models.Procurement.objects(id=procurement_id).first()
     if not procurement:
         abort(404)
@@ -40,7 +41,7 @@ def index(procurement_id):
 @module.route("/<procurement_id>/set_paid", methods=["POST"])
 @login_required
 def set_paid(procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     procurement = models.Procurement.objects(id=procurement_id).first()
     if not procurement:
         abort(404)

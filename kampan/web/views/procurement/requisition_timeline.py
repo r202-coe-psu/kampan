@@ -8,6 +8,7 @@ from flask import (
     abort,
     Response,
     current_app,
+    g,
 )
 from io import BytesIO
 from PyPDF2 import PdfMerger
@@ -188,7 +189,7 @@ def index():
 
     # query zone
     progress_choices = models.requisition_timeline.PROGRESS_STATUS_CHOICES
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     org_user_role = models.OrganizationUserRole.objects(
         user=current_user._get_current_object()
     ).first()

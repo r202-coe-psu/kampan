@@ -1,7 +1,10 @@
 import datetime
-import pathlib
 import importlib
 import logging
+import pathlib
+
+from flask import request, url_for
+
 from kampan.utils import template_filters
 
 logger = logging.getLogger(__name__)
@@ -10,6 +13,21 @@ logger = logging.getLogger(__name__)
 def add_date_url(url):
     now = datetime.datetime.now()
     return f'{url}?date={now.strftime("%Y%m%d")}'
+
+
+def switch_organization_next_url(organization):
+
+    if not request.endpoint or request.endpoint == "static":
+        return None
+
+    values = dict(request.view_args or {})
+    values.update(request.args.to_dict())
+    values["organization_id"] = str(organization.id)
+
+    try:
+        return url_for(request.endpoint, **values)
+    except Exception:
+        return None
 
 
 def get_subblueprints(directory):
@@ -65,6 +83,7 @@ def register_blueprint(app):
     app.add_template_filter(template_filters.format_thai_datetime_short_month)
     app.add_template_filter(template_filters.format_thai_date)
     app.add_template_filter(add_date_url)
+    app.add_template_global(switch_organization_next_url)
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)
 

@@ -1,8 +1,8 @@
-import mongoengine as me
 import datetime
 
-from flask_login import UserMixin
+import mongoengine as me
 from flask import url_for
+from flask_login import UserMixin
 
 from kampan.models.organizations import ORGANIZATION_ROLES
 
@@ -67,12 +67,71 @@ class User(me.Document, UserMixin):
 
         return False
 
-    def has_organization_roles(self, *roles):
+    def get_selectable_organizations(self):
+        from . import Organization
+
+        if "admin" in self.roles:
+            return list(Organization.objects(status="active").order_by("name"))
+
+        return self.organizations
+
+    def is_member_of(self, organization):
+        if not organization:
+            return False
+
         if "admin" in self.roles:
             return True
 
+        from . import OrganizationUserRole
+
+        return bool(
+            OrganizationUserRole.objects(
+                user=self,
+                organization=organization,
+                status__ne="disactive",
+            ).first()
+        )
+
+    def get_viewing_organization(self):
+        from flask import g, has_request_context
+
+        if has_request_context():
+            organization = getattr(g, "organization", None)
+            if organization:
+                return organization
+
+        return self.get_current_organization()
+
+    def get_organization_roles(self, organization=None):
+        from . import OrganizationUserRole
+
+        if organization is None:
+            organization = self.get_viewing_organization()
+
+        if not organization:
+            return []
+
+        org_user = OrganizationUserRole.objects(
+            user=self,
+            organization=organization,
+            status__ne="disactive",
+        ).first()
+
+        return org_user.roles if org_user else []
+
+    def get_organization_role_labels(self, organization=None):
+
+        role_labels = dict(ORGANIZATION_ROLES)
+
+        return [role_labels.get(role, role) for role in self.get_organization_roles(organization)]
+
+    def has_organization_roles(self, *roles, organization=None):
+        if "admin" in self.roles:
+            return True
+
+        user_roles = self.get_organization_roles(organization)
         for role in roles:
-            if role in self.get_current_organization_roles():
+            if role in user_roles:
                 return True
         return False
 
@@ -99,16 +158,8 @@ class User(me.Document, UserMixin):
         return self.user_setting.current_organization
 
     def get_current_organization_roles(self):
-        from . import OrganizationUserRole
 
-        try:
-            org_user = OrganizationUserRole.objects(
-                user=self,
-                status__ne="disactive",
-            ).first()
-            return org_user.roles
-        except:
-            return []
+        return self.get_organization_roles()
 
     def is_admin_current_organization(self):
         if "admin" in self.get_current_organization_roles() or "admin" in self.roles:
@@ -130,13 +181,19 @@ class User(me.Document, UserMixin):
         except:
             return
 
-    def get_current_division(self):
+    def get_current_division(self, organization=None):
         from . import OrganizationUserRole
+
+        if organization is None:
+            organization = self.get_viewing_organization()
+
+        if not organization:
+            return []
 
         try:
             org_division = OrganizationUserRole.objects(
                 user=self,
-                organization=self.get_current_organization(),
+                organization=organization,
                 status="active",
             ).first()
             return org_division.division
