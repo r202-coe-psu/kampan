@@ -1,28 +1,29 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    abort,
-)
-from flask_login import login_required, current_user
-from kampan.web import forms, acl
-from kampan import models
-
 import datetime
 
+from flask import (
+    Blueprint,
+    abort,
+    g,
+    redirect,
+    render_template,
+    url_for,
+)
+from flask_login import current_user, login_required
+
+from kampan import models
+from kampan.web import forms
 
 module = Blueprint("payment", __name__, url_prefix="/payment")
 
 
 @module.route("/<procurement_id>", methods=["GET", "POST"])
+@login_required
 def index(procurement_id):
     today = datetime.date.today()
-    organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=procurement_id).first()
+    organization = g.organization
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
-    print(procurement.id)
     form = forms.procurement.PaymentForm()
     return render_template(
         "procurement/payment/index.html",
@@ -31,17 +32,15 @@ def index(procurement_id):
         today=today,
         form=form,
         is_last_period=procurement.is_last_period(),
-        remaining_amount=(
-            procurement.get_remaining_amount() if procurement.is_last_period() else None
-        ),
+        remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
     )
 
 
 @module.route("/<procurement_id>/set_paid", methods=["POST"])
 @login_required
 def set_paid(procurement_id):
-    organization = current_user.user_setting.current_organization
-    procurement = models.Procurement.objects(id=procurement_id).first()
+    organization = g.organization
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
 
@@ -55,11 +54,7 @@ def set_paid(procurement_id):
             form=form,
             today=datetime.date.today(),
             is_last_period=procurement.is_last_period(),
-            remaining_amount=(
-                procurement.get_remaining_amount()
-                if procurement.is_last_period()
-                else None
-            ),
+            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
         )
 
     amount = form.amount.data
@@ -75,19 +70,12 @@ def set_paid(procurement_id):
             form=form,
             today=datetime.date.today(),
             is_last_period=procurement.is_last_period(),
-            remaining_amount=(
-                procurement.get_remaining_amount()
-                if procurement.is_last_period()
-                else None
-            ),
+            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
         )
 
     # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ ---
     if new_payment_number:
-        existing = models.Procurement.objects(
-            organization=organization,
-            payment_records__payment_number=new_payment_number
-        ).first()
+        existing = models.Procurement.objects(organization=organization, payment_records__payment_number=new_payment_number).first()
         if existing:
             form.payment_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
             return render_template(
@@ -97,21 +85,13 @@ def set_paid(procurement_id):
                 form=form,
                 today=datetime.date.today(),
                 is_last_period=procurement.is_last_period(),
-                remaining_amount=(
-                    procurement.get_remaining_amount()
-                    if procurement.is_last_period()
-                    else None
-                ),
+                remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
             )
 
     # --- บันทึกข้อมูลการจ่าย ---
     next_period_index = len(procurement.payment_records)
 
-    final_amount = (
-        procurement.get_remaining_amount() if procurement.is_last_period() else amount
-    )
-    print(f"Final amount: {final_amount}")
-
+    final_amount = procurement.get_remaining_amount() if procurement.is_last_period() else amount
     procurement.add_payment_record(
         period_index=next_period_index,
         paid_by=current_user._get_current_object(),
@@ -120,9 +100,7 @@ def set_paid(procurement_id):
     )
 
     procurement.paid_period_index = next_period_index
-    procurement.payment_status = procurement.get_current_payment_status(
-        datetime.date.today()
-    )
+    procurement.payment_status = procurement.get_current_payment_status(datetime.date.today())
     procurement.last_updated_by = current_user._get_current_object()
 
     try:
@@ -136,11 +114,8 @@ def set_paid(procurement_id):
             form=form,
             today=datetime.date.today(),
             is_last_period=procurement.is_last_period(),
-            remaining_amount=(
-                procurement.get_remaining_amount()
-                if procurement.is_last_period()
-                else None
-            ),
+            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
         )
 
-    return redirect(url_for("procurement.products.index", organization=organization))
+    # ต้องส่ง organization_id ไม่ใช่ organization เพราะ url_for จะแปะ object ลง query string
+    return redirect(url_for("procurement.products.index", organization_id=organization.id))

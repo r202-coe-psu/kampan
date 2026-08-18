@@ -116,4 +116,17 @@ To scale development and maintain system integrity, Kampan uses specialized AI s
 ### Asynchronous Operations
 All agents can be spawned and run concurrently. When allocating complex tasks, decouple tasks across individual agents (e.g., delegating template updates to `frontend_agent` and logic updates to `backend_agent` simultaneously) to expedite execution and validation.
 
+---
 
+## 🧪 10. Testing Rules & Mandatory Verification
+Every feature change, bug fix, or new capability **MUST** be verified with tests before completion.
+
+* **Mandatory Testing Workflow:**
+  1. **Before Modifying / Adding Features:** Check existing tests in the `tests/` directory.
+  2. **After Modifying / Adding Features:** You **MUST** run the test suite using `poetry run pytest` (or execute relevant test files).
+  3. **Reusing & Extending Tests:** Developers and AI agents can reuse or extend existing test files (e.g., `tests/test_multi_org.py`, `tests/test_acl_organization.py`, `tests/test_procurement_views.py`) or add new test modules under `tests/`.
+  4. **Zero Regression:** All existing and newly written tests must pass (`100% green`) before submitting or concluding work.
+* **Test Architecture:**
+  * **Runner:** `pytest` configured via `pytest.ini` (`pythonpath = .`).
+  * **Database Isolation:** Use `mongomock.MongoClient` in `tests/conftest.py` with automatic per-test collection cleanup to ensure tests run fast and without external database dependencies.
+  * **HTTP & Session:** Use Flask test client (`app.test_client()`) with `client.session_transaction()` for authenticated testing.

@@ -11,6 +11,7 @@ from flask import (
     request,
     send_file,
     url_for,
+    g,
 )
 from flask_login import current_user, login_required
 from flask_mongoengine import Pagination
@@ -67,7 +68,7 @@ def generate_next_requisition_code():
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     form = forms.requisitions.RequisitionFilterForm(request.args)
     query = {}
 
@@ -103,7 +104,11 @@ def index():
             product_number = ", ".join(procurement.product_numbers) if procurement.product_numbers else ""
 
     # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
     if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
         procurements = procurements.filter(responsible_by=org_user_role)
 
@@ -133,7 +138,7 @@ def index():
 @module.route("/<requisition_procurement_id>/non-renewal")
 @login_required
 def non_renewal(requisition_procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     if requisition_procurement_id:
         procurement = models.Procurement.objects(id=requisition_procurement_id).first()
         if not procurement:
@@ -146,7 +151,11 @@ def non_renewal(requisition_procurement_id):
         category = request.args.get("category", "")
         query = {"status": "disactive", "organization": organization}
         procurements = models.Procurement.objects(**query)
-        org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+        org_user_role = models.OrganizationUserRole.objects(
+            user=current_user._get_current_object(),
+            organization=organization,
+            status="active",
+        ).first()
         if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
             procurements = procurements.filter(responsible_by=org_user_role)
         procurements = procurements.order_by("-end_date")
@@ -164,9 +173,13 @@ def non_renewal(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/renewal-requested")
 @login_required
 def renewal_requested(requisition_procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     form = forms.requisitions.RenewalRequestedFilterForm(request.args)
-    org_user_role = models.OrganizationUserRole.objects(user=current_user._get_current_object()).first()
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
 
     query = {}
 
@@ -352,7 +365,7 @@ def renewal_requested(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/document")
 @login_required
 def document(requisition_procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     requisition = models.Requisition.objects(id=requisition_procurement_id, organization=organization).first()
     if not requisition:
         abort(404)
@@ -382,7 +395,7 @@ def document(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
 @login_required
 def create_or_edit(requisition_procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     members = organization.get_organization_users()
     requisition = None
 
@@ -523,7 +536,7 @@ def create_or_edit(requisition_procurement_id):
 @module.route("/<requisition_procurement_id>/download/all")
 @login_required
 def download(requisition_procurement_id):
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     document = models.Requisition.objects(id=requisition_procurement_id, organization=organization).first()
     pdf_streams = []
 
@@ -579,10 +592,9 @@ def requisition_action(requisition_id):
     reason = request.form.get("reason")
     fund_id = request.form.get("fund")  # fallback เดิม
     fund_ids = request.form.getlist("fund_ids")  # ใหม่: เลือกหลายแหล่งเงิน
-    print(fund_ids)
     manager_id = request.form.get("manager")
 
-    organization = current_user.user_setting.current_organization
+    organization = g.organization
     requisition = models.Requisition.objects(id=requisition_id, organization=organization).first()
     members = organization.get_organization_users()
     member_obj = next(
@@ -714,7 +726,7 @@ def requisition_action(requisition_id):
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
-                organization_id=current_user.user_setting.current_organization.id,
+                organization_id=g.organization.id,
             )
         )
 
@@ -746,7 +758,7 @@ def requisition_action(requisition_id):
         return redirect(
             url_for(
                 "procurement.requisitions.renewal_requested",
-                organization_id=current_user.user_setting.current_organization.id,
+                organization_id=g.organization.id,
             )
         )
 
@@ -756,6 +768,6 @@ def requisition_action(requisition_id):
     return redirect(
         url_for(
             "procurement.requisitions.renewal_requested",
-            organization_id=current_user.user_setting.current_organization.id,
+            organization_id=g.organization.id,
         )
     )

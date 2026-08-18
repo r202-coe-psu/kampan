@@ -12,6 +12,7 @@ from flask import (
     current_app,
     send_file,
     abort,
+    g,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 
@@ -131,19 +132,14 @@ def profile(user_id):
 @module.route("/accounts")
 @login_required
 def index():
-    organization_id = request.args.get("organization_id")
-    organization = None
     errors = request.args.get("errors")
-    if not organization:
-        organization_user_role = models.OrganizationUserRole.objects(
-            user=current_user,
-            status__ne="disactive",
-        ).first()
-        if organization_user_role:
-            organization = organization_user_role.organization
-            organization_id = organization.id
-    if not organization:
-        organization = current_user.get_current_organization()
+    # g.organization ถูกตรวจสมาชิกภาพมาแล้ว และเคารพ organization_id ที่ส่งมาใน URL
+    # (เดิมหยิบ membership แถวแรกเสมอ จึงทับหน่วยงานที่ผู้ใช้เลือกทิ้ง)
+    if getattr(g, "organization_denied", False):
+        return abort(403)
+
+    organization = g.organization
+    organization_id = organization.id if organization else None
 
     if organization:
 
