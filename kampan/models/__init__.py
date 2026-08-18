@@ -27,7 +27,14 @@ from .requisitions import Requisition, RequisitionItem, Committees
 from .upload_files import Document
 import kampan.models.vehicles as vehicles
 from .vehicles import Car, Motorcycle, CarFeedback
-from .car_feedback import CarFeedbackTemplate, QuestionTemplate
+import kampan.models.car_feedback as car_feedback
+from .car_feedback import (
+    Answer,
+    CarFeedbackResponse,
+    CarFeedbackTemplate,
+    QuestionTemplate,
+    QUESTION_TYPE,
+)
 import kampan.models.vehicle_applications as vehicle_applications
 from .requisition_timeline import (
     RequisitionTimeline,

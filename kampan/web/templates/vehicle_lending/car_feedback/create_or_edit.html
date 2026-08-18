@@ -21,6 +21,15 @@
 	</div>
 
 	<form id="feedbackForm" method="POST" class="flex flex-col gap-6">
+		{{ form.csrf_token }}
+
+		{% if questions_error %}
+		<div role="alert" class="alert alert-error">
+			<i class="ph ph-warning-circle text-xl"></i>
+			<span>{{ questions_error }}</span>
+		</div>
+		{% endif %}
+
 		<div class="card bg-base-100 shadow-sm border-t-4 border-t-primary">
 			<div class="card-body">
 				<h2 class="card-title text-lg mb-4">ข้อมูลเบื้องต้น</h2>
@@ -41,7 +50,7 @@
 
 		<div id="questionsContainer" class="flex flex-col gap-4">
 		</div>
-		<input type="hidden" name="questions_data" id="questionsData">
+		<input type="hidden" name="questions_data" id="questionsData" value="{{ questions_data or '' }}">
 		<div class="flex flex-wrap justify-center gap-2 mt-4">
 			<button type="button"
 				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
@@ -98,12 +107,15 @@
 
 <script>
 	let questions = [];
+	const submittedDataStr = document.getElementById("questionsData").value;
 	const preloadDataStr = document.getElementById("preloadQuestions").textContent;
-	if (preloadDataStr.trim().length > 2) {
+	for (const source of [submittedDataStr, preloadDataStr]) {
+		if (!source || source.trim().length <= 2) continue;
 		try {
-			questions = JSON.parse(preloadDataStr);
+			questions = JSON.parse(source);
+			break;
 		} catch (e) {
-			console.error("Error parsing preloaded questions:", e);
+			console.error("Error parsing questions:", e);
 		}
 	}
 

@@ -15,6 +15,10 @@ class CarFeedbackTemplateForm(FlaskForm):
     )
 
 
+class CarFeedbackTemplateDeleteForm(FlaskForm):
+    """ฟอร์มเปล่าไว้บังคับตรวจ CSRF token ของคำสั่งลบแบบประเมิน"""
+
+
 class CarFeedbackResponseFilterForm(FlaskForm):
     car_id = fields.SelectField(
         "รถยนต์",

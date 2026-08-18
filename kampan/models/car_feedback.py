@@ -1,5 +1,6 @@
-import mongoengine as me
 import datetime
+
+import mongoengine as me
 from bson import ObjectId
 
 QUESTION_TYPE = (
@@ -29,14 +30,23 @@ class Answer(me.EmbeddedDocument):
 
 class CarFeedbackTemplate(me.Document):
     name = me.StringField(required=True)
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     cars = me.ListField(me.ReferenceField("Car"), required=True)
     description = me.StringField(default="")
     questions = me.ListField(me.EmbeddedDocumentField(QuestionTemplate))
-    meta = {"collection": "car_feedback_templates"}
+
+    meta = {
+        "collection": "car_feedback_templates",
+        "indexes": [
+            "organization",
+            ("organization", "cars"),
+        ],
+    }
 
 
 class CarFeedbackResponse(me.Document):
     feedback_template = me.ReferenceField("CarFeedbackTemplate", required=True)
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
     car = me.ReferenceField("Car", required=True)
     car_application = me.ReferenceField("CarApplication")
     answers = me.ListField(me.EmbeddedDocumentField(Answer))
@@ -46,6 +56,7 @@ class CarFeedbackResponse(me.Document):
         "collection": "car_feedback_responses",
         "indexes": [
             "car_application",
+            ("organization", "-created_date"),
             ("feedback_template", "-created_date"),
             ("feedback_template", "car", "-created_date"),
             ("feedback_template", "car_application", "-created_date"),

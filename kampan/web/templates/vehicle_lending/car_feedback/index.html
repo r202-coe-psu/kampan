@@ -57,11 +57,14 @@
                 class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
                 <i class="ph ph-pencil-simple text-lg"></i>
               </a>
-              <a href="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}"
-                class="btn btn-sm btn-ghost text-error tooltip" data-tip="ลบ"
-                onclick="return confirm('ยืนยันการลบ?');">
-                <i class="ph ph-trash text-lg"></i>
-              </a>
+              <form method="POST"
+                action="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}"
+                onsubmit="return confirm('ยืนยันการลบแบบประเมินนี้พร้อมผลตอบรับทั้งหมด?');">
+                {{ delete_form.csrf_token }}
+                <button type="submit" class="btn btn-sm btn-ghost text-error tooltip" data-tip="ลบ">
+                  <i class="ph ph-trash text-lg"></i>
+                </button>
+              </form>
             </div>
           </td>
         </tr>

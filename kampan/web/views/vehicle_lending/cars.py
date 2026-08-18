@@ -1,21 +1,23 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    send_file,
-    abort,
-)
-from flask_login import login_required, current_user
-import mongoengine as me
-from flask_mongoengine import Pagination
 import datetime
 import io
-import qrcode
 
-from kampan.web import forms, acl
+import mongoengine as me
+import qrcode
+from flask import (
+    Blueprint,
+    abort,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user
+
 from kampan import models
+from kampan.web import acl, forms
+
+from . import car_feedback as car_feedback_view
 
 module = Blueprint("cars", __name__, url_prefix="/cars")
 
@@ -24,13 +26,9 @@ module = Blueprint("cars", __name__, url_prefix="/cars")
 @acl.organization_roles_required("admin")
 def index():
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     cars = models.vehicles.Car.objects(organization=organization)
-    return render_template(
-        "/vehicle_lending/cars/index.html", organization=organization, cars=cars
-    )
+    return render_template("/vehicle_lending/cars/index.html", organization=organization, cars=cars)
 
 
 @module.route("/create", methods=["GET", "POST"], defaults={"car_id": None})
@@ -39,9 +37,7 @@ def index():
 def create_or_edit(car_id):
     car = None
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = models.Organization.objects(id=organization_id, status="active").first()
     form = forms.vehicles.CarForm()
     if car_id:
         car = models.vehicles.Car.objects(id=car_id, organization=organization).first()
@@ -83,15 +79,11 @@ def create_or_edit(car_id):
     car.updated_date = datetime.datetime.now()
 
     car.save()
-    return redirect(
-        url_for("vehicle_lending.cars.index", organization_id=organization_id)
-    )
+    return redirect(url_for("vehicle_lending.cars.index", organization_id=organization_id))
 
 
 @module.route("/<car_id>/picture/<filename>")
-@acl.organization_roles_required(
-    "admin", "supervisor supplier", "head", "supervisor supplier"
-)
+@acl.organization_roles_required("admin", "supervisor supplier", "head", "supervisor supplier")
 def image(car_id, filename):
     organization_id = request.args.get("organization_id")
 
@@ -138,39 +130,33 @@ def qr_code(car_id):
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
-    return send_file(
-        buf, mimetype="image/png", download_name=f"qrcode_{car.license_plate}.png"
-    )
+    return send_file(buf, mimetype="image/png", download_name=f"qrcode_{car.license_plate}.png")
 
 
 @module.route("/<car_id>/feedback", methods=["GET", "POST"])
 def feedback(car_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-
-    car = models.vehicles.Car.objects(id=car_id).first()
+    try:
+        car = models.vehicles.Car.objects(id=car_id).first()
+    except (me.errors.ValidationError, me.errors.InvalidQueryError):
+        car = None
     if not car:
         return abort(404)
 
-    template_id = request.args.get("template_id")
-    if template_id:
-        template = models.car_feedback.CarFeedbackTemplate.objects(
-            id=template_id, cars=car
-        ).first()
-    else:
-        template = models.car_feedback.CarFeedbackTemplate.objects(cars=car).first()
+    organization = car.organization
 
+    template = car_feedback_view.get_feedback_template_for_car(car, template_id=request.args.get("template_id"))
     if not template:
-        return render_template("ไม่พบแบบประเมินสำหรับรถคันนี้"), 404
+        return (
+            render_template(
+                "/vehicle_lending/car_feedback/feedback_unavailable.html",
+                car=car,
+                organization=organization,
+            ),
+            404,
+        )
 
     now = datetime.datetime.now()
-    car_applications = list(
-        models.vehicle_applications.CarApplication.objects(
-            car=car, status__in=["active", "completed"]
-        ).order_by("-departure_datetime")
-    )
+    car_applications = car_feedback_view.get_car_trips(car, organization)
     trip_choices = [
         (
             str(application.id),
@@ -186,51 +172,51 @@ def feedback(car_id):
         )
         default_trip_id = str(closest_application.id)
 
-    form = forms.car_feedback.get_dynamic_feedback_form(
-        template, trip_choices=trip_choices, default_trip_id=default_trip_id
-    )
+    form = forms.car_feedback.get_dynamic_feedback_form(template, trip_choices=trip_choices, default_trip_id=default_trip_id)
 
-    if form.validate_on_submit():
-        car_application = None
-        if trip_choices:
-            car_application = models.vehicle_applications.CarApplication.objects(
-                id=form.car_application.data, car=car
-            ).first()
-
-        response = models.car_feedback.CarFeedbackResponse(
-            feedback_template=template, car=car, car_application=car_application
-        )
-        answers = []
-        for q in template.questions:
-            ans = models.car_feedback.Answer(question_id=q.question_id)
-            field_name = f"answer_{q.question_id}"
-            field = getattr(form, field_name)
-
-            if q.question_type == "score" and field.data:
-                ans.answer_score = int(field.data)
-            elif q.question_type == "text" and field.data:
-                ans.answer_text = field.data
-            elif q.question_type == "boolean" and field.data:
-                ans.answer_boolean = field.data == "True"
-            elif q.question_type == "single_choice" and field.data:
-                ans.answer_text = field.data
-            elif q.question_type == "multiple_choice" and field.data:
-                ans.answer_choices = field.data
-            answers.append(ans)
-
-        response.answers = answers
-        response.save()
-
+    if not form.validate_on_submit():
         return render_template(
-            "/vehicle_lending/car_feedback/feedback_thanks.html",
+            "/vehicle_lending/car_feedback/feedback.html",
             car=car,
             organization=organization,
+            template=template,
+            form=form,
         )
 
+    car_application = None
+    if trip_choices:
+        car_application = models.vehicle_applications.CarApplication.objects(
+            id=form.car_application.data, car=car, organization=organization
+        ).first()
+
+    response = models.CarFeedbackResponse(
+        feedback_template=template,
+        organization=organization,
+        car=car,
+        car_application=car_application,
+    )
+    answers = []
+    for q in template.questions:
+        ans = models.Answer(question_id=q.question_id)
+        field = getattr(form, f"answer_{q.question_id}")
+
+        if q.question_type == "score" and field.data:
+            ans.answer_score = int(field.data)
+        elif q.question_type == "text" and field.data:
+            ans.answer_text = field.data
+        elif q.question_type == "boolean" and field.data:
+            ans.answer_boolean = field.data == "True"
+        elif q.question_type == "single_choice" and field.data:
+            ans.answer_text = field.data
+        elif q.question_type == "multiple_choice" and field.data:
+            ans.answer_choices = field.data
+        answers.append(ans)
+
+    response.answers = answers
+    response.save()
+
     return render_template(
-        "/vehicle_lending/car_feedback/feedback.html",
+        "/vehicle_lending/car_feedback/feedback_thanks.html",
         car=car,
         organization=organization,
-        template=template,
-        form=form,
     )
