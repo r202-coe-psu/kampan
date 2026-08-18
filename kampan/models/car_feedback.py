@@ -38,6 +38,7 @@ class CarFeedbackTemplate(me.Document):
 class CarFeedbackResponse(me.Document):
     feedback_template = me.ReferenceField("CarFeedbackTemplate", required=True)
     car = me.ReferenceField("Car", required=True)
+    car_application = me.ReferenceField("CarApplication")
     answers = me.ListField(me.EmbeddedDocumentField(Answer))
     created_date = me.DateTimeField(default=datetime.datetime.now)
 

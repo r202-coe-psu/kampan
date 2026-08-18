@@ -200,10 +200,10 @@ file_input -->
                   {% if readonly %}input-readonly{% endif %}
                   {{ class_ }}">
       {% if readonly %}
-        {{ field(class_="w-full bg-transparent appearance-none outline-none border-none", disabled="disabled", **kwargs) }}
+        {{ field(class_="w-full bg-transparent bg-none appearance-none outline-none border-none", disabled="disabled", **kwargs) }}
         <input type="hidden" name="{{ field.name }}" value="{{ field.data }}" />
       {% else %}
-        {{ field(class_="w-full bg-transparent appearance-none outline-none border-none", **kwargs) }}
+        {{ field(class_="w-full bg-transparent bg-none appearance-none outline-none border-none", **kwargs) }}
       {% endif %}
     </label>
     {% if field.errors %}

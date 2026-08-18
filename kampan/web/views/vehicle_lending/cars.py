@@ -165,11 +165,40 @@ def feedback(car_id):
     if not template:
         return render_template("ไม่พบแบบประเมินสำหรับรถคันนี้"), 404
 
-    form = forms.car_feedback.get_dynamic_feedback_form(template)
+    now = datetime.datetime.now()
+    car_applications = list(
+        models.vehicle_applications.CarApplication.objects(
+            car=car, status__in=["active", "completed"]
+        ).order_by("-departure_datetime")
+    )
+    trip_choices = [
+        (
+            str(application.id),
+            f"{application.get_departure_datetime()} · {application.location}",
+        )
+        for application in car_applications
+    ]
+    default_trip_id = None
+    if car_applications:
+        closest_application = min(
+            car_applications,
+            key=lambda application: abs(application.departure_datetime - now),
+        )
+        default_trip_id = str(closest_application.id)
+
+    form = forms.car_feedback.get_dynamic_feedback_form(
+        template, trip_choices=trip_choices, default_trip_id=default_trip_id
+    )
 
     if form.validate_on_submit():
+        car_application = None
+        if trip_choices:
+            car_application = models.vehicle_applications.CarApplication.objects(
+                id=form.car_application.data, car=car
+            ).first()
+
         response = models.car_feedback.CarFeedbackResponse(
-            feedback_template=template, car=car
+            feedback_template=template, car=car, car_application=car_application
         )
         answers = []
         for q in template.questions:
