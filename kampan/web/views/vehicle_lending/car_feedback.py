@@ -401,6 +401,28 @@ def view_responses(template_id):
         car_application_id = None
     selected_trip = next((trip for trip in trip_choices if trip["id"] == car_application_id), None)
 
+    form = forms.car_feedback.CarFeedbackResponseFilterForm()
+    form.car_id.choices = [("", f"รถทุกคัน ({len(cars)} คัน)")] + [
+        (str(car.id), f"{car.license_plate} · {car_response_counts.get(str(car.id), 0)} ผลตอบรับ") for car in cars
+    ]
+    form.car_id.data = car_id or ""
+
+    if trip_choices:
+        trip_placeholder = f"ทุกเที่ยว ({len(trip_choices)} เที่ยว)"
+    else:
+        trip_placeholder = "ยังไม่มีเที่ยวรถที่ assign ไว้"
+    trip_option_choices = [("", trip_placeholder)]
+    for trip in trip_choices:
+        label = trip["departure"]
+        if not car_id and trip["license_plate"]:
+            label += f" · {trip['license_plate']}"
+        label += f" · {trip['location']} ({trip['response_count']})"
+        trip_option_choices.append((trip["id"], label))
+    form.car_application_id.choices = trip_option_choices
+    form.car_application_id.data = car_application_id or ""
+    if selected_car:
+        form.car_application_id.label.text = f"เที่ยวรถ — เฉพาะเที่ยวของ {selected_car.license_plate}"
+
     filter_kwargs = {"feedback_template": template}
     if selected_car:
         filter_kwargs["car"] = selected_car
@@ -510,6 +532,7 @@ def view_responses(template_id):
         trip_choices=trip_choices,
         car_application_id=car_application_id,
         selected_trip=selected_trip,
+        form=form,
     )
 
 

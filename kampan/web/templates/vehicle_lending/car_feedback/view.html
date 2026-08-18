@@ -1,4 +1,5 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}สถิติแบบประเมิน - {{ template.name }}{% endblock %}
 {% block dashboard_title %}สถิติแบบประเมิน{% endblock %}
@@ -91,61 +92,33 @@
 
 	{# ---------- Filter rail: sticks to the top while the stats scroll ---------- #}
 	<div class="sticky top-0 z-30 -mx-2 mt-6 bg-base-200/85 px-2 py-4 backdrop-blur-md lg:-mx-4 lg:px-4">
-		<div
+		<form method="GET"
+			action="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 			class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-sm lg:flex-row lg:items-end">
+			<input type="hidden" name="organization_id" value="{{ organization.id }}">
 
-			<label class="flex-1">
-				<span class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-base-content/50">
-					<i class="ph ph-car text-sm"></i> รถยนต์
-				</span>
-				<select class="select w-full" onchange="window.location.href = this.value">
-					<option
-						value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
-						{{ 'selected' if not car_id }}>
-						รถทุกคัน ({{ cars|length }} คัน)
-					</option>
-					{% for car in cars %}
-					<option
-						value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car.id) }}"
-						{{ 'selected' if car_id == car.id|string }}>
-						{{ car.license_plate }} &middot; {{ car_response_counts.get(car.id|string, 0) }} ผลตอบรับ
-					</option>
-					{% endfor %}
-				</select>
-			</label>
+			<div class="flex-1">
+				{{ renderer.render_select_field(form.car_id) }}
+			</div>
 
-			<label class="flex-[1.6]">
-				<span class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-base-content/50">
-					<i class="ph ph-map-pin-line text-sm"></i>
-					เที่ยวรถ
-					{% if selected_car %}<span class="text-base-content/35">— เฉพาะเที่ยวของ {{ selected_car.license_plate
-						}}</span>{% endif %}
-				</span>
-				<select class="select w-full" onchange="window.location.href = this.value"
-					{{ 'disabled' if not trip_choices }}>
-					<option
-						value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id) }}"
-						{{ 'selected' if not car_application_id }}>
-						{% if trip_choices %}ทุกเที่ยว ({{ trip_choices|length }} เที่ยว){% else %}ยังไม่มีเที่ยวรถที่ assign ไว้{% endif %}
-					</option>
-					{% for trip in trip_choices %}
-					<option
-						value="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id, car_id=car_id, car_application_id=trip.id) }}"
-						{{ 'selected' if car_application_id == trip.id }}>
-						{{ trip.departure }}{% if not car_id and trip.license_plate %} &middot; {{ trip.license_plate }}{% endif %} &middot; {{ trip.location }} ({{ trip.response_count }})
-					</option>
-					{% endfor %}
-				</select>
-			</label>
+			<div class="flex-[1.6]">
+				{{ renderer.render_search_select_field(form.car_application_id, disabled=not trip_choices) }}
+			</div>
 
-			{% if car_id or car_application_id %}
-			<a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
-				class="btn btn-ghost gap-2">
-				<i class="ph ph-x text-base"></i>
-				ล้างตัวกรอง
-			</a>
-			{% endif %}
-		</div>
+			<div class="flex shrink-0 gap-2">
+				<button type="submit" class="btn btn-primary gap-2">
+					<i class="ph ph-magnifying-glass text-base"></i>
+					ค้นหา
+				</button>
+				{% if car_id or car_application_id %}
+				<a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
+					class="btn btn-ghost gap-2">
+					<i class="ph ph-x text-base"></i>
+					ล้างตัวกรอง
+				</a>
+				{% endif %}
+			</div>
+		</form>
 	</div>
 
 	{# ---------- Selected trip context ---------- #}

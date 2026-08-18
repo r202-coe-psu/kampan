@@ -15,6 +15,19 @@ class CarFeedbackTemplateForm(FlaskForm):
     )
 
 
+class CarFeedbackResponseFilterForm(FlaskForm):
+    car_id = fields.SelectField(
+        "รถยนต์",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+    car_application_id = fields.SelectField(
+        "เที่ยวรถ",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+
+
 def get_dynamic_feedback_form(template, trip_choices=None, default_trip_id=None):
     class DynamicFeedbackForm(FlaskForm):
         pass
