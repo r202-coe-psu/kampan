@@ -460,56 +460,57 @@
 - **📸 ภาพหน้าจอประกอบ (Screenshot):**
   ![หน้าจอแสดงผลข้อมูลและแบบฟอร์มที่ใช้ฟิลด์ Payment Number ใหม่](docs/images/handover/day33_payment_number_refactor.png)
 
-### Day 34 — การพัฒนาระบบคู่มือผู้ใช้ระบบจัดซื้อจัดจ้าง
+### Day 34 — ระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้าง (Procurement System Manual — Part 1: Interactive UI & Dynamic Navigation)
 - **สิ่งที่ได้พัฒนา / ปรับปรุง:**
-  - พัฒนาหน้าระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้างแบบ Interactive (`e39ed79`)
+  - ออกแบบและพัฒนาระบบคู่มือผู้ใช้เชิงโต้ตอบ (Interactive User Manual) สำหรับระบบจัดซื้อจัดจ้าง (`e39ed79`)
 - **รายละเอียดเชิงเทคนิค:**
-  - สร้าง Route, View และ Template สำหรับแนะนำการสร้างคำขอ การตรวจรับ และการติดตามสถานะ
+  - สร้างโครงสร้าง Route `/procurement/manuals`, View controller และ Jinja2 Template (`/procurement/requisitions/manual.html`)
+  - พัฒนาระบบ Sidebar Navigation ที่ตรวจจับหมวดหมู่โมดูลอัตโนมัติ พร้อมการรองรับ Responsive Layout และการเลื่อนดูหัวข้อแบบราบรื่น (Smooth Scroll)
 - **การตัดสินใจเชิงสถาปัตยกรรมและตรรกะระบบ:**
-  - ลดภาระในการฝึกอบรมผู้ใช้งานด้วยการมีคู่มือพร้อมใช้งานในระบบ
+  - ใช้ DaisyUI Component และ Tailwind CSS เพื่อสร้าง UX/UI คู่มือที่สวยงาม ทันสมัย อ่านง่าย และนำทางไปยังแต่ละส่วนงานได้อย่างสะดวก
 - **คุณภาพระบบ Backend / Frontend:**
-  - จัดทำเนื้อหาคู่มือเป็นลำดับขั้นตอนพร้อมภาพประกอบที่เข้าใจง่าย
+  - ตรวจสอบว่าระบบ Navigation มีความยืดหยุ่น ไฮไลต์เมนูตามตำแหน่งที่ผู้ใช้อ่าน และทำงานได้อย่างถูกต้องบนทุกขนาดหน้าจอ
 - **📸 ภาพหน้าจอประกอบ (Screenshot):**
-  ![หน้าระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้างสำหรับเจ้าหน้าที่](docs/images/handover/day34_procurement_manual.png)
+  ![หน้าระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้าง Part 1: โครงสร้าง Interactive UI และ Sidebar Navigation](docs/images/handover/day34_procurement_manual_part1.png)
 
-### Day 35 — การจัดทำหน้าระบบคู่มือการบริหารคลังพัสดุ
+### Day 35 — ระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้าง (Procurement System Manual — Part 2: Step-by-Step Workflow & Multi-Tenancy Scoping)
 - **สิ่งที่ได้พัฒนา / ปรับปรุง:**
-  - พัฒนาหน้าระบบคู่มือการบริหารจัดการคลังพัสดุและแนวทางปฏิบัติงาน (`d21a46e`)
+  - จัดทำเนื้อหาคู่มือเชิงลึกครอบคลุมกระบวนการปฏิบัติงาน 23 โมดูลย่อยของระบบจัดซื้อจัดจ้าง (`e39ed79`)
 - **รายละเอียดเชิงเทคนิค:**
-  - สร้างเอกสารคำแนะนำการรับเข้า จ่ายออก การตรวจนับสต็อก และการจัดหมวดหมู่พัสดุ
+  - เขียนอธิบายขั้นตอนตั้งแต่การขอซื้อ/ขอจ้าง (Requisition Creation), การอนุมัติ (Approval Chain), การจัดสรรงบประมาณ MAS, การสั่งซื้อ จนถึงการตรวจรับพัสดุ
+  - กำหนดสิทธิ์การเข้าถึงด้วย `@acl.organization_roles_required` และสโคปข้อมูลตามองค์กรของผู้ใช้งาน (`g.organization`)
 - **การตัดสินใจเชิงสถาปัตยกรรมและตรรกะระบบ:**
-  - สร้างมาตรฐานการปฏิบัติงานสำหรับเจ้าหน้าที่คลังสินค้า
+  - ป้องกันการเข้าถึงข้อมูลข้ามองค์กร (Cross-Tenant Isolation) ในหน้าคู่มือ และอธิบายลำดับขั้น Role-Based Access Control (RBAC) ไว้อย่างชัดเจน
 - **คุณภาพระบบ Backend / Frontend:**
-  - ออกแบบหน้าจอด้วย DaisyUI Card Components ที่อ่านง่ายและค้นหาได้สะดวก
+  - เนื้อหาละเอียด เข้าใจง่าย มีตัวอย่างฟอร์ม คำอธิบายสถานะระบบ และไดอะแกรมประกอบพร้อมใช้งาน
 - **📸 ภาพหน้าจอประกอบ (Screenshot):**
-  ![หน้าระบบคู่มือการบริหารคลังพัสดุ Inventory Management Manual](docs/images/handover/day35_inventory_manual.png)
+  ![หน้าระบบคู่มือการใช้งานระบบจัดซื้อจัดจ้าง Part 2: ขั้นตอนการปฏิบัติงาน 23 โมดูลและ Multi-Tenancy Scoping](docs/images/handover/day35_procurement_manual_part2.png)
 
-### Day 36 — การเขียนชุดทดสอบอัตโนมัติด้วย Pytest สำหรับหน้าคู่มือและระบบความปลอดภัย
+### Day 36 — ระบบคู่มือการบริหารคลังพัสดุ (Inventory Management Manual — Part 1: Inventory & Requisition Workflow)
 - **สิ่งที่ได้พัฒนา / ปรับปรุง:**
-  - เขียนชุดทดสอบอัตโนมัติใน `tests/test_inventory_manual.py` (`d21a46e`)
+  - ออกแบบและพัฒนาระบบคู่มือการบริหารจัดการคลังพัสดุและสินค้าคงคลัง (Inventory Manual — Part 1) (`d21a46e`)
 - **รายละเอียดเชิงเทคนิค:**
-  - สร้าง Test Cases ตรวจสอบการเข้าถึง Route, การแยกสิทธิ์ Multi-Tenancy และการเรนเดอร์ Template
-  - ใช้ `mongomock` เพื่อให้ชุดทดสอบรันได้อย่างรวดเร็วและเป็นอิสระจากฐานข้อมูลภายนอก
+  - พัฒนา Route `/inventories/manual` และ Template `/inventories/manual.html` สำหรับแนะนำกระบวนการจัดการคลัง
+  - รวบรวมแนวทางปฏิบัติงานในการรับเข้าพัสดุ (Stock Receipt), การตรวจนับสต็อก (Stock Count), การลงทะเบียนครุภัณฑ์ และการตัดจ่ายเบิกใช้
 - **การตัดสินใจเชิงสถาปัตยกรรมและตรรกะระบบ:**
-  - บังคับใช้นโยบาย Zero-Regression สำหรับทุกหน้าจอและฟังก์ชันใหม่
+  - สร้างคู่มือมาตรฐานการปฏิบัติงาน (SOP) เพื่อลดข้อผิดพลาดในการลงบันทึกสินค้าคงคลังของเจ้าหน้าที่คลังพัสดุ
 - **คุณภาพระบบ Backend / Frontend:**
-  - ยืนยันผลการทดสอบผ่าน 100% Green
+  - ใช้งาน DaisyUI Card Components และไอคอนนำทางที่แยกแยะแต่ละหมวดงานอย่างชัดเจน
 - **📸 ภาพหน้าจอประกอบ (Screenshot):**
-  ![ผลลัพธ์การรันชุดทดสอบอัตโนมัติ Pytest ผ่าน 100% Green บน Terminal](docs/images/handover/day36_pytest_test_results.png)
+  ![หน้าระบบคู่มือการบริหารคลังพัสดุ Part 1: ระบบคลังและการเบิกจ่ายพัสดุ](docs/images/handover/day36_inventory_manual_part1.png)
 
-### Day 37 — การตรวจสอบความปลอดภัย Multi-Tenancy, การทดสอบระบบรวม และสรุปการส่งมอบ
+### Day 37 — ระบบคู่มือการบริหารคลังพัสดุ (Inventory Management Manual — Part 2: Security Isolation & Pytest Verification)
 - **สิ่งที่ได้พัฒนา / ปรับปรุง:**
-  - ดำเนินการตรวจสอบความปลอดภัย Multi-Tenancy, ทดสอบ Regression ทั่วทั้งระบบ และลงนามส่งมอบงาน
+  - ขยายระบบคู่มือคลังพัสดุในส่วนการสโคปความปลอดภัย พร้อมจัดทำชุดทดสอบอัตโนมัติ (Automated Pytest Suite) (`d21a46e`)
 - **รายละเอียดเชิงเทคนิค:**
-  - ตรวจสอบว่าทุก Query ในระบบมีการจำกัด `organization=current_user.organization`
-  - ตรวจสอบความถูกต้องของการคำนวณทศนิยมการเงิน (`DecimalField`) ทุกจุด
-  - ตรวจสอบความพร้อมของระบบพิมพ์เอกสารและคิวงาน Background Worker
+  - เขียนชุดทดสอบใน `tests/test_inventory_manual_views.py` ตรวจสอบการเข้าถึงสิทธิ์ Route `/inventories/manual` การสโคปสิทธิ์ตาม `organization_id` และการป้องกัน Access Leaks (302/403 Isolation)
+  - ใช้ `mongomock` เพื่อประมวลผลการทดสอบอย่างรวดเร็วโดยไม่อพยพฐานข้อมูลจริง
 - **การตัดสินใจเชิงสถาปัตยกรรมและตรรกะระบบ:**
-  - มั่นใจในความเสถียร ความปลอดภัย และความสมบูรณ์ของระบบก่อนขึ้น Production
+  - รวมการตรวจสอบความปลอดภัย Multi-Tenancy Security Audit และ Zero-Regression เข้ากับคู่มือการใช้งานระบบ
 - **คุณภาพระบบ Backend / Frontend:**
-  - สรุปแพ็กเกจการส่งมอบงานระบบให้ทีมงานสามารถดูแลรักษาต่อได้อย่างราบรื่น
+  - ยืนยันผลการรันชุดทดสอบผ่าน 100% Green พร้อมความสมบูรณ์ของระบบส่งมอบงาน
 - **📸 ภาพหน้าจอประกอบ (Screenshot):**
-  ![หน้าแดชบอร์ดภาพรวมระบบหลังการตรวจสอบความปลอดภัยและความสมบูรณ์](docs/images/handover/day37_final_security_dashboard.png)
+  ![หน้าระบบคู่มือการบริหารคลังพัสดุ Part 2: การตรวจสอบความปลอดภัยและชุดทดสอบ Pytest ผ่าน 100% Green](docs/images/handover/day37_inventory_manual_part2.png)
 
 ---
 
@@ -550,16 +551,16 @@
 | **Day 31** | Feature G: Car Modal, Index & Calendar | `044c154` |
 | **Day 32** | Feature H: Asset Titles & Handover Docs | `b1948dd` |
 | **Day 33** | Feature H: Schema Refactor (`payment_number`) | `653941c` |
-| **Day 34** | Feature H: Procurement Interactive Manual | `e39ed79` |
-| **Day 35** | Feature H: Inventory Manual View | `d21a46e` |
-| **Day 36** | Feature H: Automated Pytest Suite | `d21a46e` |
-| **Day 37** | Feature H: Security Audit & Final Handover | *(การตรวจสอบความปลอดภัยและส่งมอบงานระบบ)* |
+| **Day 34** | Feature H: Procurement Manual Part 1 (UI & Nav) | `e39ed79` |
+| **Day 35** | Feature H: Procurement Manual Part 2 (23 Modules) | `e39ed79` |
+| **Day 36** | Feature H: Inventory Manual Part 1 (Stock & Requisition) | `d21a46e` |
+| **Day 37** | Feature H: Inventory Manual Part 2 (Isolation & Pytest) | `d21a46e` |
 
 ---
 
 ## 🎯 บทสรุปการส่งมอบงาน (Final Handover Conclusion)
 ตลอดรอบการพัฒนา **37 วันทำการ** นี้ ระบบได้รับการยกระดับและส่งมอบตามมาตรฐานวิศวกรรมซอฟต์แวร์อย่างสมบูรณ์:
 1. **ส่วนที่ 1 (Day 1 – 17):** ส่งมอบระบบกระบวนการไทม์ไลน์ขอซื้อ/ขอจ้าง, ระบบส่งออกรายงาน Typed Export และระบบประเมินการใช้รถยนต์แบบไดนามิก
-2. **ส่วนที่ 2 (Day 18 – 37):** ส่งมอบระบบบริหารงบประมาณ MAS พร้อมการจัดสไตล์ไฟล์ Excel และแปลงวันที่ พ.ศ., การสืบค้นพัสดุและการกรองเฉพาะคำขอส่วนตัว, ระบบ Background Worker สำหรับงานอีเมล, ระบบอนุมัติการขอใช้รถยนต์พร้อมการพิมพ์เอกสารราชการและลายเซ็นดิจิทัล (`combine_paper`), การ Refactor โครงสร้างฟิลด์การเงิน (`payment_number`), หน้าระบบคู่มือจัดซื้อและคลังพัสดุแบบ Interactive รวมถึงชุดการทดสอบอัตโนมัติด้วย Pytest
+2. **ส่วนที่ 2 (Day 18 – 37):** ส่งมอบระบบบริหารงบประมาณ MAS พร้อมการจัดสไตล์ไฟล์ Excel และแปลงวันที่ พ.ศ., การสืบค้นพัสดุและการกรองเฉพาะคำขอส่วนตัว, ระบบ Background Worker สำหรับงานอีเมล, ระบบอนุมัติการขอใช้รถยนต์พร้อมการพิมพ์เอกสารราชการและลายเซ็นดิจิทัล (`combine_paper`), การ Refactor โครงสร้างฟิลด์การเงิน (`payment_number`), หน้าระบบคู่มือการจัดซื้อจัดจ้าง (Procurement Manual 2 วัน) และหน้าระบบคู่มือคลังพัสดุ (Inventory Manual 2 วัน) ที่มีการทดสอบความปลอดภัยข้ามองค์กรและชุดทดสอบอัตโนมัติด้วย Pytest
 
 โค้ดทั้งหมดได้รับการตรวจสอบและปฏิบัติตามมาตรฐาน Multi-Tenancy Scoping อย่างเข้มงวด รับประกันความถูกต้องของตัวเลขทางการเงินด้วย `DecimalField` และใช้ดีไซน์ Responsive ด้วย Tailwind CSS & DaisyUI พร้อมสำหรับการนำไปใช้งานจริงบนระบบ Production อย่างมีเสถียรภาพ
