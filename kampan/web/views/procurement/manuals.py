@@ -1,12 +1,11 @@
 from flask import (
     Blueprint,
+    g,
     render_template,
-    request,
     abort,
 )
 from flask_login import login_required
 
-from kampan import models
 from kampan.web import acl
 
 module = Blueprint("manuals", __name__, url_prefix="/manuals")
@@ -24,10 +23,7 @@ module = Blueprint("manuals", __name__, url_prefix="/manuals")
     "director",
 )
 def index():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = g.organization
 
     if not organization:
         return abort(404)
@@ -36,3 +32,4 @@ def index():
         "/procurement/requisitions/manual.html",
         organization=organization,
     )
+
