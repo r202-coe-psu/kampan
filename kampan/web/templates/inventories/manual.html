@@ -1,0 +1,1320 @@
+{% extends '/base/template-page-login.html' %}
+
+{% block title %}คู่มือการใช้งาน ระบบเบิกวัสดุและคลังพัสดุ{% endblock %}
+{% block dashboard_title %}คู่มือการใช้งาน ระบบเบิกวัสดุและคลังพัสดุ{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block additional_head %}
+<style>
+  /* สารบัญคู่มือ: ไฮไลต์หัวข้อที่กำลังอ่านอยู่ตามตำแหน่งการเลื่อนหน้า */
+  .toc-link {
+    border-inline-start: 3px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: normal !important;
+    word-break: break-word;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .toc-link i {
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+
+  /* หัวข้อที่เลื่อนผ่านไปแล้ว */
+  .toc-link.is-passed {
+    color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+  }
+
+  /* หัวข้อที่กำลังอ่านอยู่ */
+  .toc-link.is-active {
+    background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+    border-inline-start-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  /* ตัวอย่างหน้าจอ Demo */
+  [data-demo] .modal-box {
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+  }
+  @media (min-width: 640px) {
+    .meta-row {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+  .meta-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 10.5rem;
+    min-width: 10.5rem;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set badge_tone = {
+  'primary': 'badge-primary',
+  'secondary': 'badge-secondary',
+  'success': 'badge-success',
+  'warning': 'badge-warning',
+  'error': 'badge-error',
+  'neutral': 'badge-neutral',
+} %}
+{% set node_tone = {
+  'primary': 'border-primary',
+  'secondary': 'border-secondary',
+  'success': 'border-success',
+  'warning': 'border-warning',
+  'error': 'border-error',
+  'neutral': 'border-neutral',
+  'base': 'border-base-300',
+} %}
+{% set note_tone = {
+  'info': 'border-info/40 bg-info/10',
+  'success': 'border-success/40 bg-success/10',
+  'warning': 'border-warning/40 bg-warning/10',
+  'error': 'border-error/40 bg-error/10',
+} %}
+{% set note_icon_tone = {
+  'info': 'text-info',
+  'success': 'text-success',
+  'warning': 'text-warning',
+  'error': 'text-error',
+} %}
+
+{# ---------------------------------------------------------------- macros #}
+{% macro RoleBadge(text, tone='neutral') %}
+<span class="badge badge-sm {{ badge_tone.get(tone, 'badge-neutral') }} badge-outline whitespace-nowrap">{{ text }}</span>
+{%- endmacro %}
+
+{% macro SectionHeader(no, icon, title, subtitle) %}
+<div class="flex items-start gap-3 border-b border-base-300 pb-4">
+  <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <i class="ph {{ icon }} text-2xl"></i>
+  </div>
+  <div class="flex flex-col">
+    {% if no %}<span class="text-xs font-bold text-primary">โมดูลที่ {{ no }}</span>{% endif %}
+    <h2 class="text-xl font-bold text-base-content">{{ title }}</h2>
+    <p class="text-sm text-base-content/60">{{ subtitle }}</p>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro MetaRow(label, value, icon='ph-caret-right') %}
+<div class="meta-row">
+  <div class="meta-label text-base-content/60">
+    <i class="ph ph-size {{ icon }} shrink-0 text-base"></i>
+    <span>{{ label }}</span>
+  </div>
+  <div class="flex-1 text-base-content leading-relaxed">{{ value|safe }}</div>
+</div>
+{%- endmacro %}
+
+{% macro Note(text, tone='info', icon='ph-info', title='') %}
+<div class="mt-4 flex items-start gap-3 rounded-xl border {{ note_tone.get(tone, note_tone['info']) }} p-4">
+  <i class="ph ph-size {{ icon }} shrink-0 text-lg {{ note_icon_tone.get(tone, 'text-info') }} mt-0.5"></i>
+  <div class="flex-1 text-sm leading-relaxed text-base-content/80">
+    {% if title %}<strong class="font-bold text-base-content mr-1.5">{{ title }}</strong>{% endif %}{{ text|safe }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro FlowNode(text, tone='base', sub='') %}
+<div class="flex min-w-[9.5rem] flex-col items-center justify-center gap-1 rounded-xl border-2 {{ node_tone.get(tone, 'border-base-300') }} bg-base-100 px-3 py-2 text-center">
+  <span class="text-sm font-bold text-base-content">{{ text }}</span>
+  {% if sub %}<span class="text-xs text-base-content/50">{{ sub }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro FlowArrow() %}
+<i class="ph ph-arrow-right shrink-0 text-base-content/30"></i>
+{%- endmacro %}
+
+{% macro Demo(title, sub='') %}
+<div class="mt-4 overflow-hidden rounded-xl border border-base-300" data-demo>
+  <div class="flex flex-wrap items-center gap-2 border-b border-base-300 bg-base-200 px-4 py-2">
+    <i class="ph ph-size ph-frame-corners text-base-content/50"></i>
+    <span class="text-xs font-bold text-base-content/70">{{ title }}</span>
+    {% if sub %}<span class="text-xs text-base-content/50">{{ sub|safe }}</span>{% endif %}
+    <span class="badge badge-xs badge-outline ml-auto">ตัวอย่างหน้าจอ (กดไม่ได้)</span>
+  </div>
+  <div class="overflow-x-auto bg-base-100 p-4">
+    <div class="pointer-events-none min-w-[20rem] select-none" aria-hidden="true">{{ caller() }}</div>
+  </div>
+</div>
+{%- endmacro %}
+
+{# ---------------------------------------------------------------- toc data #}
+{% set toc = [
+  ('overview',                       'ph-users-three',      'ภาพรวมและบทบาทผู้ใช้งาน'),
+  ('flow-main',                      'ph-flow-arrow',       'ขั้นตอนการทำงานภาพรวมทั้งระบบ'),
+  ('dashboard',                      'ph-chart-line-up',    '1. แดชบอร์ดภาพรวมคลังวัสดุ'),
+  ('report-inventory-balances',      'ph-file-text',        '2. รายงานวัสดุคงเหลือ'),
+  ('report-quarterly-balances',      'ph-calendar-blank',   '3. รายงานวัสดุคงเหลือตามช่วงไตรมาส'),
+  ('report-custom-date-inventory',   'ph-funnel',           '4. รายงานเฉพาะวัสดุตามช่วงที่กำหนด'),
+  ('notifications',                  'ph-bell',             '5. การแจ้งเตือนระบบ'),
+  ('items',                          'ph-package',          '6. จัดการข้อมูลวัสดุทั้งหมด'),
+  ('categories',                     'ph-folders',          '7. จัดการหมวดหมู่วัสดุ'),
+  ('suppliers',                      'ph-storefront',       '8. จัดการข้อมูลร้านค้า/คู่ค้า'),
+  ('warehouses',                     'ph-warehouse',        '9. จัดการคลังวัสดุ'),
+  ('item-register-create',           'ph-tray-arrow-down',  '10. นำเข้าวัสดุเข้าคลัง'),
+  ('item-registers',                 'ph-list-checks',      '11. รายการประวัตินำเข้าวัสดุ'),
+  ('email-templates',                'ph-envelope-simple',  '12. รูปแบบอีเมลแจ้งเตือน'),
+  ('item-orders',                    'ph-shopping-cart',    '13. คำสั่งเบิกวัสดุ (สร้างและติดตาม)'),
+  ('item-checkouts',                 'ph-export',           '14. รายการนำวัสดุออก (ตัดสต็อก)'),
+  ('approve-head',                   'ph-user-check',       '15. หัวหน้าฝ่ายอนุมัติคำสั่งเบิก (ขั้นที่ 1)'),
+  ('approve-supervisor-supplier',    'ph-shield-check',     '16. หัวหน้าเจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก (ขั้นที่ 2)'),
+  ('approve-head-inventory-lost',    'ph-warning-octagon',  '17. หัวหน้าพัสดุอนุมัติวัสดุชำรุด/สูญหาย/แก้ไข'),
+  ('approve-admin',                  'ph-check-square',     '18. พัสดุอนุมัติคำสั่งเบิกและตัดสต็อก (ขั้นที่ 3)'),
+  ('lost-breaks',                    'ph-first-aid-kit',    '19. การแจ้งวัสดุชำรุด/สูญหาย/แก้ไขสต็อก'),
+  ('divisions',                      'ph-tree-structure',   '20. จัดการแผนกและโครงสร้างฝ่าย'),
+  ('org-users',                      'ph-users',            '21. จัดการสมาชิกสิทธิ์ขององค์กร'),
+  ('org-detail',                     'ph-buildings',        '22. รายละเอียดข้อมูลองค์กร'),
+  ('user-profile',                   'ph-user-circle',      '23. ข้อมูลผู้ใช้งานส่วนบุคคล'),
+  ('status-summary',                 'ph-path',             'ตารางสรุปสถานะคำสั่งเบิกและขั้นตอนดำเนินงาน'),
+] %}
+
+<div class="flex flex-col gap-4">
+
+  {# ============================================================ hero #}
+  <div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+    <div class="flex items-start gap-4">
+      <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-content">
+        <i class="ph ph-books text-3xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-base-content">คู่มือการใช้งาน ระบบเบิกวัสดุและคลังพัสดุ (Material Requisition System)</h1>
+        <p class="mt-1 text-sm text-base-content/70">
+          คู่มือการใช้งานระบบคลังและเบิกจ่ายวัสดุ ครอบคลุมการตั้งค่าหมวดหมู่ คลังวัสดุ ร้านค้าคู่ค้า การรับวัสดุเข้าสต็อก การเสนอคำขอเบิก สายการอนุมัติ 3 ขั้นตอน การตัดจ่ายสต็อก และการรายงานสรุปคงเหลือ &mdash; หน่วยงาน <span class="font-semibold">{{ organization.name if organization else '' }}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+
+    {# ============================================================ toc menu #}
+    <aside class="xl:sticky xl:top-4 xl:w-[320px] xl:shrink-0 print:hidden">
+      <div class="segment border border-base-300 bg-base-100 rounded-2xl p-4 shadow-sm">
+        <div class="mb-2 border-b border-base-300 pb-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i class="ph ph-size ph-list text-primary"></i>
+              <span class="font-bold text-base-content">สารบัญคู่มือ (23 โมดูล)</span>
+            </div>
+            <span id="manual-progress-text" class="text-xs font-semibold text-base-content/50">0%</span>
+          </div>
+          <div class="mt-2 h-1 w-full overflow-hidden rounded-full bg-base-300">
+            <div id="manual-progress-bar"
+                 class="h-full w-0 rounded-full bg-primary transition-[width] duration-150"></div>
+          </div>
+        </div>
+        <ul id="toc-list" class="menu w-full gap-1 p-0 max-h-[calc(100vh-12rem)] overflow-y-auto overflow-x-hidden">
+          {% for anchor, icon, label in toc %}
+          <li>
+            <a href="#{{ anchor }}" class="toc-link text-sm" data-toc-link="{{ anchor }}">
+              <i class="ph ph-size {{ icon }}"></i>{{ label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </aside>
+
+    {# ============================================================ body #}
+    <div class="flex min-w-0 flex-1 flex-col gap-4">
+
+      {# ------------------------------------------------ 0. overview #}
+      <section id="overview" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-users-three', 'ภาพรวมและบทบาทผู้ใช้งาน',
+                         'โครงสร้างกลุ่มงานและบทบาทหน้าที่ของผู้ใช้งานในระบบเบิกวัสดุและบริหารคลังพัสดุ (9 กลุ่มงาน 23 โมดูลย่อย)') }}
+
+        <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
+          <i class="ph ph-squares-four text-primary text-lg"></i> โครงสร้างและกลุ่มงานหลักในระบบ (9 กลุ่มงาน / 23 โมดูลย่อย)
+        </h3>
+
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-chart-line-up text-base"></i> 1. กลุ่มแดชบอร์ดและรายงาน
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">สรุปภาพรวมคลัง รายงานคงเหลือ รายงานไตรมาส รายงานตามช่วงเวลา และระบบแจ้งเตือน (โมดูล 1-5)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-package text-base"></i> 2. กลุ่มจัดการข้อมูลพื้นฐานคลัง
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">จัดการรายการวัสดุ หมวดหมู่ ร้านค้าคู่ค้า และตำแหน่งคลังวัสดุ (โมดูล 6-9)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-tray-arrow-down text-base"></i> 3. กลุ่มการนำเข้าวัสดุ
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">บันทึกรับวัสดุเข้าคลังและตรวจสอบประวัติการรับเข้า (โมดูล 10-11)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-envelope-simple text-base"></i> 4. กลุ่มเทมเพลตแจ้งเตือน
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">ตั้งค่ารูปแบบข้อความอีเมลแจ้งเตือนการเบิก (โมดูล 12)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-shopping-cart text-base"></i> 5. กลุ่มคำขอเบิกและการตัดจ่าย
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">สร้างคำขอเบิกวัสดุ ติดตามสถานะ และดูประวัติการจ่ายวัสดุออกจากคลัง (โมดูล 13-14)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-shield-check text-base"></i> 6. กลุ่มสายการอนุมัติ 3 ขั้นตอน
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">หัวหน้าฝ่าย &rarr; หัวหน้าพัสดุ &rarr; เจ้าหน้าที่พัสดุตัดสต็อก (โมดูล 15-18)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-first-aid-kit text-base"></i> 7. กลุ่มการปรับปรุงและชำรุดสูญหาย
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">แจ้งวัสดุชำรุด สูญหาย หรือปรับยอดสต็อกให้ตรงกับความเป็นจริง (โมดูล 19)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-tree-structure text-base"></i> 8. กลุ่มบริหารองค์กรและสมาชิก
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">จัดการแผนก สิทธิ์สมาชิกองค์กร และข้อมูลหน่วยงาน (โมดูล 20-22)</p>
+          </div>
+
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
+            <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
+              <i class="ph ph-user-circle text-base"></i> 9. กลุ่มบัญชีผู้ใช้
+            </div>
+            <p class="mt-0.5 text-xs text-base-content/70">จัดการข้อมูลส่วนตัวและรหัสผ่าน (โมดูล 23)</p>
+          </div>
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
+          <i class="ph ph-identification-badge text-primary text-lg"></i> บทบาทและหน้าที่ของผู้ใช้งาน (Roles & Permissions)
+        </h3>
+
+        <div class="mt-3 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-48">บทบาท</th>
+                <th>หน้าที่ในระบบ</th>
+                <th class="w-64">เมนูและสิทธิ์ที่ใช้งาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">พนักงานผู้เบิก<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
+                <td>สร้างคำสั่งเบิกวัสดุ, เลือกรายการ/จำนวน, ติดตามสถานะ, ดูประวัติการเบิกของตนเอง, แจ้งพัสดุชำรุด/สูญหาย</td>
+                <td>คำสั่งเบิกวัสดุ, แจ้งวัสดุชำรุด/สูญหาย, แดชบอร์ด, ข้อมูลผู้ใช้งาน</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head / endorser</span></td>
+                <td>ตรวจสอบและอนุมัติคำสั่งเบิกขั้นที่ 1 สำหรับบุคลากรในสังกัดฝ่ายตนเอง หรือกดปฏิเสธพร้อมระบุเหตุผล</td>
+                <td>หัวหน้าฝ่ายอนุมัติคำสั่งเบิก (ขั้นที่ 1), รายงานพัสดุคงเหลือ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">หัวหน้าเจ้าหน้าที่พัสดุ<br><span class="text-xs font-normal text-base-content/50">supervisor supplier</span></td>
+                <td>อนุมัติคำสั่งเบิกขั้นที่ 2 ในระดับภาพรวมองค์กร, ปรับเปลี่ยนจำนวนเบิกตามความเหมาะสม, อนุมัติปรับยอดวัสดุชำรุด/สูญหาย</td>
+                <td>หัวหน้าพัสดุอนุมัติคำสั่งเบิก (ขั้นที่ 2), อนุมัติวัสดุชำรุด/สูญหาย/แก้ไขสต็อก</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
+                <td>จัดการวัสดุ หมวดหมู่ คลัง ร้านค้า, บันทึกการนำเข้าวัสดุ, อนุมัติขั้นที่ 3 พร้อมตรวจสอบยอดคงเหลือจริงและตัดจ่ายวัสดุออกจากคลัง (Checkout), จัดการสมาชิกและสิทธิ์องค์กร</td>
+                <td>ทุกเมนูในระบบเบิกวัสดุและบริหารคลัง</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {{ Note('สมาชิกผู้เบิกทุกคนต้องได้รับการจัดตั้งสังกัดแผนก (Division) ก่อน จึงจะสามารถเลือกหัวหน้าฝ่ายอนุมัติคำสั่งเบิกได้อย่างถูกต้อง',
+                'warning', 'ph-warning-circle', 'ข้อกำหนดบัญชีผู้ใช้:') }}
+      </section>
+
+      {# ------------------------------------------------ 0.1 main flow #}
+      <section id="flow-main" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-flow-arrow', 'ขั้นตอนการทำงานภาพรวมทั้งระบบ',
+                         'กระบวนการเตรียมคลังพัสดุ และสายการเบิกจ่ายอนุมัติ 3 ขั้นตอน') }}
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ก. การเตรียมข้อมูลคลังวัสดุ (ทำโดย admin)</h3>
+        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+          {{ FlowNode('สร้างแผนกและเพิ่มสมาชิก', 'primary', 'เมนู แผนก / สมาชิกองค์กร') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('สร้างคลัง หมวดหมู่ ร้านค้า', 'primary', 'เมนู คลัง / หมวดหมู่ / ร้านค้า') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('เพิ่มรายการวัสดุและหน่วยนับ', 'primary', 'เมนู วัสดุทั้งหมด') }}
+          {{ FlowArrow() }}
+          {{ FlowNode('นำเข้าวัสดุรับเข้าคลัง', 'success', 'สร้างยอดสต็อกคงเหลือ (Remain)') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ข. สายการเบิกและอนุมัติคำสั่งเบิกวัสดุ (3 ขั้นตอน)</h3>
+
+        <div class="mt-3 space-y-3">
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-primary">ขั้นตอนการเบิก</span>
+              <span class="text-sm font-bold">กระบวนการเสนอคำขอเบิกจ่ายและอนุมัติตัดสต็อก</span>
+            </div>
+            <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
+              {{ FlowNode('สร้างคำสั่งเบิก (staff)', 'primary', 'สถานะ: pending') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติขั้นที่ 1 (head)', 'warning', 'สถานะ: pending on supervisor') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติขั้นที่ 2 (supervisor)', 'warning', 'สถานะ: pending on admin') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติขั้นที่ 3 & ตัดจ่าย (admin)', 'success', 'สถานะ: approved') }}
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-error/40 bg-error/5 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-sm badge-error">กรณีปฏิเสธ</span>
+              <span class="text-sm font-bold">ผู้อนุมัติในแต่ละขั้นสามารถกดปฏิเสธพร้อมระบุเหตุผลได้</span>
+            </div>
+            <p class="text-sm text-base-content/80">
+              เมื่อคำขอถูกปฏิเสธ สถานะจะเปลี่ยนเป็น <span class="font-semibold text-error">denied</span> ผู้ขอเบิกจะได้รับอีเมลแจ้งเตือนพร้อมเหตุผลประกอบ
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {# ------------------------------------------------ 1. dashboard #}
+      <section id="dashboard" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(1, 'ph-chart-line-up', 'แดชบอร์ดภาพรวมคลังวัสดุ',
+                         'สรุปสถิติจำนวนวัสดุ มูลค่ารวมพัสดุในคลัง รายการสต็อกต่ำกว่าจุดสั่งซื้อ และกราฟแนวโน้มการเบิกจ่าย') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'แดชบอร์ด &rarr; แดชบอร์ดภาพรวม', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">วัตถุประสงค์และฟังก์ชัน</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          แดชบอร์ดเป็นศูนย์รวมการแสดงผลสถิติแบบ Real-time ช่วยให้ผู้ดูแลระบบและหัวหน้างานมองเห็นสถานะความพร้อมของพัสดุคงคลัง ยอดเงินงบประมาณคลัง และคำขอเบิกที่ค้างอนุมัติได้อย่างรวดเร็ว
+        </p>
+
+        <h3 class="mt-4 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าที่เมนู <strong class="text-base-content">แดชบอร์ด &rarr; แดชบอร์ดภาพรวม</strong></li>
+          <li>ตรวจสอบการ์ดสถิติ 4 ช่องหลัก ได้แก่ รายการวัสดุทั้งหมด, มูลค่ารวม, รายการพัสดุเหลือน้อย (Low Stock), และคำสั่งเบิกรออนุมัติ</li>
+          <li>ดูแผนภูมิแสดงแนวโน้มการเบิกจ่ายพัสดุประจำเดือน</li>
+        </ol>
+
+        {% call Demo('แดชบอร์ดภาพรวมคลังพัสดุและการ์ดสถิติ', 'แดชบอร์ด') %}
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="p-3 bg-base-200/60 rounded-xl border border-base-300">
+              <div class="text-xs text-base-content/60">รายการวัสดุทั้งหมด</div>
+              <div class="text-xl font-bold text-primary">142 รายการ</div>
+            </div>
+            <div class="p-3 bg-base-200/60 rounded-xl border border-base-300">
+              <div class="text-xs text-base-content/60">มูลค่าคลังพัสดุรวม</div>
+              <div class="text-xl font-bold text-success">฿452,800.00</div>
+            </div>
+            <div class="p-3 bg-base-200/60 rounded-xl border border-base-300">
+              <div class="text-xs text-base-content/60">พัสดุเหลือน้อย (Low Stock)</div>
+              <div class="text-xl font-bold text-warning">8 รายการ</div>
+            </div>
+            <div class="p-3 bg-base-200/60 rounded-xl border border-base-300">
+              <div class="text-xs text-base-content/60">คำขอเบิกรออนุมัติ</div>
+              <div class="text-xl font-bold text-info">5 รายการ</div>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 2. report-inventory-balances #}
+      <section id="report-inventory-balances" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(2, 'ph-file-text', 'รายงานวัสดุคงเหลือ',
+                         'รายงานสรุปยอดรับเข้าสะสม ยอดจ่ายออกสะสม ยอดคงเหลือปัจจุบัน และมูลค่าวัสดุคงคลังรวม') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary') ~ ' ' ~ RoleBadge('supervisor supplier', 'secondary') ~ ' ' ~ RoleBadge('head', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'แดชบอร์ด &rarr; รายงานวัสดุคงเหลือ', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">วัตถุประสงค์และฟังก์ชัน</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          แสดงตารางความเคลื่อนไหวสต็อกพัสดุ คำนวณยอดรับเข้าสะสม ยอดตัดจ่ายออกสะสม ยอดคงเหลือปัจจุบัน (Remain) และคำนวณมูลค่าคงคลังรวม
+        </p>
+
+        <h3 class="mt-4 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าเมนู <strong class="text-base-content">แดชบอร์ด &rarr; รายงานวัสดุคงเหลือ</strong></li>
+          <li>กรอกคำค้นชื่อพัสดุ หรือเลือกหมวดหมู่ที่ต้องการตรวจสอบ</li>
+          <li>กดปุ่ม <strong class="text-primary">"ค้นหา"</strong> เพื่อประมวลผลตาราง</li>
+          <li>กดปุ่ม <strong class="text-base-content">"ส่งออกรายงาน"</strong> เพื่อดาวน์โหลดข้อมูลเป็นไฟล์ Excel/CSV หรือกดพิมพ์ PDF</li>
+        </ol>
+
+        {% call Demo('รายงานสรุปวัสดุคงเหลือและมูลค่ารวม', 'รายงานวัสดุคงเหลือ') %}
+        <div class="space-y-3">
+          <table class="table w-full text-xs">
+            <thead>
+              <tr class="bg-base-200">
+                <th>รหัสวัสดุ</th>
+                <th>ชื่อวัสดุ</th>
+                <th>รับเข้าสะสม</th>
+                <th>จ่ายออกสะสม</th>
+                <th>คงเหลือปัจจุบัน</th>
+                <th>มูลค่ารวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono">MAT-001</td>
+                <td class="font-semibold">กระดาษ A4 80 แกรม</td>
+                <td>500 รีม</td>
+                <td>320 รีม</td>
+                <td><span class="font-bold text-success">180 รีม</span></td>
+                <td>฿24,300.00</td>
+              </tr>
+              <tr>
+                <td class="font-mono">MAT-045</td>
+                <td class="font-semibold">ปากกาลูกลื่น สีน้ำเงิน 0.5mm</td>
+                <td>1,200 ด้าม</td>
+                <td>1,150 ด้าม</td>
+                <td><span class="font-bold text-warning">50 ด้าม</span></td>
+                <td>฿350.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 3. report-quarterly-balances #}
+      <section id="report-quarterly-balances" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(3, 'ph-calendar-blank', 'รายงานวัสดุคงเหลือตามช่วงไตรมาส',
+                         'การเปรียบเทียบความเคลื่อนไหวสต็อกพัสดุจำแนกตามไตรมาส (Q1 - Q4)') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary') ~ ' ' ~ RoleBadge('supervisor supplier', 'secondary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'แดชบอร์ด &rarr; รายงานวัสดุคงเหลือตามช่วงไตรมาส', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">วัตถุประสงค์และฟังก์ชัน</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          เปรียบเทียบยอดพัสดุยกลองมา ยอดรับเข้า ยอดเบิกจ่าย และยอดคงเหลือยกไป จำแนกรายไตรมาสตามปีงบประมาณ (Q1: ต.ค.-ธ.ค. / Q2: ม.ค.-มี.ค. / Q3: เม.ย.-มิ.ย. / Q4: ก.ค.-ก.ย.)
+        </p>
+
+        <h3 class="mt-4 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าเมนู <strong class="text-base-content">แดชบอร์ด &rarr; รายงานตามไตรมาส</strong></li>
+          <li>เลือกปีงบประมาณที่ต้องการตรวจสอบ</li>
+          <li>คลิกเลือกไตรมาสที่ต้องการดูข้อมูล</li>
+        </ol>
+
+        {% call Demo('ตารางรายงานวัสดุคงเหลือจำแนกตามไตรมาส', 'รายงานไตรมาส') %}
+        <div class="space-y-3">
+          <div class="flex gap-2">
+            <button class="btn btn-xs btn-primary">ไตรมาส 1 (ต.ค.-ธ.ค.)</button>
+            <button class="btn btn-xs btn-outline">ไตรมาส 2 (ม.ค.-มี.ค.)</button>
+            <button class="btn btn-xs btn-outline">ไตรมาส 3 (เม.ย.-มิ.ย.)</button>
+            <button class="btn btn-xs btn-outline">ไตรมาส 4 (ก.ค.-ก.ย.)</button>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 4. report-custom-date-inventory #}
+      <section id="report-custom-date-inventory" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(4, 'ph-funnel', 'รายงานเฉพาะวัสดุตามช่วงที่กำหนด',
+                         'ฟิลเตอร์เลือกช่วงวันที่เริ่มต้น - สิ้นสุด เพื่อตรวจสอบประวัติรับ-จ่ายพัสดุเฉพาะช่วงเวลา') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary') ~ ' ' ~ RoleBadge('supervisor supplier', 'secondary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'แดชบอร์ด &rarr; รายงานเฉพาะวัสดุตามช่วงที่กำหนด', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">วัตถุประสงค์และฟังก์ชัน</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          กำหนดกรอบเวลาวันที่เริ่มต้นถึงวันที่สิ้นสุดเพื่อตรวจสอบการเคลื่อนไหวของพัสดุเฉพาะช่วงเวลาที่ต้องการตรวจสอบพิเศษ
+        </p>
+
+        <h3 class="mt-4 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>ระบุ <strong class="text-base-content">วันที่เริ่มต้น</strong> และ <strong class="text-base-content">วันที่สิ้นสุด</strong></li>
+          <li>กดปุ่ม <strong class="text-primary">"ค้นหารายงาน"</strong></li>
+        </ol>
+
+        {% call Demo('ฟอร์มเลือกช่วงวันที่และประวัติการเคลื่อนไหวสต็อก', 'รายงานตามช่วงเวลา') %}
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <input type="text" class="input input-xs w-full" value="01/08/2026" readonly>
+            <input type="text" class="input input-xs w-full" value="23/08/2026" readonly>
+            <button class="btn btn-xs btn-primary">ค้นหารายงาน</button>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 5. notifications #}
+      <section id="notifications" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(5, 'ph-bell', 'การแจ้งเตือนระบบ',
+                         'ศูนย์รวมรายการแจ้งเตือนคำสั่งเบิกใหม่ ผลอนุมัติ และแจ้งเตือนพัสดุใกล้หมดคลัง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การแจ้งเตือน', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">วัตถุประสงค์และฟังก์ชัน</h3>
+        <p class="mt-1 text-sm text-base-content/70">
+          แจ้งเตือนอัตโนมัติเมื่อมีคำสั่งเบิกเข้ามาใหม่ ผลการอนุมัติถูกส่งต่อ หรือพัสดุมีจำนวนต่ำกว่าจุด Minimum
+        </p>
+
+        <h3 class="mt-4 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>คลิกไอคอนกระดิ่งแจ้งเตือน หรือเมนู <strong class="text-base-content">การแจ้งเตือน</strong></li>
+          <li>คลิกที่รายการเพื่อดูรายละเอียดคำขอเบิกที่เกี่ยวข้อง</li>
+        </ol>
+
+        {% call Demo('รายการการแจ้งเตือนระบบส่วนบุคคล', 'การแจ้งเตือน') %}
+        <div class="space-y-2 text-xs">
+          <div class="p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="ph ph-check-circle text-success text-base"></i>
+              <span>คำสั่งเบิก REQ-2568-0042 ได้รับการอนุมัติและตัดจ่ายสต็อกเรียบร้อยแล้ว</span>
+            </div>
+            <span class="text-base-content/50">10 นาทีที่แล้ว</span>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 6. items #}
+      <section id="items" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(6, 'ph-package', 'จัดการข้อมูลวัสดุทั้งหมด',
+                         'ทะเบียนรายการวัสดุ การตั้งค่าหน่วยนับ (ชุด/ชิ้น) จุดสั่งซื้อ Minimum และราคากลาง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin (CRUD)', 'primary') ~ ' ' ~ RoleBadge('staff (Read)', 'neutral'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การจัดการวัสดุ &rarr; วัสดุทั้งหมด', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการสร้างรายการวัสดุใหม่ (ทำโดย Admin)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มรายการวัสดุใหม่"</strong></li>
+          <li>กรอกข้อมูลสำคัญ:
+            <ul class="mt-1 space-y-1 text-xs text-base-content/70 list-disc pl-5">
+              <li><strong class="text-base-content">รหัสบาร์โค้ด / รหัสวัสดุ:</strong> รหัสอ้างอิงพัสดุประจำองค์กร</li>
+              <li><strong class="text-base-content">ชื่อวัสดุ:</strong> ชื่อเต็มของพัสดุ</li>
+              <li><strong class="text-base-content">หมวดหมู่:</strong> เลือกหมวดหมู่วัสดุ</li>
+              <li><strong class="text-base-content">หน่วยนับชุด / ชิ้น:</strong> เช่น 1 กล่อง = 5 รีม</li>
+              <li><strong class="text-base-content">จุดสั่งซื้อ (Minimum):</strong> ยอดขั้นต่ำที่ระบบจะแจ้งเตือน Low Stock</li>
+            </ul>
+          </li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึก"</strong></li>
+        </ol>
+
+        {% call Demo('ฟอร์มสร้าง/แก้ไขพัสดุและรายการวัสดุ', 'จัดการวัสดุ') %}
+        <div class="space-y-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" class="input input-xs w-full" value="MAT-001" placeholder="รหัสบาร์โค้ด/รหัสวัสดุ" readonly>
+            <input type="text" class="input input-xs w-full" value="กระดาษ A4 80 แกรม" placeholder="ชื่อวัสดุ" readonly>
+            <input type="text" class="input input-xs w-full" value="วัสดุสำนักงาน" placeholder="หมวดหมู่" readonly>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <input type="text" class="input input-xs w-full" value="กล่อง" placeholder="หน่วยนับชุด" readonly>
+            <input type="text" class="input input-xs w-full" value="รีม" placeholder="หน่วยนับชิ้น" readonly>
+            <input type="text" class="input input-xs w-full" value="5" placeholder="ชิ้นต่อชุด" readonly>
+            <input type="text" class="input input-xs w-full" value="10" placeholder="จุดสั่งซื้อ Minimum" readonly>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 7. categories #}
+      <section id="categories" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(7, 'ph-folders', 'จัดการหมวดหมู่วัสดุ',
+                         'การจำแนกหมวดหมู่พัสดุ เช่น วัสดุสำนักงาน, วัสดุคอมพิวเตอร์, วัสดุงานบ้านงานครัว') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การจัดการวัสดุ &rarr; หมวดหมู่', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มหมวดหมู่"</strong></li>
+          <li>กรอกชื่อหมวดหมู่ภาษาไทย และรายละเอียด</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึก"</strong></li>
+        </ol>
+
+        {% call Demo('ตารางจัดการหมวดหมู่วัสดุ', 'หมวดหมู่') %}
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between items-center bg-base-200 p-2 rounded-lg">
+            <span class="font-bold">วัสดุสำนักงาน (Office Supplies)</span>
+            <span class="badge badge-sm badge-neutral">48 รายการ</span>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 8. suppliers #}
+      <section id="suppliers" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(8, 'ph-storefront', 'จัดการข้อมูลร้านค้า/คู่ค้า',
+                         'สมุดรายชื่อผู้จัดจำหน่าย บริษัทคู่ค้า เลขประจำตัวผู้เสียภาษี และช่องทางติดต่อ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การจัดการวัสดุ &rarr; ร้านค้า', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการบันทึกร้านค้าคู่ค้า</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มร้านค้า"</strong></li>
+          <li>กรอกชื่อบริษัท, เลขประจำตัวผู้เสียภาษี 13 หลัก, ที่อยู่ และเบอร์โทรศัพท์ผู้ติดต่อ</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึก"</strong> เพื่อใช้อ้างอิงขณะบันทึกรับวัสดุเข้าคลัง</li>
+        </ol>
+
+        {% call Demo('ฟอร์มบันทึกข้อมูลร้านค้าผู้ขาย', 'ร้านค้า') %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <input type="text" class="input input-xs w-full" value="บริษัท สยามสเตชันเนอรี จำกัด" readonly>
+          <input type="text" class="input input-xs w-full" value="0105558012345" readonly>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 9. warehouses #}
+      <section id="warehouses" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(9, 'ph-warehouse', 'จัดการคลังวัสดุ',
+                         'การกำหนดสถานที่และคลังจัดเก็บ เช่น คลังพัสดุกลาง, คลังอาคาร A, คลังวัสดุสำนักงาน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การจัดการวัสดุ &rarr; คลังวัสดุ', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มคลังวัสดุ"</strong></li>
+          <li>กรอกชื่อสถานที่จัดเก็บคลังพัสดุ</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึก"</strong></li>
+        </ol>
+
+        {% call Demo('ตารางสถานที่คลังจัดเก็บ', 'คลังวัสดุ') %}
+        <div class="space-y-2 text-xs">
+          <div class="p-2 bg-base-200 rounded-lg flex justify-between">
+            <span class="font-bold">คลังพัสดุกลาง ชั้น 1</span>
+            <span class="badge badge-sm badge-success text-white">ใช้งานปกติ</span>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 10. item-register-create #}
+      <section id="item-register-create" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(10, 'ph-tray-arrow-down', 'นำเข้าวัสดุเข้าคลัง',
+                         'บันทึกตรวจรับพัสดุนำเข้าคลัง ระบุเลขที่ใบสั่งซื้อ/ตรวจรับ ล็อตสินค้า วันหมดอายุ และราคาต่อหน่วย') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การนำเข้าวัสดุ &rarr; นำเข้าวัสดุ', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการบันทึกรับวัสดุเข้าคลัง (Check-in)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เลือกรายการวัสดุที่ต้องการรับเข้า และเลือกคลังจัดเก็บ</li>
+          <li>กรอกเลขที่ใบตรวจรับ/สั่งซื้อ (Receipt ID/PO) และเลือกร้านค้าผู้ขาย</li>
+          <li>ระบุจำนวนชุด/ชิ้นที่รับเข้า และราคาต่อชิ้น</li>
+          <li>แนบไฟล์บิล/ใบสั่งซื้อ (ถ้ามี)</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึกนำเข้า"</strong> &rarr; <span class="font-bold text-success">ยอดคงเหลือ (Remain) ของวัสดุนั้นจะเพิ่มขึ้นทันที</span></li>
+        </ol>
+
+        {% call Demo('ฟอร์มบันทึกนำเข้าวัสดุเข้าคลัง', 'นำเข้าวัสดุ') %}
+        <div class="space-y-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" class="input input-xs w-full" value="PO-68-08-012" placeholder="เลขที่ใบสั่งซื้อ/ตรวจรับ" readonly>
+            <input type="text" class="input input-xs w-full" value="บริษัท สยามสเตชันเนอรี จำกัด" placeholder="ร้านค้าผู้จัดจำหน่าย" readonly>
+            <input type="text" class="input input-xs w-full" value="20/08/2568" placeholder="วันที่นำเข้า" readonly>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 11. item-registers #}
+      <section id="item-registers" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(11, 'ph-list-checks', 'รายการประวัตินำเข้าวัสดุ',
+                         'ประวัติใบตรวจรับวัสดุนำเข้าทั้งหมด พร้อมระบบยกเลิกใบนำเข้ากรณีคีย์ข้อมูลผิดพลาด') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary') ~ ' ' ~ RoleBadge('supervisor supplier', 'secondary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การนำเข้าวัสดุ &rarr; รายการนำเข้าวัสดุ', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการตรวจสอบและยกเลิกประวัตินำเข้า</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>ค้นหาประวัตินำเข้าตามเลขที่ใบตรวจรับหรือชื่อวัสดุ</li>
+          <li>คลิกเปิดดูไฟล์แนบบิลรับเข้า</li>
+          <li>(เฉพาะ Admin) หากคีย์ข้อมูลผิด สามารถกดปุ่ม <strong class="text-error">"ยกเลิกรายการรับเข้า"</strong> เพื่อดึงยอด Remain ออกจากระบบ</li>
+        </ol>
+
+        {% call Demo('ตารางประวัติการรับเข้าพัสดุ', 'รายการนำเข้าวัสดุ') %}
+        <div class="space-y-2 text-xs">
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-base-200">
+                <th>เลขที่ใบตรวจรับ</th>
+                <th>ร้านค้า</th>
+                <th>วันที่รับเข้า</th>
+                <th>ผู้นำเข้า</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono">RC-2568-0091</td>
+                <td>บริษัท สยามสเตชันเนอรี จำกัด</td>
+                <td>20 ส.ค. 2568</td>
+                <td>เจ้าหน้าที่พัสดุ</td>
+                <td><span class="badge badge-sm badge-success text-white">รับเข้าแล้ว</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 12. email-templates #}
+      <section id="email-templates" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(12, 'ph-envelope-simple', 'รูปแบบอีเมลแจ้งเตือน',
+                         'การตั้งค่าเทมเพลตข้อความและหัวข้ออีเมลแจ้งเตือนสายการเบิกอนุมัติ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'รูปแบบอีเมล', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการตั้งค่ารูปแบบอีเมล</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เลือกประเภทการแจ้งเตือน (เช่น มีคำสั่งเบิกใหม่, อนุมัติสำเร็จ, คำขอถูกปฏิเสธ)</li>
+          <li>กรอกข้อความใน Subject และ Body โดยใช้ Dynamic Variables (เช่น `{user_name}`, `{order_number}`)</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึก"</strong></li>
+        </ol>
+
+        {% call Demo('ฟอร์มแก้ไขรูปแบบอีเมลแจ้งเตือน', 'รูปแบบอีเมล') %}
+        <div class="space-y-2 text-xs">
+          <input type="text" class="input input-xs w-full font-bold" value="[ระบบเบิกวัสดุ] มีคำขอเบิกใหม่รอการอนุมัติ #{order_number}" readonly>
+          <textarea class="textarea textarea-xs w-full h-16" readonly>เรียน คุณ {user_name}, มีคำสั่งเบิกพัสดุเลขที่ {order_number} เสนอเข้ามาเมื่อ {created_date} กรุณาเข้าตรวจสอบในระบบ</textarea>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 13. item-orders #}
+      <section id="item-orders" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(13, 'ph-shopping-cart', 'คำสั่งเบิกวัสดุ (สร้างและติดตาม)',
+                         'หน้าจอเสนอคำขอเบิกวัสดุแบบ Dynamic Item Rows และติดตามสถานะคำขอเบิกของตนเอง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท (staff, head, supervisor, admin)', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การเบิกวัสดุ &rarr; คำสั่งเบิกวัสดุ', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการเสนอคำสั่งเบิกวัสดุ (ทำโดยผู้ขอเบิก)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ สร้างคำสั่งเบิกวัสดุ"</strong></li>
+          <li>เลือก <strong class="text-base-content">หัวหน้าฝ่ายอนุมัติ (Head/Endorser)</strong> ในสังกัดแผนกตนเอง</li>
+          <li>กรอกวัตถุประสงค์ในการขอเบิกพัสดุ</li>
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มรายการวัสดุ"</strong> เลือกชื่อพัสดุ และระบุจำนวนชุด/ชิ้นที่ขอเบิก</li>
+          <li>กดปุ่ม <strong class="text-primary">"ส่งคำสั่งเบิก"</strong> &rarr; <span class="font-bold text-warning">สถานะเริ่มต้นจะเป็น pending (รอหัวหน้าฝ่ายอนุมัติ)</span></li>
+        </ol>
+
+        {% call Demo('ฟอร์มสร้างคำสั่งเบิกพัสดุใหม่', 'สร้างคำสั่งเบิกวัสดุ') %}
+        <div class="space-y-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input type="text" class="input input-xs w-full" value="ดร.สมศักดิ์ (หัวหน้าฝ่ายเทคโนโลยีสารสนเทศ)" placeholder="เลือกหัวหน้าฝ่ายอนุมัติ" readonly>
+            <input type="text" class="input input-xs w-full" value="เพื่อใช้ในการจัดประชุมเชิงปฏิบัติการ" placeholder="วัตถุประสงค์ในการเบิก" readonly>
+          </div>
+          <div class="p-3 bg-base-200/50 rounded-xl space-y-2">
+            <div class="font-bold">รายการวัสดุที่ขอเบิก</div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input type="text" class="input input-xs w-full sm:col-span-2" value="กระดาษ A4 80 แกรม" readonly>
+              <input type="text" class="input input-xs w-full" value="2 (ชุด/กล่อง)" readonly>
+              <button class="btn btn-xs btn-error text-white">ลบ</button>
+            </div>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 14. item-checkouts #}
+      <section id="item-checkouts" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(14, 'ph-export', 'รายการนำวัสดุออก (ตัดสต็อก)',
+                         'ประวัติการจ่ายวัสดุจริงออกจากคลัง (CheckoutItem) ระบุล็อตและผู้จ่ายพัสดุ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary') ~ ' ' ~ RoleBadge('supervisor supplier', 'secondary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การเบิกวัสดุ &rarr; รายการนำวัสดุออก', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการตรวจสอบประวัติการจ่ายออก</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าเมนู <strong class="text-base-content">การเบิกวัสดุ &rarr; รายการนำวัสดุออก</strong></li>
+          <li>ดูตารางสรุปรายการตัดจ่ายจริง (Checkout ID, ผู้เบิก, จำนวนที่จ่ายจริง, วันเวลาที่จ่าย)</li>
+        </ol>
+
+        {% call Demo('ตารางประวัติการตัดจ่ายพัสดุออก', 'รายการนำวัสดุออก') %}
+        <div class="space-y-2 text-xs">
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-base-200">
+                <th>เลขที่จ่ายออก</th>
+                <th>ผู้ขอเบิก</th>
+                <th>รายการวัสดุ</th>
+                <th>จำนวนจ่ายจริง</th>
+                <th>วันที่ตัดจ่าย</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono">OUT-2568-0112</td>
+                <td>นายสมชาย ใจดี</td>
+                <td>กระดาษ A4 80 แกรม</td>
+                <td>10 รีม</td>
+                <td>22 ส.ค. 2568</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 15. approve-head #}
+      <section id="approve-head" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(15, 'ph-user-check', 'หัวหน้าฝ่ายอนุมัติคำสั่งเบิก (ขั้นที่ 1)',
+                         'การตรวจสอบคำขอเบิกพัสดุของบุคลากรในฝ่าย และการกดอนุมัติส่งต่อหรือปฏิเสธ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('head / endorser', 'warning'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติ &rarr; หัวหน้าฝ่ายอนุมัติคำสั่งเบิก', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการพิจารณาของหัวหน้าฝ่าย (อนุมัติขั้นที่ 1)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าเมนู <strong class="text-base-content">การอนุมัติ &rarr; หัวหน้าฝ่ายอนุมัติคำสั่งเบิก</strong></li>
+          <li>ตรวจสอบรายการพัสดุ จำนวนที่ขอเบิก และวัตถุประสงค์ของผู้ใต้บังคับบัญชา</li>
+          <li>หากอนุมัติ: กดปุ่ม <strong class="text-success">"อนุมัติขั้นที่ 1"</strong> &rarr; <span class="font-bold text-info">สถานะเปลี่ยนเป็น pending on supervisor supplier</span></li>
+          <li>หากไม่อนุมัติ: กดปุ่ม <strong class="text-error">"ปฏิเสธ"</strong> พร้อมระบุเหตุผลประกอบ &rarr; <span class="font-bold text-error">สถานะเปลี่ยนเป็น denied</span></li>
+        </ol>
+
+        {% call Demo('หน้าตรวจสอบอนุมัติของหัวหน้าฝ่าย', 'หัวหน้าฝ่ายอนุมัติ') %}
+        <div class="p-3 bg-base-200/50 rounded-xl space-y-2 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="font-bold">คำสั่งเบิก REQ-2568-0045 (ผู้เบิก: นายสมชาย ใจดี)</span>
+            <span class="badge badge-sm badge-warning">รอหัวหน้าฝ่ายอนุมัติ</span>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button class="btn btn-xs btn-error text-white">ปฏิเสธ</button>
+            <button class="btn btn-xs btn-success text-white">อนุมัติขั้นที่ 1</button>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 16. approve-supervisor-supplier #}
+      <section id="approve-supervisor-supplier" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(16, 'ph-shield-check', 'หัวหน้าเจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก (ขั้นที่ 2)',
+                         'การตรวจสอบภาพรวมระดับองค์กร และความสามารถในการปรับเปลี่ยนจำนวนอนุญาตให้เบิก') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('supervisor supplier', 'secondary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติ &rarr; หัวหน้าเจ้าหน้าที่พัสดุอนุมัติคำสั่งเบิก', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการพิจารณาของหัวหน้าพัสดุ (อนุมัติขั้นที่ 2)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>ตรวจสอบคำสั่งเบิกที่ผ่านการอนุมัติขั้นที่ 1 แล้ว</li>
+          <li>สามารถปรับลดจำนวนในช่อง <strong class="text-base-content">"จำนวนอนุญาตให้เบิก"</strong> หากพัสดุในคลังมีจำกัด</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึกอนุมัติขั้นที่ 2"</strong> &rarr; <span class="font-bold text-accent">สถานะเปลี่ยนเป็น pending on admin</span></li>
+        </ol>
+
+        {% call Demo('หน้าอนุมัติหัวหน้าพัสดุพร้อมช่องปรับจำนวน', 'หัวหน้าพัสดุอนุมัติ') %}
+        <div class="p-3 bg-base-200/50 rounded-xl space-y-2 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
+            <span>กระดาษ A4 (ขอเบิก 5 กล่อง)</span>
+            <input type="text" class="input input-xs w-full text-center" value="3 (อนุญาตเบิก)" readonly>
+            <button class="btn btn-xs btn-primary">บันทึกอนุมัติขั้นที่ 2</button>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 17. approve-head-inventory-lost #}
+      <section id="approve-head-inventory-lost" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(17, 'ph-warning-octagon', 'หัวหน้าพัสดุอนุมัติวัสดุชำรุด/สูญหาย/แก้ไข',
+                         'การตรวจสอบและอนุมัติใบแจ้งตัดจำหน่ายพัสดุชำรุด สูญหาย หรือปรับยอดคงเหลือ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('supervisor supplier', 'secondary') ~ ' ' ~ RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติ &rarr; หัวหน้าเจ้าหน้าที่พัสดุอนุมัติวัสดุชำรุด/สูญหาย/แก้ไข', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการอนุมัติตัดจำหน่ายพัสดุเสียหาย</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>ตรวจสอบหลักฐานและรูปถ่ายพัสดุชำรุดหรือสูญหาย</li>
+          <li>กดปุ่ม <strong class="text-success">"อนุมัติตัดจำหน่าย"</strong> &rarr; <span class="font-bold text-error">ยอด Remain ในสต็อกจะถูกหักออกทันทีตามจำนวนที่อนุมัติ</span></li>
+        </ol>
+
+        {% call Demo('หน้าอนุมัติการตัดจำหน่ายพัสดุชำรุด', 'อนุมัติพัสดุชำรุด') %}
+        <div class="p-3 bg-base-200/50 rounded-xl flex justify-between items-center text-xs">
+          <span>แจ้งพัสดุชำรุด: เก้าอี้ทำงาน (ขาหัก 1 ตัว)</span>
+          <button class="btn btn-xs btn-success text-white">อนุมัติตัดจำหน่าย</button>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 18. approve-admin #}
+      <section id="approve-admin" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(18, 'ph-check-square', 'พัสดุอนุมัติคำสั่งเบิกและตัดสต็อก (ขั้นที่ 3)',
+                         'การตรวจสอบสต็อกคงเหลือจริง ตัดจ่ายพัสดุออกจากคลัง และออกเลขที่ใบเบิก Running Number') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'การอนุมัติ &rarr; พัสดุอนุมัติคำสั่งเบิก', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการอนุมัติและตัดจ่ายสต็อก (อนุมัติขั้นสุดท้าย)</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>ตรวจสอบของในคลังจริงว่ามีเพียงพอกับจำนวนที่อนุมัติหรือไม่</li>
+          <li>กดปุ่ม <strong class="text-success">"อนุมัติและตัดจ่ายสต็อก"</strong></li>
+          <li>ระบบจะออกเลขที่ใบตัดจ่าย (OUT Running Number) และ <span class="font-bold text-success">หักยอดคงเหลือ (Remain) ออกจากคลังทันที สถานะเปลี่ยนเป็น approved</span></li>
+        </ol>
+
+        {% call Demo('หน้าอนุมัติและตัดจ่ายสต็อกพัสดุขั้นสุดท้าย', 'พัสดุอนุมัติและตัดจ่าย') %}
+        <div class="space-y-2 text-xs p-3 bg-base-200/50 rounded-xl">
+          <div class="flex justify-between items-center">
+            <span>คำขอ REQ-2568-0045 (สต็อกคงเหลือ: 50 รีม)</span>
+            <button class="btn btn-xs btn-success text-white"><i class="ph ph-check text-sm"></i> อนุมัติและตัดจ่ายสต็อก</button>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 19. lost-breaks #}
+      <section id="lost-breaks" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(19, 'ph-first-aid-kit', 'การแจ้งวัสดุชำรุด/สูญหาย/แก้ไขสต็อก',
+                         'ฟอร์มสร้างคำขอแจ้งตัดจำหน่ายพัสดุชำรุด สูญหาย หรือการปรับปรุงยอดคงเหลือให้ตรงกับสต็อกจริง') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('staff', 'neutral') ~ ' ' ~ RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'วัสดุชำรุด/สูญหาย/แก้ไข', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการแจ้งพัสดุชำรุดสูญหาย</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ สร้างใบแจ้งชำรุด/สูญหาย"</strong></li>
+          <li>เลือกประเภท (ชำรุด / สูญหาย / ปรับปรุงยอดสต็อก)</li>
+          <li>เลือกรายการวัสดุ ระบุจำนวน และแนบรูปภาพถ่ายความเสียหาย</li>
+          <li>กด <strong class="text-primary">"ส่งเรื่องแจ้ง"</strong> รอหัวหน้าพัสดุตรวจอนุมัติในโมดูล 17</li>
+        </ol>
+
+        {% call Demo('ฟอร์มแจ้งวัสดุชำรุด/สูญหาย', 'แจ้งพัสดุชำรุด') %}
+        <div class="space-y-2 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" class="input input-xs w-full" value="ชำรุด (Damaged)" readonly>
+            <input type="text" class="input input-xs w-full" value="กระดาษ A4 (เปียกน้ำ)" readonly>
+            <input type="text" class="input input-xs w-full" value="5 รีม" readonly>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 20. divisions #}
+      <section id="divisions" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(20, 'ph-tree-structure', 'จัดการแผนกและโครงสร้างฝ่าย',
+                         'การตั้งค่าและแก้ไขรายชื่อแผนก/ฝ่ายภายในองค์กร สำหรับใช้ในการจัดสังกัดบุคลากร') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'จัดการองค์กร &rarr; แผนกทั้งหมด', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการเพิ่มฝ่าย/แผนก</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>กดปุ่ม <strong class="text-primary">"+ เพิ่มแผนก"</strong></li>
+          <li>กรอกชื่อแผนกภาษาไทย (เช่น ฝ่ายเทคโนโลยีสารสนเทศ)</li>
+          <li>กดบันทึก เพื่อนำแผนกนี้ไปจัดสังกัดให้สมาชิก</li>
+        </ol>
+
+        {% call Demo('ตารางรายการแผนกภายในองค์กร', 'แผนกทั้งหมด') %}
+        <div class="space-y-2 text-xs">
+          <div class="p-2 bg-base-200 rounded-lg flex justify-between">
+            <span class="font-bold">ฝ่ายเทคโนโลยีสารสนเทศ</span>
+            <span class="badge badge-sm badge-info">12 สมาชิก</span>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 21. org-users #}
+      <section id="org-users" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(21, 'ph-users', 'จัดการสมาชิกสิทธิ์ขององค์กร',
+                         'การจัดสรรบทบาทสิทธิ์ (staff, head, supervisor supplier, admin) และกำหนดสังกัดแผนกให้บุคลากร') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'จัดการองค์กร &rarr; สมาชิกขององค์กร', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการกำหนดสิทธิ์และแผนกให้สมาชิก</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เลือกรายชื่อสมาชิกในตารางองค์กร</li>
+          <li>เลือกบทบาทสิทธิ์ (staff, head, supervisor supplier, admin)</li>
+          <li>เลือกสังกัดแผนก (Division) ให้ตรงตามโครงสร้างองค์กร</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึกสิทธิ์"</strong></li>
+        </ol>
+
+        {% call Demo('ตารางจัดการสมาชิกและสิทธิ์การใช้งาน', 'สมาชิกขององค์กร') %}
+        <div class="space-y-2 text-xs">
+          <div class="p-2 bg-base-200 rounded-lg flex justify-between items-center">
+            <span>นายสมชาย ใจดี (ฝ่ายเทคโนโลยีสารสนเทศ)</span>
+            <span class="badge badge-sm badge-primary">staff</span>
+          </div>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 22. org-detail #}
+      <section id="org-detail" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(22, 'ph-buildings', 'รายละเอียดข้อมูลองค์กร',
+                         'การจัดการชื่อหน่วยงานภาษาไทย/อังกฤษ โลโก้ ที่อยู่ และช่องทางการติดต่อ') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('admin', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'จัดการองค์กร &rarr; รายละเอียดองค์กร', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการปรับแต่งข้อมูลหน่วยงาน</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>อัปเดตชื่อองค์กรภาษาไทย ภาษาอังกฤษ และอัปโหลดไฟล์โลโก้หน่วยงาน</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึกข้อมูลองค์กร"</strong></li>
+        </ol>
+
+        {% call Demo('รายละเอียดข้อมูลองค์กร', 'รายละเอียดองค์กร') %}
+        <div class="space-y-2 text-xs">
+          <input type="text" class="input input-xs w-full font-bold" value="{{ organization.name if organization else 'หน่วยงานองค์กร' }}" readonly>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ 23. user-profile #}
+      <section id="user-profile" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(23, 'ph-user-circle', 'ข้อมูลผู้ใช้งานส่วนบุคคล',
+                         'การจัดการข้อมูลส่วนตัว ชื่อ-นามสกุล เบอร์โทรศัพท์ รูปโปรไฟล์ และการเปลี่ยนรหัสผ่าน') }}
+
+        <div class="mt-4 flex flex-col gap-2">
+          {{ MetaRow('ผู้ใช้งาน', RoleBadge('ทุกบทบาท', 'primary'), 'ph-users-three') }}
+          {{ MetaRow('เมนู', 'ข้อมูลผู้ใช้งาน', 'ph-list') }}
+        </div>
+
+        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการเปลี่ยนรหัสผ่านและข้อมูลส่วนตัว</h3>
+        <ol class="mt-2 space-y-2 text-sm text-base-content/80 pl-5 list-decimal">
+          <li>เข้าเมนู <strong class="text-base-content">ข้อมูลผู้ใช้งาน</strong></li>
+          <li>แก้ไขชื่อ-นามสกุล หรือเบอร์โทรศัพท์ติดต่อ</li>
+          <li>หากต้องการเปลี่ยนรหัสผ่าน ให้กรอกรหัสผ่านเดิม และรหัสผ่านใหม่ยืนยัน 2 ครั้ง</li>
+          <li>กดปุ่ม <strong class="text-primary">"บันทึกข้อมูลส่วนตัว"</strong></li>
+        </ol>
+
+        {% call Demo('ฟอร์มข้อมูลส่วนตัวและการเปลี่ยนรหัสผ่าน', 'ข้อมูลผู้ใช้งาน') %}
+        <div class="space-y-2 text-xs">
+          <input type="text" class="input input-xs w-full" value="{{ current_user.get_resources_fullname_th() if current_user else '' }}" readonly>
+        </div>
+        {% endcall %}
+      </section>
+
+      {# ------------------------------------------------ status-summary #}
+      <section id="status-summary" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ SectionHeader(none, 'ph-path', 'ตารางสรุปสถานะคำสั่งเบิกและขั้นตอนดำเนินงาน',
+                         'สรุปสถานะการขอเบิกพัสดุ บทบาทที่เกี่ยวข้อง และขั้นตอนการดำเนินงานถัดไป') }}
+
+        <div class="mt-4 overflow-x-auto rounded-xl border border-base-300">
+          <table class="table w-full text-xs">
+            <thead>
+              <tr class="bg-base-200">
+                <th>สถานะ (Status)</th>
+                <th>คำอธิบายภาษาไทย</th>
+                <th>บทบาทที่เกี่ยวข้อง</th>
+                <th>ขั้นตอนถัดไป</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-warning">pending</span></td>
+                <td>รอหัวหน้าฝ่ายอนุมัติ</td>
+                <td><code>staff</code> (ผู้ขอ), <code>head</code></td>
+                <td>หัวหน้าฝ่ายตรวจอนุมัติส่งต่อ หรือ ปฏิเสธ</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-info">pending on supervisor supplier</span></td>
+                <td>รอหัวหน้าเจ้าหน้าที่พัสดุอนุมัติ</td>
+                <td><code>head</code>, <code>supervisor supplier</code></td>
+                <td>หัวหน้าพัสดุตรวจอนุมัติส่งต่อ หรือ ปรับจำนวน</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-accent">pending on admin</span></td>
+                <td>รอเจ้าหน้าที่พัสดุอนุมัติและตัดจ่าย</td>
+                <td><code>supervisor supplier</code>, <code>admin</code></td>
+                <td>เจ้าหน้าที่พัสดุตรวจสอบสต็อกและตัดจ่ายพัสดุ</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-success">approved</span></td>
+                <td>อนุมัติและตัดจ่ายพัสดุสำเร็จ</td>
+                <td>ทุกบทบาท</td>
+                <td>ผู้ขอรับพัสดุออกจากคลัง (เสร็จสิ้น)</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-error">denied</span></td>
+                <td>คำขอถูกปฏิเสธ (ไม่อนุมัติ)</td>
+                <td>ทุกบทบาท</td>
+                <td>สิ้นสุดกระบวนการ (แสดงเหตุผลประกอบ)</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-ghost">cancelled</span></td>
+                <td>คำขอถูกยกเลิกโดยผู้ขอเบิก</td>
+                <td><code>staff</code></td>
+                <td>คำขอถูกยกเลิกก่อนการอนุมัติ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+  (function () {
+    const tocList = document.getElementById("toc-list");
+    if (!tocList) return;
+
+    const links = Array.from(tocList.querySelectorAll("[data-toc-link]"));
+    const items = links
+      .map(function (link) {
+        const id = link.getAttribute("data-toc-link");
+        const section = document.getElementById(id);
+        return { id: id, link: link, section: section };
+      })
+      .filter(function (item) {
+        return item.section !== null;
+      });
+
+    const progressBar = document.getElementById("manual-progress-bar");
+    const progressText = document.getElementById("manual-progress-text");
+    let activeIndex = -1;
+    let ticking = false;
+
+    function currentIndex() {
+      const doc = document.documentElement;
+      const isAtBottom = (window.innerHeight + window.scrollY) >= (doc.scrollHeight - 50);
+      if (isAtBottom && items.length > 0) {
+        return items.length - 1;
+      }
+
+      const topOffset = 120;
+      let active = 0;
+      for (let i = 0; i < items.length; i++) {
+        const rect = items[i].section.getBoundingClientRect();
+        if (rect.top <= topOffset) {
+          active = i;
+        } else {
+          break;
+        }
+      }
+      return active;
+    }
+
+    function keepLinkVisible(link) {
+      if (!link) return;
+      try {
+        link.scrollIntoView({ block: "nearest", inline: "nearest" });
+      } catch (e) {
+        const list = tocList;
+        if (!list) return;
+        const listRect = list.getBoundingClientRect();
+        const linkRect = link.getBoundingClientRect();
+        if (linkRect.top < listRect.top) {
+          list.scrollTop -= listRect.top - linkRect.top + 8;
+        } else if (linkRect.bottom > listRect.bottom) {
+          list.scrollTop += linkRect.bottom - listRect.bottom + 8;
+        }
+      }
+    }
+
+    function render() {
+      ticking = false;
+
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      const percent = scrollable > 0 ? Math.round((window.scrollY / scrollable) * 100) : 100;
+      const clamped = Math.min(100, Math.max(0, percent));
+      if (progressBar) progressBar.style.width = clamped + "%";
+      if (progressText) progressText.textContent = clamped + "%";
+
+      const index = currentIndex();
+      if (index === activeIndex) return;
+      activeIndex = index;
+
+      items.forEach(function (item, i) {
+        item.link.classList.toggle("is-active", i === index);
+        item.link.classList.toggle("is-passed", i < index);
+      });
+      keepLinkVisible(items[index].link);
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(render);
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    render();
+  })();
+
+  (function () {
+    document
+      .querySelectorAll("[data-demo] input, [data-demo] select, [data-demo] textarea, [data-demo] button, [data-demo] a")
+      .forEach(function (el) {
+        el.setAttribute("tabindex", "-1");
+      });
+  })();
+</script>
+{% endblock %}

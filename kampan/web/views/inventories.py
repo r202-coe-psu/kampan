@@ -10,6 +10,7 @@ from flask import (
     request,
     send_file,
     abort,
+    g,
 )
 from flask_mongoengine import Pagination
 from flask_login import login_required, current_user
@@ -318,3 +319,32 @@ def upload_file_inventory_info(item_register_id):
 def download_template_inventory_file():
     response = utils.inventories.get_template_inventory_file()
     return response
+
+
+@module.route("/manual", methods=["GET"])
+@login_required
+@acl.organization_roles_required(
+    "admin",
+    "endorser",
+    "staff",
+    "head",
+    "supervisor supplier",
+    "manager",
+    "director",
+)
+def manual():
+    organization = getattr(g, "organization", None)
+    if not organization:
+        organization_id = request.args.get("organization_id")
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
+
+    if not organization:
+        return abort(404)
+
+    return render_template(
+        "/inventories/manual.html",
+        organization=organization,
+    )
+
