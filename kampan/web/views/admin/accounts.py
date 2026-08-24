@@ -1,24 +1,20 @@
 import datetime
+
 import markdown
 import mongoengine as me
-
 from flask import (
     Blueprint,
-    render_template,
-    url_for,
-    redirect,
-    request,
-    session,
-    current_app,
-    send_file,
     abort,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
 )
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import current_user, login_required, login_user, logout_user
 
-from ... import models
-from ... import oauth2
-from ... import acl
-from ... import forms
+from ... import acl, forms, models, oauth2
 
 module = Blueprint("accounts", __name__)
 
@@ -28,9 +24,7 @@ def get_user_and_remember():
     result = client.principal.get("me")
     data = result.json()
 
-    user = models.User.objects(
-        me.Q(username=data.get("username", "")) | me.Q(email=data.get("email", ""))
-    ).first()
+    user = models.User.objects(me.Q(username=data.get("username", "")) | me.Q(email=data.get("email", ""))).first()
     if not user:
         user = models.User(
             id=data.get("id"),
@@ -69,13 +63,11 @@ def login_oauth(name):
     client = oauth2.oauth2_client
 
     scheme = request.environ.get("HTTP_X_FORWARDED_PROTO", "http")
-    redirect_uri = url_for(
-        "admin.accounts.authorized_oauth", name=name, _external=True, _scheme=scheme
-    )
-    
+    redirect_uri = url_for("admin.accounts.authorized_oauth", name=name, _external=True, _scheme=scheme)
+
     print("Client =", client)
     print("redirect_uri =", redirect_uri)
-    
+
     response = None
     if name == "google":
         response = client.google.authorize_redirect(redirect_uri)
@@ -144,9 +136,7 @@ def index():
     biography = ""
     if current_user.biography:
         biography = markdown.markdown(current_user.biography)
-    return render_template(
-        "/admin/accounts/index.html", user=current_user, biography=biography
-    )
+    return render_template("/admin/accounts/index.html", user=current_user, biography=biography)
 
 
 @module.route("/accounts/edit-profile", methods=["GET", "POST"])
@@ -201,14 +191,41 @@ def picture(user_id, filename):
     return response
 
 
-@module.route("/user-roles")
+@module.route("/user-roles", methods=["GET", "POST"])
 @acl.roles_required("admin")
 def user_roles():
-    users = models.User.objects()
+    search_form = forms.user_roles.UserRolesSearchForm(request.args)
+    query = me.Q()
+    has_filters = False
+    role_labels = {
+        "admin": "ผู้ดูแลระบบ",
+        "supervisor": "หัวหน้างาน",
+        "user": "ผู้ใช้งาน",
+        "staff": "พนักงาน",
+        "student": "นักศึกษา",
+    }
+
+    email = search_form.email.data.strip() if search_form.email.data else ""
+    name = search_form.name.data.strip() if search_form.name.data else ""
+    role = search_form.role.data.strip() if search_form.role.data else ""
+
+    if email:
+        has_filters = True
+        query &= me.Q(email__icontains=email)
+    if name:
+        has_filters = True
+        query &= me.Q(first_name__icontains=name) | me.Q(last_name__icontains=name)
+    if role:
+        has_filters = True
+        query &= me.Q(roles=role)
+
+    users = models.User.objects(query) if has_filters else models.User.objects()
     if "admin" in current_user.roles:
         return render_template(
             "/admin/accounts/user_roles.html",
             users=users,
+            form=search_form,
+            role_labels=role_labels,
         )
     return redirect(url_for("admin.dashboard.daily_dashboard"))
 
