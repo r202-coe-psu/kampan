@@ -26,3 +26,22 @@ Profile = model_form(
 
 class UserRolesForm(Profile):
     roles = fields.SelectMultipleField("ตำแหน่ง")
+
+
+class UserRolesSearchForm(FlaskForm):
+    class Meta:
+        csrf = False
+
+    email = fields.StringField("อีเมล", validators=[validators.Optional()])
+    name = fields.StringField("ชื่อผู้ใช้งาน", validators=[validators.Optional()])
+    role = fields.SelectField(
+        "ตำแหน่ง",
+        choices=[
+            ("", "ทั้งหมด"),
+            ("admin", "ผู้ดูแลระบบ"),
+            ("supervisor", "หัวหน้างาน"),
+            ("user", "ผู้ใช้งาน"),
+        ],
+        default="",
+        validators=[validators.Optional()],
+    )

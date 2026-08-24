@@ -1,15 +1,43 @@
 {% extends '/admin/accounts/index.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 {% block title %}ระดับผู้ใช้งาน{% endblock %}
 {% block dashboard_title %}ระดับผู้ใช้งาน{% endblock %}
-{% block breadcrumbs %}ตำเเหน่งผู้ใช้งาน{% endblock %}
+{% block breadcrumbs %}ตำแหน่งผู้ใช้งาน{% endblock %}
 
 {% block content %}
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_field(form.email, placeholder="ค้นหาจากอีเมล") }}
+    </div>
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_field(form.name, placeholder="ค้นหาจากชื่อ-นามสกุล") }}
+    </div>
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_select_field(form.role) }}
+    </div>
+    <div>
+      <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md">
+        <i class="ph ph-magnifying-glass mr-2"></i>
+        ค้นหา
+      </button>
+    </div>
+    <div class="min-w-fit">
+      <a href="{{ url_for('admin.accounts.user_roles') }}"
+        class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
+        <i class="ph ph-x mr-2"></i>
+        ล้างการค้นหา
+      </a>
+    </div>
+  </form>
+</div>
+
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
-          <th class="table-style"></th>
+          <th class="table-style">ลำดับ</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">อีเมล</th>
           <th class="table-style">ตำเเหน่ง</th>
@@ -22,7 +50,12 @@
           <td class="table-style" data-label="Name">{{ loop.index }}</td>
           <td class="table-style" data-label="Name">{{ user.get_name() }}</td>
           <td class="table-style" data-label="Email">{{ user.email }}</td>
-          <td class="table-style" data-label="Roles">{{ user.roles|join(', ') }}</td>
+          <td class="table-style" data-label="Roles">
+            {% for role in user.roles %}
+              {% set label = role_labels.get(role, role) %}
+              {{ label }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </td>
           <td class="table-style flex gap-2" data-label="Edit Roles">
             <a class="btn btn-circle btn-primary" href="{{ url_for('admin.accounts.edit_roles', user_id=user.id) }}">
               <i class="ph ph-pen"></i>
@@ -30,6 +63,11 @@
           </td>
         </tr>
         {% endfor %}
+        {% if users|length == 0 %}
+        <tr>
+          <td class="table-style text-center text-base-content/60" colspan="5">ไม่พบข้อมูลผู้ใช้งาน</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
