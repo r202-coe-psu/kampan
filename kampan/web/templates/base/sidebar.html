@@ -224,6 +224,12 @@
     {% endif %}
     {% if organization %}
     <li>
+      <a class="{{ 'menu-active' if '/inventories/manual' in request.path else '' }}"
+        href="{{ url_for('inventories.manual', organization_id=organization.id) }}">
+        <i class="ph ph-size ph-book-open"></i> คู่มือการใช้งาน
+      </a>
+    </li>
+    <li>
       <a class="{{ 'menu-active' if '/accounts' in request.path else '' }}"
         href="{{ url_for('accounts.index',organization_id=organization.id) }}">
         <i class="ph ph-size ph-house-line"></i> ข้อมูลผู้ใช้งาน
