@@ -12,6 +12,7 @@ from flask import (
     session,
     url_for,
 )
+from flask_mongoengine import Pagination
 from flask_login import current_user, login_required, login_user, logout_user
 
 from ... import acl, forms, models, oauth2
@@ -191,19 +192,16 @@ def picture(user_id, filename):
     return response
 
 
-@module.route("/user-roles", methods=["GET", "POST"])
+@module.route("/user-roles")
 @acl.roles_required("admin")
 def user_roles():
     search_form = forms.user_roles.UserRolesSearchForm(request.args)
+    if not search_form.validate():
+        abort(400, description="Invalid user search filters")
+
     query = me.Q()
     has_filters = False
-    role_labels = {
-        "admin": "ผู้ดูแลระบบ",
-        "supervisor": "หัวหน้างาน",
-        "user": "ผู้ใช้งาน",
-        "staff": "พนักงาน",
-        "student": "นักศึกษา",
-    }
+    role_labels = dict(forms.user_roles.USER_ROLE_CHOICES)
 
     email = search_form.email.data.strip() if search_form.email.data else ""
     name = search_form.name.data.strip() if search_form.name.data else ""
@@ -214,16 +212,24 @@ def user_roles():
         query &= me.Q(email__icontains=email)
     if name:
         has_filters = True
-        query &= me.Q(first_name__icontains=name) | me.Q(last_name__icontains=name)
+        query &= (
+            me.Q(first_name__icontains=name)
+            | me.Q(last_name__icontains=name)
+            | me.Q(resources__psu__display_name_th__icontains=name)
+            | me.Q(resources__psu__display_name__icontains=name)
+        )
     if role:
         has_filters = True
         query &= me.Q(roles=role)
 
     users = models.User.objects(query) if has_filters else models.User.objects()
+    users = users.order_by("last_name", "first_name")
+    page = max(request.args.get("page", default=1, type=int), 1)
+    paginated_users = Pagination(users, page=page, per_page=30)
     if "admin" in current_user.roles:
         return render_template(
             "/admin/accounts/user_roles.html",
-            users=users,
+            paginated_users=paginated_users,
             form=search_form,
             role_labels=role_labels,
         )

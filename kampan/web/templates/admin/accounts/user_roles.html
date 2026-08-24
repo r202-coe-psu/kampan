@@ -1,5 +1,6 @@
 {% extends '/admin/accounts/index.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
 {% block title %}ระดับผู้ใช้งาน{% endblock %}
 {% block dashboard_title %}ระดับผู้ใช้งาน{% endblock %}
 {% block breadcrumbs %}ตำแหน่งผู้ใช้งาน{% endblock %}
@@ -8,10 +9,10 @@
 <div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
     <div class="flex-1 min-w-48">
-      {{ renderer.render_field(form.email, placeholder="ค้นหาจากอีเมล") }}
+      {{ renderer.render_field(form.name, placeholder="ค้นหาจากชื่อ-นามสกุล") }}
     </div>
     <div class="flex-1 min-w-48">
-      {{ renderer.render_field(form.name, placeholder="ค้นหาจากชื่อ-นามสกุล") }}
+      {{ renderer.render_field(form.email, placeholder="ค้นหาจากอีเมล") }}
     </div>
     <div class="flex-1 min-w-48">
       {{ renderer.render_select_field(form.role) }}
@@ -45,7 +46,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for user in users %}
+        {% for user in paginated_users.items %}
         <tr>
           <td class="table-style" data-label="Name">{{ loop.index }}</td>
           <td class="table-style" data-label="Name">{{ user.get_name() }}</td>
@@ -63,13 +64,18 @@
           </td>
         </tr>
         {% endfor %}
-        {% if users|length == 0 %}
+        {% if paginated_users.items|length == 0 %}
         <tr>
           <td class="table-style text-center text-base-content/60" colspan="5">ไม่พบข้อมูลผู้ใช้งาน</td>
         </tr>
         {% endif %}
       </tbody>
     </table>
+    {% set params = request.args.to_dict() %}
+    {% set _dummy = params.pop('page', None) %}
+    {% if paginated_users.pages != 1 %}
+      {{ paginated.render_pagination(paginated_users, 'admin.accounts.user_roles', params) }}
+    {% endif %}
   </div>
 </div>
 {% endblock %}
