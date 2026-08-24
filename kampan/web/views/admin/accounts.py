@@ -201,6 +201,8 @@ def user_roles():
         "admin": "ผู้ดูแลระบบ",
         "supervisor": "หัวหน้างาน",
         "user": "ผู้ใช้งาน",
+        "staff": "พนักงาน",
+        "student": "นักศึกษา",
     }
 
     email = search_form.email.data.strip() if search_form.email.data else ""
