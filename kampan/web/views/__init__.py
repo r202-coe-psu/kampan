@@ -15,17 +15,43 @@ def add_date_url(url):
     return f'{url}?date={now.strftime("%Y%m%d")}'
 
 
+# หน้าแรกของแต่ละโมดูล ใช้เวลาสลับหน่วยงานเพื่อพากลับไปตั้งต้นของโมดูลนั้น
+MODULE_HOME_ENDPOINTS = {
+    "procurement": "procurement.requisitions.renewal_requested",
+    "vehicle_lending": "vehicle_lending.car_applications.calendar",
+    "admin": "admin.index",
+}
+INVENTORY_HOME_ENDPOINT = "item_orders.index"
+MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
+NON_MODULE_BLUEPRINTS = {"site", "accounts", "organizations", "notifications"}
+
+
 def switch_organization_next_url(organization):
+    """หา URL หน้าแรกของโมดูลที่ผู้ใช้อยู่ เพื่อ redirect หลังสลับหน่วยงาน
+
+    ไม่พากลับหน้าเดิม เพราะข้อมูลบนหน้านั้นมักผูกกับหน่วยงานเดิม (เช่นหน้ารายละเอียด)
+    """
 
     if not request.endpoint or request.endpoint == "static":
         return None
 
-    values = dict(request.view_args or {})
-    values.update(request.args.to_dict())
-    values["organization_id"] = str(organization.id)
+    module_name = request.endpoint.split(".")[0]
+    endpoint = MODULE_HOME_ENDPOINTS.get(module_name)
+
+    if module_name == "vehicle_lending" and "motorcycle" in request.endpoint:
+        endpoint = MOTORCYCLE_HOME_ENDPOINT
+
+    if not endpoint:
+        if module_name in NON_MODULE_BLUEPRINTS:
+            # หน้าเลือกระบบ/บัญชี ไม่ได้อยู่ในโมดูลใด ให้ view จัดการ fallback เอง
+            return None
+        # โมดูลคลังพัสดุอยู่ที่ blueprint ระดับบนสุดหลายตัว จึงใช้หน้าแรกร่วมกัน
+        endpoint = INVENTORY_HOME_ENDPOINT
 
     try:
-        return url_for(request.endpoint, **values)
+        if endpoint == "admin.index":
+            return url_for(endpoint)
+        return url_for(endpoint, organization_id=str(organization.id))
     except Exception:
         return None
 
