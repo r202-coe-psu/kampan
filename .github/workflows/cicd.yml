@@ -4,14 +4,28 @@ on:
   push:
     branches:
       - main
-
       - develop
+
+permissions:
+  contents: read
 
 jobs:
   deploy-staging:
     if: github.ref == 'refs/heads/develop'
 
-    runs-on: github-runner
+    environment:
+      name: staging
+
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - Staging
+      - github-runner
 
     steps:
       # 0. Clean docker images and build cache
@@ -28,7 +42,7 @@ jobs:
 
       - name: Checkout Code
 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 2. Copy .env from GitHub Secrets
 
@@ -50,16 +64,30 @@ jobs:
 
           DEBUG=false FORCE_OPEN=true docker compose --env-file kampan-development.cfg -f docker-compose.development.yml up -d --build --remove-orphans
 
-      # 4. Remove sensitive files
+      # 4. Remove sensitive files, even when deployment fails
 
-      # - name: Cleanup
+      - name: Cleanup
 
-      #   run: rm -f $GITHUB_WORKSPACE/kampan-development.cfg
+        if: ${{ always() }}
+
+        run: rm -f "$GITHUB_WORKSPACE/kampan-development.cfg"
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
 
-    runs-on: github-production-runner
+    environment:
+      name: production
+
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - Production
+      - github-production-runner
 
     steps:
       # 0. Clean docker images and build cache
@@ -76,7 +104,7 @@ jobs:
 
       - name: Checkout Code
 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 2. Copy .env from GitHub Secrets
 
@@ -102,4 +130,6 @@ jobs:
 
       - name: Cleanup
 
-        run: rm -f $GITHUB_WORKSPACE/kampan-production.cfg
+        if: ${{ always() }}
+
+        run: rm -f "$GITHUB_WORKSPACE/kampan-production.cfg"
