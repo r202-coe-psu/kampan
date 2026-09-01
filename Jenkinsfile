@@ -66,11 +66,11 @@ pipeline {
                         ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "
                             echo '==> Deploying kampan...'
                             cd /home/projects/kampan
-                            sudo git -C /home/projects/kampan fetch origin main
-                            sudo git -C /home/projects/kampan checkout main
-                            sudo git -C /home/projects/kampan reset --hard origin/main
-                            sudo git -C /home/projects/kampan pull origin main
-                            sudo docker compose -f docker-compose.yml up -d --build --force-recreate
+                            git -C /home/projects/kampan fetch origin main
+                            git -C /home/projects/kampan checkout main
+                            git -C /home/projects/kampan reset --hard origin/main
+                            git -C /home/projects/kampan pull origin main
+                            docker compose -f docker-compose.yml up -d --build --force-recreate
                         "
                         echo "Deployment process finished successfully!"
                     '''
