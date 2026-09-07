@@ -341,7 +341,11 @@
                   </button>
                   <button class="btn btn-success flex items-center gap-1.5 text-white" onclick="submitForm('approve', '{{ car_application.id }}')">
                     <i class="ph ph-check-circle text-lg"></i>
-                    อนุมัติ
+                    {% if car_application.using_type == 'out of town' %}
+                      อนุมัติและเสนอ ผอ.
+                    {% else %}
+                      อนุมัติ
+                    {% endif %}
                   </button>
                 </div>
               </div>

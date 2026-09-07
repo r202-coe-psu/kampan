@@ -302,16 +302,18 @@
           <div class="rounded-xl border border-base-300 p-4">
             <div class="mb-3 flex items-center gap-2">
               <span class="badge badge-sm badge-secondary">กรณีที่ 2</span>
-              <span class="text-sm font-bold">ไปต่างจังหวัด (ข้ามขั้นหัวหน้าฝ่าย ไปเสนอ ผอ. โดยตรง)</span>
+              <span class="text-sm font-bold">ไปต่างจังหวัด</span>
             </div>
             <div class="flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
               {{ FlowNode('ผู้ขอสร้างคำขอ', 'secondary', 'พนักงาน') }}
               {{ FlowArrow() }}
-              {{ FlowNode('รอพัสดุเสนอ ผอ.', 'warning', 'pending on director') }}
+              {{ FlowNode('รอหัวหน้าฝ่ายอนุมัติ', 'warning', 'pending on header') }}
               {{ FlowArrow() }}
-              {{ FlowNode('รอพัสดุอนุมัติ', 'warning', 'pending on admin') }}
+              {{ FlowNode('พัสดุเลือกรถ/คนขับ', 'warning', 'pending on admin') }}
               {{ FlowArrow() }}
-              {{ FlowNode('อนุมัติสำเร็จ', 'success', 'active + จ่ายรถ/คนขับ') }}
+              {{ FlowNode('รอ ผอ. อนุมัติ', 'warning', 'pending on director') }}
+              {{ FlowArrow() }}
+              {{ FlowNode('อนุมัติสำเร็จ', 'success', 'active') }}
               {{ FlowArrow() }}
               {{ FlowNode('เสร็จสิ้น', 'neutral', 'completed + เลขไมล์') }}
             </div>

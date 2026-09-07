@@ -283,6 +283,28 @@
                         <div class="font-semibold text-base text-base-content">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M') }} น.</div>
                       </div>
                     </div>
+
+                    <!-- Allocated Car -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+                        <i class="ph ph-car text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">รถยนต์ที่จัดสรร</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.car.license_plate if car_application.car else "ยังไม่ได้ระบุ" }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Allocated Driver -->
+                    <div class="flex items-start gap-3 bg-base-100 p-3 rounded-lg border border-base-200">
+                      <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
+                        <i class="ph ph-steering-wheel text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="text-xs text-base-content/50 font-medium">พนักงานขับรถ</div>
+                        <div class="font-semibold text-base text-base-content">{{ car_application.driver.get_resources_fullname_th() if car_application.driver else "ยังไม่ได้ระบุ" }}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

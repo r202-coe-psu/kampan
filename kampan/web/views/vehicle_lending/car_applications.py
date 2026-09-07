@@ -173,8 +173,6 @@ def create_or_edit(car_application_id):
         )
     car_application.status = "pending on header"
 
-    if form.using_type.data == "out of town":
-        car_application.status = "pending on director"
     if form.using_type.data == "airport transfer":
         car_application.flight_datetime = datetime.datetime.combine(
             form.departure_date.data, form.flight_time.data

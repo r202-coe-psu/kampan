@@ -4,7 +4,7 @@ import mongoengine as me
 
 CAR_APPLICATION_STATUS = [
     ("pending on header", "รอหัวหน้าฝ่ายอนุมัติ"),
-    ("pending on director", "รอพัสดุเสนอ ผอ."),
+    ("pending on director", "รอ ผอ. อนุมัติ"),
     ("pending on admin", "รอพัสดุอนุมัติ"),
     ("active", "อนุมัติสำเร็จ"),
     ("completed", "เสร็จสิ้น"),

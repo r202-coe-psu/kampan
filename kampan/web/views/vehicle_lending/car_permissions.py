@@ -176,7 +176,9 @@ def header_denied():
 
 
 @module.route("/director_page", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "head", "supervisor supplier", "director"
+)
 def director_page():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
@@ -257,7 +259,9 @@ def director_page():
 
 
 @module.route("/director_approve", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "head", "supervisor supplier", "director"
+)
 def director_approve():
     organization_id = request.form.get("organization_id")
     car_application_id = request.form.get("car_application_id")
@@ -269,7 +273,7 @@ def director_approve():
     car_application = models.vehicle_applications.CarApplication.objects(
         id=car_application_id
     ).first()
-    car_application.status = "pending on admin"
+    car_application.status = "active"
     car_application.director_approval = (
         models.vehicle_applications.CarApplicationApproval(
             approved_by=current_user._get_current_object(),
@@ -278,14 +282,13 @@ def director_approve():
     )
     car_application.save()
     job = redis_rq.redis_queue.queue.enqueue(
-        utils.email_utils.send_email_car_application_to_endorser,
+        utils.send_email_to_drivers.force_send_email_to_driver,
         args=(
             car_application,
             current_user._get_current_object(),
             current_app.config,
-            car_application.status,
         ),
-        job_id=f"send_email_car_application_to_endorser_{car_application.id}",
+        job_id=f"send_email_to_driver_{car_application.id}",
         timeout=600,
         job_timeout=600,
     )
@@ -298,7 +301,9 @@ def director_approve():
 
 
 @module.route("/director_denied", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "head", "supervisor supplier")
+@acl.organization_roles_required(
+    "admin", "endorser", "head", "supervisor supplier", "director"
+)
 def director_denied():
     organization_id = request.form.get("organization_id")
     car_application_id = request.form.get("car_application_id")
@@ -439,24 +444,40 @@ def admin_approve():
     if driver_id:
         car_application.driver = models.User.objects(id=driver_id).first()
 
-    car_application.status = "active"
     car_application.admin_approval = models.vehicle_applications.CarApplicationApproval(
         approved_by=current_user._get_current_object(),
         approved_at=datetime.datetime.now(),
     )
-    car_application.save()
 
-    job = redis_rq.redis_queue.queue.enqueue(
-        utils.send_email_to_drivers.force_send_email_to_driver,
-        args=(
-            car_application,
-            current_user._get_current_object(),
-            current_app.config,
-        ),
-        job_id=f"send_email_to_driver_{car_application.id}",
-        timeout=600,
-        job_timeout=600,
-    )
+    if car_application.using_type == "out of town":
+        car_application.status = "pending on director"
+        car_application.save()
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.email_utils.send_email_car_application_to_endorser,
+            args=(
+                car_application,
+                current_user._get_current_object(),
+                current_app.config,
+                car_application.status,
+            ),
+            job_id=f"send_email_car_application_to_endorser_{car_application.id}",
+            timeout=600,
+            job_timeout=600,
+        )
+    else:
+        car_application.status = "active"
+        car_application.save()
+        job = redis_rq.redis_queue.queue.enqueue(
+            utils.send_email_to_drivers.force_send_email_to_driver,
+            args=(
+                car_application,
+                current_user._get_current_object(),
+                current_app.config,
+            ),
+            job_id=f"send_email_to_driver_{car_application.id}",
+            timeout=600,
+            job_timeout=600,
+        )
 
     return redirect(
         url_for(
