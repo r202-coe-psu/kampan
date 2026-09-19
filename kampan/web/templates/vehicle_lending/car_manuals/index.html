@@ -709,7 +709,7 @@
                   <tr>
                     <td class="table-style font-semibold">ไปต่างจังหวัด</td>
                     <td class="table-style">&ndash;</td>
-                    <td class="table-style"><span class="badge badge-sm badge-warning">รอพัสดุเสนอ ผอ.</span></td>
+                    <td class="table-style"><span class="badge badge-sm badge-warning">รอหัวหน้าฝ่ายอนุมัติ</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -730,17 +730,17 @@
             </p>
           </li>
           <li class="text-sm">
-            <span class="font-bold text-base-content">5. รถยนต์ / พนักงานขับรถ (ไม่บังคับ)</span>
+            <span class="font-bold text-base-content">5. รถยนต์ / พนักงานขับรถ</span>
             <p class="text-base-content/70">
-              เว้นเป็น &ldquo;ไม่ได้ระบุ&rdquo; ได้ ปกติพัสดุจะเป็นผู้จ่ายรถและพนักงานขับรถให้ในขั้นอนุมัติสุดท้าย
-              การเลือกไว้ถือเป็นการแจ้งความประสงค์เท่านั้น
+              ผู้ขอไม่ต้องเลือกในฟอร์มนี้ พัสดุจะเป็นผู้ตรวจสอบคิวรถและจัดสรรรถกับพนักงานขับรถในขั้นอนุมัติ
             </p>
           </li>
           <li class="text-sm">
             <span class="font-bold text-base-content">6. บันทึก</span>
             <p class="text-base-content/70">
               ระบบบันทึกฝ่าย (division) ของผู้ขอไว้กับคำขอโดยอัตโนมัติ (ใช้ในการกรองของหัวหน้าฝ่าย)
-              และส่งอีเมลแจ้งผู้อนุมัติขั้นถัดไปทันที
+              และส่งอีเมลแจ้งผู้อนุมัติขั้นถัดไปเมื่อคำขอถูกส่งหรืออนุมัติผ่านแต่ละขั้น
+              (กรณีปฏิเสธ ระบบจะบันทึกเหตุผลไว้ในคำขอ)
             </p>
           </li>
         </ol>
@@ -978,14 +978,14 @@
             <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-pen text-primary"></i>แก้ไข</div>
             <p class="mt-1 text-sm text-base-content/70">
               ปุ่มแก้ไขจะแสดง <span class="font-semibold">เฉพาะคำขอที่ยังอยู่ในสถานะรออนุมัติ</span>
-              เมื่อผ่านอนุมัติแล้วหรือถูกปฏิเสธแล้วจะแก้ไขไม่ได้
+              เมื่อผ่านอนุมัติแล้วหรือถูกปฏิเสธแล้ว หน้ารายการจะไม่แสดงปุ่มแก้ไข
             </p>
           </div>
           <div class="rounded-xl border border-base-300 p-4">
             <div class="flex items-center gap-2 text-sm font-bold"><i class="ph ph-size ph-trash text-error"></i>ลบ / ยกเลิก</div>
             <p class="mt-1 text-sm text-base-content/70">
-              เปลี่ยนสถานะเป็น &ldquo;ยกเลิก&rdquo; ไม่ได้ลบข้อมูลจริง
-              ปุ่มจะถูกปิดการใช้งานเมื่อคำขออนุมัติสำเร็จแล้ว
+              เมื่อกดยืนยัน ระบบจะเปลี่ยนสถานะเป็น &ldquo;ยกเลิก&rdquo; โดยไม่ได้ลบข้อมูลจริง
+              หน้ารายการทำให้ปุ่มดูปิดการใช้งานเมื่ออนุมัติสำเร็จ แต่ backend เดิมยังรับคำขอจาก route นี้
             </p>
           </div>
           <div class="rounded-xl border border-base-300 p-4">
@@ -1072,7 +1072,7 @@
       {# ------------------------------------------------ 5. header approve #}
       <section id="header-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
         {{ SectionHeader(5, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์',
-                         'อนุมัติขั้นที่ 1 สำหรับคำขอประเภทใช้รถทั่วไปและรับส่งสนามบิน') }}
+                         'อนุมัติขั้นที่ 1 ก่อนส่งคำขอเข้าสู่ขั้นพัสดุ สำหรับทุกประเภทการใช้รถ') }}
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', 'หัวหน้าฝ่าย, ผู้มีสิทธิ์อนุมัติ, หัวหน้าฝ่ายบริหารจัดการ, พัสดุ', 'ph-users-three') }}
@@ -1107,8 +1107,8 @@
           </li>
         </ol>
 
-        {{ Note('คำขอประเภท <span class="font-semibold">ไปต่างจังหวัด</span> จะไม่ปรากฏในหน้านี้
-                 เพราะระบบข้ามขั้นหัวหน้าฝ่ายและส่งไปที่หน้า &ldquo;ผอ. อนุมัติขอใช้รถยนต์&rdquo; โดยตรง',
+        {{ Note('คำขอประเภท <span class="font-semibold">ไปต่างจังหวัด</span> จะปรากฏในหน้านี้เหมือนประเภทอื่น
+                 เมื่อหัวหน้าฝ่ายอนุมัติแล้วจึงไปที่พัสดุเพื่อจัดสรรรถ/คนขับ และส่งต่อไปที่หน้า &ldquo;ผอ. อนุมัติขอใช้รถยนต์&rdquo;',
                 'info', 'ph-info') }}
 
         {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
@@ -1126,7 +1126,7 @@
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', 'ผู้อำนวยการ / หัวหน้าฝ่ายบริหาร, พัสดุ', 'ph-users-three') }}
-          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">รอพัสดุเสนอ ผอ.</span> ของทั้งหน่วยงาน (ไม่กรองตามฝ่าย)', 'ph-funnel') }}
+          {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">รอ ผอ. อนุมัติ</span> ของทั้งหน่วยงาน (ไม่กรองตามฝ่าย)', 'ph-funnel') }}
         </div>
 
         <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
@@ -1261,9 +1261,9 @@
         </div>
         {% endcall %}
 
-        {{ Note('ถ้าไม่เลือกพนักงานขับรถ คำขอจะยังถือว่าอนุมัติสำเร็จ แต่จะไม่มีใครเห็นงานนี้ในเมนู &ldquo;รายการงาน&rdquo; ของตน
-                 และจะไม่มีอีเมลแจ้งคนขับ &mdash; จึงควรเลือกคนขับทุกครั้งที่อนุมัติ',
-                'warning', 'ph-warning-circle', 'ข้อควรระวัง:') }}
+        {{ Note('หน้าอนุมัติจะเตือนให้เลือกทั้งรถยนต์และพนักงานขับรถก่อนกดอนุมัติ
+                 ถ้ามีการส่งค่าเข้ามา backend จะบันทึกรถ/คนขับกับคำขอ และเมื่ออนุมัติแล้วระบบจะส่งอีเมลแจ้งคนขับ',
+                'info', 'ph-info', 'การจัดสรรงาน:') }}
 
         {% if current_user.has_organization_roles("admin") %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
@@ -1486,9 +1486,9 @@
                 <td class="table-style">หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์</td>
               </tr>
               <tr>
-                <td class="table-style"><span class="font-semibold text-primary">รอพัสดุเสนอ ผอ.</span></td>
-                <td class="table-style">คำขอไปต่างจังหวัด ที่เพิ่งสร้าง</td>
-                <td class="table-style">ผู้อำนวยการ (พัสดุเป็นผู้เสนอ)</td>
+                <td class="table-style"><span class="font-semibold text-primary">รอ ผอ. อนุมัติ</span></td>
+                <td class="table-style">คำขอไปต่างจังหวัดที่ผ่านหัวหน้าฝ่ายและพัสดุจัดสรรรถ/คนขับแล้ว</td>
+                <td class="table-style">ผู้อำนวยการ</td>
                 <td class="table-style">ผอ. อนุมัติขอใช้รถยนต์</td>
               </tr>
               <tr>
