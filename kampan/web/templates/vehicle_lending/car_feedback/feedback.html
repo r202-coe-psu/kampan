@@ -1,74 +1,197 @@
 {% extends '/vehicle_lending/base/car-feedback-page.html' %}
 {% block title %}ประเมินความพึงพอใจ - {{ car.license_plate }}{% endblock %}
 
-{% import '/base/html-renderer.html' as renderer %}
+{% macro render_errors(field) %}
+  {% if field.errors %}
+  <div class="mt-3 flex items-start gap-2 text-sm font-medium text-error" role="alert">
+    <i class="ph ph-warning-circle mt-0.5 shrink-0"></i>
+    <div>
+      {% for error in field.errors %}
+        {% if 'This field is required' in error %}กรุณากรอกข้อมูล{% else %}{{ error }}{% endif %}
+        {% if not loop.last %}<br>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro question_label(field, index) %}
+  <div class="flex items-start gap-3">
+    <span class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#0f2747]/10 text-sm font-bold text-[#0f2747]">
+      {{ '%02d'|format(index) }}
+    </span>
+    <div>
+      <p class="text-base font-bold leading-snug text-base-content sm:text-lg">
+        {{ field.label.text }}
+        {% if field.flags.required %}<span class="ml-1 text-error" aria-label="จำเป็น">*</span>{% endif %}
+      </p>
+    </div>
+  </div>
+{% endmacro %}
+
+{% block head %}
+<meta name="description" content="แบบประเมินความพึงพอใจการใช้บริการรถยนต์">
+{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-8">
-  <form method="POST" class="flex flex-col gap-6">
-    {{ form.hidden_tag() }}
+<main class="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(15,39,71,0.10),_transparent_32rem),linear-gradient(135deg,_#f8fafc_0%,_#eef2f7_100%)] px-4 py-6 text-base-content sm:px-6 sm:py-10 lg:px-8">
+  <div class="mx-auto max-w-5xl">
+    <form method="POST" class="sm:mt-0">
+      {{ form.hidden_tag() }}
 
-    <!-- Header Card -->
-    <div class="card bg-base-100 shadow-sm border-t-4 border-t-primary rounded-box overflow-hidden">
-      <div class="card-body p-6 md:p-8">
-        <h1 class="card-title text-2xl font-bold text-base-content mb-2">{{ template.name }}</h1>
+    <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5" aria-labelledby="feedback-title">
+      <div class="relative isolate overflow-hidden rounded-[2rem] bg-[#0f2747] px-6 py-8 text-slate-50 shadow-xl shadow-[#0f2747]/20 sm:px-9 sm:py-10">
+        <div class="absolute -right-16 -top-20 -z-10 size-64 rounded-full border-[24px] border-primary-content/10"></div>
+        <div class="absolute -bottom-24 right-14 -z-10 size-48 rounded-full bg-primary-content/10 blur-3xl"></div>
+        <h1 id="feedback-title" class="max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+          {{ template.name }}
+        </h1>
         {% if template.description %}
-        <p class="text-base-content/70 text-base leading-relaxed">{{ template.description }}</p>
+        <p class="mt-4 max-w-xl text-sm leading-7 text-primary-content/80 sm:text-base">{{ template.description }}</p>
         {% endif %}
 
-        <div class="divider my-2"></div>
-
-        <div class="flex items-center gap-3">
-          <div class="avatar placeholder">
-            <div class="bg-primary/10 text-primary rounded-full w-10">
-              <i class="ph ph-car text-xl"></i>
-            </div>
+        <div class="mt-8 flex items-center gap-3 border-t border-primary-content/20 pt-5">
+          <div class="flex size-12 items-center justify-center rounded-2xl bg-primary-content/15 text-primary-content">
+            <i class="ph ph-car-simple text-2xl"></i>
           </div>
           <div>
-            <p class="text-sm text-base-content/60">แบบประเมินสำหรับรถยนต์</p>
-            <p class="font-bold text-base-content">{{ car.license_plate }}</p>
+            <p class="text-xs font-medium text-primary-content/60">รถที่ให้บริการ</p>
+            <p class="text-lg font-bold tracking-wide">{{ car.license_plate }}</p>
           </div>
         </div>
         {% if car.description %}
-        <p class="text-xs text-base-content/50 mt-1">{{ car.description }}</p>
+        <p class="mt-4 max-w-md text-xs leading-6 text-primary-content/60">{{ car.description }}</p>
         {% endif %}
+      </div>
 
+      <div class="rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-7 shadow-lg shadow-slate-900/5 sm:px-8 sm:py-8">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="mt-2 text-xl font-bold tracking-tight">เที่ยวที่ใช้บริการ</h2>
+          </div>
+          <i class="ph ph-map-pin-line text-2xl text-base-content/25"></i>
+        </div>
         {% if form.car_application %}
-        <div class="mt-4">
-          {{ renderer.render_select_field(form.car_application) }}
+        <fieldset class="mt-7" id="field-{{ form.car_application.id }}">
+          <label for="{{ form.car_application.id }}" class="mb-2 block text-sm font-semibold text-base-content/70">
+            {{ form.car_application.label.text }}
+            {% if form.car_application.flags.required %}<span class="ml-1 text-error">*</span>{% endif %}
+          </label>
+          <select id="{{ form.car_application.id }}" name="{{ form.car_application.name }}"
+            class="select select-bordered h-auto min-h-14 w-full rounded-xl border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-[#0f2747] focus:ring-4 focus:ring-[#0f2747]/15">
+            {% for value, label in form.car_application.choices %}
+            <option value="{{ value }}" {% if form.car_application.data|string == value|string %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {{ render_errors(form.car_application) }}
+        </fieldset>
+        {% else %}
+        <div class="mt-7 rounded-2xl border border-dashed border-base-300 bg-base-200/50 p-4 text-sm leading-6 text-base-content/65">
+          แบบประเมินนี้ไม่มีเที่ยวรถที่ต้องเลือกเพิ่มเติม
         </div>
         {% endif %}
-
-        <p class="text-error text-sm mt-4 font-medium">* จำเป็น</p>
+        <div class="mt-7 flex items-start gap-2 border-t border-base-300 pt-5 text-xs leading-5 text-base-content/55">
+          <i class="ph ph-info mt-0.5 shrink-0 text-[#0f2747]"></i>
+          <span>ตอบคำถามตามประสบการณ์จริงของคุณ ช่องที่มีเครื่องหมาย <span class="font-bold text-error">*</span> เป็นข้อมูลจำเป็น</span>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Question Cards -->
-    {% for q in template.questions %}
-    {% set field = form['answer_' ~ q.question_id] %}
-    <div
-      class="card bg-base-100 shadow-sm border border-base-200 rounded-box transition-colors hover:border-primary/30">
-      <div class="card-body p-6 md:p-8">
-        {% if q.question_type == 'score' %}
-        {{ renderer.render_score_field(field) }}
-        {% elif q.question_type == 'text' %}
-        {{ renderer.render_text_area_field(field) }}
-        {% elif q.question_type == 'boolean' %}
-        {{ renderer.render_radio_field(field) }}
-        {% elif q.question_type == 'single_choice' %}
-        {{ renderer.render_radio_field(field) }}
-        {% elif q.question_type == 'multiple_choice' %}
-        {{ renderer.render_checkbox_list_field(field) }}
-        {% endif %}
+      <section class="mt-6 overflow-hidden rounded-[2rem] border border-base-300/80 bg-base-100 shadow-lg shadow-slate-900/5 sm:mt-8" aria-labelledby="questions-title">
+        <div class="flex flex-col gap-3 border-b border-base-300 bg-base-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-8">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#0f2747]">Your perspective</p>
+            <h2 id="questions-title" class="mt-2 text-2xl font-bold tracking-tight">ช่วยเล่าประสบการณ์ของคุณ</h2>
+          </div>
+          <span class="self-start rounded-lg bg-base-200 px-3 py-1.5 text-xs font-semibold text-base-content/60 sm:self-auto">
+            {{ template.questions|length }} คำถาม
+          </span>
+        </div>
+
+        <div class="divide-y divide-base-300">
+          {% for q in template.questions %}
+          {% set field = form['answer_' ~ q.question_id] %}
+          <article class="px-6 py-7 transition-colors hover:bg-base-200/30 sm:px-8 sm:py-8" id="question-{{ q.question_id }}">
+            {% if q.question_type == 'score' %}
+            <fieldset class="grid gap-5 sm:grid-cols-[minmax(12rem,0.8fr)_minmax(18rem,1.2fr)] sm:items-center">
+              {{ question_label(field, loop.index) }}
+              <div>
+                <div class="grid grid-cols-5 gap-2 sm:gap-3" role="radiogroup" aria-label="{{ field.label.text }}">
+                  {% for subfield in field %}
+                  <label class="group cursor-pointer text-center">
+                    {{ subfield(class_="peer sr-only") }}
+                    <span class="flex aspect-square items-center justify-center rounded-2xl border border-base-300 bg-base-100 text-lg font-bold text-base-content/55 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747] peer-checked:text-white peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20 sm:text-xl">
+                      {{ subfield.label.text }}
+                    </span>
+                  </label>
+                  {% endfor %}
+                </div>
+                <div class="mt-2 flex justify-between text-[11px] font-semibold text-base-content/45">
+                  <span>น้อยที่สุด</span>
+                  <span>มากที่สุด</span>
+                </div>
+                {{ render_errors(field) }}
+              </div>
+            </fieldset>
+            {% elif q.question_type == 'text' %}
+            <fieldset>
+              {{ question_label(field, loop.index) }}
+              <div class="mt-5 pl-12 sm:pl-12">
+                <textarea name="{{ field.name }}" id="{{ field.id }}" rows="4"
+                  class="textarea textarea-bordered w-full rounded-2xl border-base-300 bg-base-100 text-sm leading-7 shadow-sm outline-none transition placeholder:text-base-content/35 focus:border-[#0f2747] focus:ring-4 focus:ring-[#0f2747]/15"
+                  placeholder="เขียนความคิดเห็นหรือข้อเสนอแนะของคุณ">{{ field.data if field.data else field.default if field.default else '' }}</textarea>
+                {{ render_errors(field) }}
+              </div>
+            </fieldset>
+            {% elif q.question_type == 'boolean' or q.question_type == 'single_choice' %}
+            <fieldset>
+              {{ question_label(field, loop.index) }}
+              <div class="mt-5 grid gap-2 pl-12 sm:grid-cols-2 sm:gap-3">
+                {% for subfield in field %}
+                <label class="group cursor-pointer">
+                  {{ subfield(class_="peer sr-only") }}
+                  <span class="flex min-h-12 items-center gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747]/5 peer-checked:text-[#0f2747] peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20">
+                    <i class="ph ph-check-circle text-lg text-base-content/30 transition-colors group-hover:text-[#0f2747] peer-checked:text-[#0f2747]"></i>
+                    {{ subfield.label.text }}
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+              <div class="pl-12">{{ render_errors(field) }}</div>
+            </fieldset>
+            {% elif q.question_type == 'multiple_choice' %}
+            <fieldset>
+              {{ question_label(field, loop.index) }}
+              <div class="mt-5 grid gap-2 pl-12 sm:grid-cols-2 sm:gap-3">
+                {% for subfield in field %}
+                <label class="group cursor-pointer">
+                  {{ subfield(class_="peer sr-only") }}
+                  <span class="flex min-h-12 items-center gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747]/5 peer-checked:text-[#0f2747] peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20">
+                    <i class="ph ph-check-square text-lg text-base-content/30 transition-colors group-hover:text-[#0f2747] peer-checked:text-[#0f2747]"></i>
+                    {{ subfield.label.text }}
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+              <div class="pl-12">{{ render_errors(field) }}</div>
+            </fieldset>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <div class="mt-6 flex justify-end sm:mt-8">
+        <button type="submit" class="btn w-full rounded-xl border-0 bg-[#0f2747] px-7 text-white shadow-lg shadow-[#0f2747]/20 transition duration-200 hover:-translate-y-0.5 hover:bg-[#19395f] hover:shadow-xl hover:shadow-[#0f2747]/25 active:translate-y-0 focus-visible:outline-[#0f2747] sm:w-auto">
+          <i class="ph ph-paper-plane-tilt"></i>
+          ส่งแบบประเมิน
+        </button>
       </div>
-    </div>
-    {% endfor %}
+    </form>
 
-    <div class="flex justify-center mt-6">
-      <button type="submit" class="btn btn-primary rounded-full px-12">
-        <i class="ph ph-paper-plane-tilt"></i> ส่งแบบประเมิน
-      </button>
-    </div>
-  </form>
-</div>
+    <footer class="py-8 text-center text-xs text-base-content/45">
+      ขอบคุณที่ช่วยให้บริการรถยนต์ของเราดีขึ้น
+    </footer>
+  </div>
+</main>
 {% endblock %}

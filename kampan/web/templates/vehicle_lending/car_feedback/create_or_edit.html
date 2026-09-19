@@ -11,14 +11,23 @@
 
 
 {% block content %}
-<div class="p-6 max-w-4xl mx-auto pb-32">
-	<div class="flex items-center gap-4 mb-6">
+<main class="min-h-screen px-4 py-6 text-base-content sm:px-6 sm:py-10 lg:px-8">
+<div class="mx-auto max-w-5xl pb-16">
+	<div class="mb-5 flex items-center gap-3">
 		<a href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}"
-			class="btn btn-circle btn-ghost">
-			<i class="ph ph-arrow-left text-xl"></i>
+			class="btn btn-ghost rounded-xl text-[#0f2747] hover:bg-[#0f2747]/10">
+			<i class="ph ph-arrow-left"></i>
+			<span>กลับไปแบบประเมินทั้งหมด</span>
 		</a>
-		<h1 class="text-lg text-gray-800">ย้อนกลับ</h1>
 	</div>
+
+	<section class="relative isolate mb-6 overflow-hidden rounded-[2rem] bg-[#0f2747] px-6 py-8 text-slate-50 shadow-xl shadow-[#0f2747]/20 sm:px-9 sm:py-10">
+		<div class="absolute -right-16 -top-20 -z-10 size-64 rounded-full border-[24px] border-white/10"></div>
+		<div class="absolute -bottom-24 right-14 -z-10 size-48 rounded-full bg-white/10 blur-3xl"></div>
+		<p class="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Feedback builder</p>
+		<h1 class="mt-3 max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{{ title }}</h1>
+		<p class="mt-3 max-w-xl text-sm leading-7 text-white/75 sm:text-base">สร้างชุดคำถามที่ชัดเจน ใช้งานง่าย และพร้อมนำไปใช้กับรถยนต์ที่เลือก</p>
+	</section>
 
 	<form id="feedbackForm" method="POST" class="flex flex-col gap-6">
 		{{ form.csrf_token }}
@@ -30,64 +39,81 @@
 		</div>
 		{% endif %}
 
-		<div class="card bg-base-100 shadow-sm border-t-4 border-t-primary">
-			<div class="card-body">
-				<h2 class="card-title text-lg mb-4">ข้อมูลเบื้องต้น</h2>
-
-				<div class="form-control mb-4">
-					{{ renderer.base_render(form.name) }}
+		<div class="rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-7 shadow-lg shadow-slate-900/5 sm:px-8 sm:py-8">
+				<div class="mb-6 flex items-start justify-between gap-4">
+					<div>
+						<p class="text-xs font-bold uppercase tracking-[0.18em] text-[#0f2747]">Setup</p>
+						<h2 class="mt-2 text-2xl font-bold tracking-tight">ข้อมูลเบื้องต้น</h2>
+					</div>
+					<i class="ph ph-sliders-horizontal text-2xl text-[#0f2747]/35"></i>
 				</div>
 
-				<div class="form-control mb-4">
+				<div class="form-control mb-5">
+					{{ renderer.base_render(form.name, class_="rounded-xl border-base-300 focus-within:border-[#0f2747] focus-within:ring-4 focus-within:ring-[#0f2747]/10") }}
+				</div>
+
+				<div class="form-control mb-5 rounded-2xl [&_#multiSelectBox]:border-base-300 [&_#multiSelectBox]:rounded-xl [&_#multiSelectBox]:focus-within:border-[#0f2747] [&_#multiSelectBox]:focus-within:ring-4 [&_#multiSelectBox]:focus-within:ring-[#0f2747]/10">
 					{{ renderer.render_multiple_select_field(form.cars) }}
 				</div>
 
-				<div class="form-control mb-4">
+				<div class="form-control rounded-2xl [&_textarea]:rounded-xl [&_textarea]:border-base-300 [&_textarea]:focus:border-[#0f2747] [&_textarea]:focus:ring-4 [&_textarea]:focus:ring-[#0f2747]/10">
 					{{ renderer.render_text_area_field(form.description) }}
 				</div>
-			</div>
 		</div>
 
-		<div id="questionsContainer" class="flex flex-col gap-4">
-		</div>
+		<section class="rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-7 shadow-lg shadow-slate-900/5 sm:px-8 sm:py-8" aria-labelledby="questions-builder-title">
+			<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<p class="text-xs font-bold uppercase tracking-[0.18em] text-[#0f2747]">Question flow</p>
+					<h2 id="questions-builder-title" class="mt-2 text-2xl font-bold tracking-tight">ออกแบบคำถาม</h2>
+				</div>
+				<span class="self-start rounded-lg bg-[#0f2747]/10 px-3 py-1.5 text-xs font-semibold text-[#0f2747] sm:self-auto">เพิ่มและจัดลำดับคำถามได้ตามต้องการ</span>
+			</div>
+			<div id="questionsContainer" class="flex flex-col gap-4">
+			</div>
+		</section>
+
 		<input type="hidden" name="questions_data" id="questionsData" value="{{ questions_data or '' }}">
-		<div class="flex flex-wrap justify-center gap-2 mt-4">
+		<div class="rounded-[2rem] border border-dashed border-[#0f2747]/25 bg-[#0f2747]/[0.03] px-5 py-5 sm:px-6">
+			<p class="mb-3 text-sm font-semibold text-base-content/70">เพิ่มประเภทคำถาม</p>
+			<div class="flex flex-wrap gap-2">
 			<button type="button"
-				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				class="btn btn-outline rounded-xl border-[#0f2747]/35 text-[#0f2747] hover:border-[#0f2747] hover:bg-[#0f2747]/10"
 				onclick="addQuestion('score')">
-				<i class="ph ph-star text-warning text-lg"></i> คะแนน (1-5)
+				<i class="ph ph-star text-lg"></i> คะแนน (1-5)
 			</button>
 			<button type="button"
-				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				class="btn btn-outline rounded-xl border-[#0f2747]/35 text-[#0f2747] hover:border-[#0f2747] hover:bg-[#0f2747]/10"
 				onclick="addQuestion('text')">
 				<i class="ph ph-text-t text-lg"></i> ข้อความสั้น
 			</button>
 			<button type="button"
-				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				class="btn btn-outline rounded-xl border-[#0f2747]/35 text-[#0f2747] hover:border-[#0f2747] hover:bg-[#0f2747]/10"
 				onclick="addQuestion('boolean')">
-				<i class="ph ph-toggle-left text-primary text-lg"></i> ใช่/ไม่ใช่
+				<i class="ph ph-toggle-left text-lg"></i> ใช่/ไม่ใช่
 			</button>
 			<button type="button"
-				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				class="btn btn-outline rounded-xl border-[#0f2747]/35 text-[#0f2747] hover:border-[#0f2747] hover:bg-[#0f2747]/10"
 				onclick="addQuestion('single_choice')">
-				<i class="ph ph-radio-button text-info text-lg"></i> เลือกข้อเดียว
+				<i class="ph ph-radio-button text-lg"></i> เลือกข้อเดียว
 			</button>
 			<button type="button"
-				class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300"
+				class="btn btn-outline rounded-xl border-[#0f2747]/35 text-[#0f2747] hover:border-[#0f2747] hover:bg-[#0f2747]/10"
 				onclick="addQuestion('multiple_choice')">
-				<i class="ph ph-check-square text-success text-lg"></i> เลือกหลายข้อ
+				<i class="ph ph-check-square text-lg"></i> เลือกหลายข้อ
 			</button>
+			</div>
 		</div>
-		<div
-			class="flex justify-end gap-2 mt-8 py-4 border-t sticky bottom-0 bg-base-100 px-4 rounded-box shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.1)] z-10">
+		<div class="mt-2 flex flex-col-reverse justify-end gap-3 border-t border-base-300 pt-5 sm:flex-row sm:items-center">
 			<a href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}"
-				class="btn btn-ghost">ยกเลิก</a>
-			<button type="submit" class="btn btn-primary" onclick="prepareSubmit(event)">
+				class="btn btn-ghost rounded-xl">ยกเลิก</a>
+			<button type="submit" class="btn w-full rounded-xl border-0 bg-[#0f2747] px-7 text-white shadow-lg shadow-[#0f2747]/20 transition duration-200 hover:-translate-y-0.5 hover:bg-[#19395f] hover:shadow-xl hover:shadow-[#0f2747]/25 active:translate-y-0 focus-visible:outline-[#0f2747] sm:w-auto" onclick="prepareSubmit(event)">
 				<i class="ph ph-floppy-disk"></i> บันทึกข้อมูล
 			</button>
 		</div>
 	</form>
 </div>
+</main>
 
 <script type="application/json" id="preloadQuestions">
 [
@@ -120,11 +146,11 @@
 	}
 
 	const typeIcons = {
-		'score': '<i class="ph ph-star text-warning"></i>',
-		'text': '<i class="ph ph-text-t"></i>',
-		'boolean': '<i class="ph ph-toggle-left text-primary"></i>',
-		'single_choice': '<i class="ph ph-radio-button text-info"></i>',
-		'multiple_choice': '<i class="ph ph-check-square text-success"></i>'
+		'score': '<i class="ph ph-star text-[#0f2747]"></i>',
+		'text': '<i class="ph ph-text-t text-[#0f2747]"></i>',
+		'boolean': '<i class="ph ph-toggle-left text-[#0f2747]"></i>',
+		'single_choice': '<i class="ph ph-radio-button text-[#0f2747]"></i>',
+		'multiple_choice': '<i class="ph ph-check-square text-[#0f2747]"></i>'
 	};
 
 	const typeLabels = {
@@ -141,55 +167,55 @@
 
 		questions.forEach((q, index) => {
 			const card = document.createElement('div');
-			card.className = "card bg-base-100 shadow-sm relative group border border-base-200 hover:border-primary/30 transition-colors";
+			card.className = "relative rounded-[1.5rem] border border-base-300/80 bg-base-100 shadow-sm transition-colors hover:border-[#0f2747]/35";
 
 			let choicesHtml = '';
 			if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
 				const choicesItems = q.choice_list.map((choice, cIdx) => `
-                    <div class="flex items-center gap-2 mb-2">
+                    <div class="mb-2 flex min-w-0 items-center gap-2">
                         <i class="ph ${q.question_type === 'single_choice' ? 'ph-circle' : 'ph-square'} text-base-content/30 text-lg"></i>
-                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm" placeholder="ตัวเลือกที่ ${cIdx + 1}" value="${choice}" onchange="updateChoice(${index}, ${cIdx}, this.value)">
+                        <input type="text" class="input input-sm min-w-0 flex-1 rounded-none border-b border-t-0 border-l-0 border-r-0 focus:border-[#0f2747] focus:outline-none focus:ring-0" placeholder="ตัวเลือกที่ ${cIdx + 1}" value="${choice}" onchange="updateChoice(${index}, ${cIdx}, this.value)">
                         <button type="button" class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error" onclick="removeChoice(${index}, ${cIdx})"><i class="ph ph-x"></i></button>
                     </div>
                 `).join('');
 
 				choicesHtml = `
-                    <div class="mt-4 pl-4 border-l-2 border-base-200">
+                    <div class="mt-4 border-l-2 border-[#0f2747]/20 pl-4">
                         ${choicesItems}
-                        <button type="button" class="btn btn-ghost btn-sm mt-2 text-primary" onclick="addChoice(${index})">
+                        <button type="button" class="btn btn-ghost btn-sm mt-2 rounded-xl text-[#0f2747] hover:bg-[#0f2747]/10" onclick="addChoice(${index})">
                             <i class="ph ph-plus"></i> เพิ่มตัวเลือก
                         </button>
                     </div>
                 `;
 			} else if (q.question_type === 'score') {
-				choicesHtml = `<div class="mt-4 pl-4 opacity-50"><div class="rating"><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /><input type="radio" class="mask mask-star-2 bg-orange-400" disabled /></div><span class="text-sm ml-2">รูปแบบ 1-5 ดาว</span></div>`;
+				choicesHtml = `<div class="mt-4 flex flex-wrap items-center gap-2 pl-4 text-[#0f2747]/60"><div class="flex gap-1"><span class="flex size-8 items-center justify-center rounded-lg border border-[#0f2747]/20 text-sm">1</span><span class="flex size-8 items-center justify-center rounded-lg border border-[#0f2747]/20 text-sm">2</span><span class="flex size-8 items-center justify-center rounded-lg border border-[#0f2747]/20 text-sm">3</span><span class="flex size-8 items-center justify-center rounded-lg border border-[#0f2747]/20 text-sm">4</span><span class="flex size-8 items-center justify-center rounded-lg border border-[#0f2747]/20 text-sm">5</span></div><span class="text-sm">รูปแบบคะแนน 1-5</span></div>`;
 			} else if (q.question_type === 'boolean') {
-				choicesHtml = `<div class="mt-4 pl-4 opacity-50 flex gap-4"><label class="flex items-center gap-2"><input type="radio" class="radio radio-primary" disabled checked> ใช่</label><label class="flex items-center gap-2"><input type="radio" class="radio radio-primary" disabled> ไม่ใช่</label></div>`;
+				choicesHtml = `<div class="mt-4 flex gap-3 pl-4 text-sm text-base-content/60"><span class="rounded-xl border border-[#0f2747]/20 px-4 py-2">ใช่</span><span class="rounded-xl border border-[#0f2747]/20 px-4 py-2">ไม่ใช่</span></div>`;
 			} else if (q.question_type === 'text') {
-				choicesHtml = `<div class="mt-4 pl-4 opacity-50 border-b border-dashed border-base-300 w-full max-w-md pb-1">ข้อความตอบกลับแบบสั้น/ยาว</div>`;
+				choicesHtml = `<div class="mt-4 w-full max-w-md border-b border-dashed border-[#0f2747]/25 pb-1 pl-4 text-sm text-base-content/45">ข้อความตอบกลับแบบสั้น/ยาว</div>`;
 			}
 
 			card.innerHTML = `
-                <div class="card-body p-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
+                <div class="card-body min-w-0 p-4 sm:p-5">
+                    <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                        <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2 mb-2">
                                 ${typeIcons[q.question_type]} 
-                                <span class="text-xs font-bold text-base-content/50 uppercase tracking-wider">${typeLabels[q.question_type]}</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-[#0f2747]/65">${typeLabels[q.question_type]}</span>
                             </div>
-                            <input type="text" class="input input-bordered w-full text-md" placeholder="ตั้งคำถาม..." value="${q.question_text}" onchange="updateQuestionText(${index}, this.value)" required>
+                            <input type="text" class="input input-bordered w-full rounded-xl border-base-300 text-md focus:border-[#0f2747] focus:ring-4 focus:ring-[#0f2747]/10" placeholder="ตั้งคำถาม..." value="${q.question_text}" onchange="updateQuestionText(${index}, this.value)" required>
                             
                             ${choicesHtml}
                         </div>
                         
-                        <div class="flex flex-col items-end gap-2 border-l border-base-200 pl-4">
+                        <div class="flex w-full flex-row items-center justify-between gap-3 border-t border-[#0f2747]/10 pt-3 sm:w-auto sm:flex-col sm:items-end sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
                             <div class="form-control">
                                 <label class="label cursor-pointer gap-2 tooltip tooltip-left" data-tip="จำเป็นต้องตอบ">
                                     <span class="label-text text-xs">บังคับ</span> 
-                                    <input type="checkbox" class="toggle toggle-sm toggle-primary" ${q.is_required ? 'checked' : ''} onchange="updateRequired(${index}, this.checked)" />
+                                    <input type="checkbox" class="toggle toggle-sm border-[#0f2747]/40 checked:bg-[#0f2747]" ${q.is_required ? 'checked' : ''} onchange="updateRequired(${index}, this.checked)" />
                                 </label>
                             </div>
-                            <div class="divider my-0"></div>
+                            <div class="h-6 w-px bg-base-300 sm:h-px sm:w-8"></div>
                             <button type="button" class="btn btn-ghost btn-sm text-error h-10 px-2" onclick="removeQuestion(${index})" title="ลบคำถาม">
                                 <i class="ph ph-trash text-lg"></i>
                             </button>
