@@ -17,7 +17,7 @@
 
 {% macro question_label(field, index) %}
   <div class="flex items-start gap-3">
-    <span class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#0f2747]/10 text-sm font-bold text-[#0f2747]">
+    <span class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-bold text-primary">
       {{ '%02d'|format(index) }}
     </span>
     <div>
@@ -40,31 +40,30 @@
       {{ form.hidden_tag() }}
 
     <section class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5" aria-labelledby="feedback-title">
-      <div class="relative isolate overflow-hidden rounded-[2rem] bg-[#0f2747] px-6 py-8 text-slate-50 shadow-xl shadow-[#0f2747]/20 sm:px-9 sm:py-10">
-        <div class="absolute -right-16 -top-20 -z-10 size-64 rounded-full border-[24px] border-primary-content/10"></div>
-        <div class="absolute -bottom-24 right-14 -z-10 size-48 rounded-full bg-primary-content/10 blur-3xl"></div>
-        <h1 id="feedback-title" class="max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+      <div class="overflow-hidden rounded-xl border border-[#0f2747] bg-[#0f2747] px-6 py-8 text-slate-50 shadow-sm sm:px-9 sm:py-10">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-white/60">แบบประเมินรถยนต์</p>
+        <h1 id="feedback-title" class="mt-3 max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
           {{ template.name }}
         </h1>
         {% if template.description %}
-        <p class="mt-4 max-w-xl text-sm leading-7 text-primary-content/80 sm:text-base">{{ template.description }}</p>
+        <p class="mt-4 max-w-xl text-sm leading-7 text-white/75 sm:text-base">{{ template.description }}</p>
         {% endif %}
 
-        <div class="mt-8 flex items-center gap-3 border-t border-primary-content/20 pt-5">
-          <div class="flex size-12 items-center justify-center rounded-2xl bg-primary-content/15 text-primary-content">
+        <div class="mt-8 flex items-center gap-3 border-t border-white/15 pt-5">
+          <div class="flex size-12 items-center justify-center rounded-md bg-white/10 text-white/75">
             <i class="ph ph-car-simple text-2xl"></i>
           </div>
           <div>
-            <p class="text-xs font-medium text-primary-content/60">รถที่ให้บริการ</p>
+            <p class="text-xs font-medium text-white/60">รถที่ให้บริการ</p>
             <p class="text-lg font-bold tracking-wide">{{ car.license_plate }}</p>
           </div>
         </div>
         {% if car.description %}
-        <p class="mt-4 max-w-md text-xs leading-6 text-primary-content/60">{{ car.description }}</p>
+        <p class="mt-4 max-w-md text-xs leading-6 text-white/60">{{ car.description }}</p>
         {% endif %}
       </div>
 
-      <div class="rounded-[2rem] border border-base-300/80 bg-base-100 px-6 py-7 shadow-lg shadow-slate-900/5 sm:px-8 sm:py-8">
+      <div class="rounded-lg border border-base-300/80 bg-base-100 px-6 py-7 shadow-sm sm:px-8 sm:py-8">
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="mt-2 text-xl font-bold tracking-tight">เที่ยวที่ใช้บริการ</h2>
@@ -78,7 +77,7 @@
             {% if form.car_application.flags.required %}<span class="ml-1 text-error">*</span>{% endif %}
           </label>
           <select id="{{ form.car_application.id }}" name="{{ form.car_application.name }}"
-            class="select select-bordered h-auto min-h-14 w-full rounded-xl border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-[#0f2747] focus:ring-4 focus:ring-[#0f2747]/15">
+            class="select select-bordered h-auto min-h-14 w-full rounded-md border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15">
             {% for value, label in form.car_application.choices %}
             <option value="{{ value }}" {% if form.car_application.data|string == value|string %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
@@ -86,21 +85,21 @@
           {{ render_errors(form.car_application) }}
         </fieldset>
         {% else %}
-        <div class="mt-7 rounded-2xl border border-dashed border-base-300 bg-base-200/50 p-4 text-sm leading-6 text-base-content/65">
+        <div class="mt-7 rounded-md border border-dashed border-base-300 bg-base-200/50 p-4 text-sm leading-6 text-base-content/65">
           แบบประเมินนี้ไม่มีเที่ยวรถที่ต้องเลือกเพิ่มเติม
         </div>
         {% endif %}
         <div class="mt-7 flex items-start gap-2 border-t border-base-300 pt-5 text-xs leading-5 text-base-content/55">
-          <i class="ph ph-info mt-0.5 shrink-0 text-[#0f2747]"></i>
+          <i class="ph ph-info mt-0.5 shrink-0 text-primary"></i>
           <span>ตอบคำถามตามประสบการณ์จริงของคุณ ช่องที่มีเครื่องหมาย <span class="font-bold text-error">*</span> เป็นข้อมูลจำเป็น</span>
         </div>
       </div>
     </section>
 
-      <section class="mt-6 overflow-hidden rounded-[2rem] border border-base-300/80 bg-base-100 shadow-lg shadow-slate-900/5 sm:mt-8" aria-labelledby="questions-title">
+      <section class="mt-6 overflow-hidden rounded-lg border border-base-300/80 bg-base-100 shadow-sm sm:mt-8" aria-labelledby="questions-title">
         <div class="flex flex-col gap-3 border-b border-base-300 bg-base-100 px-6 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-8">
           <div>
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#0f2747]">Your perspective</p>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Your perspective</p>
             <h2 id="questions-title" class="mt-2 text-2xl font-bold tracking-tight">ช่วยเล่าประสบการณ์ของคุณ</h2>
           </div>
           <span class="self-start rounded-lg bg-base-200 px-3 py-1.5 text-xs font-semibold text-base-content/60 sm:self-auto">
@@ -120,7 +119,7 @@
                   {% for subfield in field %}
                   <label class="group cursor-pointer text-center">
                     {{ subfield(class_="peer sr-only") }}
-                    <span class="flex aspect-square items-center justify-center rounded-2xl border border-base-300 bg-base-100 text-lg font-bold text-base-content/55 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747] peer-checked:text-white peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20 sm:text-xl">
+                    <span class="flex aspect-square items-center justify-center rounded-md border border-base-300 bg-base-100 text-lg font-bold text-base-content/55 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/50 group-hover:text-primary peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-content peer-focus-visible:ring-4 peer-focus-visible:ring-primary/20 sm:text-xl">
                       {{ subfield.label.text }}
                     </span>
                   </label>
@@ -138,7 +137,7 @@
               {{ question_label(field, loop.index) }}
               <div class="mt-5 pl-12 sm:pl-12">
                 <textarea name="{{ field.name }}" id="{{ field.id }}" rows="4"
-                  class="textarea textarea-bordered w-full rounded-2xl border-base-300 bg-base-100 text-sm leading-7 shadow-sm outline-none transition placeholder:text-base-content/35 focus:border-[#0f2747] focus:ring-4 focus:ring-[#0f2747]/15"
+                  class="textarea textarea-bordered w-full rounded-md border-base-300 bg-base-100 text-sm leading-7 shadow-sm outline-none transition placeholder:text-base-content/35 focus:border-primary focus:ring-4 focus:ring-primary/15"
                   placeholder="เขียนความคิดเห็นหรือข้อเสนอแนะของคุณ">{{ field.data if field.data else field.default if field.default else '' }}</textarea>
                 {{ render_errors(field) }}
               </div>
@@ -150,8 +149,8 @@
                 {% for subfield in field %}
                 <label class="group cursor-pointer">
                   {{ subfield(class_="peer sr-only") }}
-                  <span class="flex min-h-12 items-center gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747]/5 peer-checked:text-[#0f2747] peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20">
-                    <i class="ph ph-check-circle text-lg text-base-content/30 transition-colors group-hover:text-[#0f2747] peer-checked:text-[#0f2747]"></i>
+                  <span class="flex min-h-12 items-center gap-3 rounded-md border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/50 group-hover:text-primary peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/20">
+                    <i class="ph ph-check-circle text-lg text-base-content/30 transition-colors group-hover:text-primary peer-checked:text-primary"></i>
                     {{ subfield.label.text }}
                   </span>
                 </label>
@@ -166,8 +165,8 @@
                 {% for subfield in field %}
                 <label class="group cursor-pointer">
                   {{ subfield(class_="peer sr-only") }}
-                  <span class="flex min-h-12 items-center gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[#0f2747]/50 group-hover:text-[#0f2747] peer-checked:border-[#0f2747] peer-checked:bg-[#0f2747]/5 peer-checked:text-[#0f2747] peer-focus-visible:ring-4 peer-focus-visible:ring-[#0f2747]/20">
-                    <i class="ph ph-check-square text-lg text-base-content/30 transition-colors group-hover:text-[#0f2747] peer-checked:text-[#0f2747]"></i>
+                  <span class="flex min-h-12 items-center gap-3 rounded-md border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content/70 shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/50 group-hover:text-primary peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/20">
+                    <i class="ph ph-check-square text-lg text-base-content/30 transition-colors group-hover:text-primary peer-checked:text-primary"></i>
                     {{ subfield.label.text }}
                   </span>
                 </label>
@@ -182,7 +181,7 @@
       </section>
 
       <div class="mt-6 flex justify-end sm:mt-8">
-        <button type="submit" class="btn w-full rounded-xl border-0 bg-[#0f2747] px-7 text-white shadow-lg shadow-[#0f2747]/20 transition duration-200 hover:-translate-y-0.5 hover:bg-[#19395f] hover:shadow-xl hover:shadow-[#0f2747]/25 active:translate-y-0 focus-visible:outline-[#0f2747] sm:w-auto">
+        <button type="submit" class="btn btn-primary w-full rounded-lg px-7 shadow-sm transition duration-200 hover:-translate-y-0.5 active:translate-y-0 sm:w-auto">
           <i class="ph ph-paper-plane-tilt"></i>
           ส่งแบบประเมิน
         </button>

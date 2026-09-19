@@ -2,6 +2,7 @@
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 
 
 {% block title %}ผอ. อนุมัติขอใช้รถยนต์{% endblock %}
@@ -49,7 +50,7 @@
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
-          <th class="table-style">สถานะ</th>
+          <th class="table-style min-w-[180px] text-center">สถานะ</th>
           <th class="table-style">เหตุผลในการ
             <br>อนุมัติ/ไม่อนุมัติ
           </th>
@@ -128,7 +129,9 @@
 
 
 
-          {{ car_application.get_status()|safe }}
+          <td class="table-style align-middle text-center" data-label="สถานะ">
+            {{ status_badge.render(car_application) }}
+          </td>
 
           <td class="table-style">
             {{ car_application.get_reason() }}

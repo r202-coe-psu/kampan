@@ -2,10 +2,11 @@
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% from "/base/components/dialogs.html" import ModalNegative, ModalPositive%}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 
 
-{% block title %}คำขอใช้รถยนต์{% endblock %}
-{% block dashboard_title %}คำขอใช้รถยนต์{% endblock %}
+{% block title %}การขอใช้รถยนต์{% endblock %}
+{% block dashboard_title %}การขอใช้รถยนต์{% endblock %}
 
 {% block breadcrumbs %}
 
@@ -39,7 +40,7 @@
           <th class="table-style">เหตุผลที่ต้องการใช้</th>
           <th class="table-style">สถานที่ต้องการจะไป</th>
           <th class="table-style">ชื่อผู้ใช้งาน</th>
-          <th class="table-style">สถานะ</th>
+          <th class="table-style min-w-[180px] text-center">สถานะ</th>
           <th class="table-style">เหตุผลในการ
             <br>อนุมัติ/ไม่อนุมัติ
           </th>
@@ -114,7 +115,9 @@
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
           <td class="table-style">{{ car_application.location }}</td>
           <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
-          {{ car_application.get_status()|safe }}
+          <td class="table-style align-middle text-center" data-label="สถานะ">
+            {{ status_badge.render(car_application) }}
+          </td>
           <td class="table-style">
             {{ car_application.get_reason() }}
           </td>
@@ -214,7 +217,7 @@
           <div><span class="font-semibold">ชื่อผู้ใช้งาน:</span> {{ car_application.creator.get_name() }}</div>
           <div class="flex items-center gap-2">
             <span class="font-semibold">สถานะ:</span>
-            {{ car_application.get_status()|safe }}
+            {{ status_badge.render(car_application, compact=true) }}
           </div>
           {% if car_application.get_reason() %}
           <div><span class="font-semibold">เหตุผลในการอนุมัติ/ไม่อนุมัติ:</span> {{ car_application.get_reason() }}</div>

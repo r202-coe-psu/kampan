@@ -1,0 +1,32 @@
+{% macro render(car_application, compact=false, readable=false) %}
+  {% set badge_tone = {
+    'pending on header': 'badge-warning',
+    'pending on director': 'badge-secondary',
+    'pending on admin': 'badge-primary',
+    'active': 'badge-success',
+    'completed': 'badge-neutral',
+    'denied by header': 'badge-error',
+    'denied by director': 'badge-error',
+    'denied by admin': 'badge-error',
+    'disactive': 'badge-ghost'
+  }.get(car_application.status, 'badge-neutral') %}
+  {% set readable_tone = {
+    'pending on header': 'text-warning border-warning',
+    'pending on director': 'text-secondary border-secondary',
+    'pending on admin': 'text-primary border-primary',
+    'active': 'text-success border-success',
+    'completed': 'text-base-content/70 border-base-content/30',
+    'denied by header': 'text-error border-error',
+    'denied by director': 'text-error border-error',
+    'denied by admin': 'text-error border-error',
+    'disactive': 'text-base-content/60 border-base-content/30'
+  }.get(car_application.status, 'text-base-content border-base-content/30') %}
+  {% set badge_style = (badge_tone if not readable else 'badge-outline bg-base-100 ' ~ readable_tone) %}
+
+  <span
+    class="badge {{ badge_style }} {{ 'badge-xs' if compact else 'badge-sm' }} inline-flex h-auto min-h-7 whitespace-nowrap px-3 py-1.5 font-semibold leading-tight shadow-sm"
+    data-status="{{ car_application.status }}"
+    title="สถานะ: {{ car_application.get_status_display() }}">
+    <span>{{ car_application.get_status_display() }}</span>
+  </span>
+{% endmacro %}
