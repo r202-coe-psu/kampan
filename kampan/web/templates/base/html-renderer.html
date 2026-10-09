@@ -553,7 +553,7 @@ file_input -->
           <input class="hidden" id="{{ input_id }}" name="{{ name }}" value="{{ selected_value }}" />
 
           <ul id="{{ input_id }}-dropdown" tabindex="0"
-            class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
+            class="dropdown-content menu bg-base-100 rounded-box z-50 w-full p-2 shadow-sm hidden overflow-auto max-h-60" {% if
             readonly or disabled %}hidden{% endif %}>
             {% for choice in choices %}
               {% if choice is iterable and choice | length >= 3 %}
