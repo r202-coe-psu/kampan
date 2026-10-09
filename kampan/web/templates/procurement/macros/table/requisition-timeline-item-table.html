@@ -26,10 +26,10 @@
           {{ renderer.render_field(shared_form.seller, readonly=False) }}
         </div>
         <div class="form-control w-full">
-          {{ renderer.render_field(shared_form.insurance_start_date, type='date', readonly=False) }}
+          {{ renderer.date_field(shared_form.insurance_start_date, field_id='insurance_start_date-' ~ item_id) }}
         </div>
         <div class="form-control w-full">
-          {{ renderer.render_field(shared_form.insurance_end_date, type='date', readonly=False) }}
+          {{ renderer.date_field(shared_form.insurance_end_date, field_id='insurance_end_date-' ~ item_id) }}
         </div>
         <div class="form-control w-full">
           {{ renderer.render_field(shared_form.insurance_duration, readonly=True) }}
@@ -41,9 +41,9 @@
     {% if shared_form %}
     <script>
       (function () {
-        const startEl = document.getElementById('{{ shared_form.insurance_start_date.id }}');
-        const endEl = document.getElementById('{{ shared_form.insurance_end_date.id }}');
-        const durationEl = document.getElementById('{{ shared_form.insurance_duration.id }}');
+        const startEl = document.getElementById('insurance_start_date-{{ item_id }}');
+        const endEl = document.getElementById('insurance_end_date-{{ item_id }}');
+        const durationEl = startEl && startEl.closest('.card').querySelector('[name="insurance_duration"]');
 
         if (!startEl || !endEl || !durationEl) return;
 
@@ -87,8 +87,9 @@
           durationEl.value = parts.length ? parts.join(' ') : '0 วัน';
         }
 
-        startEl.addEventListener('change', calculateDuration);
-        endEl.addEventListener('change', calculateDuration);
+        // date_field dispatches 'change' from its label span, which bubbles up to the fieldset
+        document.getElementById('field-insurance_start_date-{{ item_id }}').addEventListener('change', calculateDuration);
+        document.getElementById('field-insurance_end_date-{{ item_id }}').addEventListener('change', calculateDuration);
         calculateDuration();
       })();
     </script>

@@ -14,21 +14,21 @@
     </button>
 
     <dialog id="{{ confirm_id }}" class="modal">
-      <div class="modal-box">
+      <div class="modal-box overflow-visible">
         <h3 class="font-bold text-lg">ยืนยันการดำเนินการ</h3>
         <p class="py-4">คุณแน่ใจหรือไม่ว่าต้องการจะ {{ label }}?</p>
 
         <!-- เช็คว่า step ต่อไปเป็น payment_processed ไหม (step ปัจจุบันคือ inspection) -->
         {% if step_key == 'payment_processed' and inspection_form %}
           <div class="form-control w-full mb-4">
-            {{ renderer.date_field_js(inspection_form.inspection_date) }}
+            {{ renderer.date_field(inspection_form.inspection_date, field_id='inspection_date-' ~ confirm_id) }}
           </div>
         {% endif %}
 
         <!-- เช็คว่า step ต่อไปเป็น inspection ไหม (step ปัจจุบันคือ awaiting_delivery) -->
         {% if step_key == 'inspection' and delivery_form %}
           <div class="form-control w-full mb-4">
-            {{ renderer.date_field_js(delivery_form.delivery_date) }}
+            {{ renderer.date_field(delivery_form.delivery_date, field_id='delivery_date-' ~ confirm_id) }}
           </div>
         {% endif %}
 
@@ -46,7 +46,7 @@
   </form>
 {% endmacro %}
 
-{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user, inspection_form=None, delivery_form=None) %}
+{% macro _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization, current_user, inspection_form=None, delivery_form=None, variant='') %}
   {% set billing_done = item.fund_usage_amounts and item.fund_usage_amounts|length > 0 %}
   {% set action_url = url_for('procurement.requisition_timeline.add_progress',
     requisition_timeline_id=item.id, organization_id=organization.id) %}
@@ -75,14 +75,14 @@
       {% if
         can_go_back %}
         {{ _step_nav_form(action_url, PROGRESS_STATUS_ORDER[current_step -
-                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id, inspection_form, delivery_form) }}
+                2], 'btn btn-sm btn-warning border-0 shadow-md' , 'ph-arrow-left' , 'ย้อนกลับ' , 'modal-back-' ~ item.id ~ variant, inspection_form, delivery_form) }}
       {% endif
       %}
 
       {% if current_step < PROGRESS_STATUS_ORDER|length %}
         {{ _step_nav_form(action_url,
                 PROGRESS_STATUS_ORDER[current_step], 'btn btn-sm btn-primary bg-gradient-to-r from-blue-500 to-indigo-600 border-0 hover:from-blue-600 hover:to-indigo-700 shadow-md'
-                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id, inspection_form, delivery_form) }}
+                , 'ph-arrow-right' , 'ขั้นตอนถัดไป' , 'modal-next-' ~ item.id ~ variant, inspection_form, delivery_form) }}
       {% endif %}
 
     {% endif %}
@@ -280,7 +280,7 @@
                   </td>
                   <td class="px-4 py-3 flex flex-col gap-0.5 w-64 h-32 items-center justify-center ">
                     {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                        current_user, inspection_form, delivery_form) }}
+                                        current_user, inspection_form, delivery_form, variant='-desktop') }}
                   </td>
                 </tr>
                 <tr id="subtable-{{ item.requisition.id }}" class="bg-gray-50">
@@ -509,7 +509,7 @@
               </div>
               <div class="flex gap-2 flex-wrap items-end justify-end">
                 {{ _item_action_buttons(item, latest_progress, current_step, PROGRESS_STATUS_ORDER, organization,
-                                current_user, inspection_form, delivery_form) }}
+                                current_user, inspection_form, delivery_form, variant='-mobile') }}
               </div>
             </div>
             {% if item.status == 'cancelled' %}

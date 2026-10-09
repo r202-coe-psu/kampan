@@ -228,7 +228,8 @@ file_input -->
 
 {% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
   calendar_id='calendar',
-  readonly=False) %}
+  readonly=False, field_id='') %}
+  {% set fid = field_id if field_id else field.id %}
   {% set style = "input flex items-center gap-2 w-full" %}
   {% if field.errors | count > 0 %}
     {% set style = style + " input-error" %}
@@ -237,34 +238,34 @@ file_input -->
     {% set style = style + " " + class_ %}
   {% endif %}
 
-  <fieldset class="fieldset w-full" id="field-{{ field.id }}">
+  <fieldset class="fieldset w-full" id="field-{{ fid }}">
     <legend class="fieldset-legend">
       {{ field.label.text }}
       {% if field.flags.required %}<span class="text-error">*</span>{% endif %}
     </legend>
 
     <div class="relative w-full">
-      <input type="hidden" id="{{ field.id }}" name="{{ field.name }}" class="w-full cursor-pointer input validator"
+      <input type="hidden" id="{{ fid }}" name="{{ field.name }}" class="w-full cursor-pointer input validator"
         autocomplete="off" placeholder="{{ field.label.text }}" {% if field.data %}
         value="{{ field.data|format_date("%Y-%m-%d") if field.data else '' }}" {% endif %} {% if disabled %} disabled {%
         endif %} {% if readonly %}readonly{% endif %}>
 
-        <button type="button" id="cally-{{ field.id }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}" {%
+        <button type="button" id="cally-{{ fid }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}" {%
           if disabled %} disabled {% endif %}>
           <div class="flex items-center justify-between w-full">
-            <span id="cally-data-{{ field.id }}">
+            <span id="cally-data-{{ fid }}">
               {{ field.placeholder if field.placeholder else 'กรุณาเลือกวันที่' }}
             </span>
             <i class="ph ph-size ph-calendar-blank"></i>
           </div>
         </button>
 
-        <div id="cally-popover-{{ field.id }}"
+        <div id="cally-popover-{{ fid }}"
              class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
              style="max-height: 400px;
                     overflow-y: auto"
              {% if readonly or disabled %}hidden{% endif %}>
-          <calendar-date class="cally" onchange="{ const callyData = document.getElementById('cally-data-{{ field.id }}'); const parts = this.value.split('-'); callyData.innerText = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : this.value; document.getElementById('{{ field.id }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ field.id }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }" value="{{ field.data.strftime("%Y-%m-%d") if field.data else '' }}">
+          <calendar-date class="cally" onchange="{ const callyData = document.getElementById('cally-data-{{ fid }}'); const parts = this.value.split('-'); callyData.innerText = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : this.value; document.getElementById('{{ fid }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ fid }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }" value="{{ field.data.strftime("%Y-%m-%d") if field.data else '' }}">
           <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
           <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
           <calendar-month></calendar-month>
@@ -287,7 +288,7 @@ file_input -->
     </fieldset>
 
     <script>
-        initDatePicker("cally-{{ field.id }}", "cally-popover-{{ field.id }}", "{{ field.id }}", "cally-data-{{ field.id }}");
+        initDatePicker("cally-{{ fid }}", "cally-popover-{{ fid }}", "{{ fid }}", "cally-data-{{ fid }}");
     </script>
   {% endmacro %}
 
