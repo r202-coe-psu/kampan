@@ -9,6 +9,10 @@ services:
     restart: always
     networks:
       - kampan-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   web:
     build: .

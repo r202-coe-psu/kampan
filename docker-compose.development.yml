@@ -1,7 +1,8 @@
 version: "3"
 services:
   mongodb:
-    image: mongo
+    # Pinned: data files are at featureCompatibilityVersion 8.2; mongo 9.0 refuses to open them
+    image: mongo:8.2
     container_name: kampan-mongodb-${ENVIRONMENT:-development}
     volumes:
       - mongodb-${ENVIRONMENT:-development}:/data/db
@@ -9,6 +10,10 @@ services:
     restart: always
     networks:
       - kampan-network
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   web:
     build: .
