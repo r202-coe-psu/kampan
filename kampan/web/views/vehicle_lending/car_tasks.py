@@ -65,6 +65,7 @@ def index():
         sort_by=sort_by,
         order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
+        closable_car_application_ids=models.vehicle_applications.CarApplication.get_oldest_active_ids(organization),
     )
 
 
@@ -83,6 +84,8 @@ def submit_task_modal(car_application_id):
     )
     if not car_application:
         abort(404)
+    if car_application.id not in models.vehicle_applications.CarApplication.get_oldest_active_ids(organization):
+        abort(403)
 
     form = forms.vehicle_applications.ReturnCarApplicationMileageOnlyForm(
         obj=car_application

@@ -101,7 +101,7 @@
                 hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
                 รายละเอียด
               </button>
-              {% if loop.first %}
+              {% if car_application.id in editable_car_application_ids %}
               <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
                 hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
                 แก้ไข
@@ -141,7 +141,7 @@
             hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
             รายละเอียด
           </button>
-          {% if loop.first %}
+          {% if car_application.id in editable_car_application_ids %}
           <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
             hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
             แก้ไข

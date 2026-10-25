@@ -108,6 +108,30 @@ class CarApplication(VehicleApplication, me.Document):
         last_mileage = last_car_application.last_mileage
         return last_mileage
 
+    @staticmethod
+    def get_first_ids_per_car(organization, status, order_by):
+        # Mileage is tracked per car, so only one trip per car may have it entered: the oldest active task
+        # or the latest completed trip (editing that also overwrites the car's current mileage)
+        first_ids = set()
+        for car in CarApplication.objects(organization=organization, status=status).distinct("car"):
+            first = (
+                CarApplication.objects(organization=organization, status=status, car=car)
+                .order_by(order_by)
+                .only("id")
+                .first()
+            )
+            if first:
+                first_ids.add(first.id)
+        return first_ids
+
+    @staticmethod
+    def get_latest_completed_ids(organization):
+        return CarApplication.get_first_ids_per_car(organization, "completed", "-departure_datetime")
+
+    @staticmethod
+    def get_oldest_active_ids(organization):
+        return CarApplication.get_first_ids_per_car(organization, "active", "departure_datetime")
+
     def get_status(self):
         key_color = {
             "denied by header": "text-error",

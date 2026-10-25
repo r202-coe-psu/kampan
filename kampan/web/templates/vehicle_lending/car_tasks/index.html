@@ -131,7 +131,7 @@
           <th class="table-style min-w-48">สถานที่ไป</th>
           <th class="table-style min-w-52">เหตุผล</th>
           <th class="table-style">สถานะ</th>
-          <th class="table-style text-right">ดำเนินการ</th>
+          <th class="table-style">ดำเนินการ</th>
         </tr>
       </thead>
       <tbody>
@@ -161,8 +161,8 @@
         <td class="table-style max-w-60">{{ car_application.location }}</td>
         <td class="table-style max-w-64">{{ car_application.request_reason }}</td>
         <td class="table-style"><span class="badge badge-success badge-sm whitespace-nowrap">{{ car_application.get_status_display() }}</span></td>
-        <td class="table-style text-right">
-          {% if loop.first %}
+        <td class="table-style text-center">
+          {% if car_application.id in closable_car_application_ids %}
           <button class="btn btn-primary btn-sm whitespace-nowrap" hx-target="#edit-modal" hx-swap="innerHTML"
             hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
             <i class="ph ph-gas-pump text-lg"></i>
@@ -221,7 +221,7 @@
           </div>
         </dl>
 
-        {% if loop.first %}
+        {% if car_application.id in closable_car_application_ids %}
         <div class="mt-4 border-t border-base-300 pt-4">
           <button class="btn btn-primary btn-sm w-full" hx-target="#edit-modal" hx-swap="innerHTML"
             hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">

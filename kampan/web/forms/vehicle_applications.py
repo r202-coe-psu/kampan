@@ -267,7 +267,7 @@ class CarLendingHistoryFilterForm(CarPermissionFilterForm):
             ("asc", "เก่าสุดก่อน"),
             ("desc", "ใหม่สุดก่อน"),
         ],
-        default="asc",
+        default="desc",
         validators=[validators.Optional()],
         validate_choice=False,
     )

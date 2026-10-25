@@ -51,7 +51,7 @@ def index():
     return_date = form.return_date.data
     created_date = form.created_date.data
     sort_by = form.sort_by.data or "departure_datetime"
-    order_dir = form.order.data or "asc"
+    order_dir = form.order.data or "desc"
 
     query = Q(organization=organization, status="completed")
     if creator_id:
@@ -102,6 +102,7 @@ def index():
         car_lendings=car_lendings,
         today_date=today_date,
         paginated_car_applications=paginated_car_applications,
+        editable_car_application_ids=models.vehicle_applications.CarApplication.get_latest_completed_ids(organization),
         form=form,
     )
 
@@ -140,6 +141,8 @@ def edit(car_application_id):
     )
     if not car_application:
         abort(404)
+    if car_application.id not in models.vehicle_applications.CarApplication.get_latest_completed_ids(organization):
+        abort(403)
     form = forms.vehicle_applications.ReturnCarApplicationForm(obj=car_application)
 
     if request.method == "POST" and form.validate_on_submit():
