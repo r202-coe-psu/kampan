@@ -381,24 +381,36 @@
   function submitForm(action, carAppId) {
     let form = $("#approval_form_" + carAppId);
 
+    let carSelect = $("#car_" + carAppId);
+    let driverSelect = $("#driver_" + carAppId);
+    let deniedReason = $("#denied_reason_" + carAppId);
+
     // Set form action dynamically
     if (action === "approve") {
-      let carSelect = $("#car_" + carAppId);
-      let driverSelect = $("#driver_" + carAppId);
-
+      clearFieldError(deniedReason);
+      let invalidFields = [];
       if (!carSelect.val()) {
-        alert("โปรดเลือกรถยนต์");
-        carSelect.focus();
-        return;
+        showFieldError(carSelect, "โปรดเลือกรถยนต์");
+        invalidFields.push(carSelect);
       }
       if (!driverSelect.val()) {
-        alert("โปรดเลือกพนักงานขับรถ");
-        driverSelect.focus();
+        showFieldError(driverSelect, "โปรดเลือกพนักงานขับรถ");
+        invalidFields.push(driverSelect);
+      }
+      if (invalidFields.length) {
+        invalidFields[0].focus();
         return;
       }
 
       form.attr("action", "{{ url_for('vehicle_lending.car_permissions.admin_approve', organization_id=organization.id) }}");
     } else {
+      clearFieldError(carSelect);
+      clearFieldError(driverSelect);
+      if (!deniedReason.val().trim()) {
+        showFieldError(deniedReason, "โปรดระบุเหตุผลในการปฏิเสธ");
+        deniedReason.focus();
+        return;
+      }
       form.attr("action", "{{ url_for('vehicle_lending.car_permissions.admin_denied', organization_id=organization.id) }}");
     }
 

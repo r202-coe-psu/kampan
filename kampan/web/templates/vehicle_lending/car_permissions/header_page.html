@@ -351,7 +351,7 @@
     } else {
       let deniedReason = $("#denied_reason_" + carAppId);
       if (!deniedReason.val().trim()) {
-        alert("โปรดระบุเหตุผลในการปฏิเสธ");
+        showFieldError(deniedReason, "โปรดระบุเหตุผลในการปฏิเสธ");
         deniedReason.focus();
         return;
       }

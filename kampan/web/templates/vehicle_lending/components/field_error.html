@@ -1,0 +1,22 @@
+<script>
+  // Inline error label under a form field, styled like the server-side render_errors;
+  // cleared automatically once the user edits the field
+  function showFieldError(field, message) {
+    const $field = $(field);
+    const errorId = $field.attr('id') + '_error';
+    const errorClass = $field.is('select') ? 'select-error' : $field.is('textarea') ? 'textarea-error' : 'input-error';
+
+    $('#' + errorId).remove();
+    $field.addClass(errorClass).attr({ 'aria-invalid': 'true', 'aria-describedby': errorId });
+    $field.after(
+      $('<div>', { id: errorId, class: 'mt-1 text-sm font-medium text-error', role: 'alert' }).text(message)
+    );
+    $field.off('.fieldError').one('input.fieldError change.fieldError', () => clearFieldError($field));
+  }
+
+  function clearFieldError(field) {
+    const $field = $(field);
+    $('#' + $field.attr('id') + '_error').remove();
+    $field.removeClass('select-error textarea-error input-error').removeAttr('aria-invalid aria-describedby');
+  }
+</script>
