@@ -264,8 +264,8 @@ class CarLendingHistoryFilterForm(CarPermissionFilterForm):
     order = fields.SelectField(
         "ลำดับ",
         choices=[
-            ("asc", "น้อยไปมาก"),
-            ("desc", "มากไปน้อย"),
+            ("asc", "เก่าสุดก่อน"),
+            ("desc", "ใหม่สุดก่อน"),
         ],
         default="asc",
         validators=[validators.Optional()],
