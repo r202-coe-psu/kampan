@@ -57,14 +57,11 @@
                 class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
                 <i class="ph ph-pencil-simple text-lg"></i>
               </a>
-              <form method="POST"
-                action="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}"
-                onsubmit="return confirm('ยืนยันการลบแบบประเมินนี้พร้อมผลตอบรับทั้งหมด?');">
-                {{ delete_form.csrf_token }}
-                <button type="submit" class="btn btn-sm btn-ghost text-error tooltip" data-tip="ลบ">
-                  <i class="ph ph-trash text-lg"></i>
-                </button>
-              </form>
+              <button type="button" class="btn btn-sm btn-ghost text-error tooltip delete-btn" data-tip="ลบ"
+                data-name="{{ template.name }}"
+                data-delete-url="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}">
+                <i class="ph ph-trash text-lg"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -79,4 +76,37 @@
     </table>
   </div>
 </div>
+
+<dialog id="delete_feedback_modal" class="modal">
+  <div class="modal-box max-w-md">
+    <h3 class="font-bold text-lg flex items-center gap-2 text-error">
+      <i class="ph ph-warning-circle text-2xl"></i>
+      ยืนยันการลบแบบประเมิน
+    </h3>
+    <p class="py-4">
+      ต้องการลบแบบประเมิน <span id="delete_feedback_name" class="font-semibold"></span> พร้อมผลตอบรับทั้งหมดหรือไม่?
+      <br><span class="text-sm text-base-content/70">การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>
+    </p>
+    <form id="delete_feedback_form" method="POST" class="modal-action">
+      {{ delete_form.csrf_token }}
+      <button type="button" class="btn btn-ghost" onclick="delete_feedback_modal.close()">ยกเลิก</button>
+      <button type="submit" class="btn btn-error">
+        <i class="ph ph-trash"></i> ลบ
+      </button>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+  document.querySelectorAll('.delete-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.getElementById('delete_feedback_form').action = btn.dataset.deleteUrl;
+      document.getElementById('delete_feedback_name').textContent = btn.dataset.name;
+      document.getElementById('delete_feedback_modal').showModal();
+    });
+  });
+</script>
 {% endblock %}
