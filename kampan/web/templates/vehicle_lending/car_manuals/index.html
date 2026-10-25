@@ -207,7 +207,7 @@
                          'ระบบขอใช้รถยนต์แบ่งการทำงานตามบทบาท (role) ในหน่วยงาน เมนูที่เห็นในแถบด้านซ้ายจะต่างกันตามบทบาทของแต่ละคน') }}
 
         <p class="mt-4 text-sm text-base-content/80">
-          ระบบนี้ประกอบด้วยโมดูลย่อย 9 โมดูล แบ่งเป็น 3 กลุ่มงาน คือ
+          ระบบนี้ประกอบด้วยโมดูลย่อย 9 โมดูล แบ่งเป็น 3 กลุ่ม คือ
           <span class="font-semibold">กลุ่มตั้งค่าข้อมูลพื้นฐาน</span> (รถยนต์, แบบประเมิน),
           <span class="font-semibold">กลุ่มขอใช้และอนุมัติ</span> (คำขอ, ปฏิทิน, อนุมัติ 3 ระดับ) และ
           <span class="font-semibold">กลุ่มปฏิบัติงานและรายงาน</span> (รายการงาน, ประวัติการใช้รถ)
@@ -230,7 +230,7 @@
               </tr>
               <tr>
                 <td class="table-style font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head / endorser</span></td>
-                <td class="table-style">อนุมัติคำขอของคนในฝ่าย (division) เดียวกันกับตน</td>
+                <td class="table-style">อนุมัติคำขอของคนในฝ่ายเดียวกันกับตน</td>
                 <td class="table-style">หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์</td>
               </tr>
               <tr>
@@ -258,7 +258,7 @@
         </div>
 
         {{ Note('ถ้าไม่เห็นเมนูใดในแถบด้านซ้าย แสดงว่าบทบาทของบัญชีคุณในหน่วยงานนี้ยังไม่ได้รับสิทธิ์ในเมนูนั้น
-                 กรุณาติดต่อเจ้าหน้าที่พัสดุ (admin) เพื่อกำหนดบทบาทและฝ่าย (division) ให้ถูกต้อง',
+                 กรุณาติดต่อเจ้าหน้าที่พัสดุเพื่อกำหนดบทบาทและฝ่ายให้ถูกต้อง',
                 'info', 'ph-info', 'ข้อสังเกต:') }}
       </section>
 
@@ -665,13 +665,13 @@
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', 'พนักงาน, หัวหน้าฝ่าย, ผู้มีสิทธิ์อนุมัติ, หัวหน้าฝ่ายบริหารจัดการ, พัสดุ', 'ph-users-three') }}
           {{ MetaRow('เมนู', 'การขอใช้รถยนต์', 'ph-list') }}
-          {{ MetaRow('เงื่อนไข', 'บัญชีต้องถูกกำหนด <span class="font-semibold">ฝ่าย (division)</span> ไว้แล้ว เมนูนี้จึงจะแสดง', 'ph-warning-circle') }}
+          {{ MetaRow('เงื่อนไข', 'บัญชีต้องถูกกำหนดฝ่ายไว้แล้ว เมนูนี้จึงจะแสดง', 'ph-warning-circle') }}
         </div>
 
         <h3 class="mt-5 text-base font-bold text-base-content">สิ่งที่เห็นในหน้ารายการ</h3>
         <ul class="mt-2 list-disc space-y-1 pl-6 text-sm text-base-content/80">
           <li>พนักงานทั่วไป &mdash; เห็นเฉพาะคำขอที่ <span class="font-semibold">ตนเองเป็นผู้สร้าง</span></li>
-          <li>พัสดุ (admin) และหัวหน้าฝ่ายบริหารจัดการ &mdash; เห็น <span class="font-semibold">คำขอทั้งหมดของหน่วยงาน</span></li>
+          <li>พัสดุและหัวหน้าฝ่ายบริหารจัดการ &mdash; เห็น <span class="font-semibold">คำขอทั้งหมดของหน่วยงาน</span></li>
           <li>รายการเรียงจากคำขอที่สร้างล่าสุดขึ้นก่อน</li>
         </ul>
 
@@ -738,7 +738,7 @@
           <li class="text-sm">
             <span class="font-bold text-base-content">6. บันทึก</span>
             <p class="text-base-content/70">
-              ระบบบันทึกฝ่าย (division) ของผู้ขอไว้กับคำขอโดยอัตโนมัติ (ใช้ในการกรองของหัวหน้าฝ่าย)
+              ระบบบันทึกฝ่ายของผู้ขอไว้กับคำขอโดยอัตโนมัติ (ใช้ในการกรองของหัวหน้าฝ่าย)
               และส่งอีเมลแจ้งผู้อนุมัติขั้นถัดไปเมื่อคำขอถูกส่งหรืออนุมัติผ่านแต่ละขั้น
               (กรณีปฏิเสธ ระบบจะบันทึกเหตุผลไว้ในคำขอ)
             </p>
@@ -1280,7 +1280,7 @@
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน',
-                     RoleBadge('พนักงานขับรถ (driver)', 'success') ~ ' ' ~ RoleBadge('พัสดุ (admin)', 'primary'),
+                     RoleBadge('พนักงานขับรถ', 'success') ~ ' ' ~ RoleBadge('พัสดุ', 'primary'),
                      'ph-users-three') }}
           {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">อนุมัติสำเร็จ</span> ที่ยังไม่ปิดงาน', 'ph-funnel') }}
         </div>
@@ -1364,7 +1364,7 @@
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน',
-                     RoleBadge('พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงานขับรถ (driver)', 'success'),
+                     RoleBadge('พัสดุ', 'primary') ~ ' ' ~ RoleBadge('พนักงานขับรถ', 'success'),
                      'ph-users-three') }}
           {{ MetaRow('รายการที่แสดง', 'คำขอสถานะ <span class="font-semibold">เสร็จสิ้น</span> เท่านั้น', 'ph-funnel') }}
         </div>
