@@ -36,6 +36,7 @@
     </li>
     {% endif %}
 
+    {% include "/organizations/base/menu-entry.html" %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/motorcycle_manuals' in request.path else '' }}"
         href="{{ url_for('vehicle_lending.motorcycle_manuals.index', organization_id=organization.id ) }}">

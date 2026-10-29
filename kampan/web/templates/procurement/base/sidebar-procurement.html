@@ -133,6 +133,7 @@
             </ul>
           </details>
           <ul class="ml-1 mt-4 w-full">
+            {% include "/organizations/base/menu-entry.html" %}
             <li class="w-full">
               <a class="{{ 'menu-active' if '/procurement/manuals' in request.path else '' }} w-full whitespace-nowrap overflow-hidden text-ellipsis"
                 href="{{ url_for('procurement.manuals.index', organization_id=organization.id) }}" title="คู่มือการใช้งาน">

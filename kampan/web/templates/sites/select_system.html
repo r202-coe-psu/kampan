@@ -60,6 +60,19 @@
 
       {% endif %}
 
+      {% if current_user.has_organization_roles("admin") %}
+        <!-- ระบบจัดการองค์กร -->
+        <a href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}"
+           class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+          <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #DDE1F5;">
+            <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="ph ph-briefcase text-2xl sm:text-3xl text-indigo-700"></i>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-indigo-900">ระบบจัดการองค์กร</h3>
+          </div>
+        </a>
+      {% endif %}
+
       {# ระบบผู้ดูแลระบบ - เฉพาะผู้ดูแลระบบระดับ global เท่านั้น
          ต้องใช้ has_roles(['admin']) ไม่ใช่ has_organization_roles('admin')
          เพราะ /admin ป้องกันด้วย acl.roles_required("admin") ที่ดู roles ระดับผู้ใช้

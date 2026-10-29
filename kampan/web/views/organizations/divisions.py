@@ -54,7 +54,7 @@ def index():
 
     paginated_divisions = Pagination(divisions, page=page, per_page=30)
     return render_template(
-        "/divisions/index.html",
+        "/organizations/divisions/index.html",
         form=form,
         divisions=divisions,
         paginated_divisions=paginated_divisions,
@@ -81,7 +81,7 @@ def create_or_edit(division_id):
         form = forms.divisions.DivisionForm(obj=division)
     if not form.validate_on_submit():
         return render_template(
-            "/divisions/create_or_edit.html",
+            "/organizations/divisions/create_or_edit.html",
             form=form,
             organization=organization,
             division_id=division_id,
@@ -97,14 +97,14 @@ def create_or_edit(division_id):
     if not division_id:
         return redirect(
             url_for(
-                "divisions.index",
+                "organizations.divisions.index",
                 organization_id=organization_id,
             )
         )
     else:
         return redirect(
             url_for(
-                "divisions.index",
+                "organizations.divisions.index",
                 organization_id=organization_id,
             )
         )
@@ -123,7 +123,7 @@ def detail(division_id):
         organization=organization.id,
     ).first()
     return render_template(
-        "/divisions/detail.html",
+        "/organizations/divisions/detail.html",
         organization=organization,
         division=division,
     )
@@ -149,7 +149,7 @@ def add_member(division_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/divisions/add_member.html",
+            "/organizations/divisions/add_member.html",
             form=form,
             organization=organization,
             division=division,
@@ -172,7 +172,7 @@ def add_member(division_id):
 
     return redirect(
         url_for(
-            "divisions.users",
+            "organizations.divisions.users",
             organization_id=organization_id,
             division_id=division.id,
         )
@@ -233,7 +233,7 @@ def users(division_id):
     paginated_division_users = Pagination(division_users, page=page, per_page=30)
 
     return render_template(
-        "/divisions/members.html",
+        "/organizations/divisions/members.html",
         form=form,
         paginated_division_users=paginated_division_users,
         organization=organization,
@@ -261,7 +261,7 @@ def remove_division_user(division_id, division_user_id):
     org_user.save()
     return redirect(
         url_for(
-            "divisions.users",
+            "organizations.divisions.users",
             organization_id=organization_id,
             division_id=division_id,
         )
@@ -289,7 +289,7 @@ def delete(division_id):
 
     return redirect(
         url_for(
-            "divisions.index",
+            "organizations.divisions.index",
             organization_id=organization_id,
         )
     )

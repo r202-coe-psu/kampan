@@ -1,4 +1,4 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
@@ -13,7 +13,7 @@
 {% block content %}
 <div class="flex flex-row w-full justify-between">
   <div class="flex justify-end w-full gap-2">
-    <a class="btn btn-primary" href="{{ url_for('divisions.create_or_edit', organization_id=organization.id) }}">
+    <a class="btn btn-primary" href="{{ url_for('organizations.divisions.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มแผนก
     </a>
@@ -29,7 +29,7 @@
 
   <div class="flex flex-row w-full justify-between mt-4">
     <div class="flex justify-end w-full gap-2">
-      <a class="btn" href='{{  url_for("divisions.index", organization_id=organization.id) }}'>
+      <a class="btn" href='{{  url_for("organizations.divisions.index", organization_id=organization.id) }}'>
         ล้างการค้นหา
       </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
@@ -58,22 +58,22 @@
 
           <td class="table-style">
             <a class="btn btn-circle btn-primary"
-              href="{{ url_for('divisions.users', division_id=division.id ,organization_id=organization.id) }}">
+              href="{{ url_for('organizations.divisions.users', division_id=division.id ,organization_id=organization.id) }}">
               <i class="ph ph-user-list"></i>
             </a>
             <a class="btn btn-circle btn-primary"
-              href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
+              href="{{ url_for('organizations.divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
               <i class="ph ph-user-circle-plus"></i>
             </a>
           </td>
 
           <td class="table-style">
             <a class="btn btn-circle btn-primary"
-              href="{{ url_for('divisions.detail', organization_id=organization.id, division_id=division.id ) }}">
+              href="{{ url_for('organizations.divisions.detail', organization_id=organization.id, division_id=division.id ) }}">
               <i class="ph ph-list-magnifying-glass"></i>
             </a>
             <a class="btn btn-circle btn-primary"
-              href="{{ url_for('divisions.create_or_edit', organization_id=organization.id, division_id=division.id ) }}">
+              href="{{ url_for('organizations.divisions.create_or_edit', organization_id=organization.id, division_id=division.id ) }}">
               <i class="ph ph-pen"></i>
             </a>
             <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division.id }}')">
@@ -93,7 +93,7 @@
                   ยกเลิก
                 </button>
                 <a class="btn-error btn"
-                  href="{{ url_for('divisions.delete',division_id=division.id, organization_id=organization.id )}}">
+                  href="{{ url_for('organizations.divisions.delete',division_id=division.id, organization_id=organization.id )}}">
                   ยืนยัน
                   <i class="ph ph-check"></i>
                 </a>
@@ -110,7 +110,7 @@
     {% endif %}
     {% if paginated_divisions.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_divisions,"item_orders.index", request.args)}}
+    {{ paginated.render_pagination(paginated_divisions,"organizations.divisions.index", request.args)}}
 
     {% endif %}
   </div>

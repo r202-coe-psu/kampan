@@ -1,4 +1,4 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_field %}
@@ -21,14 +21,14 @@
       </label>
       <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
         <li>
-          <a class="text-success" href="{{ url_for('organizations.add_member', organization_id=organization.id) }}">
+          <a class="text-success" href="{{ url_for('organizations.members.add_member', organization_id=organization.id) }}">
             <i class="plus circle icon"></i>
             เพิ่มสมาชิก
           </a>
         </li>
         <li>
           <a class="text-success"
-            href="{{ url_for('organizations.upload_member_file', organization_id=organization.id) }}">
+            href="{{ url_for('organizations.members.upload_member_file', organization_id=organization.id) }}">
             <i class="file upload icon"></i>
             เพิ่มสมาชิกแบบหลายรายการ
           </a>
@@ -48,7 +48,7 @@
 
   <div class="flex flex-row w-full justify-between mt-4">
     <div class="flex justify-end w-full gap-2">
-      <a class="btn" href='{{  url_for("organizations.organizaiton_users", organization_id=organization.id) }}'>
+      <a class="btn" href='{{  url_for("organizations.members.index", organization_id=organization.id) }}'>
         ล้างการค้นหา
       </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
@@ -92,7 +92,7 @@
           </td>
           <td class="table-style">
             <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
-              href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
+              href="{{ url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
               <i class="ph ph-pen"></i>
             </a>
             <a class="btn btn-circle btn-error" data-tip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
@@ -108,7 +108,7 @@
                 body="คุณต้องการลบสมาชิกนี้หรือไม่ <b> %s </b>" | format(org_user.display_fullname()),
                 cancel="ยกเลิก",
                 submit="ยืนยัน",
-                redirect=url_for('organizations.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
+                redirect=url_for('organizations.members.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
             ) }}
 
           </td>
@@ -128,7 +128,7 @@
 {% endif %}
 {% if paginated_org_users.pages != 1 %}
 
-{{ paginated.render_pagination(paginated_org_users,"organizations.organizaiton_users", params)}}
+{{ paginated.render_pagination(paginated_org_users,"organizations.members.index", params)}}
 
 {% endif %}
 

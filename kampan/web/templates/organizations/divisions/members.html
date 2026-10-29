@@ -1,4 +1,4 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_form %}
@@ -9,7 +9,7 @@
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+("แผนกทั้งหมด", url_for("organizations.divisions.index", organization_id=organization.id)),
 ('สมาชิกของแผนก' + division.name, "")]) }}
 
 {% endblock %}
@@ -17,14 +17,14 @@
 {% block content %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+    <a class="btn  btn-primary" href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
   </div>
   <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
-      href="{{ url_for('divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
+      href="{{ url_for('organizations.divisions.add_member', organization_id=organization.id, division_id=division.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มสมาชิก
     </a>
@@ -41,7 +41,7 @@
 
   <div class="flex flex-row w-full justify-between mt-4">
     <div class="flex justify-end w-full gap-2">
-      <a class="btn" href='{{  url_for("divisions.users", division_id=division.id ,organization_id=organization.id) }}'>
+      <a class="btn" href='{{  url_for("organizations.divisions.users", division_id=division.id ,organization_id=organization.id) }}'>
         ล้างการค้นหา
       </a>
       <button type="submit" class="btn btn-primary">ค้นหา</button>
@@ -71,7 +71,7 @@
           </td>
           <td class="table-style">
             <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
-              href="{{ url_for('organizations.edit_roles', organization_id=organization.id, org_user_id=division_user.id) }}">
+              href="{{ url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=division_user.id) }}">
               <i class="ph ph-pen"></i>
             </a>
             <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ division_user.id }}')">
@@ -83,7 +83,7 @@
                 body="ต้องการลบสมาชิก<b> %s</b><br />" | format(division_user.display_fullname()),  
                 cancel="ยกเลิก",  
                 submit="ยืนยัน",  
-                redirect=url_for('divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)
+                redirect=url_for('organizations.divisions.remove_division_user', organization_id=organization.id, division_user_id=division_user.id, division_id=division.id)
               ) }}
           </td>
         </tr>
@@ -97,7 +97,7 @@
     {% endif %}
     {% if paginated_division_users.pages != 1 %}
 
-    {{ paginated.render_pagination(paginated_division_users,"divisions.users", params)}}
+    {{ paginated.render_pagination(paginated_division_users,"organizations.divisions.users", params)}}
 
     {% endif %}
   </div>

@@ -164,9 +164,7 @@ def delete_email_template(organization_id, email_template_id):
     organization = models.Organization.objects.get(id=organization_id)
     email_template.delete()
 
-    return redirect(
-        url_for("organizations.view_email_templates", organization_id=organization_id)
-    )
+    return redirect(url_for("email_templates.index", organization_id=organization_id))
 
 
 @module.route(
@@ -193,9 +191,7 @@ def set_default_email_template(organization_id, email_template_id, is_default):
         email_template.is_default = False
         email_template.save()
 
-    return redirect(
-        url_for("organizations.view_email_templates", organization_id=organization_id)
-    )
+    return redirect(url_for("email_templates.index", organization_id=organization_id))
 
 
 @module.route("/order/<order_id>/send_email", methods=["GET", "POST"])

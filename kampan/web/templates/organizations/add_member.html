@@ -1,4 +1,4 @@
-{% extends '/item_registers/index.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 
@@ -14,7 +14,7 @@
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("สมาชิกขององค์กร", url_for('organizations.organizaiton_users', organization_id=organization.id) ),
+("สมาชิกขององค์กร", url_for('organizations.members.index', organization_id=organization.id) ),
 ("เพิ่มสมาชิก ", "")]) }}
 {% endblock %}
 
@@ -22,7 +22,7 @@
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
-      href="{{ url_for('organizations.organizaiton_users', organization_id=organization.id) }}">
+      href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>

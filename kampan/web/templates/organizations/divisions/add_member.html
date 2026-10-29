@@ -1,4 +1,4 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
@@ -7,8 +7,8 @@
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
-("สมาชิกของแผนก" + division.name, url_for("divisions.users", division_id=division.id ,
+("แผนกทั้งหมด", url_for("organizations.divisions.index", organization_id=organization.id)),
+("สมาชิกของแผนก" + division.name, url_for("organizations.divisions.users", division_id=division.id ,
 organization_id=organization.id)),
 ('เพิ่มสมาชิก', "")]) }}
 {% endblock %}
@@ -17,7 +17,7 @@ organization_id=organization.id)),
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary"
-      href='{{ url_for("divisions.users", division_id=division.id , organization_id=organization.id) }}'>
+      href='{{ url_for("organizations.divisions.users", division_id=division.id , organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>

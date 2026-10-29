@@ -1,4 +1,4 @@
-{% extends '/item_registers/index.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}
@@ -16,14 +16,14 @@
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+("แผนกทั้งหมด", url_for("organizations.divisions.index", organization_id=organization.id)),
 ('แก้ไขรายละเอียดแผนก' if 'edit' in request.path else "เพิ่มแผนก", "")]) }}
 {% endblock %}
 
 {% block content %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary" href='{{ url_for("divisions.index", organization_id=organization.id) }}'>
+    <a class="btn  btn-primary" href='{{ url_for("organizations.divisions.index", organization_id=organization.id) }}'>
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>

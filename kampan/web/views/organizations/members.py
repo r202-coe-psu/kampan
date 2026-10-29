@@ -7,46 +7,10 @@ import datetime
 from kampan.web import forms, acl
 from kampan import models, utils
 
-module = Blueprint("organizations", __name__, url_prefix="/organizations")
+module = Blueprint("members", __name__, url_prefix="/<organization_id>/members")
 
 
-@module.route("/<organization_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
-def edit(organization_id):
-    organization = models.Organization.objects(id=organization_id).first()
-    form = forms.organizations.OrganizationForm(obj=organization)
-    if not form.validate_on_submit():
-        return render_template(
-            "/organizations/create_or_edit.html",
-            form=form,
-            organization=organization,
-        )
-
-    form.populate_obj(organization)
-    organization.last_updated_by = current_user._get_current_object()
-    organization.save()
-    return redirect(
-        url_for(
-            "organizations.detail",
-            organization_id=organization_id,
-        )
-    )
-
-
-@module.route("/<organization_id>/detail")
-@acl.organization_roles_required("admin")
-def detail(organization_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-
-    return render_template(
-        "/organizations/detail.html",
-        organization=organization,
-    )
-
-
-@module.route("/<organization_id>/add-member", methods=["GET", "POST"])
+@module.route("/add", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def add_member(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
@@ -95,15 +59,15 @@ def add_member(organization_id):
 
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route("/<organization_id>/organizaiton_users", methods=["GET", "POST"])
+@module.route("/", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
-def organizaiton_users(organization_id):
+def index(organization_id):
     organization = models.Organization.objects(id=organization_id).first()
     form = forms.organizations.SearchUserForm()
     org_users = organization.get_organization_users()
@@ -172,7 +136,7 @@ def organizaiton_users(organization_id):
         )
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization.id,
             role=form.role.data,
             user=form.user.data,
@@ -183,7 +147,7 @@ def organizaiton_users(organization_id):
 
 
 @module.route(
-    "/<organization_id>/organizaiton_users/<org_user_id>/edit_roles",
+    "/<org_user_id>/edit_roles",
     methods=["GET", "POST"],
 )
 @acl.organization_roles_required("admin")
@@ -224,15 +188,13 @@ def edit_roles(organization_id, org_user_id):
     org_user.save()
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route(
-    "/<organization_id>/organizaiton_user/<org_user_id>/remove", methods=["GET", "POST"]
-)
+@module.route("/<org_user_id>/remove", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def remove_org_user(organization_id, org_user_id):
     org_user = models.OrganizationUserRole.objects(id=org_user_id).first()
@@ -244,31 +206,13 @@ def remove_org_user(organization_id, org_user_id):
     org_user.save()
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route("/<organization_id>/email_templates", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "staff")
-def view_email_templates(organization_id):
-    organization = models.Organization.objects.get(id=organization_id)
-    form = forms.email_templates.EmailTemplateFileForm()
-
-    query_default = request.args.get("is_default")
-    email_templates = models.EmailTemplate.objects(organization=organization)
-
-    return render_template(
-        "/email_templates/index.html",
-        organization=organization,
-        email_templates=email_templates,
-        form=form,
-        default=query_default,
-    )
-
-
-@module.route("/<organization_id>/upload_member_file", methods=["GET", "POST"])
+@module.route("/upload", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "staff")
 def upload_member_file(organization_id):
     organization = models.Organization.objects(
@@ -304,22 +248,20 @@ def upload_member_file(organization_id):
     else:
         return redirect(
             url_for(
-                "organizations.upload_member_file",
+                "organizations.members.upload_member_file",
                 organization_id=organization_id,
                 errors=["ไม่พบไฟล์"],
             )
         )
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route(
-    "/<organization_id>/download_template_member_file", methods=["GET", "POST"]
-)
+@module.route("/upload/template", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "staff")
 def download_template_member_file(organization_id):
     return utils.organizations.get_template_delete_items_file()

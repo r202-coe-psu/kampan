@@ -1,11 +1,11 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
 
 {% block title %} รายละเอียดแผนก {% endblock %}
 {% block dashboard_title %} รายละเอียดแผนก {% endblock %}
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("แผนกทั้งหมด", url_for("divisions.index", organization_id=organization.id)),
+("แผนกทั้งหมด", url_for("organizations.divisions.index", organization_id=organization.id)),
 ('รายละเอียด', "")]) }}
 {% endblock %}
 
@@ -18,7 +18,7 @@
 {% block content %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
-    <a class="btn btn-primary" href="{{ url_for('divisions.index', organization_id=organization.id) }}">
+    <a class="btn btn-primary" href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}">
       <i class="ph ph-arrow-u-up-left"></i>
       ย้อนกลับ
     </a>
@@ -28,7 +28,7 @@
   <h2 class="text-2xl font-bold flex items-center justify-between">
     รายละเอียดแผนก
     <a class="btn btn-circle btn-primary"
-      href="{{ url_for('divisions.create_or_edit',division_id=division.id, organization_id=organization.id) }}"
+      href="{{ url_for('organizations.divisions.create_or_edit',division_id=division.id, organization_id=organization.id) }}"
       title='Edit Organization.'>
       <i class="ph ph-pen"></i>
     </a>

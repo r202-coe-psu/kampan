@@ -1,0 +1,7 @@
+{% if organization and current_user.has_organization_roles("admin") %}
+<li>
+  <a href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}">
+    <i class="ph ph-size ph-briefcase"></i> จัดการองค์กร
+  </a>
+</li>
+{% endif %}

@@ -19,11 +19,12 @@ def add_date_url(url):
 MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
+    "organizations": "organizations.divisions.index",
     "admin": "admin.index",
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
-NON_MODULE_BLUEPRINTS = {"site", "accounts", "organizations", "notifications"}
+NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications"}
 
 
 def switch_organization_next_url(organization):
