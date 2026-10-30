@@ -107,7 +107,7 @@ def create_user_psu(user_info, user=None):
         organization = models.Organization.objects(name=organization_name).first()
         if organization and organization not in user.organizations:
             # user.organizations.append(organization)
-            organization_user_role = models.OrganizationUerRole(
+            organization_user_role = models.OrganizationUserRole(
                 organization=organization,
                 user=user,
             )

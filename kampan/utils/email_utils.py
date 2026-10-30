@@ -443,7 +443,11 @@ def get_car_application_text_format(
             "%d/%m/%Y %H:%M"
         ),
         "car_application_objective": car_application.request_reason,
-        "car": car_application.car.license_plate,
+        "car": (
+            car_application.car.license_plate
+            if car_application.car
+            else "รอเจ้าหน้าที่จัดรถ"
+        ),
         "endorser_name": endorser.get_name(),
         "endorsement_url": endorsement_url,
     }
