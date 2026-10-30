@@ -329,7 +329,8 @@ class ControllerServer:
 
     def run(self):
         self.running = True
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.set_debug(True)
         loop.run_until_complete(self.set_up())
         item_task = loop.create_task(self.process_item_queue())
