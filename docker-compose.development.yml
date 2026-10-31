@@ -38,7 +38,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
     command:
       # uwsgi --lazy-apps --ini scripts/kampan-uwsgi.ini
-      /venv/bin/gunicorn -w 4 --bind 0.0.0.0:10060 "kampan.web:create_app()"
+      /venv/bin/gunicorn -w 4 --bind 0.0.0.0:10060 --access-logfile - "kampan.web:create_app()"
     logging:
       options:
         max-size: "10m"

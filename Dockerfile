@@ -26,6 +26,7 @@ RUN npm install --prefix kampan/web/static
 
 COPY . /app
 ENV KAMPAN_SETTINGS=/app/kampan-production.cfg
+ENV PYTHONUNBUFFERED=1
 
 RUN npm --prefix kampan/web/static run tw:minify
 RUN npm install --prefix kampan/web/static

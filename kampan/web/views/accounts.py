@@ -104,8 +104,8 @@ def authorized_oauth(name):
 
         token = remote.authorize_access_token()
 
-    except Exception as e:
-        print("autorize access error =>", e)
+    except Exception:
+        current_app.logger.exception("OAuth2 authorize access token failed: %s", name)
         return redirect(url_for("accounts.login"))
 
     session["oauth_provider"] = name
