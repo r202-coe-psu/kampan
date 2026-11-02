@@ -1,9 +1,11 @@
 {% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/email_templates/variables_panel.html' import EmailVariablesPanel %}
 
 {% block title %}
 
-{% if 'edit' in request.path %}
+{% if email_template %}
 แก้ไขรูปแบบอีเมล
 {% else %}
 เพิ่มรูปแบบอีเมล
@@ -18,99 +20,48 @@
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
 ("รูปแบบอีเมลทั้งหมด", url_for('email_templates.index', organization_id=organization.id) ),
-('แก้ไขรูปแบบอีเมล' if 'edit' in request.path else 'เพิ่มรูปแบบอีเมล', "")]) }}
+('แก้ไขรูปแบบอีเมล' if email_template else 'เพิ่มรูปแบบอีเมล', "")]) }}
 {% endblock %}
 
 {% block content %}
-
-<div class="flex flex-row justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
-      <i class="ph ph-arrow-u-up-left"></i>
-      ย้อนกลับ
-    </a>
-  </div>
-</div>
-<form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm grid grid-cols-2 w-full gap-6"
-  method="POST" enctype="multipart/form-data">
-  <div class="">
+{% set selected_type = form.type.data or email_types[0][0] %}
+<form class="grid grid-cols-1 gap-6 lg:grid-cols-3" method="POST" enctype="multipart/form-data">
+  <div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm lg:col-span-2">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-xl font-bold">{{ self.title() }}</h2>
+      {{ IconButton('ph-arrow-u-up-left', 'กลับไปรายการรูปแบบอีเมล',
+          href=url_for('email_templates.index', organization_id=organization.id), tone='neutral') }}
+    </div>
     {{ form.csrf_token }}
-    {{ renderer.render_select_field(form.type) }}
-    {{ renderer.render_field(form.name) }}
+    <div class="mt-2 grid grid-cols-1 gap-x-4 md:grid-cols-2">
+      {{ renderer.render_field(form.name) }}
+      {{ renderer.render_select_field(form.type) }}
+    </div>
     {{ renderer.render_field(form.subject) }}
-
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">{{ form.body.label }}</legend>
-      {{ form.body(class_="textarea w-full h-96") }}
+      <legend class="fieldset-legend">{{ form.body.label.text }} <span class="text-error">*</span></legend>
+      {{ form.body(class_="textarea w-full h-96 font-mono text-sm") }}
+      {% for error in form.body.errors %}<p class="text-error">{{ error }}</p>{% endfor %}
     </fieldset>
-
-    <div class="ui spaced buttons" style="margin-top: 10px !important">
+    <div class="mt-4 flex justify-end gap-2">
+      <a class="btn btn-ghost" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ยกเลิก</a>
       <button class="btn btn-primary" type="submit">
-        {{ 'บันทึก' if 'edit' in request.path else 'สร้าง' }}
+        <i class="ph ph-floppy-disk"></i>
+        {{ 'บันทึก' if email_template else 'เพิ่มรูปแบบอีเมล' }}
       </button>
-      <a class="btn" href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ยกเลิก</a>
     </div>
   </div>
-  <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-    <div class="text-2xl font-bold">
-      รายการรูปแบบข้อความที่ใช้ได้สำหรับเทมเพลตอีเมล
-    </div>
-    <div class="ui relaxed list">
-      <div class="item">
-        <div class="text-xl font-bold"><i class=" globe icon"></i> องค์กร</div>
-        <div class="px-2">
-          <div class="item"> <b>{{ '{{ organization_name }}' }}</b> - ชื่อองค์กร</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="px-2">
-          <div class="item"> <b>{{ '{{ user_name }}' }}</b> - ชื่อผู้เบิก</div>
-          <div class="item"> <b>{{ '{{ order_date }}' }}</b> - วันที่ขอเบิกวัสดุ</div>
-          <div class="item"> <b>{{ '{{ order_objective }}' }}</b> - วัตถุประสงค์</div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-xl font-bold"><i class=" archive icon"></i> แผนก</div>
-        <div class="px-2">
-          <div class="item"> <b>{{ '{{ division_name }}' }}</b> - ชื่อแผนก</div>
-          <div class="item"> <b>{{ '{{ division_description }}' }}</b> - รายละเอียดแผนก </div>
-
-        </div>
-      </div>
-      <div class="item">
-        <div class="text-xl font-bold"> หัวหน้าแผนก/ผู้อนุมัติ</div>
-        <div class="px-2">
-          <div class="item"> <b>{{ '{{ endorser_name }}' }}</b> - ชื่อผู้อนุมัติ</div>
-          <div class="item"> <b>{{ '{{ endorsement_url }}' }}</b> - URL สำหรับการอนุมัติ</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  {{ EmailVariablesPanel(email_types, email_variables, selected_type) }}
 </form>
-
-
-
-
-
-
-
 {% endblock %}
 
 {% block additional_js %}
 <script type="text/javascript">
-  $('.ui.dropdown')
-    .dropdown();
-  $(".attach-file-email_template_file").click(function () {
-    $(this).parent().find("#email_template_file").click();
-  });
-
-  $('#email_template_file')
-    .on('change', function (e) {
-      var name = e.target.files[0].name;
-      $('.attach-file-email_template_file', $(e.target).parent()).val(name);
+  // แสดงตัวแปรของประเภทอีเมลที่เลือกอยู่
+  document.getElementById('{{ form.type.id }}').addEventListener('change', function (event) {
+    document.querySelectorAll('[data-email-type]').forEach(function (panel) {
+      panel.classList.toggle('hidden', panel.dataset.emailType !== event.target.value);
     });
-
+  });
 </script>
 {% endblock %}

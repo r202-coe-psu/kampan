@@ -6,6 +6,8 @@ from flask import (
     request,
     current_app,
     session,
+    flash,
+    abort,
 )
 from flask_login import login_required, current_user
 
@@ -23,6 +25,22 @@ from jinja2 import Template
 
 module = Blueprint("email_templates", __name__, url_prefix="/email_templates")
 subviews = []
+
+
+def email_template_context():
+    return dict(
+        email_types=models.email_templates.EMAIL_TYPE,
+        email_variables=models.email_templates.EMAIL_TEMPLATE_VARIABLES,
+    )
+
+
+def get_email_template(organization, email_template_id):
+    email_template = models.EmailTemplate.objects(
+        id=email_template_id, organization=organization
+    ).first()
+    if not email_template:
+        abort(404)
+    return email_template
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -58,10 +76,9 @@ def create_or_edit(email_template_id):
     upload_form = forms.email_templates.EmailTemplateFileForm()
     organization = models.Organization.objects.get(id=organization_id)
 
-    email_template = models.EmailTemplate.objects()
+    email_template = None
     if email_template_id:
-        email_template = models.EmailTemplate.objects.get(id=email_template_id)
-        organization = models.Organization.objects.get(id=organization_id)
+        email_template = get_email_template(organization, email_template_id)
         form = forms.email_templates.EmailTemplateForm(obj=email_template)
 
     uploaded_email_template = session.get("uploaded_email_template_form", None)
@@ -76,6 +93,7 @@ def create_or_edit(email_template_id):
             upload_form=upload_form,
             email_template=email_template,
             organization=organization,
+            **email_template_context(),
         )
 
     if not email_template_id:
@@ -93,6 +111,10 @@ def create_or_edit(email_template_id):
     email_template.last_updated_by = current_user._get_current_object()
     email_template.updated_date = datetime.datetime.now()
     email_template.save()
+    flash(
+        f"{'บันทึก' if email_template_id else 'เพิ่ม'}รูปแบบอีเมล {email_template.name} แล้ว",
+        "success",
+    )
 
     return redirect(
         url_for(
@@ -144,14 +166,13 @@ def upload_email_template(email_template_id):
 def detail(email_template_id):
     organization_id = request.args.get("organization_id", None)
     organization = models.Organization.objects.get(id=organization_id)
-    email_template = models.EmailTemplate.objects.get(id=email_template_id)
-    form = forms.email_templates.EmailTemplateFileForm()
+    email_template = get_email_template(organization, email_template_id)
 
     return render_template(
         "/email_templates/detail.html",
         email_template=email_template,
         organization=organization,
-        form=form,
+        **email_template_context(),
     )
 
 
@@ -160,9 +181,10 @@ def detail(email_template_id):
 )
 @acl.organization_roles_required("staff", "admin")
 def delete_email_template(organization_id, email_template_id):
-    email_template = models.EmailTemplate.objects(id=email_template_id)
     organization = models.Organization.objects.get(id=organization_id)
+    email_template = get_email_template(organization, email_template_id)
     email_template.delete()
+    flash(f"ลบรูปแบบอีเมล {email_template.name} แล้ว", "success")
 
     return redirect(url_for("email_templates.index", organization_id=organization_id))
 
@@ -174,7 +196,7 @@ def delete_email_template(organization_id, email_template_id):
 @acl.organization_roles_required("admin", "staff")
 def set_default_email_template(organization_id, email_template_id, is_default):
     organization = models.Organization.objects.get(id=organization_id)
-    email_template = models.EmailTemplate.objects.get(id=email_template_id)
+    email_template = get_email_template(organization, email_template_id)
 
     action = is_default.lower()
     if action == "true":
@@ -190,6 +212,11 @@ def set_default_email_template(organization_id, email_template_id, is_default):
     else:
         email_template.is_default = False
         email_template.save()
+
+    if email_template.is_default:
+        flash(f"ตั้ง {email_template.name} เป็นค่าเริ่มต้นแล้ว", "success")
+    else:
+        flash(f"ยกเลิกค่าเริ่มต้นของ {email_template.name} แล้ว", "success")
 
     return redirect(url_for("email_templates.index", organization_id=organization_id))
 
