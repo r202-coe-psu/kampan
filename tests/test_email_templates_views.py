@@ -6,7 +6,12 @@ import pytest
 from flask import url_for
 
 from kampan import models
-from kampan.models.email_templates import EMAIL_TEMPLATE_VARIABLES, EMAIL_TYPE
+from kampan.models.email_templates import (
+    EMAIL_SYSTEMS,
+    EMAIL_TEMPLATE_VARIABLES,
+    EMAIL_TYPE,
+    EMAIL_TYPE_INFO,
+)
 from kampan.utils import email_utils
 
 
@@ -25,6 +30,14 @@ DIVISION = SimpleNamespace(name="Div", description="desc", organization=ORGANIZA
 
 def test_every_email_type_documents_its_variables():
     assert set(EMAIL_TEMPLATE_VARIABLES) == {value for value, _ in EMAIL_TYPE}
+
+
+def test_every_email_type_belongs_to_a_known_system():
+    assert set(EMAIL_TYPE_INFO) == {value for value, _ in EMAIL_TYPE}
+    systems = {value for value, _ in EMAIL_SYSTEMS}
+    for info in EMAIL_TYPE_INFO.values():
+        assert info["system"] in systems
+        assert info["recipient"] and info["trigger"]
 
 
 @pytest.mark.parametrize(
@@ -176,3 +189,4 @@ def test_car_application_result_variables_match_what_is_sent():
     assert _documented("car_application_result") == set(sent)
     assert sent["status_label"] == "ปฏิเสธ"
     assert sent["denied_reason"] == "รถไม่ว่าง"
+
