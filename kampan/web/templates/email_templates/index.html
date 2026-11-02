@@ -1,4 +1,5 @@
-{% extends '/base/template-page-login.html' %}
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% import 'base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated%}
 
@@ -104,7 +105,12 @@
 {% endif %}
 
 {% if not email_templates %}
-<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลรูปแบบอีเมลในขณะนี้</div>
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {{ EmptyState('ph-envelope-simple', 'ยังไม่มีรูปแบบอีเมล',
+                description='สร้างรูปแบบอีเมลสำหรับแจ้งเตือนผู้อนุมัติ เจ้าหน้าที่พัสดุ และผู้ขอเบิก',
+                action_label='เพิ่มรูปแบบอีเมล',
+                action_href=url_for('email_templates.create_or_edit', organization_id=organization.id)) }}
+</div>
 {% endif %}
 
 

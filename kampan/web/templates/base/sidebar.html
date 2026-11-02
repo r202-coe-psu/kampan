@@ -107,14 +107,6 @@
         </ul>
       </details>
     </li>
-    <li>
-      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
-        href="{{ url_for('email_templates.index', organization_id = organization.id) }}">
-        <i class="ph ph-envelope-simple"></i>
-
-        รูปแบบอีเมล
-      </a>
-    </li>
     {% endif %}
     {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
     current_user.get_current_division()) or current_user.has_roles(['admin']) %}

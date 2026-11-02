@@ -144,6 +144,46 @@ def test_divisions_index_uses_organization_layout(app, org_setup):
     assert "/item_orders" not in html
 
 
+def test_email_templates_page_uses_organization_layout(app, org_setup):
+    org = org_setup["org"]
+    with app.test_request_context():
+        email_templates_url = url_for(
+            "email_templates.index", organization_id=str(org.id)
+        )
+        members_url = url_for(
+            "organizations.members.index", organization_id=str(org.id)
+        )
+        divisions_url = url_for(
+            "organizations.divisions.index", organization_id=str(org.id)
+        )
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        response = client.get(email_templates_url)
+        org_html = client.get(divisions_url).get_data(as_text=True)
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True).replace("&amp;", "&")
+    assert members_url in html
+    assert "/item_orders" not in html
+    assert email_templates_url in org_html.replace("&amp;", "&")
+
+
+def test_email_template_create_page_uses_organization_layout(app, org_setup):
+    org = org_setup["org"]
+    with app.test_request_context():
+        create_url = url_for(
+            "email_templates.create_or_edit", organization_id=str(org.id)
+        )
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        response = client.get(create_url)
+
+    assert response.status_code == 200
+    assert "/item_orders" not in response.get_data(as_text=True)
+
+
 def test_divisions_index_pagination_links_to_divisions_index(app, org_setup):
     org = org_setup["org"]
     admin = org_setup["admin"]
@@ -520,6 +560,19 @@ def test_divisions_index_empty_state_offers_create(app, empty_org):
 
     assert "ยังไม่มีแผนก" in html
     assert "create-division" in html
+
+
+def test_email_templates_empty_state_links_to_create(app, empty_org):
+    org_id = str(empty_org["org"].id)
+    with app.test_request_context():
+        create_url = url_for("email_templates.create_or_edit", organization_id=org_id)
+
+    html = _get_html(
+        app, empty_org["admin"], "email_templates.index", organization_id=org_id
+    )
+
+    assert "ยังไม่มีรูปแบบอีเมล" in html
+    assert create_url in html.replace("&amp;", "&")
 
 
 def test_system_organizations_empty_search_offers_clear(app, create_user):

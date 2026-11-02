@@ -24,6 +24,12 @@
         <i class="ph ph-users"></i> สมาชิกขององค์กร
       </a>
     </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'email_templates' else '' }}"
+        href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
+        <i class="ph ph-envelope-simple"></i> รูปแบบอีเมล
+      </a>
+    </li>
     {% endif %}
     {% endif %}
 
