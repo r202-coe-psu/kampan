@@ -1,16 +1,28 @@
+{# breadcrumb แบบ minimal: ลิงก์สีจาง หน้าปัจจุบัน (ตัวสุดท้าย) สีปกติ ตัดด้วย … ถ้ายาวเกิน
+
+   import: {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
+   ใช้:    {{ RenderBreadcrumb([("แผนกทั้งหมด", url_for(...)), (division.name, "")]) }}
+
+   links เป็น list ของ (ชื่อ, url) ตัวที่ url ว่างแสดงเป็นข้อความ; มีตัวเดียวจะไม่แสดง (ซ้ำกับหัวข้อหน้า)
+#}
 {% macro RenderBreadcrumb(links) %}
-<div class="breadcrumbs text-sm">
+{% if links|length > 1 %}
+<nav aria-label="breadcrumb" class="breadcrumbs max-w-full pt-1 pb-3 text-sm">
   <ul>
-    {% if links|length > 1 %}
     {% for name, direct_url in links %}
-    {% if direct_url %}
-    <li> <a href="{{ direct_url }}"> {{ name }}</a></li>
+    {% if loop.last %}
+    <li aria-current="page" class="min-w-0">
+      <span class="block max-w-[14rem] truncate font-medium text-base-content sm:max-w-md" title="{{ name }}">{{ name }}</span>
+    </li>
+    {% elif direct_url %}
+    <li>
+      <a href="{{ direct_url }}" class="text-base-content/60 no-underline transition-colors hover:text-primary hover:no-underline">{{ name }}</a>
+    </li>
     {% else %}
-    <li>{{ name }}</li>
+    <li class="text-base-content/60">{{ name }}</li>
     {% endif %}
     {% endfor %}
-    {% endif %}
   </ul>
-
-</div>
+</nav>
+{% endif %}
 {% endmacro %}
