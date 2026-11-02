@@ -21,12 +21,23 @@
     </a>
   </div>
 
+  {# filter ตามระบบ: ไม่ได้เก็บใน DB แต่กรองจากประเภทอีเมลของระบบนั้น #}
+  <div role="tablist" class="tabs tabs-box mt-4 w-fit">
+    <a role="tab" class="tab {{ 'tab-active' if not selected_system }}"
+      href="{{ url_for('email_templates.index', organization_id=organization.id) }}">ทั้งหมด</a>
+    {% for system_value, system_label in email_systems %}
+    <a role="tab" class="tab {{ 'tab-active' if selected_system == system_value }}"
+      href="{{ url_for('email_templates.index', organization_id=organization.id, system=system_value) }}">{{ system_label }}</a>
+    {% endfor %}
+  </div>
+
   {% if email_templates %}
   <div class="overflow-x-auto mt-4 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
           <th class="table-style">ชื่อ</th>
+          <th class="table-style">ระบบ</th>
           <th class="table-style">ประเภท</th>
           <th class="table-style">หัวข้อ</th>
           <th class="table-style w-px whitespace-nowrap">ค่าเริ่มต้น</th>
@@ -42,6 +53,11 @@
               href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id) }}">
               {{ email_template.name }}
             </a>
+          </td>
+          <td class="table-style whitespace-nowrap" data-label="System">
+            <span class="badge module-badge {{ email_template.get_system_module_class() }}">
+              {{ email_template.get_system_display() }}
+            </span>
           </td>
           <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
           <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
@@ -79,6 +95,11 @@
       url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id),
       body='ลบ %s ออกจากองค์กรนี้' | format(email_template.name)) }}
   {% endfor %}
+  {% elif selected_system %}
+  {{ EmptyState('ph-funnel', 'ไม่มีรูปแบบอีเมลของระบบนี้',
+                description='ลองเลือกระบบอื่น หรือเพิ่มรูปแบบอีเมลใหม่',
+                action_label='เพิ่มรูปแบบอีเมล',
+                action_href=url_for('email_templates.create_or_edit', organization_id=organization.id)) }}
   {% else %}
   {{ EmptyState('ph-envelope-simple', 'ยังไม่มีรูปแบบอีเมล',
                 description='สร้างรูปแบบอีเมลสำหรับแจ้งเตือนผู้อนุมัติ เจ้าหน้าที่พัสดุ และผู้ขอเบิก',

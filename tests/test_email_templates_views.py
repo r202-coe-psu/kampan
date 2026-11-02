@@ -190,3 +190,31 @@ def test_car_application_result_variables_match_what_is_sent():
     assert sent["status_label"] == "ปฏิเสธ"
     assert sent["denied_reason"] == "รถไม่ว่าง"
 
+
+def test_index_filters_templates_by_system(app, login_as, email_setup):
+    s = email_setup
+    models.EmailTemplate(
+        name="แจ้งผลยืมรถ", subject="s", body="b",
+        type="car_application_result", organization=s.org,
+    ).save()
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        all_html = _get(app, client, "email_templates.index", organization_id=str(s.org.id)).get_data(as_text=True)
+        car_html = _get(
+            app, client, "email_templates.index",
+            organization_id=str(s.org.id), system="vehicle_lending",
+        ).get_data(as_text=True)
+        bogus_html = _get(
+            app, client, "email_templates.index",
+            organization_id=str(s.org.id), system="nope",
+        ).get_data(as_text=True)
+
+    def tbody(html):
+        return html[html.index("<tbody>"):html.index("</tbody>")]
+
+    assert "แจ้งผู้อนุมัติ" in tbody(all_html) and "แจ้งผลยืมรถ" in tbody(all_html)
+    assert "ระบบพัสดุ" in tbody(all_html) and "ระบบยืมรถ" in tbody(all_html)
+    assert "แจ้งผลยืมรถ" in tbody(car_html)
+    assert "แจ้งผู้อนุมัติ" not in tbody(car_html)
+    assert "แจ้งผู้อนุมัติ" in tbody(bogus_html)
+

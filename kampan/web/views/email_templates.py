@@ -31,6 +31,8 @@ def email_template_context():
     return dict(
         email_types=models.email_templates.EMAIL_TYPE,
         email_variables=models.email_templates.EMAIL_TEMPLATE_VARIABLES,
+        email_types_by_system=models.email_templates.get_email_types_by_system(),
+        email_type_info=models.email_templates.EMAIL_TYPE_INFO,
     )
 
 
@@ -50,6 +52,18 @@ def index():
     organization = models.Organization.objects.get(id=organization_id)
     email_templates = models.EmailTemplate.objects(organization=organization)
 
+    email_systems = models.email_templates.EMAIL_SYSTEMS
+    selected_system = request.args.get("system", "")
+    if selected_system in dict(email_systems):
+        types = [
+            value
+            for value, info in models.email_templates.EMAIL_TYPE_INFO.items()
+            if info["system"] == selected_system
+        ]
+        email_templates = email_templates.filter(type__in=types)
+    else:
+        selected_system = ""
+
     form = forms.email_templates.EmailTemplateFileForm()
 
     return render_template(
@@ -57,6 +71,8 @@ def index():
         email_templates=email_templates,
         organization=organization,
         form=form,
+        email_systems=email_systems,
+        selected_system=selected_system,
     )
 
 
