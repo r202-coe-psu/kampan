@@ -8,11 +8,11 @@ from kampan.web import acl, forms
 
 module = Blueprint("system_users", __name__, url_prefix="/system/users")
 
-EDITABLE_USER_ROLES = [
-    ("admin", "Admin"),
-    ("supervisor", "Supervisor"),
-    ("user", "User"),
-]
+EDITABLE_USER_ROLES = [role for role, _ in forms.user_roles.USER_ROLE_CHOICES if role]
+
+
+def editable_role_choices():
+    return [choice for choice in forms.user_roles.USER_ROLE_CHOICES if choice[0]]
 
 
 def summarize_roles():
@@ -100,7 +100,7 @@ def edit_roles(user_id):
         abort(404)
 
     form = forms.user_roles.UserRolesForm(obj=user)
-    form.roles.choices = EDITABLE_USER_ROLES
+    form.roles.choices = editable_role_choices()
 
     if not form.validate_on_submit():
         return render_template(
@@ -110,7 +110,9 @@ def edit_roles(user_id):
             organization=current_user.get_viewing_organization(),
         )
 
-    user.roles = form.roles.data
+    # role เก่าที่ไม่อยู่ในรายการตัวเลือกแล้ว ต้องคงไว้ ไม่ให้หายตอนบันทึก
+    kept_roles = [role for role in user.roles if role not in EDITABLE_USER_ROLES]
+    user.roles = form.roles.data + kept_roles
     user.save()
 
     return redirect(url_for("organizations.system_users.index"))

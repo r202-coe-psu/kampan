@@ -142,3 +142,37 @@ def test_user_list_filters_users_without_role(app, create_user, login_as):
     assert nobody.email in table
     assert admin.email not in table
 
+
+def test_edit_roles_offers_every_role_with_thai_labels(app, create_user, login_as):
+    admin = create_user("Admin", "User", roles=["admin"])
+    user = create_user("Target", "User", roles=["user"])
+
+    with app.test_client() as client:
+        login_as(client, admin)
+        html = client.get(f"/organizations/system/users/{user.id}/edit-roles").get_data(as_text=True)
+
+    for value, label in [
+        ("admin", "ผู้ดูแลระบบ"),
+        ("supervisor", "หัวหน้างาน"),
+        ("user", "ผู้ใช้งาน"),
+        ("staff", "พนักงาน"),
+        ("student", "นักศึกษา"),
+        ("lecturer", "อาจารย์"),
+    ]:
+        assert f'value="{value}"' in html
+        assert label in html
+
+
+def test_edit_roles_keeps_roles_not_in_form(app, create_user, login_as):
+    admin = create_user("Admin", "User", roles=["admin"])
+    user = create_user("Target", "User", roles=["alumni", "lecturer", "user"])
+
+    with app.test_client() as client:
+        login_as(client, admin)
+        client.post(
+            f"/organizations/system/users/{user.id}/edit-roles",
+            data={"roles": ["student", "staff"]},
+        )
+
+    user.reload()
+    assert user.roles == ["student", "staff", "alumni"]
