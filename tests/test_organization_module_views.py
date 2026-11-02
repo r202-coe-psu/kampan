@@ -11,8 +11,6 @@ ADMIN_ONLY_ROUTES = [
     ("organizations.divisions.create_or_edit", False, False),
     ("organizations.divisions.create_or_edit", True, False),
     ("organizations.divisions.detail", True, False),
-    ("organizations.divisions.add_member", True, False),
-    ("organizations.divisions.users", True, False),
     ("organizations.members.index", False, False),
     ("organizations.members.add_member", False, False),
     ("organizations.members.edit_roles", False, True),
@@ -295,3 +293,144 @@ def test_members_filter_by_division(app, org_setup, create_user, assign_user_to_
     assert "orphan@test.com" not in unknown
 
     assert f"division={division.id}" in submitted.headers["Location"]
+
+
+def _division_url(app, endpoint, org, division, **kwargs):
+    with app.test_request_context():
+        return url_for(
+            endpoint, organization_id=str(org.id), division_id=str(division.id), **kwargs
+        )
+
+
+def _member(create_user, assign_user_to_org, org, name, division, admin, status="active"):
+    org_user = assign_user_to_org(create_user(name, "Member"), org, status=status, added_by=admin)
+    org_user.division = division
+    org_user.save()
+    return org_user
+
+
+def test_division_page_lists_all_members_and_candidates(
+    app, org_setup, create_user, assign_user_to_org
+):
+    org, admin, division = org_setup["org"], org_setup["admin"], org_setup["division"]
+    other = models.Division(
+        name="Other Division", organization=org, created_by=admin, last_updated_by=admin
+    ).save()
+    for i in range(35):
+        _member(create_user, assign_user_to_org, org, f"Inside{i}", division, admin)
+    _member(create_user, assign_user_to_org, org, "Waiting", division, admin, status="pending")
+    _member(create_user, assign_user_to_org, org, "Removed", division, admin, status="disactive")
+    _member(create_user, assign_user_to_org, org, "Elsewhere", other, admin)
+
+    with app.test_client() as client:
+        _login(client, admin)
+        response = client.get(_division_url(app, "organizations.divisions.detail", org, division))
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    # แสดงทุกคนในหน้าเดียว ไม่แบ่งหน้า รวมคนที่รอเข้าสู่ระบบ
+    assert "data-member-total>36<" in html
+    assert "inside34@test.com" in html
+    assert "removed@test.com" not in html
+    # คนในแผนกอื่นเป็นตัวเลือกพร้อมชื่อแผนกเดิม
+    assert 'data-from="Other Division"' in html
+    assert 'data-from=""' in html  # admin/staff ที่ยังไม่มีแผนก
+
+
+def test_old_division_users_url_redirects_to_division_page(app, org_setup):
+    org, division = org_setup["org"], org_setup["division"]
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        response = client.get(_division_url(app, "organizations.divisions.users", org, division))
+
+    assert response.status_code == 301
+    assert response.headers["Location"] == _division_url(
+        app, "organizations.divisions.detail", org, division
+    )
+
+
+def test_add_member_moves_from_other_division_and_flashes_warning(
+    app, org_setup, create_user, assign_user_to_org
+):
+    org, admin, division = org_setup["org"], org_setup["admin"], org_setup["division"]
+    other = models.Division(
+        name="Other Division", organization=org, created_by=admin, last_updated_by=admin
+    ).save()
+    mover = _member(create_user, assign_user_to_org, org, "Mover", other, admin)
+    staff_role = org_setup["staff_role"]
+
+    with app.test_client() as client:
+        _login(client, admin)
+        response = client.post(
+            _division_url(app, "organizations.divisions.add_member", org, division),
+            data={"members": [str(mover.id), str(staff_role.id)]},
+        )
+        page = client.get(response.headers["Location"]).get_data(as_text=True)
+
+    mover.reload()
+    staff_role.reload()
+    assert mover.division.id == division.id
+    assert staff_role.division.id == division.id
+    assert "สมาชิก 1 คนถูกย้ายมาอยู่แผนก “Division One”" in page
+    assert "ย้ายมาจาก Other Division" in page
+
+
+def test_add_member_ignores_members_of_other_organizations(
+    app, org_setup, create_org, create_user, assign_user_to_org
+):
+    org, admin, division = org_setup["org"], org_setup["admin"], org_setup["division"]
+    outsider = assign_user_to_org(create_user("Outsider", "Member"), create_org("Other Org"), added_by=admin)
+
+    with app.test_client() as client:
+        _login(client, admin)
+        client.post(
+            _division_url(app, "organizations.divisions.add_member", org, division),
+            data={"members": [str(outsider.id)]},
+        )
+
+    outsider.reload()
+    assert outsider.division is None
+
+
+def test_remove_member_from_division_requires_post_and_same_division(
+    app, org_setup, create_user, assign_user_to_org
+):
+    org, admin, division = org_setup["org"], org_setup["admin"], org_setup["division"]
+    other = models.Division(
+        name="Other Division", organization=org, created_by=admin, last_updated_by=admin
+    ).save()
+    inside = _member(create_user, assign_user_to_org, org, "Inside", division, admin)
+    elsewhere = _member(create_user, assign_user_to_org, org, "Elsewhere", other, admin)
+
+    def remove_url(org_user):
+        return _division_url(
+            app, "organizations.divisions.remove_division_user", org, division,
+            division_user_id=str(org_user.id),
+        )
+
+    with app.test_client() as client:
+        _login(client, admin)
+        assert client.get(remove_url(inside)).status_code in (302, 403, 405)
+        assert client.post(remove_url(elsewhere)).status_code in (302, 404)
+        assert client.post(remove_url(inside)).status_code == 302
+
+    inside.reload()
+    elsewhere.reload()
+    assert inside.division is None
+    assert inside.status == "active"
+    assert elsewhere.division.id == other.id
+
+
+def test_delete_division_requires_post(app, org_setup):
+    org, division = org_setup["org"], org_setup["division"]
+    url = _division_url(app, "organizations.divisions.delete", org, division)
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        assert client.get(url).status_code in (302, 403, 405)
+        division.reload()
+        assert division.status == "active"
+        assert client.post(url).status_code == 302
+
+    division.reload()
+    assert division.status == "disactive"
