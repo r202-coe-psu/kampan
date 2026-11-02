@@ -2,6 +2,9 @@
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_field %}
+{% from '/base/components/role_badge.html' import RoleBadges %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import DeleteModal, open_modal %}
 
 {% block title %}สมาชิกขององค์กร{% endblock %}
 {% block dashboard_title %}สมาชิกขององค์กร{% endblock %}
@@ -11,34 +14,7 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="flex flex-row w-full justify-between">
-  <div class="flex justify-end w-full gap-2">
-    <div class="dropdown dropdown-end">
-      <label tabindex="0" class="btn btn-primary flex items-center gap-2">
-        <i class="ph ph-list-dashes"></i>
-        การจัดการ
-      </label>
-      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-        <li>
-          <a class="text-success" href="{{ url_for('organizations.members.add_member', organization_id=organization.id) }}">
-            <i class="plus circle icon"></i>
-            เพิ่มสมาชิก
-          </a>
-        </li>
-        <li>
-          <a class="text-success"
-            href="{{ url_for('organizations.members.upload_member_file', organization_id=organization.id) }}">
-            <i class="file upload icon"></i>
-            เพิ่มสมาชิกแบบหลายรายการ
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+<form method="post" class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{ form.hidden_tag() }}
   {# จอเล็ก 1 คอลัมน์, กลาง 2, ใหญ่ 4 เพื่อไม่ให้ช่องช่วงวันที่ถูกบีบจนอ่านไม่ออก #}
   <div class="grid w-full grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 2xl:grid-cols-4">
@@ -47,20 +23,35 @@
     <div class="min-w-0">{{ renderer.render_select_field(form.division) }}</div>
     <div class="min-w-0">{{ renderer.date_range_field(form.start_date, form.end_date) }}</div>
   </div>
-
-  <div class="flex flex-row w-full justify-between mt-4">
-    <div class="flex justify-end w-full gap-2">
-      <a class="btn" href='{{  url_for("organizations.members.index", organization_id=organization.id) }}'>
-        ล้างการค้นหา
-      </a>
-      <button type="submit" class="btn btn-primary">ค้นหา</button>
-    </div>
+  <div class="mt-3 flex justify-end gap-2">
+    <a class="btn" href='{{ url_for("organizations.members.index", organization_id=organization.id) }}'>
+      ล้างการค้นหา
+    </a>
+    <button type="submit" class="btn btn-primary">
+      <i class="ph ph-magnifying-glass"></i> ค้นหา
+    </button>
   </div>
 </form>
 
-{% if org_users %}
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-2 rounded-xl">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-bold">รายชื่อสมาชิก</h2>
+      <p class="text-base-content/60">{{ paginated_org_users.total if paginated_org_users else 0 }} คน</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a class="btn" href="{{ url_for('organizations.members.upload_member_file', organization_id=organization.id) }}">
+        <i class="ph ph-file-arrow-up"></i>
+        นำเข้าจากไฟล์
+      </a>
+      <a class="btn btn-primary" href="{{ url_for('organizations.members.add_member', organization_id=organization.id) }}">
+        <i class="ph ph-plus"></i>
+        เพิ่มสมาชิก
+      </a>
+    </div>
+  </div>
+  {% if org_users %}
+  <div class="overflow-x-auto mt-4 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
@@ -70,7 +61,7 @@
           <th class="table-style">ระดับ</th>
           <th class="table-style">แผนก</th>
           <th class="table-style whitespace-nowrap">วันที่เพิ่ม</th>
-          <th class="table-style">จัดการ</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
         </tr>
       </thead>
       <tbody>
@@ -87,32 +78,20 @@
             {{ org_user.display_appointment() }}
             {% endif %}
           </td>
-          <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
+          <td class="table-style" data-label="Roles">{{ RoleBadges(org_user.role_items()) }}</td>
           <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
           <td class="table-style whitespace-nowrap" data-label="Create date">
             {{ org_user.created_date.strftime('%d/%m/%Y') if org_user.created_date else "-" }}
           </td>
-          <td class="table-style">
-            <a class="btn btn-circle btn-primary" data-tip="แก้ไข"
-              href="{{ url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
-            <a class="btn btn-circle btn-error" data-tip="ลบ" onclick="showDeleteModal('{{ org_user.id }}')">
-              <i class="ph ph-trash"></i>
-            </a>
-
-
-
-
-            {{ ModalNegative(
-                id=org_user.id,
-                header="ลบสมาชิก",
-                body="คุณต้องการลบสมาชิกนี้หรือไม่ <b> %s </b>" | format(org_user.display_fullname()),
-                cancel="ยกเลิก",
-                submit="ยืนยัน",
-                redirect=url_for('organizations.members.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
-            ) }}
-
+          <td class="table-style w-px whitespace-nowrap">
+            {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id)) }}
+            {{ IconButton('ph-trash', 'นำออกจากองค์กร', onclick=open_modal('remove-org-user-%s' | format(org_user.id)), tone='error') }}
+            {{ DeleteModal(
+                'remove-org-user-%s' | format(org_user.id),
+                'นำสมาชิกออกจากองค์กร',
+                url_for('organizations.members.remove_org_user', organization_id=organization.id, org_user_id=org_user.id),
+                body='นำ %s ออกจากองค์กรนี้' | format(org_user.display_fullname()),
+                confirm_label='นำออก') }}
           </td>
         </tr>
 
@@ -120,33 +99,26 @@
       </tbody>
     </table>
   </div>
+  {% set params=dict(request.args) %}
+  {% if 'page' in params %}
+  {% set _dummy=params.pop('page') %}
+  {% endif %}
+  {% if 'organization_id' not in params %}
+  {% set _dummy=params.update({"organization_id": organization.id}) %}
+  {% endif %}
+  {% if paginated_org_users.pages > 1 %}
+    {{ paginated.render_pagination(paginated_org_users, "organizations.members.index", params) }}
+  {% endif %}
+  {% else %}
+  <div class="flex flex-col items-center gap-2 py-10 text-center text-base-content/60">
+    <i class="ph ph-users-three text-4xl"></i>
+    <p>ยังไม่มีสมาชิก หรือไม่พบสมาชิกที่ค้นหา</p>
+  </div>
+  {% endif %}
 </div>
-{% set params=dict(request.args) %}
-{% if 'page' in params %}
-{% set _dummy=params.pop('page') %}
-{% endif %}
-{% if 'organization_id' not in params %}
-{% set _dummy=params.update({"organization_id": organization.id}) %}
-{% endif %}
-{% if paginated_org_users.pages != 1 %}
-
-{{ paginated.render_pagination(paginated_org_users,"organizations.members.index", params)}}
-
-{% endif %}
-
-{% else %}
-<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการสมาชิกในขณะนี้</div>
-{% endif %}
 {% endblock %}
 
 {% block additional_js %}
-<script type="text/javascript">
-
-  function showDeleteModal(org_user_id) {
-    org_user_id ? $('.ui.modal.' + org_user_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
-</script>
 <script type="text/javascript">
   var datetime_formatter = {
     date: "DD/MM/YYYY"

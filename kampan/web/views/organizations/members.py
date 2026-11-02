@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, flash, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
@@ -57,6 +57,7 @@ def add_member(organization_id):
     )
     org_user.save()
 
+    flash(f"เพิ่มสมาชิก {org_user.display_fullname()} แล้ว", "success")
     return redirect(
         url_for(
             "organizations.members.index",
@@ -204,6 +205,7 @@ def edit_roles(organization_id, org_user_id):
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(f"บันทึกตำแหน่งของ {org_user.display_fullname()} แล้ว", "success")
     return redirect(
         url_for(
             "organizations.members.index",
@@ -222,6 +224,7 @@ def remove_org_user(organization_id, org_user_id):
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(f"นำ {org_user.display_fullname()} ออกจากองค์กรแล้ว", "success")
     return redirect(
         url_for(
             "organizations.members.index",
@@ -271,6 +274,7 @@ def upload_member_file(organization_id):
                 errors=["ไม่พบไฟล์"],
             )
         )
+    flash("นำเข้าสมาชิกจากไฟล์แล้ว", "success")
     return redirect(
         url_for(
             "organizations.members.index",
