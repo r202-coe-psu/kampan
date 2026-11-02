@@ -131,10 +131,21 @@ fieldset {
     white-space: nowrap;
   }
 
-  /* darken the text toward base-content so light hues stay readable */
+  /* ตัวอักษรสีดำอ่านง่าย สีของ role อยู่ที่จุดหน้าข้อความ ขอบ และพื้นจาง ๆ */
   .role-badge.badge-outline {
-    color: color-mix(in oklab, var(--role-color) 65%, var(--color-base-content));
-    background-color: color-mix(in oklab, var(--role-color) 10%, transparent);
+    gap: 0.375rem;
+    color: var(--color-base-content);
+    background-color: color-mix(in oklab, var(--role-color) 12%, var(--color-base-100));
+    border-color: color-mix(in oklab, var(--role-color) 45%, transparent);
+  }
+
+  .role-badge::before {
+    content: "";
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--role-color);
   }
 
   .role-staff {

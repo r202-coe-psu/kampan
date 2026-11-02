@@ -7,8 +7,9 @@
      {{ RoleBadges(org_user.role_items()) }}     {# รายการ [(key, label), ...] #}
 #}
 
-{% macro RoleBadge(role_key, label, size='sm') %}
-<span class="badge badge-{{ size }} badge-outline role-badge role-{{ role_key | replace(' ', '-') }}">{{ label }}</span>
+{% macro RoleBadge(role_key, label, size='md') %}
+{# เขียนชื่อ class ขนาดเต็มให้ Tailwind หาเจอ: badge-sm badge-md #}
+<span class="badge {{ 'badge-sm' if size == 'sm' else 'badge-md' }} badge-outline role-badge role-{{ role_key | replace(' ', '-') }}">{{ label }}</span>
 {%- endmacro %}
 
 {% macro RoleBadges(role_items, empty='-') %}
