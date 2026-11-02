@@ -38,7 +38,7 @@ pipeline {
                         export DOCKER_CONFIG
                         trap 'rm -rf "$DOCKER_CONFIG"' EXIT HUP INT TERM
                         printf '%s' "$REGISTRY_TOKEN" | docker login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
-                        docker build --pull -t "$REGISTRY_KAMPAN_IMAGE" .
+                        docker build --pull -f Dockerfile.staging -t "$REGISTRY_KAMPAN_IMAGE" .
                         docker push "$REGISTRY_KAMPAN_IMAGE"
                     '''
                 }

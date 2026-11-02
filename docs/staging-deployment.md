@@ -2,6 +2,12 @@
 
 The `Inventory/develop` multibranch job builds on `built-in` and deploys on
 `staging-agent`, following the DIIS Tracker agent/registry workflow.
+It polls `develop` for changes every five minutes. The previous GitHub Actions
+staging job has been removed; its production job remains.
+
+Staging uses `Dockerfile.staging` with Python 3.12 and Debian Bookworm so the
+locked NumPy 1.26 dependency has a supported Python runtime. The production
+Dockerfile is unchanged.
 
 Required Jenkins configuration:
 
