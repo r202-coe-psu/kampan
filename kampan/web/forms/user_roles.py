@@ -39,6 +39,9 @@ USER_ROLE_CHOICES = [
 ]
 
 
+NO_ROLE = "none"
+
+
 class UserRolesSearchForm(FlaskForm):
     class Meta:
         csrf = False
@@ -53,7 +56,7 @@ class UserRolesSearchForm(FlaskForm):
     )
     role = fields.SelectField(
         "ตำแหน่ง",
-        choices=USER_ROLE_CHOICES,
+        choices=USER_ROLE_CHOICES + [(NO_ROLE, "ยังไม่มีระดับ")],
         default="",
         validators=[validators.Optional()],
     )

@@ -15,6 +15,42 @@ EDITABLE_USER_ROLES = [
 ]
 
 
+def summarize_roles():
+    """นับผู้ใช้ทั้งระบบแยกตาม role คนหนึ่งมีได้หลาย role จึงนับซ้ำได้"""
+    counts = {}
+    rows = models.User.objects().aggregate(
+        [
+            {"$project": {"roles": {"$ifNull": ["$roles", []]}}},
+            {"$unwind": {"path": "$roles", "preserveNullAndEmptyArrays": True}},
+            {"$group": {"_id": "$roles", "count": {"$sum": 1}}},
+        ]
+    )
+    for row in rows:
+        counts[row["_id"] or forms.user_roles.NO_ROLE] = row["count"]
+
+    labels = dict(forms.user_roles.USER_ROLE_CHOICES)
+    known = [role for role, _ in forms.user_roles.USER_ROLE_CHOICES if role]
+    unknown = sorted(role for role in counts if role not in known + [forms.user_roles.NO_ROLE])
+    summary = [
+        {"role": role, "label": labels[role], "count": counts.get(role, 0), "filterable": True}
+        for role in known
+    ]
+    # role ที่ไม่มีในรายการตัวเลือก กรองจากหน้านี้ไม่ได้ แต่ยังต้องเห็นว่ามีอยู่
+    summary += [
+        {"role": role, "label": role, "count": counts[role], "filterable": False}
+        for role in unknown
+    ]
+    summary.append(
+        {
+            "role": forms.user_roles.NO_ROLE,
+            "label": "ยังไม่มีระดับ",
+            "count": counts.get(forms.user_roles.NO_ROLE, 0),
+            "filterable": True,
+        }
+    )
+    return summary
+
+
 @module.route("/")
 @acl.roles_required("admin")
 def index():
@@ -36,7 +72,9 @@ def index():
             | me.Q(resources__psu__display_name_th__icontains=name)
             | me.Q(resources__psu__display_name__icontains=name)
         )
-    if role:
+    if role == forms.user_roles.NO_ROLE:
+        query &= me.Q(roles__size=0) | me.Q(roles__exists=False)
+    elif role:
         query &= me.Q(roles=role)
 
     users = models.User.objects(query).order_by("last_name", "first_name")
@@ -47,6 +85,9 @@ def index():
         paginated_users=Pagination(users, page=page, per_page=30),
         form=search_form,
         role_labels=dict(forms.user_roles.USER_ROLE_CHOICES),
+        role_summary=summarize_roles(),
+        total_users=models.User.objects().count(),
+        selected_role=role,
         organization=current_user.get_viewing_organization(),
     )
 
