@@ -103,3 +103,21 @@ class SearchUserForm(FlaskForm):
         validators=None,
         render_kw={"placeholder": "user"},
     )
+
+
+UNASSIGNED_DIVISION = "none"
+
+
+class OrganizationMemberSearchForm(SearchUserForm):
+    division = fields.SelectField(
+        "แผนก",
+        choices=[("", "ทั้งหมด")],
+        validate_choice=False,
+        validators=None,
+    )
+
+    def set_division_choices(self, divisions):
+        self.division.choices = (
+            [("", "ทั้งหมด"), (UNASSIGNED_DIVISION, "ยังไม่ได้ระบุแผนก")]
+            + [(str(division.id), division.name) for division in divisions]
+        )

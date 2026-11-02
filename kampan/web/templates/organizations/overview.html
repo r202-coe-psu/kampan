@@ -86,7 +86,7 @@
             {{ MemberCount(unassigned.total, unassigned.pending) }}
             <td class="text-right">
               <a class="btn btn-ghost"
-                href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
+                href="{{ url_for('organizations.members.index', organization_id=organization.id, division='none') }}">
                 ดูสมาชิก <i class="ph ph-caret-right"></i>
               </a>
             </td>

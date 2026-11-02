@@ -251,3 +251,47 @@ def test_overview_counts_members_per_division(app, org_setup, create_user, assig
     assert "รอเข้าสู่ระบบ 1 คน" in html
     assert "Deleted Division" not in html
 
+
+def test_members_filter_by_division(app, org_setup, create_user, assign_user_to_org):
+    org = org_setup["org"]
+    admin = org_setup["admin"]
+    division = org_setup["division"]
+    deleted_division = models.Division(
+        name="Deleted Division",
+        organization=org,
+        created_by=admin,
+        last_updated_by=admin,
+        status="disactive",
+    ).save()
+
+    def member(name, member_division):
+        org_user = assign_user_to_org(create_user(name, "Member"), org, added_by=admin)
+        org_user.division = member_division
+        org_user.save()
+        return org_user
+
+    member("Inside", division)
+    member("Orphan", deleted_division)
+
+    with app.test_request_context():
+        url = url_for("organizations.members.index", organization_id=str(org.id))
+
+    with app.test_client() as client:
+        _login(client, admin)
+        in_division = client.get(url, query_string={"division": str(division.id)}).get_data(as_text=True)
+        unassigned = client.get(url, query_string={"division": "none"}).get_data(as_text=True)
+        unknown = client.get(url, query_string={"division": str(deleted_division.id)}).get_data(as_text=True)
+        submitted = client.post(url, data={"division": str(division.id)})
+
+    assert "inside@test.com" in in_division
+    assert "orphan@test.com" not in in_division
+    assert "staffuser@test.com" not in in_division
+
+    assert "orphan@test.com" in unassigned
+    assert "staffuser@test.com" in unassigned
+    assert "inside@test.com" not in unassigned
+
+    assert "inside@test.com" not in unknown
+    assert "orphan@test.com" not in unknown
+
+    assert f"division={division.id}" in submitted.headers["Location"]
