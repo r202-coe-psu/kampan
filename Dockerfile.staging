@@ -20,6 +20,8 @@ COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --only main --no-root
 
+# Tailwind's native compiler requires Node 20 or newer.
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
 COPY kampan/web/static/package.json kampan/web/static/package-lock.json kampan/web/static/
 RUN npm ci --prefix kampan/web/static
 
