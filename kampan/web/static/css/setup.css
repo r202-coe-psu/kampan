@@ -8,6 +8,25 @@
 
 @theme {
   --font-sans: "Noto Sans Thai", "sans-serif";
+
+  /* สีประจำ module อิงจากการ์ดหน้าเลือกระบบ (sites/select_system.html)
+     ใช้เป็น utility ได้ เช่น bg-module-inventory, text-module-inventory-content
+     หรือใช้ผ่าน .module-badge ด้านล่าง */
+  --color-module-procurement: #e5d4f0; /* ระบบขอซื้อขอจ้าง */
+  --color-module-procurement-icon: var(--color-purple-700);
+  --color-module-procurement-content: var(--color-purple-900);
+
+  --color-module-inventory: #f5d5e3; /* ระบบเบิกวัสดุ */
+  --color-module-inventory-icon: var(--color-pink-700);
+  --color-module-inventory-content: var(--color-pink-900);
+
+  --color-module-car: #d5e8dc; /* ระบบการขอใช้รถยนต์ */
+  --color-module-car-icon: var(--color-green-700);
+  --color-module-car-content: var(--color-green-900);
+
+  --color-module-motorcycle: #f0e5cc; /* ระบบการขอใช้รถจักรยานยนต์ */
+  --color-module-motorcycle-icon: var(--color-amber-800);
+  --color-module-motorcycle-content: var(--color-amber-900);
 }
 
 @plugin "daisyui/theme" {
@@ -178,5 +197,39 @@ fieldset {
 
   .role-manager {
     --role-color: oklch(48% 0.09 45);
+  }
+}
+
+/* Module badge: บอกว่ารายการนี้เป็นของระบบไหน สีเดียวกับการ์ดหน้าเลือกระบบ
+   ใช้คู่กับ `badge` เช่น <span class="badge module-badge module-inventory">ระบบเบิกวัสดุ</span>
+   อยู่ใน layer utilities และใช้ .badge.module-badge เพราะ daisyUI ใส่ .badge ไว้ใน utilities
+   ถ้าอยู่ใน components สีของ badge จะทับสีของ module */
+@layer utilities {
+  .badge.module-badge {
+    --badge-bg: var(--module-bg, var(--color-base-200));
+    --badge-fg: var(--module-fg, var(--color-base-content));
+    --badge-color: color-mix(in oklab, var(--badge-fg) 20%, transparent);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .module-procurement {
+    --module-bg: var(--color-module-procurement);
+    --module-fg: var(--color-module-procurement-content);
+  }
+
+  .module-inventory {
+    --module-bg: var(--color-module-inventory);
+    --module-fg: var(--color-module-inventory-content);
+  }
+
+  .module-car {
+    --module-bg: var(--color-module-car);
+    --module-fg: var(--color-module-car-content);
+  }
+
+  .module-motorcycle {
+    --module-bg: var(--color-module-motorcycle);
+    --module-fg: var(--color-module-motorcycle-content);
   }
 }
