@@ -39,12 +39,13 @@
 </div>
 
 <form method="post" class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex flex-row justify-between w-full gap-2">
-    {{form.hidden_tag()}}
-    {{ renderer.render_search_select_field(form.user) }}
-    {{ renderer.render_select_field(form.role) }}
-    {{ renderer.render_select_field(form.division) }}
-    {{ renderer.date_range_field(form.start_date, form.end_date)}}
+  {{ form.hidden_tag() }}
+  {# จอเล็ก 1 คอลัมน์, กลาง 2, ใหญ่ 4 เพื่อไม่ให้ช่องช่วงวันที่ถูกบีบจนอ่านไม่ออก #}
+  <div class="grid w-full grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 2xl:grid-cols-4">
+    <div class="min-w-0">{{ renderer.render_search_select_field(form.user) }}</div>
+    <div class="min-w-0">{{ renderer.render_select_field(form.role) }}</div>
+    <div class="min-w-0">{{ renderer.render_select_field(form.division) }}</div>
+    <div class="min-w-0">{{ renderer.date_range_field(form.start_date, form.end_date) }}</div>
   </div>
 
   <div class="flex flex-row w-full justify-between mt-4">
@@ -68,7 +69,7 @@
           <th class="table-style">ตำแหน่ง</th>
           <th class="table-style">ระดับ</th>
           <th class="table-style">แผนก</th>
-          <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
+          <th class="table-style whitespace-nowrap">วันที่เพิ่ม</th>
           <th class="table-style">จัดการ</th>
         </tr>
       </thead>
@@ -88,8 +89,8 @@
           </td>
           <td class="table-style" data-label="Roles">{{ org_user.display_roles() }}</td>
           <td class="table-style" data-label="Roles">{{ org_user.division.name }}</td>
-          <td class="table-style" data-label="Create date">{{ org_user.created_date.strftime('%d/%m/%Y') if
-        org_user.created_date else "-"}}
+          <td class="table-style whitespace-nowrap" data-label="Create date">
+            {{ org_user.created_date.strftime('%d/%m/%Y') if org_user.created_date else "-" }}
           </td>
           <td class="table-style">
             <a class="btn btn-circle btn-primary" data-tip="แก้ไข"

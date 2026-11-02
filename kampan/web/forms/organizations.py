@@ -109,6 +109,8 @@ UNASSIGNED_DIVISION = "none"
 
 
 class OrganizationMemberSearchForm(SearchUserForm):
+    start_date = fields.DateField("วันที่เพิ่ม", validators=[validators.Optional()])
+    end_date = fields.DateField("ถึง", validators=[validators.Optional()])
     division = fields.SelectField(
         "แผนก",
         choices=[("", "ทั้งหมด")],
