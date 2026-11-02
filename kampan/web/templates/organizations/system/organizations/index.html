@@ -1,0 +1,88 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import DeleteModal, open_modal %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}องค์กรทั้งหมด{% endblock %}
+{% block dashboard_title %}องค์กรทั้งหมด{% endblock %}
+
+{% block content %}
+<form method="get" class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-col gap-2 sm:flex-row">
+    <label class="input w-full">
+      <i class="ph ph-magnifying-glass opacity-60"></i>
+      <input type="search" name="q" value="{{ keyword }}" maxlength="128" placeholder="ค้นหาชื่อหรือคำอธิบายองค์กร" />
+    </label>
+    <div class="flex justify-end gap-2">
+      {% if keyword %}
+      <a class="btn" href="{{ url_for('organizations.system_organizations.index') }}">ล้างการค้นหา</a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary"><i class="ph ph-magnifying-glass"></i> ค้นหา</button>
+    </div>
+  </div>
+</form>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-bold">รายการองค์กร</h2>
+      <p class="text-base-content/60">
+        {{ paginated_organizations.total }} องค์กร{% if keyword %} ที่ตรงกับ “{{ keyword }}”{% endif %}
+      </p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('organizations.system_organizations.create_or_edit') }}">
+      <i class="ph ph-plus-circle"></i>
+      เพิ่มองค์กร
+    </a>
+  </div>
+  {% if paginated_organizations.items %}
+  <div class="overflow-x-auto mt-4 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อองค์กร</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">วันลงทะเบียน</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org in paginated_organizations.items %}
+        <tr>
+          <td class="table-style">{{ org.name }}</td>
+          <td class="table-style">{{ org.description }}</td>
+          <td class="table-style">{{ org.created_date.strftime('%d/%m/%Y') if org.created_date else '-' }}</td>
+          <td class="table-style whitespace-nowrap">
+            {{ IconButton('ph-sign-in', 'เข้าใช้งานองค์กรนี้', href=url_for('site.switch_organization', organization_id=org.id, next=url_for('organizations.overview.index', organization_id=org.id))) }}
+            {{ IconButton('ph-chart-bar', 'ภาพรวมองค์กร', href=url_for('organizations.overview.index', organization_id=org.id)) }}
+            {{ IconButton('ph-users-three', 'สมาชิกขององค์กร', href=url_for('organizations.members.index', organization_id=org.id)) }}
+            {{ IconButton('ph-user-circle-plus', 'เพิ่มสมาชิก', href=url_for('organizations.members.add_member', organization_id=org.id)) }}
+            {{ IconButton('ph-pen', 'แก้ไของค์กร', href=url_for('organizations.system_organizations.create_or_edit', organization_id=org.id)) }}
+            {{ IconButton('ph-trash', 'ลบองค์กร', onclick=open_modal('delete-org-%s' | format(org.id)), tone='error') }}
+            {{ DeleteModal(
+                'delete-org-%s' | format(org.id),
+                'ลบองค์กร',
+                url_for('organizations.system_organizations.delete', organization_id=org.id),
+                body='ต้องการลบองค์กร %s' | format(org.name),
+                confirm_label='ลบองค์กร') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_organizations.pages > 1 %}
+      {{ paginated.render_pagination(paginated_organizations, 'organizations.system_organizations.index', request.args) }}
+    {% endif %}
+  </div>
+  {% else %}
+  {{ EmptyState('ph-buildings', 'ยังไม่มีองค์กร',
+                description='สร้างองค์กรแรก แล้วเพิ่มผู้ดูแลเพื่อให้เริ่มใช้งานระบบได้',
+                action_label='เพิ่มองค์กร', action_icon='ph-plus-circle',
+                action_href=url_for('organizations.system_organizations.create_or_edit'),
+                filtered=keyword, filtered_title='ไม่พบองค์กรที่ค้นหา',
+                filtered_description='ไม่มีองค์กรที่ชื่อหรือคำอธิบายตรงกับ “%s”' | format(keyword),
+                clear_href=url_for('organizations.system_organizations.index')) }}
+  {% endif %}
+</div>
+{% endblock %}

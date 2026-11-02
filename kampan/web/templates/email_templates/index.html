@@ -1,112 +1,89 @@
-{% extends '/base/template-page-login.html' %}
-{% import 'base/html-renderer.html' as renderer %}
-{% import '/base/components/paginations/pagination.html' as paginated%}
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import DeleteModal, open_modal %}
 
-{% block title %}
-{{ "Email Template" }}
-{% endblock %}
+{% block title %}รูปแบบอีเมล{% endblock %}
+{% block dashboard_title %}รูปแบบอีเมล{% endblock %}
 
-{% block dashboard_title %}
-รูปแบบอีเมล
-{% endblock %}
-
-
-{% block breadcrumbs %}
-
-{% endblock %}
-
+{% block breadcrumbs %}{% endblock %}
 
 {% block content %}
-
-<div class="flex flex-row w-full justify-between">
-  <div class="flex justify-end w-full gap-2">
+<div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-bold">รายการรูปแบบอีเมล</h2>
+      <p class="text-base-content/60">{{ email_templates.count() }} รูปแบบ</p>
+    </div>
     <a class="btn btn-primary" href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i>
       เพิ่มรูปแบบอีเมล
     </a>
   </div>
-</div>
-{% if email_templates %}
 
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-2 rounded-xl">
+  {% if email_templates %}
+  <div class="overflow-x-auto mt-4 rounded-xl">
     <table class="table-auto w-full">
       <thead>
         <tr>
           <th class="table-style">ชื่อ</th>
           <th class="table-style">ประเภท</th>
           <th class="table-style">หัวข้อ</th>
-          <th class="table-style">ค่าเริ่มต้น</th>
-          <th class="table-style">แก้ไข</th>
+          <th class="table-style w-px whitespace-nowrap">ค่าเริ่มต้น</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for email_template in email_templates %}
+        {% set delete_modal = 'delete-email-template-%s' | format(email_template.id) %}
         <tr>
-          <td class="table-style" data-label="Name">{{ email_template.name }}</td>
-          <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
-          <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
-          <td class="table-style">
-            <span class=" {{ 'text-success' if email_template.is_default else 'text-error' }}">
-              {{ email_template.is_default }}
-            </span>
-            <a class="tooltip btn btn-circle btn-success" data-tip="change defualt setting"
-              onclick="showModal('set-default-' + '{{ email_template.id }}')">
-              <i class="ph ph-arrows-clockwise"></i>
+          <td class="table-style" data-label="Name">
+            <a class="link link-hover font-medium"
+              href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id) }}">
+              {{ email_template.name }}
             </a>
           </td>
-          <td class="table-style" data-label="modal-action">
-
-            <a class="btn btn-primary btn-circle"
-              href="{{ url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)}}">
-              <i class="ph ph-list-magnifying-glass"></i>
-            </a>
-            <a class="btn btn-primary btn-circle"
-              href="{{ url_for('email_templates.create_or_edit', organization_id=organization.id, email_template_id=email_template.id)}}">
-              <i class="ph ph-pen"></i>
-            </a>
-            <a class="btn btn-circle btn-error" onclick="showDeleteModal('{{ email_template.id }}')">
-              <i class="ph ph-trash"></i>
-            </a>
+          <td class="table-style" data-label="Type">{{ email_template.get_type_display() }}</td>
+          <td class="table-style" data-label="Subject">{{ email_template.subject }}</td>
+          <td class="table-style w-px whitespace-nowrap">
+            {# switch ค่าเริ่มต้น: เปลี่ยนแล้วส่งฟอร์มทันที (ตั้งตัวนี้ จะยกเลิกตัวเดิมของประเภทเดียวกันให้เอง) #}
+            <form method="post"
+              action="{{ url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default='false' if email_template.is_default else 'true') }}">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" class="toggle toggle-success toggle-sm"
+                  {{ 'checked' if email_template.is_default }} onchange="this.form.submit()"
+                  aria-label="ใช้ {{ email_template.name }} เป็นค่าเริ่มต้น" />
+                <span class="text-sm {{ 'text-success' if email_template.is_default else 'text-base-content/50' }}">
+                  {{ 'เปิด' if email_template.is_default else 'ปิด' }}
+                </span>
+              </label>
+            </form>
+          </td>
+          <td class="table-style w-px whitespace-nowrap">
+            {{ IconButton('ph-eye', 'ดูรายละเอียด',
+                href=url_for('email_templates.detail', organization_id=organization.id, email_template_id=email_template.id)) }}
+            {{ IconButton('ph-pen', 'แก้ไข',
+                href=url_for('email_templates.create_or_edit', organization_id=organization.id, email_template_id=email_template.id)) }}
+            {{ IconButton('ph-trash', 'ลบ', onclick=open_modal(delete_modal), tone='error') }}
 
           </td>
         </tr>
-        {{ ModalNegative(
-          id=email_template.id,
-          header="ลบรูปแบบอีเมล",
-          body="คุณการต้องการลบ <b> %s </b>?" | format(email_template.name),
-        cancel="ยกเลิก",
-        submit="ยืนยัน",
-        redirect= url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id)
-        ) }}
-        {% if email_template.is_default == false %}
-        {% set new_is_default = true %}
-        {% else %}
-        {% set new_is_default = false %}
-        {% endif %}
-
-        {{ ModalPositive(
-          id="set-default-" + email_template.id | string,
-          header="เปลี่ยนเป็นค่าเริ่มต้น",
-          body="คุณต้องการเปลี่ยนให้อีเมล <b> %s </b>" | format(email_template.name) + ("" if new_is_default else "ไม่") + "เป็นค่าเริ่มต้น?",
-        cancel="ยกเลิก",
-        submit="เปลี่ยน",
-        redirect= url_for('email_templates.set_default_email_template', organization_id=organization.id, email_template_id=email_template.id, is_default=new_is_default)
-        ) }}
-
-
         {% endfor %}
-
       </tbody>
     </table>
   </div>
+  {# modal อยู่นอกตาราง ไม่ให้รับ whitespace-nowrap ของคอลัมน์จัดการไป #}
+  {% for email_template in email_templates %}
+  {% set delete_modal = 'delete-email-template-%s' | format(email_template.id) %}
+  {{ DeleteModal(delete_modal, 'ลบรูปแบบอีเมล',
+      url_for('email_templates.delete_email_template', email_template_id=email_template.id, organization_id=organization.id),
+      body='ลบ %s ออกจากองค์กรนี้' | format(email_template.name)) }}
+  {% endfor %}
+  {% else %}
+  {{ EmptyState('ph-envelope-simple', 'ยังไม่มีรูปแบบอีเมล',
+                description='สร้างรูปแบบอีเมลสำหรับแจ้งเตือนผู้อนุมัติ เจ้าหน้าที่พัสดุ และผู้ขอเบิก',
+                action_label='เพิ่มรูปแบบอีเมล',
+                action_href=url_for('email_templates.create_or_edit', organization_id=organization.id)) }}
+  {% endif %}
 </div>
-{% endif %}
-
-{% if not email_templates %}
-<div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลรูปแบบอีเมลในขณะนี้</div>
-{% endif %}
-
-
-
 {% endblock %}

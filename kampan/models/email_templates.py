@@ -17,6 +17,60 @@ EMAIL_TYPE = [
     ("car_application", "ขอยืมรถยนต์"),
 ]
 
+# ตัวแปรที่ใช้ใน {{ ... }} ของหัวข้อและเนื้อหาได้ แยกตามประเภทอีเมล
+# ต้องตรงกับ dict ที่ kampan/utils/email_utils.py ส่งให้ template.render() (มี test คุมไว้)
+_ORDER_VARIABLES = [
+    ("organization_name", "ชื่อองค์กร"),
+    ("division_name", "ชื่อแผนกของผู้เบิก"),
+    ("division_description", "รายละเอียดแผนก"),
+    ("order_creator", "ชื่อผู้เบิก"),
+    ("order_creator_email", "อีเมลผู้เบิก"),
+    ("order_email", "อีเมลผู้เบิก (ชื่อเดิม)"),
+    ("order_date", "วันเวลาที่ขอเบิก"),
+    ("order_objective", "วัตถุประสงค์การเบิก"),
+    ("sent_item_datetime", "วันเวลานัดรับพัสดุ"),
+    ("sender_name", "ชื่อผู้ส่งอีเมล (ผู้กดดำเนินการ)"),
+    ("sender_email", "อีเมลผู้ส่ง"),
+    ("endorser_name", "ชื่อผู้รับอีเมล"),
+    ("endorsement_url", "ลิงก์ไปหน้าอนุมัติ"),
+]
+
+EMAIL_TEMPLATE_VARIABLES = {
+    "to endorser": _ORDER_VARIABLES,
+    "to supervisor supplier": _ORDER_VARIABLES,
+    "to admin": _ORDER_VARIABLES,
+    "to staff": [
+        (name, label) for name, label in _ORDER_VARIABLES if name != "endorsement_url"
+    ],
+    "lost_break": [
+        ("organization_name", "ชื่อองค์กร"),
+        ("lost_break_item_name", "ชื่อวัสดุ"),
+        ("lost_break_item_quantity", "จำนวน"),
+        ("lost_break_item_objective", "รายละเอียด/สาเหตุ"),
+        ("lost_break_item_date", "วันเวลาที่แจ้ง"),
+        ("lost_break_item_creator", "ชื่อผู้แจ้ง"),
+        ("lost_break_item_email", "อีเมลผู้แจ้ง"),
+        ("sender_name", "ชื่อผู้ส่งอีเมล"),
+        ("sender_email", "อีเมลผู้ส่ง"),
+        ("supervisor_supplier_name", "ชื่อหัวหน้าแผนกพัสดุ (ผู้รับอีเมล)"),
+        ("endorser_name", "ชื่อผู้รับอีเมล"),
+        ("endorsement_url", "ลิงก์ไปหน้าอนุมัติ"),
+    ],
+    "car_application": [
+        ("organization_name", "ชื่อองค์กร"),
+        ("division_name", "ชื่อแผนกของผู้ขอ"),
+        ("order_name", "ชื่อผู้ขอยืมรถ"),
+        ("order_email", "อีเมลผู้ขอยืมรถ"),
+        ("departure_datetime", "วันเวลาออกเดินทาง"),
+        ("car_application_objective", "เหตุผลการขอใช้รถ"),
+        ("car", "ทะเบียนรถ"),
+        ("sender_name", "ชื่อผู้ส่งอีเมล"),
+        ("sender_email", "อีเมลผู้ส่ง"),
+        ("endorser_name", "ชื่อผู้รับอีเมล"),
+        ("endorsement_url", "ลิงก์ไปหน้าอนุมัติ"),
+    ],
+}
+
 
 class EmailTemplate(me.Document):
     meta = {"collection": "email_templates"}

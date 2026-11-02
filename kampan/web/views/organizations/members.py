@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, abort, flash, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
@@ -7,73 +7,62 @@ import datetime
 from kampan.web import forms, acl
 from kampan import models, utils
 
-module = Blueprint("organizations", __name__, url_prefix="/organizations")
+module = Blueprint("members", __name__, url_prefix="/<organization_id>/members")
 
 
-@module.route("/<organization_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
-def edit(organization_id):
-    organization = models.Organization.objects(id=organization_id).first()
-    form = forms.organizations.OrganizationForm(obj=organization)
-    if not form.validate_on_submit():
-        return render_template(
-            "/organizations/create_or_edit.html",
-            form=form,
-            organization=organization,
-        )
-
-    form.populate_obj(organization)
-    organization.last_updated_by = current_user._get_current_object()
-    organization.save()
-    return redirect(
-        url_for(
-            "organizations.detail",
-            organization_id=organization_id,
-        )
-    )
+def get_organization(organization_id):
+    try:
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
+    except me.ValidationError:
+        organization = None
+    if not organization:
+        abort(404)
+    return organization
 
 
-@module.route("/<organization_id>/detail")
-@acl.organization_roles_required("admin")
-def detail(organization_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+def get_org_user(organization, org_user_id, **filters):
+    """หาสมาชิกเฉพาะในองค์กรนี้ กันการแก้ไขสมาชิกขององค์กรอื่นด้วย id"""
+    try:
+        org_user = models.OrganizationUserRole.objects(
+            id=org_user_id, organization=organization, **filters
+        ).first()
+    except me.ValidationError:
+        org_user = None
+    if not org_user:
+        abort(404)
+    return org_user
 
-    return render_template(
-        "/organizations/detail.html",
-        organization=organization,
-    )
 
-
-@module.route("/<organization_id>/add-member", methods=["GET", "POST"])
+@module.route("/add", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def add_member(organization_id):
-    organization = models.Organization.objects(id=organization_id).first()
+    organization = get_organization(organization_id)
     form = forms.organizations.OrganizationAddMemberForm()
-    users_in_organization = organization.get_distinct_users()
-    if users_in_organization:
-        form.members.choices = [
-            (str(u.id), u.get_name())
-            for u in models.User.objects()
-            if u not in users_in_organization
-        ]
-    else:
-        form.members.choices = [
-            (str(u.id), u.get_name()) for u in models.User.objects()
-        ]
-    form.division.choices = [
-        (str(d.id), d.name)
-        for d in models.Division.objects(organization=organization, status="active")
+    member_ids = {user.id for user in (organization.get_distinct_users() or []) if user}
+    candidates = [
+        user
+        for user in models.User.objects().order_by("first_name", "last_name")
+        if user.id not in member_ids
     ]
+    divisions = list(
+        models.Division.objects(organization=organization, status="active").order_by("name")
+    )
+    form.members.choices = [(str(u.id), u.get_name()) for u in candidates]
+    form.division.choices = [("", "ยังไม่ระบุแผนก")] + [(str(d.id), d.name) for d in divisions]
+
     if not form.validate_on_submit():
         return render_template(
             "/organizations/add_member.html",
             form=form,
             organization=organization,
+            candidates=candidates,
+            divisions=divisions,
+            role_choices=models.organizations.ORGANIZATION_ROLES,
         )
-    user_id = form.members.data
-    user = models.User.objects(id=user_id).first()
+
+    user = models.User.objects(id=form.members.data).first()
     if user and not user.get_default_organization():
         user.user_setting.current_organization = organization
         user.save()
@@ -82,9 +71,8 @@ def add_member(organization_id):
         organization=organization,
         user=user,
         roles=form.roles.data,
-        division=models.Division.objects(
-            id=form.division.data, status="active"
-        ).first(),
+        # เลือกได้เฉพาะแผนกขององค์กรนี้
+        division=next((d for d in divisions if str(d.id) == form.division.data), None),
         appointment=form.appointment.data,
         added_by=current_user._get_current_object(),
         last_modifier=current_user._get_current_object(),
@@ -93,19 +81,21 @@ def add_member(organization_id):
     )
     org_user.save()
 
-    return redirect(
-        url_for(
-            "organizations.organizaiton_users",
-            organization_id=organization_id,
+    flash(f"เพิ่มสมาชิก {org_user.display_fullname()} แล้ว", "success")
+    return redirect(url_for("organizations.members.index", organization_id=organization.id))
+
+
+@module.route("/", methods=["GET", "POST"])
+@acl.organization_roles_required("admin")
+def index(organization_id):
+    organization = models.Organization.objects(id=organization_id).first()
+    form = forms.organizations.OrganizationMemberSearchForm()
+    divisions = list(
+        models.Division.objects(organization=organization, status="active").order_by(
+            "name"
         )
     )
-
-
-@module.route("/<organization_id>/organizaiton_users", methods=["GET", "POST"])
-@acl.organization_roles_required("admin")
-def organizaiton_users(organization_id):
-    organization = models.Organization.objects(id=organization_id).first()
-    form = forms.organizations.SearchUserForm()
+    form.set_division_choices(divisions)
     org_users = organization.get_organization_users()
     if org_users:
         form.user.choices = [("", "")] + [
@@ -121,6 +111,9 @@ def organizaiton_users(organization_id):
         end_date = request.args.get("end_date", default="")
         user = request.args.get("user", default="")
         role = request.args.get("role", default="")
+        division = request.args.get("division", default="")
+        if division:
+            form.division.data = division
         if role:
             form.role.data = role
         if user:
@@ -157,6 +150,14 @@ def organizaiton_users(organization_id):
             org_users = org_users.filter(roles=form.role.data)
         if form.user.data:
             org_users = org_users.filter(id=form.user.data)
+        if form.division.data == forms.organizations.UNASSIGNED_DIVISION:
+            # แผนกที่ถูกลบไปแล้วนับเป็นยังไม่ได้ระบุแผนก ให้ตรงกับหน้าภาพรวม
+            org_users = org_users.filter(division__nin=divisions)
+        elif form.division.data:
+            division = next(
+                (d for d in divisions if str(d.id) == form.division.data), None
+            )
+            org_users = org_users.filter(division=division) if division else org_users.none()
         page = request.args.get("page", default=1, type=int)
         if form.start_date.data or form.end_date.data:
             page = 1
@@ -172,10 +173,11 @@ def organizaiton_users(organization_id):
         )
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization.id,
             role=form.role.data,
             user=form.user.data,
+            division=form.division.data,
             start_date=form.start_date.data,
             end_date=form.end_date.data,
         )
@@ -183,17 +185,13 @@ def organizaiton_users(organization_id):
 
 
 @module.route(
-    "/<organization_id>/organizaiton_users/<org_user_id>/edit_roles",
+    "/<org_user_id>/edit_roles",
     methods=["GET", "POST"],
 )
 @acl.organization_roles_required("admin")
 def edit_roles(organization_id, org_user_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    org_user = models.OrganizationUserRole.objects(
-        id=org_user_id, status="active"
-    ).first()
+    organization = get_organization(organization_id)
+    org_user = get_org_user(organization, org_user_id, status__ne="disactive")
 
     if org_user and org_user.user:
         if not org_user.first_name:
@@ -222,53 +220,35 @@ def edit_roles(organization_id, org_user_id):
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(f"บันทึกตำแหน่งของ {org_user.display_fullname()} แล้ว", "success")
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route(
-    "/<organization_id>/organizaiton_user/<org_user_id>/remove", methods=["GET", "POST"]
-)
+@module.route("/<org_user_id>/remove", methods=["POST"])
 @acl.organization_roles_required("admin")
 def remove_org_user(organization_id, org_user_id):
-    org_user = models.OrganizationUserRole.objects(id=org_user_id).first()
+    org_user = get_org_user(get_organization(organization_id), org_user_id)
     org_user.status = "disactive"
     org_user.last_modifier = current_user._get_current_object()
     org_user.last_ip_address = request.headers.get(
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(f"นำ {org_user.display_fullname()} ออกจากองค์กรแล้ว", "success")
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route("/<organization_id>/email_templates", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "staff")
-def view_email_templates(organization_id):
-    organization = models.Organization.objects.get(id=organization_id)
-    form = forms.email_templates.EmailTemplateFileForm()
-
-    query_default = request.args.get("is_default")
-    email_templates = models.EmailTemplate.objects(organization=organization)
-
-    return render_template(
-        "/email_templates/index.html",
-        organization=organization,
-        email_templates=email_templates,
-        form=form,
-        default=query_default,
-    )
-
-
-@module.route("/<organization_id>/upload_member_file", methods=["GET", "POST"])
+@module.route("/upload", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "staff")
 def upload_member_file(organization_id):
     organization = models.Organization.objects(
@@ -304,22 +284,21 @@ def upload_member_file(organization_id):
     else:
         return redirect(
             url_for(
-                "organizations.upload_member_file",
+                "organizations.members.upload_member_file",
                 organization_id=organization_id,
                 errors=["ไม่พบไฟล์"],
             )
         )
+    flash("นำเข้าสมาชิกจากไฟล์แล้ว", "success")
     return redirect(
         url_for(
-            "organizations.organizaiton_users",
+            "organizations.members.index",
             organization_id=organization_id,
         )
     )
 
 
-@module.route(
-    "/<organization_id>/download_template_member_file", methods=["GET", "POST"]
-)
+@module.route("/upload/template", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "staff")
 def download_template_member_file(organization_id):
     return utils.organizations.get_template_delete_items_file()

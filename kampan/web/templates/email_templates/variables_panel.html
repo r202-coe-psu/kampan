@@ -1,0 +1,33 @@
+{# กล่องรายการตัวแปรที่ใช้ในเทมเพลตอีเมลได้ แยกตามประเภทอีเมล
+   ข้อมูลมาจาก models.email_templates.EMAIL_TEMPLATE_VARIABLES (ตรงกับที่ระบบส่งจริงตอนส่งอีเมล)
+
+   import: {% from '/email_templates/variables_panel.html' import EmailVariablesPanel %}
+   ใช้:    {{ EmailVariablesPanel(email_types, email_variables, selected_type) }}
+
+   ทุกประเภทถูก render ไว้ แสดงเฉพาะ selected_type; หน้าฟอร์มสลับตาม select ประเภทด้วย data-email-type
+#}
+{% macro EmailVariablesPanel(email_types, email_variables, selected_type) %}
+<aside class="self-start rounded-box border border-base-300 bg-base-100 p-5 shadow-sm lg:sticky lg:top-4">
+  <h2 class="flex items-center gap-2 text-lg font-semibold">
+    <i class="ph ph-brackets-curly text-primary"></i>
+    ตัวแปรที่ใช้ได้
+  </h2>
+  <p class="mt-1 text-sm text-base-content/60">
+    พิมพ์ในหัวข้อหรือเนื้อหา เช่น <code class="font-mono">{{ '{{ organization_name }}' }}</code>
+    ระบบจะแทนด้วยข้อมูลจริงตอนส่งอีเมล
+  </p>
+  {% for type_value, type_label in email_types %}
+  <div data-email-type="{{ type_value }}" class="mt-4 {{ '' if type_value == selected_type else 'hidden' }}">
+    <div class="mb-2 badge badge-soft badge-primary">{{ type_label }}</div>
+    <ul class="divide-y divide-base-300 rounded-box border border-base-300 bg-base-100">
+      {% for name, label in email_variables.get(type_value, []) %}
+      <li class="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <code class="font-mono text-sm text-primary select-all break-all">{{ '{{ ' ~ name ~ ' }}' }}</code>
+        <span class="text-sm text-base-content/70 sm:text-right">{{ label }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</aside>
+{% endmacro %}

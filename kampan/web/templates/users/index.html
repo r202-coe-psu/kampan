@@ -1,0 +1,113 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% import '/base/html-renderer.html' as renderer %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}ผู้ใช้ทั้งหมด{% endblock %}
+{% block dashboard_title %}ผู้ใช้ทั้งหมด{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow">
+  <div class="card-body">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 class="card-title">ระดับผู้ใช้ในระบบ</h2>
+      <p class="text-sm text-base-content/60">
+        ผู้ใช้ทั้งหมด <span class="font-semibold tabular-nums text-base-content" data-total-users>{{ total_users }}</span> คน
+        · คนหนึ่งมีได้หลายระดับ ผลรวมจึงอาจเกินจำนวนผู้ใช้
+      </p>
+    </div>
+    <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {% for item in role_summary %}
+        {% set is_selected = selected_role == item.role %}
+        {% set tile_class = 'flex flex-col gap-1 rounded-box border p-4 transition-colors ' ~
+             ('border-primary bg-primary/5' if is_selected else 'border-base-300') %}
+        {% if item.filterable %}
+        <a class="{{ tile_class }} hover:border-primary/40 hover:bg-base-200"
+           href="{{ url_for('users.index', role=item.role) }}"
+           data-role="{{ item.role }}" {% if is_selected %}aria-current="true"{% endif %}>
+        {% else %}
+        <div class="{{ tile_class }}" data-role="{{ item.role }}" title="role นี้ไม่มีในรายการตัวเลือก จึงกรองไม่ได้">
+        {% endif %}
+          <span class="truncate text-sm text-base-content/70">{{ item.label }}</span>
+          <span class="text-2xl font-bold tabular-nums" data-role-count>{{ item.count }}</span>
+        {% if item.filterable %}</a>{% else %}</div>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_field(form.name, placeholder="ค้นหาจากชื่อ-นามสกุล") }}
+    </div>
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_field(form.email, placeholder="ค้นหาจากอีเมล") }}
+    </div>
+    <div class="flex-1 min-w-48">
+      {{ renderer.render_select_field(form.role) }}
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-magnifying-glass"></i>
+        ค้นหา
+      </button>
+      <a href="{{ url_for('users.index') }}" class="btn">
+        <i class="ph ph-x"></i>
+        ล้างการค้นหา
+      </a>
+    </div>
+  </form>
+</div>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if paginated_users.items %}
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ลำดับ</th>
+          <th class="table-style">ชื่อผู้ใช้งาน</th>
+          <th class="table-style">อีเมล</th>
+          <th class="table-style">ระดับผู้ใช้</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in paginated_users.items %}
+        <tr>
+          <td class="table-style">{{ (paginated_users.page - 1) * paginated_users.per_page + loop.index }}</td>
+          <td class="table-style">{{ user.get_name() }}</td>
+          <td class="table-style">{{ user.email }}</td>
+          <td class="table-style">
+            <div class="flex flex-wrap gap-1">
+              {% for role in user.roles %}
+                <span class="badge badge-sm badge-ghost">{{ role_labels.get(role, role) }}</span>
+              {% else %}
+                <span class="text-sm text-base-content/50">ยังไม่มีระดับ</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="table-style whitespace-nowrap">
+            {{ IconButton('ph-pen', 'แก้ไขระดับผู้ใช้', href=url_for('users.edit_roles', user_id=user.id)) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% set params = request.args.to_dict() %}
+    {% set _dummy = params.pop('page', None) %}
+    {% if paginated_users.pages > 1 %}
+      {{ paginated.render_pagination(paginated_users, 'users.index', params) }}
+    {% endif %}
+  </div>
+  {% else %}
+  {{ EmptyState('ph-user-gear', 'ยังไม่มีผู้ใช้ในระบบ',
+                description='ผู้ใช้จะปรากฏที่นี่หลังจากเข้าสู่ระบบครั้งแรก',
+                filtered=request.args.get('name') or request.args.get('email') or request.args.get('role'),
+                filtered_title='ไม่พบผู้ใช้ที่ค้นหา',
+                clear_href=url_for('users.index')) }}
+  {% endif %}
+</div>
+{% endblock %}

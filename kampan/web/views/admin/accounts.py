@@ -12,7 +12,6 @@ from flask import (
     session,
     url_for,
 )
-from flask_mongoengine import Pagination
 from flask_login import current_user, login_required, login_user, logout_user
 
 from ... import acl, forms, models, oauth2
@@ -192,71 +191,10 @@ def picture(user_id, filename):
     return response
 
 
+# ย้ายไปอยู่ในระบบจัดการองค์กรแล้ว เก็บ URL เดิมไว้ให้ bookmark ยังใช้ได้
 @module.route("/user-roles")
 @acl.roles_required("admin")
 def user_roles():
-    search_form = forms.user_roles.UserRolesSearchForm(request.args)
-    if not search_form.validate():
-        abort(400, description="Invalid user search filters")
-
-    query = me.Q()
-    has_filters = False
-    role_labels = dict(forms.user_roles.USER_ROLE_CHOICES)
-
-    email = search_form.email.data.strip() if search_form.email.data else ""
-    name = search_form.name.data.strip() if search_form.name.data else ""
-    role = search_form.role.data.strip() if search_form.role.data else ""
-
-    if email:
-        has_filters = True
-        query &= me.Q(email__icontains=email)
-    if name:
-        has_filters = True
-        query &= (
-            me.Q(first_name__icontains=name)
-            | me.Q(last_name__icontains=name)
-            | me.Q(resources__psu__display_name_th__icontains=name)
-            | me.Q(resources__psu__display_name__icontains=name)
-        )
-    if role:
-        has_filters = True
-        query &= me.Q(roles=role)
-
-    users = models.User.objects(query) if has_filters else models.User.objects()
-    users = users.order_by("last_name", "first_name")
-    page = max(request.args.get("page", default=1, type=int), 1)
-    paginated_users = Pagination(users, page=page, per_page=30)
-    if "admin" in current_user.roles:
-        return render_template(
-            "/admin/accounts/user_roles.html",
-            paginated_users=paginated_users,
-            form=search_form,
-            role_labels=role_labels,
-        )
-    return redirect(url_for("admin.dashboard.daily_dashboard"))
-
-
-@module.route("/user-roles/edit-roles", methods=["GET", "POST"])
-@login_required
-@acl.roles_required("admin")
-def edit_roles():
-    user_id = request.args.get("user_id")
-    user = models.User.objects.get(id=user_id)
-    form = forms.user_roles.UserRolesForm(obj=user)
-    form.roles.choices = [
-        ("admin", "Admin"),
-        ("supervisor", "Supervisor"),
-        ("user", "User"),
-    ]
-
-    if not form.validate_on_submit():
-        return render_template(
-            "/admin/accounts/edit_roles.html",
-            form=form,
-        )
-
-    form.populate_obj(user)
-    user.roles = form.roles.data
-    user.save()
-
-    return redirect(url_for("admin.accounts.user_roles"))
+    return redirect(
+        url_for("users.index", **request.args), code=301
+    )

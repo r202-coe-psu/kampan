@@ -1,0 +1,77 @@
+<div class="drawer-side shadow">
+  <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
+  <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
+    <div class="py-2 border-b mb-2">
+      <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
+    </div>
+    {% if organization %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.overview' else '' }}"
+        href="{{ url_for('organizations.overview.index', organization_id=organization.id) }}">
+        <i class="ph ph-chart-bar"></i> ภาพรวมองค์กร
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.divisions' else '' }}"
+        href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}">
+        <i class="ph ph-tree-structure"></i> แผนกทั้งหมด
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.members' else '' }}"
+        href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
+        <i class="ph ph-users"></i> สมาชิกขององค์กร
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'email_templates' else '' }}"
+        href="{{ url_for('email_templates.index', organization_id=organization.id) }}">
+        <i class="ph ph-envelope-simple"></i> รูปแบบอีเมล
+      </a>
+    </li>
+    {% endif %}
+    {% endif %}
+
+    {% if current_user.has_roles(['admin']) %}
+    <li class="menu-title">ผู้ดูแลระบบส่วนกลาง</li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'users' else '' }}"
+        href="{{ url_for('users.index') }}">
+        <i class="ph ph-user-gear"></i> ผู้ใช้ทั้งหมด
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.system_organizations' else '' }}"
+        href="{{ url_for('organizations.system_organizations.index') }}">
+        <i class="ph ph-buildings"></i> องค์กรทั้งหมด
+      </a>
+    </li>
+    {% endif %}
+
+    <li>
+      <a href="{{ url_for('site.select_system', organization_id=organization.id) if organization else url_for('site.select_system') }}">
+        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      </a>
+    </li>
+
+    <div class="mt-auto"></div>
+    {% include "/base/components/organization_switcher.html" %}
+    <div class="dropdown dropdown-top dropdown-end">
+      <div class="rounded-field w-full px-2 justify-between">
+        <div class="flex items-center gap-2 justify-between">
+          <i class="ph ph-size ph-user p-2"></i>
+          <div class="flex justify-center">
+            <div class="break-all">
+              <p>{{ current_user.get_resources_fullname_th() }}</p>
+              <p>{{ current_user.email }}</p>
+            </div>
+          </div>
+          <a class="font-bold hover:text-error py-3" href="{{ url_for('accounts.logout') }}">
+            <i class="ph ph-size ph-sign-out"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </ul>
+</div>

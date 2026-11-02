@@ -136,6 +136,15 @@ class User(me.Document, UserMixin):
 
         return [role_labels.get(role, role) for role in self.get_organization_roles(organization)]
 
+    def get_organization_role_items(self, organization=None):
+        """Return [(role_key, label), ...] for the user's roles in the organization."""
+        role_labels = dict(ORGANIZATION_ROLES)
+
+        return [
+            (role, role_labels.get(role, role))
+            for role in self.get_organization_roles(organization)
+        ]
+
     def has_organization_roles(self, *roles, organization=None):
         if "admin" in self.roles:
             return True

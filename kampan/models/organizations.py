@@ -49,6 +49,11 @@ class OrganizationUserRole(me.Document):
         required=True, default=datetime.datetime.now, auto_now=True
     )
 
+    def role_items(self):
+        """Return [(role_key, label), ...] for each known role of this member."""
+        role_labels = dict(ORGANIZATION_ROLES)
+        return [(role, role_labels[role]) for role in self.roles if role in role_labels]
+
     def display_roles(self):
         roles = []
         for role in self.roles:

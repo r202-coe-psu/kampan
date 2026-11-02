@@ -1,0 +1,85 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import open_modal %}
+{% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
+{% import '/base/components/forms.html' as render_form %}
+{% import '/base/html-renderer.html' as renderer %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}แผนกทั้งหมด{% endblock %}
+
+{% block dashboard_title %}แผนกทั้งหมด{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<form method="post" class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {{ form.hidden_tag() }}
+  {# จอกลางขึ้นไป: ช่องค้นหาสองช่องกับปุ่มอยู่แถวเดียวกัน #}
+  <div class="grid w-full grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+    <div class="min-w-0">{{ renderer.render_select_field(form.name) }}</div>
+    <div class="min-w-0">{{ renderer.date_range_field(form.start_date, form.end_date) }}</div>
+    <div class="flex justify-end gap-2 md:col-span-2 xl:col-span-1 xl:pb-1">
+      <a class="btn" href='{{ url_for("organizations.divisions.index", organization_id=organization.id) }}'>
+        ล้างการค้นหา
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-magnifying-glass"></i> ค้นหา
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-bold">รายการแผนก</h2>
+      <p class="text-base-content/60">{{ paginated_divisions.total }} แผนก</p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="{{ open_modal('create-division') }}">
+      <i class="ph ph-plus"></i>
+      เพิ่มแผนก
+    </button>
+  </div>
+  {% if divisions %}
+  <div class="overflow-x-auto mt-4 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          {# ชื่อแผนกกว้างประมาณ 1/4, คำอธิบายกินที่เหลือ, ปุ่มจัดการแคบเท่าปุ่ม #}
+          <th class="table-style w-1/4 min-w-40">ชื่อแผนก</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for division in paginated_divisions.items %}
+        <tr>
+          <td class="table-style break-words" data-label="Name">{{ division.name }}</td>
+          <td class="table-style" data-label="Description">
+            <p class="line-clamp-2 break-words" title="{{ division.description }}">{{ division.description or '-' }}</p>
+          </td>
+          <td class="table-style whitespace-nowrap">
+            {{ IconButton('ph-arrow-square-out', 'ดูแผนกและสมาชิก', href=url_for('organizations.divisions.detail', organization_id=organization.id, division_id=division.id)) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_divisions.pages > 1 %}
+      {{ paginated.render_pagination(paginated_divisions, "organizations.divisions.index", request.args) }}
+    {% endif %}
+  </div>
+  {% else %}
+  {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก',
+                description='สร้างแผนกเพื่อจัดกลุ่มสมาชิกและกำหนดผู้อนุมัติในแต่ละแผนก',
+                action_label='เพิ่มแผนก', action_onclick=open_modal('create-division'),
+                filtered=request.method == 'POST' and (form.name.data or form.start_date.data or form.end_date.data),
+                filtered_title='ไม่พบแผนกที่ค้นหา',
+                clear_href=url_for('organizations.divisions.index', organization_id=organization.id)) }}
+  {% endif %}
+</div>
+{{ DivisionFormModal('create-division', organization, division_form) }}
+{% endblock %}

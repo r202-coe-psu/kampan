@@ -19,11 +19,11 @@ def add_date_url(url):
 MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
-    "admin": "admin.index",
+    "organizations": "organizations.overview.index",
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
-NON_MODULE_BLUEPRINTS = {"site", "accounts", "organizations", "notifications"}
+NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
 
 
 def switch_organization_next_url(organization):
@@ -49,8 +49,6 @@ def switch_organization_next_url(organization):
         endpoint = INVENTORY_HOME_ENDPOINT
 
     try:
-        if endpoint == "admin.index":
-            return url_for(endpoint)
         return url_for(endpoint, organization_id=str(organization.id))
     except Exception:
         return None

@@ -1,0 +1,218 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/base/components/modals.html' import ConfirmModal, DeleteModal, open_modal %}
+{% from '/base/components/role_badge.html' import RoleBadges %}
+{% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
+{% from '/base/components/icon_button.html' import IconButton %}
+
+{% block title %}{{ division.name }}{% endblock %}
+{% block dashboard_title %}{{ division.name }}{% endblock %}
+
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("แผนกทั้งหมด", url_for("organizations.divisions.index", organization_id=organization.id)),
+(division.name, "")]) }}
+{% endblock %}
+
+{% block content %}
+<div class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <h2 class="card-title text-2xl break-words">{{ division.name }}</h2>
+        <p class="mt-1 break-words text-base-content/70">{{ division.description or 'ไม่มีคำอธิบาย' }}</p>
+      </div>
+      <div class="flex shrink-0 gap-1">
+        {{ IconButton('ph-pen', 'แก้ไขแผนก', onclick=open_modal('edit-division'), placement='bottom', size='md') }}
+        {{ IconButton('ph-trash', 'ลบแผนก', onclick=open_modal('delete-division'), tone='error', placement='bottom', size='md') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div>
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="card-title text-xl">สมาชิกในแผนก</h2>
+        <p class="text-base-content/60">
+          <span class="font-medium tabular-nums text-base-content" data-member-total>{{ members | length }}</span> คน
+          {% if pending_count %}· รอเข้าสู่ระบบ {{ pending_count }} คน{% endif %}
+        </p>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row">
+        {% if members %}
+        <label class="input w-full sm:w-64">
+          <i class="ph ph-magnifying-glass opacity-60"></i>
+          <input type="search" placeholder="ค้นหาชื่อหรืออีเมล" data-filter-target="division-members" />
+        </label>
+        {% endif %}
+        <button type="button" class="btn btn-primary" onclick="{{ open_modal('add-division-members') }}">
+          <i class="ph ph-user-circle-plus"></i> เพิ่มสมาชิก
+        </button>
+      </div>
+    </div>
+
+    {% if members %}
+    <div class="overflow-x-auto mt-4 rounded-xl">
+      <table class="table-auto w-full" id="division-members">
+        <thead>
+          <tr>
+            <th class="table-style">ชื่อ</th>
+            <th class="table-style">ตำแหน่ง</th>
+            <th class="table-style w-px whitespace-nowrap">วันที่เพิ่ม</th>
+            <th class="table-style w-px whitespace-nowrap">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in members %}
+          <tr data-filter-text="{{ member.display_fullname() }} {{ member.display_email() }}">
+            <td class="table-style">
+              <p class="font-medium break-words">{{ member.display_fullname() }}</p>
+              <p class="text-sm text-base-content/60 break-all">{{ member.display_email() }}</p>
+              {% if member.status == 'pending' %}
+              <span class="badge badge-sm badge-warning badge-outline mt-1">รอเข้าสู่ระบบ</span>
+              {% endif %}
+            </td>
+            <td class="table-style">{{ RoleBadges(member.role_items()) }}</td>
+            <td class="table-style whitespace-nowrap">{{ member.created_date.strftime('%d/%m/%Y') if member.created_date else '-' }}</td>
+            <td class="table-style whitespace-nowrap">
+              {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=member.id)) }}
+              {{ IconButton('ph-user-minus', 'นำออกจากแผนก', onclick=open_modal('remove-member-%s' | format(member.id)), tone='error') }}
+              {% call DeleteModal(
+                  'remove-member-%s' | format(member.id),
+                  'นำออกจากแผนก',
+                  url_for('organizations.divisions.remove_division_user', organization_id=organization.id,
+                          division_id=division.id, division_user_id=member.id),
+                  confirm_label='นำออก', icon='ph-user-minus', hidden=action_form.hidden_tag()) %}
+                <p class="text-left whitespace-normal">
+                  นำ <b>{{ member.display_fullname() }}</b> ออกจากแผนก {{ division.name }}
+                </p>
+                <p class="mt-2 text-left text-sm whitespace-normal text-base-content/60">
+                  ยังเป็นสมาชิกขององค์กรอยู่ แค่ไม่มีแผนก
+                </p>
+              {% endcall %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {{ EmptyState('ph-magnifying-glass', 'ไม่พบสมาชิกที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
+                    size='sm', hidden=True, attrs='data-filter-empty="division-members"') }}
+    </div>
+    {% else %}
+    {{ EmptyState('ph-users-three', 'ยังไม่มีสมาชิกในแผนกนี้',
+                  description='เพิ่มสมาชิกขององค์กรเข้ามาในแผนก เพื่อให้เบิกวัสดุและส่งคำขออนุมัติได้',
+                  action_label='เพิ่มสมาชิก', action_icon='ph-user-circle-plus',
+                  action_onclick=open_modal('add-division-members')) }}
+    {% endif %}
+  </div>
+</div>
+
+{{ DeleteModal(
+    'delete-division',
+    'ลบแผนก %s' | format(division.name),
+    url_for('organizations.divisions.delete', organization_id=organization.id, division_id=division.id),
+    body='สมาชิก %d คนในแผนกนี้จะยังอยู่ในองค์กร แต่จะไม่มีแผนก' | format(members | length),
+    confirm_label='ลบแผนก',
+    hidden=action_form.hidden_tag()) }}
+
+{% call ConfirmModal(
+    'add-division-members',
+    'เพิ่มสมาชิกเข้าแผนก %s' | format(division.name),
+    url_for('organizations.divisions.add_member', organization_id=organization.id, division_id=division.id),
+    confirm_label='เพิ่มสมาชิก', icon='ph-user-circle-plus', hidden=action_form.hidden_tag()) %}
+  {% if candidates %}
+  <label class="input w-full">
+    <i class="ph ph-magnifying-glass opacity-60"></i>
+    <input type="search" placeholder="ค้นหาชื่อหรืออีเมล" data-filter-target="division-candidates" />
+  </label>
+  <ul class="mt-3 max-h-72 overflow-y-auto rounded-box border border-base-300" id="division-candidates">
+    {% for candidate in candidates %}
+    {% set org_user = candidate.org_user %}
+    <li data-filter-text="{{ org_user.display_fullname() }} {{ org_user.display_email() }}">
+      <label class="flex cursor-pointer items-start gap-3 border-b border-base-300 px-3 py-2 hover:bg-base-200">
+        <input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1" name="members"
+          value="{{ org_user.id }}" data-name="{{ org_user.display_fullname() }}"
+          data-from="{{ candidate.current_division.name if candidate.current_division else '' }}" />
+        <span class="min-w-0 flex-1">
+          <span class="block break-words font-medium">{{ org_user.display_fullname() }}</span>
+          <span class="block break-all text-sm text-base-content/60">{{ org_user.display_email() }}</span>
+        </span>
+        {% if candidate.current_division %}
+        <span class="badge badge-sm badge-ghost shrink-0" title="อยู่ในแผนกนี้ตอนนี้">{{ candidate.current_division.name }}</span>
+        {% endif %}
+      </label>
+    </li>
+    {% endfor %}
+  </ul>
+  {{ EmptyState('ph-magnifying-glass', 'ไม่พบสมาชิกที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
+                size='sm', hidden=True, attrs='data-filter-empty="division-candidates"') }}
+
+  <div role="alert" class="alert alert-warning mt-3 hidden" data-move-warning>
+    <i class="ph ph-warning text-xl"></i>
+    <div>
+      <p class="font-semibold">มีสมาชิกที่จะถูกย้ายมาจากแผนกอื่น</p>
+      <ul class="mt-1 list-disc pl-5 text-sm" data-move-list></ul>
+    </div>
+  </div>
+  {% else %}
+  {{ EmptyState('ph-check-circle', 'สมาชิกทุกคนอยู่ในแผนกนี้แล้ว',
+                description='ไม่มีสมาชิกขององค์กรเหลือให้เพิ่มเข้าแผนกนี้', size='sm') }}
+  {% endif %}
+{% endcall %}
+{{ DivisionFormModal('edit-division', organization, division_form, division=division) }}
+{% endblock content %}
+
+{% block additional_js %}
+<script>
+  // ค้นหาในรายการ: input[data-filter-target] กรองแถว [data-filter-text] ภายใน element id นั้น
+  document.querySelectorAll('[data-filter-target]').forEach(function (input) {
+    var targetId = input.dataset.filterTarget;
+    var rows = document.querySelectorAll('#' + targetId + ' [data-filter-text]');
+    var empty = document.querySelector('[data-filter-empty="' + targetId + '"]');
+    input.addEventListener('input', function () {
+      var keyword = input.value.trim().toLowerCase();
+      var shown = 0;
+      rows.forEach(function (row) {
+        var match = row.dataset.filterText.toLowerCase().indexOf(keyword) !== -1;
+        row.classList.toggle('hidden', !match);
+        if (match) shown += 1;
+      });
+      if (empty) empty.classList.toggle('hidden', shown > 0);
+    });
+  });
+
+  // เตือนเมื่อเลือกคนที่อยู่แผนกอื่น และปิดปุ่มเพิ่มจนกว่าจะเลือกอย่างน้อยหนึ่งคน
+  (function () {
+    var modal = document.getElementById('add-division-members');
+    if (!modal) return;
+    var checkboxes = modal.querySelectorAll('input[name="members"]');
+    var warning = modal.querySelector('[data-move-warning]');
+    var list = modal.querySelector('[data-move-list]');
+    var confirm = modal.querySelector('[data-modal-confirm]');
+
+    function update() {
+      var moving = [];
+      var selected = 0;
+      checkboxes.forEach(function (checkbox) {
+        if (!checkbox.checked) return;
+        selected += 1;
+        if (checkbox.dataset.from) moving.push(checkbox.dataset.name + ' จะถูกย้ายจาก ' + checkbox.dataset.from);
+      });
+      if (list) {
+        list.replaceChildren.apply(list, moving.map(function (text) {
+          var item = document.createElement('li');
+          item.textContent = text;
+          return item;
+        }));
+      }
+      if (warning) warning.classList.toggle('hidden', moving.length === 0);
+      confirm.disabled = selected === 0;
+    }
+
+    checkboxes.forEach(function (checkbox) { checkbox.addEventListener('change', update); });
+    update();
+  })();
+</script>
+{% endblock %}

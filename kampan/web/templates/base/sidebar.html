@@ -107,14 +107,6 @@
         </ul>
       </details>
     </li>
-    <li>
-      <a class="{{ 'menu-active' if '/email_templates' in request.path else '' }}"
-        href="{{ url_for('email_templates.index', organization_id = organization.id) }}">
-        <i class="ph ph-envelope-simple"></i>
-
-        รูปแบบอีเมล
-      </a>
-    </li>
     {% endif %}
     {% if (current_user.has_organization_roles("admin", "supervisor supplier", "endorser", "head", "staff") and
     current_user.get_current_division()) or current_user.has_roles(['admin']) %}
@@ -192,36 +184,6 @@
     </li>
     {% endif %}
 
-    {% if current_user.has_organization_roles("admin") and organization %}
-    <li>
-      <details {% if '/divisions/' in request.path or '/organizaiton_users' in request.path or '/detail' in request.path
-        %} open {% endif %}>
-        <summary>
-          <i class="ph ph-size ph-briefcase"></i> จัดการองค์กร
-        </summary>
-        <ul>
-          <li>
-            <a class="{{ 'menu-active' if '/divisions/' in request.path else '' }}"
-              href="{{ url_for('divisions.index', organization_id = organization.id)}}">
-              แผนกทั้งหมด
-            </a>
-          </li>
-          <li>
-            <a class="{{ 'menu-active' if '/organizaiton_users' in request.path else '' }}"
-              href="{{ url_for('organizations.organizaiton_users', organization_id = organization.id)}}">
-              สมาชิกขององค์กร
-            </a>
-          </li>
-          <li>
-            <a class="{{ 'menu-active' if '/detail' in request.path else '' }}"
-              href="{{ url_for('organizations.detail', organization_id = organization.id)}}">
-              รายละเอียดองค์กร
-            </a>
-          </li>
-        </ul>
-      </details>
-    </li>
-    {% endif %}
     {% if organization %}
     <li>
       <a class="{{ 'menu-active' if '/inventories/manual' in request.path else '' }}"

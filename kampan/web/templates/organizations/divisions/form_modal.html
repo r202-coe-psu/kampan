@@ -1,0 +1,32 @@
+{# modal ฟอร์มเพิ่ม/แก้ไขแผนก ใช้ในหน้าแผนกทั้งหมด หน้าภาพรวม (เพิ่ม) และหน้าแผนก (แก้ไข)
+
+   import: {% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
+   เพิ่ม:   {{ DivisionFormModal('create-division', organization, division_form) }}
+   แก้ไข:  {{ DivisionFormModal('edit-division', organization, division_form, division=division) }}
+   เปิด:   onclick="{{ open_modal('create-division') }}"
+
+   division_form คือ forms.divisions.DivisionForm (ใช้ csrf และค่าเดิมของฟอร์ม)
+#}
+{% from '/base/components/modals.html' import ConfirmModal %}
+
+{% macro DivisionFormModal(id, organization, division_form, division=None) %}
+{% if division %}
+  {% set action = url_for('organizations.divisions.create_or_edit', organization_id=organization.id, division_id=division.id) %}
+{% else %}
+  {% set action = url_for('organizations.divisions.create_or_edit', organization_id=organization.id) %}
+{% endif %}
+{% call ConfirmModal(id, 'แก้ไขแผนก' if division else 'เพิ่มแผนก', action,
+                     confirm_label='บันทึก' if division else 'เพิ่มแผนก',
+                     icon='ph-pen' if division else 'ph-tree-structure', hidden=division_form.hidden_tag()) %}
+  <fieldset class="fieldset">
+    <legend class="fieldset-legend">ชื่อแผนก <span class="text-error">*</span></legend>
+    <input type="text" class="input w-full" name="{{ division_form.name.name }}"
+      value="{{ division_form.name.data or '' }}" maxlength="256" required placeholder="เช่น ฝ่ายพัสดุ" />
+  </fieldset>
+  <fieldset class="fieldset">
+    <legend class="fieldset-legend">รายละเอียด</legend>
+    <textarea class="textarea w-full" name="{{ division_form.description.name }}" rows="3"
+      placeholder="หน้าที่หรือขอบเขตงานของแผนก (ไม่บังคับ)">{{ division_form.description.data or '' }}</textarea>
+  </fieldset>
+{% endcall %}
+{% endmacro %}

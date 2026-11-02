@@ -4,8 +4,13 @@
    - อยู่หลายหน่วยงาน: กดได้ เปิด modal ให้เลือก
    - อยู่หน่วยงานเดียว: แสดงเป็นข้อมูลเฉย ๆ ไม่ต้องกด เพราะไม่มีอะไรให้สลับ
 
+   การ์ด "จัดการองค์กร" ทางขวาของการ์ดหน่วยงาน: ทางเข้าระบบจัดการองค์กร
+   แสดงเฉพาะ admin ของหน่วยงาน และซ่อนเมื่ออยู่ในระบบจัดการองค์กรแล้ว เพราะ sidebar มีเมนูอยู่แล้ว
+
    ชื่อหน่วยงานยาว: ตัดด้วย truncate + title, ใน modal ใช้ line-clamp-2 + break-words
 #}
+
+{% from '/base/components/role_badge.html' import RoleBadge %}
 
 {% macro OrganizationSummary(organization, role_labels, is_global_admin, can_switch) %}
   <span class="flex min-w-0 items-center gap-2">
@@ -41,18 +46,31 @@
     {% set is_global_admin = 'admin' in current_user.roles %}
     {% set viewing_role_labels = current_user.get_organization_role_labels(viewing_organization) if viewing_organization else [] %}
 
-    <div class="w-full px-2 py-2">
+    {% set show_manage_link = viewing_organization
+          and not (request.blueprint or '').startswith('organizations')
+          and current_user.has_organization_roles('admin', organization=viewing_organization) %}
+
+    <div class="flex w-full items-stretch gap-2 px-2 py-2">
       {% if can_switch %}
         <button type="button"
-                class="btn btn-block h-auto justify-between gap-2 border-base-300 bg-base-200 px-3 py-2 font-normal hover:bg-base-300"
+                class="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-field border border-base-300 bg-base-200 px-3 py-2 text-left transition-colors hover:bg-base-300"
                 onclick="document.getElementById('organization_switcher_modal').showModal()">
           {{ OrganizationSummary(viewing_organization, viewing_role_labels, is_global_admin, true) }}
         </button>
       {% else %}
         {# หน่วยงานเดียว: แสดงข้อมูลเฉย ๆ ไม่ใช่ปุ่ม #}
-        <div class="flex w-full items-center justify-between gap-2 rounded-field border border-base-300 bg-base-200 px-3 py-2">
+        <div class="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-field border border-base-300 bg-base-200 px-3 py-2">
           {{ OrganizationSummary(viewing_organization, viewing_role_labels, is_global_admin, false) }}
         </div>
+      {% endif %}
+
+      {% if show_manage_link %}
+        <a class="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-field border border-base-300 bg-base-200 px-3 py-2 transition-colors hover:bg-base-300"
+           href="{{ url_for('organizations.overview.index', organization_id=viewing_organization.id) }}"
+           title="จัดการองค์กร" aria-label="จัดการองค์กร">
+          <i class="ph ph-size ph-gear-six text-primary"></i>
+          <span class="whitespace-nowrap text-xs">จัดการองค์กร</span>
+        </a>
       {% endif %}
     </div>
 
@@ -75,7 +93,7 @@
             <ul class="flex flex-col gap-2">
               {% for selectable_organization in selectable_organizations %}
                 {% set is_viewing = viewing_organization and selectable_organization.id == viewing_organization.id %}
-                {% set role_labels = current_user.get_organization_role_labels(selectable_organization) %}
+                {% set role_items = current_user.get_organization_role_items(selectable_organization) %}
                 <li>
                   <a class="flex items-start gap-3 rounded-xl border p-3 transition-colors
                             {{ 'border-primary bg-primary/5' if is_viewing else 'border-base-300 hover:border-primary/40 hover:bg-base-200' }}"
@@ -89,9 +107,9 @@
                         {{ selectable_organization.name }}
                       </span>
                       <span class="flex flex-wrap gap-1">
-                        {% if role_labels %}
-                          {% for role_label in role_labels %}
-                            <span class="badge badge-sm {{ 'badge-primary' if is_viewing else 'badge-ghost' }}">{{ role_label }}</span>
+                        {% if role_items %}
+                          {% for role_key, role_label in role_items %}
+                            {{ RoleBadge(role_key, role_label) }}
                           {% endfor %}
                         {% elif is_global_admin %}
                           <span class="badge badge-sm badge-outline">ผู้ดูแลระบบส่วนกลาง</span>
