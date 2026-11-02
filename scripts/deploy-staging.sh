@@ -7,6 +7,16 @@ set -eu
 : "${REGISTRY_KAMPAN_IMAGE:?Set the exact image tag built by Jenkins}"
 : "${CFG_FILE:?Bind INVENTORY_ENV_DEVELOPMENT}"
 
+# Adopt only the existing Kampan application services. Its MongoDB, Redis and
+# network are managed separately and must keep their data and running process.
+for service in mongodb redis; do
+    container="kampan-$service-development"
+    test "$(docker inspect --format '{{.State.Running}}' "$container")" = true
+    test "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$container")" = kampan
+done
+docker exec kampan-mongodb-development mongosh --quiet --eval 'quit(db.adminCommand("ping").ok ? 0 : 1)'
+test "$(docker exec kampan-redis-development redis-cli ping)" = PONG
+
 # Config must survive Jenkins workspace cleanup and container restarts.
 config_dir="${KAMPAN_STAGING_CONFIG_DIR:-$HOME/.config/kampan/staging}"
 mkdir -p "$config_dir"
@@ -24,14 +34,13 @@ printf '%s' "$REGISTRY_TOKEN" | docker login -u "$REGISTRY_USER" --password-stdi
 docker pull "$REGISTRY_KAMPAN_IMAGE"
 
 compose() {
-    docker compose -p kampan-staging -f docker-compose.staging.yml "$@"
+    docker compose -p kampan -f docker-compose.staging.yml "$@"
 }
 
 compose config --quiet
-# Pull public services separately; the exact private app image is already local.
-compose pull mongodb redis
-# Preserve databases and queues between builds; do not stop the whole stack.
-if ! compose up -d --no-build --pull never --remove-orphans --wait --wait-timeout 180; then
+# Infrastructure intentionally lives outside this application-only Compose file.
+export COMPOSE_IGNORE_ORPHANS=true
+if ! compose up -d --no-build --pull never --wait --wait-timeout 180; then
     compose ps -a
     exit 1
 fi

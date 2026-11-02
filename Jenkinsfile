@@ -7,6 +7,10 @@ pipeline {
         timestamps()
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     environment {
         REGISTRY_USER = 'ci-bot'
     }
