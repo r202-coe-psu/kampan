@@ -4,6 +4,12 @@
 {% block title %}{{ 'แก้ไขรายละเอียดองค์กร' if target_organization else 'เพิ่มองค์กร' }}{% endblock %}
 {% block dashboard_title %}{{ self.title() }}{% endblock %}
 
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("องค์กรทั้งหมด", url_for('organizations.system_organizations.index')),
+(target_organization.name if target_organization else 'เพิ่มองค์กร', "")]) }}
+{% endblock %}
+
 {% block content %}
 <div class="flex justify-start w-full gap-2">
   <a class="btn btn-primary" href="{{ url_for('organizations.system_organizations.index') }}">

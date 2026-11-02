@@ -1,21 +1,24 @@
-import datetime
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_mongoengine import Pagination
+import mongoengine as me
 
 from kampan import models
 from kampan.web import acl, forms
 
-module = Blueprint(
-    "system_organizations", __name__, url_prefix="/system/organizations"
-)
+# ระบบส่วนกลาง: รายการองค์กรทั้งหมด เพิ่ม/แก้ไข/ลบองค์กร อยู่ที่ /organizations/
+# ใช้ได้เฉพาะผู้ใช้ที่มี role admin ระดับระบบ (User.roles) ไม่ใช่ admin ขององค์กร
+# ส่วนสมาชิกขององค์กรใช้หน้า /organizations/<id>/members/ ร่วมกับ admin ขององค์กร
+module = Blueprint("system_organizations", __name__)
 
 
 def get_target_organization(organization_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    try:
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
+    except me.ValidationError:
+        organization = None
     if not organization:
         abort(404)
     return organization
@@ -35,14 +38,20 @@ def render_system_page(template, **context):
 @acl.roles_required("admin")
 def index():
     organizations = models.Organization.objects(status="active").order_by("name")
+    keyword = request.args.get("q", default="").strip()[:128]
+    if keyword:
+        organizations = organizations.filter(
+            me.Q(name__icontains=keyword) | me.Q(description__icontains=keyword)
+        )
     page = max(request.args.get("page", default=1, type=int), 1)
     return render_system_page(
         "index.html",
         paginated_organizations=Pagination(organizations, page=page, per_page=30),
+        keyword=keyword,
     )
 
 
-@module.route("/create", methods=["GET", "POST"], defaults={"organization_id": None})
+@module.route("/new", methods=["GET", "POST"], defaults={"organization_id": None})
 @module.route("/<organization_id>/edit", methods=["GET", "POST"])
 @acl.roles_required("admin")
 def create_or_edit(organization_id):
@@ -72,149 +81,6 @@ def create_or_edit(organization_id):
         "success",
     )
     return redirect(url_for("organizations.system_organizations.index"))
-
-
-@module.route("/<organization_id>/detail")
-@acl.roles_required("admin")
-def detail(organization_id):
-    return render_system_page(
-        "detail.html", target_organization=get_target_organization(organization_id)
-    )
-
-
-@module.route("/<organization_id>/add-member", methods=["GET", "POST"])
-@acl.roles_required("admin")
-def add_member(organization_id):
-    target_organization = get_target_organization(organization_id)
-    form = forms.organizations.OrganizationAddMemberForm()
-    users_in_organization = target_organization.get_distinct_users() or []
-    form.members.choices = [
-        (str(u.id), u.get_name())
-        for u in models.User.objects()
-        if u not in users_in_organization
-    ]
-    form.division.choices = [("", "")] + [
-        (str(d.id), d.name)
-        for d in models.Division.objects(
-            organization=target_organization, status="active"
-        )
-    ]
-
-    if not form.validate_on_submit():
-        return render_system_page(
-            "add_member.html", form=form, target_organization=target_organization
-        )
-
-    user = models.User.objects(id=form.members.data).first()
-    if user:
-        user.user_setting.current_organization = target_organization
-        user.save()
-
-        org_user = models.OrganizationUserRole(
-            organization=target_organization,
-            user=user,
-            roles=form.roles.data,
-            division=(
-                models.Division.objects(id=form.division.data, status="active").first()
-                if form.division.data
-                else None
-            ),
-            appointment=form.appointment.data,
-            added_by=current_user._get_current_object(),
-            last_modifier=current_user._get_current_object(),
-            last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-            created_date=datetime.datetime.now(),
-        )
-        org_user.save()
-        flash(
-            f"เพิ่มสมาชิก {org_user.display_fullname()} เข้า {target_organization.name} แล้ว",
-            "success",
-        )
-    else:
-        flash("ไม่พบผู้ใช้ที่เลือก", "error")
-
-    return redirect(
-        url_for(
-            "organizations.system_organizations.users",
-            organization_id=target_organization.id,
-        )
-    )
-
-
-@module.route("/<organization_id>/users")
-@acl.roles_required("admin")
-def users(organization_id):
-    target_organization = get_target_organization(organization_id)
-    org_users = models.OrganizationUserRole.objects(
-        organization=target_organization, status__ne="disactive"
-    ).order_by("-first_name")
-    page = max(request.args.get("page", default=1, type=int), 1)
-    return render_system_page(
-        "members.html",
-        paginated_org_users=Pagination(org_users, page=page, per_page=30),
-        target_organization=target_organization,
-    )
-
-
-@module.route("/<organization_id>/users/<org_user_id>/edit-roles", methods=["GET", "POST"])
-@acl.roles_required("admin")
-def edit_roles(organization_id, org_user_id):
-    target_organization = get_target_organization(organization_id)
-    org_user = models.OrganizationUserRole.objects(
-        id=org_user_id, organization=target_organization, status="active"
-    ).first()
-    if not org_user:
-        abort(404)
-    form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
-
-    if not form.validate_on_submit():
-        return render_system_page(
-            "edit_roles.html",
-            form=form,
-            target_organization=target_organization,
-            org_user=org_user,
-        )
-
-    org_user.roles = form.roles.data
-    org_user.last_modifier = current_user._get_current_object()
-    org_user.last_ip_address = request.headers.get(
-        "X-Forwarded-For", request.remote_addr
-    )
-    org_user.save()
-    flash(f"บันทึกตำแหน่งของ {org_user.display_fullname()} แล้ว", "success")
-    return redirect(
-        url_for(
-            "organizations.system_organizations.users",
-            organization_id=target_organization.id,
-        )
-    )
-
-
-@module.route("/<organization_id>/users/<org_user_id>/remove", methods=["GET", "POST"])
-@acl.roles_required("admin")
-def remove_org_user(organization_id, org_user_id):
-    target_organization = get_target_organization(organization_id)
-    org_user = models.OrganizationUserRole.objects(
-        id=org_user_id, organization=target_organization
-    ).first()
-    if not org_user:
-        abort(404)
-    org_user.status = "disactive"
-    org_user.last_modifier = current_user._get_current_object()
-    org_user.last_ip_address = request.headers.get(
-        "X-Forwarded-For", request.remote_addr
-    )
-    org_user.save()
-    flash(
-        f"นำ {org_user.display_fullname()} ออกจาก {target_organization.name} แล้ว",
-        "success",
-    )
-    return redirect(
-        url_for(
-            "organizations.system_organizations.users",
-            organization_id=target_organization.id,
-        )
-    )
 
 
 @module.route("/<organization_id>/delete", methods=["POST"])
