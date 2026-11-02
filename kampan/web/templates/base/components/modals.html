@@ -42,7 +42,7 @@ document.getElementById('{{ id }}').showModal()
 {% set style = MODAL_TONES.get(tone, MODAL_TONES.primary) %}
 <dialog id="{{ id }}" class="modal modal-bottom sm:modal-middle">
   {# ทั้งกล่องเป็นฟอร์ม เนื้อหาจาก {% call %} (เช่น checkbox) จึงถูกส่งไปพร้อมปุ่มยืนยัน #}
-  <form method="{{ method }}" action="{{ action }}" class="modal-box">
+  <form method="{{ method }}" action="{{ action }}" class="modal-box whitespace-normal text-left">
     {{ hidden }}
     {{ _header(title, tone, icon) }}
     <div class="mt-3 text-base-content/80">
@@ -73,7 +73,7 @@ document.getElementById('{{ id }}').showModal()
 {% macro AlertModal(id, title, body="", tone="info", icon="", button_label="ตกลง", open=False) %}
 {% set style = MODAL_TONES.get(tone, MODAL_TONES.info) %}
 <dialog id="{{ id }}" class="modal modal-bottom sm:modal-middle">
-  <div class="modal-box">
+  <div class="modal-box whitespace-normal text-left">
     {{ _header(title, tone, icon) }}
     <div class="mt-3 text-base-content/80">
       {% if caller %}{{ caller() }}{% elif body %}<p class="break-words">{{ body }}</p>{% endif %}
