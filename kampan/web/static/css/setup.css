@@ -120,3 +120,52 @@ fieldset {
     animation: none;
   }
 }
+
+/* Organization role badges: one color per organization role.
+   Use with `badge badge-outline`; see templates/base/components/role_badge.html.
+   admin = primary and driver = success follow the vehicle system. */
+@layer components {
+  .role-badge {
+    --role-color: var(--color-neutral);
+    --badge-color: var(--role-color);
+    white-space: nowrap;
+  }
+
+  /* darken the text toward base-content so light hues stay readable */
+  .role-badge.badge-outline {
+    color: color-mix(in oklab, var(--role-color) 65%, var(--color-base-content));
+    background-color: color-mix(in oklab, var(--role-color) 10%, transparent);
+  }
+
+  .role-staff {
+    --role-color: var(--color-neutral);
+  }
+
+  .role-endorser {
+    --role-color: oklch(60% 0.11 190);
+  }
+
+  .role-head {
+    --role-color: var(--color-secondary);
+  }
+
+  .role-supervisor-supplier {
+    --role-color: oklch(55% 0.2 295);
+  }
+
+  .role-admin {
+    --role-color: var(--color-primary);
+  }
+
+  .role-driver {
+    --role-color: var(--color-success);
+  }
+
+  .role-director {
+    --role-color: var(--color-accent);
+  }
+
+  .role-manager {
+    --role-color: oklch(48% 0.09 45);
+  }
+}

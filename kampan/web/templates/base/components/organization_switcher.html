@@ -10,6 +10,8 @@
    ชื่อหน่วยงานยาว: ตัดด้วย truncate + title, ใน modal ใช้ line-clamp-2 + break-words
 #}
 
+{% from '/base/components/role_badge.html' import RoleBadge %}
+
 {% macro OrganizationSummary(organization, role_labels, is_global_admin, can_switch) %}
   <span class="flex min-w-0 items-center gap-2">
     <i class="ph ph-size ph-buildings shrink-0 text-primary"></i>
@@ -91,7 +93,7 @@
             <ul class="flex flex-col gap-2">
               {% for selectable_organization in selectable_organizations %}
                 {% set is_viewing = viewing_organization and selectable_organization.id == viewing_organization.id %}
-                {% set role_labels = current_user.get_organization_role_labels(selectable_organization) %}
+                {% set role_items = current_user.get_organization_role_items(selectable_organization) %}
                 <li>
                   <a class="flex items-start gap-3 rounded-xl border p-3 transition-colors
                             {{ 'border-primary bg-primary/5' if is_viewing else 'border-base-300 hover:border-primary/40 hover:bg-base-200' }}"
@@ -105,9 +107,9 @@
                         {{ selectable_organization.name }}
                       </span>
                       <span class="flex flex-wrap gap-1">
-                        {% if role_labels %}
-                          {% for role_label in role_labels %}
-                            <span class="badge badge-sm {{ 'badge-primary' if is_viewing else 'badge-ghost' }}">{{ role_label }}</span>
+                        {% if role_items %}
+                          {% for role_key, role_label in role_items %}
+                            {{ RoleBadge(role_key, role_label) }}
                           {% endfor %}
                         {% elif is_global_admin %}
                           <span class="badge badge-sm badge-outline">ผู้ดูแลระบบส่วนกลาง</span>

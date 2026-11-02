@@ -1,0 +1,20 @@
+{# ป้ายสีของ role ในหน่วยงาน (organization role) แต่ละ role มีสีของตัวเอง
+   กำหนดสีไว้ใน static/css/setup.css (.role-*) ใช้ key ของ role เป็นตัวเลือกสี
+
+   ใช้งาน:
+     {% from '/base/components/role_badge.html' import RoleBadge, RoleBadges %}
+     {{ RoleBadge('admin', 'ผู้ดูแล/เจ้าหน้าที่พัสดุ') }}
+     {{ RoleBadges(org_user.role_items()) }}     {# รายการ [(key, label), ...] #}
+#}
+
+{% macro RoleBadge(role_key, label, size='sm') %}
+<span class="badge badge-{{ size }} badge-outline role-badge role-{{ role_key | replace(' ', '-') }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro RoleBadges(role_items, empty='-') %}
+{% if role_items %}
+<span class="flex flex-wrap gap-1">
+  {% for role_key, label in role_items %}{{ RoleBadge(role_key, label) }}{% endfor %}
+</span>
+{% else %}{{ empty }}{% endif %}
+{%- endmacro %}
