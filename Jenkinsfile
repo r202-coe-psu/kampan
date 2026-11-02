@@ -20,9 +20,9 @@ pipeline {
             }
             options { timeout(time: 30, unit: 'MINUTES') }
             steps {
-                checkout scm
                 script {
-                    env.REGISTRY_KAMPAN_IMAGE = "${env.REGISTRY_URL}/r202-coe-psu/kampan:develop-${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(12)}"
+                    def revision = checkout scm
+                    env.REGISTRY_KAMPAN_IMAGE = "${env.REGISTRY_URL}/r202-coe-psu/kampan:develop-${env.BUILD_NUMBER}-${revision.GIT_COMMIT.take(12)}"
                 }
                 withCredentials([
                     string(credentialsId: 'CI_REGISTRY_TOKEN', variable: 'REGISTRY_TOKEN')
