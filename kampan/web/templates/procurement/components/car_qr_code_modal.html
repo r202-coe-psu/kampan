@@ -25,6 +25,25 @@
 </dialog>
 
 <script>
+	// navigator.clipboard exists only in secure contexts (HTTPS/localhost); staging runs on plain HTTP
+	function copyText(text) {
+		if (window.isSecureContext && navigator.clipboard) {
+			return navigator.clipboard.writeText(text);
+		}
+		return new Promise((resolve, reject) => {
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			textarea.setAttribute('readonly', '');
+			textarea.style.position = 'fixed';
+			textarea.style.opacity = '0';
+			document.getElementById('qr-modal').appendChild(textarea);
+			textarea.select();
+			const ok = document.execCommand('copy');
+			textarea.remove();
+			ok ? resolve() : reject(new Error('copy failed'));
+		});
+	}
+
 	document.addEventListener('click', function (e) {
 		const btn = e.target.closest('.qr-btn');
 		if (!btn) return;
@@ -44,9 +63,12 @@
 		if (feedbackUrl) {
 			copyBtn.style.display = 'inline-flex';
 			copyBtn.onclick = function () {
-				navigator.clipboard.writeText(feedbackUrl).then(() => {
-					const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
+				const iconHTML = '<i class="ph ph-copy"></i> คัดลอกลิ้งก์';
+				copyText(feedbackUrl).then(() => {
 					copyBtn.innerHTML = '<i class="ph ph-check text-success"></i> คัดลอกแล้ว';
+				}).catch(() => {
+					copyBtn.innerHTML = '<i class="ph ph-x text-error"></i> คัดลอกไม่สำเร็จ';
+				}).finally(() => {
 					setTimeout(() => copyBtn.innerHTML = iconHTML, 2000);
 				});
 			};
