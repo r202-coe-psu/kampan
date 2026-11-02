@@ -141,6 +141,7 @@ def test_header_email_uses_division_saved_on_application(
 ):
     """worker ไม่มี request context ต้องหาหัวหน้าจากแผนกในใบขอ ไม่ใช่องค์กรแรกของผู้ขอ"""
     sent = []
+    sent_steps = []
 
     class FakeSMTP:
         def __init__(self, setting):
@@ -154,6 +155,7 @@ def test_header_email_uses_division_saved_on_application(
 
         def send_email(self, receiver, subject, body, html=False, steps=None):
             sent.append(receiver)
+            sent_steps.append(steps)
             return True
 
     monkeypatch.setattr(email_utils, "PSUSMTP", FakeSMTP)
@@ -183,3 +185,4 @@ def test_header_email_uses_division_saved_on_application(
         )
 
     assert sent == [head.email]
+    assert [step["state"] for step in sent_steps[0]] == ["done", "current", "upcoming", "upcoming"]

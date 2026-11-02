@@ -530,7 +530,13 @@ def send_email_car_application_to_endorser(
 
         logger.debug(f"send email to {endorser.email}")
         print(f"----> send email to {endorser.email}")
-        psu_smtp.send_email(endorser.email, email_subject, email_body, html=True)
+        psu_smtp.send_email(
+            endorser.email,
+            email_subject,
+            email_body,
+            html=True,
+            steps=get_car_application_steps(car_application),
+        )
     logger.debug(
         "################ Finished sending emails to all endorsers ################"
     )
