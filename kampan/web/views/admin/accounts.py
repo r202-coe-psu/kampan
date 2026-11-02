@@ -196,5 +196,5 @@ def picture(user_id, filename):
 @acl.roles_required("admin")
 def user_roles():
     return redirect(
-        url_for("organizations.system_users.index", **request.args), code=301
+        url_for("users.index", **request.args), code=301
     )

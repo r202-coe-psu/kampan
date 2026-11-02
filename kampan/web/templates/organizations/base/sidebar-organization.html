@@ -30,8 +30,8 @@
     {% if current_user.has_roles(['admin']) %}
     <li class="menu-title">ผู้ดูแลระบบส่วนกลาง</li>
     <li>
-      <a class="{{ 'menu-active' if request.blueprint == 'organizations.system_users' else '' }}"
-        href="{{ url_for('organizations.system_users.index') }}">
+      <a class="{{ 'menu-active' if request.blueprint == 'users' else '' }}"
+        href="{{ url_for('users.index') }}">
         <i class="ph ph-user-gear"></i> ผู้ใช้ทั้งหมด
       </a>
     </li>

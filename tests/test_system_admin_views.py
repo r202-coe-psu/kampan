@@ -43,7 +43,7 @@ def test_global_admin_sees_system_section_in_organization_sidebar(app, login_as,
     html = _get(app, login_as, setup["global_admin"], url).get_data(as_text=True)
 
     assert SYSTEM_SECTION in html
-    assert _url(app, "organizations.system_users.index") in html
+    assert _url(app, "users.index") in html
     assert _url(app, "organizations.system_organizations.index") in html
 
 
@@ -57,7 +57,7 @@ def test_org_admin_does_not_see_system_section(app, login_as, setup):
 
 @pytest.mark.parametrize(
     "endpoint",
-    ["organizations.system_users.index", "organizations.system_organizations.index"],
+    ["users.index", "organizations.system_organizations.index"],
 )
 def test_org_admin_is_denied_system_pages(app, login_as, setup, endpoint):
     response = _get(app, login_as, setup["org_admin"], _url(app, endpoint))
@@ -70,7 +70,7 @@ def test_org_admin_is_denied_system_pages(app, login_as, setup, endpoint):
 @pytest.mark.parametrize(
     "endpoint,needs_org,needs_org_user",
     [
-        ("organizations.system_users.index", False, False),
+        ("users.index", False, False),
         ("organizations.system_organizations.index", False, False),
         ("organizations.system_organizations.create_or_edit", False, False),
         ("organizations.system_organizations.create_or_edit", True, False),
@@ -134,7 +134,7 @@ def test_old_admin_urls_redirect_to_organization_module(app, login_as, setup):
         admin_index = client.get("/admin/")
         admin_orgs = client.get("/admin/organizations/")
 
-    assert admin_index.headers["Location"] == _url(app, "organizations.system_users.index")
+    assert admin_index.headers["Location"] == _url(app, "users.index")
     assert admin_orgs.status_code == 301
     assert admin_orgs.headers["Location"] == _url(
         app, "organizations.system_organizations.index"

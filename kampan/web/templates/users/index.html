@@ -1,4 +1,5 @@
 {% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% import '/base/html-renderer.html' as renderer %}
 {% from '/base/components/icon_button.html' import IconButton %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
@@ -23,7 +24,7 @@
              ('border-primary bg-primary/5' if is_selected else 'border-base-300') %}
         {% if item.filterable %}
         <a class="{{ tile_class }} hover:border-primary/40 hover:bg-base-200"
-           href="{{ url_for('organizations.system_users.index', role=item.role) }}"
+           href="{{ url_for('users.index', role=item.role) }}"
            data-role="{{ item.role }}" {% if is_selected %}aria-current="true"{% endif %}>
         {% else %}
         <div class="{{ tile_class }}" data-role="{{ item.role }}" title="role นี้ไม่มีในรายการตัวเลือก จึงกรองไม่ได้">
@@ -52,7 +53,7 @@
         <i class="ph ph-magnifying-glass"></i>
         ค้นหา
       </button>
-      <a href="{{ url_for('organizations.system_users.index') }}" class="btn">
+      <a href="{{ url_for('users.index') }}" class="btn">
         <i class="ph ph-x"></i>
         ล้างการค้นหา
       </a>
@@ -61,6 +62,7 @@
 </div>
 
 <div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if paginated_users.items %}
   <div class="overflow-x-auto mt-2 rounded-xl">
     <table class="table-auto w-full">
       <thead>
@@ -88,12 +90,8 @@
             </div>
           </td>
           <td class="table-style whitespace-nowrap">
-            {{ IconButton('ph-pen', 'แก้ไขระดับผู้ใช้', href=url_for('organizations.system_users.edit_roles', user_id=user.id)) }}
+            {{ IconButton('ph-pen', 'แก้ไขระดับผู้ใช้', href=url_for('users.edit_roles', user_id=user.id)) }}
           </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td class="table-style text-center text-base-content/60" colspan="5">ไม่พบข้อมูลผู้ใช้งาน</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -101,8 +99,15 @@
     {% set params = request.args.to_dict() %}
     {% set _dummy = params.pop('page', None) %}
     {% if paginated_users.pages > 1 %}
-      {{ paginated.render_pagination(paginated_users, 'organizations.system_users.index', params) }}
+      {{ paginated.render_pagination(paginated_users, 'users.index', params) }}
     {% endif %}
   </div>
+  {% else %}
+  {{ EmptyState('ph-user-gear', 'ยังไม่มีผู้ใช้ในระบบ',
+                description='ผู้ใช้จะปรากฏที่นี่หลังจากเข้าสู่ระบบครั้งแรก',
+                filtered=request.args.get('name') or request.args.get('email') or request.args.get('role'),
+                filtered_title='ไม่พบผู้ใช้ที่ค้นหา',
+                clear_href=url_for('users.index')) }}
+  {% endif %}
 </div>
 {% endblock %}

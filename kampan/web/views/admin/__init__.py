@@ -8,4 +8,4 @@ module = Blueprint("admin", __name__, url_prefix="/admin")
 @module.route("/")
 @acl.roles_required("admin")
 def index():
-    return redirect(url_for("organizations.system_users.index"))
+    return redirect(url_for("users.index"))

@@ -244,7 +244,7 @@ def test_create_organization_as_global_admin_shows_toast(app, login_as, setup):
 
 def test_edit_user_roles_shows_toast(app, login_as, setup):
     member = setup["member"]
-    url = _url(app, "organizations.system_users.edit_roles", user_id=str(member.id))
+    url = _url(app, "users.edit_roles", user_id=str(member.id))
     html = _post_and_follow(
         app,
         login_as,

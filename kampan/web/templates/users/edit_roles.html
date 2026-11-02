@@ -4,9 +4,15 @@
 {% block title %}แก้ไขระดับผู้ใช้{% endblock %}
 {% block dashboard_title %}แก้ไขระดับผู้ใช้ {{ user.get_name() }}{% endblock %}
 
+{% block breadcrumbs %}
+{{ RenderBreadcrumb([
+("ผู้ใช้ทั้งหมด", url_for('users.index')),
+(user.get_name(), "")]) }}
+{% endblock %}
+
 {% block content %}
 <div class="flex justify-start w-full gap-2">
-  <a class="btn btn-primary" href="{{ url_for('organizations.system_users.index') }}">
+  <a class="btn btn-primary" href="{{ url_for('users.index') }}">
     <i class="ph ph-arrow-u-up-left"></i>
     ย้อนกลับ
   </a>

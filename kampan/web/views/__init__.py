@@ -23,7 +23,7 @@ MODULE_HOME_ENDPOINTS = {
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
-NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications"}
+NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
 
 
 def switch_organization_next_url(organization):

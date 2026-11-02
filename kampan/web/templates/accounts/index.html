@@ -6,7 +6,7 @@
 
 {% block breadcrumbs %}
 {% if current_user.has_roles(['admin']) %}
-<a class="btn  btn-primary" href="{{ url_for('organizations.system_users.index') }}"><i class="ph ph-user"></i></i>Administrator</a>
+<a class="btn  btn-primary" href="{{ url_for('users.index') }}"><i class="ph ph-user"></i></i>Administrator</a>
 {% endif %}
 {% endblock %}
 

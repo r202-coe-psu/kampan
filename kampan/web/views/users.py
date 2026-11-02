@@ -6,7 +6,7 @@ from flask_mongoengine import Pagination
 from kampan import models
 from kampan.web import acl, forms
 
-module = Blueprint("system_users", __name__, url_prefix="/system/users")
+module = Blueprint("users", __name__, url_prefix="/users")
 
 EDITABLE_USER_ROLES = [role for role, _ in forms.user_roles.USER_ROLE_CHOICES if role]
 
@@ -81,7 +81,7 @@ def index():
     page = max(request.args.get("page", default=1, type=int), 1)
 
     return render_template(
-        "/organizations/system/users/index.html",
+        "/users/index.html",
         paginated_users=Pagination(users, page=page, per_page=30),
         form=search_form,
         role_labels=dict(forms.user_roles.USER_ROLE_CHOICES),
@@ -104,7 +104,7 @@ def edit_roles(user_id):
 
     if not form.validate_on_submit():
         return render_template(
-            "/organizations/system/users/edit_roles.html",
+            "/users/edit_roles.html",
             form=form,
             user=user,
             organization=current_user.get_viewing_organization(),
@@ -116,4 +116,4 @@ def edit_roles(user_id):
     user.save()
 
     flash(f"บันทึกระดับผู้ใช้ของ {user.get_name()} แล้ว", "success")
-    return redirect(url_for("organizations.system_users.index"))
+    return redirect(url_for("users.index"))
