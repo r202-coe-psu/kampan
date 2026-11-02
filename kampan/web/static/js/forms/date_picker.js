@@ -1,3 +1,25 @@
+// ปฏิทินเปิดชิดซ้ายของช่องเสมอ ถ้าช่องอยู่ทางขวาของจอ (เช่นคอลัมน์สุดท้ายของฟอร์มค้นหา)
+// ปฏิทินสองเดือนจะล้นจอ จึงเลื่อนกลับเข้ามาให้อยู่ในจอทุกครั้งที่เปิด
+const POPOVER_VIEWPORT_MARGIN = 8;
+
+function keepPopoverInViewport(popover) {
+  if (popover.classList.contains("hidden")) return;
+
+  popover.style.left = "";
+  popover.style.right = "";
+  const rect = popover.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth;
+  if (rect.right <= viewportWidth - POPOVER_VIEWPORT_MARGIN) return;
+
+  const parentLeft = (popover.offsetParent || document.body).getBoundingClientRect().left;
+  const targetLeft = Math.max(
+    POPOVER_VIEWPORT_MARGIN,
+    viewportWidth - POPOVER_VIEWPORT_MARGIN - rect.width
+  );
+  popover.style.left = `${targetLeft - parentLeft}px`;
+  popover.style.right = "auto";
+}
+
 function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
   const button = document.getElementById(buttonId);
   const popover = document.getElementById(popoverId);
@@ -15,6 +37,7 @@ function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
 
   button.addEventListener("click", function () {
     popover.classList.toggle("hidden");
+    keepPopoverInViewport(popover);
   });
 
   document.addEventListener("click", function (event) {
@@ -41,6 +64,7 @@ function initDateRange(buttonId, popoverId, startId, endId, buttonTextId) {
 
   button.addEventListener("click", function () {
     popover.classList.toggle("hidden");
+    keepPopoverInViewport(popover);
   });
 
   document.addEventListener("click", function (event) {
