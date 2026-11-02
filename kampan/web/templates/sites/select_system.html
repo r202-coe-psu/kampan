@@ -14,22 +14,22 @@
       <!-- ระบบขอซื้อขอจ้าง -->
       <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
          class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-        <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #E5D4F0;">
+        <div class="p-6 text-center h-full flex flex-col justify-center bg-module-procurement">
           <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-            <i class="ph ph-shopping-cart text-2xl sm:text-3xl text-purple-700"></i>
+            <i class="ph ph-shopping-cart text-2xl sm:text-3xl text-module-procurement-icon"></i>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-purple-900">ระบบขอซื้อขอจ้าง</h3>
+          <h3 class="text-lg sm:text-xl font-bold text-module-procurement-content">ระบบขอซื้อขอจ้าง</h3>
         </div>
       </a>
 
       <a href="{{ url_for('item_orders.index', organization_id=organization.id) }}"
          class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
 
-        <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #F5D5E3;">
+        <div class="p-6 text-center h-full flex flex-col justify-center bg-module-inventory">
           <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-            <i class="ph ph-package text-2xl sm:text-3xl text-pink-700"></i>
+            <i class="ph ph-package text-2xl sm:text-3xl text-module-inventory-icon"></i>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-pink-900">ระบบเบิกวัสดุ</h3>
+          <h3 class="text-lg sm:text-xl font-bold text-module-inventory-content">ระบบเบิกวัสดุ</h3>
         </div>
       </a>
 
@@ -38,11 +38,11 @@
         <!-- ระบบการขอใช้รถยนต์ -->
         <a href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-          <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #D5E8DC;">
+          <div class="p-6 text-center h-full flex flex-col justify-center bg-module-car">
             <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-              <i class="ph ph-car text-2xl sm:text-3xl text-green-700"></i>
+              <i class="ph ph-car text-2xl sm:text-3xl text-module-car-icon"></i>
             </div>
-            <h3 class="text-lg sm:text-xl font-bold text-green-900">ระบบการขอใช้รถยนต์</h3>
+            <h3 class="text-lg sm:text-xl font-bold text-module-car-content">ระบบการขอใช้รถยนต์</h3>
           </div>
         </a>
 
@@ -50,11 +50,11 @@
         <!-- ระบบการขอใช้รถจักรยานยนต์ -->
         <a href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-          <div class="p-6 text-center h-full flex flex-col justify-center" style="background-color: #F0E5CC;">
+          <div class="p-6 text-center h-full flex flex-col justify-center bg-module-motorcycle">
             <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-              <i class="ph ph-motorcycle text-2xl sm:text-3xl text-amber-800"></i>
+              <i class="ph ph-motorcycle text-2xl sm:text-3xl text-module-motorcycle-icon"></i>
             </div>
-            <h3 class="text-lg sm:text-xl font-bold text-amber-900">ระบบการขอใช้รถจักรยานยนต์</h3>
+            <h3 class="text-lg sm:text-xl font-bold text-module-motorcycle-content">ระบบการขอใช้รถจักรยานยนต์</h3>
           </div>
         </a>
 
