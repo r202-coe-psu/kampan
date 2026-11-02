@@ -218,3 +218,14 @@ def test_index_filters_templates_by_system(app, login_as, email_setup):
     assert "แจ้งผู้อนุมัติ" not in tbody(car_html)
     assert "แจ้งผู้อนุมัติ" in tbody(bogus_html)
 
+
+def test_create_form_groups_types_by_system(app, login_as, email_setup):
+    s = email_setup
+    with app.test_client() as client:
+        login_as(client, s.admin)
+        html = _get(app, client, "email_templates.create_or_edit", organization_id=str(s.org.id)).get_data(as_text=True)
+
+    inventory = html.index('<optgroup label="ระบบพัสดุ">')
+    vehicle = html.index('<optgroup label="ระบบยืมรถ">')
+    assert inventory < html.index('value="to endorser"') < vehicle < html.index('value="car_application"')
+    assert "ส่งเมื่อ" in html and EMAIL_TYPE_INFO["to staff"]["recipient"] in html

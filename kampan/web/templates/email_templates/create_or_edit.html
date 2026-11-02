@@ -35,7 +35,20 @@
     {{ form.csrf_token }}
     <div class="mt-2 grid grid-cols-1 gap-x-4 md:grid-cols-2">
       {{ renderer.render_field(form.name) }}
-      {{ renderer.render_select_field(form.type) }}
+      {# จัดกลุ่มประเภทตามระบบด้วย optgroup ค่าที่ส่งยังเป็น type เดิม #}
+      <fieldset class="w-full fieldset" id="field-{{ form.type.id }}">
+        <legend class="fieldset-legend">{{ form.type.label.text }} <span class="text-error">*</span></legend>
+        <select class="select w-full {{ 'select-error' if form.type.errors }}" id="{{ form.type.id }}" name="{{ form.type.name }}">
+          {% for system_value, system_label, types in email_types_by_system %}
+          <optgroup label="{{ system_label }}">
+            {% for type_value, type_label in types %}
+            <option value="{{ type_value }}" {{ 'selected' if type_value == selected_type }}>{{ type_label }}</option>
+            {% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+        {% for error in form.type.errors %}<p class="text-error">{{ error }}</p>{% endfor %}
+      </fieldset>
     </div>
     {{ renderer.render_field(form.subject) }}
     <fieldset class="fieldset">
@@ -51,7 +64,7 @@
       </button>
     </div>
   </div>
-  {{ EmailVariablesPanel(email_types, email_variables, selected_type) }}
+  {{ EmailVariablesPanel(email_types, email_variables, selected_type, email_type_info) }}
 </form>
 {% endblock %}
 

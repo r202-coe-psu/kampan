@@ -39,7 +39,7 @@
       </fieldset>
       <fieldset class="fieldset">
         <legend class="fieldset-legend">ประเภทอีเมล</legend>
-        <div class="rounded-field border border-base-300 bg-base-200/50 px-3 py-2">{{ email_template.get_type_display() }}</div>
+        <div class="rounded-field border border-base-300 bg-base-200/50 px-3 py-2">{{ email_template.get_system_display() }} · {{ email_template.get_type_display() }}</div>
       </fieldset>
     </div>
     <fieldset class="fieldset">
@@ -51,7 +51,7 @@
       <pre class="min-h-48 overflow-x-auto whitespace-pre-wrap break-words rounded-field border border-base-300 bg-base-200/50 px-3 py-2 font-mono text-sm">{{ email_template.body }}</pre>
     </fieldset>
   </div>
-  {{ EmailVariablesPanel(email_types, email_variables, email_template.type) }}
+  {{ EmailVariablesPanel(email_types, email_variables, email_template.type, email_type_info) }}
 </div>
 
 {{ DeleteModal('delete-email-template', 'ลบรูปแบบอีเมล',

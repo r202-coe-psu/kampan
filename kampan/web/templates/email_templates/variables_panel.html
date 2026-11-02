@@ -2,11 +2,11 @@
    ข้อมูลมาจาก models.email_templates.EMAIL_TEMPLATE_VARIABLES (ตรงกับที่ระบบส่งจริงตอนส่งอีเมล)
 
    import: {% from '/email_templates/variables_panel.html' import EmailVariablesPanel %}
-   ใช้:    {{ EmailVariablesPanel(email_types, email_variables, selected_type) }}
+   ใช้:    {{ EmailVariablesPanel(email_types, email_variables, selected_type, email_type_info) }}
 
    ทุกประเภทถูก render ไว้ แสดงเฉพาะ selected_type; หน้าฟอร์มสลับตาม select ประเภทด้วย data-email-type
 #}
-{% macro EmailVariablesPanel(email_types, email_variables, selected_type) %}
+{% macro EmailVariablesPanel(email_types, email_variables, selected_type, email_type_info={}) %}
 <aside class="self-start rounded-box border border-base-300 bg-base-100 p-5 shadow-sm lg:sticky lg:top-4">
   <h2 class="flex items-center gap-2 text-lg font-semibold">
     <i class="ph ph-brackets-curly text-primary"></i>
@@ -19,6 +19,13 @@
   {% for type_value, type_label in email_types %}
   <div data-email-type="{{ type_value }}" class="mt-4 {{ '' if type_value == selected_type else 'hidden' }}">
     <div class="mb-2 badge badge-soft badge-primary">{{ type_label }}</div>
+    {% set info = email_type_info.get(type_value) %}
+    {% if info %}
+    <dl class="mb-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+      <dt class="text-base-content/60">ส่งถึง</dt><dd>{{ info.recipient }}</dd>
+      <dt class="text-base-content/60">ส่งเมื่อ</dt><dd>{{ info.trigger }}</dd>
+    </dl>
+    {% endif %}
     <ul class="divide-y divide-base-300 rounded-box border border-base-300 bg-base-100">
       {% for name, label in email_variables.get(type_value, []) %}
       <li class="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
