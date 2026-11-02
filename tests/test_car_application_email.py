@@ -69,8 +69,8 @@ def test_requester_email_sent_to_creator_as_html(
         def quit(self):
             pass
 
-        def send_email(self, receiver, subject, body, html=False):
-            sent.append((receiver, subject, body, html))
+        def send_email(self, receiver, subject, body, html=False, steps=None):
+            sent.append((receiver, subject, body, html, steps))
             return True
 
     monkeypatch.setattr(email_utils, "PSUSMTP", FakeSMTP)
@@ -92,10 +92,45 @@ def test_requester_email_sent_to_creator_as_html(
             car_application, user, {"KAMPAN_HOST_URL": "https://staging.example.test"}
         )
 
-    receiver, subject, body, html = sent[0]
+    receiver, subject, body, html, steps = sent[0]
     assert receiver == "requester@example.test"
     assert subject == "ผลการขอใช้รถ: ปฏิเสธ"
     assert "เหตุผล: ไม่มีงบ" in body
     assert f"https://staging.example.test/vehicle_lending/car_applications?organization_id={org.id}" in body
     assert html is True
+    assert [step["state"] for step in steps] == ["done", "denied", "upcoming", "upcoming"]
 
+
+def _steps(status, using_type="general"):
+    car_application = models.vehicle_applications.CarApplication(
+        status=status, using_type=using_type
+    )
+    return [(step["label"], step["state"]) for step in email_utils.get_car_application_steps(car_application)]
+
+
+def test_steps_for_general_trip_pending_on_admin():
+    assert _steps("pending on admin") == [
+        ("ยื่นคำขอ", "done"),
+        ("หัวหน้าฝ่าย", "done"),
+        ("พัสดุ", "current"),
+        ("อนุมัติ", "upcoming"),
+    ]
+
+
+def test_steps_for_out_of_town_trip_include_director():
+    assert _steps("denied by director", "out of town") == [
+        ("ยื่นคำขอ", "done"),
+        ("หัวหน้าฝ่าย", "done"),
+        ("พัสดุ", "done"),
+        ("ผอ.", "denied"),
+        ("อนุมัติ", "upcoming"),
+    ]
+
+
+def test_steps_all_done_when_approved():
+    assert {state for _, state in _steps("active", "out of town")} == {"done"}
+
+
+def test_steps_empty_for_unknown_stage():
+    assert _steps("denied by director", "general") == []
+    assert _steps("disactive") == []

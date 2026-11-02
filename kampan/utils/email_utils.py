@@ -61,7 +61,7 @@ class PSUSMTP:
     def quit(self):
         self.server.quit()
 
-    def send_email(self, receiver, subject, body, html=False):
+    def send_email(self, receiver, subject, body, html=False, steps=None):
         try:
             sender = self.sender
             if self.sender_name:
@@ -77,7 +77,7 @@ class PSUSMTP:
             message.attach(MIMEText(body, "plain", "utf-8"))
             if html:
                 message.attach(
-                    MIMEText(render_email_html(subject, body), "html", "utf-8")
+                    MIMEText(render_email_html(subject, body, steps), "html", "utf-8")
                 )
 
             self.server.sendmail(sender, receivers, message.as_string())
@@ -570,6 +570,38 @@ def get_car_application_result_text_format(
     }
 
 
+def get_car_application_steps(car_application):
+    """ขั้นตอนอนุมัติของใบขอใช้รถ พร้อมสถานะของแต่ละขั้น สำหรับ stepper ในอีเมล"""
+    approvers = [("header", "หัวหน้าฝ่าย"), ("admin", "พัสดุ")]
+    if car_application.using_type == "out of town":
+        approvers.append(("director", "ผอ."))
+
+    status = car_application.status
+    keys = [key for key, _ in approvers]
+    denied = status.startswith("denied by ")
+    stage = status.removeprefix("denied by ").removeprefix("pending on ")
+    if status in ("active", "completed"):
+        reached = len(keys)
+    elif stage in keys:
+        reached = keys.index(stage)
+    else:
+        return []
+
+    steps = [{"label": "ยื่นคำขอ", "state": "done"}]
+    for index, (_, label) in enumerate(approvers):
+        if index < reached:
+            state = "done"
+        elif index == reached:
+            state = "denied" if denied else "current"
+        else:
+            state = "upcoming"
+        steps.append({"label": label, "state": state})
+    steps.append(
+        {"label": "อนุมัติ", "state": "done" if reached == len(keys) else "upcoming"}
+    )
+    return steps
+
+
 def send_email_car_application_to_requester(car_application, user, setting):
     """แจ้งผู้ขอทุกครั้งที่ใบขอใช้รถถูกอนุมัติไปขั้นถัดไปหรือถูกปฏิเสธ"""
     creator = car_application.creator
@@ -601,6 +633,12 @@ def send_email_car_application_to_requester(car_application, user, setting):
         return False
 
     logger.debug(f"send car application result to {creator.email}")
-    sent = psu_smtp.send_email(creator.email, email_subject, email_body, html=True)
+    sent = psu_smtp.send_email(
+        creator.email,
+        email_subject,
+        email_body,
+        html=True,
+        steps=get_car_application_steps(car_application),
+    )
     psu_smtp.quit()
     return sent

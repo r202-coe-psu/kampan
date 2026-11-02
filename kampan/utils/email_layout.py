@@ -118,12 +118,76 @@ def body_to_html(body):
     return Markup("").join(blocks)
 
 
-def render_email_html(subject, body):
+_STEP_STYLES = {
+    # state: (พื้นวงกลม, ขอบ, สีสัญลักษณ์, สัญลักษณ์แทนเลขขั้น หรือ None, สีป้าย)
+    "done": (PRIMARY_COLOR, PRIMARY_COLOR, "#ffffff", "✓", "#0f172a"),
+    "current": ("#ffffff", PRIMARY_COLOR, PRIMARY_COLOR, None, PRIMARY_COLOR),
+    "denied": ("#dc2626", "#dc2626", "#ffffff", "✕", "#dc2626"),
+    "upcoming": ("#ffffff", "#cbd5e1", "#94a3b8", None, "#94a3b8"),
+}
+
+
+def _step_line(color):
+    return Markup(
+        '<td width="50%" style="padding:0;"><div style="height:2px; line-height:2px; '
+        'font-size:0; background-color:{};">&nbsp;</div></td>'
+    ).format(color)
+
+
+def render_steps(steps):
+    """steps: list ของ dict {"label", "state"} โดย state เป็น done/current/denied/upcoming"""
+    if not steps:
+        return Markup("")
+
+    cells = []
+    for index, step in enumerate(steps):
+        fill, border, fg, symbol, label_color = _STEP_STYLES[step["state"]]
+        reached = step["state"] in ("done", "current", "denied")
+        left = "transparent" if index == 0 else (PRIMARY_COLOR if reached else "#e2e8f0")
+        right_done = step["state"] == "done" and index + 1 < len(steps)
+        right = "transparent" if index == len(steps) - 1 else (PRIMARY_COLOR if right_done else "#e2e8f0")
+        weight = "bold" if step["state"] in ("current", "denied") else "normal"
+
+        cells.append(
+            Markup(
+                '<td align="center" valign="top" width="{width}%" style="padding:0;">'
+                '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+                "{left}"
+                '<td style="padding:0;"><div style="width:28px; height:28px; line-height:26px; '
+                "border-radius:50%; border:2px solid {border}; background-color:{fill}; color:{fg}; "
+                'font-size:14px; font-weight:bold; text-align:center; box-sizing:border-box;">{symbol}</div></td>'
+                "{right}"
+                "</tr></table>"
+                '<div style="margin-top:6px; padding:0 2px; font-size:12px; line-height:1.4; '
+                'color:{label_color}; font-weight:{weight};">{label}</div>'
+                "</td>"
+            ).format(
+                width=100 // len(steps),
+                left=_step_line(left),
+                right=_step_line(right),
+                border=border,
+                fill=fill,
+                fg=fg,
+                symbol=symbol or str(index + 1),
+                label_color=label_color,
+                weight=weight,
+                label=step["label"],
+            )
+        )
+
+    return Markup(
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
+        "<tr>{}</tr></table>"
+    ).format(Markup("").join(cells))
+
+
+def render_email_html(subject, body, steps=None):
     preheader = next((line.strip() for line in (body or "").splitlines() if line.strip()), "")
     return _env.get_template("layout.html").render(
         subject=subject,
         preheader=preheader,
         content=body_to_html(body),
+        steps=render_steps(steps),
         primary_color=PRIMARY_COLOR,
         app_name=default_settings.KAMPAN_EMAIL_SENDER_NAME or default_settings.APP_TITLE,
     )

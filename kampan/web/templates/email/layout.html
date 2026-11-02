@@ -19,6 +19,13 @@
               <div style="font-size:19px; font-weight:bold; line-height:1.4; margin-top:4px;">{{ subject }}</div>
             </td>
           </tr>
+          {% if steps %}
+          <tr>
+            <td style="padding:24px 20px 4px; font-family:Tahoma, 'Leelawadee UI', 'Noto Sans Thai', Arial, sans-serif;">
+              {{ steps }}
+            </td>
+          </tr>
+          {% endif %}
           <tr>
             <td style="padding:28px; font-family:Tahoma, 'Leelawadee UI', 'Noto Sans Thai', Arial, sans-serif; font-size:15px; line-height:1.7; color:#1e293b;">
               {{ content }}

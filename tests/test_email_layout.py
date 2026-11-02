@@ -85,3 +85,17 @@ def test_host_url_falls_back_to_default_settings():
 
     assert email_utils.get_host_url({}) == default_settings.KAMPAN_HOST_URL
     assert email_utils.get_host_url(None) == default_settings.KAMPAN_HOST_URL
+
+
+def test_steps_render_above_content_only_when_given():
+    steps = [
+        {"label": "ยื่นคำขอ", "state": "done"},
+        {"label": "พัสดุ", "state": "denied"},
+        {"label": "อนุมัติ", "state": "upcoming"},
+    ]
+    with_steps = email_layout.render_email_html("s", "เนื้อหา", steps)
+    without = email_layout.render_email_html("s", "เนื้อหา")
+
+    assert "✓" in with_steps and "✕" in with_steps and ">3</div>" in with_steps
+    assert with_steps.index("พัสดุ") < with_steps.index('<div style="margin:0 0 16px;">เนื้อหา')
+    assert "✓" not in without
