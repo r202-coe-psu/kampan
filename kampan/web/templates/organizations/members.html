@@ -1,4 +1,5 @@
 {% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/components/forms.html' as render_field %}
@@ -110,10 +111,13 @@
     {{ paginated.render_pagination(paginated_org_users, "organizations.members.index", params) }}
   {% endif %}
   {% else %}
-  <div class="flex flex-col items-center gap-2 py-10 text-center text-base-content/60">
-    <i class="ph ph-users-three text-4xl"></i>
-    <p>ยังไม่มีสมาชิก หรือไม่พบสมาชิกที่ค้นหา</p>
-  </div>
+  {{ EmptyState('ph-users-three', 'ยังไม่มีสมาชิกในองค์กร',
+                description='เพิ่มผู้ใช้เข้าองค์กรทีละคน หรือนำเข้าจากไฟล์ทีเดียวหลายคน',
+                action_label='เพิ่มสมาชิก',
+                action_href=url_for('organizations.members.add_member', organization_id=organization.id),
+                filtered=request.method == 'POST',
+                filtered_title='ไม่พบสมาชิกที่ค้นหา',
+                clear_href=url_for('organizations.members.index', organization_id=organization.id)) }}
   {% endif %}
 </div>
 {% endblock %}

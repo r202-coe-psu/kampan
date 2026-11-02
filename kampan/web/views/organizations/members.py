@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, render_template, redirect, url_for, request
+from flask import Blueprint, abort, flash, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 import mongoengine as me
 from flask_mongoengine import Pagination
@@ -10,34 +10,59 @@ from kampan import models, utils
 module = Blueprint("members", __name__, url_prefix="/<organization_id>/members")
 
 
+def get_organization(organization_id):
+    try:
+        organization = models.Organization.objects(
+            id=organization_id, status="active"
+        ).first()
+    except me.ValidationError:
+        organization = None
+    if not organization:
+        abort(404)
+    return organization
+
+
+def get_org_user(organization, org_user_id, **filters):
+    """หาสมาชิกเฉพาะในองค์กรนี้ กันการแก้ไขสมาชิกขององค์กรอื่นด้วย id"""
+    try:
+        org_user = models.OrganizationUserRole.objects(
+            id=org_user_id, organization=organization, **filters
+        ).first()
+    except me.ValidationError:
+        org_user = None
+    if not org_user:
+        abort(404)
+    return org_user
+
+
 @module.route("/add", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def add_member(organization_id):
-    organization = models.Organization.objects(id=organization_id).first()
+    organization = get_organization(organization_id)
     form = forms.organizations.OrganizationAddMemberForm()
-    users_in_organization = organization.get_distinct_users()
-    if users_in_organization:
-        form.members.choices = [
-            (str(u.id), u.get_name())
-            for u in models.User.objects()
-            if u not in users_in_organization
-        ]
-    else:
-        form.members.choices = [
-            (str(u.id), u.get_name()) for u in models.User.objects()
-        ]
-    form.division.choices = [
-        (str(d.id), d.name)
-        for d in models.Division.objects(organization=organization, status="active")
+    member_ids = {user.id for user in (organization.get_distinct_users() or []) if user}
+    candidates = [
+        user
+        for user in models.User.objects().order_by("first_name", "last_name")
+        if user.id not in member_ids
     ]
+    divisions = list(
+        models.Division.objects(organization=organization, status="active").order_by("name")
+    )
+    form.members.choices = [(str(u.id), u.get_name()) for u in candidates]
+    form.division.choices = [("", "ยังไม่ระบุแผนก")] + [(str(d.id), d.name) for d in divisions]
+
     if not form.validate_on_submit():
         return render_template(
             "/organizations/add_member.html",
             form=form,
             organization=organization,
+            candidates=candidates,
+            divisions=divisions,
+            role_choices=models.organizations.ORGANIZATION_ROLES,
         )
-    user_id = form.members.data
-    user = models.User.objects(id=user_id).first()
+
+    user = models.User.objects(id=form.members.data).first()
     if user and not user.get_default_organization():
         user.user_setting.current_organization = organization
         user.save()
@@ -46,9 +71,8 @@ def add_member(organization_id):
         organization=organization,
         user=user,
         roles=form.roles.data,
-        division=models.Division.objects(
-            id=form.division.data, status="active"
-        ).first(),
+        # เลือกได้เฉพาะแผนกขององค์กรนี้
+        division=next((d for d in divisions if str(d.id) == form.division.data), None),
         appointment=form.appointment.data,
         added_by=current_user._get_current_object(),
         last_modifier=current_user._get_current_object(),
@@ -58,12 +82,7 @@ def add_member(organization_id):
     org_user.save()
 
     flash(f"เพิ่มสมาชิก {org_user.display_fullname()} แล้ว", "success")
-    return redirect(
-        url_for(
-            "organizations.members.index",
-            organization_id=organization_id,
-        )
-    )
+    return redirect(url_for("organizations.members.index", organization_id=organization.id))
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -171,12 +190,8 @@ def index(organization_id):
 )
 @acl.organization_roles_required("admin")
 def edit_roles(organization_id, org_user_id):
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    org_user = models.OrganizationUserRole.objects(
-        id=org_user_id, status="active"
-    ).first()
+    organization = get_organization(organization_id)
+    org_user = get_org_user(organization, org_user_id, status__ne="disactive")
 
     if org_user and org_user.user:
         if not org_user.first_name:
@@ -214,10 +229,10 @@ def edit_roles(organization_id, org_user_id):
     )
 
 
-@module.route("/<org_user_id>/remove", methods=["GET", "POST"])
+@module.route("/<org_user_id>/remove", methods=["POST"])
 @acl.organization_roles_required("admin")
 def remove_org_user(organization_id, org_user_id):
-    org_user = models.OrganizationUserRole.objects(id=org_user_id).first()
+    org_user = get_org_user(get_organization(organization_id), org_user_id)
     org_user.status = "disactive"
     org_user.last_modifier = current_user._get_current_object()
     org_user.last_ip_address = request.headers.get(

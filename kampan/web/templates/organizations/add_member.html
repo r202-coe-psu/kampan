@@ -1,41 +1,161 @@
 {% extends '/organizations/base/default-organization-page.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/base/components/role_badge.html' import RoleBadge %}
 
-
-{% block title %}
-เพิ่มสมาชิก
-{% endblock %}
-
-
-{% block dashboard_title %}
-{{ self.title() }}
-{% endblock %}
-
+{% block title %}เพิ่มสมาชิก{% endblock %}
+{% block dashboard_title %}เพิ่มสมาชิก{% endblock %}
 
 {% block breadcrumbs %}
 {{ RenderBreadcrumb([
-("สมาชิกขององค์กร", url_for('organizations.members.index', organization_id=organization.id) ),
-("เพิ่มสมาชิก ", "")]) }}
+("สมาชิกขององค์กร", url_for('organizations.members.index', organization_id=organization.id)),
+("เพิ่มสมาชิก", "")]) }}
 {% endblock %}
 
-{% block content %}
-<div class="flex flex-row justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <a class="btn  btn-primary"
-      href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
-      <i class="ph ph-arrow-u-up-left"></i>
-      ย้อนกลับ
-    </a>
+{% macro StepTitle(number, title, hint="") %}
+<div class="flex items-start gap-3">
+  <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{{ number }}</span>
+  <div>
+    <h2 class="text-lg font-bold">{{ title }}</h2>
+    {% if hint %}<p class="text-sm text-base-content/60">{{ hint }}</p>{% endif %}
   </div>
 </div>
-<div>
-  <form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
-    {{ form.hidden_tag() }}
-    {{ renderer.render_select_field(form.members) }}
-    {{ renderer.render_select_field(form.division) }}
-    {{ renderer.render_multiple_select_field(form.roles) }}
-    {{ renderer.render_field(form.appointment) }}
-    <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
-  </form>
-</div>
+{% endmacro %}
+
+{% macro FieldErrors(field) %}
+{% for error in field.errors %}
+<p class="mt-2 text-sm text-error"><i class="ph ph-warning-circle"></i> {{ error }}</p>
+{% endfor %}
+{% endmacro %}
+
+{% block content %}
+<form method="POST" id="add-member-form">
+  {{ form.hidden_tag() }}
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+    {# 1. เลือกผู้ใช้ #}
+    <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+      {{ StepTitle(1, "เลือกผู้ใช้", "ผู้ใช้ที่ยังไม่ได้อยู่ใน %s" | format(organization.name)) }}
+      {% if candidates %}
+      <label class="input mt-4 w-full">
+        <i class="ph ph-magnifying-glass opacity-60"></i>
+        <input type="search" placeholder="ค้นหาชื่อหรืออีเมล" data-user-search autocomplete="off" />
+      </label>
+      <ul class="mt-3 max-h-[26rem] overflow-y-auto rounded-box border border-base-300" data-user-list>
+        {% for user in candidates %}
+        <li data-filter-text="{{ user.get_name() }} {{ user.first_name }} {{ user.last_name }} {{ user.email }}">
+          <label class="flex cursor-pointer items-center gap-3 border-b border-base-300 px-3 py-2.5 hover:bg-base-200 has-[:checked]:bg-primary/10">
+            <input type="radio" class="radio radio-primary radio-sm" name="{{ form.members.name }}" value="{{ user.id }}"
+              data-name="{{ user.get_name() }}" {% if form.members.data == user.id | string %}checked{% endif %} />
+            <span class="min-w-0 flex-1">
+              <span class="block break-words font-medium">{{ user.get_name() }}</span>
+              <span class="block break-all text-sm text-base-content/60">{{ user.email }}</span>
+            </span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+      {{ EmptyState('ph-magnifying-glass', 'ไม่พบผู้ใช้ที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
+                    size='sm', hidden=True, attrs='data-user-empty') }}
+      {% else %}
+      {{ EmptyState('ph-check-circle', 'ผู้ใช้ทุกคนอยู่ในองค์กรนี้แล้ว',
+                    description='ไม่มีผู้ใช้เหลือให้เพิ่มเข้าองค์กร') }}
+      {% endif %}
+      {{ FieldErrors(form.members) }}
+    </section>
+
+    <div class="flex flex-col gap-4">
+      {# 2. ตำแหน่งในองค์กร #}
+      <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ StepTitle(2, "ตำแหน่งในองค์กร", "เลือกได้มากกว่าหนึ่ง กำหนดว่าเห็นเมนูและอนุมัติอะไรได้บ้าง") }}
+        <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {% for role_key, role_label in role_choices %}
+          <label class="flex cursor-pointer items-center gap-3 rounded-box border border-base-300 px-3 py-2.5 hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+            <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ form.roles.name }}"
+              value="{{ role_key }}" {% if form.roles.data and role_key in form.roles.data %}checked{% endif %} />
+            {{ RoleBadge(role_key, role_label) }}
+          </label>
+          {% endfor %}
+        </div>
+        {{ FieldErrors(form.roles) }}
+      </section>
+
+      {# 3. แผนกและตำแหน่งงาน #}
+      <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {{ StepTitle(3, "แผนกและตำแหน่งงาน", "ไม่บังคับ แก้ไขภายหลังได้") }}
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">แผนก</legend>
+            <select class="select w-full" name="{{ form.division.name }}">
+              {% for value, label in form.division.choices %}
+              <option value="{{ value }}" {% if form.division.data == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if not divisions %}<p class="label">องค์กรนี้ยังไม่มีแผนก</p>{% endif %}
+          </fieldset>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">ตำแหน่งงาน</legend>
+            <input type="text" class="input w-full" name="{{ form.appointment.name }}"
+              value="{{ form.appointment.data or '' }}" placeholder="เช่น นักวิชาการพัสดุ" />
+          </fieldset>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  {# แถบยืนยัน: สรุปสิ่งที่เลือก #}
+  <div class="segment mt-4 flex flex-col gap-3 border border-base-300 bg-base-100 rounded-2xl p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-base-content/70" data-summary>เลือกผู้ใช้และตำแหน่งอย่างน้อยหนึ่งตำแหน่ง</p>
+    <div class="flex justify-end gap-2">
+      <a class="btn btn-ghost" href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary" data-submit>
+        <i class="ph ph-user-circle-plus"></i> เพิ่มสมาชิก
+      </button>
+    </div>
+  </div>
+</form>
 {% endblock content %}
+
+{% block additional_js %}
+<script>
+  (function () {
+    var form = document.getElementById('add-member-form');
+    if (!form) return;
+    var search = form.querySelector('[data-user-search]');
+    var rows = form.querySelectorAll('[data-user-list] [data-filter-text]');
+    var empty = form.querySelector('[data-user-empty]');
+    var summary = form.querySelector('[data-summary]');
+    var submit = form.querySelector('[data-submit]');
+
+    if (search) {
+      search.addEventListener('input', function () {
+        var keyword = search.value.trim().toLowerCase();
+        var shown = 0;
+        rows.forEach(function (row) {
+          var match = row.dataset.filterText.toLowerCase().indexOf(keyword) !== -1;
+          row.classList.toggle('hidden', !match);
+          if (match) shown += 1;
+        });
+        if (empty) empty.classList.toggle('hidden', shown > 0);
+      });
+    }
+
+    function update() {
+      var user = form.querySelector('input[name="{{ form.members.name }}"]:checked');
+      var roles = form.querySelectorAll('input[name="{{ form.roles.name }}"]:checked').length;
+      submit.disabled = !user || roles === 0;
+      if (!user && roles === 0) {
+        summary.textContent = 'เลือกผู้ใช้และตำแหน่งอย่างน้อยหนึ่งตำแหน่ง';
+      } else if (!user) {
+        summary.textContent = 'ยังไม่ได้เลือกผู้ใช้';
+      } else if (roles === 0) {
+        summary.textContent = 'เพิ่ม ' + user.dataset.name + ' — ยังไม่ได้เลือกตำแหน่ง';
+      } else {
+        summary.textContent = 'เพิ่ม ' + user.dataset.name + ' ด้วย ' + roles + ' ตำแหน่ง';
+      }
+    }
+
+    form.addEventListener('change', update);
+    update();
+  })();
+</script>
+{% endblock %}
