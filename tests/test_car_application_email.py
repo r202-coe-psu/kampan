@@ -135,3 +135,51 @@ def test_steps_empty_for_unknown_stage():
     assert _steps("denied by director", "general") == []
     assert _steps("disactive") == []
 
+
+def test_header_email_uses_division_saved_on_application(
+    app, monkeypatch, create_org, create_user, assign_user_to_org, create_car_application
+):
+    """worker ไม่มี request context ต้องหาหัวหน้าจากแผนกในใบขอ ไม่ใช่องค์กรแรกของผู้ขอ"""
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, setting):
+            pass
+
+        def login(self):
+            return True
+
+        def quit(self):
+            pass
+
+        def send_email(self, receiver, subject, body, html=False, steps=None):
+            sent.append(receiver)
+            return True
+
+    monkeypatch.setattr(email_utils, "PSUSMTP", FakeSMTP)
+    with app.app_context():
+        other_org = create_org("Other Org")
+        org = create_org("Car Org")
+        division = models.Division(name="ฝ่ายรถ", organization=org).save()
+        other_division = models.Division(name="ฝ่ายอื่น", organization=other_org).save()
+
+        requester = create_user("Req", "User")
+        assign_user_to_org(requester, other_org).update(set__division=other_division)
+        assign_user_to_org(requester, org).update(set__division=division)
+        head = create_user("Head", "User")
+        assign_user_to_org(head, org, roles=["head"]).update(set__division=division)
+
+        models.EmailTemplate(
+            name="ขอใช้รถ", subject="ขอใช้รถ", body="เรียน {{ endorser_name }}",
+            type="car_application", organization=org, is_default=True,
+        ).save()
+        car_application = create_car_application(org, None, status="pending on header")
+        car_application.creator = requester
+        car_application.division = division
+        car_application.save()
+
+        assert email_utils.send_email_car_application_to_endorser(
+            car_application, requester, {}, "pending on header"
+        )
+
+    assert sent == [head.email]

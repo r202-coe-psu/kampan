@@ -474,19 +474,21 @@ def send_email_car_application_to_endorser(
     logger.info(f"use force_send_email_to_endorser")
 
     creator = car_application.creator
-    division = creator.get_current_division()
-    organization = division.organization
+    organization = car_application.organization
+    # worker ไม่มี request context ถ้าเดาแผนกจากองค์กรที่ผู้ขอเปิดดูอยู่
+    # จะได้องค์กรแรกของผู้ขอ ซึ่งอาจไม่ใช่องค์กรของใบขอนี้
+    division = car_application.division or creator.get_current_division(organization)
+    if not division:
+        logger.debug(f"car application {car_application.id} has no division")
+        return False
 
+    endorsers = []
     if state == "pending on header":
         endorsers = division.get_user_endorsers()
-        # print("-----> header", endorsers)
-
     elif state == "pending on director":
         endorsers = organization.get_director()
-        # print("-----> director", endorsers)
     elif state == "pending on admin":
         endorsers = organization.get_admins()
-        # print("-----> admin", endorsers)
     email_template = organization.get_default_email_template("car_application")
 
     if not email_template:
