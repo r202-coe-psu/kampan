@@ -186,3 +186,39 @@ def test_header_email_uses_division_saved_on_application(
 
     assert sent == [head.email]
     assert [step["state"] for step in sent_steps[0]] == ["done", "current", "upcoming", "upcoming"]
+
+
+def test_driver_email_is_html_without_stepper(
+    app, monkeypatch, create_org, create_user, create_car_application
+):
+    from kampan.utils import send_email_to_drivers
+
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, setting):
+            pass
+
+        def login(self):
+            return True
+
+        def quit(self):
+            pass
+
+        def send_email(self, receiver, subject, body, html=False, steps=None):
+            sent.append((receiver, html, steps))
+            return True
+
+    monkeypatch.setattr(send_email_to_drivers, "PSUSMTP", FakeSMTP)
+    with app.app_context():
+        org = create_org()
+        requester = create_user("Req", "User")
+        driver = create_user("Driver", "User")
+        car_application = create_car_application(org, None)
+        car_application.creator = requester
+        car_application.driver = driver
+        car_application.save()
+
+        assert send_email_to_drivers.force_send_email_to_driver(car_application, requester, {})
+
+    assert sent == [(driver.email, True, None)]

@@ -72,6 +72,7 @@ def force_send_email_to_driver(
         receiver=driver.email,
         subject=email_subject,
         body=email_body,
+        html=True,
     )
     psu_smtp.quit()
     return success
