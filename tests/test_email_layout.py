@@ -96,6 +96,16 @@ def test_steps_render_above_content_only_when_given():
     with_steps = email_layout.render_email_html("s", "เนื้อหา", steps)
     without = email_layout.render_email_html("s", "เนื้อหา")
 
-    assert "✓" in with_steps and "✕" in with_steps and ">3</div>" in with_steps
+    assert "✓" in with_steps and "✕" in with_steps and ">3</td>" in with_steps
     assert with_steps.index("พัสดุ") < with_steps.index('<div style="margin:0 0 16px;">เนื้อหา')
     assert "✓" not in without
+
+
+def test_steps_avoid_div_boxes_that_outlook_ignores():
+    html = email_layout.render_steps(
+        [{"label": "ยื่นคำขอ", "state": "done"}, {"label": "อนุมัติ", "state": "upcoming"}]
+    )
+
+    assert "<div" not in html
+    assert "transparent" not in html
+    assert 'bgcolor="#003c71"' in html

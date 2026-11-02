@@ -127,10 +127,16 @@ _STEP_STYLES = {
 }
 
 
+_FONT = "Tahoma, 'Leelawadee UI', 'Noto Sans Thai', Arial, sans-serif"
+_NO_LINE = "#ffffff"  # สีพื้นการ์ด ใช้แทน transparent ที่ bgcolor ของ Outlook ไม่รู้จัก
+
+
 def _step_line(color):
+    # Outlook บน Windows วาดด้วย engine ของ Word ซึ่งไม่สน height ของ div
+    # จึงใช้ td ที่มี bgcolor/height และบังคับ line-height ด้วย mso-line-height-rule
     return Markup(
-        '<td width="50%" style="padding:0;"><div style="height:2px; line-height:2px; '
-        'font-size:0; background-color:{};">&nbsp;</div></td>'
+        '<td width="50%" height="2" bgcolor="{0}" style="height:2px; background-color:{0}; '
+        'font-size:1px; line-height:2px; mso-line-height-rule:exactly;">&nbsp;</td>'
     ).format(color)
 
 
@@ -139,37 +145,48 @@ def render_steps(steps):
     if not steps:
         return Markup("")
 
-    cells = []
+    width = 100 // len(steps)
+    circles = []
+    labels = []
     for index, step in enumerate(steps):
         fill, border, fg, symbol, label_color = _STEP_STYLES[step["state"]]
         reached = step["state"] in ("done", "current", "denied")
-        left = "transparent" if index == 0 else (PRIMARY_COLOR if reached else "#e2e8f0")
+        left = _NO_LINE if index == 0 else (PRIMARY_COLOR if reached else "#e2e8f0")
         right_done = step["state"] == "done" and index + 1 < len(steps)
-        right = "transparent" if index == len(steps) - 1 else (PRIMARY_COLOR if right_done else "#e2e8f0")
+        right = _NO_LINE if index == len(steps) - 1 else (PRIMARY_COLOR if right_done else "#e2e8f0")
         weight = "bold" if step["state"] in ("current", "denied") else "normal"
 
-        cells.append(
+        circles.append(
             Markup(
-                '<td align="center" valign="top" width="{width}%" style="padding:0;">'
+                '<td width="{width}%" align="center" valign="middle" style="padding:0;">'
                 '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
                 "{left}"
-                '<td style="padding:0;"><div style="width:28px; height:28px; line-height:26px; '
-                "border-radius:50%; border:2px solid {border}; background-color:{fill}; color:{fg}; "
-                'font-size:14px; font-weight:bold; text-align:center; box-sizing:border-box;">{symbol}</div></td>'
+                '<td width="28" height="28" align="center" valign="middle" bgcolor="{fill}" '
+                'style="width:28px; min-width:28px; height:28px; padding:0; border:2px solid {border}; '
+                "border-radius:50%; background-color:{fill}; color:{fg}; font-family:{font}; "
+                'font-size:14px; font-weight:bold; line-height:28px; mso-line-height-rule:exactly;">{symbol}</td>'
                 "{right}"
-                "</tr></table>"
-                '<div style="margin-top:6px; padding:0 2px; font-size:12px; line-height:1.4; '
-                'color:{label_color}; font-weight:{weight};">{label}</div>'
-                "</td>"
+                "</tr></table></td>"
             ).format(
-                width=100 // len(steps),
+                width=width,
                 left=_step_line(left),
                 right=_step_line(right),
-                border=border,
                 fill=fill,
+                border=border,
                 fg=fg,
+                font=Markup(_FONT),
                 symbol=symbol or str(index + 1),
-                label_color=label_color,
+            )
+        )
+        labels.append(
+            Markup(
+                '<td width="{width}%" align="center" valign="top" style="padding:6px 2px 0; '
+                "font-family:{font}; font-size:12px; line-height:1.4; color:{color}; "
+                'font-weight:{weight};">{label}</td>'
+            ).format(
+                width=width,
+                font=Markup(_FONT),
+                color=label_color,
                 weight=weight,
                 label=step["label"],
             )
@@ -177,8 +194,8 @@ def render_steps(steps):
 
     return Markup(
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
-        "<tr>{}</tr></table>"
-    ).format(Markup("").join(cells))
+        "<tr>{}</tr><tr>{}</tr></table>"
+    ).format(Markup("").join(circles), Markup("").join(labels))
 
 
 def render_email_html(subject, body, steps=None):
