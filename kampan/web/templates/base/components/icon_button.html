@@ -1,0 +1,39 @@
+{# ปุ่มไอคอนพร้อม tooltip บอกว่าปุ่มทำอะไร (daisyUI tooltip แสดงทั้งตอน hover และตอน focus ด้วยคีย์บอร์ด)
+
+   import:  {% from '/base/components/icon_button.html' import IconButton %}
+   ลิงก์:   {{ IconButton('ph-pen', 'แก้ไข', href=url_for(...)) }}
+   ปุ่ม JS: {{ IconButton('ph-trash', 'ลบ', onclick=open_modal('delete-1'), tone='error') }}
+
+   label ใช้เป็นทั้งข้อความ tooltip และ aria-label ให้ screen reader
+   placement: left (ค่าเริ่มต้น เหมาะกับคอลัมน์จัดการทางขวาของตาราง ไม่ล้นกรอบ) / top / bottom / right
+#}
+
+{# เขียนชื่อ class เต็มไว้ให้ Tailwind หาเจอ #}
+{% set ICON_BUTTON_TONES = {
+  "neutral": "btn-ghost",
+  "primary": "btn-ghost text-primary",
+  "success": "btn-ghost text-success",
+  "error": "btn-ghost text-error",
+} %}
+{% set ICON_BUTTON_PLACEMENTS = {
+  "left": "tooltip-left",
+  "right": "tooltip-right",
+  "top": "tooltip-top",
+  "bottom": "tooltip-bottom",
+} %}
+{% set ICON_BUTTON_SIZES = {"sm": "btn-sm", "md": "btn-md"} %}
+
+{% macro IconButton(icon, label, href=None, onclick=None, tone="primary", placement="left", size="sm") %}
+{% set button_class = "btn btn-square " ~ ICON_BUTTON_SIZES.get(size, "btn-sm") ~ " " ~ ICON_BUTTON_TONES.get(tone, ICON_BUTTON_TONES.primary) %}
+<span class="tooltip {{ ICON_BUTTON_PLACEMENTS.get(placement, 'tooltip-left') }}" data-tip="{{ label }}">
+  {% if href %}
+  <a class="{{ button_class }}" href="{{ href }}" aria-label="{{ label }}">
+    <i class="ph {{ icon }} text-lg"></i>
+  </a>
+  {% else %}
+  <button type="button" class="{{ button_class }}" aria-label="{{ label }}" {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    <i class="ph {{ icon }} text-lg"></i>
+  </button>
+  {% endif %}
+</span>
+{% endmacro %}
