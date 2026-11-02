@@ -109,3 +109,11 @@ def test_steps_avoid_div_boxes_that_outlook_ignores():
     assert "<div" not in html
     assert "transparent" not in html
     assert 'bgcolor="#003c71"' in html
+
+
+def test_step_line_colour_sits_in_nested_two_pixel_cell():
+    line = email_layout._step_line("#003c71")
+
+    outer = line[: line.index("<table")]
+    assert "bgcolor" not in outer
+    assert '<td height="2" bgcolor="#003c71"' in line

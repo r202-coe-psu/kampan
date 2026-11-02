@@ -132,11 +132,14 @@ _NO_LINE = "#ffffff"  # สีพื้นการ์ด ใช้แทน tra
 
 
 def _step_line(color):
-    # Outlook บน Windows วาดด้วย engine ของ Word ซึ่งไม่สน height ของ div
-    # จึงใช้ td ที่มี bgcolor/height และบังคับ line-height ด้วย mso-line-height-rule
+    # td ในแถวเดียวกับวงกลมถูกยืดสูงเท่าวงกลม ถ้าใส่สีที่ td นี้ตรง ๆ เส้นจะหนา 28px
+    # จึงวาดเส้นเป็น table สูง 2px ซ้อนไว้ตรงกลางแทน (Outlook บน Windows ไม่สน height ของ div)
     return Markup(
-        '<td width="50%" height="2" bgcolor="{0}" style="height:2px; background-color:{0}; '
+        '<td width="50%" valign="middle" style="padding:0;">'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+        '<td height="2" bgcolor="{0}" style="height:2px; background-color:{0}; '
         'font-size:1px; line-height:2px; mso-line-height-rule:exactly;">&nbsp;</td>'
+        "</tr></table></td>"
     ).format(color)
 
 
