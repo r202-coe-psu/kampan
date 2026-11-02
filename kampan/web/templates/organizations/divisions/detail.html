@@ -1,6 +1,8 @@
 {% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/base/components/modals.html' import ConfirmModal, DeleteModal, open_modal %}
 {% from '/base/components/role_badge.html' import RoleBadges %}
+{% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
 {% from '/base/components/icon_button.html' import IconButton %}
 
 {% block title %}{{ division.name }}{% endblock %}
@@ -21,7 +23,7 @@
         <p class="mt-1 break-words text-base-content/70">{{ division.description or 'ไม่มีคำอธิบาย' }}</p>
       </div>
       <div class="flex shrink-0 gap-1">
-        {{ IconButton('ph-pen', 'แก้ไขแผนก', href=url_for('organizations.divisions.create_or_edit', organization_id=organization.id, division_id=division.id), placement='bottom', size='md') }}
+        {{ IconButton('ph-pen', 'แก้ไขแผนก', onclick=open_modal('edit-division'), placement='bottom', size='md') }}
         {{ IconButton('ph-trash', 'ลบแผนก', onclick=open_modal('delete-division'), tone='error', placement='bottom', size='md') }}
       </div>
     </div>
@@ -95,13 +97,14 @@
           {% endfor %}
         </tbody>
       </table>
-      <p class="hidden py-6 text-center text-base-content/60" data-filter-empty="division-members">ไม่พบสมาชิกที่ค้นหา</p>
+      {{ EmptyState('ph-magnifying-glass', 'ไม่พบสมาชิกที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
+                    size='sm', hidden=True, attrs='data-filter-empty="division-members"') }}
     </div>
     {% else %}
-    <div class="flex flex-col items-center gap-2 py-10 text-center text-base-content/60">
-      <i class="ph ph-users-three text-4xl"></i>
-      <p>ยังไม่มีสมาชิกในแผนกนี้</p>
-    </div>
+    {{ EmptyState('ph-users-three', 'ยังไม่มีสมาชิกในแผนกนี้',
+                  description='เพิ่มสมาชิกขององค์กรเข้ามาในแผนก เพื่อให้เบิกวัสดุและส่งคำขออนุมัติได้',
+                  action_label='เพิ่มสมาชิก', action_icon='ph-user-circle-plus',
+                  action_onclick=open_modal('add-division-members')) }}
     {% endif %}
   </div>
 </div>
@@ -143,7 +146,8 @@
     </li>
     {% endfor %}
   </ul>
-  <p class="hidden py-4 text-center text-base-content/60" data-filter-empty="division-candidates">ไม่พบสมาชิกที่ค้นหา</p>
+  {{ EmptyState('ph-magnifying-glass', 'ไม่พบสมาชิกที่ค้นหา', description='ลองค้นหาด้วยชื่อหรืออีเมลอื่น',
+                size='sm', hidden=True, attrs='data-filter-empty="division-candidates"') }}
 
   <div role="alert" class="alert alert-warning mt-3 hidden" data-move-warning>
     <i class="ph ph-warning text-xl"></i>
@@ -153,9 +157,11 @@
     </div>
   </div>
   {% else %}
-  <p class="py-4 text-center">สมาชิกทุกคนในองค์กรอยู่ในแผนกนี้แล้ว</p>
+  {{ EmptyState('ph-check-circle', 'สมาชิกทุกคนอยู่ในแผนกนี้แล้ว',
+                description='ไม่มีสมาชิกขององค์กรเหลือให้เพิ่มเข้าแผนกนี้', size='sm') }}
   {% endif %}
 {% endcall %}
+{{ DivisionFormModal('edit-division', organization, division_form, division=division) }}
 {% endblock content %}
 
 {% block additional_js %}

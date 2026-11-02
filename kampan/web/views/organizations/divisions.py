@@ -56,6 +56,7 @@ def index():
     paginated_divisions = Pagination(divisions, page=page, per_page=30)
     return render_template(
         "/organizations/divisions/index.html",
+        division_form=forms.divisions.DivisionForm(formdata=None),
         form=form,
         divisions=divisions,
         paginated_divisions=paginated_divisions,
@@ -71,40 +72,43 @@ def index():
 @module.route("/<division_id>/edit", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def create_or_edit(division_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    """เพิ่ม/แก้ไขแผนกจาก modal ในหน้าแผนกทั้งหมด หน้าภาพรวม และหน้าแผนก
 
-    form = forms.divisions.DivisionForm()
-    if division_id:
-        division = get_division(organization, division_id)
-        form = forms.divisions.DivisionForm(obj=division)
+    ไม่มีหน้าฟอร์มแยกแล้ว GET จึงพากลับไปหน้าที่มี modal
+    """
+    organization = models.Organization.objects(
+        id=request.args.get("organization_id"), status="active"
+    ).first()
+    division = get_division(organization, division_id) if division_id else None
+    back_url = (
+        division_url(organization, division)
+        if division
+        else url_for("organizations.divisions.index", organization_id=organization.id)
+    )
+    if request.method == "GET":
+        return redirect(back_url)
+
+    form = forms.divisions.DivisionForm(obj=division)
     if not form.validate_on_submit():
-        return render_template(
-            "/organizations/divisions/create_or_edit.html",
-            form=form,
-            organization=organization,
-            division_id=division_id,
-        )
-    if not division_id:
+        flash("กรุณากรอกชื่อแผนก" if form.name.errors else "บันทึกแผนกไม่สำเร็จ", "error")
+        return redirect(back_url)
+
+    if not division:
         division = models.Division(
             created_by=current_user._get_current_object(),
             organization=organization,
         )
+        created = True
+    else:
+        created = False
     form.populate_obj(division)
     division.last_updated_by = current_user._get_current_object()
     division.save()
     flash(
-        f"เพิ่มแผนก {division.name} แล้ว"
-        if not division_id
-        else f"บันทึกแผนก {division.name} แล้ว",
+        f"เพิ่มแผนก {division.name} แล้ว" if created else f"บันทึกแผนก {division.name} แล้ว",
         "success",
     )
-    if not division_id:
-        return redirect(
-            url_for("organizations.divisions.index", organization_id=organization_id)
-        )
+    # เพิ่มแผนกใหม่แล้วพาไปหน้าแผนกนั้นเลย จะได้เพิ่มสมาชิกต่อ
     return redirect(division_url(organization, division))
 
 
@@ -162,6 +166,7 @@ def detail(division_id):
 
     return render_template(
         "/organizations/divisions/detail.html",
+        division_form=forms.divisions.DivisionForm(formdata=None, obj=division),
         organization=organization,
         division=division,
         members=members,

@@ -82,13 +82,14 @@ def test_edit_division_shows_toast(app, login_as, setup):
     _assert_toast(html, "บันทึกแผนก Finance 2 แล้ว")
 
 
-def test_invalid_division_form_does_not_flash(app, login_as, setup):
+def test_invalid_division_form_shows_error_toast(app, login_as, setup):
+    # ฟอร์มแผนกอยู่ใน modal ส่งไม่ผ่านจึงบอกด้วย toast สีแดงแทนการแสดงฟอร์มซ้ำ
     url = _url(
         app, "organizations.divisions.create_or_edit", organization_id=str(setup["org"].id)
     )
     html = _post_and_follow(app, login_as, setup["admin"], url, {"name": ""})
 
-    assert "data-toast" not in html
+    _assert_toast(html, "กรุณากรอกชื่อแผนก", tone="alert-error")
 
 
 def test_delete_division_shows_toast(app, login_as, setup):

@@ -8,8 +8,6 @@ from kampan import models
 # (endpoint, needs_division, needs_org_user)
 ADMIN_ONLY_ROUTES = [
     ("organizations.divisions.index", False, False),
-    ("organizations.divisions.create_or_edit", False, False),
-    ("organizations.divisions.create_or_edit", True, False),
     ("organizations.divisions.detail", True, False),
     ("organizations.members.index", False, False),
     ("organizations.members.add_member", False, False),
@@ -434,3 +432,110 @@ def test_delete_division_requires_post(app, org_setup):
 
     division.reload()
     assert division.status == "disactive"
+
+
+def test_division_forms_are_modals(app, org_setup):
+    org, division = org_setup["org"], org_setup["division"]
+    with app.test_request_context():
+        index_url = url_for("organizations.divisions.index", organization_id=str(org.id))
+        overview_url = url_for("organizations.overview.index", organization_id=str(org.id))
+        create_url = url_for("organizations.divisions.create_or_edit", organization_id=str(org.id))
+        edit_url = url_for(
+            "organizations.divisions.create_or_edit",
+            organization_id=str(org.id),
+            division_id=str(division.id),
+        )
+        detail_url = url_for(
+            "organizations.divisions.detail", organization_id=str(org.id), division_id=str(division.id)
+        )
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        index_html = client.get(index_url).get_data(as_text=True)
+        overview_html = client.get(overview_url).get_data(as_text=True)
+        detail_html = client.get(detail_url).get_data(as_text=True)
+        # ไม่มีหน้าฟอร์มแยกแล้ว GET พากลับไปหน้าที่มี modal
+        create_get = client.get(create_url)
+        edit_get = client.get(edit_url)
+
+    assert 'id="create-division"' in index_html and f'action="{create_url}"' in index_html.replace("&amp;", "&")
+    assert 'id="create-division"' in overview_html
+    assert 'id="edit-division"' in detail_html
+    assert 'value="Division One"' in detail_html  # ฟอร์มแก้ไขมีค่าเดิม
+    assert create_get.status_code == 302 and create_get.headers["Location"] == index_url
+    assert edit_get.status_code == 302 and edit_get.headers["Location"] == detail_url
+
+
+def test_division_form_modal_creates_and_edits(app, org_setup):
+    org, division = org_setup["org"], org_setup["division"]
+    with app.test_request_context():
+        create_url = url_for("organizations.divisions.create_or_edit", organization_id=str(org.id))
+        edit_url = url_for(
+            "organizations.divisions.create_or_edit",
+            organization_id=str(org.id),
+            division_id=str(division.id),
+        )
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        created = client.post(create_url, data={"name": "Procurement", "description": "ซื้อของ"})
+        client.post(edit_url, data={"name": "Division Renamed", "description": "ใหม่"})
+        empty = client.post(create_url, data={"name": ""})
+
+    new_division = models.Division.objects(name="Procurement", organization=org).first()
+    assert new_division is not None
+    # เพิ่มแล้วพาไปหน้าแผนกใหม่
+    assert created.headers["Location"].startswith(f"/organizations/divisions/{new_division.id}/detail")
+    division.reload()
+    assert division.name == "Division Renamed" and division.description == "ใหม่"
+    assert empty.status_code == 302
+    assert models.Division.objects(name="", organization=org).count() == 0
+
+
+@pytest.fixture
+def empty_org(app, create_org, create_user, assign_user_to_org):
+    org = create_org("Empty Org")
+    admin = create_user("Emptyadmin", "Org")
+    assign_user_to_org(admin, org, roles=["admin"])
+    return {"org": org, "admin": admin}
+
+
+def _get_html(app, user, endpoint, method="get", data=None, **kwargs):
+    with app.test_request_context():
+        url = url_for(endpoint, **kwargs)
+    with app.test_client() as client:
+        _login(client, user)
+        response = getattr(client, method)(url, data=data or {})
+    assert response.status_code == 200
+    return response.get_data(as_text=True)
+
+
+def test_divisions_index_empty_state_offers_create(app, empty_org):
+    html = _get_html(
+        app,
+        empty_org["admin"],
+        "organizations.divisions.index",
+        organization_id=str(empty_org["org"].id),
+    )
+
+    assert "ยังไม่มีแผนก" in html
+    assert "create-division" in html
+
+
+def test_system_organizations_empty_search_offers_clear(app, create_user):
+    sys_admin = create_user("Sysadmin", "Empty")
+    sys_admin.roles = ["admin"]
+    sys_admin.save()
+    with app.test_request_context():
+        index_url = url_for("organizations.system_organizations.index")
+
+    html = _get_html(
+        app,
+        sys_admin,
+        "organizations.system_organizations.index",
+        q="ไม่มีองค์กรนี้แน่นอน",
+    )
+
+    assert "ไม่พบองค์กรที่ค้นหา" in html
+    assert "ล้างการค้นหา" in html
+    assert f'href="{index_url}"' in html

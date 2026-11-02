@@ -2,7 +2,7 @@ import mongoengine as me
 from flask import Blueprint, abort, render_template
 
 from kampan import models
-from kampan.web import acl
+from kampan.web import acl, forms
 
 module = Blueprint("overview", __name__, url_prefix="/<organization_id>")
 
@@ -64,6 +64,7 @@ def index(organization_id):
 
     return render_template(
         "/organizations/overview.html",
+        division_form=forms.divisions.DivisionForm(formdata=None),
         organization=organization,
         division_rows=division_rows,
         unassigned=unassigned,

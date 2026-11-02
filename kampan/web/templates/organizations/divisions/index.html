@@ -1,5 +1,8 @@
 {% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import open_modal %}
+{% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
@@ -35,10 +38,10 @@
       <h2 class="text-xl font-bold">รายการแผนก</h2>
       <p class="text-base-content/60">{{ paginated_divisions.total }} แผนก</p>
     </div>
-    <a class="btn btn-primary" href="{{ url_for('organizations.divisions.create_or_edit', organization_id=organization.id) }}">
+    <button type="button" class="btn btn-primary" onclick="{{ open_modal('create-division') }}">
       <i class="ph ph-plus"></i>
       เพิ่มแผนก
-    </a>
+    </button>
   </div>
   {% if divisions %}
   <div class="overflow-x-auto mt-4 rounded-xl">
@@ -70,10 +73,13 @@
     {% endif %}
   </div>
   {% else %}
-  <div class="flex flex-col items-center gap-2 py-10 text-center text-base-content/60">
-    <i class="ph ph-tree-structure text-4xl"></i>
-    <p>ยังไม่มีแผนก หรือไม่พบแผนกที่ค้นหา</p>
-  </div>
+  {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก',
+                description='สร้างแผนกเพื่อจัดกลุ่มสมาชิกและกำหนดผู้อนุมัติในแต่ละแผนก',
+                action_label='เพิ่มแผนก', action_onclick=open_modal('create-division'),
+                filtered=request.method == 'POST' and (form.name.data or form.start_date.data or form.end_date.data),
+                filtered_title='ไม่พบแผนกที่ค้นหา',
+                clear_href=url_for('organizations.divisions.index', organization_id=organization.id)) }}
   {% endif %}
 </div>
+{{ DivisionFormModal('create-division', organization, division_form) }}
 {% endblock %}

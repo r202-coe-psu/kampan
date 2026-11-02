@@ -1,5 +1,8 @@
 {% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import open_modal %}
+{% from '/organizations/divisions/form_modal.html' import DivisionFormModal %}
 
 {% block title %}ภาพรวมองค์กร{% endblock %}
 {% block dashboard_title %}{{ organization.name }}{% endblock %}
@@ -43,9 +46,9 @@
       </div>
       <div class="flex flex-wrap items-center gap-2">
         {{ IconButton('ph-users', 'สมาชิกทั้งหมด', href=url_for('organizations.members.index', organization_id=organization.id), placement='bottom', size='md') }}
-        <a class="btn btn-primary" href="{{ url_for('organizations.divisions.create_or_edit', organization_id=organization.id) }}">
+        <button type="button" class="btn btn-primary" onclick="{{ open_modal('create-division') }}">
           <i class="ph ph-plus-circle"></i> เพิ่มแผนก
-        </a>
+        </button>
       </div>
     </div>
 
@@ -89,10 +92,9 @@
       </table>
     </div>
     {% else %}
-    <div class="flex flex-col items-center gap-2 py-10 text-center text-base-content/60">
-      <i class="ph ph-tree-structure text-4xl"></i>
-      <p class="text-lg">ยังไม่มีแผนกและสมาชิกในองค์กรนี้</p>
-    </div>
+    {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนกและสมาชิกในองค์กรนี้',
+                  description='เริ่มจากสร้างแผนก แล้วเพิ่มสมาชิกเข้าแต่ละแผนก',
+                  action_label='เพิ่มแผนก', action_onclick=open_modal('create-division')) }}
     {% endif %}
   </div>
 </div>
@@ -113,4 +115,5 @@
     </dl>
   </div>
 </div>
+{{ DivisionFormModal('create-division', organization, division_form) }}
 {% endblock content %}
