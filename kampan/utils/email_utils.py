@@ -17,6 +17,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape, Template
 
 import mongoengine as me
 from kampan import models, default_settings
+from kampan.utils.email_layout import render_email_html
 
 import logging
 
@@ -54,7 +55,7 @@ class PSUSMTP:
     def quit(self):
         self.server.quit()
 
-    def send_email(self, receiver, subject, body):
+    def send_email(self, receiver, subject, body, html=False):
         try:
             sender = self.sender
             if self.sender_name:
@@ -67,8 +68,11 @@ class PSUSMTP:
             message["From"] = sender
             message["To"] = receiver
 
-            email_body = MIMEText(body, "plain")
-            message.attach(email_body)
+            message.attach(MIMEText(body, "plain", "utf-8"))
+            if html:
+                message.attach(
+                    MIMEText(render_email_html(subject, body), "html", "utf-8")
+                )
 
             self.server.sendmail(sender, receivers, message.as_string())
 
@@ -157,7 +161,7 @@ def force_send_email_to_endorser(
     )
     order.emails.append(order_email)
     order.save()
-    if psu_smtp.send_email(endorser.email, email_subject, email_body):
+    if psu_smtp.send_email(endorser.email, email_subject, email_body, html=True):
         order.emails[-1].status = "sent"
     else:
         order.emails[-1].status = "failed"
@@ -218,7 +222,7 @@ def force_send_email_to_supervisor_supplier(
         )
         order.emails.append(order_email)
         order.save()
-        if psu_smtp.send_email(endorser.email, email_subject, email_body):
+        if psu_smtp.send_email(endorser.email, email_subject, email_body, html=True):
             order.emails[-1].status = "sent"
         else:
             order.emails[-1].status = "failed"
@@ -280,7 +284,7 @@ def force_send_email_to_admin(
         )
         order.emails.append(order_email)
         order.save()
-        if psu_smtp.send_email(admin.email, email_subject, email_body):
+        if psu_smtp.send_email(admin.email, email_subject, email_body, html=True):
             order.emails[-1].status = "sent"
         else:
             order.emails[-1].status = "failed"
@@ -342,7 +346,7 @@ def force_send_email_to_staff(
     )
     order.emails.append(order_email)
     order.save()
-    if psu_smtp.send_email(creator.email, email_subject, email_body):
+    if psu_smtp.send_email(creator.email, email_subject, email_body, html=True):
         order.emails[-1].status = "sent"
     else:
         order.emails[-1].status = "failed"
@@ -420,7 +424,7 @@ def send_email_lost_break(
         email_body = template_body.render(text_format)
 
         logger.debug(f"send email to {endorser.email}")
-        psu_smtp.send_email(endorser.email, email_subject, email_body)
+        psu_smtp.send_email(endorser.email, email_subject, email_body, html=True)
 
     psu_smtp.quit()
     return True
@@ -518,7 +522,7 @@ def send_email_car_application_to_endorser(
 
         logger.debug(f"send email to {endorser.email}")
         print(f"----> send email to {endorser.email}")
-        psu_smtp.send_email(endorser.email, email_subject, email_body)
+        psu_smtp.send_email(endorser.email, email_subject, email_body, html=True)
     logger.debug(
         "################ Finished sending emails to all endorsers ################"
     )
