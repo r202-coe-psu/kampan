@@ -1,8 +1,7 @@
 from jinja2 import Template
 import logging
 from kampan import models
-from .email_utils import PSUSMTP
-from kampan import default_settings
+from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +137,7 @@ def send_payment_notification_job(
 
         if text_format and text_format["responsible_by"]:
             for person in text_format["responsible_by"]:
-                host_url = default_settings.KAMPAN_HOST_URL
+                host_url = get_host_url(setting)
                 ma_url = f"{host_url}/procurement/payment/{procurement.id}?organization_id={person['organization']}"
 
                 context = {

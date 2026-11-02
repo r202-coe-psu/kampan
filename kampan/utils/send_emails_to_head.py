@@ -1,8 +1,7 @@
 from jinja2 import Template
 import logging
 from kampan import models
-from .email_utils import PSUSMTP
-from kampan import default_settings
+from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ def get_head_text_format(requisition, setting, organization_id):
         str(purchaser.division.id) if purchaser and purchaser.division else "-"
     )
     purchaser_email = user.email if user else purchaser.email if purchaser else "-"
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
 
     document_url = f"{host_url}/procurement/requisitions/renewal_requested"
 

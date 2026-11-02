@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def get_host_url(setting):
+    """URL ของ environment ที่รันอยู่ (staging/prod) สำหรับใส่ลิงก์ในอีเมล"""
+    host_url = (setting or {}).get("KAMPAN_HOST_URL") or default_settings.KAMPAN_HOST_URL
+    return host_url.rstrip("/")
+
+
 class PSUSMTP:
     def __init__(self, setting):
         self.setting = setting
@@ -143,7 +149,7 @@ def force_send_email_to_endorser(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     endorsement_url = (
         f"{host_url}/approve_orders/endorser?organization_id={organization.id}"
     )
@@ -203,7 +209,7 @@ def force_send_email_to_supervisor_supplier(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     endorsement_url = f"{host_url}/approve_orders/supervisor_supplier?organization_id={organization.id}"
     for endorser in endorsers:
         text_format = get_endorser_text_format(
@@ -263,7 +269,7 @@ def force_send_email_to_admin(
         template_subject = Template(email_template.subject)
         template_body = Template(email_template.body)
 
-        host_url = default_settings.KAMPAN_HOST_URL
+        host_url = get_host_url(setting)
         endorsement_url = (
             f"{host_url}/approve_orders/admin?organization_id={organization.id}"
         )
@@ -327,7 +333,7 @@ def force_send_email_to_staff(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     endorsement_url = f""
 
     text_format = get_endorser_text_format(
@@ -411,7 +417,7 @@ def send_email_lost_break(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     endorsement_url = (
         f"{host_url}/lost_breaks/approve_page?organization_id={organization.id}"
     )
@@ -503,7 +509,7 @@ def send_email_car_application_to_endorser(
     template_subject = Template(email_template.subject)
     template_body = Template(email_template.body)
 
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     if state == "pending on header":
         endorsement_url = f"{host_url}/vehicle_lending/car_permissions/header_page?organization_id={organization.id}"
     elif state == "pending on director":

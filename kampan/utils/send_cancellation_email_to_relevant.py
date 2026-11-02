@@ -1,8 +1,7 @@
 from jinja2 import Template
 import logging
 from kampan import models
-from .email_utils import PSUSMTP
-from kampan import default_settings
+from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ def get_email_text_format(
     purchaser_division = purchaser_user.division.name if purchaser_user else "-"
     requisition_code = requisition.requisition_code
     note = requisition_timeline.note if requisition_timeline.note else "-"
-    host_url = default_settings.KAMPAN_HOST_URL
+    host_url = get_host_url(setting)
     document_url = f"{host_url}/procurement/requisition_timeline"
     text_format = {
         "purchaser_name": purchaser_name,

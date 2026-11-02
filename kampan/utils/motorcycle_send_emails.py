@@ -1,8 +1,7 @@
 from jinja2 import Template
 import logging
 from kampan import models
-from .email_utils import PSUSMTP
-from kampan import default_settings
+from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,7 @@ def force_send_email_to_admin(
         template_subject = Template(email_subject_template)
         template_body = Template(email_body_template)
 
-        host_url = default_settings.KAMPAN_HOST_URL
+        host_url = get_host_url(setting)
         endorsement_url = f"{host_url}/vehicle_lending/motorcycle_permissions/admin_page?organization_id={organization.id}"
 
         text_format = get_endorser_text_format(

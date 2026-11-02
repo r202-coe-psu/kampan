@@ -72,3 +72,16 @@ def test_list_items_separated_by_blank_lines_stay_in_one_paragraph():
 
     assert html.count('<div style="margin:0 0 16px;">') == 3
     assert "•&nbsp;ปากกา" in html and "•&nbsp;ดินสอ" in html
+
+
+def test_host_url_follows_environment_config():
+    assert email_utils.get_host_url({"KAMPAN_HOST_URL": "https://staging.example.test/"}) == (
+        "https://staging.example.test"
+    )
+
+
+def test_host_url_falls_back_to_default_settings():
+    from kampan import default_settings
+
+    assert email_utils.get_host_url({}) == default_settings.KAMPAN_HOST_URL
+    assert email_utils.get_host_url(None) == default_settings.KAMPAN_HOST_URL
