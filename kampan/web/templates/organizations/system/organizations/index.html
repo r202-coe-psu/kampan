@@ -1,0 +1,84 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% from '/base/components/dialogs.html' import ModalNegative %}
+{% import '/base/components/paginations/pagination.html' as paginated %}
+
+{% block title %}องค์กรทั้งหมด{% endblock %}
+{% block dashboard_title %}องค์กรทั้งหมด{% endblock %}
+
+{% block content %}
+<div class="flex justify-end w-full">
+  <a class="btn btn-primary" href="{{ url_for('organizations.system_organizations.create_or_edit') }}">
+    <i class="ph ph-plus-circle"></i>
+    เพิ่มองค์กร
+  </a>
+</div>
+
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if paginated_organizations.items %}
+  <div class="overflow-x-auto mt-2 rounded-xl">
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="table-style">ชื่อองค์กร</th>
+          <th class="table-style">คำอธิบาย</th>
+          <th class="table-style">วันลงทะเบียน</th>
+          <th class="table-style">จัดการ</th>
+          <th class="table-style">เข้าใช้งานองค์กร</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org in paginated_organizations.items %}
+        <tr>
+          <td class="table-style">{{ org.name }}</td>
+          <td class="table-style">{{ org.description }}</td>
+          <td class="table-style">{{ org.created_date.strftime('%d/%m/%Y') if org.created_date else '-' }}</td>
+          <td class="table-style">
+            <div class="flex flex-wrap gap-1">
+              <a class="btn btn-circle btn-primary" title="รายละเอียด"
+                href="{{ url_for('organizations.system_organizations.detail', organization_id=org.id) }}">
+                <i class="ph ph-list-magnifying-glass"></i>
+              </a>
+              <a class="btn btn-circle btn-primary" title="สมาชิก"
+                href="{{ url_for('organizations.system_organizations.users', organization_id=org.id) }}">
+                <i class="ph ph-users-three"></i>
+              </a>
+              <a class="btn btn-circle btn-primary" title="เพิ่มสมาชิก"
+                href="{{ url_for('organizations.system_organizations.add_member', organization_id=org.id) }}">
+                <i class="ph ph-user-circle-plus"></i>
+              </a>
+              <a class="btn btn-circle btn-primary" title="แก้ไข"
+                href="{{ url_for('organizations.system_organizations.create_or_edit', organization_id=org.id) }}">
+                <i class="ph ph-pen"></i>
+              </a>
+              <button type="button" class="btn btn-circle btn-error" title="ลบ"
+                onclick="document.querySelector('dialog.delete-{{ org.id }}').showModal()">
+                <i class="ph ph-trash"></i>
+              </button>
+              {{ ModalNegative(
+                id="delete-%s" | format(org.id),
+                header="ลบข้อมูลองค์กร",
+                body="ต้องการลบองค์กร <b>%s</b>" | format(org.name | e),
+                redirect=url_for('organizations.system_organizations.delete', organization_id=org.id),
+              ) }}
+            </div>
+          </td>
+          <td class="table-style">
+            <a class="btn btn-primary"
+              href="{{ url_for('site.switch_organization', organization_id=org.id, next=url_for('organizations.divisions.index', organization_id=org.id)) }}">
+              <i class="ph ph-sign-in"></i>
+              เข้าใช้งาน
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if paginated_organizations.pages > 1 %}
+      {{ paginated.render_pagination(paginated_organizations, 'organizations.system_organizations.index', request.args) }}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="flex w-full justify-center py-6 text-xl">ยังไม่มีองค์กร</div>
+  {% endif %}
+</div>
+{% endblock %}

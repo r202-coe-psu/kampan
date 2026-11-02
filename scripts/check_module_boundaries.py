@@ -44,7 +44,6 @@ KNOWN_BROKEN_ENDPOINTS = {
         "admin.administration.classes.view",
     ),
     ("kampan/web/templates/admin/dashboard/index-admin.html", "classes.enroll"),
-    ("kampan/web/templates/admin/organizations/index.html", "organizations.index"),
     ("kampan/web/templates/approve_orders/item_checkouts.html", "approve_orders.index"),
     (
         "kampan/web/templates/dashboard/daily_dashboard.html",

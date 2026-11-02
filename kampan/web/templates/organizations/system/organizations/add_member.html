@@ -1,0 +1,23 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}เพิ่มสมาชิก{% endblock %}
+{% block dashboard_title %}เพิ่มสมาชิก {{ target_organization.name }}{% endblock %}
+
+{% block content %}
+<div class="flex justify-start w-full gap-2">
+  <a class="btn btn-primary"
+    href="{{ url_for('organizations.system_organizations.users', organization_id=target_organization.id) }}">
+    <i class="ph ph-arrow-u-up-left"></i>
+    ย้อนกลับ
+  </a>
+</div>
+<form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
+  {{ form.hidden_tag() }}
+  {{ renderer.render_select_field(form.members) }}
+  {{ renderer.render_select_field(form.division) }}
+  {{ renderer.render_multiple_select_field(form.roles) }}
+  {{ renderer.render_field(form.appointment) }}
+  <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
+</form>
+{% endblock content %}

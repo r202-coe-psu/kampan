@@ -1,0 +1,23 @@
+{% extends '/organizations/base/default-organization-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}แก้ไขตำแหน่ง{% endblock %}
+{% block dashboard_title %}แก้ไขตำแหน่ง {{ org_user.user.get_name() }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+  <ul>
+    <li><a href="{{ url_for('organizations.system_organizations.index') }}">องค์กรทั้งหมด</a></li>
+    <li><a href="{{ url_for('organizations.system_organizations.users', organization_id=target_organization.id) }}">สมาชิกของ {{ target_organization.name }}</a></li>
+    <li>แก้ไขตำแหน่ง</li>
+  </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<form class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm" method="POST">
+  {{ form.hidden_tag() }}
+  {{ renderer.render_multiple_select_field(form.roles) }}
+  <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
+</form>
+{% endblock content %}
