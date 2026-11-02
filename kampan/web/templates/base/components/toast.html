@@ -1,43 +1,59 @@
-{% macro render_toast(message, category) %}
+{# Toast แจ้งผลหลังบันทึก/ลบ (ข้อความจาก flash())
 
-<div class="toast toast-end z-50" id="toast-message">
-  {% if category == 'success' %}
-  <div class="alert alert-success rounded-3xl text-white text-base min-w-96">
-    <span class="material-symbols-outlined fill">
-      check_circle
-    </span>
-    <span>{{ message }}</span>
-  </div>
-  {% elif category == 'error' %}
-  <div class="alert alert-error rounded-3xl text-white text-base">
-    <span class="material-symbols-outlined fill">
-      error
-    </span>
-    <span>{{ message }}</span>
-  </div>
-  {% elif category == 'pending' %}
-  <div class="alert alert-warning rounded-3xl text-white text-base">
-    <span class="material-symbols-outlined fill">
-      hourglass_empty
-    </span>
-    <span>{{ message }}</span>
-  </div>
-  {% else %}
-  <div class="alert alert-info rounded-3xl text-white text-base">
-    <span class="material-symbols-outlined fill">
-      info
-    </span>
-    <span>{{ message }}</span>
-  </div>
-  {% endif %}
+   import:  {% from '/base/components/toast.html' import render_toast, render_toasts %}
+   - render_toasts(messages): messages คือ list ของ (category, message) แสดงซ้อนกันใน toast เดียว
+   - render_toast(message, category): ข้อความเดียว
+   category: success / error / pending / อื่น ๆ (info)
+   หายเองหลัง 5 วินาที (success) หรือ 10 วินาที (อื่น ๆ) และกดที่ข้อความเพื่อปิดได้ #}
+
+{# เขียนชื่อ class เต็มไว้ตรงนี้ให้ Tailwind หาเจอ ห้ามประกอบชื่อ class จาก string #}
+{% set TOAST_STYLES = {
+  "success": {"alert": "alert-success", "icon": "ph-check-circle"},
+  "error": {"alert": "alert-error", "icon": "ph-warning-circle"},
+  "pending": {"alert": "alert-warning", "icon": "ph-hourglass"},
+  "info": {"alert": "alert-info", "icon": "ph-info"},
+} %}
+
+
+{% macro _toast_alert(message, category) %}
+{% set style = TOAST_STYLES.get(category, TOAST_STYLES.info) %}
+<div role="{{ 'alert' if category == 'error' else 'status' }}" data-toast
+  data-toast-timeout="{{ 5000 if category == 'success' else 10000 }}"
+  class="alert {{ style.alert }} cursor-pointer rounded-3xl text-white text-base transition-opacity duration-500"
+  title="คลิกเพื่อปิด">
+  <i class="ph {{ style.icon }} text-xl" aria-hidden="true"></i>
+  <span class="break-words">{{ message }}</span>
 </div>
+{% endmacro %}
 
+
+{% macro _toast_script() %}
 <script>
-  setTimeout(() => {
-    const toast = document.getElementById('toast-message');
-    if (toast) {
-      $(toast).fadeOut();
-    }
-  }, "{{ category }}" === "success" ? 5000 : 10000);
+  document.querySelectorAll('[data-toast]:not([data-toast-armed])').forEach((el) => {
+    el.dataset.toastArmed = '1';
+    const dismiss = () => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 500);
+    };
+    el.addEventListener('click', dismiss);
+    setTimeout(dismiss, Number(el.dataset.toastTimeout));
+  });
 </script>
+{% endmacro %}
+
+
+{% macro render_toasts(messages) %}
+{% if messages %}
+<div class="toast toast-end z-50 max-w-sm">
+  {% for category, message in messages %}
+  {{ _toast_alert(message, category) }}
+  {% endfor %}
+</div>
+{{ _toast_script() }}
+{% endif %}
+{% endmacro %}
+
+
+{% macro render_toast(message, category) %}
+{{ render_toasts([(category, message)]) }}
 {% endmacro %}
