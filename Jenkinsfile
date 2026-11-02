@@ -1,57 +1,68 @@
 pipeline {
-    agent { label 'mgmt' }
+    agent none
+
+    options {
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        REGISTRY_USER = 'ci-bot'
+    }
 
     stages {
-    //         stage('SonarQube Analysis') {
-    //         when {
-    //             anyOf {
-    //                 branch 'develop'
-    //                 branch 'main'
-    //             }
-    //         }
-    //         steps {
-    //             script {
-    //                 def scannerHome = tool 'SonarScanner'
-    //                 withCredentials([string(credentialsId: 'kampan_SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-    //                     withSonarQubeEnv() {
-    //                         sh "${scannerHome}/bin/sonar-scanner -Dsonar.token=\$SONAR_TOKEN"
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-        // stage('Deploy to Staging') {
-        //     when {
-        //         branch 'develop'
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             sshUserPrivateKey(credentialsId: 'kampan-staging-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-        //             string(credentialsId: 'kampan-staging-host', variable: 'SSH_HOST'),
-        //             string(credentialsId: 'kampan-staging-port', variable: 'SSH_PORT')
-        //         ]) {
-        //             sh '''
-        //                 echo "Starting deployment to Staging server..."
-                        
-        //                 ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "
-                            
-        //                     echo '==> Deploying kampan Staging...'
-        //                     cd /home/projects/kampan
-        //                     git -C /home/projects/kampan fetch origin develop
-        //                     git -C /home/projects/kampan checkout develop
-        //                     git -C /home/projects/kampan reset --hard origin/develop
-        //                     git -C /home/projects/kampan pull
-        //                     docker compose -f docker-compose.staging.yml up -d --build --force-recreate
+        stage('Build and Publish Staging Image') {
+            agent { label 'built-in' }
+            when {
+                beforeAgent true
+                branch 'develop'
+            }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            steps {
+                checkout scm
+                script {
+                    env.REGISTRY_KAMPAN_IMAGE = "${env.REGISTRY_URL}/r202-coe-psu/kampan:develop-${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(12)}"
+                }
+                withCredentials([
+                    string(credentialsId: 'CI_REGISTRY_TOKEN', variable: 'REGISTRY_TOKEN')
+                ]) {
+                    sh '''
+                        set -eu
+                        : "${REGISTRY_URL:?Set the Jenkins REGISTRY_URL environment variable}"
+                        DOCKER_CONFIG=$(mktemp -d)
+                        export DOCKER_CONFIG
+                        trap 'rm -rf "$DOCKER_CONFIG"' EXIT HUP INT TERM
+                        printf '%s' "$REGISTRY_TOKEN" | docker login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
+                        docker build --pull -t "$REGISTRY_KAMPAN_IMAGE" .
+                        docker push "$REGISTRY_KAMPAN_IMAGE"
+                    '''
+                }
+            }
+        }
 
-        //                 "
-        //                 echo "Deployment process finished successfully!"
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Deploy to Staging') {
+            agent { label 'staging-agent' }
+            when {
+                beforeAgent true
+                branch 'develop'
+            }
+            options { timeout(time: 10, unit: 'MINUTES') }
+            steps {
+                checkout scm
+                withCredentials([
+                    string(credentialsId: 'CI_REGISTRY_TOKEN', variable: 'REGISTRY_TOKEN'),
+                    file(credentialsId: 'INVENTORY_ENV_DEVELOPMENT', variable: 'CFG_FILE')
+                ]) {
+                    sh 'sh scripts/deploy-staging.sh'
+                }
+            }
+        }
 
         stage('Deploy to Production') {
+            agent { label 'mgmt' }
             when {
+                beforeAgent true
                 branch 'main'
             }
             steps {

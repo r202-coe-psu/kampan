@@ -1,0 +1,78 @@
+name: kampan-staging
+
+x-app: &app
+  image: ${REGISTRY_KAMPAN_IMAGE:?Set REGISTRY_KAMPAN_IMAGE to the image built by Jenkins}
+  restart: unless-stopped
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - staging-files:/deployment
+    - type: bind
+      source: ${KAMPAN_CFG_FILE:?Set KAMPAN_CFG_FILE to the persistent staging config}
+      target: /app/kampan-development.cfg
+      read_only: true
+      bind:
+        create_host_path: false
+  environment:
+    KAMPAN_SETTINGS: /app/kampan-development.cfg
+  depends_on:
+    mongodb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mongodb:
+    image: mongo:8.2
+    restart: unless-stopped
+    volumes:
+      - staging-mongodb:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - staging-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  web:
+    <<: *app
+    ports:
+      - "${KAMPAN_STAGING_PORT:-10060}:10060"
+    command: /venv/bin/gunicorn -w 4 --bind 0.0.0.0:10060 --access-logfile - "kampan.web:create_app()"
+    healthcheck:
+      test:
+        - CMD
+        - /venv/bin/python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:10060/', timeout=5)"
+      interval: 10s
+      timeout: 10s
+      start_period: 30s
+      retries: 12
+
+  worker:
+    <<: *app
+    command: /venv/bin/kampan-worker
+
+  controller:
+    <<: *app
+    command: /venv/bin/kampan-controller
+
+volumes:
+  staging-mongodb:
+  staging-redis:
+  staging-files:

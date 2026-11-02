@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+*.cfg
+**/*.cfg
+**/__pycache__
+**/*.pyc
+**/node_modules
+.venv
+venv
+env
+tests
+*.dump
