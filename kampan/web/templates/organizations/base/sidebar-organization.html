@@ -25,12 +25,29 @@
       </a>
     </li>
     {% endif %}
+    {% endif %}
+
+    {% if current_user.has_roles(['admin']) %}
+    <li class="menu-title">ผู้ดูแลระบบส่วนกลาง</li>
     <li>
-      <a href="{{ url_for('site.select_system', organization_id=organization.id) }}">
-        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.system_users' else '' }}"
+        href="{{ url_for('organizations.system_users.index') }}">
+        <i class="ph ph-user-gear"></i> ผู้ใช้ทั้งหมด
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.system_organizations' else '' }}"
+        href="{{ url_for('organizations.system_organizations.index') }}">
+        <i class="ph ph-buildings"></i> องค์กรทั้งหมด
       </a>
     </li>
     {% endif %}
+
+    <li>
+      <a href="{{ url_for('site.select_system', organization_id=organization.id) if organization else url_for('site.select_system') }}">
+        <i class="ph ph-swap"></i> เปลี่ยนระบบ
+      </a>
+    </li>
 
     <div class="mt-auto"></div>
     {% include "/base/components/organization_switcher.html" %}

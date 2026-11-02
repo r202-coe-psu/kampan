@@ -20,7 +20,6 @@ MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
     "organizations": "organizations.divisions.index",
-    "admin": "admin.index",
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
@@ -50,8 +49,6 @@ def switch_organization_next_url(organization):
         endpoint = INVENTORY_HOME_ENDPOINT
 
     try:
-        if endpoint == "admin.index":
-            return url_for(endpoint)
         return url_for(endpoint, organization_id=str(organization.id))
     except Exception:
         return None

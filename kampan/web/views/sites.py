@@ -65,7 +65,7 @@ def select_system():
         return render_template("sites/select_system.html", organization=organization)
 
     if "admin" in current_user.roles:
-        return redirect(url_for("admin.index"))
+        return redirect(url_for("organizations.system_organizations.index"))
 
     return render_template(
         "/accounts/index.html",
