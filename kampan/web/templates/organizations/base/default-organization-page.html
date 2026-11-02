@@ -42,4 +42,37 @@
   </div>
   {% include "/organizations/base/sidebar-organization.html" %}
 </div>
+
+{# ข้อความจาก flash(): warning เป็น AlertModal ที่เปิดเองตอนโหลดหน้า (ต้องให้ผู้ใช้กดรับทราบ)
+   ส่วน success / error / pending / info เป็น toast ที่หายเอง #}
+{% from '/base/components/modals.html' import AlertModal %}
+{% from '/base/components/toast.html' import render_toasts %}
+{% set toast_messages = [] %}
+{% for category, message in get_flashed_messages(with_categories=true) %}
+  {% if category == "warning" and message is mapping %}
+    {# flash แบบมีโครงสร้าง: {"title", "summary", "items": [{"label", "detail"}]} แสดงเป็นรายการ #}
+    {% call AlertModal("flash-%d" | format(loop.index), message.title or "โปรดทราบ", tone="warning", open=True) %}
+      {% if message.summary %}<p class="break-words">{{ message.summary }}</p>{% endif %}
+      {% if message["items"] %}
+      <ul class="mt-3 max-h-72 divide-y divide-base-300 overflow-y-auto rounded-box border border-base-300">
+        {% for item in message["items"] %}
+        <li class="flex flex-col gap-0.5 px-3 py-2">
+          <span class="break-words font-medium text-base-content">{{ item.label }}</span>
+          {% if item.detail %}
+          <span class="flex items-center gap-1 text-sm text-base-content/60">
+            <i class="ph ph-arrow-bend-down-right"></i> {{ item.detail }}
+          </span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endcall %}
+  {% elif category == "warning" %}
+    {{ AlertModal("flash-%d" | format(loop.index), "โปรดทราบ", body=message, tone="warning", open=True) }}
+  {% else %}
+    {% set _ = toast_messages.append((category, message)) %}
+  {% endif %}
+{% endfor %}
+{{ render_toasts(toast_messages) }}
 {% endblock body %}
