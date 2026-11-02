@@ -7,6 +7,12 @@
     {% if organization %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
+      <a class="{{ 'menu-active' if request.blueprint == 'organizations.overview' else '' }}"
+        href="{{ url_for('organizations.overview.index', organization_id=organization.id) }}">
+        <i class="ph ph-chart-bar"></i> ภาพรวมองค์กร
+      </a>
+    </li>
+    <li>
       <a class="{{ 'menu-active' if request.blueprint == 'organizations.divisions' else '' }}"
         href="{{ url_for('organizations.divisions.index', organization_id=organization.id) }}">
         <i class="ph ph-tree-structure"></i> แผนกทั้งหมด
@@ -16,12 +22,6 @@
       <a class="{{ 'menu-active' if request.blueprint == 'organizations.members' else '' }}"
         href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">
         <i class="ph ph-users"></i> สมาชิกขององค์กร
-      </a>
-    </li>
-    <li>
-      <a class="{{ 'menu-active' if request.blueprint == 'organizations.details' else '' }}"
-        href="{{ url_for('organizations.details.index', organization_id=organization.id) }}">
-        <i class="ph ph-buildings"></i> รายละเอียดองค์กร
       </a>
     </li>
     {% endif %}

@@ -155,7 +155,7 @@ def test_org_admin_sees_manage_button_next_to_switcher(app, login_as, setup, end
 
     assert response.status_code == 200
     assert MANAGE_BUTTON in html
-    assert _url(app, "organizations.divisions.index", organization_id=setup["org"].id) in html
+    assert _url(app, "organizations.overview.index", organization_id=setup["org"].id) in html
 
 
 def test_staff_does_not_see_manage_button(app, login_as, setup):

@@ -16,7 +16,7 @@ ADMIN_ONLY_ROUTES = [
     ("organizations.members.index", False, False),
     ("organizations.members.add_member", False, False),
     ("organizations.members.edit_roles", False, True),
-    ("organizations.details.index", False, False),
+    ("organizations.overview.index", False, False),
 ]
 ROUTE_IDS = [
     f"{endpoint}{'-division' if division else ''}{'-orguser' if org_user else ''}"
@@ -177,3 +177,77 @@ def test_divisions_index_pagination_links_to_divisions_index(app, org_setup):
     assert hrefs, "page 2 link not rendered"
     assert all(h.startswith("/organizations/divisions") for h in hrefs), hrefs
     assert "/item_orders" not in html
+
+
+def test_details_redirects_to_overview(app, org_setup):
+    org = org_setup["org"]
+    with app.test_request_context():
+        details_url = url_for("organizations.details.index", organization_id=str(org.id))
+        overview_url = url_for("organizations.overview.index", organization_id=str(org.id))
+
+    with app.test_client() as client:
+        _login(client, org_setup["admin"])
+        response = client.get(details_url)
+
+    assert response.status_code == 301
+    assert response.headers["Location"] == overview_url
+
+
+def test_overview_counts_members_per_division(app, org_setup, create_user, assign_user_to_org):
+    org = org_setup["org"]
+    admin = org_setup["admin"]
+    division = org_setup["division"]
+    empty_division = models.Division(
+        name="Empty Division",
+        organization=org,
+        created_by=admin,
+        last_updated_by=admin,
+        status="active",
+    ).save()
+    deleted_division = models.Division(
+        name="Deleted Division",
+        organization=org,
+        created_by=admin,
+        last_updated_by=admin,
+        status="disactive",
+    ).save()
+
+    def member(name, member_division, status="active"):
+        org_user = assign_user_to_org(create_user(name, "Member"), org, status=status, added_by=admin)
+        org_user.division = member_division
+        org_user.save()
+
+    member("Alpha", division)
+    member("Bravo", division)
+    member("Charlie", division, status="pending")
+    member("Delta", division, status="disactive")
+    member("Echo", deleted_division)
+
+    # สมาชิกขององค์กรอื่นต้องไม่ถูกนับ
+    other_org = models.Organization(name="Other", status="active").save()
+    assign_user_to_org(create_user("Outsider", "Member"), other_org, added_by=admin)
+
+    with app.test_request_context():
+        url = url_for("organizations.overview.index", organization_id=str(org.id))
+
+    with app.test_client() as client:
+        _login(client, admin)
+        response = client.get(url)
+
+    assert response.status_code == 200
+    context_rows = {}
+    html = response.get_data(as_text=True)
+    for row in re.findall(r"<tr [^>]*data-division-row>(.*?)</tr>", html, re.S):
+        name = re.search(r"data-division-name>\s*(.*?)\s*</p>", row).group(1)
+        count = re.search(r"data-member-count>(\d+)</span>", row).group(1)
+        context_rows[name] = int(count)
+
+    # admin กับ staff ใน org_setup ไม่มีแผนก + Echo อยู่ในแผนกที่ถูกลบ
+    assert context_rows == {
+        "Division One": 3,
+        "Empty Division": 0,
+        "ยังไม่ได้ระบุแผนก": 3,
+    }
+    assert "รอเข้าสู่ระบบ 1 คน" in html
+    assert "Deleted Division" not in html
+
