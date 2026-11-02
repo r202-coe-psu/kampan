@@ -105,7 +105,7 @@ def test_global_admin_creates_and_deletes_organization(app, login_as, setup):
         created = models.Organization.objects(name="Brand New Org").first()
         assert created is not None
 
-        response = client.get(
+        response = client.post(
             _url(app, "organizations.system_organizations.delete", organization_id=created.id)
         )
         assert response.status_code == 302

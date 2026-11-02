@@ -1,5 +1,7 @@
 {% extends '/organizations/base/default-organization-page.html' %}
-{% from '/base/components/dialogs.html' import ModalNegative %}
+{% from '/base/components/icon_button.html' import IconButton %}
+{% from '/base/components/modals.html' import DeleteModal, open_modal %}
+{% from '/base/components/role_badge.html' import RoleBadges %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}สมาชิกขององค์กร{% endblock %}
@@ -33,7 +35,7 @@
           <th class="table-style">อีเมล</th>
           <th class="table-style">ตำแหน่ง</th>
           <th class="table-style">เพิ่มเข้ามาเมื่อวันที่</th>
-          <th class="table-style">แก้ไขตำแหน่ง/ลบสมาชิก</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
         </tr>
       </thead>
       <tbody>
@@ -41,23 +43,17 @@
         <tr>
           <td class="table-style">{{ org_user.display_fullname() }}</td>
           <td class="table-style">{{ org_user.display_email() }}</td>
-          <td class="table-style">{{ org_user.roles | join(', ') }}</td>
+          <td class="table-style">{{ RoleBadges(org_user.role_items()) }}</td>
           <td class="table-style">{{ org_user.created_date.strftime('%d/%m/%Y') if org_user.created_date else '-' }}</td>
-          <td class="table-style">
-            <a class="btn btn-circle btn-primary" title="แก้ไขตำแหน่ง"
-              href="{{ url_for('organizations.system_organizations.edit_roles', organization_id=target_organization.id, org_user_id=org_user.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
-            <button type="button" class="btn btn-circle btn-error" title="ลบสมาชิก"
-              onclick="document.querySelector('dialog.remove-{{ org_user.id }}').showModal()">
-              <i class="ph ph-trash"></i>
-            </button>
-            {{ ModalNegative(
-              id="remove-%s" | format(org_user.id),
-              header="ลบสมาชิก",
-              body="ต้องการลบสมาชิก <b>%s</b>" | format(org_user.display_fullname() | e),
-              redirect=url_for('organizations.system_organizations.remove_org_user', organization_id=target_organization.id, org_user_id=org_user.id),
-            ) }}
+          <td class="table-style whitespace-nowrap">
+            {{ IconButton('ph-pen', 'แก้ไขตำแหน่ง', href=url_for('organizations.system_organizations.edit_roles', organization_id=target_organization.id, org_user_id=org_user.id)) }}
+            {{ IconButton('ph-trash', 'นำออกจากองค์กร', onclick=open_modal('remove-%s' | format(org_user.id)), tone='error') }}
+            {{ DeleteModal(
+              'remove-%s' | format(org_user.id),
+              'นำสมาชิกออกจากองค์กร',
+              url_for('organizations.system_organizations.remove_org_user', organization_id=target_organization.id, org_user_id=org_user.id),
+              body='นำ %s ออกจาก %s' | format(org_user.display_fullname(), target_organization.name),
+              confirm_label='นำออก') }}
           </td>
         </tr>
         {% endfor %}

@@ -1,5 +1,6 @@
 {% extends '/organizations/base/default-organization-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
+{% from '/base/components/icon_button.html' import IconButton %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 
 {% block title %}ผู้ใช้ทั้งหมด{% endblock %}
@@ -68,7 +69,7 @@
           <th class="table-style">ชื่อผู้ใช้งาน</th>
           <th class="table-style">อีเมล</th>
           <th class="table-style">ระดับผู้ใช้</th>
-          <th class="table-style">แก้ไขระดับผู้ใช้</th>
+          <th class="table-style w-px whitespace-nowrap">จัดการ</th>
         </tr>
       </thead>
       <tbody>
@@ -86,11 +87,8 @@
               {% endfor %}
             </div>
           </td>
-          <td class="table-style">
-            <a class="btn btn-circle btn-primary" title="แก้ไขระดับผู้ใช้"
-              href="{{ url_for('organizations.system_users.edit_roles', user_id=user.id) }}">
-              <i class="ph ph-pen"></i>
-            </a>
+          <td class="table-style whitespace-nowrap">
+            {{ IconButton('ph-pen', 'แก้ไขระดับผู้ใช้', href=url_for('organizations.system_users.edit_roles', user_id=user.id)) }}
           </td>
         </tr>
         {% else %}

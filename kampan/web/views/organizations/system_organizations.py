@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_mongoengine import Pagination
 
@@ -65,6 +65,12 @@ def create_or_edit(organization_id):
         target_organization.created_by = current_user._get_current_object()
     target_organization.last_updated_by = current_user._get_current_object()
     target_organization.save()
+    flash(
+        f"เพิ่มองค์กร {target_organization.name} แล้ว"
+        if not organization_id
+        else f"บันทึกองค์กร {target_organization.name} แล้ว",
+        "success",
+    )
     return redirect(url_for("organizations.system_organizations.index"))
 
 
@@ -120,6 +126,12 @@ def add_member(organization_id):
             created_date=datetime.datetime.now(),
         )
         org_user.save()
+        flash(
+            f"เพิ่มสมาชิก {org_user.display_fullname()} เข้า {target_organization.name} แล้ว",
+            "success",
+        )
+    else:
+        flash("ไม่พบผู้ใช้ที่เลือก", "error")
 
     return redirect(
         url_for(
@@ -169,6 +181,7 @@ def edit_roles(organization_id, org_user_id):
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(f"บันทึกตำแหน่งของ {org_user.display_fullname()} แล้ว", "success")
     return redirect(
         url_for(
             "organizations.system_organizations.users",
@@ -192,6 +205,10 @@ def remove_org_user(organization_id, org_user_id):
         "X-Forwarded-For", request.remote_addr
     )
     org_user.save()
+    flash(
+        f"นำ {org_user.display_fullname()} ออกจาก {target_organization.name} แล้ว",
+        "success",
+    )
     return redirect(
         url_for(
             "organizations.system_organizations.users",
@@ -200,10 +217,11 @@ def remove_org_user(organization_id, org_user_id):
     )
 
 
-@module.route("/<organization_id>/delete")
+@module.route("/<organization_id>/delete", methods=["POST"])
 @acl.roles_required("admin")
 def delete(organization_id):
     target_organization = get_target_organization(organization_id)
     target_organization.status = "disactive"
     target_organization.save()
+    flash(f"ลบองค์กร {target_organization.name} แล้ว", "success")
     return redirect(url_for("organizations.system_organizations.index"))

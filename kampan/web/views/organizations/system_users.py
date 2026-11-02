@@ -1,5 +1,5 @@
 import mongoengine as me
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_mongoengine import Pagination
 
@@ -115,4 +115,5 @@ def edit_roles(user_id):
     user.roles = form.roles.data + kept_roles
     user.save()
 
+    flash(f"บันทึกระดับผู้ใช้ของ {user.get_name()} แล้ว", "success")
     return redirect(url_for("organizations.system_users.index"))
