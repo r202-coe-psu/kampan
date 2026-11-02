@@ -1,0 +1,57 @@
+{# กล่องแสดงตอนไม่มีข้อมูล ใช้แทนข้อความเปล่าๆ ใต้ตาราง/รายการ
+
+   import:  {% from '/base/components/empty_state.html' import EmptyState %}
+
+   ยังไม่มีข้อมูล (มีปุ่มชวนสร้าง):
+     {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก',
+                   description='สร้างแผนกแรกเพื่อจัดกลุ่มสมาชิก',
+                   action_label='เพิ่มแผนก', action_onclick=open_modal('create-division')) }}
+
+   ค้นหาไม่พบ (filtered=True จะเปลี่ยนเป็นไอคอนแว่นขยาย และใช้ปุ่มล้างการค้นหาแทน):
+     {{ EmptyState('ph-tree-structure', 'ยังไม่มีแผนก', filtered=is_filtered,
+                   clear_href=url_for(...)) }}
+
+   size: md (ค่าเริ่มต้น ใช้แทนทั้งตาราง) / sm (ใช้ในรายการที่กรองด้วย JS หรือใน modal)
+   attrs: attribute เพิ่มเติมของกล่อง เช่น 'data-filter-empty="x"'
+   hidden: ซ่อนไว้ก่อน ให้ JS สลับ class hidden เอง
+#}
+
+{% macro EmptyState(icon, title, description=None,
+                    action_label=None, action_href=None, action_onclick=None, action_icon='ph-plus',
+                    filtered=False, filtered_title=None, filtered_description=None, clear_href=None,
+                    size='md', hidden=False, attrs='') %}
+{% if filtered %}
+  {% set icon = 'ph-magnifying-glass' %}
+  {% set title = filtered_title or 'ไม่พบข้อมูลที่ค้นหา' %}
+  {% set description = filtered_description or 'ลองเปลี่ยนคำค้นหาหรือเงื่อนไขการกรอง' %}
+{% endif %}
+{% set is_small = size == 'sm' %}
+{# wrapper แยกจาก flex ด้านใน เพื่อให้ JS สลับ class hidden ได้โดยไม่ชนกับ display:flex #}
+<div class="{{ 'hidden' if hidden else '' }}" role="status" {{ attrs | safe }}>
+<div class="flex flex-col items-center text-center {{ 'gap-2 px-4 py-6' if is_small else 'mt-4 gap-3 rounded-box border border-dashed border-base-300 bg-base-200/40 px-6 py-12' }}">
+  {# ต้องใส่ ! เพราะ .ph ใน setup.css ตั้ง font-size ไว้นอก layer ทำให้ชนะ utility ปกติ #}
+  <i class="ph {{ icon }} text-base-content {{ 'text-3xl!' if is_small else 'text-5xl!' }}"></i>
+  <div class="max-w-md">
+    <p class="{{ 'text-base' if is_small else 'text-lg' }} font-semibold text-base-content">{{ title }}</p>
+    {% if description %}
+    <p class="mt-1 text-sm text-base-content/60">{{ description }}</p>
+    {% endif %}
+  </div>
+  {% if filtered and clear_href %}
+  <a class="btn btn-sm mt-2" href="{{ clear_href }}">
+    <i class="ph ph-x"></i> ล้างการค้นหา
+  </a>
+  {% elif not filtered and action_label and (action_href or action_onclick) %}
+    {% if action_href %}
+    <a class="btn btn-primary btn-sm mt-2" href="{{ action_href }}">
+      <i class="ph {{ action_icon }}"></i> {{ action_label }}
+    </a>
+    {% else %}
+    <button type="button" class="btn btn-primary btn-sm mt-2" onclick="{{ action_onclick }}">
+      <i class="ph {{ action_icon }}"></i> {{ action_label }}
+    </button>
+    {% endif %}
+  {% endif %}
+</div>
+</div>
+{% endmacro %}
