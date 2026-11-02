@@ -112,7 +112,7 @@ def test_steps_for_general_trip_pending_on_admin():
     assert _steps("pending on admin") == [
         ("ยื่นคำขอ", "done"),
         ("หัวหน้าฝ่าย", "done"),
-        ("พัสดุ", "current"),
+        ("ผู้ดูแล/พัสดุ", "current"),
         ("อนุมัติ", "upcoming"),
     ]
 
@@ -121,7 +121,7 @@ def test_steps_for_out_of_town_trip_include_director():
     assert _steps("denied by director", "out of town") == [
         ("ยื่นคำขอ", "done"),
         ("หัวหน้าฝ่าย", "done"),
-        ("พัสดุ", "done"),
+        ("ผู้ดูแล/พัสดุ", "done"),
         ("ผอ.", "denied"),
         ("อนุมัติ", "upcoming"),
     ]
@@ -134,3 +134,4 @@ def test_steps_all_done_when_approved():
 def test_steps_empty_for_unknown_stage():
     assert _steps("denied by director", "general") == []
     assert _steps("disactive") == []
+

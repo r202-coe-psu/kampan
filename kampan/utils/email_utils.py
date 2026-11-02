@@ -572,7 +572,7 @@ def get_car_application_result_text_format(
 
 def get_car_application_steps(car_application):
     """ขั้นตอนอนุมัติของใบขอใช้รถ พร้อมสถานะของแต่ละขั้น สำหรับ stepper ในอีเมล"""
-    approvers = [("header", "หัวหน้าฝ่าย"), ("admin", "พัสดุ")]
+    approvers = [("header", "หัวหน้าฝ่าย"), ("admin", "ผู้ดูแล/พัสดุ")]
     if car_application.using_type == "out of town":
         approvers.append(("director", "ผอ."))
 
