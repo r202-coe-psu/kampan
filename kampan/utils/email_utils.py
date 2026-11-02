@@ -534,3 +534,73 @@ def send_email_car_application_to_endorser(
     )
     psu_smtp.quit()
     return True
+
+
+def get_car_application_result_text_format(
+    division, sender, car_application, application_url
+):
+    status_labels = dict(models.vehicle_applications.CAR_APPLICATION_STATUS)
+    is_denied = car_application.status.startswith("denied")
+    driver = car_application.driver
+
+    return {
+        "organization_name": division.organization.name if division else "-",
+        "division_name": division.name if division else "-",
+        "order_name": car_application.creator.get_name(),
+        "order_email": car_application.creator.email,
+        "status_label": status_labels.get(car_application.status, car_application.status),
+        "denied_reason": (car_application.denied_reason or "-") if is_denied else "-",
+        "departure_datetime": car_application.departure_datetime.strftime("%d/%m/%Y %H:%M"),
+        "return_datetime": (
+            car_application.return_datetime.strftime("%d/%m/%Y %H:%M")
+            if car_application.return_datetime
+            else "-"
+        ),
+        "location": car_application.location or "-",
+        "car_application_objective": car_application.request_reason,
+        "car": (
+            car_application.car.license_plate
+            if car_application.car
+            else "รอเจ้าหน้าที่จัดรถ"
+        ),
+        "driver_name": driver.get_name() if driver else "-",
+        "sender_name": sender.get_name(),
+        "sender_email": sender.email,
+        "application_url": application_url,
+    }
+
+
+def send_email_car_application_to_requester(car_application, user, setting):
+    """แจ้งผู้ขอทุกครั้งที่ใบขอใช้รถถูกอนุมัติไปขั้นถัดไปหรือถูกปฏิเสธ"""
+    creator = car_application.creator
+    organization = car_application.organization
+    email_template = organization.get_default_email_template("car_application_result")
+
+    if not email_template:
+        logger.debug("There are no car_application_result email template")
+        return False
+
+    if not creator or not creator.email:
+        logger.debug("car application creator email is required")
+        return False
+
+    division = car_application.division or creator.get_current_division()
+    application_url = (
+        f"{get_host_url(setting)}/vehicle_lending/car_applications"
+        f"?organization_id={organization.id}"
+    )
+    text_format = get_car_application_result_text_format(
+        division, user, car_application, application_url
+    )
+    email_subject = Template(email_template.subject).render(text_format)
+    email_body = Template(email_template.body).render(text_format)
+
+    psu_smtp = PSUSMTP(setting)
+    if not psu_smtp.login():
+        logger.debug("email cannot login")
+        return False
+
+    logger.debug(f"send car application result to {creator.email}")
+    sent = psu_smtp.send_email(creator.email, email_subject, email_body, html=True)
+    psu_smtp.quit()
+    return sent

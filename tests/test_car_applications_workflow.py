@@ -434,3 +434,54 @@ def test_migration_script_updates_legacy_out_of_town_records(workflow_setup):
     modern_app.reload()
     assert modern_app.status == "pending on director"  # kept as is!
 
+
+
+def _requester_jobs(mock_queue):
+    from kampan.utils import email_utils
+
+    return [
+        c for c in mock_queue.enqueue.call_args_list
+        if c.args and c.args[0] is email_utils.send_email_car_application_to_requester
+    ]
+
+
+@pytest.mark.parametrize(
+    "endpoint, actor, status",
+    [
+        ("header_approve", "head", "pending on header"),
+        ("header_denied", "head", "pending on header"),
+        ("admin_approve", "admin", "pending on admin"),
+        ("admin_denied", "admin", "pending on admin"),
+        ("director_approve", "director", "pending on director"),
+        ("director_denied", "director", "pending on director"),
+    ],
+)
+def test_every_decision_notifies_requester(
+    app, workflow_setup, login_as, mock_redis_queue, endpoint, actor, status
+):
+    car_app = models.vehicle_applications.CarApplication(
+        organization=workflow_setup["org"],
+        division=workflow_setup["division"],
+        creator=workflow_setup["staff"],
+        car=workflow_setup["car"],
+        driver=workflow_setup["driver"],
+        using_type="general",
+        location="หาดใหญ่",
+        request_reason="ไปราชการ",
+        status=status,
+    ).save()
+
+    client = app.test_client()
+    login_as(client, workflow_setup[actor])
+    client.post(
+        f"/vehicle_lending/car_permissions/{endpoint}",
+        data={
+            "organization_id": str(workflow_setup["org"].id),
+            "car_application_id": str(car_app.id),
+            "denied_reason": "เหตุผล",
+        },
+    )
+
+    jobs = _requester_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    assert jobs[0].kwargs["args"][0].id == car_app.id

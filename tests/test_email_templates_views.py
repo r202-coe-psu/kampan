@@ -156,3 +156,23 @@ def test_cannot_open_or_delete_another_organizations_template(app, login_as, ema
     assert detail.status_code == 404
     assert deleted.status_code == 404
     assert models.EmailTemplate.objects(id=s.foreign.id).count() == 1
+
+
+def test_car_application_result_variables_match_what_is_sent():
+    car_application = SimpleNamespace(
+        creator=_person("requester"),
+        status="denied by admin",
+        denied_reason="รถไม่ว่าง",
+        departure_datetime=NOW,
+        return_datetime=NOW,
+        location="หาดใหญ่",
+        request_reason="trip",
+        car=None,
+        driver=None,
+    )
+    sent = email_utils.get_car_application_result_text_format(
+        DIVISION, _person("admin"), car_application, "http://x"
+    )
+    assert _documented("car_application_result") == set(sent)
+    assert sent["status_label"] == "ปฏิเสธ"
+    assert sent["denied_reason"] == "รถไม่ว่าง"

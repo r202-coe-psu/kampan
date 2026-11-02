@@ -20,6 +20,20 @@ from ... import redis_rq
 module = Blueprint("car_permissions", __name__, url_prefix="/car_permissions")
 
 
+def notify_requester(car_application):
+    redis_rq.redis_queue.queue.enqueue(
+        utils.email_utils.send_email_car_application_to_requester,
+        args=(
+            car_application,
+            current_user._get_current_object(),
+            current_app.config,
+        ),
+        job_id=f"send_email_car_application_to_requester_{car_application.id}_{car_application.status}",
+        timeout=600,
+        job_timeout=600,
+    )
+
+
 @module.route("/header_page", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "head", "supervisor supplier")
 def header_page():
@@ -125,6 +139,7 @@ def header_approve():
         )
     )
     car_application.save()
+    notify_requester(car_application)
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_car_application_to_endorser,
         args=(
@@ -166,6 +181,7 @@ def header_denied():
         )
     )
     car_application.save()
+    notify_requester(car_application)
 
     return redirect(
         url_for(
@@ -281,6 +297,7 @@ def director_approve():
         )
     )
     car_application.save()
+    notify_requester(car_application)
     job = redis_rq.redis_queue.queue.enqueue(
         utils.send_email_to_drivers.force_send_email_to_driver,
         args=(
@@ -323,6 +340,7 @@ def director_denied():
         )
     )
     car_application.save()
+    notify_requester(car_application)
 
     return redirect(
         url_for(
@@ -452,6 +470,7 @@ def admin_approve():
     if car_application.using_type == "out of town":
         car_application.status = "pending on director"
         car_application.save()
+        notify_requester(car_application)
         job = redis_rq.redis_queue.queue.enqueue(
             utils.email_utils.send_email_car_application_to_endorser,
             args=(
@@ -467,6 +486,7 @@ def admin_approve():
     else:
         car_application.status = "active"
         car_application.save()
+        notify_requester(car_application)
         job = redis_rq.redis_queue.queue.enqueue(
             utils.send_email_to_drivers.force_send_email_to_driver,
             args=(
@@ -506,6 +526,7 @@ def admin_denied():
         approved_at=datetime.datetime.now(),
     )
     car_application.save()
+    notify_requester(car_application)
 
     return redirect(
         url_for(
