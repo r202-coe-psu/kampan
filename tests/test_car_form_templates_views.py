@@ -816,3 +816,62 @@ def test_paper_editor_appends_the_group_to_labels_that_collide(app, setup, login
     assert labels["approvals.admin.name"] == "ผู้จัดรถ : ชื่อผู้อนุมัติ (ขั้นอนุมัติ)"
     assert labels["app.requester_name"] == "ชื่อผู้ขอ"
     assert labels["approvals.admin.date"] == "ผู้จัดรถ : วันที่อนุมัติ"
+
+
+def _builder_json(body, element_id):
+    match = re.search(rf'<script type="application/json" id="{element_id}">(.*?)</script>', body, re.S)
+    return json.loads(match.group(1))
+
+
+def test_role_step_for_driver_is_rejected_in_thai(app, setup, login_as):
+    """คนขับไม่มีขั้นอนุมัติในแบบฟอร์ม: ขั้นที่ role เป็น driver ต้องไม่ถูกบันทึก"""
+    org = setup["org"]
+    client = login_as(app.test_client(), setup["admin"])
+
+    res = client.post(
+        f"{BASE}/create",
+        data=valid_payload(
+            org,
+            steps_data=json.dumps(
+                [
+                    {"key": "drive", "label": "คนขับรับทราบ", "approver_type": "role", "role": "driver"},
+                    {"key": "admin", "label": "ผู้จัดรถ", "approver_type": "role", "role": "admin", "assigns_vehicle": True},
+                ]
+            ),
+        ),
+    )
+
+    assert count_templates(org) == 0
+    assert "ขั้นที่ 1: พนักงานขับรถเป็นผู้อนุมัติไม่ได้" in res.get_data(as_text=True)
+
+
+def test_builder_offers_neither_the_driver_role_nor_driver_only_members(
+    app, setup, create_user, assign_user_to_org, login_as
+):
+    org = setup["org"]
+    driver = create_user("Driver", "Only")
+    driving_head = create_user("Driving", "Head")
+    assign_user_to_org(driver, org, roles=["driver", "staff"])
+    assign_user_to_org(driving_head, org, roles=["driver", "head"])
+    client = login_as(app.test_client(), setup["admin"])
+
+    body = client.get(f"{BASE}/create?organization_id={org.id}").get_data(as_text=True)
+
+    assert "driver" not in [value for value, _ in _builder_json(body, "rolesData")]
+    member_ids = [m["id"] for m in _builder_json(body, "membersData")]
+    assert str(driver.id) not in member_ids
+    assert str(driving_head.id) in member_ids
+
+
+def test_user_step_naming_a_driver_only_member_is_rejected(
+    app, setup, create_user, assign_user_to_org, login_as
+):
+    org = setup["org"]
+    driver = create_user("Driver", "Only")
+    assign_user_to_org(driver, org, roles=["driver"])
+    client = login_as(app.test_client(), setup["admin"])
+
+    res = client.post(f"{BASE}/create", data=user_step_payload(org, str(driver.id)))
+
+    assert count_templates(org) == 0
+    assert "ขั้นที่ 1: พนักงานขับรถเป็นผู้อนุมัติไม่ได้" in res.get_data(as_text=True)

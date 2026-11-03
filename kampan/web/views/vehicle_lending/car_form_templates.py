@@ -109,7 +109,7 @@ def parse_fields_payload(raw):
 
 
 def parse_steps_payload(raw, organization):
-    members = {m["id"]: m["user"] for m in get_org_members(organization)}
+    members = {m["id"]: m for m in get_org_members(organization)}
     step_defs = []
     items = _load_list(raw, "ขั้นอนุมัติ")
     taken = _taken_keys(items)
@@ -119,11 +119,16 @@ def parse_steps_payload(raw, organization):
         user_id = str(item.get("user") or "")
         if approver_type == "user" and user_id:
             # ตรวจฝั่ง server ว่าเป็นสมาชิก active ของ org นี้ ไม่เชื่อค่าจาก dropdown
-            user = members.get(user_id)
-            if user is None:
+            member = members.get(user_id)
+            if member is None:
                 raise TemplatePayloadError(
                     f"ขั้นที่ {index}: ผู้อนุมัติต้องเป็นสมาชิกของหน่วยงานนี้"
                 )
+            if not models.car_form_templates.can_approve(member["roles"]):
+                raise TemplatePayloadError(
+                    f"ขั้นที่ {index}: {models.car_form_templates.DRIVER_CANNOT_APPROVE}"
+                )
+            user = member["user"]
         key = clean_key(item.get("key")) or new_key(STEP_PREFIX, taken)
         step_defs.append(
             models.car_form_templates.ApprovalStepDef(
@@ -160,6 +165,7 @@ def get_org_members(organization):
             "id": str(role.user.id),
             "name": f"{role.user.first_name} {role.user.last_name}".strip(),
             "user": role.user,
+            "roles": list(role.roles),
         }
         for role in roles
         if role.user
@@ -178,9 +184,13 @@ def builder_context(organization):
             }
             for f in CATALOG.values()
         ],
-        roles=models.organizations.ORGANIZATION_ROLES,
+        roles=models.car_form_templates.APPROVER_ROLES,
         custom_field_types=models.car_form_templates.CUSTOM_FIELD_TYPES,
-        members=[{k: v for k, v in m.items() if k != "user"} for m in get_org_members(organization)],
+        members=[
+            {"id": m["id"], "name": m["name"]}
+            for m in get_org_members(organization)
+            if models.car_form_templates.can_approve(m["roles"])
+        ],
         app_variables=APP_VARIABLES,
     )
 

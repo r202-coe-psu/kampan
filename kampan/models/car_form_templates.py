@@ -97,6 +97,13 @@ class CarFormTemplate(me.Document):
 
 INTERNAL_PROBLEM = "ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่"
 ROLE_LABELS = dict(ORGANIZATION_ROLES)
+APPROVER_ROLES = [(value, label) for value, label in ORGANIZATION_ROLES if value != "driver"]
+DRIVER_CANNOT_APPROVE = "พนักงานขับรถเป็นผู้อนุมัติไม่ได้"
+
+
+def can_approve(roles):
+    """คนขับไม่มีขั้นอนุมัติในแบบฟอร์ม เว้นแต่มี role อื่นนอกจาก staff"""
+    return "driver" not in roles or bool(set(roles) - {"driver", "staff"})
 CUSTOM_TYPE_KEYS = {key for key, _ in CUSTOM_FIELD_TYPES}
 
 
@@ -205,6 +212,8 @@ def _step_problems(steps):
                 problems.append(f"{where}: ต้องเลือกผู้อนุมัติ")
         elif not step.role:
             problems.append(f"{where}: ต้องเลือก role")
+        elif step.role == "driver":
+            problems.append(f"{where}: {DRIVER_CANNOT_APPROVE}")
         elif step.role not in ROLE_LABELS:
             problems.append(f"{where}: ไม่มี role {_quote(step.role)} ในระบบ")
 
