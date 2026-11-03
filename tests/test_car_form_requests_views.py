@@ -1410,6 +1410,86 @@ def test_request_reason_is_limited_to_what_fits_one_line_on_the_paper_form(app, 
     assert 'maxlength="60"' in form.get_data(as_text=True)
 
 
+def test_request_submitted_before_the_template_was_rekeyed_can_still_be_approved_and_printed(
+    app, head_admin_setup, login_as
+):
+    """คำขอที่ยื่นก่อน rekey template และค้างอยู่ขั้นที่ 2 ต้องอนุมัติต่อจนครบได้ และใบพิมพ์ยังมีค่า custom กับชื่อผู้อนุมัติขั้นแรก"""
+    s = head_admin_setup
+    blank = BytesIO()
+    pdf = canvas.Canvas(blank, pagesize=(595, 842))
+    pdf.drawString(50, 800, "BLANK-FORM")
+    pdf.showPage()
+    pdf.save()
+    paper_file = models.car_form_templates.CarFormPaperFile(
+        organization=s["org"],
+        filename="form.pdf",
+        data=blank.getvalue(),
+        page_count=1,
+        page_sizes=[[595, 842]],
+    )
+    paper_file.save()
+    template = s["template"]
+    template.fields = [
+        models.car_form_templates.FormFieldDef(
+            source="custom", key="project_no", label="เลขที่โครงการ", field_type="text"
+        )
+    ]
+    template.paper_file = paper_file
+    template.placements = [
+        models.car_form_templates.PaperPlacement(
+            page=0, x=0.1, y=0.2, w=0.6, h=0.03, variable="details.custom_project_no"
+        ),
+        models.car_form_templates.PaperPlacement(
+            page=0, x=0.1, y=0.3, w=0.6, h=0.03, variable="approvals.head.name"
+        ),
+    ]
+    template.save()
+    org_id = str(s["org"].id)
+
+    submitted = _submit(
+        login_as(app.test_client(), s["staff"]),
+        template,
+        s["org"],
+        custom_project_no="PRJ-2569-77",
+    )
+    assert submitted.status_code == 302
+    car_app = models.vehicle_applications.CarApplication.objects(
+        organization=s["org"]
+    ).first()
+    head_res = _approve(login_as(app.test_client(), s["head"]), car_app, s["org"])
+    assert head_res.status_code == 302
+
+    # จำลอง migration script: เปลี่ยน key ของ template หลังมีคำขอค้างอยู่ขั้นที่ 2
+    from kampan.utils.car_form_keys import rekey_template
+
+    field_map, step_map = rekey_template(template)
+    template.save()
+    assert set(field_map) == {"project_no"} and set(step_map) == {"head", "admin"}
+
+    admin_res = _approve(
+        login_as(app.test_client(), s["admin"]),
+        car_app,
+        s["org"],
+        car=str(s["car"].id),
+    )
+    paper = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/{car_app.id}/paper?organization_id={org_id}"
+    )
+
+    assert admin_res.status_code == 302
+    car_app.reload()
+    assert car_app.status == "active"
+    assert car_app.car == s["car"]
+    assert [(a.step_key, a.decision) for a in car_app.step_approvals] == [
+        ("head", "approved"),
+        ("admin", "approved"),
+    ]
+    assert paper.status_code == 200
+    text = PdfReader(BytesIO(paper.data)).pages[0].extract_text()
+    assert "PRJ-2569-77" in text
+    assert "Head User" in text
+
+
 def _edit(client, car_app, org, **overrides):
     return client.post(
         f"{BASE}/{car_app.id}/edit",
