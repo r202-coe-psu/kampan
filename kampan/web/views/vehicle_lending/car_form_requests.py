@@ -130,6 +130,39 @@ def paper(car_application_id):
     )
 
 
+def _request_form_class(field_defs, organization):
+    car_types = _active_car_types(organization)
+    return forms.car_form_templates.build_details_form(
+        field_defs,
+        allowed_choices={"vehicle_kind": car_types} if car_types else None,
+        base=forms.car_form_requests.CarFormRequestForm,
+    )
+
+
+def _render_request_form(organization, template, form, car_application=None):
+    return (
+        render_template(
+            "/vehicle_lending/car_form_requests/form.html",
+            organization=organization,
+            template=template,
+            form=form,
+            car_application=car_application,
+        ),
+        400 if request.method == "POST" else 200,
+    )
+
+
+def _apply_core_fields(car_application, form):
+    car_application.details = form.details()
+    car_application.phone = form.phone.data.strip()
+    car_application.location = form.location.data.strip()
+    car_application.request_reason = form.request_reason.data.strip()
+    car_application.passenger_number = form.passenger_number.data
+    car_application.departure_datetime = form.departure_datetime()
+    car_application.return_datetime = form.return_datetime()
+    car_application.updater = current_user._get_current_object()
+
+
 @module.route("/new/<template_id>", methods=["GET", "POST"])
 @acl.organization_roles_required(*REQUEST_ROLES)
 def create(template_id):
@@ -141,24 +174,10 @@ def create(template_id):
         abort(404)
 
     snapshot = _snapshot(template)
-    car_types = _active_car_types(organization)
-    form_class = forms.car_form_templates.build_details_form(
-        snapshot["fields"],
-        allowed_choices={"vehicle_kind": car_types} if car_types else None,
-        base=forms.car_form_requests.CarFormRequestForm,
-    )
-    form = form_class()
+    form = _request_form_class(snapshot["fields"], organization)()
 
     if not form.validate_on_submit():
-        return (
-            render_template(
-                "/vehicle_lending/car_form_requests/form.html",
-                organization=organization,
-                template=template,
-                form=form,
-            ),
-            400 if request.method == "POST" else 200,
-        )
+        return _render_request_form(organization, template, form)
 
     member = models.OrganizationUserRole.objects(
         user=current_user.id, organization=organization, status__ne="disactive"
@@ -168,19 +187,12 @@ def create(template_id):
         organization=organization,
         form_template=template,
         template_snapshot=snapshot,
-        details=form.details(),
         status="pending",
         current_step=0,
         creator=current_user._get_current_object(),
-        updater=current_user._get_current_object(),
         division=member.division if member else None,
-        phone=form.phone.data.strip(),
-        location=form.location.data.strip(),
-        request_reason=form.request_reason.data.strip(),
-        passenger_number=form.passenger_number.data,
-        departure_datetime=form.departure_datetime(),
-        return_datetime=form.return_datetime(),
     )
+    _apply_core_fields(car_application, form)
     utils.car_form_flow.record_submitted(car_application, current_user._get_current_object())
     car_application.save()
     return redirect(
