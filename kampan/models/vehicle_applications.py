@@ -175,20 +175,28 @@ class CarApplication(VehicleApplication, me.Document):
         return last_mileage
 
     @staticmethod
-    def get_first_ids_per_car(organization, status, order_by):
+    def get_first_per_car(organization, status, order_by):
         # Mileage is tracked per car, so only one trip per car may have it entered: the oldest active task
         # or the latest completed trip (editing that also overwrites the car's current mileage)
-        first_ids = set()
+        first_per_car = {}
         for car in CarApplication.objects(organization=organization, status=status).distinct("car"):
             first = (
                 CarApplication.objects(organization=organization, status=status, car=car)
                 .order_by(order_by)
-                .only("id")
+                .only("id", "car", "departure_datetime", "driver")
                 .first()
             )
             if first:
-                first_ids.add(first.id)
-        return first_ids
+                first_per_car[car.id] = first
+        return first_per_car
+
+    @staticmethod
+    def get_first_ids_per_car(organization, status, order_by):
+        return {first.id for first in CarApplication.get_first_per_car(organization, status, order_by).values()}
+
+    @staticmethod
+    def get_oldest_active_per_car(organization):
+        return CarApplication.get_first_per_car(organization, "active", "departure_datetime")
 
     @staticmethod
     def get_latest_completed_ids(organization):
@@ -196,7 +204,7 @@ class CarApplication(VehicleApplication, me.Document):
 
     @staticmethod
     def get_oldest_active_ids(organization):
-        return CarApplication.get_first_ids_per_car(organization, "active", "departure_datetime")
+        return {first.id for first in CarApplication.get_oldest_active_per_car(organization).values()}
 
     def get_status(self):
         key_color = {
