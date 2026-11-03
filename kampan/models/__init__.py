@@ -35,6 +35,7 @@ from .car_feedback import (
     QuestionTemplate,
     QUESTION_TYPE,
 )
+import kampan.models.car_form_templates as car_form_templates
 import kampan.models.vehicle_applications as vehicle_applications
 from .requisition_timeline import (
     RequisitionTimeline,

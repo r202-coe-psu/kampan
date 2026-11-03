@@ -11,6 +11,8 @@ CAR_APPLICATION_STATUS = [
     ("denied by header", "ปฏิเสธ"),
     ("denied by director", "ปฏิเสธ"),
     ("denied by admin", "ปฏิเสธ"),
+    ("pending", "รออนุมัติ"),
+    ("denied", "ปฏิเสธ"),
     ("disactive", "ยกเลิก"),
 ]
 
@@ -66,10 +68,20 @@ class CarApplicationApproval(me.EmbeddedDocument):
     approved_at = me.DateTimeField()
 
 
+class StepApproval(me.EmbeddedDocument):
+    step_key = me.StringField(required=True)
+    label = me.StringField()
+    decision = me.StringField(choices=[("approved", "อนุมัติ"), ("denied", "ปฏิเสธ")])
+    decided_by = me.ReferenceField("User", dbref=True)
+    decided_at = me.DateTimeField()
+    comment = me.StringField(default="")
+
+
 class CarApplication(VehicleApplication, me.Document):
     meta = {"collection": "car_applications"}
     phone = me.StringField(default="", max_length=32)
-    using_type = me.StringField(default="", choices=USING_TYPE)  # ประเภทการใช้รถ
+    # ประเภทการใช้รถ (ว่างได้สำหรับคำขอจาก car form template)
+    using_type = me.StringField(default="", choices=USING_TYPE + [("", "-")])
     travel_type = me.StringField(default="one way", choices=TRAVEL_TYPE)  # ประเภทการเดินทาง
     airport_transfer_type = me.StringField()  # ประเภทการรับส่งสนามบิน (ตัวเลือกเสริม ไม่ตรวจสอบค่า)
     passenger_location = me.StringField(default="", max_length=516)  # รับผู้โดยสารที่ไหน
@@ -92,6 +104,13 @@ class CarApplication(VehicleApplication, me.Document):
     header_approval = me.EmbeddedDocumentField(CarApplicationApproval)
     director_approval = me.EmbeddedDocumentField(CarApplicationApproval)
     admin_approval = me.EmbeddedDocumentField(CarApplicationApproval)
+
+    # Car form template flow (None form_template = flow เดิม)
+    form_template = me.ReferenceField("CarFormTemplate", dbref=True)
+    template_snapshot = me.DictField()
+    details = me.DictField(default=dict)
+    current_step = me.IntField(min_value=0, default=0)
+    step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
 
     def get_mile_before(self):
         last_car_application = (
@@ -137,6 +156,8 @@ class CarApplication(VehicleApplication, me.Document):
             "denied by header": "text-error",
             "denied by director": "text-error",
             "denied by admin": "text-error",
+            "denied": "text-error",
+            "pending": "text-primary",
             "approved": "text-green-500",
             "pending on director": "text-primary",
             "pending on admin": "text-primary",
