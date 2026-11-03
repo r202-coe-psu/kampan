@@ -123,6 +123,7 @@ def index():
     return render_template(
         "procurement/requisitions/index.html",
         procurements=paginated_procurements.items,
+        can_change_renewal=renewal_permission_checker(organization),
         form=form,
         paginated_procurements=paginated_procurements,
         organization=organization,
@@ -132,6 +133,26 @@ def index():
         selected_product_number=product_number,
         selected_asset_code=asset_code,
         selected_expiration_date_range=expiration_date_range,
+    )
+
+
+PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุหรือไม่ต่ออายุ MA รายการนี้"
+
+
+def renewal_permission_checker(organization):
+    """สิทธิ์กดต่ออายุ / ไม่ต่ออายุ MA: admin ได้ทุกรายการในหน่วยงาน · staff ได้เฉพาะ MA ที่ตัวเองเป็นผู้รับผิดชอบ"""
+    if current_user.has_organization_roles("admin", organization=organization):
+        return lambda procurement: True
+    if not current_user.has_organization_roles("staff", organization=organization):
+        return lambda procurement: False
+
+    member = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(), organization=organization, status="active"
+    ).first()
+    if not member:
+        return lambda procurement: False
+    return lambda procurement: any(
+        getattr(responsible, "id", None) == member.id for responsible in (procurement.responsible_by or [])
     )
 
 
@@ -159,6 +180,10 @@ def non_renewal_action(requisition_procurement_id):
     procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
+
+    if not renewal_permission_checker(organization)(procurement):
+        flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
     if not claim_pending_procurement(procurement, organization, "disactive"):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
@@ -200,6 +225,10 @@ def renewal_requested_action(requisition_procurement_id):
     procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
+
+    if not renewal_permission_checker(organization)(procurement):
+        flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
     # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
     if not claim_pending_procurement(procurement, organization, "renewal-requested"):

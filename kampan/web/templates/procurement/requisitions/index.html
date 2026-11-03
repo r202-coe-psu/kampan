@@ -158,7 +158,7 @@
         </div>
       </div>
       <!-- Card Footer -->
-      {% if item.status == 'pending' %}
+      {% if item.status == 'pending' and can_change_renewal(item) %}
       <div class="bg-gray-50 px-4 py-3 border-t">
         <div class="flex gap-2">
           <button onclick="document.getElementById('renew_modal_{{ item.id }}').showModal()"

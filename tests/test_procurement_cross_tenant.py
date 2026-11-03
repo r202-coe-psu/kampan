@@ -683,3 +683,78 @@ def test_renewal_requested_action_failed_requisition_restores_pending(world, cli
 
     procurement_a.reload()
     assert procurement_a.status == "pending"
+
+
+# ---------------------------------------------------------------------------
+# สิทธิ์ต่ออายุ / ไม่ต่ออายุ: admin ทุก MA ในหน่วยงาน · staff เฉพาะ MA ที่ตัวเองรับผิดชอบ · role อื่นไม่ได้
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def org_a_members(world, create_user, assign_user_to_org):
+    staff = create_user("StaffA", "Alpha")
+    other_staff = create_user("OtherStaffA", "Alpha")
+    head = create_user("HeadA", "Alpha")
+    manager = create_user("ManagerA", "Alpha")
+    return SimpleNamespace(
+        staff=staff,
+        other_staff=other_staff,
+        head=head,
+        manager=manager,
+        role_staff=assign_user_to_org(staff, world.org_a, roles=["staff"]),
+        role_other_staff=assign_user_to_org(other_staff, world.org_a, roles=["staff"]),
+        role_head=assign_user_to_org(head, world.org_a, roles=["head"]),
+        role_manager=assign_user_to_org(manager, world.org_a, roles=["manager"]),
+    )
+
+
+def test_renewal_requested_action_staff_responsible_ok(world, client_for, org_a_members):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
+    client = client_for(org_a_members.staff)
+
+    response = client.post(
+        f"/procurement/requisitions/{procurement_a.id}/renewal-requested?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 302
+    procurement_a.reload()
+    assert procurement_a.status == "renewal-requested"
+    assert models.Requisition.objects.count() == 1
+
+
+def test_non_renewal_action_staff_responsible_ok(world, client_for, org_a_members):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
+    client = client_for(org_a_members.staff)
+
+    response = client.post(f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}")
+
+    assert response.status_code == 302
+    procurement_a.reload()
+    assert procurement_a.status == "disactive"
+
+
+@pytest.mark.parametrize("who", ["other_staff", "head", "manager"])
+@pytest.mark.parametrize("suffix", ["non-renewal", "renewal-requested"])
+def test_renewal_actions_refuse_users_without_permission(world, client_for, org_a_members, who, suffix):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
+    client = client_for(getattr(org_a_members, who))
+
+    response = client.post(f"/procurement/requisitions/{procurement_a.id}/{suffix}?organization_id={world.org_a.id}")
+
+    assert response.status_code == 302
+    procurement_a.reload()
+    assert procurement_a.status == "pending"
+    assert models.Requisition.objects.count() == 0
+
+
+@pytest.mark.parametrize("who, sees_buttons", [("admin", True), ("staff", True), ("head", False), ("manager", False)])
+def test_index_shows_renewal_buttons_only_to_permitted_users(world, client_for, org_a_members, who, sees_buttons):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
+    user = world.admin_a if who == "admin" else getattr(org_a_members, who)
+    client = client_for(user)
+
+    response = client.get(f"/procurement/requisitions?organization_id={world.org_a.id}")
+
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+    assert (f"renew_modal_{procurement_a.id}').showModal()" in html) is sees_buttons
