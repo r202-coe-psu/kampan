@@ -23,7 +23,7 @@ def _is_login_redirect(response):
     return response.status_code == 302 and LOGIN_PATH in response.headers["Location"]
 
 
-def _make_procurement(organization, user, name="MA contract", status="active", responsible=None):
+def _make_procurement(organization, user, name="MA contract", status="pending", responsible=None):
     procurement = models.Procurement(
         name=name,
         category="product",
@@ -174,7 +174,7 @@ def test_non_renewal_action_other_org_procurement_404_and_unchanged(world, clien
 
     assert response.status_code == 404
     procurement_b.reload()
-    assert procurement_b.status == "active"
+    assert procurement_b.status == "pending"
 
 
 def test_renewal_requested_action_other_org_procurement_404_no_requisition(world, client_for):
@@ -187,7 +187,7 @@ def test_renewal_requested_action_other_org_procurement_404_no_requisition(world
 
     assert response.status_code == 404
     procurement_b.reload()
-    assert procurement_b.status == "active"
+    assert procurement_b.status == "pending"
     assert models.Requisition.objects.count() == 0
 
 
@@ -200,7 +200,7 @@ def test_state_changing_actions_reject_get(world, client_for, suffix):
 
     assert response.status_code == 405
     procurement_a.reload()
-    assert procurement_a.status == "active"
+    assert procurement_a.status == "pending"
     assert models.Requisition.objects.count() == 0
 
 
@@ -458,7 +458,8 @@ def test_download_exported_file_owner_ok(world, client_for, gridfs_enabled):
     assert response.data == b"hello"
 
 
-def test_download_exported_file_legacy_without_organization_owner_ok(world, client_for, gridfs_enabled):
+def test_download_exported_file_legacy_without_organization_owner_gets_404(world, client_for, gridfs_enabled):
+    """ไฟล์เก่าที่ไม่มี organization มีข้อมูลทุกหน่วยงานปน แม้เจ้าของก็โหลดไม่ได้ ต้อง export ใหม่"""
     export = _make_export_file(world.admin_a, organization=None, content=b"legacy")
     assert export.organization is None
     client = client_for(world.admin_a)
@@ -467,8 +468,17 @@ def test_download_exported_file_legacy_without_organization_owner_ok(world, clie
         f"/procurement/requisition_timeline_items/download_exported_excel/{export.id}?organization_id={world.org_a.id}"
     )
 
+    assert response.status_code == 404
+
+
+def test_export_modal_hides_legacy_file_without_organization(world, client_for, gridfs_enabled):
+    legacy = _make_export_file(world.admin_a, organization=None, content=b"legacy")
+    client = client_for(world.admin_a)
+
+    response = client.get(f"/procurement/requisition_timeline_items/export_excel_modal?organization_id={world.org_a.id}")
+
     assert response.status_code == 200
-    assert response.data == b"legacy"
+    assert str(legacy.id) not in response.data.decode("utf-8")
 
 
 def test_download_exported_file_legacy_other_admin_gets_404(world, client_for, gridfs_enabled):
@@ -611,3 +621,65 @@ def test_products_image_own_org_ok(world, client_for, gridfs_enabled):
 
     assert response.status_code == 200
     assert response.mimetype == "image/png"
+
+
+# ---------------------------------------------------------------------------
+# renewal / non-renewal ต้องเปลี่ยนได้เฉพาะ MA ที่ pending (กันกดซ้ำ / ยิงตรง)
+# ---------------------------------------------------------------------------
+
+
+def test_renewal_requested_action_double_submit_creates_one_requisition(world, client_for):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[world.role_admin_a])
+    client = client_for(world.admin_a)
+    url = f"/procurement/requisitions/{procurement_a.id}/renewal-requested?organization_id={world.org_a.id}"
+
+    first = client.post(url)
+    second = client.post(url)
+
+    assert first.status_code == 302
+    assert second.status_code == 302
+    assert models.Requisition.objects.count() == 1
+    procurement_a.reload()
+    assert procurement_a.status == "renewal-requested"
+
+
+@pytest.mark.parametrize("status", ["active", "disactive", "renewal-requested"])
+def test_renewal_requested_action_rejects_non_pending(world, client_for, status):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, status=status, responsible=[world.role_admin_a])
+    client = client_for(world.admin_a)
+
+    response = client.post(
+        f"/procurement/requisitions/{procurement_a.id}/renewal-requested?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 302
+    assert models.Requisition.objects.count() == 0
+    procurement_a.reload()
+    assert procurement_a.status == status
+
+
+@pytest.mark.parametrize("status", ["active", "renewal-requested"])
+def test_non_renewal_action_rejects_non_pending(world, client_for, status):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, status=status)
+    client = client_for(world.admin_a)
+
+    response = client.post(f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}")
+
+    assert response.status_code == 302
+    procurement_a.reload()
+    assert procurement_a.status == status
+
+
+def test_renewal_requested_action_failed_requisition_restores_pending(world, client_for, monkeypatch):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[world.role_admin_a])
+    client = client_for(world.admin_a)
+
+    def _boom(self, *args, **kwargs):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(models.Requisition, "save", _boom)
+    with pytest.raises(RuntimeError):
+        client.post(f"/procurement/requisitions/{procurement_a.id}/renewal-requested?organization_id={world.org_a.id}")
+
+    procurement_a.reload()
+    assert procurement_a.status == "pending"

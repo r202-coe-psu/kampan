@@ -8,6 +8,7 @@ from flask import (
     current_app,
     redirect,
     render_template,
+    flash,
     request,
     send_file,
     url_for,
@@ -134,6 +135,20 @@ def index():
     )
 
 
+PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอดำเนินการ"
+
+
+def claim_pending_procurement(procurement, organization, new_status: str) -> bool:
+    """เปลี่ยนสถานะ MA จาก pending แบบ atomic · คืน False ถ้าสถานะไม่ใช่ pending แล้ว (เช่นกดซ้ำ)"""
+    return bool(
+        models.Procurement.objects(id=procurement.id, organization=organization, status="pending").update_one(
+            set__status=new_status,
+            set__last_updated_by=current_user._get_current_object(),
+            set__updated_date=datetime.datetime.now(),
+        )
+    )
+
+
 @module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])
 @login_required
 def non_renewal_action(requisition_procurement_id):
@@ -145,9 +160,8 @@ def non_renewal_action(requisition_procurement_id):
     if not procurement:
         abort(404)
 
-    procurement.status = "disactive"
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.save()
+    if not claim_pending_procurement(procurement, organization, "disactive"):
+        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
     return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
 
@@ -187,6 +201,11 @@ def renewal_requested_action(requisition_procurement_id):
     if not procurement:
         abort(404)
 
+    # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
+    if not claim_pending_procurement(procurement, organization, "renewal-requested"):
+        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+
     # สร้างรหัส requisition_code ใหม่
     requisition_code = generate_next_requisition_code()
     # สร้าง Requisition ใหม่
@@ -213,10 +232,12 @@ def renewal_requested_action(requisition_procurement_id):
         last_updated_by=current_user._get_current_object(),
         organization=organization,
     )
-    requisition.save()
-    procurement.status = "renewal-requested"
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.save()
+    try:
+        requisition.save()
+    except Exception:
+        # สร้างคำขอไม่สำเร็จ คืนสถานะ MA ให้กดใหม่ได้
+        models.Procurement.objects(id=procurement.id, status="renewal-requested").update_one(set__status="pending")
+        raise
 
     return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 

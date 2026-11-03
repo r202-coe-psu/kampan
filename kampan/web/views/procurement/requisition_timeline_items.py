@@ -81,15 +81,12 @@ def export_excel_modal():
     organization_id = request.args.get("organization_id")
     form = forms.requisition_timeline_items.ExportExcelForm(request.args)
     modal_id = uuid4()
-    # ไฟล์ของหน่วยงานที่กำลังดูก่อน ถ้าไม่มีให้ใช้ไฟล์เก่าที่ยังไม่มี organization
-    exported_files = models.export_file.ExportFile.objects(
+    # เฉพาะไฟล์ของหน่วยงานที่กำลังดู · ไฟล์เก่าที่ไม่มี organization มีข้อมูลทุกหน่วยงานปน จึงไม่แสดง
+    exported_file = models.export_file.ExportFile.objects(
         created_by=current_user._get_current_object(),
         type_="requisition_items_export",
-        organization__in=[g.organization, None],
-    )
-    exported_file = next(
-        (f for f in exported_files if f.organization), None
-    ) or exported_files.first()
+        organization=g.organization,
+    ).first()
 
     return render_template(
         "procurement/components/export_excel_modal.html",
@@ -141,11 +138,11 @@ def download_exported_file(export_id):
         abort(404)
 
     # เจ้าของไฟล์เท่านั้น และต้องเป็นไฟล์ของหน่วยงานนี้
-    # (ไฟล์เก่าที่ยังไม่มี organization เจ้าของยังโหลดได้)
+    # (ไฟล์เก่าที่ไม่มี organization มีข้อมูลทุกหน่วยงานปน จึงโหลดไม่ได้ ต้อง export ใหม่)
     export_mas_excel = models.ExportFile.objects(
         id=export_id,
         created_by=current_user._get_current_object(),
-        organization__in=[organization, None],
+        organization=organization,
     ).first()
     if not export_mas_excel:
         abort(404)
