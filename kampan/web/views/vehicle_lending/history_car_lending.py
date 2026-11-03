@@ -5,6 +5,7 @@ from uuid import uuid4
 from flask import (
     Blueprint,
     abort,
+    flash,
     redirect,
     render_template,
     request,
@@ -156,6 +157,7 @@ def edit(car_application_id):
         car_application.updater = current_user._get_current_object()
         car_application.updated_date = datetime.datetime.now()
         car_application.save()
+        flash(f"บันทึกเลขไมล์รถ {car.license_plate} แล้ว", "success")
         return redirect(
             url_for(
                 "vehicle_lending.history_car_lending.index",
