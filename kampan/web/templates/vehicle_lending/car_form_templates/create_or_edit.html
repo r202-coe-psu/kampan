@@ -1,0 +1,239 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
+
+{% block title %}{{ 'แก้ไข' if template else 'สร้าง' }}แบบฟอร์มใบขอใช้รถ{% endblock %}
+
+{% block content %}
+<form id="templateForm" method="POST" class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  {{ form.csrf_token }}
+  <input type="hidden" name="organization_id" value="{{ organization.id }}">
+  <input type="hidden" name="fields_data" id="fieldsData" value="{{ fields_data or '' }}">
+  <input type="hidden" name="steps_data" id="stepsData" value="{{ steps_data or '' }}">
+
+  <div class="flex flex-col gap-6 lg:col-span-2">
+    {% if error %}
+    <div role="alert" class="alert alert-error" id="templateError">
+      <i class="ph ph-warning-circle text-xl"></i>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <section class="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+      <h2 class="mb-3 text-xl font-bold">ข้อมูลเบื้องต้น</h2>
+      {{ renderer.render_field(form.name) }}
+      {{ renderer.render_field(form.description) }}
+    </section>
+
+    <section class="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-xl font-bold">ฟิลด์ที่ผู้ขอต้องกรอก</h2>
+        <button type="button" class="btn btn-sm btn-outline" id="addField"><i class="ph ph-plus"></i> เพิ่มฟิลด์</button>
+      </div>
+      <div id="fieldsContainer" class="flex flex-col gap-3"></div>
+    </section>
+
+    <section class="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-xl font-bold">ขั้นอนุมัติ</h2>
+        <button type="button" class="btn btn-sm btn-outline" id="addStep"><i class="ph ph-plus"></i> เพิ่มขั้น</button>
+      </div>
+      <p class="mb-3 text-sm text-base-content/60">ต้องมีขั้นจัดรถ (assigns_vehicle) พอดี 1 ขั้น</p>
+      <div id="stepsContainer" class="flex flex-col gap-3"></div>
+    </section>
+
+    <section class="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+      <h2 class="mb-3 text-xl font-bold">กระดาษ (HTML)</h2>
+      {{ renderer.render_text_area_field(form.paper_html) }}
+    </section>
+
+    <div class="flex justify-end gap-3">
+      <a href="{{ url_for('vehicle_lending.car_form_templates.create_or_edit', organization_id=organization.id) }}" class="btn btn-ghost">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> บันทึก</button>
+    </div>
+  </div>
+
+  <aside class="self-start rounded-box border border-base-300 bg-base-100 p-5 shadow-sm lg:sticky lg:top-4" id="variablesPanel">
+    <h2 class="flex items-center gap-2 text-lg font-semibold">
+      <i class="ph ph-brackets-curly text-primary"></i> ตัวแปรที่ใช้ได้
+    </h2>
+    <p class="mt-1 text-sm text-base-content/60">พิมพ์ในช่อง HTML ของกระดาษ เช่น <code class="font-mono">{{ '{{ app.requester_name }}' }}</code></p>
+    <ul class="mt-3 divide-y divide-base-300 rounded-box border border-base-300" id="variablesList">
+      {% for name, label in app_variables %}
+      <li class="flex flex-col gap-0.5 px-3 py-2">
+        <code class="font-mono text-sm text-primary select-all break-all">{{ '{{ ' ~ name ~ ' }}' }}</code>
+        <span class="text-sm text-base-content/70">{{ label }}</span>
+      </li>
+      {% endfor %}
+      <li class="flex flex-col gap-0.5 px-3 py-2">
+        <code class="font-mono text-sm text-primary select-all break-all">{{ '{{ org.name }}' }}</code>
+        <span class="text-sm text-base-content/70">ชื่อหน่วยงาน</span>
+      </li>
+    </ul>
+    <ul class="divide-y divide-base-300 rounded-box border border-base-300" id="dynamicVariables"></ul>
+  </aside>
+</form>
+
+<script type="application/json" id="catalogData">{{ catalog | tojson }}</script>
+<script type="application/json" id="membersData">{{ members | tojson }}</script>
+<script type="application/json" id="rolesData">{{ roles | tojson }}</script>
+<script type="application/json" id="customTypesData">{{ custom_field_types | tojson }}</script>
+<script type="application/json" id="preloadFields">{{ (template_fields if template_fields is defined else []) | tojson }}</script>
+<script type="application/json" id="preloadSteps">{{ (template_steps if template_steps is defined else []) | tojson }}</script>
+
+<script>
+(function () {
+  const readJson = (id) => JSON.parse(document.getElementById(id).textContent || "[]");
+  const catalog = readJson("catalogData");
+  const members = readJson("membersData");
+  const roles = readJson("rolesData");
+  const customTypes = readJson("customTypesData");
+
+  function loadInitial(hiddenId, preloadId) {
+    const submitted = document.getElementById(hiddenId).value;
+    for (const source of [submitted, document.getElementById(preloadId).textContent]) {
+      if (!source || source.trim().length <= 2) continue;
+      try { return JSON.parse(source); } catch (e) { console.error(e); }
+    }
+    return [];
+  }
+
+  let fields = loadInitial("fieldsData", "preloadFields");
+  let steps = loadInitial("stepsData", "preloadSteps");
+
+  // helpers that build DOM nodes with textContent/value, never innerHTML, so stored labels cannot inject markup
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(([k, v]) => {
+      if (k === "class") node.className = v;
+      else if (k === "value") node.value = v;
+      else if (k === "checked") node.checked = !!v;
+      else node.setAttribute(k, v);
+    });
+    (children || []).forEach((c) => node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+    return node;
+  }
+
+  function textInput(placeholder, value, onChange, extraClass) {
+    const input = el("input", { type: "text", class: "input input-bordered input-sm " + (extraClass || ""), placeholder, value: value || "" });
+    input.addEventListener("change", () => onChange(input.value));
+    return input;
+  }
+
+  function selectInput(options, value, onChange) {
+    const select = el("select", { class: "select select-bordered select-sm" });
+    options.forEach(([val, label]) => {
+      const opt = el("option", { value: val }, [label]);
+      if (val === value) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", () => onChange(select.value));
+    return select;
+  }
+
+  function checkbox(label, checked, onChange) {
+    const input = el("input", { type: "checkbox", class: "checkbox checkbox-sm", checked });
+    input.addEventListener("change", () => onChange(input.checked));
+    return el("label", { class: "label cursor-pointer gap-2" }, [input, el("span", { class: "label-text text-xs" }, [label])]);
+  }
+
+  function rowControls(list, index, rerender) {
+    const move = (delta) => {
+      const target = index + delta;
+      if (target < 0 || target >= list.length) return;
+      [list[index], list[target]] = [list[target], list[index]];
+      rerender();
+    };
+    const btn = (icon, title, handler, cls) => {
+      const b = el("button", { type: "button", class: "btn btn-ghost btn-xs " + (cls || ""), title }, [el("i", { class: "ph " + icon })]);
+      b.addEventListener("click", handler);
+      return b;
+    };
+    return el("div", { class: "flex gap-1" }, [
+      btn("ph-arrow-up", "เลื่อนขึ้น", () => move(-1)),
+      btn("ph-arrow-down", "เลื่อนลง", () => move(1)),
+      btn("ph-trash", "ลบ", () => { list.splice(index, 1); rerender(); }, "text-error"),
+    ]);
+  }
+
+  function renderFields() {
+    const container = document.getElementById("fieldsContainer");
+    container.replaceChildren();
+    fields.forEach((f, i) => {
+      const row = el("div", { class: "flex flex-wrap items-center gap-2 rounded-lg border border-base-300 p-3", "data-row": "field" });
+      row.appendChild(selectInput([["catalog", "จาก catalog"], ["custom", "กำหนดเอง"]], f.source, (v) => { f.source = v; renderFields(); }));
+      if (f.source === "catalog") {
+        row.appendChild(selectInput([["", "เลือกฟิลด์"]].concat(catalog.map((c) => [c.key, c.label + " (" + c.key + ")"])), f.key, (v) => { f.key = v; renderFields(); }));
+      } else {
+        row.appendChild(textInput("key (a-z, 0-9, _)", f.key, (v) => { f.key = v; renderVariables(); }, "w-40"));
+        row.appendChild(selectInput(customTypes, f.field_type || "text", (v) => { f.field_type = v; renderFields(); }));
+      }
+      row.appendChild(textInput("ป้ายชื่อ (ว่างได้สำหรับ catalog)", f.label, (v) => { f.label = v; }, "w-56"));
+      const type = f.source === "catalog" ? ((catalog.find((c) => c.key === f.key) || {}).field_type) : f.field_type;
+      if (type === "radio" || type === "checkbox") {
+        row.appendChild(textInput("ตัวเลือก คั่นด้วย ,", (f.choices || []).join(", "), (v) => {
+          f.choices = v.split(",").map((s) => s.trim()).filter(Boolean);
+        }, "w-64"));
+      }
+      row.appendChild(checkbox("บังคับ", f.is_required, (v) => { f.is_required = v; }));
+      row.appendChild(rowControls(fields, i, renderFields));
+      container.appendChild(row);
+    });
+    renderVariables();
+  }
+
+  function renderSteps() {
+    const container = document.getElementById("stepsContainer");
+    container.replaceChildren();
+    steps.forEach((s, i) => {
+      const row = el("div", { class: "flex flex-wrap items-center gap-2 rounded-lg border border-base-300 p-3", "data-row": "step" });
+      row.appendChild(textInput("key (a-z, 0-9, _)", s.key, (v) => { s.key = v; renderVariables(); }, "w-36"));
+      row.appendChild(textInput("ชื่อขั้น", s.label, (v) => { s.label = v; }, "w-48"));
+      row.appendChild(selectInput([["role", "ตาม role"], ["user", "ระบุตัวคน"]], s.approver_type || "role", (v) => { s.approver_type = v; renderSteps(); }));
+      if ((s.approver_type || "role") === "role") {
+        row.appendChild(selectInput([["", "เลือก role"]].concat(roles), s.role || "", (v) => { s.role = v; }));
+        row.appendChild(checkbox("ฝ่ายเดียวกับผู้ขอ", s.same_division, (v) => { s.same_division = v; }));
+      } else {
+        row.appendChild(selectInput([["", "เลือกผู้อนุมัติ"]].concat(members.map((m) => [m.id, m.name])), s.user || "", (v) => { s.user = v; }));
+      }
+      row.appendChild(checkbox("ขั้นจัดรถ", s.assigns_vehicle, (v) => { s.assigns_vehicle = v; }));
+      row.appendChild(rowControls(steps, i, renderSteps));
+      container.appendChild(row);
+    });
+    renderVariables();
+  }
+
+  function renderVariables() {
+    const list = document.getElementById("dynamicVariables");
+    list.replaceChildren();
+    const add = (name, label) => {
+      list.appendChild(el("li", { class: "flex flex-col gap-0.5 px-3 py-2" }, [
+        el("code", { class: "font-mono text-sm text-primary select-all break-all" }, ["{{ " + name + " }}"]),
+        el("span", { class: "text-sm text-base-content/70" }, [label]),
+      ]));
+    };
+    fields.filter((f) => f.key).forEach((f) => {
+      add("details." + (f.source === "custom" ? "custom_" + f.key : f.key), f.label || f.key);
+    });
+    steps.filter((s) => s.key).forEach((s) => {
+      ["name", "position", "date", "decision"].forEach((attr) => add("approvals." + s.key + "." + attr, (s.label || s.key) + " : " + attr));
+    });
+  }
+
+  document.getElementById("addField").addEventListener("click", () => {
+    fields.push({ source: "catalog", key: "", label: "", field_type: "text", choices: [], is_required: false });
+    renderFields();
+  });
+  document.getElementById("addStep").addEventListener("click", () => {
+    steps.push({ key: "", label: "", approver_type: "role", role: "", user: "", same_division: false, assigns_vehicle: false });
+    renderSteps();
+  });
+  document.getElementById("templateForm").addEventListener("submit", () => {
+    document.getElementById("fieldsData").value = JSON.stringify(fields);
+    document.getElementById("stepsData").value = JSON.stringify(steps);
+  });
+
+  renderFields();
+  renderSteps();
+})();
+</script>
+{% endblock %}
