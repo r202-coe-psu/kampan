@@ -56,3 +56,27 @@ class CarFormTemplate(me.Document):
     updated_date = me.DateTimeField(
         required=True, default=datetime.datetime.now, auto_now=True
     )
+
+    def clean(self):
+        from kampan.utils.car_form_catalog import CATALOG
+
+        for field in self.fields:
+            if field.source == "catalog":
+                catalog_field = CATALOG.get(field.key)
+                if catalog_field is None:
+                    raise me.ValidationError(
+                        f"catalog field '{field.key}' ไม่มีอยู่ใน catalog"
+                    )
+                if not set(field.choices) <= set(catalog_field.choices):
+                    raise me.ValidationError(
+                        f"choices ของ '{field.key}' ต้องเป็นสับเซตของ catalog"
+                    )
+            elif not field.field_type:
+                raise me.ValidationError(
+                    f"custom field '{field.key}' ต้องระบุ field_type"
+                )
+
+        if not self.steps:
+            raise me.ValidationError("ต้องมีอย่างน้อย 1 ขั้นอนุมัติ")
+        if sum(1 for step in self.steps if step.assigns_vehicle) != 1:
+            raise me.ValidationError("ต้องมีขั้นจัดรถ (assigns_vehicle) พอดี 1 ขั้น")
