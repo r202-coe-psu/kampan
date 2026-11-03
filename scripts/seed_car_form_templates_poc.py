@@ -4,9 +4,11 @@ Seed car form template (POC) ให้ organization
 
 ตัวอย่าง:
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_domestic --approver-user <user_id>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_domestic --pdf <path ของ PDF ต้นฉบับ>
     python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_general
 
 - รันซ้ำได้ (idempotent): ถ้ามี template ชื่อเดียวกันใน organization แล้ว จะไม่สร้างซ้ำ
+- --pdf: แนบ PDF ต้นฉบับเป็นใบพิมพ์ (physical_domestic จะได้ placements เริ่มต้นตามพิกัดของฟอร์มทางการด้วย)
 - physical_domestic: ถ้าไม่ระบุ --approver-user ขั้น "ผู้อนุมัติ" จะ fallback เป็น role endorser
 """
 
@@ -55,6 +57,11 @@ def main():
         default=None,
         help="User id ของผู้อนุมัติ (ใช้กับ physical_domestic)",
     )
+    parser.add_argument(
+        "--pdf",
+        default=None,
+        help="Path ของ PDF ต้นฉบับที่ใช้เป็นใบพิมพ์ (physical_domestic: วางตัวแปรให้อัตโนมัติ)",
+    )
     parser.add_argument("--config", default=None, help="Path to the Kampan configuration file.")
     args = parser.parse_args()
 
@@ -66,8 +73,13 @@ def main():
     if args.template == "physical_domestic" and approver_user is None:
         print("[!] ไม่ได้ระบุ --approver-user: ขั้น 'ผู้อนุมัติ' ใช้ role endorser แทน")
 
+    pdf_bytes = None
+    if args.pdf:
+        with open(args.pdf, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+
     template = car_form_seeds.seed_template(
-        organization, args.template, approver_user=approver_user
+        organization, args.template, approver_user=approver_user, pdf_bytes=pdf_bytes
     )
     print(f"[OK] Template '{template.name}' id={template.id} (organization={organization.name})")
 
