@@ -1,6 +1,7 @@
 import datetime
 from io import BytesIO
 
+import pytest
 from PyPDF2 import PdfReader
 from reportlab.pdfgen import canvas
 
@@ -132,3 +133,217 @@ def test_a_seeded_domestic_template_renders_a_filled_pdf_containing_the_requests
 
     assert "สนามบินหาดใหญ่" in text
     assert "สงขลา" in text
+
+
+def test_seeding_physical_abroad_with_a_pdf_creates_valid_template_with_expected_steps_fields_and_placements(
+    app, create_org
+):
+    """seed physical_abroad พร้อม PDF: ชื่อตรงฟอร์มทางการ, 3 ขั้น head/admin/director, fields ตามฟอร์ม และ placements ที่ผ่าน validate"""
+    template = car_form_seeds.seed_template(
+        create_org(name="กองกายภาพ"), "physical_abroad", pdf_bytes=blank_a4_pdf()
+    )
+
+    template.validate()
+    assert template.name == "ขอใช้รถยนต์พร้อมพนักงานขับรถไปปฏิบัติงานต่างประเทศ"
+    assert [(s.key, s.role, s.same_division, s.assigns_vehicle) for s in template.steps] == [
+        ("head", "head", True, False),
+        ("admin", "admin", False, True),
+        ("director", "director", False, False),
+    ]
+    assert [f.details_key() for f in template.fields] == [
+        "vehicle_kind",
+        "vehicle_count",
+        "custom_doc_no",
+        "custom_city_state",
+        "custom_country",
+        "custom_pickup",
+        "custom_coordinator",
+        "custom_coordinator_phone",
+        "custom_requester_position",
+    ]
+    assert [f.key for f in template.fields if f.is_required] == [
+        "vehicle_kind",
+        "vehicle_count",
+        "city_state",
+        "country",
+    ]
+    assert template.paper_file.page_sizes == [[595.32, 841.92]]
+    assert {
+        "app.division",
+        "details.custom_country",
+        "app.departure.month_th",
+        "approvals.head.name",
+        "approvals.admin.name",
+        "approvals.director.name",
+    } <= {p.variable for p in template.placements}
+
+
+def test_seeding_physical_airport_with_a_pdf_creates_valid_template_with_expected_steps_fields_and_placements(
+    app, create_org, create_user
+):
+    """seed physical_airport พร้อม PDF: ชื่อตรงฟอร์มทางการ, 2 ขั้น admin -> approver (ผูกคนที่ส่งมา), fields ตามฟอร์ม และ placements ที่ผ่าน validate"""
+    approver = create_user("Wichai", "Approver")
+
+    template = car_form_seeds.seed_template(
+        create_org(name="กองกายภาพ"),
+        "physical_airport",
+        approver_user=approver,
+        pdf_bytes=blank_a4_pdf(),
+    )
+
+    template.validate()
+    assert template.name == "ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่"
+    assert [(s.key, s.approver_type, s.assigns_vehicle) for s in template.steps] == [
+        ("admin", "role", True),
+        ("approver", "user", False),
+    ]
+    assert template.steps[1].user.id == approver.id
+    assert [f.details_key() for f in template.fields] == [
+        "custom_transfer",
+        "custom_flight_no",
+        "custom_flight_date",
+        "custom_arrive_time",
+        "custom_depart_time",
+        "custom_pickup",
+        "custom_requester_position",
+        *[f"custom_p{n}_{part}" for n in range(1, 6) for part in ("name", "phone")],
+        "cost_responsibility",
+    ]
+    assert template.fields[0].choices == ["รับ", "ส่ง"]
+    assert template.fields[-1].choices == ["ค่าน้ำมันเชื้อเพลิง", "เบี้ยเลี้ยง", "ไม่รับผิดชอบ"]
+    placed = {(p.variable, p.match_value) for p in template.placements}
+    assert {
+        ("details.custom_transfer", "รับ"),
+        ("details.custom_transfer", "ส่ง"),
+        ("app.car_type", "เก๋ง"),
+        ("app.car_type", "ตู้"),
+        ("details.cost_responsibility", "ไม่รับผิดชอบ"),
+        ("approvals.approver.name", ""),
+    } <= placed
+
+
+def test_seeding_physical_airport_without_approver_user_falls_back_to_role_endorser(
+    app, create_org
+):
+    """seed physical_airport ไม่ระบุ approver_user: ขั้น approver เป็น role endorser"""
+    template = car_form_seeds.seed_template(create_org(name="กองกายภาพ"), "physical_airport")
+
+    template.validate()
+    approver_step = template.steps[1]
+    assert (approver_step.key, approver_step.approver_type, approver_step.role) == (
+        "approver",
+        "role",
+        "endorser",
+    )
+
+
+def test_seeding_physical_welfare_with_a_pdf_creates_valid_template_with_expected_steps_fields_and_placements(
+    app, create_org, create_user
+):
+    """seed physical_welfare พร้อม PDF: ชื่อตรงฟอร์มทางการ, 3 ขั้น head/admin/approver (ผูกคนที่ส่งมา), fields ตามฟอร์ม และ placements ที่ผ่าน validate"""
+    approver = create_user("Wichai", "Approver")
+
+    template = car_form_seeds.seed_template(
+        create_org(name="กองกายภาพ"),
+        "physical_welfare",
+        approver_user=approver,
+        pdf_bytes=blank_a4_pdf(),
+    )
+
+    template.validate()
+    assert template.name == "ใบขอใช้รถประเภทสวัสดิการบุคลากร"
+    assert [(s.key, s.approver_type, s.same_division, s.assigns_vehicle) for s in template.steps] == [
+        ("head", "role", True, False),
+        ("admin", "role", False, True),
+        ("approver", "user", False, False),
+    ]
+    assert template.steps[2].user.id == approver.id
+    assert [f.details_key() for f in template.fields] == [
+        "custom_employee_type",
+        "vehicle_kind",
+        "custom_event_type",
+        "custom_event_owner",
+        "custom_house",
+        "custom_subdistrict",
+        "district",
+        "province",
+        "custom_pickup",
+    ]
+    assert template.fields[0].choices == [
+        "พนักงานมหาวิทยาลัย",
+        "ลูกจ้างประจำ",
+        "พนักงานเงินรายได้",
+    ]
+    assert template.fields[1].choices == ["บัส", "ตู้"]
+    assert template.fields[2].choices == ["อุปสมบท", "มงคลสมรส", "ฌาปณกิจศพ"]
+    assert [f.key for f in template.fields if f.is_required] == [
+        "employee_type",
+        "vehicle_kind",
+        "event_type",
+        "province",
+    ]
+    placed = {(p.variable, p.match_value) for p in template.placements}
+    assert {
+        ("details.custom_employee_type", "ลูกจ้างประจำ"),
+        ("details.vehicle_kind", "ตู้"),
+        ("details.custom_event_type", "ฌาปณกิจศพ"),
+        ("app.car_type", "บัส"),
+        ("details.province", ""),
+        ("approvals.head.name", ""),
+        ("approvals.approver.name", ""),
+    } <= placed
+
+
+def test_seeding_physical_welfare_without_approver_user_falls_back_to_role_endorser(
+    app, create_org
+):
+    """seed physical_welfare ไม่ระบุ approver_user: ขั้น approver เป็น role endorser"""
+    template = car_form_seeds.seed_template(create_org(name="กองกายภาพ"), "physical_welfare")
+
+    template.validate()
+    approver_step = template.steps[2]
+    assert (approver_step.key, approver_step.approver_type, approver_step.role) == (
+        "approver",
+        "role",
+        "endorser",
+    )
+
+
+@pytest.mark.parametrize(
+    "key, details, expected_text",
+    [
+        ("physical_abroad", {"custom_country": "มาเลเซีย", "vehicle_kind": "ตู้"}, "มาเลเซีย"),
+        ("physical_airport", {"custom_flight_no": "FD3601", "custom_transfer": "รับ"}, "FD3601"),
+        (
+            "physical_welfare",
+            {"custom_subdistrict": "คอหงส์", "province": "สงขลา", "vehicle_kind": "ตู้"},
+            "คอหงส์",
+        ),
+    ],
+)
+def test_a_seeded_paper_renders_a_filled_pdf_containing_a_value_from_the_request(
+    app, create_org, create_user, assign_user_to_org, create_car, key, details, expected_text
+):
+    """คำขอจาก template ที่ seed พร้อม PDF: render_pdf ได้ PDF ที่มีค่าที่ผู้ขอกรอกในรายละเอียด"""
+    org = create_org(name="กองกายภาพ")
+    template = car_form_seeds.seed_template(org, key, pdf_bytes=blank_a4_pdf())
+    requester = create_user("Somchai", "Jaidee")
+    assign_user_to_org(requester, org, roles=["staff"])
+    application = models.vehicle_applications.CarApplication(
+        organization=org,
+        creator=requester,
+        car=create_car(org, license_plate="กข-1234"),
+        phone="0812345678",
+        departure_datetime=datetime.datetime(2026, 11, 3, 8, 30),
+        return_datetime=datetime.datetime(2026, 11, 3, 17, 0),
+        details=details,
+        template_snapshot={
+            "paper_file_id": str(template.paper_file.id),
+            "placements": [dict(p.to_mongo()) for p in template.placements],
+        },
+    )
+    application.save()
+
+    text = PdfReader(BytesIO(car_form_paper.render_pdf(application))).pages[0].extract_text()
+
+    assert expected_text in text

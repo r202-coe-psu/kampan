@@ -5,11 +5,16 @@ Seed car form template (POC) ให้ organization
 ตัวอย่าง:
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_domestic --approver-user <user_id>
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_domestic --pdf <path ของ PDF ต้นฉบับ>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_abroad --pdf <path ของ PDF ต้นฉบับ>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_airport --pdf <path ของ PDF ต้นฉบับ>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_welfare --pdf <path ของ PDF ต้นฉบับ>
     python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_general
 
+template ที่มีให้เลือก: diis_general, physical_domestic, physical_abroad, physical_airport, physical_welfare
+
 - รันซ้ำได้ (idempotent): ถ้ามี template ชื่อเดียวกันใน organization แล้ว จะไม่สร้างซ้ำ
-- --pdf: แนบ PDF ต้นฉบับเป็นใบพิมพ์ (physical_domestic จะได้ placements เริ่มต้นตามพิกัดของฟอร์มทางการด้วย)
-- physical_domestic: ถ้าไม่ระบุ --approver-user ขั้น "ผู้อนุมัติ" จะ fallback เป็น role endorser
+- --pdf: แนบ PDF ต้นฉบับเป็นใบพิมพ์ (ทุก template ที่เป็นฟอร์มทางการ physical_* จะได้ placements เริ่มต้นตามพิกัดของฟอร์มนั้นด้วย)
+- physical_domestic/physical_airport/physical_welfare: ถ้าไม่ระบุ --approver-user ขั้น "ผู้อนุมัติ" จะ fallback เป็น role endorser
 """
 
 import argparse
@@ -55,12 +60,12 @@ def main():
     parser.add_argument(
         "--approver-user",
         default=None,
-        help="User id ของผู้อนุมัติ (ใช้กับ physical_domestic)",
+        help="User id ของผู้อนุมัติ (ใช้กับ physical_domestic, physical_airport, physical_welfare)",
     )
     parser.add_argument(
         "--pdf",
         default=None,
-        help="Path ของ PDF ต้นฉบับที่ใช้เป็นใบพิมพ์ (physical_domestic: วางตัวแปรให้อัตโนมัติ)",
+        help="Path ของ PDF ต้นฉบับที่ใช้เป็นใบพิมพ์ (physical_*: วางตัวแปรให้อัตโนมัติ)",
     )
     parser.add_argument("--config", default=None, help="Path to the Kampan configuration file.")
     args = parser.parse_args()
@@ -70,7 +75,10 @@ def main():
     organization = models.Organization.objects.get(id=args.organization)
     approver_user = models.User.objects.get(id=args.approver_user) if args.approver_user else None
 
-    if args.template == "physical_domestic" and approver_user is None:
+    if (
+        args.template in ("physical_domestic", "physical_airport", "physical_welfare")
+        and approver_user is None
+    ):
         print("[!] ไม่ได้ระบุ --approver-user: ขั้น 'ผู้อนุมัติ' ใช้ role endorser แทน")
 
     pdf_bytes = None
