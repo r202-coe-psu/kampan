@@ -192,6 +192,7 @@
 {% macro audit_log(entries) %}
 {% set ACTION_STYLE = {
   'submitted': {'icon': 'ph-paper-plane-tilt', 'tone': 'text-info'},
+  'edited': {'icon': 'ph-pencil-simple', 'tone': 'text-warning'},
   'approved': {'icon': 'ph-check-circle', 'tone': 'text-success'},
   'denied': {'icon': 'ph-x-circle', 'tone': 'text-error'},
 } %}

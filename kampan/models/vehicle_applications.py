@@ -79,6 +79,7 @@ class StepApproval(me.EmbeddedDocument):
 
 AUDIT_ACTIONS = [
     ("submitted", "ยื่นคำขอ"),
+    ("edited", "แก้ไขคำขอ"),
     ("approved", "อนุมัติ"),
     ("denied", "ปฏิเสธ"),
 ]

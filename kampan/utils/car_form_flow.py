@@ -93,6 +93,20 @@ def record_submitted(car_application, user):
     _audit(car_application, "submitted", user)
 
 
+def can_edit(car_application, user):
+    """ผู้ยื่นแก้คำขอได้จนกว่าผู้อนุมัติคนแรกจะดำเนินการ"""
+    return (
+        car_application.status == "pending"
+        and not car_application.step_approvals
+        and car_application.creator is not None
+        and car_application.creator.id == user.id
+    )
+
+
+def record_edited(car_application, user, changes):
+    _audit(car_application, "edited", user, changes=changes)
+
+
 def approve(car_application, user, comment="", car=None, driver=None):
     step = current_step_def(car_application)
     if step is None:
