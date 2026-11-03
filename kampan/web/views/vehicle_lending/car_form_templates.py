@@ -542,8 +542,18 @@ def save_placements(template_id):
     if not template:
         abort(404)
 
+    raw = request.form.get("placements_data", "")
+    if not raw.strip():
+        # ไม่มีข้อมูลส่งมาเลย (ไม่ใช่ "[]") ถือว่าหน้าเว็บส่งผิดพลาด ห้ามลบกล่องที่บันทึกไว้
+        return render_paper_editor(
+            template,
+            organization,
+            error="ไม่พบข้อมูลตำแหน่งที่ส่งมา ตำแหน่งเดิมยังอยู่ครบ กรุณารีโหลดหน้าแล้วลองบันทึกอีกครั้ง",
+            status=400,
+        )
+
     try:
-        template.placements = parse_placements_payload(request.form.get("placements_data"))
+        template.placements = parse_placements_payload(raw)
         template.last_updated_by = current_user._get_current_object()
         template.save()
     except (TemplatePayloadError, me.ValidationError) as error:

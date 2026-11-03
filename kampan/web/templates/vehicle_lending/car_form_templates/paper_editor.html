@@ -505,6 +505,11 @@
       event.preventDefault();
     });
 
+    document.getElementById("variableSearch").addEventListener("input", (event) => renderPalette(event.target.value));
+    document.getElementById("placementsForm").addEventListener("submit", () => {
+      document.getElementById("placementsData").value = JSON.stringify(placements);
+    });
+
     renderPalette("");
     loadPdf();
   })();

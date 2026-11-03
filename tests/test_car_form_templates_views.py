@@ -622,3 +622,31 @@ def test_paper_editor_sends_sample_text_and_the_thai_font_for_true_size_preview(
     samples = {v["name"]: v["sample"] for v in variables}
     assert samples["app.requester_name"] == "สมชาย ใจดี"
     assert "THSarabunNew.ttf" in body
+
+
+def test_saving_without_placements_data_keeps_the_existing_placements(app, setup, login_as):
+    """A save that carries no placements_data at all (e.g. the page script did not fill it) must not wipe the boxes"""
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    client = login_as(app.test_client(), setup["admin"])
+    save_placements(client, org, template, [placement()])
+
+    res = save_placements(client, org, template, "")
+
+    template.reload()
+    assert res.status_code == 400
+    assert len(template.placements) == 1
+    assert "ไม่พบข้อมูลตำแหน่ง" in res.get_data(as_text=True)
+
+
+def test_saving_an_empty_list_clears_the_placements(app, setup, login_as):
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    client = login_as(app.test_client(), setup["admin"])
+    save_placements(client, org, template, [placement()])
+
+    res = save_placements(client, org, template, [])
+
+    template.reload()
+    assert res.status_code == 302
+    assert template.placements == []
