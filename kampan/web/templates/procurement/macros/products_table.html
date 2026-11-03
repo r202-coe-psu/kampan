@@ -41,7 +41,7 @@
         {% if item.image %}
         <div class="md:col-span-2 card bg-base-100 border border-base-200 shadow-sm">
           <img
-            src="{{ url_for('procurement.products.image', procurement_id=item.id, filename=item.image.filename if item.image.filename else 'image') }}"
+            src="{{ url_for('procurement.products.image', procurement_id=item.id, filename=item.image.filename if item.image.filename else 'image', organization_id=organization.id) }}"
             alt="รูปภาพประกอบ" class="rounded-lg w-full h-auto object-cover max-h-80 shadow-md mx-auto" />
         </div>
         {% endif %}

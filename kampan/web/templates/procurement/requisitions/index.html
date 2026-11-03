@@ -202,10 +202,13 @@
           <form method="dialog">
             <button class="btn btn-outline">ยกเลิก</button>
           </form>
-          <a href="{{ url_for('procurement.requisitions.renewal_requested', requisition_procurement_id=item.id) }}"
-            class="btn btn-success text-white">
-            <i class="ph ph-check mr-1"></i>ยืนยันต่ออายุ
-          </a>
+          <form method="post"
+            action="{{ url_for('procurement.requisitions.renewal_requested_action', requisition_procurement_id=item.id, organization_id=organization.id) }}">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+            <button type="submit" class="btn btn-success text-white">
+              <i class="ph ph-check mr-1"></i>ยืนยันต่ออายุ
+            </button>
+          </form>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -241,10 +244,13 @@
           <form method="dialog">
             <button class="btn btn-outline">ยกเลิก</button>
           </form>
-          <a href="{{ url_for('procurement.requisitions.non_renewal', requisition_procurement_id=item.id) }}"
-            class="btn btn-error text-white">
-            <i class="ph ph-x mr-1"></i>ยืนยันไม่ต่ออายุ
-          </a>
+          <form method="post"
+            action="{{ url_for('procurement.requisitions.non_renewal_action', requisition_procurement_id=item.id, organization_id=organization.id) }}">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+            <button type="submit" class="btn btn-error text-white">
+              <i class="ph ph-x mr-1"></i>ยืนยันไม่ต่ออายุ
+            </button>
+          </form>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">

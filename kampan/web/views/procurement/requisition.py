@@ -134,45 +134,96 @@ def index():
     )
 
 
-@module.route("/non-renewal", defaults={"requisition_procurement_id": None})
-@module.route("/<requisition_procurement_id>/non-renewal")
+@module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])
 @login_required
-def non_renewal(requisition_procurement_id):
+def non_renewal_action(requisition_procurement_id):
     organization = g.organization
-    if requisition_procurement_id:
-        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-        if not procurement:
-            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-        procurement.status = "disactive"
-        procurement.last_updated_by = current_user._get_current_object()
-        procurement.save()
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-    else:
-        category = request.args.get("category", "")
-        query = {"status": "disactive", "organization": organization}
-        procurements = models.Procurement.objects(**query)
-        org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object(),
-            organization=organization,
-            status="active",
-        ).first()
-        if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-            procurements = procurements.filter(responsible_by=org_user_role)
-        procurements = procurements.order_by("-end_date")
-        category_choices = models.procurement.CATEGORY_CHOICES
-        return render_template(
-            "procurement/requisitions/non_renewal.html",
-            items=procurements,
-            organization=organization,
-            category_choices=category_choices,
-            selected_category=category,
-        )
+    if not organization:
+        abort(404)
+
+    procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+
+    procurement.status = "disactive"
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+    return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
 
-@module.route("/renewal_requested", defaults={"requisition_procurement_id": None})
-@module.route("/<requisition_procurement_id>/renewal-requested")
+@module.route("/non-renewal")
 @login_required
-def renewal_requested(requisition_procurement_id):
+def non_renewal():
+    organization = g.organization
+    category = request.args.get("category", "")
+    query = {"status": "disactive", "organization": organization}
+    procurements = models.Procurement.objects(**query)
+    org_user_role = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status="active",
+    ).first()
+    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
+        procurements = procurements.filter(responsible_by=org_user_role)
+    procurements = procurements.order_by("-end_date")
+    category_choices = models.procurement.CATEGORY_CHOICES
+    return render_template(
+        "procurement/requisitions/non_renewal.html",
+        items=procurements,
+        organization=organization,
+        category_choices=category_choices,
+        selected_category=category,
+    )
+
+
+@module.route("/<requisition_procurement_id>/renewal-requested", methods=["POST"])
+@login_required
+def renewal_requested_action(requisition_procurement_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+
+    # สร้างรหัส requisition_code ใหม่
+    requisition_code = generate_next_requisition_code()
+    # สร้าง Requisition ใหม่
+    requisition = models.Requisition(
+        requisition_code=requisition_code,
+        purchaser=(procurement.responsible_by[0] if procurement.responsible_by else None),
+        phone=None,
+        reason=f"Renewal requested for procurement {procurement.name}",
+        start_date=procurement.end_date,
+        items=[
+            models.RequisitionItem(
+                product_name=procurement.name,
+                category=procurement.category,
+                amount=procurement.amount,
+                currency=None,
+                quantity=1,
+            )
+        ],
+        # ensure at least one committee entry exists so model validation passes
+        committees=None,
+        type="MA",
+        fund=None,
+        created_by=current_user._get_current_object(),
+        last_updated_by=current_user._get_current_object(),
+        organization=organization,
+    )
+    requisition.save()
+    procurement.status = "renewal-requested"
+    procurement.last_updated_by = current_user._get_current_object()
+    procurement.save()
+
+    return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+
+
+@module.route("/renewal_requested")
+@login_required
+def renewal_requested():
     organization = g.organization
     form = forms.requisitions.RenewalRequestedFilterForm(request.args)
     org_user_role = models.OrganizationUserRole.objects(
@@ -198,168 +249,131 @@ def renewal_requested(requisition_procurement_id):
         else:
             query["status"] = status
 
-    if requisition_procurement_id:
-        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-        if not procurement:
-            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-        # สร้างรหัส requisition_code ใหม่
-        requisition_code = generate_next_requisition_code()
-        # สร้าง Requisition ใหม่
-        requisition = models.Requisition(
-            requisition_code=requisition_code,
-            purchaser=(procurement.responsible_by[0] if procurement.responsible_by else None),
-            phone=None,
-            reason=f"Renewal requested for procurement {procurement.name}",
-            start_date=procurement.end_date,
-            items=[
-                models.RequisitionItem(
-                    product_name=procurement.name,
-                    category=procurement.category,
-                    amount=procurement.amount,
-                    currency=None,
-                    quantity=1,
-                )
-            ],
-            # ensure at least one committee entry exists so model validation passes
-            committees=None,
-            type="MA",
-            fund=None,
-            created_by=current_user._get_current_object(),
-            last_updated_by=current_user._get_current_object(),
-            organization=organization,
+    category = request.args.get("category", "")
+    query["organization"] = organization
+    requisitions = models.Requisition.objects(**query)
+
+    # Determine user role hierarchy
+    # is_admin_or_head = current_user.has_organization_roles(
+    #     "admin"
+    # ) or current_user.has_organization_roles("head")
+    is_admin = current_user.has_organization_roles("admin")
+    is_head = current_user.has_organization_roles("head")
+    is_manager = current_user.has_organization_roles("manager")
+    is_staff = current_user.has_organization_roles("staff")
+
+    # Apply filters based on role (lowest privilege first)
+    manager_requisitions = None
+    manager_submitted_requisitions = None
+    head_pending_requisitions = None
+
+    if is_staff and not (is_admin or is_manager or is_head):
+        # Filter by purchaser.user matching current_user
+        staff_requisitions = []
+        for req in requisitions:
+            if req.purchaser and req.purchaser.user and req.purchaser.user.id == current_user.id:
+                staff_requisitions.append(req.id)
+        requisitions = requisitions.filter(id__in=staff_requisitions)
+
+    elif is_manager and not (is_admin or is_head):
+        manager_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__not__elemMatch={
+                "approver_role": "manager",
+            },
         )
-        requisition.save()
-        procurement.status = "renewal-requested"
-        procurement.last_updated_by = current_user._get_current_object()
-        procurement.save()
-
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-    else:
-        category = request.args.get("category", "")
-        query["organization"] = organization
-        requisitions = models.Requisition.objects(**query)
-
-        # Determine user role hierarchy
-        # is_admin_or_head = current_user.has_organization_roles(
-        #     "admin"
-        # ) or current_user.has_organization_roles("head")
-        is_admin = current_user.has_organization_roles("admin")
-        is_head = current_user.has_organization_roles("head")
-        is_manager = current_user.has_organization_roles("manager")
-        is_staff = current_user.has_organization_roles("staff")
-
-        # Apply filters based on role (lowest privilege first)
-        manager_requisitions = None
-        manager_submitted_requisitions = None
-        head_pending_requisitions = None
-
-        if is_staff and not (is_admin or is_manager or is_head):
-            # Filter by purchaser.user matching current_user
-            staff_requisitions = []
-            for req in requisitions:
-                if req.purchaser and req.purchaser.user and req.purchaser.user.id == current_user.id:
-                    staff_requisitions.append(req.id)
-            requisitions = requisitions.filter(id__in=staff_requisitions)
-
-        elif is_manager and not (is_admin or is_head):
-            manager_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__not__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-            manager_submitted_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-
-        elif is_head and not (is_admin or is_manager):
-            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
-
-        elif is_manager and is_staff and is_head and is_admin:
-            manager_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__not__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-            manager_submitted_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-
-        # Retrieve division-scoped pending requisitions for the head role
-        if is_head and org_user_role and org_user_role.division:
-            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-            # Enforce that all shown requisitions belong to the user's own division
-            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
-            head_pending_requisitions = requisitions.filter(
-                approval_history__not__elemMatch={
-                    "approver_role": "head",
-                },
-            )
-
-        # Exclude pending/submitted lists from the bottom list to avoid duplicates
-        excluded_ids = []
-        if manager_requisitions:
-            excluded_ids.extend([req.id for req in manager_requisitions])
-        if head_pending_requisitions:
-            excluded_ids.extend([req.id for req in head_pending_requisitions])
-        
-        if excluded_ids:
-            requisitions = requisitions.filter(id__nin=excluded_ids)
-
-        requisitions = requisitions.order_by("-requisition_code")
-        # print(requisitions[1].purchaser.to_json(indent=2))
-        mas_list = models.MAS.objects()
-
-        # Pagination
-        page = request.args.get("page", default=1, type=int)
-        per_page = request.args.get("per_page", default=10, type=int)
-        paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
-
-        paginated_manager_requisitions = None
-        if manager_requisitions is not None:
-            manager_page = request.args.get("manager_page", default=1, type=int)
-            paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
-
-        paginated_manager_submitted_requisitions = None
-        if manager_submitted_requisitions is not None:
-            manager_submitted_page = request.args.get("manager_submitted_page", default=1, type=int)
-            paginated_manager_submitted_requisitions = Pagination(
-                manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
-            )
-
-        paginated_head_pending_requisitions = None
-        if head_pending_requisitions is not None:
-            head_page = request.args.get("head_page", default=1, type=int)
-            paginated_head_pending_requisitions = Pagination(
-                head_pending_requisitions, page=head_page, per_page=per_page
-            )
-
-        return render_template(
-            "procurement/requisitions/renewal_requested.html",
-            requisitions=paginated_requisitions.items,
-            paginated_requisitions=paginated_requisitions,
-            manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
-            manager_submitted_requisitions=(
-                paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
-            ),
-            head_pending_requisitions=(paginated_head_pending_requisitions.items if paginated_head_pending_requisitions else []),
-            paginated_head_pending_requisitions=paginated_head_pending_requisitions,
-            form=form,
-            paginated_manager_requisitions=paginated_manager_requisitions,
-            paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
-            organization=organization,
-            selected_category=category,
-            status_choices=models.requisitions.STATUS_CHOICES,
-            mas_list=mas_list,
+        manager_submitted_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__elemMatch={
+                "approver_role": "manager",
+            },
         )
+
+    elif is_head and not (is_admin or is_manager):
+        purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
+        requisitions = requisitions.filter(purchaser__in=purchaser_ids)
+
+    elif is_manager and is_staff and is_head and is_admin:
+        manager_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__not__elemMatch={
+                "approver_role": "manager",
+            },
+        )
+        manager_submitted_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__elemMatch={
+                "approver_role": "manager",
+            },
+        )
+
+    # Retrieve division-scoped pending requisitions for the head role
+    if is_head and org_user_role and org_user_role.division:
+        purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
+        # Enforce that all shown requisitions belong to the user's own division
+        requisitions = requisitions.filter(purchaser__in=purchaser_ids)
+        head_pending_requisitions = requisitions.filter(
+            approval_history__not__elemMatch={
+                "approver_role": "head",
+            },
+        )
+
+    # Exclude pending/submitted lists from the bottom list to avoid duplicates
+    excluded_ids = []
+    if manager_requisitions:
+        excluded_ids.extend([req.id for req in manager_requisitions])
+    if head_pending_requisitions:
+        excluded_ids.extend([req.id for req in head_pending_requisitions])
+    
+    if excluded_ids:
+        requisitions = requisitions.filter(id__nin=excluded_ids)
+
+    requisitions = requisitions.order_by("-requisition_code")
+    # print(requisitions[1].purchaser.to_json(indent=2))
+    mas_list = models.MAS.objects()
+
+    # Pagination
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+    paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
+
+    paginated_manager_requisitions = None
+    if manager_requisitions is not None:
+        manager_page = request.args.get("manager_page", default=1, type=int)
+        paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
+
+    paginated_manager_submitted_requisitions = None
+    if manager_submitted_requisitions is not None:
+        manager_submitted_page = request.args.get("manager_submitted_page", default=1, type=int)
+        paginated_manager_submitted_requisitions = Pagination(
+            manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
+        )
+
+    paginated_head_pending_requisitions = None
+    if head_pending_requisitions is not None:
+        head_page = request.args.get("head_page", default=1, type=int)
+        paginated_head_pending_requisitions = Pagination(
+            head_pending_requisitions, page=head_page, per_page=per_page
+        )
+
+    return render_template(
+        "procurement/requisitions/renewal_requested.html",
+        requisitions=paginated_requisitions.items,
+        paginated_requisitions=paginated_requisitions,
+        manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
+        manager_submitted_requisitions=(
+            paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
+        ),
+        head_pending_requisitions=(paginated_head_pending_requisitions.items if paginated_head_pending_requisitions else []),
+        paginated_head_pending_requisitions=paginated_head_pending_requisitions,
+        form=form,
+        paginated_manager_requisitions=paginated_manager_requisitions,
+        paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
+        organization=organization,
+        selected_category=category,
+        status_choices=models.requisitions.STATUS_CHOICES,
+        mas_list=mas_list,
+    )
 
 
 @module.route("/<requisition_procurement_id>/document")
@@ -396,7 +410,9 @@ def document(requisition_procurement_id):
 @login_required
 def create_or_edit(requisition_procurement_id):
     organization = g.organization
-    members = organization.get_organization_users()
+    # กรรมการและผู้ขอซื้อต้องเป็นสมาชิก active ของหน่วยงานที่กำลังดูอยู่เท่านั้น
+    members = list(models.OrganizationUserRole.objects(organization=organization, status="active").order_by("-first_name"))
+    members_by_id = {str(member.id): member for member in members}
     requisition = None
 
     if requisition_procurement_id:
@@ -411,7 +427,7 @@ def create_or_edit(requisition_procurement_id):
 
     member_choices = [(str(member.id), member.display_fullname()) for member in members]
     for committee_form in form.committees:
-        committee_form.member.choices.extend(member_choices)
+        committee_form.member.choices = [("-", "เลือกกรรมการ")] + member_choices
 
     current_org_user_role = next(
         (member for member in members if str(getattr(member.user, "id", "")) == str(current_user.id)),
@@ -462,7 +478,9 @@ def create_or_edit(requisition_procurement_id):
     requisition.committees = []
     for committee_form in form.committees:
         if committee_form.member.data != "-":
-            member_obj = models.OrganizationUserRole.objects(id=committee_form.member.data).first()
+            member_obj = members_by_id.get(committee_form.member.data)
+            if not member_obj:
+                abort(400)
             committee = models.requisitions.Committees(
                 member=member_obj,
                 committee_type=committee_form.committee_type.data,
@@ -507,7 +525,7 @@ def create_or_edit(requisition_procurement_id):
     if current_org_user_role:
         requisition.purchaser = current_org_user_role
     elif form.purchaser.data and form.purchaser.data != "-":
-        requisition.purchaser = models.OrganizationUserRole.objects(id=form.purchaser.data).first()
+        requisition.purchaser = members_by_id.get(form.purchaser.data)
 
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()

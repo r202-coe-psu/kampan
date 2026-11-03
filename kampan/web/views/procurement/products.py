@@ -43,9 +43,12 @@ def calculate_months_days(start_date, end_date):
 
 
 @module.route("", methods=["GET", "POST"])
+@login_required
 def index():
     form = forms.procurement.ProductFilterForm(request.args)
     organization = g.organization
+    if not organization:
+        abort(404)
     today = datetime.date.today()
     name = request.args.get("name")
     category = request.args.get("category")
@@ -284,9 +287,16 @@ def download_template(organization_id):
 
 
 @module.route("/<procurement_id>/picture/<filename>")
+@login_required
 def image(procurement_id, filename):
-    procurement = models.Procurement.objects.get(id=procurement_id)
-    if not procurement or not procurement.image or procurement.image.filename != filename:
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+    if not procurement.image or procurement.image.filename != filename:
         return abort(403)
     return send_file(
         procurement.image,
