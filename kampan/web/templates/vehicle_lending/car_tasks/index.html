@@ -131,7 +131,7 @@
           <td class="min-w-40">{{ request_kind(car_application) }}</td>
           <td class="whitespace-nowrap">
             <div class="font-medium">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
-            {% if car_application.driver %}<div class="text-xs text-base-content/60"><i class="ph ph-steering-wheel"></i> {{ car_application.driver.get_resources_fullname_th() }}</div>{% endif %}
+            {% if car_application.driver %}<div class="text-xs text-base-content/60">{{ car_application.driver.get_resources_fullname_th() }}</div>{% endif %}
           </td>
           <td class="whitespace-nowrap">{{ car_application.creator.get_name() if car_application.creator else '-' }}</td>
           <td class="min-w-56">
