@@ -1,36 +1,23 @@
+{# ป้ายสถานะคำขอใช้รถ ใช้ร่วมกันทุกหน้า: badge-soft บอกด้วยสี, สีเขียวใช้โทนเข้ม (tone-deep-success) ให้อ่านง่าย
+   compact=true -> ขนาดเล็กสำหรับตาราง/การ์ดแน่น ๆ, readable=true -> แบบเส้นขอบบนพื้นขาว (ใช้บนพื้นหลังสี) #}
 {% macro render(car_application, compact=false, readable=false) %}
-  {% set badge_tone = {
-    'pending on header': 'badge-warning',
-    'pending on director': 'badge-secondary',
-    'pending on admin': 'badge-primary',
+  {% set styles = {
     'pending': 'badge-warning',
-    'denied': 'badge-error',
+    'pending on header': 'badge-warning',
+    'pending on admin': 'badge-primary',
+    'pending on director': 'badge-secondary',
     'active': 'badge-success',
-    'completed': 'badge-neutral',
+    'completed': 'badge-info',
+    'denied': 'badge-error',
     'denied by header': 'badge-error',
-    'denied by director': 'badge-error',
     'denied by admin': 'badge-error',
-    'disactive': 'badge-ghost'
-  }.get(car_application.status, 'badge-neutral') %}
-  {% set readable_tone = {
-    'pending on header': 'text-warning border-warning',
-    'pending on director': 'text-secondary border-secondary',
-    'pending on admin': 'text-primary border-primary',
-    'pending': 'text-warning border-warning',
-    'denied': 'text-error border-error',
-    'active': 'text-success border-success',
-    'completed': 'text-base-content/70 border-base-content/30',
-    'denied by header': 'text-error border-error',
-    'denied by director': 'text-error border-error',
-    'denied by admin': 'text-error border-error',
-    'disactive': 'text-base-content/60 border-base-content/30'
-  }.get(car_application.status, 'text-base-content border-base-content/30') %}
-  {% set badge_style = (badge_tone if not readable else 'badge-outline bg-base-100 ' ~ readable_tone) %}
-
-  <span
-    class="badge {{ badge_style }} {{ 'badge-xs' if compact else 'badge-sm' }} inline-flex h-auto min-h-7 whitespace-nowrap px-3 py-1.5 font-semibold leading-tight shadow-sm"
-    data-status="{{ car_application.status }}"
-    title="สถานะ: {{ car_application.get_status_display() }}">
-    <span>{{ car_application.get_status_display() }}</span>
+    'denied by director': 'badge-error',
+    'disactive': 'badge-neutral',
+  } %}
+  {% set tone = styles.get(car_application.status, 'badge-neutral') %}
+  <span class="badge {{ tone }} {{ 'badge-outline bg-base-100' if readable else 'badge-soft' }} {{ 'badge-xs' if compact else 'badge-sm' }} tone-deep-success whitespace-nowrap font-medium align-middle"
+        data-status="{{ car_application.status }}"
+        title="สถานะ: {{ car_application.get_status_display() }}">
+    {{ car_application.get_status_display() }}
   </span>
 {% endmacro %}

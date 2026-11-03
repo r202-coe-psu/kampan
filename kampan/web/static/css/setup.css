@@ -233,3 +233,10 @@ fieldset {
     --module-fg: var(--color-module-motorcycle-content);
   }
 }
+
+/* เขียวโทนเข้ม (ใกล้ green-700) สำหรับ stepper / ป้ายสถานะ / timeline ของระบบรถ
+   เขียวของธีม (72% lightness) สว่างจนแสบตาและตัวอักษรบนพื้นเขียวอ่านยาก */
+.tone-deep-success {
+  --color-success: oklch(52.7% 0.154 150.069);
+  --color-success-content: oklch(98.2% 0.018 155.826);
+}
