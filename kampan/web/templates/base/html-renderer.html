@@ -200,10 +200,15 @@ file_input -->
                   {% if readonly %}input-readonly{% endif %}
                   {{ class_ }}">
       {% if readonly %}
-        {{ field(class_="w-full bg-none outline-none border-none", disabled="disabled", **kwargs) }}
-        <input type="hidden" name="{{ field.name }}" value="{{ field.data }}" />
+        {% set select_html = field(class_="w-full bg-none outline-none border-none", disabled="disabled", **kwargs) %}
       {% else %}
-        {{ field(class_="w-full bg-none outline-none border-none", **kwargs) }}
+        {% set select_html = field(class_="w-full bg-none outline-none border-none", **kwargs) %}
+      {% endif %}
+      {# <selectedcontent> ทำให้ข้อความยาวถูกตัดเป็น … ตาม DaisyUI แทนที่จะวิ่งทับลูกศร (เบราว์เซอร์ที่ไม่รองรับจะข้ามแท็กนี้) #}
+      {% set open_end = select_html.index('>') + 1 %}
+      {{ select_html[:open_end] }}<button><selectedcontent></selectedcontent></button>{{ select_html[open_end:] }}
+      {% if readonly %}
+        <input type="hidden" name="{{ field.name }}" value="{{ field.data }}" />
       {% endif %}
     </label>
     {% if field.errors %}
