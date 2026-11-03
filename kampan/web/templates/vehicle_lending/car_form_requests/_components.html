@@ -141,10 +141,10 @@
       {% if 'car' in approve_form %}
       {% set requested_type = (car_application.details or {}).get('vehicle_kind') or '' %}
       <div data-car-field>
-        {% if requested_type %}<span class="badge badge-sm badge-info badge-soft">ผู้ขอต้องการ: {{ requested_type }}</span>{% endif %}
+        {% if requested_type %}<p class="text-sm text-base-content/70">ผู้ขอต้องการ: <span class="font-semibold text-base-content">{{ requested_type }}</span></p>{% endif %}
         {{ renderer.render_select_field(approve_form.car, **{'data-car-select': '', 'data-requested-type': requested_type}) }}
         {% if requested_type %}
-        <label class="label cursor-pointer gap-2 text-sm">
+        <label class="label cursor-pointer gap-2 text-sm mt-2">
           <input type="checkbox" class="checkbox checkbox-sm" data-show-all-types>
           แสดงรถทุกประเภท
         </label>
