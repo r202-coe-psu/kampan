@@ -1,6 +1,7 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}ประวัติการใช้รถยนต์{% endblock %}
 
@@ -10,153 +11,133 @@
 {% endblock %}
 
 {% block content %}
+{% set page = paginated_car_applications %}
 <div id="edit-modal"></div>
-<div class="flex justify-end w-full gap-2">
-  <a class="btn btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
-    hx-get="{{ url_for('vehicle_lending.history_car_lending.export_car_applications', organization_id=organization.id) }}">
-    <i class="ph ph-file"></i>
-    ส่งออกข้อมูลใบขอใช้รถ
-  </a>
+
+{% set is_filtered = request.args.items()|rejectattr(0, 'in', ['organization_id', 'page'])|selectattr(1)|list|length > 0 %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <button type="button" class="btn btn-ghost justify-between rounded-box lg:hidden" aria-expanded="{{ 'true' if is_filtered else 'false' }}"
+    onclick="const open = document.getElementById('history-filter').classList.toggle('max-lg:hidden') === false; this.setAttribute('aria-expanded', open); this.querySelector('.ph-caret-down').classList.toggle('rotate-180', open);">
+    <span class="flex items-center gap-2"><i class="ph ph-funnel"></i> ค้นหา / กรองข้อมูล{% if is_filtered %} <span class="badge badge-primary badge-xs">กำลังกรอง</span>{% endif %}</span>
+    <i class="ph ph-caret-down transition-transform {{ 'rotate-180' if is_filtered else '' }}"></i>
+  </button>
+  <form id="history-filter" method="GET" action="{{ url_for('vehicle_lending.history_car_lending.index') }}"
+    class="card-body grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4 items-end {{ '' if is_filtered else 'max-lg:hidden' }}">
+    <input type="hidden" name="organization_id" value="{{ organization.id }}">
+
+    {{ renderer.render_search_select_field(form.creator) }}
+    {{ renderer.base_render(form.location) }}
+    {{ renderer.base_render(form.departure_date) }}
+    {{ renderer.base_render(form.return_date) }}
+    {{ renderer.base_render(form.created_date) }}
+    {{ renderer.render_select_field(form.sort_by) }}
+    {{ renderer.render_select_field(form.order) }}
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary flex-1 sm:flex-none">
+        <i class="ph ph-magnifying-glass"></i> ค้นหา
+      </button>
+      <a href="?organization_id={{ organization.id }}" class="btn btn-ghost flex-1 sm:flex-none">
+        <i class="ph ph-x"></i> ล้างการค้นหา
+      </a>
+    </div>
+  </form>
 </div>
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm ">
-  <!-- Date Filter Form -->
-  <div class="mb-6">
-    <form method="GET"
-      action="{{ url_for('vehicle_lending.history_car_lending.index') }}"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-      <input type="hidden" name="organization_id" value="{{ organization.id }}">
 
-      {{ renderer.render_search_select_field(form.creator) }}
-      {{ renderer.base_render(form.location) }}
-      {{ renderer.base_render(form.departure_date) }}
-      {{ renderer.base_render(form.return_date) }}
-      {{ renderer.base_render(form.created_date) }}
-      {{ renderer.render_select_field(form.sort_by) }}
-      {{ renderer.render_select_field(form.order) }}
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ page.total }}</span> รายการ</p>
+  <button type="button" class="btn btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
+    hx-get="{{ url_for('vehicle_lending.history_car_lending.export_car_applications', organization_id=organization.id) }}">
+    <i class="ph ph-file-arrow-down"></i> ส่งออกข้อมูลใบขอใช้รถ
+  </button>
+</div>
 
-      <div class="flex gap-2 min-w-fit mt-4">
-        <button type="submit" class="btn btn-primary shadow-md">
-          <i class="ph ph-magnifying-glass mr-2"></i>
-          ค้นหา
-        </button>
-        <a href="?organization_id={{ organization.id }}" class="btn btn-outline shadow-md">
-          <i class="ph ph-x mr-2"></i>
-          ล้างการค้นหา
-        </a>
-      </div>
-    </form>
-  </div>
+{% macro history_actions(car_application) %}
+<button type="button" class="btn btn-sm btn-primary btn-soft" hx-target="#edit-modal" hx-swap="innerHTML"
+  hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
+  <i class="ph ph-eye"></i> รายละเอียด
+</button>
+{% if car_application.id in editable_car_application_ids %}
+<button type="button" class="btn btn-sm btn-ghost" hx-target="#edit-modal" hx-swap="innerHTML"
+  hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
+  <i class="ph ph-pencil-simple"></i> แก้ไข
+</button>
+{% endif %}
+{% endmacro %}
 
-  <div class="mt-2 text-lg font-bold mb-4">
-    แสดงรายการงานทั้งหมด
-  </div>
-  <div class="overflow-x-auto mt-2 rounded-xl">
-    <table class="table-auto w-full max-lg:hidden">
+{% if page.total %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-lg:hidden">
+  <div class="overflow-x-auto">
+    <table class="table table-zebra">
       <thead>
         <tr>
-          <th class="table-style"></th>
-          <th class="table-style">วันที่ออกเดินทาง</th>
-          <th class="table-style">ผู้ขอใช้</th>
-          <th class="table-style">ลักษณะงาน</th>
-          <th class="table-style">สถานที่ไป</th>
-          <th class="table-style">กลับถึงเวลา</th>
-          <th class="table-style">เลขไมล์ก่อนออกเดินทาง</th>
-          <th class="table-style">เลขไมล์หลังเดินทางกลับ</th>
-          <th class="table-style">จัดการ</th>
+          <th>#</th>
+          <th>วันที่ออกเดินทาง</th>
+          <th>ผู้ขอใช้</th>
+          <th>สถานที่ / ลักษณะงาน</th>
+          <th>กลับถึงเวลา</th>
+          <th class="text-right">เลขไมล์ก่อนเดินทาง</th>
+          <th class="text-right">เลขไมล์หลังเดินทาง</th>
+          <th></th>
         </tr>
-
       </thead>
       <tbody>
-        {% for car_application in paginated_car_applications.items %}
-        <tr>
-          <td class="table-style">
-            {{ paginated_car_applications.total - ((paginated_car_applications.page -1) *
-            paginated_car_applications.per_page) - loop.index0 }}
+        {% for car_application in page.items %}
+        <tr class="hover">
+          <td class="text-base-content/60">{{ page.total - ((page.page - 1) * page.per_page) - loop.index0 }}</td>
+          <td class="whitespace-nowrap">{{ car_application.departure_datetime|format_thai_datetime_short_month }}</td>
+          <td class="whitespace-nowrap font-medium">{{ car_application.creator.get_name() }}</td>
+          <td class="min-w-48 max-w-xs">
+            <div class="font-semibold">{{ car_application.location or '-' }}</div>
+            <div class="text-xs text-base-content/60">{{ car_application.request_reason or '' }}</div>
           </td>
-          <td class="table-style">
-            {{ car_application.departure_datetime|format_thai_datetime_short_month }}
-          </td>
-          <td class="table-style">
-            {{ car_application.creator.get_name() }}
-          </td>
-          <td class="table-style text-wrap" style="max-width: 200px;">
-            {{ car_application.request_reason }}
-          </td>
-          <td class="table-style">
-            {{ car_application.location }}
-          </td>
-          <td class="table-style">
-            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else
-            "" }}
-          </td>
-          <td class="table-style">
-            {{ car_application.last_mileage_before if car_application.last_mileage_before else '-' }}
-          </td>
-          <td class="table-style">
-            {{ car_application.last_mileage }}
-          </td>
-          <td class="table-style gap-2">
-            <div class="flex flex-wrap flex-row gap-2">
-              <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
-                hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
-                รายละเอียด
-              </button>
-              {% if car_application.id in editable_car_application_ids %}
-              <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
-                hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
-                แก้ไข
-              </button>
-              {% endif %}
-            </div>
-          </td>
+          <td class="whitespace-nowrap">{{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else '-' }}</td>
+          <td class="text-right tabular-nums">{{ car_application.last_mileage_before or '-' }}</td>
+          <td class="text-right tabular-nums">{{ car_application.last_mileage or '-' }}</td>
+          <td class="whitespace-nowrap">{{ history_actions(car_application) }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-
-    <!-- Mobile Cards -->
-    <div class="space-y-4 lg:hidden">
-      {% for car_application in paginated_car_applications.items %}
-      <div class="border rounded-xl p-4 shadow bg-white">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm font-bold text-black">#{{ paginated_car_applications.total -
-            ((paginated_car_applications.page
-            -1) * paginated_car_applications.per_page) - loop.index0 }}</span>
-          <span class="text-sm font-medium text-gray-700">{{
-            car_application.departure_datetime|format_thai_datetime_short_month }}</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <div><span class="font-semibold">ผู้ขอใช้:</span> {{ car_application.creator.get_name() }}</div>
-          <div><span class="font-semibold">ลักษณะงาน:</span> {{ car_application.request_reason }}</div>
-          <div><span class="font-semibold">สถานที่ไป:</span> {{ car_application.location }}</div>
-          <div><span class="font-semibold">กลับถึงเวลา:</span>
-            {{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else
-            "-" }}
-          </div>
-          <div><span class="font-semibold">เลขไมล์ก่อนเดินทาง:</span> {{ car_application.get_mile_before() }}</div>
-          <div><span class="font-semibold">เลขไมล์หลังเดินทาง:</span> {{ car_application.last_mileage }}</div>
-        </div>
-        <div class="flex flex-wrap gap-2 mt-3 justify-end">
-          <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
-            hx-get="{{ url_for('vehicle_lending.history_car_lending.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
-            รายละเอียด
-          </button>
-          {% if car_application.id in editable_car_application_ids %}
-          <button class="btn btn-sm btn-primary" hx-target="#edit-modal" hx-swap="innerHTML"
-            hx-get="{{ url_for('vehicle_lending.history_car_lending.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
-            แก้ไข
-          </button>
-          {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% if paginated_car_applications.pages != 1 %}
-    {{ paginated.render_pagination(paginated_car_applications, "vehicle_lending.history_car_lending.index", kwargs=request.args) }}
-    {% endif %}
-    {% if not paginated_car_applications.total %}
-    <div class="flex w-full justify-center py-6 text-xl">ไม่มีข้อมูลการทำรายการในขณะนี้</div>
-    {% endif %}
   </div>
 </div>
+
+<div class="mt-4 flex flex-col gap-3 lg:hidden">
+  {% for car_application in page.items %}
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-3 p-4">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="font-semibold">{{ car_application.location or '-' }}</div>
+          {% if car_application.request_reason %}<div class="text-sm text-base-content/70">{{ car_application.request_reason }}</div>{% endif %}
+        </div>
+        <span class="text-xs text-base-content/60 whitespace-nowrap">#{{ page.total - ((page.page - 1) * page.per_page) - loop.index0 }}</span>
+      </div>
+      <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+        <dt class="text-base-content/60">ผู้ขอใช้</dt>
+        <dd>{{ car_application.creator.get_name() }}</dd>
+        <dt class="text-base-content/60">ออกเดินทาง</dt>
+        <dd>{{ car_application.departure_datetime|format_thai_datetime_short_month }}</dd>
+        <dt class="text-base-content/60">กลับถึง</dt>
+        <dd>{{ car_application.return_datetime|format_thai_datetime_short_month if car_application.return_datetime else '-' }}</dd>
+        <dt class="text-base-content/60">เลขไมล์</dt>
+        <dd class="tabular-nums">{{ car_application.last_mileage_before or '-' }} → {{ car_application.last_mileage or '-' }}</dd>
+      </dl>
+      <div class="card-actions justify-end">{{ history_actions(car_application) }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if page.pages != 1 %}
+<div class="mt-4">
+  {{ paginated.render_pagination(page, "vehicle_lending.history_car_lending.index", kwargs=request.args) }}
+</div>
+{% endif %}
+{% else %}
+{{ EmptyState('ph-clock-counter-clockwise', 'ยังไม่มีประวัติการใช้รถยนต์',
+              description='เมื่อมีการใช้รถเสร็จสิ้น รายการจะแสดงที่นี่',
+              filtered=is_filtered,
+              clear_href=url_for('vehicle_lending.history_car_lending.index', organization_id=organization.id)) }}
+{% endif %}
 {% endblock %}
