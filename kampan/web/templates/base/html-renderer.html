@@ -375,13 +375,16 @@ file_input -->
 
   {% macro render_text_area_field(field) %}
     <fieldset class="fieldset w-full" id="field-{{ field.id }}">
-      <legend class="fieldset-legend">{{ field.label.text }}</legend>
-      <textarea class="w-full h-24 textarea"
+      <legend class="fieldset-legend">
+        {{ field.label.text }}
+        {% if field.flags.required %}<span class="text-error">*</span>{% endif %}
+      </legend>
+      <textarea class="w-full h-24 textarea {% if field.errors %}textarea-error{% endif %}"
                 name="{{ field.name }}"
                 id="{{ field.id }}"
                 placeholder="กรอก{{ field.label.text }}ที่นี่">{{ field.data if field.data else field.default if field.default else "" }}</textarea>
-      <div class="fieldset-label">
-        <p class="validator-hint">
+      {% if field.errors %}
+        <span class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
             {% if 'This field is required' in error %}
               กรุณากรอกข้อมูล
@@ -390,8 +393,8 @@ file_input -->
             {% endif %}
             {% if not loop.last %}<br />{% endif %}
           {% endfor %}
-        </p>
-      </div>
+        </span>
+      {% endif %}
     </fieldset>
   {% endmacro %}
 
