@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from kampan.models.vehicles import VEHICLE_TYPES
+
 
 @dataclass(frozen=True)
 class CatalogField:
@@ -16,7 +18,7 @@ CATALOG = {
             "vehicle_kind",
             "ชนิดรถ",
             "radio",
-            ("บัส", "ตู้", "เก๋ง", "มินิบัส"),
+            tuple(value for value, _label in VEHICLE_TYPES),
         ),
         CatalogField("vehicle_count", "จำนวนรถ", "number"),
         CatalogField("district", "อำเภอ", "text"),

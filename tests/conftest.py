@@ -101,11 +101,12 @@ def login_as(app):
 
 @pytest.fixture
 def create_car():
-    def _create_car(organization, license_plate="กก 1111", status="active"):
+    def _create_car(organization, license_plate="กก 1111", status="active", vehicle_type=None):
         car = models.vehicles.Car(
             license_plate=license_plate,
             organization=organization,
             status=status,
+            vehicle_type=vehicle_type,
         )
         car.save()
         return car
