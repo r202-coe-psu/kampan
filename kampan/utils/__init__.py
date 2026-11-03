@@ -20,3 +20,4 @@ from . import export_file
 from . import date_utils
 from . import car_form_flow
 from . import car_form_catalog
+from . import car_form_paper

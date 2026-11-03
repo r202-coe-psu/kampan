@@ -1,0 +1,22 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% block title %}ยื่นคำขอใช้รถ{% endblock %}
+{% block dashboard_title %}ยื่นคำขอใช้รถ{% endblock %}
+
+{% block content %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <p class="mb-4 text-base-content/70">เลือกแบบฟอร์มที่ต้องการยื่น</p>
+  {% if templates %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    {% for template in templates %}
+    <a class="btn btn-outline justify-start h-auto py-3"
+       href="{{ url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) }}">
+      {{ template.name }}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center text-base-content/60 py-8">ยังไม่มีแบบฟอร์มที่เปิดใช้งาน</div>
+  {% endif %}
+</div>
+{% endblock %}

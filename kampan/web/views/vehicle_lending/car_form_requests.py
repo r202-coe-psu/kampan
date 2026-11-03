@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Blueprint, abort, g, redirect, request, url_for
+from flask import Blueprint, abort, g, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from kampan import models, utils
@@ -38,7 +38,53 @@ def _parse_datetime(form, prefix):
     )
 
 
-@module.route("/new/<template_id>", methods=["POST"])
+@module.route("/new")
+@acl.organization_roles_required(*REQUEST_ROLES)
+def choose_template():
+    organization = g.organization
+    return render_template(
+        "/vehicle_lending/car_form_requests/choose_template.html",
+        organization=organization,
+        templates=models.car_form_templates.CarFormTemplate.objects(
+            organization=organization, status="active"
+        ).order_by("name"),
+    )
+
+
+@module.route("/inbox")
+@acl.organization_roles_required(*REQUEST_ROLES)
+def inbox():
+    organization = g.organization
+    user = current_user._get_current_object()
+    return render_template(
+        "/vehicle_lending/car_form_requests/inbox.html",
+        organization=organization,
+        car_applications=utils.car_form_flow.pending_for(user, organization),
+        cars=models.vehicles.Car.objects(organization=organization, status="active"),
+        drivers=organization.get_all_drivers(),
+        current_step_def=utils.car_form_flow.current_step_def,
+    )
+
+
+@module.route("/<car_application_id>/paper")
+@acl.organization_roles_required(*REQUEST_ROLES)
+def paper(car_application_id):
+    organization = g.organization
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization
+    ).first()
+    if not car_application:
+        abort(404)
+
+    return render_template(
+        "/vehicle_lending/car_form_requests/paper.html",
+        organization=organization,
+        car_application=car_application,
+        paper_html=utils.car_form_paper.render_paper(car_application),
+    )
+
+
+@module.route("/new/<template_id>", methods=["GET", "POST"])
 @acl.organization_roles_required(*REQUEST_ROLES)
 def create(template_id):
     organization = g.organization
@@ -50,9 +96,26 @@ def create(template_id):
 
     form = request.form
     snapshot = _snapshot(template)
-    details_form = forms.car_form_templates.build_details_form(snapshot["fields"])(request.form)
+    details_form_class = forms.car_form_templates.build_details_form(snapshot["fields"])
+
+    def render_form(details_form, status=200):
+        return (
+            render_template(
+                "/vehicle_lending/car_form_requests/form.html",
+                organization=organization,
+                template=template,
+                details_form=details_form,
+                form=form,
+            ),
+            status,
+        )
+
+    if request.method == "GET":
+        return render_form(details_form_class(formdata=None))
+
+    details_form = details_form_class(request.form)
     if not details_form.validate():
-        abort(400)
+        return render_form(details_form, 400)
 
     try:
         departure_datetime = _parse_datetime(form, "departure")
@@ -84,7 +147,7 @@ def create(template_id):
     car_application.save()
     return redirect(
         url_for(
-            "vehicle_lending.car_applications.index",
+            "vehicle_lending.car_form_requests.inbox",
             organization_id=str(organization.id),
         )
     )
@@ -129,7 +192,7 @@ def approve(car_application_id):
     )
     return redirect(
         url_for(
-            "vehicle_lending.car_applications.index",
+            "vehicle_lending.car_form_requests.inbox",
             organization_id=str(organization.id),
         )
     )
@@ -157,7 +220,7 @@ def deny(car_application_id):
     )
     return redirect(
         url_for(
-            "vehicle_lending.car_applications.index",
+            "vehicle_lending.car_form_requests.inbox",
             organization_id=str(organization.id),
         )
     )

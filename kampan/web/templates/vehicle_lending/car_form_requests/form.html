@@ -1,0 +1,61 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% block title %}{{ template.name }}{% endblock %}
+{% block dashboard_title %}{{ template.name }}{% endblock %}
+
+{% block content %}
+<form method="post"
+      action="{{ url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) }}"
+      class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+  {{ details_form.hidden_tag() }}
+  <input type="hidden" name="organization_id" value="{{ organization.id }}">
+
+  <label class="form-control">
+    <span class="label-text">เบอร์โทรศัพท์</span>
+    <input type="text" name="phone" value="{{ form.get('phone', '') }}" class="input input-bordered w-full" required>
+  </label>
+  <label class="form-control">
+    <span class="label-text">สถานที่ที่ต้องการจะไป</span>
+    <input type="text" name="location" value="{{ form.get('location', '') }}" class="input input-bordered w-full" required>
+  </label>
+  <label class="form-control">
+    <span class="label-text">เหตุผลที่ต้องการใช้รถ</span>
+    <textarea name="request_reason" class="textarea textarea-bordered w-full" required>{{ form.get('request_reason', '') }}</textarea>
+  </label>
+  <label class="form-control">
+    <span class="label-text">จำนวนผู้โดยสาร</span>
+    <input type="number" min="0" name="passenger_number" value="{{ form.get('passenger_number', '') }}" class="input input-bordered w-full" required>
+  </label>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label class="form-control">
+      <span class="label-text">วันที่ออกเดินทาง</span>
+      <input type="date" name="departure_date" value="{{ form.get('departure_date', '') }}" class="input input-bordered w-full" required>
+    </label>
+    <label class="form-control">
+      <span class="label-text">เวลาออกเดินทาง</span>
+      <input type="time" name="departure_time" value="{{ form.get('departure_time', '') }}" class="input input-bordered w-full" required>
+    </label>
+    <label class="form-control">
+      <span class="label-text">วันที่กลับ</span>
+      <input type="date" name="return_date" value="{{ form.get('return_date', '') }}" class="input input-bordered w-full" required>
+    </label>
+    <label class="form-control">
+      <span class="label-text">เวลากลับ</span>
+      <input type="time" name="return_time" value="{{ form.get('return_time', '') }}" class="input input-bordered w-full" required>
+    </label>
+  </div>
+
+  {% for field in details_form if field.widget.input_type != 'hidden' %}
+  <div class="form-control">
+    <span class="label-text">{{ field.label.text }}</span>
+    {{ field(class_="select select-bordered w-full" if field.type == "SelectField" else "input input-bordered w-full") }}
+    {% for error in field.errors %}<span class="text-error text-sm">{{ error }}</span>{% endfor %}
+  </div>
+  {% endfor %}
+
+  <div class="flex justify-end gap-2">
+    <a class="btn btn-ghost" href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยกเลิก</a>
+    <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
+  </div>
+</form>
+{% endblock %}

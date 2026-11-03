@@ -514,3 +514,167 @@ def test_request_without_departure_date_is_rejected_with_400(
 
     assert res.status_code == 400
     assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def _inbox(client, org):
+    return client.get(f"{BASE}/inbox?organization_id={org.id}")
+
+
+def test_inbox_shows_pending_request_only_to_users_who_can_act_on_its_current_step(
+    app, head_admin_setup, login_as, create_user, assign_user_to_org
+):
+    """GET /inbox แสดงคำขอที่รออยู่ เฉพาะผู้ที่ทำขั้นปัจจุบันได้ (head ฝ่ายเดียวกัน แล้วเป็น admin หลัง head อนุมัติ)"""
+    s = head_admin_setup
+    other_division = models.Division(name="ฝ่ายอื่น", organization=s["org"])
+    other_division.save()
+    other_head = create_user("Otherhead", "User")
+    role = assign_user_to_org(other_head, s["org"], roles=["head"])
+    role.division = other_division
+    role.save()
+    car_app = _submit_and_get(app, login_as, s)
+    car_app.location = "ตำบลบ่อยาง-อินบ็อกซ์"
+    car_app.save()
+
+    head_page = _inbox(login_as(app.test_client(), s["head"]), s["org"])
+    other_head_page = _inbox(login_as(app.test_client(), other_head), s["org"])
+    staff_page = _inbox(login_as(app.test_client(), s["staff"]), s["org"])
+    admin_before = _inbox(login_as(app.test_client(), s["admin"]), s["org"])
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"])
+    admin_after = _inbox(login_as(app.test_client(), s["admin"]), s["org"])
+
+    assert head_page.status_code == 200
+    assert "ตำบลบ่อยาง-อินบ็อกซ์" in head_page.get_data(as_text=True)
+    assert "ตำบลบ่อยาง-อินบ็อกซ์" not in other_head_page.get_data(as_text=True)
+    assert "ตำบลบ่อยาง-อินบ็อกซ์" not in staff_page.get_data(as_text=True)
+    assert "ตำบลบ่อยาง-อินบ็อกซ์" not in admin_before.get_data(as_text=True)
+    assert "ตำบลบ่อยาง-อินบ็อกซ์" in admin_after.get_data(as_text=True)
+
+
+def test_paper_shows_template_paper_rendered_with_request_values_to_org_members_only(
+    app, head_admin_setup, login_as, create_org, create_user, assign_user_to_org
+):
+    """GET /<id>/paper แสดงใบขอที่ render จาก paper_html ของ template ให้สมาชิก org เท่านั้น (org อื่นได้ 404)"""
+    s = head_admin_setup
+    s["template"].paper_html = "<p>เรียน ผอ. ขอใช้รถไป {{ app.location }}</p>"
+    s["template"].save()
+    car_app = _submit_and_get(app, login_as, s)
+    org_b = create_org(name="หน่วยงาน B")
+    user_b = create_user("Outsider", "User")
+    assign_user_to_org(user_b, org_b, roles=["staff"])
+
+    own = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/{car_app.id}/paper?organization_id={s['org'].id}"
+    )
+    outsider = login_as(app.test_client(), user_b).get(
+        f"{BASE}/{car_app.id}/paper?organization_id={org_b.id}"
+    )
+
+    assert own.status_code == 200
+    assert "เรียน ผอ. ขอใช้รถไป จ.สงขลา" in own.get_data(as_text=True)
+    assert outsider.status_code == 404
+
+
+def test_new_lists_only_active_templates_of_the_current_org(
+    app, head_admin_setup, login_as, create_org
+):
+    """GET /new แสดงเฉพาะ template ที่ active ของ org ปัจจุบัน (ไม่แสดงของ org อื่น หรือที่ปิดใช้งาน)"""
+    s = head_admin_setup
+    step = lambda: models.car_form_templates.ApprovalStepDef(
+        key="admin", label="ผู้จัดรถ", approver_type="role", role="admin", assigns_vehicle=True
+    )
+    models.car_form_templates.CarFormTemplate(
+        organization=create_org(name="หน่วยงานอื่น"), name="แบบฟอร์มของ org อื่น", steps=[step()]
+    ).save()
+    models.car_form_templates.CarFormTemplate(
+        organization=s["org"], name="แบบฟอร์มที่ปิดแล้ว", status="disactive", steps=[step()]
+    ).save()
+
+    res = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new?organization_id={s['org'].id}"
+    )
+
+    html = res.get_data(as_text=True)
+    assert res.status_code == 200
+    assert "head แล้ว admin จัดรถ" in html
+    assert "แบบฟอร์มของ org อื่น" not in html
+    assert "แบบฟอร์มที่ปิดแล้ว" not in html
+
+
+def test_new_form_renders_core_fields_and_the_templates_details_fields(
+    app, head_admin_setup, login_as
+):
+    """GET /new/<template_id> แสดงฟิลด์หลัก ฟิลด์ catalog (label จาก catalog) และฟิลด์ custom (label ที่ตั้งเอง)"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"],
+        [
+            {"source": "catalog", "key": "vehicle_kind"},
+            {"source": "custom", "key": "project_no", "field_type": "text", "label": "เลขที่โครงการ"},
+        ],
+    )
+
+    res = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
+    )
+
+    html = res.get_data(as_text=True)
+    assert res.status_code == 200
+    for core in ("phone", "location", "request_reason", "passenger_number", "departure_date", "return_time"):
+        assert f'name="{core}"' in html
+    assert "ชนิดรถ" in html
+    assert 'name="vehicle_kind"' in html
+    assert "เลขที่โครงการ" in html
+    assert 'name="custom_project_no"' in html
+
+
+def test_submit_approve_and_deny_redirect_to_the_inbox(app, head_admin_setup, login_as):
+    """ยื่น/อนุมัติ/ปฏิเสธสำเร็จ แล้วพาไปหน้า inbox ของ car form requests"""
+    s = head_admin_setup
+    inbox_path = f"{BASE}/inbox"
+
+    submitted = _submit(login_as(app.test_client(), s["staff"]), s["template"], s["org"])
+    first = models.vehicle_applications.CarApplication.objects(organization=s["org"]).first()
+    approved = _approve(login_as(app.test_client(), s["head"]), first, s["org"])
+    denied = login_as(app.test_client(), s["admin"]).post(
+        f"{BASE}/{first.id}/deny",
+        data={"organization_id": str(s["org"].id), "denied_reason": "รถไม่ว่าง"},
+    )
+
+    for res in (submitted, approved, denied):
+        assert res.status_code == 302
+        assert inbox_path in res.headers["Location"]
+
+
+def test_legacy_car_application_pages_render_a_template_request_without_using_type(
+    app, head_admin_setup, login_as
+):
+    """คำขอจาก template (using_type ว่าง) ต้องไม่ทำให้ modal ปฏิทิน และหน้ารายการเดิมพัง"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    client = login_as(app.test_client(), s["staff"])
+    org_q = f"organization_id={s['org'].id}"
+
+    modal = client.get(f"/vehicle_lending/car_applications/{car_app.id}/modal?{org_q}")
+    index = client.get(f"/vehicle_lending/car_applications?{org_q}")
+    calendar = client.get(f"/vehicle_lending/car_applications/calendar?{org_q}")
+
+    assert modal.status_code == 200
+    assert "จ.สงขลา" in modal.get_data(as_text=True)
+    assert index.status_code == 200
+    assert calendar.status_code == 200
+
+
+def test_sidebar_links_to_new_request_and_inbox_for_staff_and_templates_for_admin_only(
+    app, head_admin_setup, login_as
+):
+    """sidebar มีลิงก์ยื่นคำขอและรอฉันอนุมัติสำหรับ staff ส่วนลิงก์จัดการ template เห็นเฉพาะ admin"""
+    s = head_admin_setup
+    org_q = f"?organization_id={s['org'].id}"
+
+    staff_html = login_as(app.test_client(), s["staff"]).get(f"{BASE}/inbox{org_q}").get_data(as_text=True)
+    admin_html = login_as(app.test_client(), s["admin"]).get(f"{BASE}/inbox{org_q}").get_data(as_text=True)
+
+    assert f"{BASE}/new?organization_id={s['org'].id}" in staff_html
+    assert f"{BASE}/inbox?organization_id={s['org'].id}" in staff_html
+    assert "/vehicle_lending/car_form_templates/" not in staff_html
+    assert f"/vehicle_lending/car_form_templates/?organization_id={s['org'].id}" in admin_html

@@ -50,6 +50,28 @@
       </a>
     </li>
     {% endif %}
+    {% if current_user.has_organization_roles("admin", "endorser", "staff", "head", "director", "supervisor supplier") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_form_requests/new' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id ) }}">
+        <i class="ph ph-note-pencil"></i> ยื่นคำขอใช้รถ (template)
+      </a>
+    </li>
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_form_requests/inbox' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.car_form_requests.inbox', organization_id=organization.id ) }}">
+        <i class="ph ph-tray"></i> รอฉันอนุมัติ
+      </a>
+    </li>
+    {% endif %}
+    {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/car_form_templates' in request.path else '' }}"
+        href="/vehicle_lending/car_form_templates/?organization_id={{ organization.id }}">
+        <i class="ph ph-file-text"></i> Template ใบขอใช้รถ
+      </a>
+    </li>
+    {% endif %}
     {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/header_page' in request.path else '' }}"

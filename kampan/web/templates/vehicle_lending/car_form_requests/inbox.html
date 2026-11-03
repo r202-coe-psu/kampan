@@ -1,0 +1,77 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% block title %}รอฉันอนุมัติ{% endblock %}
+{% block dashboard_title %}รอฉันอนุมัติ{% endblock %}
+
+{% block content %}
+<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if car_applications %}
+  <div class="flex flex-col gap-4">
+    {% for car_application in car_applications %}
+    {% set step = current_step_def(car_application) %}
+    <div class="border border-base-300 rounded-xl p-4 flex flex-col gap-3" data-request-id="{{ car_application.id }}">
+      <div class="flex flex-wrap justify-between gap-2">
+        <div>
+          <div class="font-bold">{{ car_application.form_template.name if car_application.form_template else '-' }}</div>
+          <div class="text-sm text-base-content/70">
+            ผู้ขอ: {{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}
+            {% if car_application.division %} ({{ car_application.division.name }}){% endif %}
+          </div>
+        </div>
+        <span class="badge badge-warning">ขั้นตอน: {{ step.label }}</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>สถานที่: <span class="font-semibold">{{ car_application.location or '-' }}</span></div>
+        <div>เหตุผล: <span class="font-semibold">{{ car_application.request_reason or '-' }}</span></div>
+        <div>ออกเดินทาง: <span class="font-semibold">{{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') if car_application.departure_datetime else '-' }} น.</span></div>
+        <div>กลับ: <span class="font-semibold">{{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else '-' }} น.</span></div>
+        <div>จำนวนผู้โดยสาร: <span class="font-semibold">{{ car_application.passenger_number }}</span></div>
+      </div>
+      <div class="flex flex-wrap gap-2 items-start">
+        <form method="post"
+              action="{{ url_for('vehicle_lending.car_form_requests.approve', car_application_id=car_application.id) }}"
+              class="flex flex-wrap gap-2 items-end">
+          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+          <input type="hidden" name="organization_id" value="{{ organization.id }}">
+          {% if step.assigns_vehicle %}
+          <label class="form-control">
+            <span class="label-text">รถ</span>
+            <select name="car" class="select select-bordered" required>
+              <option value="">เลือกรถ</option>
+              {% for car in cars %}
+              <option value="{{ car.id }}">{{ car.license_plate }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="form-control">
+            <span class="label-text">พนักงานขับรถ</span>
+            <select name="driver" class="select select-bordered">
+              <option value="">ไม่ระบุ</option>
+              {% for driver in drivers %}
+              <option value="{{ driver.id }}">{{ driver.get_resources_fullname_th() }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          {% endif %}
+          <input type="text" name="comment" class="input input-bordered" placeholder="ความเห็น (ถ้ามี)">
+          <button type="submit" class="btn btn-success">อนุมัติ</button>
+        </form>
+        <form method="post"
+              action="{{ url_for('vehicle_lending.car_form_requests.deny', car_application_id=car_application.id) }}"
+              class="flex flex-wrap gap-2 items-end">
+          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+          <input type="hidden" name="organization_id" value="{{ organization.id }}">
+          <input type="text" name="denied_reason" class="input input-bordered" placeholder="เหตุผลที่ปฏิเสธ" required>
+          <button type="submit" class="btn btn-error">ปฏิเสธ</button>
+        </form>
+        <a class="btn btn-outline"
+           href="{{ url_for('vehicle_lending.car_form_requests.paper', car_application_id=car_application.id, organization_id=organization.id) }}">ดูใบขอ</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center text-base-content/60 py-8">ไม่มีคำขอที่รอคุณอนุมัติ</div>
+  {% endif %}
+</div>
+{% endblock %}

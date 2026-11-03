@@ -39,6 +39,15 @@ def can_act(car_application, user, organization):
     return True
 
 
+def pending_for(user, organization):
+    pending = models.vehicle_applications.CarApplication.objects(
+        organization=organization,
+        form_template__ne=None,
+        status="pending",
+    ).order_by("created_date")
+    return [c for c in pending if can_act(c, user, organization)]
+
+
 def approve(car_application, user, comment="", car=None, driver=None):
     step = current_step_def(car_application)
     if step is None:
