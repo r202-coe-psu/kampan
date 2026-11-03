@@ -55,11 +55,15 @@
             <div class="text-xs text-error mt-1">{{ car_application.denied_reason }}</div>
             {% endif %}
           </td>
-          <td>
+          <td class="whitespace-nowrap">
+            <a class="btn btn-sm btn-primary btn-soft"
+               href="{{ url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
+              <i class="ph ph-eye"></i> รายละเอียด
+            </a>
             {% if (car_application.template_snapshot or {}).get('paper_file_id') %}
-            <a class="btn btn-sm btn-outline"
+            <a class="btn btn-sm btn-ghost"
                href="{{ url_for('vehicle_lending.car_form_requests.paper', car_application_id=car_application.id, organization_id=organization.id) }}"
-               target="_blank">ดูใบขอ</a>
+               target="_blank"><i class="ph ph-file-pdf"></i> ใบขอ</a>
             {% endif %}
           </td>
         </tr>

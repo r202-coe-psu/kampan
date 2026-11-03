@@ -1,0 +1,125 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+{% from '/vehicle_lending/components/vehicle_type_mismatch_badge.html' import VehicleTypeMismatchBadge %}
+
+{% block title %}รายละเอียดคำขอใช้รถ{% endblock %}
+{% block dashboard_title %}รายละเอียดคำขอใช้รถ{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+  <ul>
+    <li><a href="{{ url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id) }}">คำขอใช้รถ</a></li>
+    <li>{{ car_application.form_template.name if car_application.form_template else 'คำขอ' }}</li>
+  </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set progress = step_progress(car_application) %}
+{% set step = current_step_def(car_application) %}
+
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="card-title">{{ car_application.form_template.name if car_application.form_template else '-' }}</h2>
+          {{ status_badge.render(car_application) }}
+          {{ VehicleTypeMismatchBadge(car_application) }}
+        </div>
+        {{ ui.requester(car_application) }}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% if (car_application.template_snapshot or {}).get('paper_file_id') %}
+        <a class="btn btn-ghost" target="_blank"
+           href="{{ url_for('vehicle_lending.car_form_requests.paper', car_application_id=car_application.id, organization_id=organization.id) }}">
+          <i class="ph ph-file-pdf"></i> ดูใบขอ
+        </a>
+        {% endif %}
+        {% if can_act %}{{ ui.action_buttons(car_application) }}{% endif %}
+      </div>
+    </div>
+
+    {% if car_application.status == 'denied' and car_application.denied_reason %}
+    <div role="alert" class="alert alert-error alert-soft">
+      <i class="ph ph-x-circle text-xl"></i>
+      <span>ถูกปฏิเสธ: {{ car_application.denied_reason }}</span>
+    </div>
+    {% elif step %}
+    <div role="alert" class="alert alert-warning alert-soft">
+      <i class="ph ph-hourglass-medium text-xl"></i>
+      <span>ตอนนี้รอ <b>{{ step.label }}</b> อนุมัติ{% if can_act %} — คุณเป็นผู้อนุมัติขั้นนี้{% endif %}</span>
+    </div>
+    {% elif car_application.status == 'active' %}
+    <div role="alert" class="alert alert-success alert-soft">
+      <i class="ph ph-check-circle text-xl"></i>
+      <span>อนุมัติครบทุกขั้นแล้ว{% if car_application.car %} · รถ {{ car_application.car.license_plate }}{% endif %}{% if car_application.driver %} · คนขับ {{ car_application.driver.get_resources_fullname_th() }}{% endif %}</span>
+    </div>
+    {% endif %}
+
+    <div class="rounded-box bg-base-200/60 p-4 overflow-x-auto">
+      {{ ui.stepper(progress) }}
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 flex flex-col gap-4">
+    <section class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h3 class="card-title text-base"><i class="ph ph-clipboard-text"></i> ข้อมูลคำขอ</h3>
+        {{ ui.summary(car_application) }}
+        {% if detail_rows %}
+        <div class="divider my-1"></div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          {% for row in detail_rows %}
+          <div>
+            <dt class="text-base-content/60">{{ row.label }}</dt>
+            <dd class="font-semibold">{{ row.value or '-' }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+        {% endif %}
+        {% if car_application.car or car_application.driver %}
+        <div class="divider my-1"></div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div>
+            <dt class="text-base-content/60"><i class="ph ph-car"></i> รถที่จัดให้</dt>
+            <dd class="font-semibold">{{ car_application.car.license_plate if car_application.car else '-' }}{% if car_application.assigned_vehicle_type %} ({{ car_application.assigned_vehicle_type }}){% endif %}</dd>
+          </div>
+          <div>
+            <dt class="text-base-content/60"><i class="ph ph-steering-wheel"></i> พนักงานขับรถ</dt>
+            <dd class="font-semibold">{{ car_application.driver.get_resources_fullname_th() if car_application.driver else '-' }}</dd>
+          </div>
+        </dl>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h3 class="card-title text-base"><i class="ph ph-list-checks"></i> ขั้นตอนการอนุมัติ</h3>
+        {{ ui.step_cards(progress) }}
+      </div>
+    </section>
+  </div>
+
+  <section class="card bg-base-100 border border-base-300 shadow-sm h-fit">
+    <div class="card-body">
+      <h3 class="card-title text-base"><i class="ph ph-clock-counter-clockwise"></i> ประวัติการดำเนินการ</h3>
+      <p class="text-xs text-base-content/60 -mt-1">ใคร ทำอะไร เมื่อไร (ล่าสุดอยู่บน)</p>
+      {{ ui.audit_log(audit_logs) }}
+    </div>
+  </section>
+</div>
+
+{% if can_act %}
+{{ ui.action_modals(car_application, step, organization, cars, cars_requested_type_first, drivers, next='detail') }}
+{% endif %}
+{% endblock %}
+
+{% block additional_js %}
+{{ ui.car_filter_js() }}
+{% endblock %}

@@ -77,6 +77,29 @@ class StepApproval(me.EmbeddedDocument):
     comment = me.StringField(default="")
 
 
+AUDIT_ACTIONS = [
+    ("submitted", "ยื่นคำขอ"),
+    ("approved", "อนุมัติ"),
+    ("denied", "ปฏิเสธ"),
+]
+
+
+class CarApplicationAuditLog(me.EmbeddedDocument):
+    """ประวัติการเปลี่ยนแปลงของคำขอ: ใคร ทำอะไร ขั้นไหน เมื่อไร และค่าที่เปลี่ยน"""
+
+    action = me.StringField(choices=AUDIT_ACTIONS, required=True)
+    actor = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    step_key = me.StringField(default="")
+    step_label = me.StringField(default="")
+    comment = me.StringField(default="")
+    # [{"field": "car", "label": "รถ", "old": "", "new": "กข-1234"}, ...]
+    changes = me.ListField(me.DictField())
+
+    def get_action_display(self):
+        return dict(AUDIT_ACTIONS).get(self.action, self.action)
+
+
 class CarApplication(VehicleApplication, me.Document):
     meta = {"collection": "car_applications"}
     phone = me.StringField(default="", max_length=32)
@@ -113,6 +136,7 @@ class CarApplication(VehicleApplication, me.Document):
     details = me.DictField(default=dict)
     current_step = me.IntField(min_value=0, default=0)
     step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
+    audit_logs = me.ListField(me.EmbeddedDocumentField(CarApplicationAuditLog))
 
     def has_vehicle_type_mismatch(self):
         requested = (self.details or {}).get("vehicle_kind")

@@ -86,6 +86,7 @@ def index():
         organization=organization,
         car_applications=utils.car_form_flow.visible_requests(user, organization),
         current_step_def=utils.car_form_flow.current_step_def,
+        step_progress=utils.car_form_flow.step_progress,
     )
 
 
@@ -98,10 +99,7 @@ def inbox():
         "/vehicle_lending/car_form_requests/inbox.html",
         organization=organization,
         car_applications=utils.car_form_flow.pending_for(user, organization),
-        cars=list(models.vehicles.Car.objects(organization=organization, status="active")),
-        cars_requested_type_first=_cars_requested_type_first,
-        drivers=organization.get_all_drivers(),
-        current_step_def=utils.car_form_flow.current_step_def,
+        **_action_context(organization),
     )
 
 
@@ -190,12 +188,79 @@ def create(template_id):
         departure_datetime=departure_datetime,
         return_datetime=return_datetime,
     )
+    utils.car_form_flow.record_submitted(car_application, current_user._get_current_object())
     car_application.save()
     return redirect(
         url_for(
             "vehicle_lending.car_form_requests.index",
             organization_id=str(organization.id),
         )
+    )
+
+
+def _redirect_after_action(car_application, organization):
+    # ทำจากหน้ารายละเอียด (next=detail) กลับไปหน้ารายละเอียด ที่เหลือกลับหน้ารายการที่ต้องอนุมัติ
+    if request.form.get("next") == "detail":
+        return redirect(
+            url_for(
+                "vehicle_lending.car_form_requests.detail",
+                car_application_id=str(car_application.id),
+                organization_id=str(organization.id),
+            )
+        )
+    return redirect(
+        url_for(
+            "vehicle_lending.car_form_requests.inbox",
+            organization_id=str(organization.id),
+        )
+    )
+
+
+def _detail_rows(car_application):
+    from kampan.utils.car_form_catalog import CATALOG
+
+    details = car_application.details or {}
+    rows = []
+    for field in (car_application.template_snapshot or {}).get("fields", []):
+        key = field["key"] if field.get("source") == "catalog" else f"custom_{field['key']}"
+        catalog_field = CATALOG.get(field["key"]) if field.get("source") == "catalog" else None
+        label = field.get("label") or (catalog_field.default_label if catalog_field else field["key"])
+        value = details.get(key, "")
+        if isinstance(value, (list, tuple)):
+            value = ", ".join(str(v) for v in value)
+        rows.append({"label": label, "value": value})
+    return rows
+
+
+def _action_context(organization):
+    return {
+        "cars": list(models.vehicles.Car.objects(organization=organization, status="active")),
+        "cars_requested_type_first": _cars_requested_type_first,
+        "drivers": organization.get_all_drivers(),
+        "current_step_def": utils.car_form_flow.current_step_def,
+        "step_progress": utils.car_form_flow.step_progress,
+    }
+
+
+@module.route("/<car_application_id>")
+@acl.organization_roles_required(*REQUEST_ROLES)
+def detail(car_application_id):
+    organization = g.organization
+    user = current_user._get_current_object()
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization, form_template__ne=None
+    ).first()
+    if not car_application or not utils.car_form_flow.can_view(car_application, user, organization):
+        abort(404)
+
+    return render_template(
+        "/vehicle_lending/car_form_requests/detail.html",
+        organization=organization,
+        car_application=car_application,
+        can_act=utils.car_form_flow.can_act(car_application, user, organization),
+        detail_rows=_detail_rows(car_application),
+        audit_logs=list(reversed(car_application.audit_logs)),
+        **_action_context(organization),
     )
 
 
@@ -236,12 +301,7 @@ def approve(car_application_id):
         car=car,
         driver=driver,
     )
-    return redirect(
-        url_for(
-            "vehicle_lending.car_form_requests.inbox",
-            organization_id=str(organization.id),
-        )
-    )
+    return _redirect_after_action(car_application, organization)
 
 
 @module.route("/<car_application_id>/deny", methods=["POST"])
@@ -264,9 +324,4 @@ def deny(car_application_id):
         current_user._get_current_object(),
         request.form.get("denied_reason", ""),
     )
-    return redirect(
-        url_for(
-            "vehicle_lending.car_form_requests.inbox",
-            organization_id=str(organization.id),
-        )
-    )
+    return _redirect_after_action(car_application, organization)

@@ -1,0 +1,281 @@
+{# ส่วนประกอบที่ใช้ร่วมกันของหน้าคำขอใช้รถ (template): stepper, modal อนุมัติ/ปฏิเสธ, สรุปคำขอ, audit log #}
+
+{% set STEP_STYLE = {
+  'done': {'step': 'step-success', 'content': '✓', 'badge': 'badge-success', 'text': 'อนุมัติแล้ว', 'icon': 'ph-check-circle', 'tone': 'text-success'},
+  'current': {'step': 'step-warning', 'content': '●', 'badge': 'badge-warning', 'text': 'รออนุมัติ', 'icon': 'ph-hourglass-medium', 'tone': 'text-warning'},
+  'denied': {'step': 'step-error', 'content': '✕', 'badge': 'badge-error', 'text': 'ปฏิเสธ', 'icon': 'ph-x-circle', 'tone': 'text-error'},
+  'waiting': {'step': '', 'content': '', 'badge': 'badge-ghost', 'text': 'ยังไม่ถึง', 'icon': 'ph-circle', 'tone': 'text-base-content/40'},
+  'skipped': {'step': '', 'content': '–', 'badge': 'badge-ghost', 'text': 'ไม่ได้ดำเนินการ', 'icon': 'ph-minus-circle', 'tone': 'text-base-content/40'},
+} %}
+
+{% macro stepper(progress, show_names=true) %}
+<ul class="steps steps-vertical md:steps-horizontal w-full text-xs" data-stepper>
+  <li class="step step-success" data-content="✓" data-step-state="done">
+    <div class="flex flex-col text-left md:text-center">
+      <span class="font-medium">ยื่นคำขอ</span>
+    </div>
+  </li>
+  {% for step in progress %}
+  {% set style = STEP_STYLE[step.state] %}
+  <li class="step {{ style.step }}" data-content="{{ style.content or step.index }}" data-step-state="{{ step.state }}">
+    <div class="flex flex-col text-left md:text-center">
+      <span class="font-medium {{ 'text-base-content/50' if step.state in ('waiting', 'skipped') else '' }}">{{ step.index }}. {{ step.label }}</span>
+      {% if show_names %}
+      <span class="text-[11px] {{ style.tone }}">{% if step.decided_by %}{{ step.decided_by }}{% else %}{{ style.text }}{% endif %}</span>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro step_cards(progress) %}
+<ol class="flex flex-col gap-3" data-step-cards>
+  {% for step in progress %}
+  {% set style = STEP_STYLE[step.state] %}
+  <li class="flex gap-3 rounded-box border p-4 {{ 'border-warning bg-warning/5' if step.state == 'current' else ('border-error bg-error/5' if step.state == 'denied' else 'border-base-300') }}"
+      data-step-state="{{ step.state }}">
+    <i class="ph {{ style.icon }} text-2xl {{ style.tone }} shrink-0"></i>
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="font-semibold">ขั้นที่ {{ step.index }}: {{ step.label }}</div>
+        <span class="badge badge-sm {{ style.badge }}">{{ style.text }}</span>
+      </div>
+      <div class="text-sm text-base-content/70 mt-1">
+        ผู้อนุมัติ: {{ step.approver or '-' }}
+        {% if step.assigns_vehicle %}<span class="badge badge-xs badge-outline ml-1">จัดรถ</span>{% endif %}
+      </div>
+      {% if step.decided_by %}
+      <div class="text-sm mt-2">
+        <i class="ph ph-user"></i> <span class="font-medium">{{ step.decided_by }}</span>
+        {% if step.decided_at %}<span class="text-base-content/60"> · {{ step.decided_at.strftime('%d/%m/%Y %H:%M') }} น.</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if step.comment %}
+      <div class="mt-2 rounded-box bg-base-200 px-3 py-2 text-sm"><i class="ph ph-chat-text"></i> {{ step.comment }}</div>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
+{% macro summary(car_application) %}
+<dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-map-pin"></i> สถานที่</dt>
+    <dd class="font-semibold">{{ car_application.location or '-' }}</dd>
+  </div>
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-note"></i> เหตุผล</dt>
+    <dd class="font-semibold">{{ car_application.request_reason or '-' }}</dd>
+  </div>
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-calendar-blank"></i> ออกเดินทาง</dt>
+    <dd class="font-semibold">{{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') ~ ' น.' if car_application.departure_datetime else '-' }}</dd>
+  </div>
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-calendar-check"></i> กลับ</dt>
+    <dd class="font-semibold">{{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') ~ ' น.' if car_application.return_datetime else '-' }}</dd>
+  </div>
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-users"></i> จำนวนผู้โดยสาร</dt>
+    <dd class="font-semibold">{{ car_application.passenger_number }} คน</dd>
+  </div>
+  <div>
+    <dt class="text-base-content/60"><i class="ph ph-phone"></i> เบอร์โทร</dt>
+    <dd class="font-semibold">{{ car_application.phone or '-' }}</dd>
+  </div>
+</dl>
+{% endmacro %}
+
+{% macro requester(car_application) %}
+<div class="flex items-center gap-3">
+  <div class="avatar avatar-placeholder">
+    <div class="bg-primary/10 text-primary w-10 rounded-full">
+      <i class="ph ph-user text-lg"></i>
+    </div>
+  </div>
+  <div>
+    <div class="font-semibold">{{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}</div>
+    <div class="text-xs text-base-content/60">
+      {{ car_application.division.name if car_application.division else 'ไม่ระบุฝ่าย' }}
+      · ยื่นเมื่อ {{ car_application.created_date.strftime('%d/%m/%Y %H:%M') if car_application.created_date else '-' }}
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro action_buttons(car_application, size='') %}
+<button type="button" class="btn btn-success {{ size }}" onclick="document.getElementById('approve-{{ car_application.id }}').showModal()">
+  <i class="ph ph-check"></i> อนุมัติ
+</button>
+<button type="button" class="btn btn-error btn-outline {{ size }}" onclick="document.getElementById('deny-{{ car_application.id }}').showModal()">
+  <i class="ph ph-x"></i> ปฏิเสธ
+</button>
+{% endmacro %}
+
+{% macro action_modals(car_application, step, organization, cars, cars_requested_type_first, drivers, next='') %}
+{% set modal_id = car_application.id %}
+<dialog id="approve-{{ modal_id }}" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box max-w-xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="ปิด">✕</button>
+    </form>
+    <h3 class="text-lg font-bold flex items-center gap-2">
+      <i class="ph ph-check-circle text-success text-2xl"></i> อนุมัติคำขอใช้รถ
+    </h3>
+    <p class="text-sm text-base-content/70 mt-1">
+      {{ car_application.form_template.name if car_application.form_template else '' }}
+      · ขั้นตอน <span class="font-semibold text-base-content">{{ step.label }}</span>
+    </p>
+    <div class="mt-3 rounded-box bg-base-200 p-3 text-sm">
+      <div class="font-medium">{{ car_application.location or '-' }}</div>
+      <div class="text-base-content/70">{{ car_application.request_reason or '' }}</div>
+    </div>
+    <form method="post"
+          action="{{ url_for('vehicle_lending.car_form_requests.approve', car_application_id=car_application.id) }}"
+          class="mt-4 flex flex-col gap-3">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      {% if step.assigns_vehicle %}
+      {% set requested_type = (car_application.details or {}).get('vehicle_kind') or '' %}
+      <fieldset class="fieldset" data-car-field>
+        <legend class="fieldset-legend">รถ <span class="text-error">*</span>{% if requested_type %} <span class="badge badge-sm badge-info badge-outline">ผู้ขอต้องการ: {{ requested_type }}</span>{% endif %}</legend>
+        <select name="car" class="select w-full" required data-car-select data-requested-type="{{ requested_type }}">
+          <option value="">เลือกรถ</option>
+          {% for car in cars_requested_type_first(cars, car_application) %}
+          <option value="{{ car.id }}" data-vehicle-type="{{ car.vehicle_type or '' }}">{{ car.license_plate }}{% if car.vehicle_type %} ({{ car.get_vehicle_type_display() }}){% endif %}</option>
+          {% endfor %}
+        </select>
+        {% if requested_type %}
+        <label class="label cursor-pointer gap-2">
+          <input type="checkbox" class="checkbox checkbox-sm" data-show-all-types>
+          แสดงรถทุกประเภท
+        </label>
+        {% endif %}
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">พนักงานขับรถ</legend>
+        <select name="driver" class="select w-full">
+          <option value="">ไม่ระบุ</option>
+          {% for driver in drivers %}
+          <option value="{{ driver.id }}">{{ driver.get_resources_fullname_th() }}</option>
+          {% endfor %}
+        </select>
+      </fieldset>
+      {% endif %}
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">ความเห็น (ถ้ามี)</legend>
+        <textarea name="comment" class="textarea w-full" rows="2" placeholder="เช่น อนุมัติตามเสนอ"></textarea>
+      </fieldset>
+      <div class="modal-action">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('approve-{{ modal_id }}').close()">ยกเลิก</button>
+        <button type="submit" class="btn btn-success"><i class="ph ph-check"></i> ยืนยันอนุมัติ</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<dialog id="deny-{{ modal_id }}" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box max-w-xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="ปิด">✕</button>
+    </form>
+    <h3 class="text-lg font-bold flex items-center gap-2">
+      <i class="ph ph-x-circle text-error text-2xl"></i> ปฏิเสธคำขอใช้รถ
+    </h3>
+    <p class="text-sm text-base-content/70 mt-1">
+      ขั้นตอน <span class="font-semibold text-base-content">{{ step.label }}</span> · เมื่อปฏิเสธแล้วคำขอจะสิ้นสุดทันที
+    </p>
+    <form method="post"
+          action="{{ url_for('vehicle_lending.car_form_requests.deny', car_application_id=car_application.id) }}"
+          class="mt-4 flex flex-col gap-3">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">เหตุผลที่ปฏิเสธ <span class="text-error">*</span></legend>
+        <textarea name="denied_reason" class="textarea w-full" rows="3" required placeholder="ผู้ขอจะเห็นเหตุผลนี้"></textarea>
+      </fieldset>
+      <div class="modal-action">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('deny-{{ modal_id }}').close()">ยกเลิก</button>
+        <button type="submit" class="btn btn-error"><i class="ph ph-x"></i> ยืนยันปฏิเสธ</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+{% endmacro %}
+
+{% macro audit_log(entries) %}
+{% set ACTION_STYLE = {
+  'submitted': {'icon': 'ph-paper-plane-tilt', 'tone': 'text-info'},
+  'approved': {'icon': 'ph-check-circle', 'tone': 'text-success'},
+  'denied': {'icon': 'ph-x-circle', 'tone': 'text-error'},
+} %}
+<div data-audit-log>
+  {% if entries %}
+  <ul class="timeline timeline-vertical timeline-compact">
+    {% for entry in entries %}
+    {% set style = ACTION_STYLE.get(entry.action, {'icon': 'ph-dot', 'tone': ''}) %}
+    <li data-audit-entry>
+      {% if not loop.first %}<hr class="bg-base-300" />{% endif %}
+      <div class="timeline-middle"><i class="ph {{ style.icon }} text-xl {{ style.tone }} bg-base-100 rounded-full"></i></div>
+      <div class="timeline-end mb-4 min-w-0">
+        <div class="flex flex-wrap items-baseline gap-x-2">
+          <span class="font-semibold">{{ entry.actor.get_resources_fullname_th() if entry.actor else 'ระบบ' }}</span>
+          <span class="{{ style.tone }}">{{ entry.get_action_display() }}</span>
+          {% if entry.step_label %}<span class="text-base-content/70">ขั้น “{{ entry.step_label }}”</span>{% endif %}
+        </div>
+        <time class="text-xs text-base-content/60">{{ entry.created_date.strftime('%d/%m/%Y %H:%M:%S') }} น.</time>
+        {% if entry.comment %}
+        <div class="mt-1 text-sm rounded-box bg-base-200 px-3 py-2"><i class="ph ph-chat-text"></i> {{ entry.comment }}</div>
+        {% endif %}
+        {% if entry.changes %}
+        <ul class="mt-1 text-sm flex flex-col gap-0.5">
+          {% for change in entry.changes %}
+          <li>
+            <span class="text-base-content/70">{{ change.label }}:</span>
+            <span class="line-through text-base-content/50">{{ change.old or '-' }}</span>
+            <i class="ph ph-arrow-right text-xs"></i>
+            <span class="font-medium">{{ change.new or '-' }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% if not loop.last %}<hr class="bg-base-300" />{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="text-sm text-base-content/60">ยังไม่มีประวัติ (คำขอนี้ยื่นก่อนเริ่มเก็บ audit log)</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro car_filter_js() %}
+<script type="text/javascript">
+  document.querySelectorAll('select[data-car-select]').forEach(function (select) {
+    const requested = select.dataset.requestedType;
+    const toggle = select.closest('[data-car-field]').querySelector('[data-show-all-types]');
+    function applyFilter() {
+      const showAll = !requested || (toggle && toggle.checked);
+      Array.from(select.options).forEach(function (option) {
+        if (!option.value) return;
+        const hide = !showAll && option.dataset.vehicleType !== requested;
+        option.hidden = hide;
+        option.disabled = hide;
+      });
+      if (select.selectedOptions.length && select.selectedOptions[0].disabled) {
+        select.value = '';
+      }
+    }
+    if (toggle) toggle.addEventListener('change', applyFilter);
+    applyFilter();
+  });
+</script>
+{% endmacro %}

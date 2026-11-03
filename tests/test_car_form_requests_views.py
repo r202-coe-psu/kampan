@@ -976,3 +976,121 @@ def test_sidebar_names_the_inbox_list_to_approve_and_links_the_requests_list(
     assert "รายการที่ต้องอนุมัติ" in html
     assert "รอฉันอนุมัติ" not in html
     assert f'href="{BASE}/?organization_id={s["org"].id}"' in html
+
+
+# ---- audit log / หน้ารายละเอียด / modal ----
+
+
+def _detail(client, car_app, org):
+    return client.get(f"{BASE}/{car_app.id}?organization_id={org.id}")
+
+
+def test_audit_log_records_who_did_what_and_when_through_submit_approve_and_deny(
+    app, head_admin_setup, login_as
+):
+    """ยื่น อนุมัติ (พร้อมจัดรถ/คนขับ) และปฏิเสธ ต้องเก็บ audit log: ใคร ทำอะไร ขั้นไหน เมื่อไร และค่าที่เปลี่ยน"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"], comment="ไปได้")
+    _approve(
+        login_as(app.test_client(), s["admin"]), car_app, s["org"],
+        car=str(s["car"].id), comment="จัดรถให้แล้ว",
+    )
+    car_app.reload()
+
+    logs = car_app.audit_logs
+    assert [log.action for log in logs] == ["submitted", "approved", "approved"]
+    assert [log.actor for log in logs] == [s["staff"], s["head"], s["admin"]]
+    assert all(log.created_date is not None for log in logs)
+    assert logs[1].step_label == "ผู้บังคับบัญชา"
+    assert logs[1].comment == "ไปได้"
+    assert logs[2].step_label == "ผู้จัดรถบริการ"
+    assert {"field": "car", "label": "รถ", "old": "", "new": "กข-1234"} in logs[2].changes
+    assert logs[2].changes[-1]["field"] == "status"
+    assert logs[2].changes[-1]["new"] == "active"
+
+
+def test_audit_log_records_denial_with_reason(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    login_as(app.test_client(), s["head"]).post(
+        f"{BASE}/{car_app.id}/deny",
+        data={"organization_id": str(s["org"].id), "denied_reason": "ไม่มีงบ"},
+    )
+    car_app.reload()
+
+    last = car_app.audit_logs[-1]
+    assert last.action == "denied"
+    assert last.actor == s["head"]
+    assert last.comment == "ไม่มีงบ"
+    assert {"field": "status", "label": "สถานะ", "old": "pending", "new": "denied"} in last.changes
+
+
+def test_detail_page_shows_stepper_with_who_approved_and_the_current_step_and_the_audit_log(
+    app, head_admin_setup, login_as
+):
+    """หน้ารายละเอียดแสดง stepper: ขั้นที่ผ่านแล้วพร้อมชื่อผู้อนุมัติ ขั้นที่รออยู่ และ audit log"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"], comment="ความเห็นหัวหน้า-xyz")
+
+    res = _detail(login_as(app.test_client(), s["staff"]), car_app, s["org"])
+
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert 'data-step-state="done"' in html
+    assert 'data-step-state="current"' in html
+    assert s["head"].get_resources_fullname_th() in html
+    assert "ความเห็นหัวหน้า-xyz" in html
+    assert "data-audit-log" in html
+    assert html.count("data-audit-entry") == 2
+
+
+def test_detail_page_is_hidden_from_staff_who_did_not_submit_it_and_from_other_orgs(
+    app, head_admin_setup, login_as, create_user, assign_user_to_org, create_org
+):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    stranger = create_user("Stranger", "User")
+    assign_user_to_org(stranger, s["org"], roles=["staff"])
+    other_org = create_org(name="องค์กรอื่น")
+    assign_user_to_org(s["admin"], other_org, roles=["admin"])
+
+    assert _detail(login_as(app.test_client(), stranger), car_app, s["org"]).status_code == 404
+    assert _detail(login_as(app.test_client(), s["admin"]), car_app, other_org).status_code == 404
+    assert _detail(login_as(app.test_client(), s["admin"]), car_app, s["org"]).status_code == 200
+
+
+def test_inbox_offers_approve_and_deny_in_modals_and_a_stepper_per_request(
+    app, head_admin_setup, login_as
+):
+    """หน้ารายการที่ต้องอนุมัติ: ปุ่มอนุมัติ/ปฏิเสธเปิด modal (dialog) ของคำขอนั้น และมี stepper"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+
+    html = _inbox(login_as(app.test_client(), s["head"]), s["org"]).get_data(as_text=True)
+
+    assert f'<dialog id="approve-{car_app.id}"' in html
+    assert f'<dialog id="deny-{car_app.id}"' in html
+    assert f"getElementById('approve-{car_app.id}').showModal()" in html
+    assert 'data-step-state="current"' in html
+    assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in html
+
+
+def test_approving_from_the_detail_page_returns_to_the_detail_page(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+
+    res = _approve(login_as(app.test_client(), s["head"]), car_app, s["org"], next="detail")
+
+    assert res.status_code == 302
+    assert res.headers["Location"].split("?")[0].endswith(f"{BASE}/{car_app.id}")
+
+
+def test_requests_list_links_each_request_to_its_detail_page(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+
+    html = _requests_list(login_as(app.test_client(), s["staff"]), s["org"]).get_data(as_text=True)
+
+    assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in html
