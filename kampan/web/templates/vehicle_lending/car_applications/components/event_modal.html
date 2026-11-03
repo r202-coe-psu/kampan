@@ -1,117 +1,100 @@
-<dialog class="modal modal-open">
-  <div class="modal-box w-11/12 max-w-2xl">
-    <form method="dialog">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="this.closest('dialog').remove()">✕</button>
-    </form>
-    <h3 class="font-bold text-xl text-primary mb-4 border-b pb-2 flex items-center gap-2">
-      <i class="ph ph-car-profile text-2xl"></i>
-      <span>รายละเอียดการขอใช้รถยนต์</span>
-    </h3>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-      <!-- Creator -->
-      <div class="flex items-start gap-3 col-span-full bg-base-200/50 p-3 rounded-lg">
-        <div class="bg-primary/10 p-2 rounded-full text-primary flex items-center justify-center">
-          <i class="ph ph-user text-xl"></i>
+{% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+{% set is_airport = car_application.using_type == 'airport transfer' %}
+
+<dialog class="modal modal-open modal-bottom sm:modal-middle" data-event-modal>
+  <div class="modal-box w-full sm:max-w-3xl p-0 flex flex-col max-h-[90svh]">
+    <header class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-base-300">
+      <div class="flex flex-col gap-2 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="font-bold text-lg">
+            {{ car_application.form_template.name if car_application.form_template else 'คำขอใช้รถยนต์' }}
+          </h3>
+          {{ status_badge.render(car_application) }}
         </div>
-        <div>
-          <div class="text-sm text-base-content/70">ผู้ขอ</div>
-          <div class="font-semibold text-base">{{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}</div>
-        </div>
+        {{ ui.requester(car_application) }}
       </div>
-      
-      <!-- Start Time -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
-        <div class="bg-green-500/10 p-2 rounded-full text-green-600 flex items-center justify-center">
-          <i class="ph ph-calendar-plus text-xl"></i>
-        </div>
-        <div>
-          <div class="text-sm text-base-content/70">{{ 'วัน-เวลา ไป' if car_application.using_type == 'airport transfer' else 'วัน-เวลา เริ่ม' }}</div>
-          <div class="font-semibold text-base">
-            <span>{{ car_application.departure_datetime.strftime('%d/%m/%Y') if car_application.departure_datetime else '-' }}</span>
-            <span class="ml-1">{{ car_application.departure_datetime.strftime('%H:%M น.') if car_application.departure_datetime else '-' }}</span>
+      <button type="button" class="btn btn-sm btn-circle btn-ghost" aria-label="ปิด"
+              onclick="this.closest('dialog').remove()"><i class="ph ph-x"></i></button>
+    </header>
+
+    <div class="overflow-y-auto px-6 py-5 flex flex-col gap-5">
+      <section class="shrink-0 rounded-box bg-base-200/60 p-4 overflow-x-auto">
+        <h4 class="border-l-4 border-primary pl-2 text-sm font-bold leading-tight mb-4">ขั้นตอนการอนุมัติ</h4>
+        {{ ui.stepper(progress) }}
+      </section>
+
+      {% if car_application.status in ('denied', 'denied by header', 'denied by admin', 'denied by director') and car_application.denied_reason %}
+      <div role="alert" class="shrink-0 alert alert-error alert-soft">
+        <i class="ph ph-x-circle text-xl"></i>
+        <span>ถูกปฏิเสธ: {{ car_application.denied_reason }}</span>
+      </div>
+      {% endif %}
+
+      <section class="shrink-0 card border border-base-300">
+        <div class="card-body p-4 gap-4">
+          <h4 class="border-l-4 border-primary pl-2 text-sm font-bold leading-tight">การเดินทาง</h4>
+          <div class="grid grid-cols-[auto_1fr] gap-x-3">
+            <div class="flex flex-col items-center pt-1.5">
+              <span class="block size-3 rounded-full bg-primary"></span>
+              <span class="w-px flex-1 bg-base-300 my-1"></span>
+            </div>
+            <div class="pb-4 min-w-0">
+              <div class="text-xs font-semibold text-base-content/60">{{ 'ไป' if is_airport else 'ออกเดินทาง' }}</div>
+              <div class="font-semibold">{{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') ~ ' น.' if car_application.departure_datetime else '-' }}</div>
+              {% if car_application.passenger_location %}
+              <div class="text-sm text-base-content/70 break-words">รับที่ {{ car_application.passenger_location }}</div>
+              {% endif %}
+            </div>
+            <div class="pt-1.5"><span class="block size-3 rounded-full bg-error"></span></div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-base-content/60">ปลายทาง</div>
+              <div class="font-semibold break-words">{{ car_application.location or '-' }}</div>
+              {% if is_airport %}
+              <div class="text-sm text-base-content/70">
+                {{ car_application.get_airport_transfer_type_display() }}
+                {% if car_application.airport_transfer_type == 'pickup' and car_application.flight_return_datetime %}
+                · เครื่องถึง {{ car_application.flight_return_datetime.strftime('%H:%M น.') }}
+                {% elif car_application.airport_transfer_type == 'dropoff' and car_application.flight_datetime %}
+                · เครื่องออก {{ car_application.flight_datetime.strftime('%H:%M น.') }}
+                {% endif %}
+              </div>
+              {% elif car_application.return_datetime %}
+              <div class="text-sm text-base-content/70">กลับ {{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') }} น.</div>
+              {% endif %}
+            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Return Time / Flight Time -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg">
-        <div class="bg-orange-500/10 p-2 rounded-full text-orange-600 flex items-center justify-center">
-          <i class="ph {{ 'ph-airplane-tilt' if car_application.using_type == 'airport transfer' else 'ph-calendar-check' }} text-xl"></i>
-        </div>
-        <div>
-          {% if car_application.using_type == 'airport transfer' %}
-          <div class="text-sm text-base-content/70">รับส่งสนามบิน ({{ car_application.get_airport_transfer_type_display() }})</div>
-          <div class="font-semibold text-base">
-            {% if car_application.airport_transfer_type == 'pickup' %}
-            <span>เครื่องถึงสนามบิน {{ car_application.flight_return_datetime.strftime('%H:%M น.') if car_application.flight_return_datetime else '-' }}</span>
-            {% elif car_application.airport_transfer_type == 'dropoff' %}
-            <span>เครื่องออกจากสนามบิน {{ car_application.flight_datetime.strftime('%H:%M น.') if car_application.flight_datetime else '-' }}</span>
-            {% else %}
-            <span>-</span>
-            {% endif %}
-          </div>
-          {% else %}
-          <div class="text-sm text-base-content/70">วัน-เวลา กลับ</div>
-          <div class="font-semibold text-base">
-            <span>{{ car_application.return_datetime.strftime('%d/%m/%Y') if car_application.return_datetime else '-' }}</span>
-            <span class="ml-1">{{ car_application.return_datetime.strftime('%H:%M น.') if car_application.return_datetime else '-' }}</span>
-          </div>
-          {% endif %}
-        </div>
-      </div>
+          <div class="divider my-0"></div>
 
-      <!-- Location -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
-        <div class="bg-indigo-500/10 p-2 rounded-full text-indigo-600 flex items-center justify-center">
-          <i class="ph ph-map-pin-line text-xl"></i>
+          <dl class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            <div class="sm:col-span-3">
+              <dt class="text-xs font-semibold text-base-content/60">เหตุผล</dt>
+              <dd class="mt-0.5 font-semibold break-words">{{ car_application.request_reason or '-' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-semibold text-base-content/60">รถ</dt>
+              <dd class="mt-0.5 font-semibold">{{ car_application.car.license_plate if car_application.car else 'ยังไม่จัดรถ' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-semibold text-base-content/60">พนักงานขับรถ</dt>
+              <dd class="mt-0.5 font-semibold">{{ car_application.driver.get_resources_fullname_th() if car_application.driver else '-' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-semibold text-base-content/60">ผู้โดยสาร</dt>
+              <dd class="mt-0.5 font-semibold">{{ car_application.passenger_number }} คน</dd>
+            </div>
+          </dl>
         </div>
-        <div>
-          <div class="text-sm text-base-content/70">สถานที่ที่ต้องการไปรับ</div>
-          <div class="font-medium text-base break-words">{{ car_application.passenger_location or '-' }}</div>
-        </div>
-      </div>
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
-        <div class="bg-red-500/10 p-2 rounded-full text-red-600 flex items-center justify-center">
-          <i class="ph ph-map-pin text-xl"></i>
-        </div>
-        <div>
-          <div class="text-sm text-base-content/70">สถานที่ที่ต้องการจะไป</div>
-          <div class="font-medium text-base break-words">{{ car_application.location or '-' }}</div>
-        </div>
-      </div>
-
-      <!-- Passenger Location -->
-      
-
-      <!-- Reason -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
-        <div class="bg-purple-500/10 p-2 rounded-full text-purple-600 flex items-center justify-center">
-          <i class="ph ph-text-align-left text-xl"></i>
-        </div>
-        <div>
-          <div class="text-sm text-base-content/70">เหตุผล</div>
-          <div class="font-medium text-base break-words">{{ car_application.request_reason or '-' }}</div>
-        </div>
-      </div>
-
-      <!-- License Plate -->
-      <div class="flex items-start gap-3 bg-base-200/50 p-3 rounded-lg col-span-full">
-        <div class="bg-blue-500/10 p-2 rounded-full text-blue-600 flex items-center justify-center">
-          <i class="ph ph-identification-card text-xl"></i>
-        </div>
-        <div>
-          <div class="text-sm text-base-content/70">ป้ายทะเบียน</div>
-          <div class="font-semibold text-base">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
-        </div>
-      </div>      
+      </section>
     </div>
 
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn btn-primary px-8" onclick="this.closest('dialog').remove()">ปิด</button>
-      </form>
-    </div>
+    <footer class="flex justify-end gap-2 px-6 py-4 border-t border-base-300">
+      <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').remove()">ปิด</button>
+      {% if detail_url %}
+      <a class="btn btn-primary" href="{{ detail_url }}"><i class="ph ph-arrow-square-out"></i> ดูรายละเอียดคำขอ</a>
+      {% endif %}
+    </footer>
   </div>
   <div class="modal-backdrop" onclick="this.closest('dialog').remove()"></div>
 </dialog>

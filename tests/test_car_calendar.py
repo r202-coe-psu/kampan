@@ -67,6 +67,23 @@ def test_calendar_lists_pending_form_requests(
     assert str(pending.id) in [event["id"] for event in res.get_json()["car_applications"]]
 
 
+def test_event_modal_shows_stepper(
+    app, create_org, create_user, assign_user_to_org, create_car, create_car_application, login_as
+):
+    org = create_org()
+    staff = create_user("Staff", "User")
+    assign_user_to_org(staff, org, roles=["staff"])
+    application = create_car_application(org, create_car(org), status="pending on header")
+    client = app.test_client()
+    login_as(client, staff)
+
+    res = client.get(f"/vehicle_lending/car_applications/{application.id}/modal?organization_id={org.id}")
+
+    html = res.get_data(as_text=True)
+    assert "data-stepper" in html
+    assert "หัวหน้าฝ่าย" in html
+
+
 def _calendar_event(app, org, staff, login_as, application):
     client = app.test_client()
     login_as(client, staff)

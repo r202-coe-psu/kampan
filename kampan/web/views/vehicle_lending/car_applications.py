@@ -312,9 +312,19 @@ def event_modal(car_application_id):
     car_application = models.vehicle_applications.CarApplication.objects(
         id=car_application_id, organization=organization_id
     ).first()
+    if not car_application:
+        return abort(404)
     return render_template(
         "/vehicle_lending/car_applications/components/event_modal.html",
         car_application=car_application,
+        progress=utils.car_form_flow.step_progress(car_application),
+        detail_url=url_for(
+            "vehicle_lending.car_form_requests.detail",
+            car_application_id=car_application.id,
+            organization_id=organization_id,
+        )
+        if car_application.form_template
+        else None,
     )
 
 
