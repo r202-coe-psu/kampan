@@ -6,6 +6,7 @@ import qrcode
 from flask import (
     Blueprint,
     abort,
+    flash,
     redirect,
     render_template,
     request,
@@ -79,6 +80,7 @@ def create_or_edit(car_id):
     car.updated_date = datetime.datetime.now()
 
     car.save()
+    flash(f"{'บันทึก' if car_id else 'เพิ่ม'}รถ {car.license_plate} แล้ว", "success")
     return redirect(url_for("vehicle_lending.cars.index", organization_id=organization_id))
 
 
@@ -108,6 +110,7 @@ def delete(car_id):
     car = models.vehicles.Car.objects().get(id=car_id)
     car.status = "disactive"
     car.save()
+    flash(f"ลบรถ {car.license_plate} แล้ว", "success")
 
     return redirect(url_for("vehicle_lending.cars.index", **request.args))
 
