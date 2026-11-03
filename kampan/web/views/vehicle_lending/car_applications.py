@@ -259,6 +259,7 @@ def get_car_applications():
     car_applications = models.vehicle_applications.CarApplication.objects(
         organization=organization_id,
         status__in=[
+            "pending",
             "pending on header",
             "pending on director",
             "pending on admin",
@@ -269,6 +270,7 @@ def get_car_applications():
 
     color_of_event = {
         "active": "green",
+        "pending": "orange",
         "pending on header": "orange",
         "pending on director": "orange",
         "pending on admin": "orange",
