@@ -1,6 +1,7 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 
 {% from '/vehicle_lending/components/vehicle_type_mismatch_badge.html' import VehicleTypeMismatchBadge %}
+{% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
 
 {% block title %}รายการที่ต้องอนุมัติ{% endblock %}
 {% block dashboard_title %}รายการที่ต้องอนุมัติ{% endblock %}
@@ -10,7 +11,11 @@
   <p class="text-sm text-base-content/70">
     <i class="ph ph-info"></i> แสดงเฉพาะคำขอที่ถึงขั้นตอนที่คุณเป็นผู้อนุมัติ กด “ดู” เพื่อตรวจรายละเอียดและอนุมัติ
   </p>
-  <span class="badge badge-warning badge-lg gap-1"><i class="ph ph-hourglass-medium"></i> รอคุณ {{ car_applications|length }} รายการ</span>
+  <span class="badge badge-warning badge-soft badge-lg">รอคุณ {{ car_applications|length }} รายการ</span>
+</div>
+
+<div class="mt-4">
+  {{ ui.search_bar('vehicle_lending.car_form_requests.inbox', organization, search_args, templates) }}
 </div>
 
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
@@ -55,7 +60,7 @@
           </td>
           <td class="text-center">{{ car_application.passenger_number }}</td>
           <td class="min-w-36">
-            <span class="badge badge-warning badge-sm gap-1 whitespace-nowrap"><i class="ph ph-hourglass-medium"></i> {{ step.label }}</span>
+            <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap">{{ step.label }}</span>
             <div class="text-xs text-base-content/60 mt-1">
               ขั้นที่ {{ car_application.current_step + 1 }} จาก {{ total }}
               {% if step.assigns_vehicle %}<span class="badge badge-xs badge-outline ml-1">จัดรถ</span>{% endif %}
@@ -75,8 +80,13 @@
   {% else %}
   <div class="card-body items-center text-center py-12">
     <i class="ph ph-check-circle text-5xl text-success"></i>
+    {% if search_args.q or search_args.template_id %}
+    <h2 class="text-lg font-semibold">ไม่พบคำขอที่ตรงกับการค้นหา</h2>
+    <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้นหรือแบบฟอร์ม</p>
+    {% else %}
     <h2 class="text-lg font-semibold">ไม่มีคำขอที่รอคุณอนุมัติ</h2>
     <p class="text-sm text-base-content/60">เมื่อมีคำขอถึงขั้นตอนของคุณ จะแสดงที่นี่</p>
+    {% endif %}
   </div>
   {% endif %}
 </div>

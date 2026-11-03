@@ -9,7 +9,7 @@
 } %}
 
 {% macro stepper(progress, show_names=true) %}
-<ul class="steps steps-vertical md:steps-horizontal w-full text-xs" data-stepper>
+<ul class="steps steps-vertical md:steps-horizontal w-full text-xs tone-deep-success" data-stepper>
   <li class="step step-success" data-content="✓" data-step-state="done">
     <div class="flex flex-col text-left md:text-center">
       <span class="font-medium">ยื่นคำขอ</span>
@@ -30,7 +30,7 @@
 {% endmacro %}
 
 {% macro step_cards(progress) %}
-<ol class="flex flex-col gap-3" data-step-cards>
+<ol class="flex flex-col gap-3 tone-deep-success" data-step-cards>
   {% for step in progress %}
   {% set style = STEP_STYLE[step.state] %}
   <li class="flex gap-3 rounded-box border p-4 {{ 'border-warning bg-warning/5' if step.state == 'current' else ('border-error bg-error/5' if step.state == 'denied' else 'border-base-300') }}"
@@ -39,7 +39,7 @@
     <div class="flex-1 min-w-0">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="font-semibold">ขั้นที่ {{ step.index }}: {{ step.label }}</div>
-        <span class="badge badge-sm {{ style.badge }}">{{ style.text }}</span>
+        <span class="badge badge-sm badge-soft {{ style.badge }} whitespace-nowrap">{{ style.text }}</span>
       </div>
       <div class="text-sm text-base-content/70 mt-1">
         ผู้อนุมัติ: {{ step.approver or '-' }}
@@ -107,7 +107,7 @@
 {% endmacro %}
 
 {% macro action_buttons(car_application, size='') %}
-<button type="button" class="btn btn-success {{ size }}" onclick="document.getElementById('approve-{{ car_application.id }}').showModal()">
+<button type="button" class="btn btn-success tone-deep-success {{ size }}" onclick="document.getElementById('approve-{{ car_application.id }}').showModal()">
   <i class="ph ph-check"></i> อนุมัติ
 </button>
 <button type="button" class="btn btn-error btn-outline {{ size }}" onclick="document.getElementById('deny-{{ car_application.id }}').showModal()">
@@ -172,7 +172,7 @@
       </fieldset>
       <div class="modal-action">
         <button type="button" class="btn btn-ghost" onclick="document.getElementById('approve-{{ modal_id }}').close()">ยกเลิก</button>
-        <button type="submit" class="btn btn-success"><i class="ph ph-check"></i> ยืนยันอนุมัติ</button>
+        <button type="submit" class="btn btn-success tone-deep-success"><i class="ph ph-check"></i> ยืนยันอนุมัติ</button>
       </div>
     </form>
   </div>
@@ -216,7 +216,7 @@
   'approved': {'icon': 'ph-check-circle', 'tone': 'text-success'},
   'denied': {'icon': 'ph-x-circle', 'tone': 'text-error'},
 } %}
-<div data-audit-log>
+<div class="tone-deep-success" data-audit-log>
   {% if entries %}
   <ul class="timeline timeline-vertical timeline-compact">
     {% for entry in entries %}
@@ -236,7 +236,7 @@
         {% endif %}
         {% if entry.changes %}
         <ul class="mt-1 text-sm flex flex-col gap-0.5">
-          {% for change in entry.changes %}
+          {% for change in entry.display_changes() %}
           <li>
             <span class="text-base-content/70">{{ change.label }}:</span>
             <span class="line-through text-base-content/50">{{ change.old or '-' }}</span>
@@ -278,4 +278,48 @@
     applyFilter();
   });
 </script>
+{% endmacro %}
+
+{% macro search_bar(endpoint, organization, search_args, templates, statuses=none, placeholder='ค้นหาสถานที่ เหตุผล ผู้ขอ ทะเบียนรถ') %}
+<form method="GET" action="{{ url_for(endpoint) }}" role="search"
+      class="card bg-base-100 border border-base-300 shadow-sm">
+  {# เขียน class เต็มทั้งสองแบบให้ tailwind scan เจอ #}
+  {% set grid_cols = 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_minmax(9rem,12rem)_auto]' if statuses else 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_auto]' %}
+  <div class="card-body p-4 grid grid-cols-1 gap-3 {{ grid_cols }} md:items-end">
+    <input type="hidden" name="organization_id" value="{{ organization.id }}">
+    <fieldset class="fieldset py-0">
+      <legend class="fieldset-legend">ค้นหา</legend>
+      <label class="input w-full">
+        <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
+        <input type="search" name="q" value="{{ search_args.q }}" placeholder="{{ placeholder }}" class="grow">
+      </label>
+    </fieldset>
+    <fieldset class="fieldset py-0">
+      <legend class="fieldset-legend">แบบฟอร์ม</legend>
+      <select name="template_id" class="select w-full">
+        <option value="">ทุกแบบฟอร์ม</option>
+        {% for template in templates %}
+        <option value="{{ template.id }}" {% if search_args.template_id == template.id|string %}selected{% endif %}>{{ template.name }}</option>
+        {% endfor %}
+      </select>
+    </fieldset>
+    {% if statuses %}
+    <fieldset class="fieldset py-0">
+      <legend class="fieldset-legend">สถานะ</legend>
+      <select name="status" class="select w-full">
+        <option value="">ทุกสถานะ</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if search_args.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </fieldset>
+    {% endif %}
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary flex-1 md:flex-none"><i class="ph ph-magnifying-glass"></i> ค้นหา</button>
+      {% if search_args.q or search_args.template_id or search_args.status %}
+      <a class="btn btn-ghost flex-1 md:flex-none" href="{{ url_for(endpoint, organization_id=organization.id) }}">ล้าง</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
 {% endmacro %}

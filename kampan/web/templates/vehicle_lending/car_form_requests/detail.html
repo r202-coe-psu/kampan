@@ -53,7 +53,7 @@
       <span>ตอนนี้รอ <b>{{ step.label }}</b> อนุมัติ{% if can_act %} — คุณเป็นผู้อนุมัติขั้นนี้{% endif %}</span>
     </div>
     {% elif car_application.status == 'active' %}
-    <div role="alert" class="alert alert-success alert-soft">
+    <div role="alert" class="alert alert-success alert-soft tone-deep-success">
       <i class="ph ph-check-circle text-xl"></i>
       <span>อนุมัติครบทุกขั้นแล้ว{% if car_application.car %} · รถ {{ car_application.car.license_plate }}{% endif %}{% if car_application.driver %} · คนขับ {{ car_application.driver.get_resources_fullname_th() }}{% endif %}</span>
     </div>
@@ -109,7 +109,6 @@
   <section class="card bg-base-100 border border-base-300 shadow-sm h-fit">
     <div class="card-body">
       <h3 class="card-title text-base"><i class="ph ph-clock-counter-clockwise"></i> ประวัติการดำเนินการ</h3>
-      <p class="text-xs text-base-content/60 -mt-1">ใคร ทำอะไร เมื่อไร (ล่าสุดอยู่บน)</p>
       {{ ui.audit_log(audit_logs) }}
     </div>
   </section>

@@ -203,3 +203,36 @@ def step_progress(car_application):
             }
         )
     return progress
+
+
+def _search_text(car_application):
+    creator = car_application.creator
+    parts = [
+        car_application.location,
+        car_application.request_reason,
+        car_application.form_template.name if car_application.form_template else "",
+        car_application.car.license_plate if car_application.car else "",
+        car_application.division.name if car_application.division else "",
+        creator.first_name if creator else "",
+        creator.last_name if creator else "",
+        _display_user(creator),
+        _display_user(car_application.driver),
+    ]
+    return " ".join(str(p) for p in parts if p).lower()
+
+
+def search(car_applications, q="", status="", template_id=""):
+    """กรองรายการคำขอด้วยข้อความ (สถานที่/เหตุผล/แบบฟอร์ม/ทะเบียน/ฝ่าย/ผู้ขอ/คนขับ), สถานะ และแบบฟอร์ม"""
+    q = (q or "").strip().lower()
+    results = []
+    for car_application in car_applications:
+        if status and car_application.status != status:
+            continue
+        if template_id and (
+            not car_application.form_template or str(car_application.form_template.id) != template_id
+        ):
+            continue
+        if q and q not in _search_text(car_application):
+            continue
+        results.append(car_application)
+    return results

@@ -76,6 +76,27 @@ def _cars_requested_type_first(cars, car_application):
     return sorted(cars, key=lambda car: car.vehicle_type != requested)
 
 
+SEARCH_STATUSES = [
+    ("pending", "รออนุมัติ"),
+    ("active", "อนุมัติสำเร็จ"),
+    ("completed", "เสร็จสิ้น"),
+    ("denied", "ปฏิเสธ"),
+    ("disactive", "ยกเลิก"),
+]
+
+
+def _search_args():
+    return {
+        "q": request.args.get("q", "").strip(),
+        "status": request.args.get("status", ""),
+        "template_id": request.args.get("template_id", ""),
+    }
+
+
+def _org_templates(organization):
+    return models.car_form_templates.CarFormTemplate.objects(organization=organization).order_by("name")
+
+
 @module.route("/")
 @acl.organization_roles_required(*REQUEST_ROLES)
 def index():
@@ -84,7 +105,12 @@ def index():
     return render_template(
         "/vehicle_lending/car_form_requests/index.html",
         organization=organization,
-        car_applications=utils.car_form_flow.visible_requests(user, organization),
+        car_applications=utils.car_form_flow.search(
+            utils.car_form_flow.visible_requests(user, organization), **_search_args()
+        ),
+        search_args=_search_args(),
+        templates=_org_templates(organization),
+        statuses=SEARCH_STATUSES,
         current_step_def=utils.car_form_flow.current_step_def,
         step_progress=utils.car_form_flow.step_progress,
     )
@@ -98,7 +124,11 @@ def inbox():
     return render_template(
         "/vehicle_lending/car_form_requests/inbox.html",
         organization=organization,
-        car_applications=utils.car_form_flow.pending_for(user, organization),
+        car_applications=utils.car_form_flow.search(
+            utils.car_form_flow.pending_for(user, organization), **_search_args()
+        ),
+        search_args=_search_args(),
+        templates=_org_templates(organization),
         current_step_def=utils.car_form_flow.current_step_def,
     )
 

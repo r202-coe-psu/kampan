@@ -1,18 +1,27 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 
 {% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+{% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 {% block dashboard_title %}คำขอใช้รถ{% endblock %}
 
 {% block content %}
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex justify-end mb-4">
-    <a class="btn btn-primary"
-       href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">
-      <i class="ph ph-plus"></i> ยื่นคำขอใช้รถ
-    </a>
-  </div>
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-base-content/70">
+    <i class="ph ph-info"></i> คำขอใช้รถที่คุณมีสิทธิ์เห็น เรียงจากใหม่ไปเก่า
+  </p>
+  <a class="btn btn-primary"
+     href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">
+    <i class="ph ph-plus"></i> ยื่นคำขอใช้รถ
+  </a>
+</div>
+
+<div class="mt-4">
+  {{ ui.search_bar('vehicle_lending.car_form_requests.index', organization, search_args, templates, statuses) }}
+</div>
+
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
   {% if car_applications %}
   <div class="overflow-x-auto">
     <table class="table table-zebra">
@@ -31,12 +40,12 @@
       <tbody>
         {% for car_application in car_applications %}
         {% set step = current_step_def(car_application) %}
-        <tr data-request-id="{{ car_application.id }}">
+        <tr class="hover" data-request-id="{{ car_application.id }}">
           <td class="whitespace-nowrap">{{ car_application.created_date.strftime('%d/%m/%Y %H:%M') if car_application.created_date else '-' }}</td>
-          <td>{{ car_application.form_template.name if car_application.form_template else '-' }}</td>
-          <td>
-            {{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}
-            {% if car_application.division %}<div class="text-xs text-base-content/60">{{ car_application.division.name }}</div>{% endif %}
+          <td class="min-w-40">{{ car_application.form_template.name if car_application.form_template else '-' }}</td>
+          <td class="whitespace-nowrap">
+            <div class="font-medium">{{ car_application.creator.get_resources_fullname_th() if car_application.creator else '-' }}</div>
+            {% if car_application.division %}<div class="text-xs text-base-content/60 whitespace-nowrap">{{ car_application.division.name }}</div>{% endif %}
           </td>
           <td>
             <div class="font-semibold">{{ car_application.location or '-' }}</div>
@@ -46,7 +55,7 @@
             {{ car_application.departure_datetime.strftime('%d/%m/%Y %H:%M') if car_application.departure_datetime else '-' }}
             <div class="text-xs text-base-content/60">ถึง {{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else '-' }}</div>
           </td>
-          <td>{{ car_application.car.license_plate if car_application.car else '-' }}</td>
+          <td class="whitespace-nowrap">{{ car_application.car.license_plate if car_application.car else '-' }}</td>
           <td>
             {{ status_badge.render(car_application) }}
             {% if car_application.status == 'pending' and step %}
@@ -72,7 +81,16 @@
     </table>
   </div>
   {% else %}
-  <div class="text-center text-base-content/60 py-8">ยังไม่มีคำขอใช้รถ</div>
+  <div class="card-body items-center text-center py-12">
+    <i class="ph ph-car-simple text-5xl text-base-content/30"></i>
+    {% if search_args.q or search_args.template_id or search_args.status %}
+    <h2 class="text-lg font-semibold">ไม่พบคำขอที่ตรงกับการค้นหา</h2>
+    <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้นหรือตัวกรอง</p>
+    {% else %}
+    <h2 class="text-lg font-semibold">ยังไม่มีคำขอใช้รถ</h2>
+    <p class="text-sm text-base-content/60">กด “ยื่นคำขอใช้รถ” เพื่อเริ่มยื่นคำขอแรก</p>
+    {% endif %}
+  </div>
   {% endif %}
 </div>
 {% endblock %}

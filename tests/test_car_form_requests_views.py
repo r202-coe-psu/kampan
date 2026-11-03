@@ -1109,3 +1109,103 @@ def test_requests_list_links_each_request_to_its_detail_page(app, head_admin_set
     html = _requests_list(login_as(app.test_client(), s["staff"]), s["org"]).get_data(as_text=True)
 
     assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in html
+
+
+def test_audit_log_shows_status_changes_with_thai_labels(app, head_admin_setup, login_as):
+    """ใน audit log ค่าสถานะที่เปลี่ยนแสดงเป็นป้ายภาษาไทย (รออนุมัติ → ปฏิเสธ) ไม่ใช่ค่า pending/denied"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    login_as(app.test_client(), s["head"]).post(
+        f"{BASE}/{car_app.id}/deny",
+        data={"organization_id": str(s["org"].id), "denied_reason": "ไม่มีงบ"},
+    )
+
+    html = _detail(login_as(app.test_client(), s["staff"]), car_app, s["org"]).get_data(as_text=True)
+    log = html[html.index("data-audit-log"):]
+
+    assert "รออนุมัติ" in log
+    assert "ปฏิเสธ" in log
+    assert ">pending<" not in log
+    assert ">denied<" not in log
+
+
+def test_status_badge_carries_the_status_key_and_thai_label(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    _submit_and_get(app, login_as, s)
+
+    html = _requests_list(login_as(app.test_client(), s["staff"]), s["org"]).get_data(as_text=True)
+
+    assert 'data-status="pending"' in html
+    assert "รออนุมัติ" in html
+
+
+def test_task_list_shows_an_active_template_request_with_its_form_name_and_a_status_badge(
+    app, head_admin_setup, login_as
+):
+    """รายการงาน (car_tasks) แสดงคำขอจาก template ที่อนุมัติครบแล้ว พร้อมชื่อแบบฟอร์มแทนประเภทการใช้แบบเดิม"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"])
+    _approve(login_as(app.test_client(), s["admin"]), car_app, s["org"], car=str(s["car"].id))
+
+    res = login_as(app.test_client(), s["admin"]).get(
+        f"/vehicle_lending/car_tasks?organization_id={s['org'].id}"
+    )
+
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert s["template"].name in html
+    assert 'data-status="active"' in html
+    assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in html
+
+
+# ---- ค้นหา ----
+
+
+def test_requests_list_search_by_text_status_and_template(app, two_requests, login_as):
+    """หน้าคำขอใช้รถ: ค้นด้วยข้อความ (สถานที่/เหตุผล/ชื่อผู้ขอ), สถานะ และแบบฟอร์ม"""
+    s = two_requests
+    admin = login_as(app.test_client(), s["admin"])
+    base = f"{BASE}/?organization_id={s['org'].id}"
+
+    by_text = admin.get(f"{base}&q=สตาฟ-ข").get_data(as_text=True)
+    by_requester = admin.get(f"{base}&q=Otherstaff").get_data(as_text=True)
+    by_status = admin.get(f"{base}&status=denied").get_data(as_text=True)
+    by_template = admin.get(f"{base}&template_id={s['template'].id}").get_data(as_text=True)
+
+    assert "สถานที่ของสตาฟ-ข" in by_text and "สถานที่ของสตาฟ-ก" not in by_text
+    assert "สถานที่ของสตาฟ-ข" in by_requester and "สถานที่ของสตาฟ-ก" not in by_requester
+    assert "สถานที่ของสตาฟ-" not in by_status
+    assert "สถานที่ของสตาฟ-ก" in by_template and "สถานที่ของสตาฟ-ข" in by_template
+    assert 'name="q"' in by_text and 'value="สตาฟ-ข"' in by_text
+
+
+def test_inbox_search_by_text(app, two_requests, login_as):
+    s = two_requests
+    admin_view = login_as(app.test_client(), s["head"])
+    base = f"{BASE}/inbox?organization_id={s['org'].id}"
+
+    html = admin_view.get(f"{base}&q=ไม่มีคำนี้").get_data(as_text=True)
+    all_html = admin_view.get(base).get_data(as_text=True)
+
+    assert 'name="q"' in html
+    assert "สถานที่ของสตาฟ-ก" in all_html
+    assert "สถานที่ของสตาฟ-ก" not in html
+
+
+def test_task_list_search_by_text(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    car_app.location = "ปลายทาง-งาน-xyz"
+    car_app.save()
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"])
+    _approve(login_as(app.test_client(), s["admin"]), car_app, s["org"], car=str(s["car"].id))
+    admin = login_as(app.test_client(), s["admin"])
+    base = f"/vehicle_lending/car_tasks?organization_id={s['org'].id}"
+
+    hit = admin.get(f"{base}&q=งาน-xyz").get_data(as_text=True)
+    miss = admin.get(f"{base}&q=ไม่มีคำนี้").get_data(as_text=True)
+
+    assert 'name="q"' in hit
+    assert "ปลายทาง-งาน-xyz" in hit
+    assert "ปลายทาง-งาน-xyz" not in miss
