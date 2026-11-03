@@ -67,7 +67,7 @@
     {% if current_user.has_organization_roles("admin") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_form_templates' in request.path else '' }}"
-        href="/vehicle_lending/car_form_templates/?organization_id={{ organization.id }}">
+        href="{{ url_for('vehicle_lending.car_form_templates.index', organization_id=organization.id) }}">
         <i class="ph ph-file-text"></i> Template ใบขอใช้รถ
       </a>
     </li>
