@@ -4,6 +4,7 @@ from flask import (
     Blueprint,
     Response,
     abort,
+    flash,
     g,
     redirect,
     render_template,
@@ -196,6 +197,7 @@ def create(template_id):
     _apply_core_fields(car_application, form)
     utils.car_form_flow.record_submitted(car_application, current_user._get_current_object())
     car_application.save()
+    flash(f"ยื่นคำขอ {template.name} แล้ว", "success")
     return redirect(
         url_for(
             "vehicle_lending.car_form_requests.index",
@@ -277,6 +279,9 @@ def edit(car_application_id):
         _apply_core_fields(car_application, form)
         utils.car_form_flow.record_edited(car_application, user, changes)
         car_application.save()
+        flash("บันทึกการแก้ไขคำขอแล้ว", "success")
+    else:
+        flash("ไม่มีข้อมูลที่เปลี่ยนแปลง", "info")
     return redirect(
         url_for(
             "vehicle_lending.car_form_requests.detail",
@@ -407,6 +412,7 @@ def approve(car_application_id):
         car=car,
         driver=driver,
     )
+    flash("อนุมัติคำขอแล้ว", "success")
     return _redirect_after_action(car_application, organization)
 
 
@@ -438,4 +444,5 @@ def deny(car_application_id):
         current_user._get_current_object(),
         deny_form.denied_reason.data.strip(),
     )
+    flash("ไม่อนุมัติคำขอแล้ว", "success")
     return _redirect_after_action(car_application, organization)
