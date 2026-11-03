@@ -713,3 +713,156 @@ def test_sidebar_links_to_new_request_and_inbox_for_staff_and_templates_for_admi
     assert f"{BASE}/inbox?organization_id={s['org'].id}" in staff_html
     assert "/vehicle_lending/car_form_templates/" not in staff_html
     assert f"/vehicle_lending/car_form_templates/?organization_id={s['org'].id}" in admin_html
+
+
+def _vehicle_kind_options(html):
+    import re
+
+    select = re.search(r'<select[^>]*name="vehicle_kind".*?</select>', html, re.S).group(0)
+    return re.findall(r'<option[^>]*value="([^"]*)"', select)
+
+
+def test_requesters_vehicle_type_options_are_only_the_types_the_org_has_active_cars_of(
+    app, head_admin_setup, login_as, create_org, create_car
+):
+    """ตัวเลือกประเภทรถของผู้ขอมีเฉพาะประเภทที่องค์กรมีรถ active (รถ disactive/ขององค์กรอื่นไม่นับ)"""
+    s = head_admin_setup
+    other_org = create_org(name="องค์กรอื่น")
+    create_car(s["org"], license_plate="ตู้-1", vehicle_type="ตู้")
+    create_car(s["org"], license_plate="บัส-1", vehicle_type="บัส", status="disactive")
+    create_car(other_org, license_plate="เก๋ง-1", vehicle_type="เก๋ง")
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "vehicle_kind"}]
+    )
+
+    res = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
+    )
+
+    assert res.status_code == 200
+    assert _vehicle_kind_options(res.get_data(as_text=True)) == ["", "ตู้"]
+
+
+def test_vehicle_type_the_org_has_no_active_car_of_is_rejected_and_nothing_is_created(
+    app, head_admin_setup, login_as, create_car
+):
+    """ส่งประเภทรถที่องค์กรไม่มีรถ active (แต่อยู่ใน catalog) ต้องได้ 400 และไม่เกิด CarApplication"""
+    s = head_admin_setup
+    create_car(s["org"], license_plate="ตู้-1", vehicle_type="ตู้")
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "vehicle_kind"}]
+    )
+
+    res = _submit(
+        login_as(app.test_client(), s["staff"]),
+        template,
+        s["org"],
+        vehicle_kind="บัส",
+    )
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_requesters_vehicle_type_options_fall_back_to_the_catalog_when_no_car_has_a_type(
+    app, head_admin_setup, login_as
+):
+    """องค์กรที่ยังไม่ติดประเภทรถ ผู้ขอยังเลือกได้ครบตาม catalog"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "vehicle_kind"}]
+    )
+
+    res = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
+    )
+
+    assert _vehicle_kind_options(res.get_data(as_text=True)) == [
+        "", "บัส", "ตู้", "เก๋ง", "มินิบัส"
+    ]
+
+
+def test_vehicle_step_inbox_lists_cars_of_the_requested_type_first_and_offers_a_show_all_types_toggle(
+    app, head_admin_setup, login_as, create_car
+):
+    """ขั้นจัดรถ: option รถมี data-vehicle-type, select บอกประเภทที่ขอ, รถประเภทที่ขอขึ้นก่อน และมี checkbox แสดงรถทุกประเภท"""
+    import re
+
+    s = head_admin_setup
+    create_car(s["org"], license_plate="บัส-1", vehicle_type="บัส")
+    create_car(s["org"], license_plate="ตู้-1", vehicle_type="ตู้")
+    car_app = _at_vehicle_step(app, login_as, s)
+    car_app.details = {"vehicle_kind": "ตู้"}
+    car_app.save()
+
+    res = _inbox(login_as(app.test_client(), s["admin"]), s["org"])
+
+    html = res.get_data(as_text=True)
+    select = re.search(r'<select[^>]*name="car".*?</select>', html, re.S).group(0)
+    assert 'data-requested-type="ตู้"' in select
+    assert re.findall(r'data-vehicle-type="([^"]*)"', select) == ["ตู้", "", "บัส"]
+    assert "แสดงรถทุกประเภท" in html
+
+
+def _requested_vehicle_type_at_vehicle_step(app, login_as, s, requested):
+    car_app = _at_vehicle_step(app, login_as, s)
+    car_app.details = {"vehicle_kind": requested}
+    car_app.save()
+    return car_app
+
+
+def test_assigning_a_car_of_another_type_than_requested_succeeds_and_records_the_assigned_cars_type(
+    app, head_admin_setup, login_as, create_car
+):
+    """จัดรถต่างประเภทจากที่ขอได้ และบันทึกประเภทของรถที่จัดไว้ใน assigned_vehicle_type"""
+    s = head_admin_setup
+    bus = create_car(s["org"], license_plate="บัส-1", vehicle_type="บัส")
+    car_app = _requested_vehicle_type_at_vehicle_step(app, login_as, s, "ตู้")
+
+    res = _approve(
+        login_as(app.test_client(), s["admin"]), car_app, s["org"], car=str(bus.id)
+    )
+
+    assert res.status_code == 302
+    car_app.reload()
+    assert car_app.status == "active"
+    assert car_app.car == bus
+    assert car_app.assigned_vehicle_type == "บัส"
+
+
+def test_assigning_a_matching_car_records_the_same_type(
+    app, head_admin_setup, login_as, create_car
+):
+    """จัดรถตรงประเภทที่ขอ assigned_vehicle_type ต้องเท่ากับประเภทที่ขอ"""
+    s = head_admin_setup
+    van = create_car(s["org"], license_plate="ตู้-1", vehicle_type="ตู้")
+    car_app = _requested_vehicle_type_at_vehicle_step(app, login_as, s, "ตู้")
+
+    res = _approve(
+        login_as(app.test_client(), s["admin"]), car_app, s["org"], car=str(van.id)
+    )
+
+    assert res.status_code == 302
+    car_app.reload()
+    assert car_app.assigned_vehicle_type == "ตู้"
+
+
+def test_request_list_flags_a_car_of_another_type_than_requested(
+    app, head_admin_setup, login_as, create_car
+):
+    """รายการคำขอแสดงป้าย 'จัดรถต่างประเภทจากที่ขอ' เมื่อประเภทที่จัดต่างจากที่ขอ และไม่แสดงเมื่อตรงกัน"""
+    s = head_admin_setup
+    bus = create_car(s["org"], license_plate="บัส-1", vehicle_type="บัส")
+    car_app = _requested_vehicle_type_at_vehicle_step(app, login_as, s, "ตู้")
+    client = login_as(app.test_client(), s["staff"])
+    url = f"/vehicle_lending/car_applications?organization_id={s['org'].id}"
+
+    _approve(login_as(app.test_client(), s["admin"]), car_app, s["org"], car=str(bus.id))
+    mismatch_page = client.get(url).get_data(as_text=True)
+    car_app.reload()
+    car_app.details = {"vehicle_kind": "บัส"}
+    car_app.save()
+    matching_page = client.get(url).get_data(as_text=True)
+
+    assert "จัดรถต่างประเภทจากที่ขอ" in mismatch_page
+    assert "จัดรถต่างประเภทจากที่ขอ" not in matching_page

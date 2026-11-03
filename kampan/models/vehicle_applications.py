@@ -93,6 +93,8 @@ class CarApplication(VehicleApplication, me.Document):
     passenger_number = me.IntField(min_value=0, required=True, default=0)
 
     car = me.ReferenceField("Car", dbref=True)
+    # ประเภทของรถที่จัดให้ ณ ตอนอนุมัติ (เทียบกับ details.vehicle_kind ที่ผู้ขอเลือก)
+    assigned_vehicle_type = me.StringField()
     driver = me.ReferenceField("User", dbref=True)
     division = me.ReferenceField("Division", dbref=True)
 
@@ -111,6 +113,14 @@ class CarApplication(VehicleApplication, me.Document):
     details = me.DictField(default=dict)
     current_step = me.IntField(min_value=0, default=0)
     step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
+
+    def has_vehicle_type_mismatch(self):
+        requested = (self.details or {}).get("vehicle_kind")
+        return bool(
+            requested
+            and self.assigned_vehicle_type
+            and requested != self.assigned_vehicle_type
+        )
 
     def get_mile_before(self):
         last_car_application = (

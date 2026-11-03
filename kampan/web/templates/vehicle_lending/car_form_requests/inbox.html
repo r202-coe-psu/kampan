@@ -1,5 +1,7 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 
+{% from '/vehicle_lending/components/vehicle_type_mismatch_badge.html' import VehicleTypeMismatchBadge %}
+
 {% block title %}รอฉันอนุมัติ{% endblock %}
 {% block dashboard_title %}รอฉันอนุมัติ{% endblock %}
 
@@ -18,7 +20,10 @@
             {% if car_application.division %} ({{ car_application.division.name }}){% endif %}
           </div>
         </div>
-        <span class="badge badge-warning">ขั้นตอน: {{ step.label }}</span>
+        <div class="flex flex-wrap gap-2 items-start">
+          {{ VehicleTypeMismatchBadge(car_application) }}
+          <span class="badge badge-warning">ขั้นตอน: {{ step.label }}</span>
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
         <div>สถานที่: <span class="font-semibold">{{ car_application.location or '-' }}</span></div>
@@ -34,15 +39,23 @@
           {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
           <input type="hidden" name="organization_id" value="{{ organization.id }}">
           {% if step.assigns_vehicle %}
-          <label class="form-control">
-            <span class="label-text">รถ</span>
-            <select name="car" class="select select-bordered" required>
+          {% set requested_type = (car_application.details or {}).get('vehicle_kind') or '' %}
+          <div class="form-control" data-car-field>
+            <label class="label-text" for="car-{{ car_application.id }}">รถ{% if requested_type %} (ที่ขอ: {{ requested_type }}){% endif %}</label>
+            <select name="car" id="car-{{ car_application.id }}" class="select select-bordered" required
+                    data-car-select data-requested-type="{{ requested_type }}">
               <option value="">เลือกรถ</option>
-              {% for car in cars %}
-              <option value="{{ car.id }}">{{ car.license_plate }}</option>
+              {% for car in cars_requested_type_first(cars, car_application) %}
+              <option value="{{ car.id }}" data-vehicle-type="{{ car.vehicle_type or '' }}">{{ car.license_plate }}{% if car.vehicle_type %} ({{ car.get_vehicle_type_display() }}){% endif %}</option>
               {% endfor %}
             </select>
-          </label>
+            {% if requested_type %}
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" class="checkbox checkbox-sm" data-show-all-types>
+              <span class="label-text">แสดงรถทุกประเภท</span>
+            </label>
+            {% endif %}
+          </div>
           <label class="form-control">
             <span class="label-text">พนักงานขับรถ</span>
             <select name="driver" class="select select-bordered">
@@ -74,4 +87,27 @@
   <div class="text-center text-base-content/60 py-8">ไม่มีคำขอที่รอคุณอนุมัติ</div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block additional_js %}
+<script type="text/javascript">
+  document.querySelectorAll('select[data-car-select]').forEach(function (select) {
+    const requested = select.dataset.requestedType;
+    const toggle = select.closest('[data-car-field]').querySelector('[data-show-all-types]');
+    function applyFilter() {
+      const showAll = !requested || (toggle && toggle.checked);
+      Array.from(select.options).forEach(function (option) {
+        if (!option.value) return;
+        const hide = !showAll && option.dataset.vehicleType !== requested;
+        option.hidden = hide;
+        option.disabled = hide;
+      });
+      if (select.selectedOptions.length && select.selectedOptions[0].disabled) {
+        select.value = '';
+      }
+    }
+    if (toggle) toggle.addEventListener('change', applyFilter);
+    applyFilter();
+  });
+</script>
 {% endblock %}

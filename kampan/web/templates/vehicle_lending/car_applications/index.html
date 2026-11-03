@@ -3,6 +3,7 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% from "/base/components/dialogs.html" import ModalNegative, ModalPositive%}
 {% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+{% from '/vehicle_lending/components/vehicle_type_mismatch_badge.html' import VehicleTypeMismatchBadge %}
 
 
 {% block title %}การขอใช้รถยนต์{% endblock %}
@@ -111,7 +112,7 @@
               {% endif %}
             </div>
           </td>
-          <td class="table-style"> {{ car_application.car.license_plate if car_application.car else "-" }}</td>
+          <td class="table-style"> {{ car_application.car.license_plate if car_application.car else "-" }} {{ VehicleTypeMismatchBadge(car_application) }}</td>
           <td class="table-style" data-label="Description">{{ car_application.request_reason }}</td>
           <td class="table-style">{{ car_application.location }}</td>
           <td class="table-style" data-label="User">{{ car_application.creator.get_name() }}</td>
@@ -205,7 +206,7 @@
           </div>
         </div>
         <div class="grid grid-cols-1 gap-2 text-sm">
-          <div><span class="font-semibold">ป้ายทะเบียนรถ:</span> {{ car_application.car.license_plate if car_application.car else "-" }}</div>
+          <div><span class="font-semibold">ป้ายทะเบียนรถ:</span> {{ car_application.car.license_plate if car_application.car else "-" }} {{ VehicleTypeMismatchBadge(car_application) }}</div>
           <div><span class="font-semibold">ประเภทการใช้รถ:</span>
             {{ car_application.get_using_type_display() }}
             {% if car_application.using_type == 'airport transfer' %}

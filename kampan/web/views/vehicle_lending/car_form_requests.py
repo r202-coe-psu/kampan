@@ -48,6 +48,16 @@ def _parse_datetime(form, prefix):
     )
 
 
+def _active_car_types(organization):
+    return {
+        car.vehicle_type
+        for car in models.vehicles.Car.objects(
+            organization=organization, status="active", vehicle_type__ne=None
+        )
+        if car.vehicle_type
+    }
+
+
 @module.route("/new")
 @acl.organization_roles_required(*REQUEST_ROLES)
 def choose_template():
@@ -61,6 +71,11 @@ def choose_template():
     )
 
 
+def _cars_requested_type_first(cars, car_application):
+    requested = (car_application.details or {}).get("vehicle_kind")
+    return sorted(cars, key=lambda car: car.vehicle_type != requested)
+
+
 @module.route("/inbox")
 @acl.organization_roles_required(*REQUEST_ROLES)
 def inbox():
@@ -70,7 +85,8 @@ def inbox():
         "/vehicle_lending/car_form_requests/inbox.html",
         organization=organization,
         car_applications=utils.car_form_flow.pending_for(user, organization),
-        cars=models.vehicles.Car.objects(organization=organization, status="active"),
+        cars=list(models.vehicles.Car.objects(organization=organization, status="active")),
+        cars_requested_type_first=_cars_requested_type_first,
         drivers=organization.get_all_drivers(),
         current_step_def=utils.car_form_flow.current_step_def,
     )
@@ -109,7 +125,11 @@ def create(template_id):
 
     form = request.form
     snapshot = _snapshot(template)
-    details_form_class = forms.car_form_templates.build_details_form(snapshot["fields"])
+    car_types = _active_car_types(organization)
+    details_form_class = forms.car_form_templates.build_details_form(
+        snapshot["fields"],
+        allowed_choices={"vehicle_kind": car_types} if car_types else None,
+    )
 
     def render_form(details_form, status=200):
         return (

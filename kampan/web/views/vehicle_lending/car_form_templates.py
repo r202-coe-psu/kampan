@@ -34,6 +34,7 @@ APP_VARIABLES = [
     ("app.request_reason", "เหตุผลที่ขอใช้รถ"),
     ("app.passenger_number", "จำนวนผู้โดยสาร"),
     ("app.car_plate", "ทะเบียนรถที่จัดให้"),
+    ("app.car_type", "ประเภทรถที่จัด"),
     ("app.driver_name", "ชื่อพนักงานขับรถ"),
 ]
 

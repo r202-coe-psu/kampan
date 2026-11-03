@@ -1,0 +1,6 @@
+{% macro VehicleTypeMismatchBadge(car_application) %}
+{% if car_application.has_vehicle_type_mismatch() %}
+<span class="badge badge-warning badge-sm"
+  title="ขอ: {{ car_application.details.get('vehicle_kind') }} / จัด: {{ car_application.assigned_vehicle_type }}">จัดรถต่างประเภทจากที่ขอ</span>
+{% endif %}
+{% endmacro %}

@@ -144,3 +144,16 @@ def test_check_placement_is_drawn_only_when_the_value_matches(make_application):
     assert drawn_line_segments(car_form_paper.render_pdf(matching)) == 2
     assert drawn_line_segments(car_form_paper.render_pdf(other)) == 0
     assert drawn_line_segments(car_form_paper.render_pdf(in_list)) == 2
+
+
+def test_paper_prints_the_assigned_cars_type_as_app_car_type(make_application):
+    application = make_application([placement("app.car_type")])
+    application.assigned_vehicle_type = "บัส"
+    application.save()
+
+    text = page_text(car_form_paper.render_pdf(application))
+
+    assert "บัส" in text
+    assert "app.car_type" in car_form_paper.available_variables(
+        models.car_form_templates.CarFormTemplate()
+    )

@@ -4,12 +4,17 @@ from wtforms import fields, validators, widgets
 from kampan import utils
 
 
-def _field_type_and_choices(field_def):
+def _field_type_and_choices(field_def, allowed_choices=None):
     source = field_def.get("source", "catalog")
     template_choices = tuple(field_def.get("choices") or ())
     if source == "catalog":
         catalog_field = utils.car_form_catalog.CATALOG[field_def["key"]]
-        return catalog_field.field_type, template_choices or catalog_field.choices
+        choices = template_choices or catalog_field.choices
+        allowed = (allowed_choices or {}).get(field_def["key"])
+        if allowed is not None:
+            narrowed = tuple(c for c in choices if c in allowed)
+            choices = narrowed or choices
+        return catalog_field.field_type, choices
     return field_def.get("field_type"), template_choices
 
 
@@ -21,8 +26,8 @@ def _default_label(field_def):
     return field_def["key"]
 
 
-def _build_field(field_def):
-    field_type, choices = _field_type_and_choices(field_def)
+def _build_field(field_def, allowed_choices=None):
+    field_type, choices = _field_type_and_choices(field_def, allowed_choices)
     required = field_def.get("is_required", False)
     label = _default_label(field_def)
     message = f"กรุณากรอก {label}"
@@ -66,9 +71,13 @@ def _details_key(field_def):
     return f"custom_{field_def['key']}"
 
 
-def build_details_form(field_defs):
+def build_details_form(field_defs, allowed_choices=None):
+    """allowed_choices: optional {catalog key: values} that narrows a catalog
+    field's choices further; if nothing would be left, the choices are kept."""
     keys = [_details_key(f) for f in field_defs]
-    attrs = {key: _build_field(f) for key, f in zip(keys, field_defs)}
+    attrs = {
+        key: _build_field(f, allowed_choices) for key, f in zip(keys, field_defs)
+    }
 
     def details(self):
         values = {}

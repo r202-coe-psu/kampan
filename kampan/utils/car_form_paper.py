@@ -51,6 +51,7 @@ def _build_app(car_application):
         "request_reason": car_application.request_reason,
         "passenger_number": car_application.passenger_number,
         "car_plate": (car_application.car.license_plate if car_application.car else "") or "",
+        "car_type": car_application.assigned_vehicle_type or "",
         "driver_name": _user_name(car_application.driver),
         "departure": _thai_datetime(car_application.departure_datetime),
         "return": _thai_datetime(car_application.return_datetime),
@@ -81,6 +82,7 @@ APP_VARIABLES = frozenset(
         "app.request_reason",
         "app.passenger_number",
         "app.car_plate",
+        "app.car_type",
         "app.driver_name",
     }
     | {f"app.{group}.{part}" for group in ("departure", "return") for part in (*_DATE_PARTS, "time")}

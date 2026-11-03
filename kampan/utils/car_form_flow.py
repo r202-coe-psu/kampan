@@ -57,6 +57,7 @@ def approve(car_application, user, comment="", car=None, driver=None):
         if car is None:
             raise ValueError("car is required on a vehicle assigning step")
         car_application.car = car
+        car_application.assigned_vehicle_type = car.vehicle_type
         car_application.driver = driver
 
     car_application.step_approvals.append(
