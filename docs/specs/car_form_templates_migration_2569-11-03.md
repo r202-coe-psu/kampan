@@ -139,6 +139,9 @@
 
 ## 5. โค้ดเดิมที่ต้องแก้หรือลบใน M5 (หลังย้ายข้อมูลแล้ว)
 
+> **ซ่อนไว้แล้วชั่วคราว (ยังไม่ลบ):** หน้า `car_permissions` ทั้งหมด (หัวหน้าฝ่าย / ผอ. / พัสดุอนุมัติ) ตอบ 404 และเมนูใน sidebar กับปุ่มในคู่มือถูกซ่อน เมื่อ `CAR_LEGACY_APPROVAL_ENABLED` ไม่ได้ตั้งเป็น `True` (ค่าเริ่มต้นคือปิด) ถ้าต้องการเปิดกลับมา ให้ใส่ `CAR_LEGACY_APPROVAL_ENABLED = True` ในไฟล์ cfg แล้ว restart โดย test ของ flow เดิมเปิด flag นี้ใน `tests/conftest.py`
+> **ข้อควรระวัง:** คำขอเดิมที่ค้าง `pending on header/admin/director` จะไม่มีใครอนุมัติต่อได้จนกว่าจะเปิด flag หรือ migrate (M4)
+
 | ไฟล์ | ใช้ของเดิมอะไรอยู่ | ทำอะไร |
 |---|---|---|
 | `kampan/web/views/vehicle_lending/car_permissions.py` + `car_permissions/{header,admin,director}_page.html` | flow 3 ขั้นแบบตายตัว | ลบ แทนด้วย `/car_form_requests/inbox` |
