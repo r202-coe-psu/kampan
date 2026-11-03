@@ -317,3 +317,82 @@ def test_concurrent_admin_approvals_reserve_once(app, login_as, setup, monkeypat
         assert models.Reservation.objects(requisition=setup["requisition"]).count() == 1
         assert setup["mas"].reservable_amount == Decimal("90000.00")
         assert roles_in_history(setup["requisition"]) == [("head", "approved"), ("admin", "approved")]
+
+
+def test_over_allocation_is_refused_before_claiming_step(app, login_as, setup):
+    with app.test_client() as client, app.app_context():
+        post_action(client, login_as, setup["head"], setup, "head")
+        post_action(client, login_as, setup["admin"], setup, "admin", **admin_approve_data(setup, amount="200000.00"))
+
+        setup["mas"].reload()
+        assert roles_in_history(setup["requisition"]) == [("head", "approved")]
+        assert models.Reservation.objects(requisition=setup["requisition"]).count() == 0
+        assert setup["mas"].reservable_amount == Decimal("100000.00")
+
+        # แก้ยอดแล้วกดใหม่ได้
+        post_action(client, login_as, setup["admin"], setup, "admin", **admin_approve_data(setup))
+        assert roles_in_history(setup["requisition"]) == [("head", "approved"), ("admin", "approved")]
+
+
+def test_failure_after_claim_rolls_back_so_step_can_be_retried(app, login_as, setup, monkeypatch):
+    with app.test_client() as client, app.app_context():
+        post_action(client, login_as, setup["head"], setup, "head")
+
+        original_save = models.Requisition.save
+
+        def failing_save(self, *args, **kwargs):
+            raise RuntimeError("db down")
+
+        monkeypatch.setattr(models.Requisition, "save", failing_save)
+        with pytest.raises(RuntimeError):
+            post_action(client, login_as, setup["admin"], setup, "admin", **admin_approve_data(setup))
+        monkeypatch.setattr(models.Requisition, "save", original_save)
+
+        setup["mas"].reload()
+        assert roles_in_history(setup["requisition"]) == [("head", "approved")]
+        assert models.Reservation.objects(requisition=setup["requisition"]).count() == 0
+        assert setup["mas"].reservable_amount == Decimal("100000.00")
+
+        post_action(client, login_as, setup["admin"], setup, "admin", **admin_approve_data(setup))
+        setup["mas"].reload()
+        assert roles_in_history(setup["requisition"]) == [("head", "approved"), ("admin", "approved")]
+        assert setup["mas"].reservable_amount == Decimal("90000.00")
+
+
+def test_approval_is_saved_even_if_email_queue_is_down(app, login_as, setup, mock_queue):
+    with app.test_client() as client, app.app_context():
+        mock_queue.enqueue.side_effect = ConnectionError("redis down")
+        post_action(client, login_as, setup["head"], setup, "head")
+
+        assert roles_in_history(setup["requisition"]) == [("head", "approved")]
+        assert setup["requisition"].status == "progress"
+
+
+def test_final_save_does_not_overwrite_history_written_meanwhile(app, login_as, setup, monkeypatch):
+    """entry ที่ request อื่น push ระหว่างที่ request นี้กำลังจัดสรรงบ ต้องไม่ถูก save() เขียนทับ"""
+    with app.test_client() as client, app.app_context():
+        post_action(client, login_as, setup["head"], setup, "head")
+        original_save = models.MAS.save
+
+        def save_with_concurrent_push(self, *args, **kwargs):
+            models.Requisition.objects(id=setup["requisition"].id).update_one(
+                push__approval_history=models.requisitions.ApprovalHistory(approver_role="manager", action="approved")
+            )
+            return original_save(self, *args, **kwargs)
+
+        monkeypatch.setattr(models.MAS, "save", save_with_concurrent_push)
+        post_action(client, login_as, setup["admin"], setup, "admin", **admin_approve_data(setup))
+
+        assert ("manager", "approved") in roles_in_history(setup["requisition"])
+
+
+def test_rejection_email_job_sees_the_rejection(app, login_as, setup, mock_queue):
+    with app.test_client() as client, app.app_context():
+        post_action(client, login_as, setup["head"], setup, "head", action="rejected")
+
+        from kampan.utils import rejected_emails
+
+        calls = [c for c in mock_queue.enqueue.call_args_list if c.args[0] is rejected_emails.send_email_rejected_to_user_admin_committee]
+        assert len(calls) == 1
+        requisition_arg = calls[0].kwargs["args"][0]
+        assert [(h.approver_role, h.action) for h in requisition_arg.approval_history] == [("head", "rejected")]

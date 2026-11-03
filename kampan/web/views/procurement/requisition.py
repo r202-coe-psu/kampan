@@ -623,16 +623,24 @@ def requisition_action(requisition_id):
         return redirect(renewal_requested_url)
 
     manager_obj = None
-    if approver_role == "admin" and action == "approved" and manager_id:
-        if ObjectId.is_valid(manager_id):
-            manager_obj = models.OrganizationUserRole.objects(
-                id=manager_id,
-                organization=organization,
-                roles="manager",
-                status__ne="disactive",
-            ).first()
-        if not manager_obj:
-            abort(400)
+    allocations = []
+    if approver_role == "admin" and action == "approved":
+        if manager_id:
+            if ObjectId.is_valid(manager_id):
+                manager_obj = models.OrganizationUserRole.objects(
+                    id=manager_id,
+                    organization=organization,
+                    roles="manager",
+                    status__ne="disactive",
+                ).first()
+            if not manager_obj:
+                abort(400)
+
+        # ตรวจการจัดสรรงบทั้งหมดก่อนจองขั้น เพื่อไม่ให้ขั้นค้างเป็น "อนุมัติแล้ว" ทั้งที่จัดสรรไม่สำเร็จ
+        allocations, allocation_error = get_fund_allocations(organization, fund_id, fund_ids)
+        if allocation_error:
+            flash(allocation_error, "error")
+            return redirect(renewal_requested_url)
 
     approval = models.requisitions.ApprovalHistory(
         approver=member_obj,
@@ -652,162 +660,158 @@ def requisition_action(requisition_id):
         flash("ขั้นนี้ดำเนินการแล้ว", "error")
         return redirect(renewal_requested_url)
 
-    if (approver_role == "head" or approver_role == "manager") and action == "approved":
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.approved_emails.send_email_approve_to_user_admin_committee,
-            args=(
-                requisition,
-                current_user.id,
-                current_app.config,
-                organization,
-                approver_role,
-            ),
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> Approved email job submitted", job.get_id())
+    user = current_user._get_current_object()
+    reservations = []
+    reserved_mas = []
+    try:
+        # Admin อนุมัติ: จองงบ MAS แบบหลายแหล่งตามที่ตรวจไว้แล้ว
+        if allocations:
+            fund_list = []
+            for mas, amount in allocations:
+                reservation = models.Reservation(
+                    requisition=requisition,
+                    mas=mas,
+                    amount=amount,
+                    reserved_by=user,
+                    organization=organization,
+                )
+                reservation.save()
+                reservations.append(reservation)
 
-    # Admin อนุมัติ: อัปเดตการจัดสรร MAS แบบหลายแหล่ง (กันการจัดสรรซ้ำด้วยการจองขั้นด้านบน)
-    if approver_role == "admin" and action == "approved":
-        # รวบรวม amounts ต่อ MAS จาก form: key = fund_amounts[<mas_id>]
-        items = list(request.form.items(multi=True))  # แปลงเป็น list เพื่อใช้งาน/ debug ได้
-        # print("raw items (first 10):", raw_items[:10])
-        input_amounts = {}
-        for k, v in items:
-            if k.startswith("fund_amounts[") and k.endswith("]"):
-                mas_id = k[len("fund_amounts[") : -1]
-                try:
-                    amt = Decimal(str(v or "0")).quantize(Decimal("0.01"))
-                except Exception:
-                    amt = Decimal("0.00")
-                input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + amt
+                mas.reservable_amount -= amount
+                mas.last_updated_by = user
+                mas.editable = False
+                mas.save()
+                reserved_mas.append((mas, amount))
 
-        if not fund_ids and fund_id:
-            fund_ids = [fund_id]
-            input_amounts.setdefault(fund_id, input_amounts.get(fund_id, Decimal("0.00")))
+                fund_list.append(models.requisitions.Funds(mas=mas, amount=amount, reservation=reservation))
+            requisition.fund = fund_list
 
-        fund_list = []
-        for fid in set(fund_ids or []):
-            amt = input_amounts.get(fid, Decimal("0.00"))
-            if amt <= 0:
-                continue
-            if not ObjectId.is_valid(fid):
-                continue
-            mas = models.MAS.objects(id=fid, organization=organization).first()
-            if not mas:
-                continue
+        if approver_role == "admin" and action == "approved":
+            fund_source = request.form.get("fund_source")
+            if fund_source:
+                requisition.fund_source = fund_source
+            if manager_obj:
+                requisition.selected_manager = models.requisitions.SelectedManager(
+                    manager=manager_obj,
+                    is_acting=request.form.get("Acting") == "True",
+                )
 
-            print("=====> mas", mas)
+        # ไม่แก้ requisition.approval_history ใน object เพื่อให้ save() ไม่เขียนทับ entry ที่ request อื่นเพิ่ง push
+        history = list(requisition.approval_history or []) + [approval]
+        approved_roles = {h.approver_role for h in history if h.action == "approved"}
+        rejected_roles = {h.approver_role for h in history if h.action == "rejected"}
 
-            res = models.Reservation(
+        if rejected_roles:
+            requisition.status = "incomplete"
+        elif set(models.requisitions.APPROVAL_STEPS).issubset(approved_roles):
+            requisition.status = "complete"
+        else:
+            requisition.status = "progress"
+        requisition.last_updated_by = user
+        requisition.save()
+
+        if requisition.status == "complete":
+            models.RequisitionTimeline(
                 requisition=requisition,
-                mas=mas,
-                amount=amt,
-                reserved_by=current_user._get_current_object(),
+                purchaser=requisition.purchaser,
+                progress=[
+                    models.Progress(
+                        progress_status="request_created",
+                        created_by=user,
+                        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+                        user_agent=request.headers.get("User-Agent"),
+                        timestamp=datetime.datetime.now(),
+                    )
+                ],
+                note=None,
+                status="active",
+                updated_date=datetime.datetime.now(),
+                last_updated_by=user,
+                created_date=datetime.datetime.now(),
+                created_by=user,
                 organization=organization,
-            )
-            res.save()
+            ).save()
+    except Exception:
+        rollback_approval(requisition, approval, reservations, reserved_mas)
+        raise
 
-            fund_list.append(models.requisitions.Funds(mas=mas, amount=amt, reservation=res))
+    requisition.reload()
+    enqueue_approval_emails(requisition, approver_role, action, manager_obj, organization)
+    return redirect(renewal_requested_url)
 
-            mas.reservable_amount -= amt
-            mas.last_updated_by = current_user._get_current_object()
-            mas.editable = False
-            mas.save()
 
-        requisition.fund = fund_list
+def get_fund_allocations(organization, fund_id, fund_ids):
+    """อ่านยอดจัดสรรจาก form (key = fund_amounts[<mas_id>]) คืน ([(mas, amount)], error)"""
+    input_amounts = {}
+    for key, value in request.form.items(multi=True):
+        if key.startswith("fund_amounts[") and key.endswith("]"):
+            mas_id = key[len("fund_amounts[") : -1]
+            try:
+                amount = Decimal(str(value or "0")).quantize(Decimal("0.01"))
+            except Exception:
+                amount = Decimal("0.00")
+            input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + amount
 
-        fund_source = request.form.get("fund_source")
-        if fund_source:
-            requisition.fund_source = fund_source
+    if not fund_ids and fund_id:
+        fund_ids = [fund_id]  # fallback เดิม
 
-        # 5) บันทึก Manager และส่งอีเมลถึง Manager
-        if manager_obj:
-            is_acting = request.form.get("Acting") == "True"
-            requisition.selected_manager = models.requisitions.SelectedManager(
-                manager=manager_obj,
-                is_acting=is_acting,
-            )
+    allocations = []
+    for mas_id in dict.fromkeys(fund_ids or []):
+        amount = input_amounts.get(mas_id, Decimal("0.00"))
+        if amount <= 0 or not ObjectId.is_valid(mas_id):
+            continue
+        mas = models.MAS.objects(id=mas_id, organization=organization).first()
+        if not mas:
+            continue
+        if amount > (mas.reservable_amount or Decimal("0")):
+            return [], f"ยอดจัดสรรจาก {mas.mas_code} เกินยอดที่จองได้"
+        allocations.append((mas, amount))
+    return allocations, None
 
+
+def rollback_approval(requisition, approval, reservations, reserved_mas):
+    """คืนสภาพเมื่อบันทึกการอนุมัติไม่สำเร็จหลังจองขั้นแล้ว เพื่อให้ผู้ใช้กดใหม่ได้"""
+    models.Requisition.objects(id=requisition.id).update_one(
+        __raw__={"$pull": {"approval_history": {"_id": approval._id}}}
+    )
+    for reservation in reservations:
+        reservation.delete()
+    for mas, amount in reserved_mas:
+        mas.reload()
+        mas.reservable_amount += amount
+        mas.save()
+
+
+def enqueue_approval_emails(requisition, approver_role, action, manager_obj, organization):
+    """ส่งอีเมลหลังบันทึกสำเร็จแล้ว ถ้า Redis มีปัญหาให้ log ไว้ ไม่ทำให้การอนุมัติที่บันทึกแล้วล้ม"""
+    jobs = []
+    if action == "rejected":
+        jobs.append(utils.rejected_emails.send_email_rejected_to_user_admin_committee)
+    elif approver_role in ("head", "manager"):
+        jobs.append(utils.approved_emails.send_email_approve_to_user_admin_committee)
+
+    for job_function in jobs:
+        try:
             job = redis_rq.redis_queue.queue.enqueue(
+                job_function,
+                args=(requisition, current_user.id, current_app.config, organization, approver_role),
+                timeout=600,
+                job_timeout=600,
+            )
+            print("=====> email job submitted", job.get_id())
+        except Exception:
+            current_app.logger.exception("enqueue email failed for requisition %s", requisition.id)
+
+    if manager_obj:
+        try:
+            redis_rq.redis_queue.queue.enqueue(
                 utils.send_email_to_manager.send_email_to_manager,
                 args=(requisition, current_app.config, manager_obj, organization),
                 timeout=600,
                 job_timeout=600,
             )
-            print("=====> manager email job submitted", job.get_id())
+        except Exception:
+            current_app.logger.exception("enqueue manager email failed for requisition %s", requisition.id)
 
-    # approval ถูก push ลง DB แล้วตอนจองขั้น เพิ่มใน object ด้วยเพื่อให้ save() ด้านล่างเขียนตรงกัน
-    if requisition.approval_history is None:
-        requisition.approval_history = []
-    requisition.approval_history.append(approval)
 
-    required_roles = {"head", "admin", "manager"}
-    approved_roles = set(h.approver_role for h in requisition.approval_history if h.action == "approved")
-    rejected_roles = set(h.approver_role for h in requisition.approval_history if h.action == "rejected")
-
-    if rejected_roles:
-        requisition.status = "incomplete"
-        requisition.last_updated_by = current_user._get_current_object()
-        requisition.save()
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.rejected_emails.send_email_rejected_to_user_admin_committee,
-            args=(
-                requisition,
-                current_user.id,
-                current_app.config,
-                organization,
-                approver_role,
-            ),
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> Reject email job submitted", job.get_id())
-        return redirect(
-            url_for(
-                "procurement.requisitions.renewal_requested",
-                organization_id=g.organization.id,
-            )
-        )
-
-    if required_roles.issubset(approved_roles):
-        requisition.status = "complete"
-        requisition.last_updated_by = current_user._get_current_object()
-        requisition.save()
-        requisition_timeline = models.RequisitionTimeline(
-            requisition=requisition,
-            purchaser=requisition.purchaser,
-            progress=[
-                models.Progress(
-                    progress_status="request_created",
-                    created_by=current_user._get_current_object(),
-                    last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-                    user_agent=request.headers.get("User-Agent"),
-                    timestamp=datetime.datetime.now(),
-                )
-            ],
-            note=None,
-            status="active",
-            updated_date=datetime.datetime.now(),
-            last_updated_by=current_user._get_current_object(),
-            created_date=datetime.datetime.now(),
-            created_by=current_user._get_current_object(),
-            organization=organization,
-        )
-        requisition_timeline.save()
-        return redirect(
-            url_for(
-                "procurement.requisitions.renewal_requested",
-                organization_id=g.organization.id,
-            )
-        )
-
-    requisition.status = "progress" if approved_roles else "pending"
-    requisition.last_updated_by = current_user._get_current_object()
-    requisition.save()
-    return redirect(
-        url_for(
-            "procurement.requisitions.renewal_requested",
-            organization_id=g.organization.id,
-        )
-    )
