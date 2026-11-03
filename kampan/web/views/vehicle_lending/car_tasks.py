@@ -79,7 +79,7 @@ def index():
         sort_by=sort_by,
         order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
-        closable_car_application_ids=models.vehicle_applications.CarApplication.get_oldest_active_ids(organization),
+        oldest_active_by_car=models.vehicle_applications.CarApplication.get_oldest_active_per_car(organization),
     )
 
 

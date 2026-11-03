@@ -67,3 +67,29 @@ def test_driver_can_close_their_own_task(app, tasks_setup, login_as):
     s["task_a"].reload()
 
     assert s["task_a"].status == "completed"
+
+
+def test_task_waiting_on_an_older_task_of_the_same_car_says_which_task_blocks_it(
+    app, tasks_setup, login_as, create_car_application
+):
+    """คนขับมองไม่เห็นงานของคนอื่น จึงต้องบอกว่างานตัวเองติดอยู่หลังงานไหน แทนที่จะไม่มีปุ่มเฉยๆ"""
+    import datetime
+
+    s = tasks_setup
+    later = create_car_application(
+        s["org"], s["task_b"].car, location="งานถัดไปของคนขับ-ก",
+        departure_datetime=datetime.datetime(2026, 1, 15, 9, 30),
+    )
+    later.driver = s["driver_a"]
+    later.save()
+
+    html = login_as(app.test_client(), s["driver_a"]).get(
+        f"{TASKS}?organization_id={s['org'].id}"
+    ).get_data(as_text=True)
+    row = html[html.index(f'data-request-id="{later.id}"'):]
+    row = row[: row.index("</tr>")]
+
+    assert "ปิดงาน / กรอกไมล์" not in row
+    assert "รอปิดงานก่อนหน้า" in row
+    assert "08:00" in row
+    assert s["task_b"].driver.get_resources_fullname_th() in row
