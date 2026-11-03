@@ -1,5 +1,6 @@
 import io
 import json
+import re
 
 import pytest
 from reportlab.pdfgen import canvas
@@ -84,6 +85,43 @@ def test_org_admin_creates_template_with_fields_and_steps(app, setup, login_as):
         ("head", "head", True, False),
         ("admin", "admin", False, True),
     ]
+
+
+def test_create_with_empty_keys_generates_distinct_random_keys(app, setup, login_as):
+    """When an admin creates a template whose custom fields and steps have empty keys, the saved template gets f_xxxxxx / s_xxxxxx keys, all distinct, and catalog fields keep their catalog key"""
+    org = setup["org"]
+    client = login_as(app.test_client(), setup["admin"])
+    fields = [
+        {"source": "catalog", "key": "district", "is_required": True},
+        {"source": "custom", "key": "", "label": "ชื่อโครงการ", "field_type": "text"},
+        {"source": "custom", "key": "", "label": "งบประมาณ", "field_type": "text"},
+    ]
+    steps = [
+        {"key": "", "label": "ผู้บังคับบัญชา", "approver_type": "role", "role": "head"},
+        {
+            "key": "",
+            "label": "ผู้จัดรถ",
+            "approver_type": "role",
+            "role": "admin",
+            "assigns_vehicle": True,
+        },
+    ]
+
+    res = client.post(
+        f"{BASE}/create",
+        data=valid_payload(
+            org, fields_data=json.dumps(fields), steps_data=json.dumps(steps)
+        ),
+    )
+
+    assert res.status_code == 302
+    template = models.car_form_templates.CarFormTemplate.objects(organization=org).get()
+    assert template.fields[0].key == "district"
+    custom_keys = [f.key for f in template.fields[1:]]
+    step_keys = [s.key for s in template.steps]
+    assert all(re.fullmatch(r"f_[a-z0-9]{6}", k) for k in custom_keys)
+    assert all(re.fullmatch(r"s_[a-z0-9]{6}", k) for k in step_keys)
+    assert len(set(custom_keys + step_keys)) == 4
 
 
 def count_templates(org):
@@ -650,3 +688,73 @@ def test_saving_an_empty_list_clears_the_placements(app, setup, login_as):
     template.reload()
     assert res.status_code == 302
     assert template.placements == []
+
+
+def test_renaming_and_reordering_keeps_keys_and_placements_pointing_at_the_same_field_and_step(
+    app, setup, login_as
+):
+    """Editing a template that has a PDF and placements: renaming a custom field and a step and swapping the two steps, with the existing keys in the payload, keeps every key and every placement, and the placements resolve to the new labels by key"""
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    template.fields = [
+        models.car_form_templates.FormFieldDef(
+            source="custom", key="f_abc123", label="ชื่อโครงการ", field_type="text"
+        )
+    ]
+    template.steps = [
+        models.car_form_templates.ApprovalStepDef(
+            key="s_aaa111", label="ผู้บังคับบัญชา", role="head", same_division=True
+        ),
+        models.car_form_templates.ApprovalStepDef(
+            key="s_bbb222", label="ผู้จัดรถ", role="admin", assigns_vehicle=True
+        ),
+    ]
+    template.save()
+    client = login_as(app.test_client(), setup["admin"])
+    placed = [
+        placement(variable="details.custom_f_abc123"),
+        placement(variable="approvals.s_aaa111.decision", kind="check", match_value="approved"),
+        placement(variable="approvals.s_bbb222.name"),
+    ]
+    assert save_placements(client, org, template, placed).status_code == 302
+
+    res = client.post(
+        f"{BASE}/{template.id}/edit",
+        data=valid_payload(
+            org,
+            fields_data=json.dumps(
+                [{"source": "custom", "key": "f_abc123", "label": "ชื่อกิจกรรม", "field_type": "text"}]
+            ),
+            steps_data=json.dumps(
+                [
+                    {"key": "s_bbb222", "label": "เจ้าหน้าที่จัดรถ", "approver_type": "role", "role": "admin", "assigns_vehicle": True},
+                    {"key": "s_aaa111", "label": "หัวหน้างาน", "approver_type": "role", "role": "head", "same_division": True},
+                ]
+            ),
+        ),
+    )
+
+    assert res.status_code == 302
+    template.reload()
+    assert [f.key for f in template.fields] == ["f_abc123"]
+    assert [(s.key, s.label) for s in template.steps] == [
+        ("s_bbb222", "เจ้าหน้าที่จัดรถ"),
+        ("s_aaa111", "หัวหน้างาน"),
+    ]
+    assert [p.variable for p in template.placements] == [
+        "details.custom_f_abc123",
+        "approvals.s_aaa111.decision",
+        "approvals.s_bbb222.name",
+    ]
+    template.validate()
+    page = client.get(
+        f"{BASE}/{template.id}/paper_editor", query_string={"organization_id": str(org.id)}
+    )
+    variables = json.loads(
+        re.search(r'id="variablesData">(.*?)</script>', page.get_data(as_text=True), re.S).group(1)
+    )
+    labels = {v["name"]: v["label"] for v in variables}
+    assert labels["details.custom_f_abc123"] == "ชื่อกิจกรรม"
+    assert labels["approvals.s_aaa111.decision"].startswith("หัวหน้างาน")
+    assert labels["approvals.s_bbb222.name"].startswith("เจ้าหน้าที่จัดรถ")
+

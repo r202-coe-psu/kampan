@@ -19,6 +19,7 @@ from wtforms import fields, validators
 
 from kampan import models
 from kampan.utils.car_form_catalog import CATALOG
+from kampan.utils.car_form_keys import FIELD_PREFIX, STEP_PREFIX, new_key
 from kampan.utils.car_form_paper import APPROVAL_PARTS, available_variables, sample_values
 from kampan.web import acl
 
@@ -77,16 +78,26 @@ def clean_key(raw):
     return str(raw or "").translate(INVISIBLE_CHARS).strip().lower()
 
 
+def _taken_keys(items):
+    return {k for k in (clean_key(i.get("key")) for i in items) if k}
+
+
 def parse_fields_payload(raw):
     field_defs = []
-    for item in _load_list(raw, "ฟิลด์"):
+    items = _load_list(raw, "ฟิลด์")
+    taken = _taken_keys(items)
+    for item in items:
         choices = item.get("choices") or []
         if not isinstance(choices, list):
             raise TemplatePayloadError("รูปแบบตัวเลือกของฟิลด์ไม่ถูกต้อง")
+        source = item.get("source") or "catalog"
+        key = clean_key(item.get("key"))
+        if source == "custom" and not key:
+            key = new_key(FIELD_PREFIX, taken)
         field_defs.append(
             models.car_form_templates.FormFieldDef(
-                source=item.get("source") or "catalog",
-                key=clean_key(item.get("key")),
+                source=source,
+                key=key,
                 label=(item.get("label") or "").strip(),
                 field_type=item.get("field_type") or None,
                 choices=[str(c).strip() for c in choices if str(c).strip()],
@@ -99,7 +110,9 @@ def parse_fields_payload(raw):
 def parse_steps_payload(raw, organization):
     members = {m["id"]: m["user"] for m in get_org_members(organization)}
     step_defs = []
-    for index, item in enumerate(_load_list(raw, "ขั้นอนุมัติ"), start=1):
+    items = _load_list(raw, "ขั้นอนุมัติ")
+    taken = _taken_keys(items)
+    for index, item in enumerate(items, start=1):
         approver_type = item.get("approver_type") or "role"
         user = None
         user_id = str(item.get("user") or "")
@@ -110,9 +123,10 @@ def parse_steps_payload(raw, organization):
                 raise TemplatePayloadError(
                     f"ขั้นที่ {index}: ผู้อนุมัติต้องเป็นสมาชิกของหน่วยงานนี้"
                 )
+        key = clean_key(item.get("key")) or new_key(STEP_PREFIX, taken)
         step_defs.append(
             models.car_form_templates.ApprovalStepDef(
-                key=clean_key(item.get("key")),
+                key=key,
                 label=(item.get("label") or "").strip(),
                 approver_type=approver_type,
                 role=item.get("role") or None,
