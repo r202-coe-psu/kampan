@@ -240,3 +240,8 @@ fieldset {
   --color-success: oklch(52.7% 0.154 150.069);
   --color-success-content: oklch(98.2% 0.018 155.826);
 }
+
+/* dropdown ของ .select (base-select) ไม่แสดงเครื่องหมายถูกหน้าตัวเลือกที่เลือกอยู่ */
+.select select option::checkmark {
+  display: none;
+}
