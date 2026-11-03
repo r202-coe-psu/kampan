@@ -17,7 +17,7 @@ import pandas as pd
 from mongoengine.queryset.visitor import Q
 
 from kampan.web import forms, acl
-from kampan import models
+from kampan import models, utils
 from kampan.repositories.history_car_lending import HistoryCarLendingRepository
 
 module = Blueprint("car_tasks", __name__, url_prefix="/car_tasks")
@@ -52,6 +52,11 @@ def index():
         sort_field
     )
 
+    q = request.args.get("q", "").strip()
+    if q:
+        matched_ids = [c.id for c in utils.car_form_flow.search(car_lendings, q=q)]
+        car_lendings = car_lendings.filter(id__in=matched_ids)
+
     page = request.args.get("page", 1, type=int)
     paginated_car_applications = Pagination(car_lendings, page=page, per_page=30)
     today_date = datetime.date.today()
@@ -62,6 +67,7 @@ def index():
         car_lendings=car_lendings,
         target_date=target_date,
         today_date=today_date,
+        q=q,
         sort_by=sort_by,
         order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
