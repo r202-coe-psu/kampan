@@ -19,6 +19,7 @@
 | M4 ย้ายข้อมูลคำขอเดิม | ⬜ ยังไม่ทำ (ต้องเขียนสคริปต์) | ข้อ 3.3 |
 | M5 ลบโค้ดและฟิลด์เดิม | ⬜ ยังไม่ทำ | ข้อ 5 |
 | Backfill ประเภทรถ (`Car.vehicle_type`) | ⬜ ต้องทำก่อนเปิดใช้ | ข้อ 3.2 |
+| Rekey template (ซ่อน key) | ✅ รันบน DB local แล้ว 2569-11-03 (7 template) | `scripts/migrate_car_form_template_keys.py [--dry-run]` ดู `car_form_template_hidden_keys_2569-11-03_spec.md` ข้อ 4 |
 
 ---
 
