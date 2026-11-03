@@ -139,7 +139,7 @@
 
 ## 5. โค้ดเดิมที่ต้องแก้หรือลบใน M5 (หลังย้ายข้อมูลแล้ว)
 
-> **ซ่อนไว้แล้วชั่วคราว (ยังไม่ลบ):** หน้า `car_permissions` ทั้งหมด (หัวหน้าฝ่าย / ผอ. / พัสดุอนุมัติ) ตอบ 404 และเมนูใน sidebar กับปุ่มในคู่มือถูกซ่อน เมื่อ `CAR_LEGACY_APPROVAL_ENABLED` ไม่ได้ตั้งเป็น `True` (ค่าเริ่มต้นคือปิด) ถ้าต้องการเปิดกลับมา ให้ใส่ `CAR_LEGACY_APPROVAL_ENABLED = True` ในไฟล์ cfg แล้ว restart โดย test ของ flow เดิมเปิด flag นี้ใน `tests/conftest.py`
+> **ซ่อนไว้แล้วชั่วคราว (ยังไม่ลบ):** หน้า `car_permissions` ทั้งหมด (หัวหน้าฝ่าย / ผอ. / พัสดุอนุมัติ) และหน้ายื่น/แก้/ลบ/พิมพ์คำขอแบบเดิมใน `car_applications` (`index`, `create_or_edit`, `delete`, `paper`, `combine_paper`) ตอบ 404 ส่วนปฏิทินยังใช้ได้และปุ่ม "เพิ่มคำขอ" ในปฏิทินพาไป `/car_form_requests/new` และเมนูใน sidebar กับปุ่มในคู่มือถูกซ่อน เมื่อ `CAR_LEGACY_FLOW_ENABLED` ไม่ได้ตั้งเป็น `True` (ค่าเริ่มต้นคือปิด) ถ้าต้องการเปิดกลับมา ให้ใส่ `CAR_LEGACY_FLOW_ENABLED = True` ในไฟล์ cfg แล้ว restart โดย test ของ flow เดิมเปิด flag นี้ใน `tests/conftest.py`
 > **ข้อควรระวัง:** คำขอเดิมที่ค้าง `pending on header/admin/director` จะไม่มีใครอนุมัติต่อได้จนกว่าจะเปิด flag หรือ migrate (M4)
 
 | ไฟล์ | ใช้ของเดิมอะไรอยู่ | ทำอะไร |
