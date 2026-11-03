@@ -155,6 +155,11 @@ class User(me.Document, UserMixin):
                 return True
         return False
 
+    def can_approve_car_forms(self, organization=None):
+        from .car_form_templates import can_approve
+
+        return "admin" in self.roles or can_approve(self.get_organization_roles(organization))
+
     def get_image(self):
         return ""
 

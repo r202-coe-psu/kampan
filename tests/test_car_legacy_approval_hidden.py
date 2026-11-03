@@ -69,3 +69,21 @@ def test_sidebar_hides_the_legacy_request_menu_but_keeps_the_calendar(legacy_dis
     assert f'href="/vehicle_lending/car_applications?organization_id={org.id}"' not in html
     assert "ph-hand-arrow-up" not in html
     assert "ปฏิทินการขอใช้รถยนต์" in html
+
+
+@pytest.mark.parametrize(
+    "roles, sees_inbox",
+    [(["driver", "staff"], False), (["staff"], True), (["driver", "head"], True)],
+)
+def test_sidebar_shows_the_approval_inbox_only_to_people_who_can_approve(
+    app, create_org, create_user, assign_user_to_org, login_as, roles, sees_inbox
+):
+    org = create_org(name="DIIS")
+    user = create_user("Some", "One")
+    assign_user_to_org(user, org, roles=roles)
+    client = login_as(app.test_client(), user)
+
+    html = client.get(f"/vehicle_lending/car_form_requests/?organization_id={org.id}").get_data(as_text=True)
+
+    assert "คำขอใช้รถ" in html
+    assert ("รายการที่ต้องอนุมัติ" in html) is sees_inbox

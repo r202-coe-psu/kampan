@@ -65,12 +65,14 @@
         <i class="ph ph-list-bullets"></i> คำขอใช้รถ
       </a>
     </li>
+    {% if current_user.can_approve_car_forms() %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_form_requests/inbox' in request.path else '' }}"
         href="{{ url_for('vehicle_lending.car_form_requests.inbox', organization_id=organization.id ) }}">
         <i class="ph ph-tray"></i> รายการที่ต้องอนุมัติ
       </a>
     </li>
+    {% endif %}
     {% endif %}
     {% if current_user.has_organization_roles("admin") %}
     <li>
