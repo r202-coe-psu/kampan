@@ -2,15 +2,14 @@
 
 {% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 {% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 {% block dashboard_title %}คำขอใช้รถ{% endblock %}
 
 {% block content %}
 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-  <p class="text-sm text-base-content/70">
-    <i class="ph ph-info"></i> คำขอใช้รถที่คุณมีสิทธิ์เห็น เรียงจากใหม่ไปเก่า
-  </p>
+  <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ car_applications|length }}</span> รายการ</p>
   <a class="btn btn-primary"
      href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">
     <i class="ph ph-plus"></i> ยื่นคำขอใช้รถ
@@ -21,8 +20,8 @@
   {{ ui.search_bar('vehicle_lending.car_form_requests.index', organization, search_form) }}
 </div>
 
+{% if car_applications %}
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
-  {% if car_applications %}
   <div class="overflow-x-auto">
     <table class="table table-zebra">
       <thead>
@@ -80,17 +79,14 @@
       </tbody>
     </table>
   </div>
-  {% else %}
-  <div class="card-body items-center text-center py-12">
-    <i class="ph ph-car-simple text-5xl text-base-content/30"></i>
-    {% if search_form.q.data or search_form.template_id.data or search_form.status.data %}
-    <h2 class="text-lg font-semibold">ไม่พบคำขอที่ตรงกับการค้นหา</h2>
-    <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้นหรือตัวกรอง</p>
-    {% else %}
-    <h2 class="text-lg font-semibold">ยังไม่มีคำขอใช้รถ</h2>
-    <p class="text-sm text-base-content/60">กด “ยื่นคำขอใช้รถ” เพื่อเริ่มยื่นคำขอแรก</p>
-    {% endif %}
-  </div>
-  {% endif %}
 </div>
+{% else %}
+{{ EmptyState('ph-car-simple', 'ยังไม่มีคำขอใช้รถ',
+              description='กด “ยื่นคำขอใช้รถ” เพื่อเริ่มยื่นคำขอแรก',
+              action_label='ยื่นคำขอใช้รถ',
+              action_href=url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id),
+              filtered=search_form.q.data or search_form.template_id.data or search_form.status.data,
+              filtered_title='ไม่พบคำขอที่ตรงกับการค้นหา',
+              clear_href=url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id)) }}
+{% endif %}
 {% endblock %}

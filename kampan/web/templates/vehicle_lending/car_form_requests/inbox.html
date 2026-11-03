@@ -2,24 +2,22 @@
 
 {% from '/vehicle_lending/components/vehicle_type_mismatch_badge.html' import VehicleTypeMismatchBadge %}
 {% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}รายการที่ต้องอนุมัติ{% endblock %}
 {% block dashboard_title %}รายการที่ต้องอนุมัติ{% endblock %}
 
 {% block content %}
-<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-  <p class="text-sm text-base-content/70">
-    <i class="ph ph-info"></i> แสดงเฉพาะคำขอที่ถึงขั้นตอนที่คุณเป็นผู้อนุมัติ กด “ดู” เพื่อตรวจรายละเอียดและอนุมัติ
-  </p>
-  <span class="badge badge-warning badge-soft badge-lg">รอคุณ {{ car_applications|length }} รายการ</span>
+<div class="mt-4">
+  <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ car_applications|length }}</span> รายการ</p>
 </div>
 
 <div class="mt-4">
   {{ ui.search_bar('vehicle_lending.car_form_requests.inbox', organization, search_form) }}
 </div>
 
+{% if car_applications %}
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
-  {% if car_applications %}
   <div class="overflow-x-auto">
     <table class="table table-zebra">
       <thead>
@@ -59,8 +57,8 @@
             <div class="text-xs text-base-content/60">ถึง {{ car_application.return_datetime.strftime('%d/%m/%Y %H:%M') if car_application.return_datetime else '-' }}</div>
           </td>
           <td class="text-center">{{ car_application.passenger_number }}</td>
-          <td class="min-w-36">
-            <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap">{{ step.label }}</span>
+          <td class="min-w-36 max-w-56">
+            <span class="badge badge-warning badge-soft badge-sm h-auto py-0.5 leading-snug whitespace-normal">{{ step.label }}</span>
             <div class="text-xs text-base-content/60 mt-1">
               ขั้นที่ {{ car_application.current_step + 1 }} จาก {{ total }}
               {% if step.assigns_vehicle %}<span class="badge badge-xs badge-outline ml-1">จัดรถ</span>{% endif %}
@@ -77,17 +75,12 @@
       </tbody>
     </table>
   </div>
-  {% else %}
-  <div class="card-body items-center text-center py-12">
-    <i class="ph ph-check-circle text-5xl text-success"></i>
-    {% if search_form.q.data or search_form.template_id.data %}
-    <h2 class="text-lg font-semibold">ไม่พบคำขอที่ตรงกับการค้นหา</h2>
-    <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้นหรือแบบฟอร์ม</p>
-    {% else %}
-    <h2 class="text-lg font-semibold">ไม่มีคำขอที่รอคุณอนุมัติ</h2>
-    <p class="text-sm text-base-content/60">เมื่อมีคำขอถึงขั้นตอนของคุณ จะแสดงที่นี่</p>
-    {% endif %}
-  </div>
-  {% endif %}
 </div>
+{% else %}
+{{ EmptyState('ph-check-circle', 'ไม่มีคำขอที่รอคุณอนุมัติ',
+              description='เมื่อมีคำขอถึงขั้นตอนของคุณ จะแสดงที่นี่',
+              filtered=search_form.q.data or search_form.template_id.data,
+              filtered_title='ไม่พบคำขอที่ตรงกับการค้นหา',
+              clear_href=url_for('vehicle_lending.car_form_requests.inbox', organization_id=organization.id)) }}
+{% endif %}
 {% endblock %}
