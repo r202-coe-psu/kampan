@@ -239,7 +239,7 @@ def test_head_from_another_division_cannot_approve_same_division_step(
 
 
 def test_user_step_can_only_be_approved_by_that_specific_user(
-    app, create_org, create_user, assign_user_to_org, login_as
+    app, create_org, create_user, assign_user_to_org, create_car, login_as
 ):
     """ขั้น approver_type='user' อนุมัติได้เฉพาะ user นั้น ผู้ใช้อื่นที่มีทุก role ก็อนุมัติไม่ได้"""
     org = create_org(name="หน่วยงาน user-step")
@@ -251,6 +251,7 @@ def test_user_step_can_only_be_approved_by_that_specific_user(
     assign_user_to_org(
         other, org, roles=["admin", "head", "director", "endorser", "staff"]
     )
+    car = create_car(org, license_plate="งจ-5555")
     template = models.car_form_templates.CarFormTemplate(
         organization=org,
         name="เจาะจงผู้อนุมัติ",
@@ -260,6 +261,7 @@ def test_user_step_can_only_be_approved_by_that_specific_user(
                 label="ผู้อนุมัติที่ระบุ",
                 approver_type="user",
                 user=chosen,
+                assigns_vehicle=True,
             )
         ],
     )
@@ -271,13 +273,13 @@ def test_user_step_can_only_be_approved_by_that_specific_user(
         organization=org
     ).first()
 
-    res = _approve(login_as(app.test_client(), other), car_app, org)
+    res = _approve(login_as(app.test_client(), other), car_app, org, car=str(car.id))
     _assert_forbidden(res)
     car_app.reload()
     assert car_app.status == "pending"
     assert len(car_app.step_approvals) == 0
 
-    res = _approve(login_as(app.test_client(), chosen), car_app, org)
+    res = _approve(login_as(app.test_client(), chosen), car_app, org, car=str(car.id))
     assert res.status_code == 302
     car_app.reload()
     assert car_app.status == "active"
@@ -383,3 +385,132 @@ def test_vehicle_step_rejects_driver_who_is_not_a_member_of_the_org(
     assert car_app.current_step == 1
     assert car_app.driver is None
     assert [a.step_key for a in car_app.step_approvals] == ["head"]
+
+
+def _template_with_fields(org, fields):
+    template = models.car_form_templates.CarFormTemplate(
+        organization=org,
+        name="template ที่มีฟิลด์เพิ่ม",
+        fields=[models.car_form_templates.FormFieldDef(**f) for f in fields],
+        steps=[
+            models.car_form_templates.ApprovalStepDef(
+                key="admin",
+                label="ผู้จัดรถบริการ",
+                approver_type="role",
+                role="admin",
+                assigns_vehicle=True,
+            ),
+        ],
+    )
+    template.save()
+    return template
+
+
+def test_submitted_catalog_values_are_stored_under_details_key_and_custom_under_custom_prefix(
+    app, head_admin_setup, login_as
+):
+    """ค่าฟิลด์ catalog เก็บที่ details.<catalog key> และค่า custom เก็บที่ details.custom_<key>"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"],
+        [
+            {"source": "catalog", "key": "vehicle_kind"},
+            {"source": "catalog", "key": "province"},
+            {"source": "catalog", "key": "cost_responsibility"},
+            {"source": "custom", "key": "project_no", "field_type": "text"},
+        ],
+    )
+
+    res = _submit(
+        login_as(app.test_client(), s["staff"]),
+        template,
+        s["org"],
+        vehicle_kind="ตู้",
+        province="สงขลา",
+        cost_responsibility=["ค่าน้ำมันเชื้อเพลิง", "เบี้ยเลี้ยง"],
+        custom_project_no="PRJ-2569-01",
+    )
+
+    assert res.status_code == 302
+    car_app = models.vehicle_applications.CarApplication.objects(
+        organization=s["org"]
+    ).first()
+    assert car_app.details == {
+        "vehicle_kind": "ตู้",
+        "province": "สงขลา",
+        "cost_responsibility": ["ค่าน้ำมันเชื้อเพลิง", "เบี้ยเลี้ยง"],
+        "custom_project_no": "PRJ-2569-01",
+    }
+
+
+def test_request_missing_a_required_catalog_field_is_not_created(
+    app, head_admin_setup, login_as
+):
+    """ขาดฟิลด์ catalog ที่บังคับกรอก ต้องได้ 400 และไม่เกิด CarApplication"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "province", "is_required": True}]
+    )
+
+    res = _submit(login_as(app.test_client(), s["staff"]), template, s["org"])
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_radio_value_outside_catalog_choices_is_rejected(
+    app, head_admin_setup, login_as
+):
+    """ค่า radio นอก choices ของ catalog ต้องถูกปฏิเสธ (400) และไม่เกิด CarApplication"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "vehicle_kind"}]
+    )
+
+    res = _submit(
+        login_as(app.test_client(), s["staff"]),
+        template,
+        s["org"],
+        vehicle_kind="เรือ",
+    )
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_radio_value_outside_template_restricted_choices_is_rejected(
+    app, head_admin_setup, login_as
+):
+    """template จำกัด choices เป็น ตู้/เก๋ง แล้วส่ง 'บัส' (อยู่ใน catalog แต่ถูกตัดออก) ต้องถูกปฏิเสธ (400)"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"],
+        [{"source": "catalog", "key": "vehicle_kind", "choices": ["ตู้", "เก๋ง"]}],
+    )
+
+    res = _submit(
+        login_as(app.test_client(), s["staff"]),
+        template,
+        s["org"],
+        vehicle_kind="บัส",
+    )
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_request_without_departure_date_is_rejected_with_400(
+    app, head_admin_setup, login_as
+):
+    """ไม่ส่งวันที่ออกเดินทาง ต้องได้ 400 (ไม่ใช่ 500) และไม่เกิด CarApplication"""
+    s = head_admin_setup
+
+    res = _submit(
+        login_as(app.test_client(), s["staff"]),
+        s["template"],
+        s["org"],
+        departure_date="",
+    )
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0

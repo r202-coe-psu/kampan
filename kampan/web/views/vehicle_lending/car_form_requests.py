@@ -4,7 +4,7 @@ from flask import Blueprint, abort, g, redirect, request, url_for
 from flask_login import current_user
 
 from kampan import models, utils
-from kampan.web import acl
+from kampan.web import acl, forms
 
 module = Blueprint(
     "car_form_requests", __name__, url_prefix="/car_form_requests"
@@ -31,6 +31,13 @@ def _snapshot(template):
     }
 
 
+def _parse_datetime(form, prefix):
+    return datetime.datetime.strptime(
+        f"{form.get(prefix + '_date', '')} {form.get(prefix + '_time', '')}",
+        "%Y-%m-%d %H:%M",
+    )
+
+
 @module.route("/new/<template_id>", methods=["POST"])
 @acl.organization_roles_required(*REQUEST_ROLES)
 def create(template_id):
@@ -42,6 +49,17 @@ def create(template_id):
         abort(404)
 
     form = request.form
+    snapshot = _snapshot(template)
+    details_form = forms.car_form_templates.build_details_form(snapshot["fields"])(request.form)
+    if not details_form.validate():
+        abort(400)
+
+    try:
+        departure_datetime = _parse_datetime(form, "departure")
+        return_datetime = _parse_datetime(form, "return")
+    except ValueError:
+        abort(400)
+
     member = models.OrganizationUserRole.objects(
         user=current_user.id, organization=organization, status__ne="disactive"
     ).first()
@@ -49,7 +67,8 @@ def create(template_id):
     car_application = models.vehicle_applications.CarApplication(
         organization=organization,
         form_template=template,
-        template_snapshot=_snapshot(template),
+        template_snapshot=snapshot,
+        details=details_form.details(),
         status="pending",
         current_step=0,
         creator=current_user._get_current_object(),
@@ -59,12 +78,8 @@ def create(template_id):
         location=form.get("location", ""),
         request_reason=form.get("request_reason", ""),
         passenger_number=form.get("passenger_number", type=int, default=0),
-        departure_datetime=datetime.datetime.strptime(
-            f"{form['departure_date']} {form['departure_time']}", "%Y-%m-%d %H:%M"
-        ),
-        return_datetime=datetime.datetime.strptime(
-            f"{form['return_date']} {form['return_time']}", "%Y-%m-%d %H:%M"
-        ),
+        departure_datetime=departure_datetime,
+        return_datetime=return_datetime,
     )
     car_application.save()
     return redirect(
