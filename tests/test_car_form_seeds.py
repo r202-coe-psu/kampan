@@ -46,19 +46,52 @@ def test_seeding_twice_does_not_create_duplicate_template(app, create_org):
     assert models.car_form_templates.CarFormTemplate.objects(organization=org).count() == 1
 
 
-def test_seeding_diis_general_creates_template_with_head_and_admin_steps_and_no_fields(
-    app, create_org
+DIIS_HEAD_ADMIN = [
+    ("head", "head", True, False),
+    ("admin", "admin", False, True),
+]
+
+
+@pytest.mark.parametrize(
+    "key, name, fields, steps",
+    [
+        (
+            "diis_general",
+            "ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (ทั่วไป)",
+            [("pickup", "text", "สถานที่ให้ไปรับ", False, [])],
+            DIIS_HEAD_ADMIN,
+        ),
+        (
+            "diis_airport",
+            "ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (รับ-ส่งสนามบิน)",
+            [
+                ("transfer", "radio", "ประเภทการเดินทาง", True, ["ส่ง", "รับ"]),
+                ("flight_no", "text", "เที่ยวบิน", True, []),
+                ("flight_time", "text", "เวลาเครื่องออก/ถึง", False, []),
+                ("pickup", "text", "สถานที่ให้ไปรับ", False, []),
+            ],
+            DIIS_HEAD_ADMIN,
+        ),
+        (
+            "diis_out_of_town",
+            "ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (ไปต่างจังหวัด)",
+            [("pickup", "text", "สถานที่ให้ไปรับ", False, [])],
+            DIIS_HEAD_ADMIN + [("director", "director", False, False)],
+        ),
+    ],
+)
+def test_seeding_a_diis_template_creates_valid_template_with_its_fields_and_approval_steps(
+    app, create_org, key, name, fields, steps
 ):
-    """seed diis_general: ไม่มี detail field, 2 ขั้น head (same_division) -> admin (จัดรถ)"""
-    template = car_form_seeds.seed_template(create_org(name="DIIS"), "diis_general")
+    """seed diis_*: ชื่อ/field/ขั้นอนุมัติตรงกับใบขอใช้รถของสำนักนวัตกรรมดิจิทัลฯ แต่ละแบบ"""
+    template = car_form_seeds.seed_template(create_org(name="DIIS"), key)
 
     template.validate()
-    assert template.name == "ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (ทั่วไป)"
-    assert len(template.fields) == 0
-    assert [(s.key, s.role, s.same_division, s.assigns_vehicle) for s in template.steps] == [
-        ("head", "head", True, False),
-        ("admin", "admin", False, True),
-    ]
+    assert template.name == name
+    assert [
+        (f.key, f.field_type, f.label, f.is_required, list(f.choices)) for f in template.fields
+    ] == fields
+    assert [(s.key, s.role, s.same_division, s.assigns_vehicle) for s in template.steps] == steps
 
 
 def blank_a4_pdf(pages=1):
@@ -334,6 +367,119 @@ def test_a_seeded_paper_renders_a_filled_pdf_containing_a_value_from_the_request
         creator=requester,
         car=create_car(org, license_plate="กข-1234"),
         phone="0812345678",
+        departure_datetime=datetime.datetime(2026, 11, 3, 8, 30),
+        return_datetime=datetime.datetime(2026, 11, 3, 17, 0),
+        details=details,
+        template_snapshot={
+            "paper_file_id": str(template.paper_file.id),
+            "placements": [dict(p.to_mongo()) for p in template.placements],
+        },
+    )
+    application.save()
+
+    text = PdfReader(BytesIO(car_form_paper.render_pdf(application))).pages[0].extract_text()
+
+    assert expected_text in text
+
+
+def blank_diis_pdf():
+    buf = BytesIO()
+    pdf = canvas.Canvas(buf, pagesize=(594.96, 841.92))
+    pdf.drawString(50, 800, "DIIS FORM")
+    pdf.showPage()
+    pdf.save()
+    return buf.getvalue()
+
+
+DIIS_COMMON_VARIABLES = {
+    "app.created.day",
+    "app.created.month_th",
+    "app.created.year_be",
+    "app.requester_name",
+    "app.division",
+    "app.phone",
+    "app.location",
+    "app.departure.time",
+    "app.passenger_number",
+    "approvals.head.name",
+    "approvals.head.date",
+    "approvals.admin.name",
+    "approvals.admin.date",
+}
+DIIS_PLACEMENT_EXPECTATIONS = {
+    "diis_general": DIIS_COMMON_VARIABLES
+    | {
+        "app.request_reason",
+        "app.return.time",
+        "details.custom_pickup",
+        "app.car_plate",
+        "app.driver_name",
+        "approvals.admin.decision",
+        "approvals.admin.comment",
+    },
+    "diis_airport": DIIS_COMMON_VARIABLES
+    | {
+        "details.custom_transfer",
+        "details.custom_flight_no",
+        "details.custom_flight_time",
+        "details.custom_pickup",
+        "app.car_plate",
+        "app.driver_name",
+        "approvals.admin.decision",
+        "approvals.admin.comment",
+    },
+    "diis_out_of_town": DIIS_COMMON_VARIABLES
+    | {
+        "app.request_reason",
+        "app.return.day",
+        "app.return.time",
+        "details.custom_pickup",
+        "app.car_plate",
+        "app.driver_name",
+        "approvals.director.name",
+        "approvals.director.date",
+        "approvals.director.decision",
+        "approvals.director.comment",
+    },
+}
+
+
+@pytest.mark.parametrize("key", sorted(DIIS_PLACEMENT_EXPECTATIONS))
+def test_seeding_a_diis_template_with_a_pdf_places_its_values_and_every_placement_validates(
+    app, create_org, key
+):
+    """seed diis_* พร้อม PDF: paper_file เก็บ PDF, placements ผ่าน validate และครอบคลุมตัวแปรที่ใบนั้นต้องพิมพ์"""
+    pdf_bytes = blank_diis_pdf()
+
+    template = car_form_seeds.seed_template(create_org(name="DIIS"), key, pdf_bytes=pdf_bytes)
+
+    template.validate()
+    assert bytes(template.paper_file.data) == pdf_bytes
+    assert DIIS_PLACEMENT_EXPECTATIONS[key] <= {p.variable for p in template.placements}
+
+
+@pytest.mark.parametrize(
+    "key, details, expected_text",
+    [
+        ("diis_general", {"custom_pickup": "หน้าตึกอธิการ"}, "หน้าตึกอธิการ"),
+        ("diis_airport", {"custom_transfer": "ส่ง", "custom_flight_no": "TG123"}, "TG123"),
+        ("diis_out_of_town", {"custom_pickup": "หน้าตึกอธิการ"}, "หน้าตึกอธิการ"),
+    ],
+)
+def test_a_seeded_diis_paper_renders_a_filled_pdf_containing_a_value_from_the_request(
+    app, create_org, create_user, assign_user_to_org, create_car, key, details, expected_text
+):
+    """คำขอจาก template DIIS ที่ seed พร้อม PDF: render_pdf ได้ PDF ที่มีค่าที่ผู้ขอกรอก"""
+    org = create_org(name="DIIS")
+    template = car_form_seeds.seed_template(org, key, pdf_bytes=blank_diis_pdf())
+    requester = create_user("Somchai", "Jaidee")
+    assign_user_to_org(requester, org, roles=["staff"])
+    application = models.vehicle_applications.CarApplication(
+        organization=org,
+        creator=requester,
+        car=create_car(org, license_plate="กษ-9318"),
+        phone="0812345678",
+        location="ศูนย์ประชุมนานาชาติ",
         departure_datetime=datetime.datetime(2026, 11, 3, 8, 30),
         return_datetime=datetime.datetime(2026, 11, 3, 17, 0),
         details=details,

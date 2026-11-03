@@ -146,6 +146,20 @@ def test_check_placement_is_drawn_only_when_the_value_matches(make_application):
     assert drawn_line_segments(car_form_paper.render_pdf(in_list)) == 2
 
 
+def test_check_placement_with_star_match_value_is_drawn_when_the_value_is_non_empty_and_not_when_empty(
+    make_application,
+):
+    check = placement("app.location", w=0.03, h=0.02, kind="check", match_value="*")
+    application = make_application([check])
+
+    assert drawn_line_segments(car_form_paper.render_pdf(application)) == 2
+
+    application.location = ""
+    application.save()
+
+    assert drawn_line_segments(car_form_paper.render_pdf(application)) == 0
+
+
 def test_paper_prints_the_assigned_cars_type_as_app_car_type(make_application):
     application = make_application([placement("app.car_type")])
     application.assigned_vehicle_type = "บัส"

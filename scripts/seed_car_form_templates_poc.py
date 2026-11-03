@@ -8,12 +8,15 @@ Seed car form template (POC) ให้ organization
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_abroad --pdf <path ของ PDF ต้นฉบับ>
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_airport --pdf <path ของ PDF ต้นฉบับ>
     python scripts/seed_car_form_templates_poc.py --organization <id> --template physical_welfare --pdf <path ของ PDF ต้นฉบับ>
-    python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_general
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_general --pdf <path ของ PDF ฟอร์ม DIIS เปล่า>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_airport --pdf <path ของ PDF ฟอร์ม DIIS เปล่า>
+    python scripts/seed_car_form_templates_poc.py --organization <id> --template diis_out_of_town --pdf <path ของ PDF ฟอร์ม DIIS เปล่า>
 
-template ที่มีให้เลือก: diis_general, physical_domestic, physical_abroad, physical_airport, physical_welfare
+template ที่มีให้เลือก: diis_general, diis_airport, diis_out_of_town, physical_domestic, physical_abroad, physical_airport, physical_welfare
 
 - รันซ้ำได้ (idempotent): ถ้ามี template ชื่อเดียวกันใน organization แล้ว จะไม่สร้างซ้ำ
-- --pdf: แนบ PDF ต้นฉบับเป็นใบพิมพ์ (ทุก template ที่เป็นฟอร์มทางการ physical_* จะได้ placements เริ่มต้นตามพิกัดของฟอร์มนั้นด้วย)
+- --pdf: แนบ PDF ต้นฉบับเป็นใบพิมพ์ (physical_* และ diis_* จะได้ placements เริ่มต้นตามพิกัดของฟอร์มนั้นด้วย;
+  diis_* ทั้ง 3 แบบใช้ PDF ใบเดียวกัน คือฟอร์ม DIIS เปล่าที่ export จาก paper.html)
 - physical_domestic/physical_airport/physical_welfare: ถ้าไม่ระบุ --approver-user ขั้น "ผู้อนุมัติ" จะ fallback เป็น role endorser
 """
 

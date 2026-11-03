@@ -193,6 +193,8 @@
       if (placement.kind === "check") {
         // ติ๊กเฉพาะเมื่อค่าตัวอย่างตรงกับค่าที่กำหนด เหมือน _is_checked ฝั่ง server; ปิดตัวอย่าง = แสดง ✓ ทุกกล่อง
         if (!showSample) return "✓";
+        // match_value "*" = ติ๊กเมื่อมีค่า (ตรงกับ ANY_VALUE ใน car_form_paper)
+        if (placement.match_value === "*") return info.sample ? "✓" : "";
         return placement.match_value && info.sample === placement.match_value ? "✓" : "";
       }
       return showSample ? (info.sample || placement.variable) : placement.variable;
@@ -367,13 +369,13 @@
       if (placement.kind === "check") {
         let control;
         if (info.choices.length) {
-          control = el("select", { class: "select select-bordered select-sm" }, [el("option", { value: "" }, ["- เลือกค่าที่ต้องติ๊ก -"])]);
+          control = el("select", { class: "select select-bordered select-sm" }, [el("option", { value: "" }, ["- เลือกค่าที่ต้องติ๊ก -"]), el("option", { value: "*" }, ["* (มีค่า)"])]);
           info.choices.forEach((c) => control.appendChild(el("option", { value: c }, [c])));
           if (placement.match_value && !info.choices.includes(placement.match_value)) {
             control.appendChild(el("option", { value: placement.match_value }, [placement.match_value]));
           }
         } else {
-          control = el("input", { type: "text", class: "input input-bordered input-sm", placeholder: "ค่าที่ต้องติ๊ก" });
+          control = el("input", { type: "text", class: "input input-bordered input-sm", placeholder: "ค่าที่ต้องติ๊ก (* = มีค่า)" });
         }
         control.value = placement.match_value || "";
         const onMatch = () => { placement.match_value = control.value; refreshBox(placement); };

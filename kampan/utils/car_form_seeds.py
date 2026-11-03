@@ -63,25 +63,65 @@ def _physical_domestic(approver_user):
     )
 
 
+def _diis_head_admin_steps():
+    return [
+        cft.ApprovalStepDef(
+            key="head",
+            label="หัวหน้าฝ่าย",
+            approver_type="role",
+            role="head",
+            same_division=True,
+        ),
+        cft.ApprovalStepDef(
+            key="admin",
+            label="ผู้ควบคุมยานพาหนะ",
+            approver_type="role",
+            role="admin",
+            assigns_vehicle=True,
+        ),
+    ]
+
+
 def _diis_general(approver_user):
     return dict(
         name="ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (ทั่วไป)",
-        fields=[],
-        steps=[
-            cft.ApprovalStepDef(
-                key="head",
-                label="หัวหน้าฝ่าย",
-                approver_type="role",
-                role="head",
-                same_division=True,
+        fields=[_text_field("pickup", "สถานที่ให้ไปรับ")],
+        steps=_diis_head_admin_steps(),
+    )
+
+
+def _diis_airport(approver_user):
+    return dict(
+        name="ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (รับ-ส่งสนามบิน)",
+        fields=[
+            cft.FormFieldDef(
+                source="custom",
+                key="transfer",
+                label="ประเภทการเดินทาง",
+                field_type="radio",
+                choices=["ส่ง", "รับ"],
+                is_required=True,
             ),
+            _text_field("flight_no", "เที่ยวบิน", is_required=True),
+            _text_field("flight_time", "เวลาเครื่องออก/ถึง"),
+            _text_field("pickup", "สถานที่ให้ไปรับ"),
+        ],
+        steps=_diis_head_admin_steps(),
+    )
+
+
+def _diis_out_of_town(approver_user):
+    return dict(
+        name="ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (ไปต่างจังหวัด)",
+        fields=[_text_field("pickup", "สถานที่ให้ไปรับ")],
+        steps=_diis_head_admin_steps()
+        + [
             cft.ApprovalStepDef(
-                key="admin",
-                label="ผู้ควบคุมยานพาหนะ",
+                key="director",
+                label="ผู้อำนวยการสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ",
                 approver_type="role",
-                role="admin",
-                assigns_vehicle=True,
-            ),
+                role="director",
+            )
         ],
     )
 
@@ -322,14 +362,16 @@ def _physical_domestic_placements():
     return placements
 
 
-def _box(x0, x1, y0, y1, variable, align="center", kind="text", match_value="", font_size=15):
+def _box(
+    x0, x1, y0, y1, variable, align="center", kind="text", match_value="", font_size=15, page_w=_PAGE_W
+):
     """กล่องจากพิกัด pt ของ `pdftotext -bbox` (x0..x1, y0..y1); ข้อความยกขึ้น 3pt ให้นั่งบนเส้นจุด"""
     lift = 3 if kind == "text" else 0
     return cft.PaperPlacement(
         page=0,
-        x=x0 / _PAGE_W,
+        x=x0 / page_w,
         y=(y0 - lift) / _PAGE_H,
-        w=(x1 - x0) / _PAGE_W,
+        w=(x1 - x0) / page_w,
         h=(y1 - y0) / _PAGE_H,
         variable=variable,
         kind=kind,
@@ -488,7 +530,151 @@ def _physical_welfare_placements():
     ]
 
 
+# ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ (DIIS): ทั้ง 3 แบบใช้ PDF ใบเดียวกัน (ฟอร์มเปล่าที่ export
+# จาก paper.html; A4 594.96x841.92) พิกัดวัดจาก `pdftotext -bbox` และภาพ raster 300 dpi ของ PDF นั้น
+# - ข้อความ: (x0, x1, y ของเส้นจุดไข่ปลา, variable, ตัวเลือก) ข้อความนั่งเหนือเส้นจุดประมาณ 2pt
+# - วงกลม/สี่เหลี่ยม: (x0, x1, y0, y1) ของรูปทรงนั้น ๆ ใช้ kind="check"
+_DIIS_PAGE_W = 594.96
+_DIIS_BOX_H = 15.5
+
+
+def _diis_text(x0, x1, dot_y, variable, **options):
+    bottom = dot_y + 4  # _box ยกข้อความขึ้น 3pt; baseline จึงอยู่เหนือเส้นจุดราว 2pt
+    if options.get("align") == "left":
+        x0 += 3  # เว้นจากป้ายหน้าเส้นจุดเล็กน้อย
+    return _box(x0, x1, bottom - _DIIS_BOX_H, bottom, variable, page_w=_DIIS_PAGE_W, **options)
+
+
+def _diis_check(x0, x1, y0, y1, variable, match_value):
+    return _box(
+        x0, x1, y0, y1, variable, kind="check", match_value=match_value, page_w=_DIIS_PAGE_W
+    )
+
+
+def _diis_date(prefix, x_left, dot_y):
+    """วัน เดือน ปี พ.ศ. 3 กล่องติดกันบนเส้นจุดเส้นเดียว (เส้นของ "ในวันที่"/"เดินทางไปวันที่" ฯลฯ)"""
+    return [
+        _diis_text(x_left + 2, x_left + 24, dot_y, f"{prefix}.day", align="right"),
+        _diis_text(x_left + 25, x_left + 93, dot_y, f"{prefix}.month_th"),
+        _diis_text(x_left + 94, x_left + 144, dot_y, f"{prefix}.year_be", align="left"),
+    ]
+
+
+def _diis_header():
+    return [
+        _diis_text(299.3, 336.5, 61.0, "app.created.day"),
+        _diis_text(360.0, 464.6, 61.0, "app.created.month_th"),
+        _diis_text(486.0, 538.3, 61.0, "app.created.year_be"),
+        _diis_text(86.9, 274.3, 111.2, "app.requester_name", align="left"),
+        _diis_text(296.9, 420.5, 111.2, "app.division", align="left"),
+        _diis_text(442.6, 538.3, 111.2, "app.phone", align="left"),
+    ]
+
+
+def _diis_signatures():
+    """ลงชื่อผู้ขอใช้ และหัวหน้าฝ่าย + วันที่ (วันที่เป็นข้อความเดียว dd/mm/พ.ศ. วางบนเส้นของเดือน)"""
+    return [
+        _diis_text(341.3, 489.6, 464.4, "app.requester_name"),
+        _diis_text(341.3, 473.0, 493.0, "approvals.head.name"),
+        _diis_text(388.0, 454.0, 514.1, "approvals.head.date", font_size=13),
+    ]
+
+
+def _diis_section_circle(y0, y1):
+    return _diis_check(57.1, 70.6, y0, y1, "app.location", "*")
+
+
+def _diis_admin_box():
+    """ความเห็นของผู้ควบคุมยานพาหนะ (คอลัมน์ซ้าย; ใบต่างจังหวัดไม่ใช้)"""
+    return [
+        _diis_check(57.1, 70.6, 558.0, 571.4, "approvals.admin.decision", "approved"),
+        _diis_check(70.6, 84.0, 577.4, 590.9, "app.car_plate", "กษ-9318"),
+        _diis_check(70.6, 84.0, 597.8, 611.3, "app.car_plate", "บล-5746"),
+        _diis_text(92.2, 241.2, 631.7, "app.driver_name"),
+        _diis_check(57.1, 70.6, 680.2, 693.8, "approvals.admin.decision", "denied"),
+        _diis_text(138.7, 275.0, 694.8, "approvals.admin.comment", align="left"),
+        _diis_text(135.8, 233.0, 731.5, "approvals.admin.name"),
+        _diis_text(154.0, 222.0, 752.4, "approvals.admin.date", font_size=13),
+    ]
+
+
+def _diis_general_placements():
+    return (
+        _diis_header()
+        + [
+            _diis_section_circle(135.1, 148.6),
+            _diis_text(127.4, 538.3, 149.5, "app.location", align="left"),
+            _diis_text(140.2, 407.8, 169.7, "app.request_reason", align="left"),
+            _diis_text(470.9, 523.2, 169.7, "app.passenger_number"),
+        ]
+        + _diis_date("app.departure", 105.8, 189.2)
+        + [
+            _diis_text(378.7, 431.0, 189.2, "app.departure.time"),
+            _diis_text(474.0, 526.3, 189.2, "app.return.time"),
+            _diis_text(142.6, 449.8, 208.8, "details.custom_pickup", align="left"),
+            _diis_text(474.0, 526.3, 208.8, "app.departure.time"),
+        ]
+        + _diis_signatures()
+        + _diis_admin_box()
+    )
+
+
+def _diis_airport_placements():
+    # ใบนี้พิมพ์ค่าลงแถว "ไปส่งที่สนามบิน" เท่านั้น (ค่า รับ/ส่ง ถูกแยกด้วยเครื่องหมายในช่อง □ ของแถวนั้น)
+    return (
+        _diis_header()
+        + [
+            _diis_check(57.1, 70.6, 217.4, 230.9, "app.location", "*"),
+            _diis_check(78.0, 90.0, 239.3, 251.3, "details.custom_transfer", "ส่ง"),
+            _diis_check(78.0, 90.0, 300.0, 312.0, "details.custom_transfer", "รับ"),
+        ]
+        + _diis_date("app.departure", 169.4, 252.2)
+        + [
+            _diis_text(352.6, 404.6, 252.2, "app.departure.time"),
+            _diis_text(478.6, 523.2, 252.2, "app.passenger_number"),
+            _diis_text(131.3, 337.9, 272.4, "details.custom_flight_no", align="left"),
+            _diis_text(474.0, 526.3, 272.4, "details.custom_flight_time"),
+            _diis_text(163.4, 538.3, 292.1, "details.custom_pickup", align="left"),
+        ]
+        + _diis_signatures()
+        + _diis_admin_box()
+    )
+
+
+def _diis_out_of_town_placements():
+    return (
+        _diis_header()
+        + [
+            _diis_section_circle(342.7, 356.2),
+            _diis_text(166.6, 538.3, 357.2, "app.location", align="left"),
+            _diis_text(140.2, 407.8, 377.5, "app.request_reason", align="left"),
+            _diis_text(470.9, 523.2, 377.5, "app.passenger_number"),
+        ]
+        + _diis_date("app.departure", 132.0, 397.0)
+        + [_diis_text(474.0, 526.3, 397.0, "app.departure.time")]
+        + [_diis_text(142.6, 538.3, 416.4, "details.custom_pickup", align="left")]
+        + _diis_date("app.return", 138.7, 436.1)
+        + [_diis_text(474.0, 526.3, 436.1, "app.return.time")]
+        + _diis_signatures()
+        + [
+            _diis_text(463.4, 538.3, 600.2, "app.car_plate", align="left"),
+            _diis_text(392.9, 538.3, 619.7, "app.driver_name", align="left"),
+            _diis_text(372.0, 469.9, 640.1, "app.location", align="left"),
+            _diis_text(398.9, 496.3, 669.2, "approvals.admin.name"),
+            _diis_text(417.0, 485.0, 690.2, "approvals.admin.date", font_size=13),
+            _diis_check(303.1, 316.6, 701.3, 714.7, "approvals.director.decision", "approved"),
+            _diis_check(357.1, 370.6, 701.3, 714.7, "approvals.director.decision", "denied"),
+            _diis_text(449.3, 538.3, 715.7, "approvals.director.comment", align="left"),
+            _diis_text(404.2, 501.6, 749.5, "approvals.director.name"),
+            _diis_text(417.0, 485.0, 770.4, "approvals.director.date", font_size=13),
+        ]
+    )
+
+
 _PLACEMENT_BUILDERS = {
+    "diis_general": _diis_general_placements,
+    "diis_airport": _diis_airport_placements,
+    "diis_out_of_town": _diis_out_of_town_placements,
     "physical_domestic": _physical_domestic_placements,
     "physical_abroad": _physical_abroad_placements,
     "physical_airport": _physical_airport_placements,
@@ -497,6 +683,8 @@ _PLACEMENT_BUILDERS = {
 
 _BUILDERS = {
     "diis_general": _diis_general,
+    "diis_airport": _diis_airport,
+    "diis_out_of_town": _diis_out_of_town,
     "physical_domestic": _physical_domestic,
     "physical_abroad": _physical_abroad,
     "physical_airport": _physical_airport,

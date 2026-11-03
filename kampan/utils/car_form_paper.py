@@ -209,7 +209,12 @@ def _draw_check(pdf, box):
     pdf.drawPath(path, stroke=1, fill=0)
 
 
+ANY_VALUE = "*"  # match_value พิเศษ: ติ๊กเมื่อตัวแปรมีค่า (ไม่ว่างก็ตาม) ใช้กับวงกลมหัวข้อของฟอร์มที่ติ๊กเสมอ
+
+
 def _is_checked(value, match_value):
+    if match_value == ANY_VALUE:
+        return value != "" and value != [] and value != ()
     if isinstance(value, (list, tuple)):
         return match_value in value
     return str(value) == match_value
