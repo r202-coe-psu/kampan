@@ -3,6 +3,7 @@ from io import BytesIO
 from PyPDF2 import PdfReader
 
 from kampan import models
+from kampan.utils.car_form_keys import rekey_template
 
 cft = models.car_form_templates
 
@@ -728,5 +729,6 @@ def seed_template(organization, key, created_by=None, approver_user=None, pdf_by
         build_placements = _PLACEMENT_BUILDERS.get(key)
         if build_placements:
             template.placements = build_placements()
+    rekey_template(template)
     template.save()
     return template
