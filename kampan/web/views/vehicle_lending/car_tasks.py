@@ -6,6 +6,7 @@ from flask import (
     request,
     send_file,
     abort,
+    flash,
 )
 import calendar
 from flask_login import login_required, current_user
@@ -120,6 +121,7 @@ def submit_task_modal(car_application_id):
         car_application.updater = current_user._get_current_object()
         car_application.updated_date = datetime.datetime.now()
         car_application.save()
+        flash(f"ปิดงานรถ {car.license_plate} แล้ว", "success")
 
         return redirect(
             url_for(
