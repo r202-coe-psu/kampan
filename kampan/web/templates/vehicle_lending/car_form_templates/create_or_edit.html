@@ -12,9 +12,16 @@
 
   <div class="flex flex-col gap-6 lg:col-span-2">
     {% if error %}
-    <div role="alert" class="alert alert-error" id="templateError">
+    <div role="alert" class="alert alert-error items-start" id="templateError">
       <i class="ph ph-warning-circle text-xl"></i>
-      <span>{{ error }}</span>
+      <div>
+        <p class="font-semibold">บันทึกไม่สำเร็จ กรุณาแก้ไขรายการต่อไปนี้</p>
+        <ul class="mt-1 list-disc pl-5 text-sm">
+          {% for problem in (error if error is not string else [error]) %}
+          <li>{{ problem }}</li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
     {% endif %}
 
@@ -117,7 +124,7 @@
 
   function textInput(placeholder, value, onChange, extraClass) {
     const input = el("input", { type: "text", class: "input input-bordered input-sm " + (extraClass || ""), placeholder, value: value || "" });
-    input.addEventListener("change", () => onChange(input.value));
+    input.addEventListener("input", () => onChange(input.value));
     return input;
   }
 
@@ -170,8 +177,21 @@
         row.appendChild(selectInput(customTypes, f.field_type || "text", (v) => { f.field_type = v; renderFields(); }));
       }
       row.appendChild(textInput("ป้ายชื่อ (ว่างได้สำหรับ catalog)", f.label, (v) => { f.label = v; }, "w-56"));
-      const type = f.source === "catalog" ? ((catalog.find((c) => c.key === f.key) || {}).field_type) : f.field_type;
-      if (type === "radio" || type === "checkbox") {
+      const catalogField = f.source === "catalog" ? catalog.find((c) => c.key === f.key) : null;
+      const type = catalogField ? catalogField.field_type : f.field_type;
+      if (catalogField && (type === "radio" || type === "checkbox")) {
+        // ตัวเลือกของ catalog ให้ติ๊กจากค่ามาตรฐานเท่านั้น จะได้สะกดผิดไม่ได้; ไม่ติ๊กเลย = ใช้ทั้งหมด
+        f.choices = (f.choices || []).filter((c) => catalogField.choices.includes(c));
+        const picker = el("div", { class: "flex flex-wrap items-center gap-2" }, [
+          el("span", { class: "text-xs text-base-content/60" }, ["ตัวเลือกที่ใช้ (ไม่ติ๊ก = ใช้ทั้งหมด):"]),
+        ]);
+        catalogField.choices.forEach((choice) => {
+          picker.appendChild(checkbox(choice, f.choices.includes(choice), (on) => {
+            f.choices = catalogField.choices.filter((c) => (c === choice ? on : f.choices.includes(c)));
+          }));
+        });
+        row.appendChild(picker);
+      } else if (type === "radio" || type === "checkbox") {
         row.appendChild(textInput("ตัวเลือก คั่นด้วย ,", (f.choices || []).join(", "), (v) => {
           f.choices = v.split(",").map((s) => s.trim()).filter(Boolean);
         }, "w-64"));
@@ -229,7 +249,72 @@
     steps.push({ key: "", label: "", approver_type: "role", role: "", user: "", same_division: false, assigns_vehicle: false });
     renderSteps();
   });
-  document.getElementById("templateForm").addEventListener("submit", () => {
+  // ตรวจแบบเดียวกับ template_problems() ฝั่ง server เพื่อบอกจุดผิดก่อนส่ง (server ยังตรวจซ้ำเสมอ)
+  const KEY_RE = /^[a-z][a-z0-9_]*$/;
+  const KEY_RULE = "ต้องขึ้นต้นด้วย a-z และใช้ได้แค่ a-z, 0-9, _ (เช่น head, admin)";
+  const cleanKey = (k) => String(k || "").replace(/[​‌‍⁠﻿]/g, "").trim().toLowerCase();
+
+  function builderProblems() {
+    const problems = [];
+    const seenFields = {};
+    fields.forEach((f, i) => {
+      const where = "ฟิลด์ที่ " + (i + 1);
+      f.key = cleanKey(f.key);
+      if (f.source === "catalog") {
+        if (!catalog.find((c) => c.key === f.key)) problems.push(where + ": ต้องเลือกฟิลด์จาก catalog");
+      } else {
+        if (!KEY_RE.test(f.key)) problems.push(where + ": key “" + f.key + "” " + KEY_RULE);
+        if (!customTypes.some(([v]) => v === f.field_type)) problems.push(where + ": ต้องเลือกชนิดข้อมูล");
+        else if ((f.field_type === "radio" || f.field_type === "checkbox") && !(f.choices || []).length) {
+          problems.push(where + ": ต้องใส่ตัวเลือกอย่างน้อย 1 ค่า");
+        }
+      }
+      const detailsKey = (f.source === "custom" ? "custom_" : "") + f.key;
+      if (f.key && seenFields[detailsKey]) problems.push(where + ": key “" + f.key + "” ซ้ำกับฟิลด์ที่ " + seenFields[detailsKey]);
+      else seenFields[detailsKey] = i + 1;
+    });
+
+    if (!steps.length) problems.push("ต้องมีอย่างน้อย 1 ขั้นอนุมัติ");
+    const seenSteps = {};
+    steps.forEach((s, i) => {
+      const where = "ขั้นที่ " + (i + 1);
+      s.key = cleanKey(s.key);
+      if (!KEY_RE.test(s.key)) problems.push(where + ": key “" + s.key + "” " + KEY_RULE);
+      else if (seenSteps[s.key]) problems.push(where + ": key “" + s.key + "” ซ้ำกับขั้นที่ " + seenSteps[s.key]);
+      else seenSteps[s.key] = i + 1;
+      if (!String(s.label || "").trim()) problems.push(where + ": ต้องกรอกชื่อขั้น");
+      if ((s.approver_type || "role") === "user") {
+        if (!s.user) problems.push(where + ": ต้องเลือกผู้อนุมัติ");
+      } else if (!s.role) {
+        problems.push(where + ": ต้องเลือก role");
+      }
+    });
+    const vehicleSteps = steps.filter((s) => s.assigns_vehicle).length;
+    if (steps.length && vehicleSteps !== 1) problems.push("ต้องมีขั้นจัดรถพอดี 1 ขั้น (ตอนนี้มี " + vehicleSteps + " ขั้น)");
+    return problems;
+  }
+
+  function showProblems(problems) {
+    let box = document.getElementById("clientError");
+    if (!problems.length) { if (box) box.remove(); return; }
+    if (!box) {
+      box = el("div", { role: "alert", class: "alert alert-error items-start", id: "clientError" });
+      document.getElementById("templateForm").querySelector(".lg\\:col-span-2").prepend(box);
+    }
+    box.replaceChildren(
+      el("i", { class: "ph ph-warning-circle text-xl" }),
+      el("div", {}, [
+        el("p", { class: "font-semibold" }, ["ยังบันทึกไม่ได้ กรุณาแก้ไขรายการต่อไปนี้"]),
+        el("ul", { class: "mt-1 list-disc pl-5 text-sm" }, problems.map((p) => el("li", {}, [p]))),
+      ]),
+    );
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  document.getElementById("templateForm").addEventListener("submit", (event) => {
+    const problems = builderProblems();
+    showProblems(problems);
+    if (problems.length) { event.preventDefault(); return; }
     document.getElementById("fieldsData").value = JSON.stringify(fields);
     document.getElementById("stepsData").value = JSON.stringify(steps);
   });

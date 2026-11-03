@@ -68,6 +68,14 @@ def _load_list(raw, label):
     return payload
 
 
+INVISIBLE_CHARS = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff"))
+
+
+def clean_key(raw):
+    # ค่าที่ copy มาวางมักติด zero-width space ซึ่ง strip() ไม่ตัดให้; รูปแบบ key ตรวจใน model
+    return str(raw or "").translate(INVISIBLE_CHARS).strip().lower()
+
+
 def parse_fields_payload(raw):
     field_defs = []
     for item in _load_list(raw, "ฟิลด์"):
@@ -77,7 +85,7 @@ def parse_fields_payload(raw):
         field_defs.append(
             models.car_form_templates.FormFieldDef(
                 source=item.get("source") or "catalog",
-                key=(item.get("key") or "").strip(),
+                key=clean_key(item.get("key")),
                 label=(item.get("label") or "").strip(),
                 field_type=item.get("field_type") or None,
                 choices=[str(c).strip() for c in choices if str(c).strip()],
@@ -90,19 +98,20 @@ def parse_fields_payload(raw):
 def parse_steps_payload(raw, organization):
     members = {m["id"]: m["user"] for m in get_org_members(organization)}
     step_defs = []
-    for item in _load_list(raw, "ขั้นอนุมัติ"):
+    for index, item in enumerate(_load_list(raw, "ขั้นอนุมัติ"), start=1):
         approver_type = item.get("approver_type") or "role"
         user = None
-        if approver_type == "user":
+        user_id = str(item.get("user") or "")
+        if approver_type == "user" and user_id:
             # ตรวจฝั่ง server ว่าเป็นสมาชิก active ของ org นี้ ไม่เชื่อค่าจาก dropdown
-            user = members.get(str(item.get("user") or ""))
+            user = members.get(user_id)
             if user is None:
                 raise TemplatePayloadError(
-                    f"ผู้อนุมัติของขั้น '{item.get('label') or item.get('key') or ''}' ต้องเป็นสมาชิกของหน่วยงานนี้"
+                    f"ขั้นที่ {index}: ผู้อนุมัติต้องเป็นสมาชิกของหน่วยงานนี้"
                 )
         step_defs.append(
             models.car_form_templates.ApprovalStepDef(
-                key=(item.get("key") or "").strip(),
+                key=clean_key(item.get("key")),
                 label=(item.get("label") or "").strip(),
                 approver_type=approver_type,
                 role=item.get("role") or None,
@@ -115,13 +124,15 @@ def parse_steps_payload(raw, organization):
 
 
 def validation_message(error):
-    """ข้อความที่อ่านรู้เรื่องจาก ValidationError ของ mongoengine"""
+    """รายการปัญหาภาษาไทยจาก ValidationError ของ mongoengine (ไม่ส่งข้อความดิบให้ผู้ใช้)"""
+    if isinstance(error, models.car_form_templates.CarFormTemplateInvalid):
+        return error.problems
     nested = (error.errors or {}).get("__all__")
+    if isinstance(nested, models.car_form_templates.CarFormTemplateInvalid):
+        return nested.problems
     if nested is not None:
-        return getattr(nested, "message", None) or str(nested)
-    if error.errors:
-        return "; ".join(f"{k}: {getattr(v, 'message', v)}" for k, v in error.errors.items())
-    return error.message or str(error)
+        return [getattr(nested, "message", None) or str(nested)]
+    return ["ข้อมูลแบบฟอร์มไม่ถูกต้อง กรุณาตรวจสอบฟิลด์และขั้นอนุมัติอีกครั้ง"]
 
 
 def get_org_members(organization):
@@ -260,7 +271,7 @@ def create_or_edit(template_id):
         target.last_updated_by = current_user._get_current_object()
         target.save()
     except TemplatePayloadError as error:
-        return render_form(error=str(error))
+        return render_form(error=[str(error)])
     except me.ValidationError as error:
         return render_form(error=validation_message(error))
 

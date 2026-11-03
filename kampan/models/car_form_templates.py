@@ -90,57 +90,135 @@ class CarFormTemplate(me.Document):
     )
 
     def clean(self):
-        from kampan.utils.car_form_catalog import CATALOG
+        problems = template_problems(self)
+        if problems:
+            raise CarFormTemplateInvalid(problems)
 
-        for field in self.fields:
-            if field.source == "catalog":
-                catalog_field = CATALOG.get(field.key)
-                if catalog_field is None:
-                    raise me.ValidationError(
-                        f"catalog field '{field.key}' ไม่มีอยู่ใน catalog"
-                    )
-                if not set(field.choices) <= set(catalog_field.choices):
-                    raise me.ValidationError(
-                        f"choices ของ '{field.key}' ต้องเป็นสับเซตของ catalog"
-                    )
-            elif not field.field_type:
-                raise me.ValidationError(
-                    f"custom field '{field.key}' ต้องระบุ field_type"
+
+KEY_RULE = "ต้องขึ้นต้นด้วย a-z และใช้ได้แค่ a-z, 0-9, _ (เช่น head, admin)"
+ROLE_LABELS = dict(ORGANIZATION_ROLES)
+CUSTOM_TYPE_KEYS = {key for key, _ in CUSTOM_FIELD_TYPES}
+
+
+class CarFormTemplateInvalid(me.ValidationError):
+    """รวมปัญหาทุกข้อของ template เป็นข้อความภาษาไทยที่อ่านรู้เรื่อง"""
+
+    def __init__(self, problems):
+        self.problems = list(problems)
+        super().__init__("\n".join(self.problems))
+
+
+def _quote(value):
+    return f"“{value}”"
+
+
+def _valid_key(key):
+    import re
+
+    return bool(re.match(r"^[a-z][a-z0-9_]*$", key or ""))
+
+
+def template_problems(template):
+    return (
+        _field_problems(template.fields)
+        + _step_problems(template.steps)
+        + _placement_problems(template)
+    )
+
+
+def _field_problems(fields):
+    from kampan.utils.car_form_catalog import CATALOG
+
+    problems = []
+    seen = {}
+    for index, field in enumerate(fields, start=1):
+        where = f"ฟิลด์ที่ {index}"
+        if field.source == "catalog":
+            catalog_field = CATALOG.get(field.key)
+            if catalog_field is None:
+                if field.key:
+                    problems.append(f"{where}: ไม่มีฟิลด์ {_quote(field.key)} ใน catalog")
+                else:
+                    problems.append(f"{where}: ต้องเลือกฟิลด์จาก catalog")
+                continue
+            label = field.label or catalog_field.default_label
+            invalid = [c for c in field.choices if c not in catalog_field.choices]
+            if invalid:
+                problems.append(
+                    f"{where} ({label}): ตัวเลือก {', '.join(map(_quote, invalid))} ไม่มีใน catalog"
+                    f" (ใช้ได้: {', '.join(catalog_field.choices)})"
                 )
+        else:
+            if not _valid_key(field.key):
+                problems.append(f"{where}: key {_quote(field.key)} {KEY_RULE}")
+            if field.field_type not in CUSTOM_TYPE_KEYS:
+                problems.append(f"{where}: ต้องเลือกชนิดข้อมูล")
+            elif field.field_type in ("radio", "checkbox") and not field.choices:
+                problems.append(f"{where}: ต้องใส่ตัวเลือกอย่างน้อย 1 ค่า")
 
-        if not self.steps:
-            raise me.ValidationError("ต้องมีอย่างน้อย 1 ขั้นอนุมัติ")
-        if sum(1 for step in self.steps if step.assigns_vehicle) != 1:
-            raise me.ValidationError("ต้องมีขั้นจัดรถ (assigns_vehicle) พอดี 1 ขั้น")
+        details_key = field.details_key()
+        if details_key in seen:
+            problems.append(f"{where}: key {_quote(field.key)} ซ้ำกับฟิลด์ที่ {seen[details_key]}")
+        else:
+            seen[details_key] = index
+    return problems
 
-        self._validate_placements()
 
-    def _validate_placements(self):
-        from kampan.utils.car_form_paper import available_variables
+def _step_problems(steps):
+    if not steps:
+        return ["ต้องมีอย่างน้อย 1 ขั้นอนุมัติ"]
 
-        if not self.placements:
-            return
-        if not self.paper_file:
-            raise me.ValidationError("ต้องอัปโหลด PDF ก่อนวางตัวแปรบนกระดาษ")
+    problems = []
+    seen = {}
+    for index, step in enumerate(steps, start=1):
+        where = f"ขั้นที่ {index}"
+        if not _valid_key(step.key):
+            problems.append(f"{where}: key {_quote(step.key)} {KEY_RULE}")
+        elif step.key in seen:
+            problems.append(f"{where}: key {_quote(step.key)} ซ้ำกับขั้นที่ {seen[step.key]}")
+        else:
+            seen[step.key] = index
+        if not (step.label or "").strip():
+            problems.append(f"{where}: ต้องกรอกชื่อขั้น")
+        if step.approver_type == "user":
+            if not step.user:
+                problems.append(f"{where}: ต้องเลือกผู้อนุมัติ")
+        elif not step.role:
+            problems.append(f"{where}: ต้องเลือก role")
+        elif step.role not in ROLE_LABELS:
+            problems.append(f"{where}: ไม่มี role {_quote(step.role)} ในระบบ")
 
-        variables = available_variables(self)
-        for placement in self.placements:
-            if placement.variable not in variables:
-                raise me.ValidationError(
-                    f"ตัวแปร '{placement.variable}' ไม่มีใน template นี้"
-                )
-            if placement.page >= self.paper_file.page_count:
-                raise me.ValidationError(
-                    f"หน้า {placement.page} เกินจำนวนหน้าของ PDF"
-                )
-            if (
-                placement.x < 0
-                or placement.y < 0
-                or placement.w <= 0
-                or placement.h <= 0
-                or placement.x + placement.w > 1 + 1e-9
-                or placement.y + placement.h > 1 + 1e-9
-            ):
-                raise me.ValidationError(
-                    f"ตำแหน่งของ '{placement.variable}' อยู่นอกหน้ากระดาษ"
-                )
+    vehicle_steps = sum(1 for step in steps if step.assigns_vehicle)
+    if vehicle_steps != 1:
+        problems.append(f"ต้องมีขั้นจัดรถพอดี 1 ขั้น (ตอนนี้มี {vehicle_steps} ขั้น)")
+    return problems
+
+
+def _placement_problems(template):
+    from kampan.utils.car_form_paper import available_variables
+
+    if not template.placements:
+        return []
+    if not template.paper_file:
+        return ["ต้องอัปโหลด PDF ก่อนวางตัวแปรบนกระดาษ"]
+
+    problems = []
+    variables = available_variables(template)
+    for index, placement in enumerate(template.placements, start=1):
+        where = f"กล่องที่ {index} ({placement.variable})"
+        if placement.variable not in variables:
+            problems.append(f"{where}: ไม่มีตัวแปรนี้ใน template (ลบกล่องหรือบันทึกฟิลด์/ขั้นก่อน)")
+        if placement.page >= template.paper_file.page_count:
+            problems.append(
+                f"{where}: อยู่หน้า {placement.page + 1} แต่ PDF มี {template.paper_file.page_count} หน้า"
+            )
+        if (
+            placement.x < 0
+            or placement.y < 0
+            or placement.w <= 0
+            or placement.h <= 0
+            or placement.x + placement.w > 1 + 1e-9
+            or placement.y + placement.h > 1 + 1e-9
+        ):
+            problems.append(f"{where}: อยู่นอกหน้ากระดาษ")
+    return problems

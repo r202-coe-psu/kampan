@@ -495,3 +495,113 @@ def test_paper_editor_page_lists_template_variables_and_points_to_the_pdf(app, s
     assert "app.location" in body
     assert "approvals.admin.decision" in body
     assert f"{BASE}/{template.id}/paper_file?organization_id={org.id}" in body
+
+
+def _steps_with_first_key(key):
+    return json.dumps(
+        [
+            {"key": key, "label": "ผู้บังคับบัญชา", "approver_type": "role", "role": "head", "same_division": True},
+            {"key": "admin", "label": "ผู้จัดรถ", "approver_type": "role", "role": "admin", "assigns_vehicle": True},
+        ]
+    )
+
+
+def test_keys_pasted_with_invisible_characters_are_cleaned_and_saved(app, setup, login_as):
+    org = setup["org"]
+    client = app.test_client()
+    login_as(client, setup["admin"])
+
+    res = client.post(
+        "/vehicle_lending/car_form_templates/create",
+        data=valid_payload(org, steps_data=_steps_with_first_key("​head﻿ ")),
+    )
+
+    assert res.status_code == 302
+    template = models.car_form_templates.CarFormTemplate.objects(organization=org).first()
+    assert [s.key for s in template.steps] == ["head", "admin"]
+
+
+def test_invalid_step_key_shows_which_step_and_value_in_thai(app, setup, login_as):
+    org = setup["org"]
+    client = app.test_client()
+    login_as(client, setup["admin"])
+
+    res = client.post(
+        "/vehicle_lending/car_form_templates/create",
+        data=valid_payload(org, steps_data=_steps_with_first_key("ผู้บังคับบัญชา")),
+    )
+
+    body = res.get_data(as_text=True)
+    assert res.status_code == 200
+    assert count_templates(org) == 0
+    assert "ขั้นที่ 1" in body
+    assert "ผู้บังคับบัญชา" in body
+    assert "ValidationError" not in body
+
+
+RAW_MONGO_PHRASES = ("ValidationError", "Field is required", "did not match validation regex", "Value must be one of")
+
+
+def test_every_problem_is_listed_in_readable_thai_at_once(app, setup, login_as):
+    org = setup["org"]
+    client = app.test_client()
+    login_as(client, setup["admin"])
+
+    res = client.post(
+        "/vehicle_lending/car_form_templates/create",
+        data=valid_payload(
+            org,
+            fields_data=json.dumps(
+                [
+                    {"source": "catalog", "key": "vehicle_kind", "choices": ["รถตู้", "บัส"]},
+                    {"source": "custom", "key": "note", "label": "", "field_type": ""},
+                ]
+            ),
+            steps_data=json.dumps(
+                [
+                    {"key": "ผู้บังคับบัญชา", "label": "", "approver_type": "role", "role": ""},
+                    {"key": "admin", "label": "ผู้จัดรถ", "approver_type": "role", "role": "admin", "assigns_vehicle": True},
+                    {"key": "admin", "label": "ซ้ำ", "approver_type": "role", "role": "director", "assigns_vehicle": True},
+                ]
+            ),
+        ),
+    )
+
+    body = res.get_data(as_text=True)
+    assert res.status_code == 200
+    assert count_templates(org) == 0
+    for expected in (
+        "ฟิลด์ที่ 1 (ชนิดรถ): ตัวเลือก “รถตู้” ไม่มีใน catalog (ใช้ได้: บัส, ตู้, เก๋ง, มินิบัส)",
+        "ฟิลด์ที่ 2: ต้องเลือกชนิดข้อมูล",
+        "ขั้นที่ 1: key “ผู้บังคับบัญชา”",
+        "ขั้นที่ 1: ต้องกรอกชื่อขั้น",
+        "ขั้นที่ 1: ต้องเลือก role",
+        "ขั้นที่ 3: key “admin” ซ้ำกับขั้นที่ 2",
+        "ต้องมีขั้นจัดรถพอดี 1 ขั้น (ตอนนี้มี 2 ขั้น)",
+    ):
+        assert expected in body, expected
+    for raw in RAW_MONGO_PHRASES:
+        assert raw not in body, raw
+
+
+def test_user_step_without_a_user_is_rejected_in_thai(app, setup, login_as):
+    org = setup["org"]
+    client = app.test_client()
+    login_as(client, setup["admin"])
+
+    res = client.post(
+        "/vehicle_lending/car_form_templates/create",
+        data=valid_payload(
+            org,
+            steps_data=json.dumps(
+                [
+                    {"key": "approver", "label": "ผู้อนุมัติ", "approver_type": "user", "user": ""},
+                    {"key": "admin", "label": "ผู้จัดรถ", "approver_type": "role", "role": "admin", "assigns_vehicle": True},
+                ]
+            ),
+        ),
+    )
+
+    body = res.get_data(as_text=True)
+    assert count_templates(org) == 0
+    assert "ขั้นที่ 1: ต้องเลือกผู้อนุมัติ" in body

@@ -5,9 +5,16 @@
 {% block content %}
 <div class="flex flex-col gap-6">
   {% if error %}
-  <div role="alert" class="alert alert-error" id="paperError">
+  <div role="alert" class="alert alert-error items-start" id="paperError">
     <i class="ph ph-warning-circle text-xl"></i>
-    <span>{{ error }}</span>
+    <div>
+      <p class="font-semibold">บันทึกไม่สำเร็จ กรุณาแก้ไขรายการต่อไปนี้</p>
+      <ul class="mt-1 list-disc pl-5 text-sm">
+        {% for problem in (error if error is not string else [error]) %}
+        <li>{{ problem }}</li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
   {% endif %}
 
