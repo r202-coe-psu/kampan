@@ -121,6 +121,62 @@ def _resolve(context, variable):
     return "" if value is None else value
 
 
+SAMPLE_DATETIME = {
+    "departure": (20, 11, 2026, "08:30"),
+    "return": (22, 11, 2026, "17:00"),
+    "created": (3, 11, 2026, ""),
+}
+SAMPLE_DETAILS = {"province": "สงขลา", "district": "หาดใหญ่", "vehicle_count": "1"}
+
+
+def _sample_date(day, month, year, time):
+    date = {"day": day, "month_th": THAI_MONTHS[month - 1], "year_be": year + 543}
+    return {**date, "time": time} if time else date
+
+
+def _sample_detail(field):
+    from kampan.utils.car_form_catalog import CATALOG
+
+    catalog_field = CATALOG.get(field.key) if field.source == "catalog" else None
+    choices = list(field.choices) or (list(catalog_field.choices) if catalog_field else [])
+    if choices:
+        return choices[0]
+    if catalog_field and field.key in SAMPLE_DETAILS:
+        return SAMPLE_DETAILS[field.key]
+    field_type = catalog_field.field_type if catalog_field else field.field_type
+    if field_type == "number":
+        return "1"
+    if field_type == "date":
+        return "20/11/2569"
+    label = field.label or (catalog_field.default_label if catalog_field else field.key)
+    return f"ตัวอย่าง{label}"
+
+
+def sample_values(template):
+    """ค่าตัวอย่างของทุกตัวแปร ใช้แสดงในหน้าจัดวางให้เห็นขนาดข้อความจริงก่อนมีคำขอ"""
+    context = {
+        "app": {
+            "requester_name": "สมชาย ใจดี",
+            "division": "งานยุทธศาสตร์และบริการกลาง",
+            "phone": "074-282-000",
+            "location": "อ.หาดใหญ่ จ.สงขลา",
+            "request_reason": "ประชุมวิชาการ",
+            "passenger_number": 10,
+            "car_plate": "40-1234 สงขลา",
+            "car_type": "ตู้",
+            "driver_name": "สมศักดิ์ ขับดี",
+            **{group: _sample_date(*parts) for group, parts in SAMPLE_DATETIME.items()},
+        },
+        "details": {field.details_key(): _sample_detail(field) for field in template.fields},
+        "approvals": {
+            step.key: {"name": f"ชื่อ{step.label}", "date": "03/11/2569", "decision": "approved", "comment": ""}
+            for step in template.steps
+        },
+        "org": {"name": template.organization.name if template.organization else ""},
+    }
+    return {name: str(_resolve(context, name)) for name in available_variables(template)}
+
+
 def _ensure_font():
     if FONT_NAME not in pdfmetrics.getRegisteredFontNames():
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT_PATH)))

@@ -19,7 +19,7 @@ from wtforms import fields, validators
 
 from kampan import models
 from kampan.utils.car_form_catalog import CATALOG
-from kampan.utils.car_form_paper import APPROVAL_PARTS, available_variables
+from kampan.utils.car_form_paper import APPROVAL_PARTS, available_variables, sample_values
 from kampan.web import acl
 
 module = Blueprint(
@@ -381,8 +381,14 @@ def variable_catalog(template):
             labels[name] = f"{step.label} : {APPROVAL_PART_LABELS[part]}"
         choices[f"approvals.{step.key}.decision"] = ["approved", "denied"]
 
+    samples = sample_values(template)
     return [
-        {"name": name, "label": labels.get(name, name), "choices": choices.get(name, [])}
+        {
+            "name": name,
+            "label": labels.get(name, name),
+            "choices": choices.get(name, []),
+            "sample": samples.get(name, ""),
+        }
         for name in sorted(available_variables(template))
     ]
 

@@ -157,3 +157,34 @@ def test_paper_prints_the_assigned_cars_type_as_app_car_type(make_application):
     assert "app.car_type" in car_form_paper.available_variables(
         models.car_form_templates.CarFormTemplate()
     )
+
+
+def test_sample_values_give_every_variable_of_a_template_a_readable_example(app, create_org):
+    org = create_org(name="กองกายภาพ")
+    ft = models.car_form_templates
+    template = ft.CarFormTemplate(
+        organization=org,
+        name="ตัวอย่าง",
+        fields=[
+            ft.FormFieldDef(source="catalog", key="vehicle_kind"),
+            ft.FormFieldDef(source="catalog", key="cost_responsibility"),
+            ft.FormFieldDef(source="catalog", key="vehicle_count"),
+            ft.FormFieldDef(source="catalog", key="province"),
+            ft.FormFieldDef(source="custom", key="country", label="ประเทศ", field_type="text"),
+        ],
+        steps=[
+            ft.ApprovalStepDef(key="head", label="หัวหน้าฝ่าย", role="head"),
+            ft.ApprovalStepDef(key="admin", label="ผู้จัดรถ", role="admin", assigns_vehicle=True),
+        ],
+    )
+
+    samples = car_form_paper.sample_values(template)
+
+    assert set(samples) == set(car_form_paper.available_variables(template))
+    empty = sorted(name for name, value in samples.items() if not str(value).strip() and not name.endswith(".comment"))
+    assert empty == []
+    assert samples["app.requester_name"] == "สมชาย ใจดี"
+    assert samples["details.vehicle_kind"] == "บัส"
+    assert samples["details.province"] == "สงขลา"
+    assert samples["details.custom_country"] == "ตัวอย่างประเทศ"
+    assert samples["approvals.head.name"] == "ชื่อหัวหน้าฝ่าย"

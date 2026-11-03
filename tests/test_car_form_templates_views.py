@@ -605,3 +605,20 @@ def test_user_step_without_a_user_is_rejected_in_thai(app, setup, login_as):
     body = res.get_data(as_text=True)
     assert count_templates(org) == 0
     assert "ขั้นที่ 1: ต้องเลือกผู้อนุมัติ" in body
+
+
+def test_paper_editor_sends_sample_text_and_the_thai_font_for_true_size_preview(app, setup, login_as):
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    client = login_as(app.test_client(), setup["admin"])
+
+    res = client.get(f"{BASE}/{template.id}/paper_editor", query_string={"organization_id": str(org.id)})
+
+    body = res.get_data(as_text=True)
+    assert res.status_code == 200
+    import re
+
+    variables = json.loads(re.search(r'id="variablesData">(.*?)</script>', body, re.S).group(1))
+    samples = {v["name"]: v["sample"] for v in variables}
+    assert samples["app.requester_name"] == "สมชาย ใจดี"
+    assert "THSarabunNew.ttf" in body

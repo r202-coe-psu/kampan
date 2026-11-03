@@ -66,7 +66,23 @@
     </aside>
 
     <section class="flex flex-col gap-4 lg:col-span-3">
-      <div id="pdfStatus" class="text-sm text-base-content/60">กำลังโหลด PDF...</div>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div id="pdfStatus" class="text-sm text-base-content/60">กำลังโหลด PDF...</div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="label cursor-pointer gap-2">
+            <input type="checkbox" id="showSample" class="toggle toggle-sm toggle-primary" checked>
+            <span class="label-text text-xs">แสดงข้อความตัวอย่าง</span>
+          </label>
+          <div class="join" title="ซูมหน้ากระดาษ">
+            <button type="button" class="btn btn-sm join-item" id="zoomOut"><i class="ph ph-magnifying-glass-minus"></i></button>
+            <button type="button" class="btn btn-sm join-item w-16" id="zoomReset">100%</button>
+            <button type="button" class="btn btn-sm join-item" id="zoomIn"><i class="ph ph-magnifying-glass-plus"></i></button>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/50">
+        ปุ่มลัดเมื่อเลือกกล่อง: ลูกศร = ขยับ (Shift = ขยับไกล) · <kbd class="kbd kbd-xs">[</kbd> <kbd class="kbd kbd-xs">]</kbd> = ลด/เพิ่มขนาดตัวอักษร · <kbd class="kbd kbd-xs">Delete</kbd> = ลบกล่อง
+      </p>
       <div id="pagesContainer" class="flex flex-col items-center gap-6 overflow-x-auto"></div>
 
       <form id="placementsForm" method="POST" class="flex justify-end gap-3"
@@ -88,6 +104,15 @@
     'worker_src': 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
   } | tojson }}</script>
 
+  <style>
+    @font-face {
+      font-family: "THSarabunNewPreview";
+      src: url("{{ url_for('static', filename='fonts/THSarabunNew.ttf') }}") format("truetype");
+    }
+    .placement-box .sample-text { font-family: "THSarabunNewPreview", sans-serif; line-height: 1; white-space: nowrap; color: #1d4ed8; }
+    .placement-box .variable-tag { display: none; }
+    .placement-box:hover .variable-tag, .placement-box.is-selected .variable-tag { display: block; }
+  </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
   (function () {
@@ -100,7 +125,16 @@
     const DEFAULT_W = 0.2;
     const DEFAULT_H = 0.03;
     const MIN_SIZE = 0.01;
-    const RENDER_WIDTH = 760;
+    const BASE_WIDTH = 760;
+    const ZOOMS = [0.75, 1, 1.25, 1.5, 2];
+    const MIN_FONT = 8;    // ตรงกับ MIN_FONT_SIZE ฝั่ง server
+    const FONT_STEP = 0.5;
+    const PREVIEW_FONT = '"THSarabunNewPreview"';
+    let zoomIndex = 1;
+    let showSample = true;
+    let pdfDoc = null;
+    const measureCtx = document.createElement("canvas").getContext("2d");
+    const fitted = new Map(); // placement -> ขนาดที่ถูกย่อให้พอดีกล่อง (ไม่ส่งไป server)
 
     const layers = {};      // page index -> overlay element
     const boxes = new Map(); // placement object -> box element
@@ -143,43 +177,79 @@
     }
 
     // placement boxes
+    const pagePt = (placement) => pageSizes[placement.page] || [595, 842];
+
+    // ขนาดตัวอักษรที่ใช้จริง: เริ่มจาก font_size แล้วลดทีละ 0.5 จนกว้างไม่เกินกล่อง (เหมือน _draw_text ฝั่ง server)
+    function fittedFontSize(text, fontSize, boxWidthPt) {
+      let size = fontSize;
+      measureCtx.font = "1px " + PREVIEW_FONT;
+      const unit = measureCtx.measureText(text).width;
+      while (size > MIN_FONT && unit * size > boxWidthPt) size -= FONT_STEP;
+      return size;
+    }
+
+    function previewText(placement) {
+      const info = variableByName[placement.variable] || {};
+      if (placement.kind === "check") return "✓";
+      return showSample ? (info.sample || placement.variable) : placement.variable;
+    }
+
     function applyBoxStyle(placement, box, pageWidthPx) {
+      const [wPt, hPt] = pagePt(placement);
+      const pxPerPt = pageWidthPx / wPt;
       box.style.left = placement.x * 100 + "%";
       box.style.top = placement.y * 100 + "%";
       box.style.width = placement.w * 100 + "%";
       box.style.height = placement.h * 100 + "%";
-      const pt = (pageSizes[placement.page] || [595])[0];
-      box.style.fontSize = Math.max(8, placement.font_size * (pageWidthPx / pt)) + "px";
-      box.style.textAlign = placement.align;
+      box.classList.toggle("is-selected", placement === selected);
       box.classList.toggle("ring-2", placement === selected);
       box.classList.toggle("ring-primary", placement === selected);
-    }
 
-    function boxLabel(placement) {
-      if (placement.kind === "check") return "✓ " + placement.variable + (placement.match_value ? " = " + placement.match_value : "");
-      return placement.variable;
+      const text = box.querySelector(".sample-text");
+      const boxWpt = placement.w * wPt;
+      const boxHpt = placement.h * hPt;
+      if (placement.kind === "check") {
+        const size = Math.min(boxWpt, boxHpt);
+        text.style.fontSize = size * pxPerPt + "px";
+        text.style.left = "0"; text.style.right = "0"; text.style.textAlign = "center";
+        text.style.bottom = (boxHpt - size) / 2 * pxPerPt + "px";
+        fitted.delete(placement);
+        return;
+      }
+      const content = previewText(placement);
+      const size = showSample ? fittedFontSize(content, placement.font_size, boxWpt) : Math.min(placement.font_size, 12);
+      if (showSample && size < placement.font_size) fitted.set(placement, size); else fitted.delete(placement);
+      text.style.fontSize = size * pxPerPt + "px";
+      text.style.left = "0"; text.style.right = "0";
+      text.style.textAlign = placement.align;
+      // baseline ฝั่ง server = ขอบล่าง + (สูงกล่อง - size)/2 + 0.2*size; ใน CSS ตัวอักษร line-height 1 มี descent ~0.2*size อยู่แล้ว
+      text.style.bottom = Math.max(0, (boxHpt - size) / 2) * pxPerPt + "px";
     }
 
     function refreshBox(placement) {
       const box = boxes.get(placement);
       const layer = layers[placement.page];
       if (!box || !layer) return;
+      box.querySelector(".sample-text").textContent = previewText(placement);
+      box.querySelector(".variable-tag").textContent = placement.variable + (placement.kind === "check" && placement.match_value ? " = " + placement.match_value : "");
       applyBoxStyle(placement, box, layer.getBoundingClientRect().width);
-      box.firstChild.textContent = boxLabel(placement);
+      if (placement === selected) updateFitNote();
     }
 
     function createBox(placement) {
       const layer = layers[placement.page];
       if (!layer) return;
-      const label = el("span", { class: "pointer-events-none block truncate" }, [boxLabel(placement)]);
+      const label = el("span", { class: "sample-text pointer-events-none absolute" });
+      const tag = el("span", { class: "variable-tag pointer-events-none absolute -top-5 left-0 whitespace-nowrap rounded bg-primary px-1 font-mono text-[10px] text-primary-content" });
       const handle = el("span", { class: "absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm bg-primary" });
       const box = el("div", {
-        class: "absolute cursor-move select-none border border-dashed border-primary bg-primary/10 text-primary-content",
-        style: "touch-action:none;color:#1d4ed8",
-      }, [label, handle]);
+        class: "placement-box absolute cursor-move select-none border border-dashed border-primary bg-primary/5",
+        style: "touch-action:none",
+      }, [label, tag, handle]);
+      label.textContent = previewText(placement);
       boxes.set(placement, box);
       layer.appendChild(box);
-      applyBoxStyle(placement, box, layer.getBoundingClientRect().width);
+      refreshBox(placement);
 
       let drag = null;
       const begin = (mode) => (event) => {
@@ -219,6 +289,46 @@
     }
 
     // properties panel
+    function setFontSize(placement, value) {
+      placement.font_size = Math.round(clamp(value, 6, 72) * 2) / 2;
+      refreshBox(placement);
+      const number = document.getElementById("fontSizeNumber");
+      const range = document.getElementById("fontSizeRange");
+      if (number && placement === selected) number.value = placement.font_size;
+      if (range && placement === selected) range.value = placement.font_size;
+    }
+
+    function updateFitNote() {
+      const note = document.getElementById("fontFitNote");
+      if (!note || !selected) return;
+      const size = fitted.get(selected);
+      note.textContent = size ? "ข้อความยาวเกินกล่อง ตอนพิมพ์จะย่อเหลือ " + size + " pt (ขยายกล่องหรือลดข้อความ)" : "";
+    }
+
+    function fontSizeControl(placement) {
+      const minus = el("button", { type: "button", class: "btn btn-sm join-item", title: "ลดขนาด ([)" }, ["−"]);
+      const plus = el("button", { type: "button", class: "btn btn-sm join-item", title: "เพิ่มขนาด (])" }, ["+"]);
+      const number = el("input", { type: "number", min: "6", max: "72", step: "0.5", id: "fontSizeNumber", class: "input input-bordered input-sm join-item w-20 text-center" });
+      number.value = placement.font_size;
+      const range = el("input", { type: "range", min: "6", max: "36", step: "0.5", id: "fontSizeRange", class: "range range-primary range-xs" });
+      range.value = placement.font_size;
+      const fit = el("button", { type: "button", class: "btn btn-xs btn-ghost", title: "ตั้งขนาดให้พอดีความสูงกล่อง" }, [el("i", { class: "ph ph-arrows-vertical" }), " พอดีความสูงกล่อง"]);
+      minus.addEventListener("click", () => setFontSize(placement, placement.font_size - FONT_STEP));
+      plus.addEventListener("click", () => setFontSize(placement, placement.font_size + FONT_STEP));
+      number.addEventListener("input", () => { const n = parseFloat(number.value); if (n > 0) setFontSize(placement, n); });
+      range.addEventListener("input", () => setFontSize(placement, parseFloat(range.value)));
+      fit.addEventListener("click", () => setFontSize(placement, placement.h * pagePt(placement)[1] * 0.9));
+      const note = el("div", { id: "fontFitNote", class: "text-[11px] text-warning" });
+      const wrap = el("div", { class: "flex flex-col gap-1" }, [
+        el("div", { class: "join" }, [minus, number, plus]),
+        range,
+        fit,
+        note,
+      ]);
+      setTimeout(updateFitNote);
+      return labeled("ขนาดตัวอักษร (pt)", wrap);
+    }
+
     function labeled(text, control) {
       return el("label", { class: "flex flex-col gap-1 text-xs" }, [text, control]);
     }
@@ -267,13 +377,7 @@
         holder.appendChild(labeled("ติ๊กเมื่อค่าเท่ากับ", control));
       }
 
-      const size = el("input", { type: "number", min: "6", max: "72", step: "0.5", class: "input input-bordered input-sm" });
-      size.value = placement.font_size;
-      size.addEventListener("input", () => {
-        const n = parseFloat(size.value);
-        if (n > 0) { placement.font_size = n; refreshBox(placement); }
-      });
-      holder.appendChild(labeled("ขนาดตัวอักษร (pt)", size));
+      if (placement.kind !== "check") holder.appendChild(fontSizeControl(placement));
 
       const align = el("select", { class: "select select-bordered select-sm" }, [
         el("option", { value: "left" }, ["ชิดซ้าย"]),
@@ -319,37 +423,81 @@
       document.getElementById("pagesContainer").appendChild(el("div", {}, [label, wrapper]));
     }
 
+    async function renderPages() {
+      const container = document.getElementById("pagesContainer");
+      container.replaceChildren();
+      Object.keys(layers).forEach((k) => delete layers[k]);
+      boxes.clear();
+      const width = BASE_WIDTH * ZOOMS[zoomIndex];
+      const ratio = window.devicePixelRatio || 1;
+      for (let n = 1; n <= pdfDoc.numPages; n++) {
+        const page = await pdfDoc.getPage(n);
+        const base = page.getViewport({ scale: 1 });
+        const scale = width / base.width;
+        const viewport = page.getViewport({ scale: scale * ratio });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = width + "px";
+        canvas.style.height = Math.floor(base.height * scale) + "px";
+        addPage(n - 1, canvas, width);
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      }
+      placements.forEach(createBox);
+      document.getElementById("zoomReset").textContent = Math.round(ZOOMS[zoomIndex] * 100) + "%";
+    }
+
     async function loadPdf() {
       const status = document.getElementById("pdfStatus");
       if (!window.pdfjsLib) { status.textContent = "โหลด pdf.js ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"; return; }
       pdfjsLib.GlobalWorkerOptions.workerSrc = config.worker_src;
       try {
-        const pdf = await pdfjsLib.getDocument({ url: config.pdf_url, withCredentials: true }).promise;
-        const ratio = window.devicePixelRatio || 1;
-        for (let n = 1; n <= pdf.numPages; n++) {
-          const page = await pdf.getPage(n);
-          const base = page.getViewport({ scale: 1 });
-          const scale = RENDER_WIDTH / base.width;
-          const viewport = page.getViewport({ scale: scale * ratio });
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.floor(viewport.width);
-          canvas.height = Math.floor(viewport.height);
-          canvas.style.width = RENDER_WIDTH + "px";
-          canvas.style.height = Math.floor(base.height * scale) + "px";
-          addPage(n - 1, canvas, RENDER_WIDTH);
-          await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-        }
+        // วัดความกว้างข้อความด้วยฟอนต์เดียวกับตอนพิมพ์ จึงต้องรอฟอนต์โหลดก่อน
+        await document.fonts.load("16px " + PREVIEW_FONT).catch(() => null);
+        pdfDoc = await pdfjsLib.getDocument({ url: config.pdf_url, withCredentials: true }).promise;
+        await renderPages();
         status.textContent = "ลากตัวแปรจากด้านซ้ายไปวางบนหน้ากระดาษ คลิกกล่องเพื่อแก้ไขคุณสมบัติ";
-        placements.forEach(createBox);
       } catch (error) {
         console.error(error);
         status.textContent = "แสดงไฟล์ PDF ไม่ได้";
       }
     }
 
-    document.getElementById("variableSearch").addEventListener("input", (event) => renderPalette(event.target.value));
-    document.getElementById("placementsForm").addEventListener("submit", () => {
-      document.getElementById("placementsData").value = JSON.stringify(placements);
+    function setZoom(index) {
+      if (!pdfDoc) return;
+      zoomIndex = clamp(index, 0, ZOOMS.length - 1);
+      const keep = selected;
+      renderPages().then(() => { if (keep) select(keep); });
+    }
+    document.getElementById("zoomOut").addEventListener("click", () => setZoom(zoomIndex - 1));
+    document.getElementById("zoomIn").addEventListener("click", () => setZoom(zoomIndex + 1));
+    document.getElementById("zoomReset").addEventListener("click", () => setZoom(1));
+    document.getElementById("showSample").addEventListener("change", (event) => {
+      showSample = event.target.checked;
+      placements.forEach(refreshBox);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!selected) return;
+      const target = event.target;
+      if (target && (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA")) return;
+      const [wPt, hPt] = pagePt(selected);
+      const stepX = (event.shiftKey ? 5 : 0.5) / wPt;   // 0.5pt หรือ 5pt
+      const stepY = (event.shiftKey ? 5 : 0.5) / hPt;
+      const moves = { ArrowLeft: [-stepX, 0], ArrowRight: [stepX, 0], ArrowUp: [0, -stepY], ArrowDown: [0, stepY] };
+      if (moves[event.key]) {
+        const [dx, dy] = moves[event.key];
+        selected.x = round(clamp(selected.x + dx, 0, 1 - selected.w));
+        selected.y = round(clamp(selected.y + dy, 0, 1 - selected.h));
+        refreshBox(selected);
+      } else if (event.key === "[" || event.key === "]") {
+        setFontSize(selected, selected.font_size + (event.key === "]" ? FONT_STEP : -FONT_STEP));
+      } else if (event.key === "Delete" || event.key === "Backspace") {
+        removePlacement(selected);
+      } else {
+        return;
+      }
+      event.preventDefault();
     });
 
     renderPalette("");
