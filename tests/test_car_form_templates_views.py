@@ -302,6 +302,7 @@ def test_delete_sets_status_disactive_and_template_leaves_the_index(app, setup, 
 
     template.reload()
     assert template.status == "disactive"
+    client.get(f"{BASE}/", query_string=query)  # หน้าแรกหลังลบแสดง toast ที่มีชื่อแบบฟอร์ม
     after = client.get(f"{BASE}/", query_string=query)
     assert "แบบที่จะลบ" not in after.get_data(as_text=True)
 

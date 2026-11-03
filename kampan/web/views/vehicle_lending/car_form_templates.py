@@ -8,6 +8,7 @@ from flask import (
     Blueprint,
     Response,
     abort,
+    flash,
     g,
     redirect,
     render_template,
@@ -300,6 +301,7 @@ def create_or_edit(template_id):
         return render_form(error=[str(error)])
     except me.ValidationError as error:
         return render_form(error=validation_message(error))
+    flash(f"{'บันทึก' if template else 'สร้าง'}แบบฟอร์ม {target.name} แล้ว", "success")
 
     return redirect(
         url_for(
@@ -327,6 +329,7 @@ def delete(template_id):
     template.status = "disactive"
     template.last_updated_by = current_user._get_current_object()
     template.save()
+    flash(f"ลบแบบฟอร์ม {template.name} แล้ว", "success")
 
     return redirect(
         url_for(
@@ -524,6 +527,7 @@ def upload_paper_file(template_id):
     template.paper_file = paper_file
     template.last_updated_by = current_user._get_current_object()
     template.save()
+    flash(f"อัปโหลดเอกสาร {upload.filename} แล้ว", "success")
 
     return redirect(
         url_for(
@@ -611,6 +615,7 @@ def save_placements(template_id):
         )
         template.reload()
         return render_paper_editor(template, organization, error=message, status=400)
+    flash("บันทึกตำแหน่งตัวแปรแล้ว", "success")
 
     return redirect(
         url_for(
