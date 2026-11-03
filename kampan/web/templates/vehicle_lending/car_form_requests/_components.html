@@ -1,4 +1,4 @@
-{# ส่วนประกอบที่ใช้ร่วมกันของหน้าคำขอใช้รถ (template): stepper, modal อนุมัติ/ปฏิเสธ, สรุปคำขอ, audit log #}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% set STEP_STYLE = {
   'done': {'step': 'step-success', 'content': '✓', 'badge': 'badge-success', 'text': 'อนุมัติแล้ว', 'icon': 'ph-check-circle', 'tone': 'text-success'},
@@ -115,7 +115,7 @@
 </button>
 {% endmacro %}
 
-{% macro action_modals(car_application, step, organization, cars, cars_requested_type_first, drivers, next='') %}
+{% macro action_modals(car_application, step, organization, approve_form, deny_form) %}
 {% set modal_id = car_application.id %}
 <dialog id="approve-{{ modal_id }}" class="modal modal-bottom sm:modal-middle">
   <div class="modal-box max-w-xl">
@@ -123,7 +123,7 @@
       <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="ปิด">✕</button>
     </form>
     <h3 class="text-lg font-bold flex items-center gap-2">
-      <i class="ph ph-check-circle text-success text-2xl"></i> อนุมัติคำขอใช้รถ
+      <i class="ph ph-check-circle text-success tone-deep-success text-2xl"></i> อนุมัติคำขอใช้รถ
     </h3>
     <p class="text-sm text-base-content/70 mt-1">
       {{ car_application.form_template.name if car_application.form_template else '' }}
@@ -133,43 +133,26 @@
       <div class="font-medium">{{ car_application.location or '-' }}</div>
       <div class="text-base-content/70">{{ car_application.request_reason or '' }}</div>
     </div>
-    <form method="post"
+    <form method="post" novalidate
           action="{{ url_for('vehicle_lending.car_form_requests.approve', car_application_id=car_application.id) }}"
-          class="mt-4 flex flex-col gap-3">
-      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+          class="mt-4 flex flex-col gap-1">
+      {{ approve_form.hidden_tag() }}
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-      {% if step.assigns_vehicle %}
+      {% if 'car' in approve_form %}
       {% set requested_type = (car_application.details or {}).get('vehicle_kind') or '' %}
-      <fieldset class="fieldset" data-car-field>
-        <legend class="fieldset-legend">รถ <span class="text-error">*</span>{% if requested_type %} <span class="badge badge-sm badge-info badge-outline">ผู้ขอต้องการ: {{ requested_type }}</span>{% endif %}</legend>
-        <select name="car" class="select w-full" required data-car-select data-requested-type="{{ requested_type }}">
-          <option value="">เลือกรถ</option>
-          {% for car in cars_requested_type_first(cars, car_application) %}
-          <option value="{{ car.id }}" data-vehicle-type="{{ car.vehicle_type or '' }}">{{ car.license_plate }}{% if car.vehicle_type %} ({{ car.get_vehicle_type_display() }}){% endif %}</option>
-          {% endfor %}
-        </select>
+      <div data-car-field>
+        {% if requested_type %}<span class="badge badge-sm badge-info badge-soft">ผู้ขอต้องการ: {{ requested_type }}</span>{% endif %}
+        {{ renderer.render_select_field(approve_form.car, **{'data-car-select': '', 'data-requested-type': requested_type}) }}
         {% if requested_type %}
-        <label class="label cursor-pointer gap-2">
+        <label class="label cursor-pointer gap-2 text-sm">
           <input type="checkbox" class="checkbox checkbox-sm" data-show-all-types>
           แสดงรถทุกประเภท
         </label>
         {% endif %}
-      </fieldset>
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">พนักงานขับรถ</legend>
-        <select name="driver" class="select w-full">
-          <option value="">ไม่ระบุ</option>
-          {% for driver in drivers %}
-          <option value="{{ driver.id }}">{{ driver.get_resources_fullname_th() }}</option>
-          {% endfor %}
-        </select>
-      </fieldset>
+      </div>
+      {{ renderer.render_select_field(approve_form.driver) }}
       {% endif %}
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">ความเห็น (ถ้ามี)</legend>
-        <textarea name="comment" class="textarea w-full" rows="2" placeholder="เช่น อนุมัติตามเสนอ"></textarea>
-      </fieldset>
+      {{ renderer.render_text_area_field(approve_form.comment) }}
       <div class="modal-action">
         <button type="button" class="btn btn-ghost" onclick="document.getElementById('approve-{{ modal_id }}').close()">ยกเลิก</button>
         <button type="submit" class="btn btn-success tone-deep-success"><i class="ph ph-check"></i> ยืนยันอนุมัติ</button>
@@ -190,16 +173,12 @@
     <p class="text-sm text-base-content/70 mt-1">
       ขั้นตอน <span class="font-semibold text-base-content">{{ step.label }}</span> · เมื่อปฏิเสธแล้วคำขอจะสิ้นสุดทันที
     </p>
-    <form method="post"
+    <form method="post" novalidate
           action="{{ url_for('vehicle_lending.car_form_requests.deny', car_application_id=car_application.id) }}"
-          class="mt-4 flex flex-col gap-3">
-      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+          class="mt-4 flex flex-col gap-1">
+      {{ deny_form.hidden_tag() }}
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">เหตุผลที่ปฏิเสธ <span class="text-error">*</span></legend>
-        <textarea name="denied_reason" class="textarea w-full" rows="3" required placeholder="ผู้ขอจะเห็นเหตุผลนี้"></textarea>
-      </fieldset>
+      {{ renderer.render_text_area_field(deny_form.denied_reason) }}
       <div class="modal-action">
         <button type="button" class="btn btn-ghost" onclick="document.getElementById('deny-{{ modal_id }}').close()">ยกเลิก</button>
         <button type="submit" class="btn btn-error"><i class="ph ph-x"></i> ยืนยันปฏิเสธ</button>
@@ -280,43 +259,19 @@
 </script>
 {% endmacro %}
 
-{% macro search_bar(endpoint, organization, search_args, templates, statuses=none, placeholder='ค้นหาสถานที่ เหตุผล ผู้ขอ ทะเบียนรถ') %}
-<form method="GET" action="{{ url_for(endpoint) }}" role="search"
-      class="card bg-base-100 border border-base-300 shadow-sm">
-  {# เขียน class เต็มทั้งสองแบบให้ tailwind scan เจอ #}
-  {% set grid_cols = 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_minmax(9rem,12rem)_auto]' if statuses else 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_auto]' %}
-  <div class="card-body p-4 grid grid-cols-1 gap-3 {{ grid_cols }} md:items-end">
+{% macro search_bar(endpoint, organization, search_form, placeholder='ค้นหาสถานที่ เหตุผล ผู้ขอ ทะเบียนรถ') %}
+{% set with_status = 'status' in search_form %}
+{% set grid_cols = 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_minmax(9rem,12rem)_auto]' if with_status else 'md:grid-cols-[minmax(14rem,1fr)_minmax(10rem,16rem)_auto]' %}
+{% set filtered = search_form.q.data or search_form.template_id.data or (with_status and search_form.status.data) %}
+<form method="GET" action="{{ url_for(endpoint) }}" role="search" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body p-4 grid grid-cols-1 gap-x-3 {{ grid_cols }} md:items-end">
     <input type="hidden" name="organization_id" value="{{ organization.id }}">
-    <fieldset class="fieldset py-0">
-      <legend class="fieldset-legend">ค้นหา</legend>
-      <label class="input w-full">
-        <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
-        <input type="search" name="q" value="{{ search_args.q }}" placeholder="{{ placeholder }}" class="grow">
-      </label>
-    </fieldset>
-    <fieldset class="fieldset py-0">
-      <legend class="fieldset-legend">แบบฟอร์ม</legend>
-      <select name="template_id" class="select w-full">
-        <option value="">ทุกแบบฟอร์ม</option>
-        {% for template in templates %}
-        <option value="{{ template.id }}" {% if search_args.template_id == template.id|string %}selected{% endif %}>{{ template.name }}</option>
-        {% endfor %}
-      </select>
-    </fieldset>
-    {% if statuses %}
-    <fieldset class="fieldset py-0">
-      <legend class="fieldset-legend">สถานะ</legend>
-      <select name="status" class="select w-full">
-        <option value="">ทุกสถานะ</option>
-        {% for value, label in statuses %}
-        <option value="{{ value }}" {% if search_args.status == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </fieldset>
-    {% endif %}
-    <div class="flex gap-2">
+    {{ renderer.render_field(search_form.q, placeholder=placeholder, type='search') }}
+    {{ renderer.render_select_field(search_form.template_id) }}
+    {% if with_status %}{{ renderer.render_select_field(search_form.status) }}{% endif %}
+    <div class="flex gap-2 pb-1">
       <button type="submit" class="btn btn-primary flex-1 md:flex-none"><i class="ph ph-magnifying-glass"></i> ค้นหา</button>
-      {% if search_args.q or search_args.template_id or search_args.status %}
+      {% if filtered %}
       <a class="btn btn-ghost flex-1 md:flex-none" href="{{ url_for(endpoint, organization_id=organization.id) }}">ล้าง</a>
       {% endif %}
     </div>

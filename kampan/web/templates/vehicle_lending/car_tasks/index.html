@@ -1,5 +1,6 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/base/html-renderer.html' as renderer %}
 {% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 
 {% block title %}รายการงาน{% endblock %}
@@ -11,7 +12,6 @@
 {% block content %}
 <div id="edit-modal"></div>
 
-{# ชื่อแบบฟอร์มสำหรับคำขอจาก template, ประเภทการใช้แบบเดิมสำหรับคำขอเก่า #}
 {% macro request_kind(car_application) %}
   {% if car_application.form_template %}
     {{ car_application.form_template.name }}
@@ -56,36 +56,13 @@
 <section class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4">
     <form method="GET" action="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
-      class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(10rem,12rem)_minmax(11rem,14rem)_minmax(9rem,10rem)_auto] xl:items-end">
+      class="grid w-full grid-cols-1 gap-x-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(10rem,12rem)_minmax(11rem,14rem)_minmax(9rem,10rem)_auto] xl:items-end">
       <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      <fieldset class="fieldset py-0">
-        <legend class="fieldset-legend">ค้นหา</legend>
-        <label class="input w-full">
-          <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
-          <input type="search" name="q" value="{{ q }}" placeholder="สถานที่ เหตุผล ผู้ขอ ทะเบียน คนขับ" class="grow">
-        </label>
-      </fieldset>
-      <fieldset class="fieldset py-0">
-        <legend class="fieldset-legend">เลือกวันที่</legend>
-        <input id="task-date" type="date" name="date" class="input w-full"
-          value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
-      </fieldset>
-      <fieldset class="fieldset py-0">
-        <legend class="fieldset-legend">เรียงลำดับตาม</legend>
-        <select id="task-sort-by" name="sort_by" class="select w-full">
-          <option value="departure_datetime" {% if sort_by == 'departure_datetime' %}selected{% endif %}>วันเวลาออกเดินทาง</option>
-          <option value="return_datetime" {% if sort_by == 'return_datetime' %}selected{% endif %}>วันเวลากลับ</option>
-          <option value="created_date" {% if sort_by == 'created_date' %}selected{% endif %}>วันที่สร้าง</option>
-        </select>
-      </fieldset>
-      <fieldset class="fieldset py-0">
-        <legend class="fieldset-legend">ลำดับ</legend>
-        <select id="task-order" name="order" class="select w-full">
-          <option value="asc" {% if order_dir == 'asc' %}selected{% endif %}>เก่าสุดก่อน</option>
-          <option value="desc" {% if order_dir == 'desc' %}selected{% endif %}>ใหม่สุดก่อน</option>
-        </select>
-      </fieldset>
-      <div class="flex flex-wrap gap-2">
+      {{ renderer.render_field(filter_form.q, placeholder="สถานที่ เหตุผล ผู้ขอ ทะเบียน คนขับ", type="search") }}
+      {{ renderer.render_field(filter_form.date) }}
+      {{ renderer.render_select_field(filter_form.sort_by) }}
+      {{ renderer.render_select_field(filter_form.order) }}
+      <div class="flex flex-wrap gap-2 pb-1">
         <button type="submit" class="btn btn-primary flex-1 sm:flex-none"><i class="ph ph-magnifying-glass"></i> ค้นหา</button>
         <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
           class="btn btn-outline flex-1 sm:flex-none"><i class="ph ph-calendar-dot"></i> วันนี้</a>

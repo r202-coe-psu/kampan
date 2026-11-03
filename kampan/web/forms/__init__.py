@@ -26,3 +26,4 @@ from . import reservations
 from . import requisition_timeline_items
 from . import car_feedback
 from . import car_form_templates
+from . import car_form_requests

@@ -887,7 +887,10 @@ def test_new_form_marks_required_fields_with_a_red_asterisk(app, head_admin_setu
         f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
     ).get_data(as_text=True)
 
-    marked = set(re.findall(r'<span class="label-text">([^<]+?)\s*<span class="text-error"[^>]*>\*</span>', html))
+    marked = {
+        label.strip()
+        for label in re.findall(r'<legend class="fieldset-legend">\s*([^<]+?)\s*<span class="text-error"[^>]*>\*</span>', html)
+    }
     assert {"เบอร์โทรศัพท์", "สถานที่ที่ต้องการจะไป", "วันที่ออกเดินทาง", "เลขที่โครงการ"} <= marked
     assert "หมายเหตุเพิ่มเติม" not in marked
 
@@ -1209,3 +1212,175 @@ def test_task_list_search_by_text(app, head_admin_setup, login_as):
     assert 'name="q"' in hit
     assert "ปลายทาง-งาน-xyz" in hit
     assert "ปลายทาง-งาน-xyz" not in miss
+
+
+# ---- WTForms + html-renderer ----
+
+
+@pytest.fixture
+def csrf_on(app):
+    app.config["WTF_CSRF_ENABLED"] = True
+    yield
+    app.config["WTF_CSRF_ENABLED"] = False
+
+
+def _csrf_from(html):
+    import re
+
+    return re.search(r'name="csrf_token" type="hidden" value="([^"]+)"|name="csrf_token" value="([^"]+)"', html)
+
+
+def _token(html):
+    m = _csrf_from(html)
+    return m.group(1) or m.group(2)
+
+
+def test_approve_and_deny_without_csrf_token_are_rejected(app, head_admin_setup, login_as, csrf_on):
+    """เปิด CSRF แล้ว POST อนุมัติ/ปฏิเสธโดยไม่มี token ต้องไม่ผ่าน และสถานะไม่เปลี่ยน"""
+    s = head_admin_setup
+    app.config["WTF_CSRF_ENABLED"] = False
+    car_app = _submit_and_get(app, login_as, s)
+    app.config["WTF_CSRF_ENABLED"] = True
+    head = login_as(app.test_client(), s["head"])
+
+    approve = _approve(head, car_app, s["org"])
+    deny = head.post(f"{BASE}/{car_app.id}/deny", data={"organization_id": str(s["org"].id), "denied_reason": "x"})
+
+    assert approve.status_code == 400
+    assert deny.status_code == 400
+    car_app.reload()
+    assert car_app.status == "pending" and car_app.current_step == 0
+
+
+def test_approve_with_csrf_token_from_the_detail_page_succeeds(app, head_admin_setup, login_as, csrf_on):
+    s = head_admin_setup
+    app.config["WTF_CSRF_ENABLED"] = False
+    car_app = _submit_and_get(app, login_as, s)
+    app.config["WTF_CSRF_ENABLED"] = True
+    head = login_as(app.test_client(), s["head"])
+    token = _token(_detail(head, car_app, s["org"]).get_data(as_text=True))
+
+    res = _approve(head, car_app, s["org"], csrf_token=token)
+
+    assert res.status_code == 302
+    car_app.reload()
+    assert car_app.current_step == 1
+
+
+def test_submit_without_csrf_token_is_rejected(app, head_admin_setup, login_as, csrf_on):
+    s = head_admin_setup
+    res = _submit(login_as(app.test_client(), s["staff"]), s["template"], s["org"])
+
+    assert res.status_code == 400
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_approve_without_car_on_the_vehicle_step_shows_the_error_in_the_reopened_modal(
+    app, head_admin_setup, login_as
+):
+    """ขั้นจัดรถไม่เลือกรถ: ได้ 400 พร้อมหน้ารายละเอียดที่เปิด modal อนุมัติค้างไว้และบอก error ที่ช่องรถ"""
+    s = head_admin_setup
+    car_app = _at_vehicle_step(app, login_as, s)
+
+    res = _approve(login_as(app.test_client(), s["admin"]), car_app, s["org"], next="detail")
+
+    assert res.status_code == 400
+    html = res.get_data(as_text=True)
+    assert "กรุณาเลือกรถ" in html
+    assert f'data-open-modal="approve-{car_app.id}"' in html
+
+
+def test_deny_without_reason_shows_the_error_and_keeps_the_request_pending(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+
+    res = login_as(app.test_client(), s["head"]).post(
+        f"{BASE}/{car_app.id}/deny", data={"organization_id": str(s["org"].id), "denied_reason": "  "}
+    )
+
+    assert res.status_code == 400
+    html = res.get_data(as_text=True)
+    assert "กรุณาระบุเหตุผลที่ปฏิเสธ" in html
+    assert f'data-open-modal="deny-{car_app.id}"' in html
+    car_app.reload()
+    assert car_app.status == "pending"
+
+
+def test_submit_rejects_a_return_before_departure_with_a_thai_message_at_the_field(
+    app, head_admin_setup, login_as
+):
+    s = head_admin_setup
+    res = _submit(
+        login_as(app.test_client(), s["staff"]), s["template"], s["org"],
+        return_date="2026-03-09",
+    )
+
+    assert res.status_code == 400
+    html = res.get_data(as_text=True)
+    assert "วันเวลากลับต้องอยู่หลังวันเวลาออกเดินทาง" in html
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_submit_without_phone_shows_a_thai_required_message(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    res = _submit(login_as(app.test_client(), s["staff"]), s["template"], s["org"], phone="")
+
+    assert res.status_code == 400
+    assert "กรุณากรอกเบอร์โทรศัพท์" in res.get_data(as_text=True)
+
+
+def test_request_form_renders_fields_with_the_html_renderer_components(app, head_admin_setup, login_as):
+    """ฟิลด์หลักและฟิลด์ของ template ใช้ macro ของ html-renderer (fieldset id="field-<name>")
+    ช่องติ๊กหลายข้อใช้ render_checkbox_list_field"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"], [{"source": "catalog", "key": "cost_responsibility"}, {"source": "catalog", "key": "province"}]
+    )
+
+    html = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
+    ).get_data(as_text=True)
+
+    for name in ("phone", "location", "request_reason", "passenger_number", "departure_date", "return_time", "province", "cost_responsibility"):
+        assert f'id="field-{name}"' in html, name
+    assert "checkbox checkbox-primary" in html
+
+
+def test_search_bar_is_a_wtform_rendered_with_the_html_renderer(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    html = login_as(app.test_client(), s["admin"]).get(
+        f"{BASE}/?organization_id={s['org'].id}&q=abc"
+    ).get_data(as_text=True)
+
+    assert 'id="field-q"' in html
+    assert 'id="field-template_id"' in html
+    assert 'id="field-status"' in html
+    assert 'value="abc"' in html
+
+
+def test_task_filter_is_a_wtform_rendered_with_the_renderer_and_ignores_unknown_sort_fields(
+    app, head_admin_setup, login_as
+):
+    s = head_admin_setup
+    admin = login_as(app.test_client(), s["admin"])
+    base = f"/vehicle_lending/car_tasks?organization_id={s['org'].id}"
+
+    html = admin.get(f"{base}&q=abc").get_data(as_text=True)
+    odd_sort = admin.get(f"{base}&sort_by=creator.password&order=sideways")
+
+    for name in ("q", "date", "sort_by", "order"):
+        assert f'id="field-{name}"' in html, name
+    assert 'value="abc"' in html
+    assert odd_sort.status_code == 200
+
+
+def test_return_before_departure_is_reported_even_when_other_fields_are_missing(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    res = _submit(
+        login_as(app.test_client(), s["staff"]), s["template"], s["org"],
+        phone="", return_date="2026-03-09",
+    )
+
+    html = res.get_data(as_text=True)
+    assert "กรุณากรอกเบอร์โทรศัพท์" in html
+    assert "วันเวลากลับต้องอยู่หลังวันเวลาออกเดินทาง" in html

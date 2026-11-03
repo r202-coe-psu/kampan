@@ -15,7 +15,7 @@
 </div>
 
 <div class="mt-4">
-  {{ ui.search_bar('vehicle_lending.car_form_requests.inbox', organization, search_args, templates) }}
+  {{ ui.search_bar('vehicle_lending.car_form_requests.inbox', organization, search_form) }}
 </div>
 
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
@@ -80,7 +80,7 @@
   {% else %}
   <div class="card-body items-center text-center py-12">
     <i class="ph ph-check-circle text-5xl text-success"></i>
-    {% if search_args.q or search_args.template_id %}
+    {% if search_form.q.data or search_form.template_id.data %}
     <h2 class="text-lg font-semibold">ไม่พบคำขอที่ตรงกับการค้นหา</h2>
     <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้นหรือแบบฟอร์ม</p>
     {% else %}

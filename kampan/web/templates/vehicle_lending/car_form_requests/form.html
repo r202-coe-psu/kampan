@@ -1,74 +1,83 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/base/html-renderer.html' as renderer %}
 
 {% block title %}{{ template.name }}{% endblock %}
 {% block dashboard_title %}{{ template.name }}{% endblock %}
 
-{% block content %}
-{% macro field_label(text, required) -%}
-<span class="label-text">{{ text }}{% if required %} <span class="text-error" title="ต้องกรอก" aria-label="ต้องกรอก">*</span>{% endif %}</span>
-{%- endmacro %}
+{% macro render_detail_field(field) %}
+  {% if field.type == 'SelectMultipleField' %}
+    {{ renderer.render_checkbox_list_field(field) }}
+  {% elif field.type == 'SelectField' %}
+    {{ renderer.render_select_field(field) }}
+  {% elif field.type == 'TextAreaField' %}
+    {{ renderer.render_text_area_field(field) }}
+  {% elif field.type in ('IntegerField', 'FloatField') %}
+    {{ renderer.render_number_field(field, disabled_optional_text=True) }}
+  {% else %}
+    {{ renderer.render_field(field) }}
+  {% endif %}
+{% endmacro %}
 
-<div class="flex justify-start w-full gap-2">
-  <a class="btn btn-primary"
-     href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">
-    <i class="ph ph-arrow-u-up-left"></i>
-    ย้อนกลับ
-  </a>
+{% block breadcrumbs %}
+<div class="breadcrumbs text-sm">
+  <ul>
+    <li><a href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยื่นคำขอใช้รถ</a></li>
+    <li>{{ template.name }}</li>
+  </ul>
 </div>
+{% endblock %}
 
-<form method="post"
+{% block content %}
+<form method="post" novalidate
       action="{{ url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) }}"
-      class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-  {{ details_form.hidden_tag() }}
-  <p class="text-sm text-base-content/60"><span class="text-error">*</span> = ต้องกรอก</p>
+      class="mt-4 flex flex-col gap-4">
+  {{ form.hidden_tag() }}
   <input type="hidden" name="organization_id" value="{{ organization.id }}">
 
-  <label class="form-control">
-    {{ field_label('เบอร์โทรศัพท์', True) }}
-    <input type="text" name="phone" value="{{ form.get('phone', '') }}" class="input input-bordered w-full" required>
-  </label>
-  <label class="form-control">
-    {{ field_label('สถานที่ที่ต้องการจะไป', True) }}
-    <input type="text" name="location" value="{{ form.get('location', '') }}" class="input input-bordered w-full" required>
-  </label>
-  <label class="form-control">
-    {{ field_label('เหตุผลที่ต้องการใช้รถ', True) }}
-    <textarea name="request_reason" class="textarea textarea-bordered w-full" required>{{ form.get('request_reason', '') }}</textarea>
-  </label>
-  <label class="form-control">
-    {{ field_label('จำนวนผู้โดยสาร', True) }}
-    <input type="number" min="0" name="passenger_number" value="{{ form.get('passenger_number', '') }}" class="input input-bordered w-full" required>
-  </label>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <label class="form-control">
-      {{ field_label('วันที่ออกเดินทาง', True) }}
-      <input type="date" name="departure_date" value="{{ form.get('departure_date', '') }}" class="input input-bordered w-full" required>
-    </label>
-    <label class="form-control">
-      {{ field_label('เวลาออกเดินทาง', True) }}
-      <input type="time" name="departure_time" value="{{ form.get('departure_time', '') }}" class="input input-bordered w-full" required>
-    </label>
-    <label class="form-control">
-      {{ field_label('วันที่กลับ', True) }}
-      <input type="date" name="return_date" value="{{ form.get('return_date', '') }}" class="input input-bordered w-full" required>
-    </label>
-    <label class="form-control">
-      {{ field_label('เวลากลับ', True) }}
-      <input type="time" name="return_time" value="{{ form.get('return_time', '') }}" class="input input-bordered w-full" required>
-    </label>
+  {% if form.errors %}
+  <div role="alert" class="alert alert-error alert-soft">
+    <i class="ph ph-warning-circle text-xl"></i>
+    <span>กรอกข้อมูลไม่ครบหรือไม่ถูกต้อง กรุณาตรวจช่องที่มีข้อความสีแดง</span>
   </div>
+  {% endif %}
 
-  {% for field in details_form if field.widget.input_type != 'hidden' %}
-  <div class="form-control">
-    {{ field_label(field.label.text, field.flags.required) }}
-    {{ field(class_="select select-bordered w-full" if field.type == "SelectField" else "input input-bordered w-full") }}
-    {% for error in field.errors %}<span class="text-error text-sm">{{ error }}</span>{% endfor %}
-  </div>
-  {% endfor %}
+  <section class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="card-title text-base"><i class="ph ph-clipboard-text"></i> ข้อมูลการเดินทาง</h3>
+        <p class="text-xs text-base-content/60"><span class="text-error">*</span> = ต้องกรอก</p>
+      </div>
+      <div class="grid grid-cols-1 gap-x-4 md:grid-cols-2">
+        {{ renderer.render_field(form.phone, placeholder="เช่น 074-282000") }}
+        {{ renderer.render_number_field(form.passenger_number, min=0, disabled_optional_text=True) }}
+        <div class="md:col-span-2">{{ renderer.render_field(form.location) }}</div>
+        <div class="md:col-span-2">{{ renderer.render_text_area_field(form.request_reason) }}</div>
+        {{ renderer.render_field(form.departure_date) }}
+        {{ renderer.render_field(form.departure_time) }}
+        {{ renderer.render_field(form.return_date) }}
+        {{ renderer.render_field(form.return_time) }}
+      </div>
+    </div>
+  </section>
+
+  {% if form.details_keys %}
+  <section class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body">
+      <h3 class="card-title text-base"><i class="ph ph-list-bullets"></i> ข้อมูลเพิ่มเติมของแบบฟอร์ม</h3>
+      <div class="grid grid-cols-1 gap-x-4 md:grid-cols-2">
+        {% for key in form.details_keys %}
+        <div class="{{ 'md:col-span-2' if form[key].type in ('TextAreaField', 'SelectMultipleField') else '' }}">
+          {{ render_detail_field(form[key]) }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
 
   <div class="flex justify-end gap-2">
     <a class="btn btn-ghost" href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยกเลิก</a>
-    <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
+    <button type="submit" class="btn btn-primary"><i class="ph ph-paper-plane-tilt"></i> ยื่นคำขอ</button>
   </div>
 </form>
 {% endblock %}

@@ -71,7 +71,7 @@ def _details_key(field_def):
     return f"custom_{field_def['key']}"
 
 
-def build_details_form(field_defs, allowed_choices=None):
+def build_details_form(field_defs, allowed_choices=None, base=FlaskForm):
     """allowed_choices: optional {catalog key: values} that narrows a catalog
     field's choices further; if nothing would be left, the choices are kept."""
     keys = [_details_key(f) for f in field_defs]
@@ -87,4 +87,5 @@ def build_details_form(field_defs, allowed_choices=None):
         return values
 
     attrs["details"] = details
-    return type("DetailsForm", (FlaskForm,), attrs)
+    attrs["details_keys"] = keys
+    return type("DetailsForm", (base,), attrs)

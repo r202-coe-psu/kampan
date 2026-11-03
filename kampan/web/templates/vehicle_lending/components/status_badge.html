@@ -1,5 +1,3 @@
-{# ป้ายสถานะคำขอใช้รถ ใช้ร่วมกันทุกหน้า: badge-soft บอกด้วยสี, สีเขียวใช้โทนเข้ม (tone-deep-success) ให้อ่านง่าย
-   compact=true -> ขนาดเล็กสำหรับตาราง/การ์ดแน่น ๆ, readable=true -> แบบเส้นขอบบนพื้นขาว (ใช้บนพื้นหลังสี) #}
 {% macro render(car_application, compact=false, readable=false) %}
   {% set styles = {
     'pending': 'badge-warning',

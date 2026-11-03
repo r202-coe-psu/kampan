@@ -115,10 +115,19 @@
 </div>
 
 {% if can_act %}
-{{ ui.action_modals(car_application, step, organization, cars, cars_requested_type_first, drivers, next='detail') }}
+{{ ui.action_modals(car_application, step, organization, approve_form, deny_form) }}
 {% endif %}
 {% endblock %}
 
 {% block additional_js %}
 {{ ui.car_filter_js() }}
+{% if open_modal %}
+<div hidden data-open-modal="{{ open_modal }}"></div>
+<script>
+  (() => {
+    const dialog = document.getElementById({{ open_modal|tojson }});
+    if (dialog) dialog.showModal();
+  })();
+</script>
+{% endif %}
 {% endblock %}

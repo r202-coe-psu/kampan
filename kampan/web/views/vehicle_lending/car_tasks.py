@@ -31,28 +31,28 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    date_str = request.args.get("date")
-    target_date = None
-    sort_by = request.args.get("sort_by", "departure_datetime")
-    order_dir = request.args.get("order", "asc")
+    filter_form = forms.car_form_requests.CarTaskFilterForm(formdata=request.args)
+    filter_form.validate()
+    target_date = None if filter_form.date.errors else filter_form.date.data
+    sort_choices = {value for value, _ in filter_form.sort_by.choices}
+    sort_by = filter_form.sort_by.data if filter_form.sort_by.data in sort_choices else "departure_datetime"
+    order_dir = "desc" if filter_form.order.data == "desc" else "asc"
+    q = (filter_form.q.data or "").strip()
 
     query = Q(organization=organization, status="active")
 
-    if date_str:
-        target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    if target_date:
         start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
         end_of_day = datetime.datetime.combine(target_date, datetime.time.max)
         query &= Q(
             departure_datetime__gte=start_of_day, departure_datetime__lte=end_of_day
         )
 
-    # Apply sorting
     sort_field = sort_by if order_dir == "asc" else f"-{sort_by}"
     car_lendings = models.vehicle_applications.CarApplication.objects(query).order_by(
         sort_field
     )
 
-    q = request.args.get("q", "").strip()
     if q:
         matched_ids = [c.id for c in utils.car_form_flow.search(car_lendings, q=q)]
         car_lendings = car_lendings.filter(id__in=matched_ids)
@@ -68,6 +68,7 @@ def index():
         target_date=target_date,
         today_date=today_date,
         q=q,
+        filter_form=filter_form,
         sort_by=sort_by,
         order_dir=order_dir,
         paginated_car_applications=paginated_car_applications,
