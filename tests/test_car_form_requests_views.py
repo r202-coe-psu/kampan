@@ -866,3 +866,25 @@ def test_request_list_flags_a_car_of_another_type_than_requested(
 
     assert "จัดรถต่างประเภทจากที่ขอ" in mismatch_page
     assert "จัดรถต่างประเภทจากที่ขอ" not in matching_page
+
+
+def test_new_form_marks_required_fields_with_a_red_asterisk(app, head_admin_setup, login_as):
+    """ช่องที่บังคับกรอกมี * สีแดงต่อท้ายชื่อ ช่องที่ไม่บังคับไม่มี"""
+    import re
+
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"],
+        [
+            {"source": "custom", "key": "project_no", "field_type": "text", "label": "เลขที่โครงการ", "is_required": True},
+            {"source": "custom", "key": "note", "field_type": "text", "label": "หมายเหตุเพิ่มเติม"},
+        ],
+    )
+
+    html = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/new/{template.id}?organization_id={s['org'].id}"
+    ).get_data(as_text=True)
+
+    marked = set(re.findall(r'<span class="label-text">([^<]+?)\s*<span class="text-error"[^>]*>\*</span>', html))
+    assert {"เบอร์โทรศัพท์", "สถานที่ที่ต้องการจะไป", "วันที่ออกเดินทาง", "เลขที่โครงการ"} <= marked
+    assert "หมายเหตุเพิ่มเติม" not in marked
