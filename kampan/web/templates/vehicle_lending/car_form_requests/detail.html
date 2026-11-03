@@ -38,6 +38,12 @@
           <i class="ph ph-file-pdf"></i> ดูใบขอ
         </a>
         {% endif %}
+        {% if can_edit %}
+        <a class="btn btn-outline"
+           href="{{ url_for('vehicle_lending.car_form_requests.edit', car_application_id=car_application.id, organization_id=organization.id) }}">
+          <i class="ph ph-pencil-simple"></i> แก้ไขคำขอ
+        </a>
+        {% endif %}
         {% if can_act %}{{ ui.action_buttons(car_application) }}{% endif %}
       </div>
     </div>

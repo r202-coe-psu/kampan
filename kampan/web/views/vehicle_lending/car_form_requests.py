@@ -11,6 +11,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user
+from wtforms import fields as wtforms_fields
 
 from kampan import models, utils
 from kampan.web import acl, forms
@@ -203,6 +204,88 @@ def create(template_id):
     )
 
 
+def _saved_form_data(car_application, form_class):
+    departure = car_application.departure_datetime
+    return_ = car_application.return_datetime
+    data = {
+        "phone": car_application.phone,
+        "location": car_application.location,
+        "request_reason": car_application.request_reason,
+        "passenger_number": car_application.passenger_number,
+        "departure_date": departure.date() if departure else None,
+        "departure_time": departure.time() if departure else None,
+        "return_date": return_.date() if return_ else None,
+        "return_time": return_.time() if return_ else None,
+    }
+    details = car_application.details or {}
+    for key in form_class.details_keys:
+        value = details.get(key)
+        # details เก็บวันที่เป็น isoformat ต้องแปลงกลับให้ DateField แสดงค่าได้
+        if getattr(form_class, key).field_class is wtforms_fields.DateField and isinstance(value, str):
+            value = datetime.date.fromisoformat(value) if value else None
+        data[key] = value
+    return data
+
+
+def _display_value(value):
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(v) for v in value)
+    if isinstance(value, datetime.time):
+        return value.strftime("%H:%M")
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    return str(value).strip()
+
+
+def _form_changes(form, saved):
+    changes = []
+    for name, old in saved.items():
+        old_text, new_text = _display_value(old), _display_value(form[name].data)
+        if old_text != new_text:
+            changes.append(
+                {"field": name, "label": str(form[name].label.text), "old": old_text, "new": new_text}
+            )
+    return changes
+
+
+@module.route("/<car_application_id>/edit", methods=["GET", "POST"])
+@acl.organization_roles_required(*REQUEST_ROLES)
+def edit(car_application_id):
+    organization = g.organization
+    user = current_user._get_current_object()
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization, form_template__ne=None
+    ).first()
+    if not car_application:
+        abort(404)
+    if not utils.car_form_flow.can_edit(car_application, user):
+        abort(403)
+
+    form_class = _request_form_class(
+        (car_application.template_snapshot or {}).get("fields", []), organization
+    )
+    saved = _saved_form_data(car_application, form_class)
+    form = form_class() if request.method == "POST" else form_class(data=saved)
+
+    if not form.validate_on_submit():
+        return _render_request_form(organization, car_application.form_template, form, car_application)
+
+    changes = _form_changes(form, saved)
+    if changes:
+        _apply_core_fields(car_application, form)
+        utils.car_form_flow.record_edited(car_application, user, changes)
+        car_application.save()
+    return redirect(
+        url_for(
+            "vehicle_lending.car_form_requests.detail",
+            car_application_id=str(car_application.id),
+            organization_id=str(organization.id),
+        )
+    )
+
+
 def _redirect_after_action(car_application, organization):
     # ทำจากหน้ารายละเอียด (next=detail) กลับไปหน้ารายละเอียด ที่เหลือกลับหน้ารายการที่ต้องอนุมัติ
     if request.form.get("next") == "detail":
@@ -260,6 +343,7 @@ def _render_detail(car_application, organization, approve_form=None, deny_form=N
             organization=organization,
             car_application=car_application,
             can_act=can_act,
+            can_edit=utils.car_form_flow.can_edit(car_application, user),
             approve_form=approve_form,
             deny_form=deny_form,
             open_modal=open_modal,

@@ -1408,3 +1408,112 @@ def test_request_reason_is_limited_to_what_fits_one_line_on_the_paper_form(app, 
 
     form = client.get(f"{BASE}/new/{s['template'].id}?organization_id={s['org'].id}")
     assert 'maxlength="60"' in form.get_data(as_text=True)
+
+
+def _edit(client, car_app, org, **overrides):
+    return client.post(
+        f"{BASE}/{car_app.id}/edit",
+        data={
+            "organization_id": str(org.id),
+            "phone": "0812345678",
+            "location": "จ.สงขลา",
+            "request_reason": "ตรวจงานก่อสร้าง",
+            "passenger_number": "3",
+            "departure_date": "2026-03-10",
+            "departure_time": "08:30",
+            "return_date": "2026-03-10",
+            "return_time": "16:30",
+            **overrides,
+        },
+    )
+
+
+def test_requester_can_edit_their_request_before_any_approver_acts_and_it_is_audited(
+    app, head_admin_setup, login_as
+):
+    """ผู้ยื่นแก้คำขอได้ตราบที่ยังไม่มีผู้อนุมัติดำเนินการ และบันทึกค่าที่เปลี่ยนใน audit log"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    client = login_as(app.test_client(), s["staff"])
+
+    page = client.get(f"{BASE}/{car_app.id}/edit?organization_id={s['org'].id}")
+    assert page.status_code == 200
+    html = page.get_data(as_text=True)
+    assert 'value="จ.สงขลา"' in html
+    assert 'value="2026-03-10"' in html
+    assert f"{BASE}/{car_app.id}/edit" in _detail(client, car_app, s["org"]).get_data(as_text=True)
+
+    res = _edit(client, car_app, s["org"], location="จ.ภูเก็ต", passenger_number="5")
+    assert res.status_code == 302
+    car_app.reload()
+    assert car_app.location == "จ.ภูเก็ต"
+    assert car_app.passenger_number == 5
+    assert car_app.status == "pending"
+    assert car_app.current_step == 0
+    log = car_app.audit_logs[-1]
+    assert log.action == "edited"
+    assert log.actor == s["staff"]
+    assert {c["field"] for c in log.changes} == {"location", "passenger_number"}
+
+
+def test_edit_keeps_the_request_on_its_submitted_template_snapshot(app, head_admin_setup, login_as):
+    """แก้ template หลังยื่นแล้ว ฟอร์มแก้คำขอยังใช้ฟิลด์ของ snapshot เดิม"""
+    s = head_admin_setup
+    template = _template_with_fields(
+        s["org"], [{"source": "custom", "key": "project_no", "label": "เลขที่โครงการ", "field_type": "text"}]
+    )
+    client = login_as(app.test_client(), s["staff"])
+    _submit(client, template, s["org"], custom_project_no="PRJ-1")
+    car_app = models.vehicle_applications.CarApplication.objects(organization=s["org"]).first()
+    template.fields = []
+    template.save()
+
+    res = _edit(client, car_app, s["org"], custom_project_no="PRJ-2")
+    assert res.status_code == 302
+    car_app.reload()
+    assert car_app.details == {"custom_project_no": "PRJ-2"}
+
+
+def test_request_cannot_be_edited_after_an_approver_acted(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    _approve(login_as(app.test_client(), s["head"]), car_app, s["org"])
+    client = login_as(app.test_client(), s["staff"])
+
+    _assert_forbidden(client.get(f"{BASE}/{car_app.id}/edit?organization_id={s['org'].id}"))
+    _assert_forbidden(_edit(client, car_app, s["org"], location="จ.ภูเก็ต"))
+    assert f"{BASE}/{car_app.id}/edit" not in _detail(client, car_app, s["org"]).get_data(as_text=True)
+    car_app.reload()
+    assert car_app.location == "จ.สงขลา"
+
+
+def test_denied_request_cannot_be_edited(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    login_as(app.test_client(), s["head"]).post(
+        f"{BASE}/{car_app.id}/deny",
+        data={"organization_id": str(s["org"].id), "denied_reason": "ไม่จำเป็น"},
+    )
+    client = login_as(app.test_client(), s["staff"])
+    _assert_forbidden(_edit(client, car_app, s["org"], location="จ.ภูเก็ต"))
+
+
+def test_only_the_requester_can_edit_a_pending_request(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    for user in (s["head"], s["admin"]):
+        client = login_as(app.test_client(), user)
+        _assert_forbidden(_edit(client, car_app, s["org"], location="จ.ภูเก็ต"))
+    car_app.reload()
+    assert car_app.location == "จ.สงขลา"
+
+
+def test_invalid_edit_is_rejected_with_400_and_changes_nothing(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    client = login_as(app.test_client(), s["staff"])
+    res = _edit(client, car_app, s["org"], location="", return_date="2026-03-09")
+    assert res.status_code == 400
+    car_app.reload()
+    assert car_app.location == "จ.สงขลา"
+    assert [log.action for log in car_app.audit_logs] == ["submitted"]

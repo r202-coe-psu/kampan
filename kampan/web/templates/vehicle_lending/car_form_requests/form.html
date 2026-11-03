@@ -1,8 +1,9 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}{{ template.name }}{% endblock %}
-{% block dashboard_title %}{{ template.name }}{% endblock %}
+{% set page_title = ('แก้ไขคำขอ: ' if car_application else '') ~ template.name %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block dashboard_title %}{{ page_title }}{% endblock %}
 
 {% macro render_detail_field(field) %}
   {% if field.type == 'SelectMultipleField' %}
@@ -21,15 +22,27 @@
 {% block breadcrumbs %}
 <div class="breadcrumbs text-sm">
   <ul>
+    {% if car_application %}
+    <li><a href="{{ url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id) }}">คำขอใช้รถ</a></li>
+    <li><a href="{{ url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) }}">{{ template.name }}</a></li>
+    <li>แก้ไข</li>
+    {% else %}
     <li><a href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยื่นคำขอใช้รถ</a></li>
     <li>{{ template.name }}</li>
+    {% endif %}
   </ul>
 </div>
 {% endblock %}
 
 {% block content %}
-<form method="post" novalidate
-      action="{{ url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) }}"
+{% if car_application %}
+  {% set action_url = url_for('vehicle_lending.car_form_requests.edit', car_application_id=car_application.id, organization_id=organization.id) %}
+  {% set cancel_url = url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) %}
+{% else %}
+  {% set action_url = url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) %}
+  {% set cancel_url = url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) %}
+{% endif %}
+<form method="post" novalidate action="{{ action_url }}"
       class="mt-4 flex flex-col gap-4">
   {{ form.hidden_tag() }}
   <input type="hidden" name="organization_id" value="{{ organization.id }}">
@@ -76,8 +89,12 @@
   {% endif %}
 
   <div class="flex justify-end gap-2">
-    <a class="btn btn-ghost" href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยกเลิก</a>
+    <a class="btn btn-ghost" href="{{ cancel_url }}">ยกเลิก</a>
+    {% if car_application %}
+    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> บันทึกการแก้ไข</button>
+    {% else %}
     <button type="submit" class="btn btn-primary"><i class="ph ph-paper-plane-tilt"></i> ยื่นคำขอ</button>
+    {% endif %}
   </div>
 </form>
 {% endblock %}
