@@ -99,6 +99,18 @@ class CarApplicationAuditLog(me.EmbeddedDocument):
     def get_action_display(self):
         return dict(AUDIT_ACTIONS).get(self.action, self.action)
 
+    def display_changes(self):
+        """changes สำหรับแสดงผล: ค่าสถานะแปลงเป็นป้ายภาษาไทย"""
+        labels = dict(CAR_APPLICATION_STATUS)
+        return [
+            {
+                **change,
+                "old": labels.get(change.get("old"), change.get("old")) if change.get("field") == "status" else change.get("old"),
+                "new": labels.get(change.get("new"), change.get("new")) if change.get("field") == "status" else change.get("new"),
+            }
+            for change in self.changes
+        ]
+
 
 class CarApplication(VehicleApplication, me.Document):
     meta = {"collection": "car_applications"}
