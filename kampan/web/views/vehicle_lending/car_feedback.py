@@ -7,6 +7,7 @@ from bson import ObjectId
 from flask import (
     Blueprint,
     abort,
+    flash,
     redirect,
     render_template,
     request,
@@ -664,6 +665,7 @@ def create_or_edit(template_id):
         cars=selected_cars,
         questions=questions,
     )
+    flash(f"{'บันทึก' if template_id else 'สร้าง'}แบบประเมิน {form.name.data} แล้ว", "success")
 
     return redirect(url_for("vehicle_lending.car_feedback.index", organization_id=organization.id))
 
@@ -819,5 +821,6 @@ def delete(template_id):
         return abort(404)
 
     delete_template(template)
+    flash(f"ลบแบบประเมิน {template.name} แล้ว", "success")
 
     return redirect(url_for("vehicle_lending.car_feedback.index", organization_id=organization.id))
