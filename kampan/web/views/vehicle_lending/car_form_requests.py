@@ -76,6 +76,19 @@ def _cars_requested_type_first(cars, car_application):
     return sorted(cars, key=lambda car: car.vehicle_type != requested)
 
 
+@module.route("/")
+@acl.organization_roles_required(*REQUEST_ROLES)
+def index():
+    organization = g.organization
+    user = current_user._get_current_object()
+    return render_template(
+        "/vehicle_lending/car_form_requests/index.html",
+        organization=organization,
+        car_applications=utils.car_form_flow.visible_requests(user, organization),
+        current_step_def=utils.car_form_flow.current_step_def,
+    )
+
+
 @module.route("/inbox")
 @acl.organization_roles_required(*REQUEST_ROLES)
 def inbox():
@@ -180,7 +193,7 @@ def create(template_id):
     car_application.save()
     return redirect(
         url_for(
-            "vehicle_lending.car_form_requests.inbox",
+            "vehicle_lending.car_form_requests.index",
             organization_id=str(organization.id),
         )
     )

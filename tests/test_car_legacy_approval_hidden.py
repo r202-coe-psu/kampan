@@ -33,4 +33,4 @@ def test_sidebar_hides_legacy_approval_menus_when_disabled(legacy_disabled, admi
     assert "หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์" not in html
     assert "ผอ. อนุมัติขอใช้รถยนต์" not in html
     assert "พัสดุอนุมัติขอใช้รถยนต์" not in html
-    assert "รอฉันอนุมัติ" in html
+    assert "รายการที่ต้องอนุมัติ" in html

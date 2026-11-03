@@ -662,8 +662,8 @@ def test_new_form_renders_core_fields_and_the_templates_details_fields(
     assert 'name="custom_project_no"' in html
 
 
-def test_submit_approve_and_deny_redirect_to_the_inbox(app, head_admin_setup, login_as):
-    """ยื่น/อนุมัติ/ปฏิเสธสำเร็จ แล้วพาไปหน้า inbox ของ car form requests"""
+def test_submit_goes_to_the_requests_list_and_approve_deny_go_to_the_inbox(app, head_admin_setup, login_as):
+    """ยื่นสำเร็จแล้วพาไปหน้ารวมคำขอใช้รถ ส่วนอนุมัติ/ปฏิเสธพาไปหน้ารายการที่ต้องอนุมัติ"""
     s = head_admin_setup
     inbox_path = f"{BASE}/inbox"
 
@@ -675,7 +675,9 @@ def test_submit_approve_and_deny_redirect_to_the_inbox(app, head_admin_setup, lo
         data={"organization_id": str(s["org"].id), "denied_reason": "รถไม่ว่าง"},
     )
 
-    for res in (submitted, approved, denied):
+    assert submitted.status_code == 302
+    assert submitted.headers["Location"].split("?")[0].endswith(f"{BASE}/")
+    for res in (approved, denied):
         assert res.status_code == 302
         assert inbox_path in res.headers["Location"]
 
@@ -702,7 +704,7 @@ def test_legacy_car_application_pages_render_a_template_request_without_using_ty
 def test_sidebar_links_to_new_request_and_inbox_for_staff_and_templates_for_admin_only(
     app, head_admin_setup, login_as
 ):
-    """sidebar มีลิงก์ยื่นคำขอและรอฉันอนุมัติสำหรับ staff ส่วนลิงก์จัดการ template เห็นเฉพาะ admin"""
+    """sidebar มีลิงก์ยื่นคำขอและรายการที่ต้องอนุมัติสำหรับ staff ส่วนลิงก์จัดการ template เห็นเฉพาะ admin"""
     s = head_admin_setup
     org_q = f"?organization_id={s['org'].id}"
 
@@ -888,3 +890,89 @@ def test_new_form_marks_required_fields_with_a_red_asterisk(app, head_admin_setu
     marked = set(re.findall(r'<span class="label-text">([^<]+?)\s*<span class="text-error"[^>]*>\*</span>', html))
     assert {"เบอร์โทรศัพท์", "สถานที่ที่ต้องการจะไป", "วันที่ออกเดินทาง", "เลขที่โครงการ"} <= marked
     assert "หมายเหตุเพิ่มเติม" not in marked
+
+
+def _requests_list(client, org):
+    return client.get(f"{BASE}/?organization_id={org.id}")
+
+
+@pytest.fixture
+def two_requests(app, head_admin_setup, login_as, create_user, assign_user_to_org):
+    """คำขอ 2 ใบ: ของ staff (ฝ่ายอาคาร) และของ staff อีกคนในฝ่ายอื่น"""
+    s = head_admin_setup
+    other_division = models.Division(name="ฝ่ายอื่น", organization=s["org"])
+    other_division.save()
+    other_staff = create_user("Otherstaff", "User")
+    role = assign_user_to_org(other_staff, s["org"], roles=["staff"])
+    role.division = other_division
+    role.save()
+
+    mine = _submit_and_get(app, login_as, s)
+    mine.location = "สถานที่ของสตาฟ-ก"
+    mine.save()
+    _submit(login_as(app.test_client(), other_staff), s["template"], s["org"])
+    theirs = models.vehicle_applications.CarApplication.objects(creator=other_staff).first()
+    theirs.location = "สถานที่ของสตาฟ-ข"
+    theirs.save()
+    return {**s, "other_staff": other_staff}
+
+
+def test_requests_list_shows_staff_only_their_own_requests(app, two_requests, login_as):
+    """พนักงาน (staff) เห็นเฉพาะคำขอที่ตัวเองยื่น"""
+    s = two_requests
+    res = _requests_list(login_as(app.test_client(), s["staff"]), s["org"])
+
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert "สถานที่ของสตาฟ-ก" in html
+    assert "สถานที่ของสตาฟ-ข" not in html
+
+
+@pytest.mark.parametrize("role", ["admin", "director", "endorser", "supervisor supplier"])
+def test_requests_list_shows_every_request_in_the_org_to_admin_and_executive_roles(
+    app, two_requests, login_as, create_user, assign_user_to_org, create_org, role
+):
+    """admin / ผอ. / ผู้อนุมัติ / หัวหน้าพัสดุ เห็นคำขอทุกใบใน org (แต่ไม่เห็นของ org อื่น)"""
+    s = two_requests
+    viewer = create_user("Viewer", role.replace(" ", ""))
+    assign_user_to_org(viewer, s["org"], roles=[role])
+
+    html = _requests_list(login_as(app.test_client(), viewer), s["org"]).get_data(as_text=True)
+
+    assert "สถานที่ของสตาฟ-ก" in html
+    assert "สถานที่ของสตาฟ-ข" in html
+
+
+def test_requests_list_shows_head_the_requests_of_their_own_division(app, two_requests, login_as):
+    """หัวหน้าฝ่ายเห็นคำขอของคนในฝ่ายตัวเอง ไม่เห็นของฝ่ายอื่น"""
+    s = two_requests
+    html = _requests_list(login_as(app.test_client(), s["head"]), s["org"]).get_data(as_text=True)
+
+    assert "สถานที่ของสตาฟ-ก" in html
+    assert "สถานที่ของสตาฟ-ข" not in html
+
+
+def test_requests_list_does_not_show_requests_from_another_org(
+    app, two_requests, login_as, create_org, assign_user_to_org
+):
+    """admin ของอีก org ดูรายการของ org ตัวเองแล้วไม่เห็นคำขอของ org นี้"""
+    s = two_requests
+    other_org = create_org(name="องค์กรอื่น")
+    assign_user_to_org(s["admin"], other_org, roles=["admin"])
+
+    html = _requests_list(login_as(app.test_client(), s["admin"]), other_org).get_data(as_text=True)
+
+    assert "สถานที่ของสตาฟ-ก" not in html
+    assert "สถานที่ของสตาฟ-ข" not in html
+
+
+def test_sidebar_names_the_inbox_list_to_approve_and_links_the_requests_list(
+    app, head_admin_setup, login_as
+):
+    """เมนูชื่อ "รายการที่ต้องอนุมัติ" (ไม่ใช่ "รอฉันอนุมัติ") และมีเมนู "คำขอใช้รถ" ไปหน้ารวมคำขอ"""
+    s = head_admin_setup
+    html = _requests_list(login_as(app.test_client(), s["staff"]), s["org"]).get_data(as_text=True)
+
+    assert "รายการที่ต้องอนุมัติ" in html
+    assert "รอฉันอนุมัติ" not in html
+    assert f'href="{BASE}/?organization_id={s["org"].id}"' in html

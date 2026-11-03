@@ -1,5 +1,7 @@
 import datetime
 
+import mongoengine as me
+
 from kampan import models
 
 
@@ -46,6 +48,23 @@ def pending_for(user, organization):
         status="pending",
     ).order_by("created_date")
     return [c for c in pending if can_act(c, user, organization)]
+
+
+VIEW_ALL_ROLES = ("admin", "director", "endorser", "supervisor supplier")
+
+
+def visible_requests(user, organization):
+    """คำขอจาก template ที่ผู้ใช้ดูได้: admin/ผอ./ผู้อนุมัติ/หัวหน้าพัสดุ เห็นทั้ง org,
+    หัวหน้าฝ่ายเห็นของฝ่ายตัวเองและของตัวเอง, คนอื่นเห็นเฉพาะที่ตัวเองยื่น"""
+    requests = models.vehicle_applications.CarApplication.objects(
+        organization=organization, form_template__ne=None
+    ).order_by("-created_date")
+    if user.has_organization_roles(*VIEW_ALL_ROLES, organization=organization):
+        return requests
+    division = _user_division(user, organization)
+    if division and "head" in user.get_organization_roles(organization):
+        return requests.filter(me.Q(division=division) | me.Q(creator=user))
+    return requests.filter(creator=user)
 
 
 def approve(car_application, user, comment="", car=None, driver=None):
