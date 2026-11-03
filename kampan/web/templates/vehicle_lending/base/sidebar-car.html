@@ -72,6 +72,7 @@
       </a>
     </li>
     {% endif %}
+    {% if config.get("CAR_LEGACY_APPROVAL_ENABLED") %}
     {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/header_page' in request.path else '' }}"
@@ -96,6 +97,7 @@
         <i class="ph ph-check-square"></i> พัสดุอนุมัติขอใช้รถยนต์
       </a>
     </li>
+    {% endif %}
     {% endif %}
 
     <li>

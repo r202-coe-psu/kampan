@@ -3,6 +3,7 @@ import datetime
 import mongoengine as me
 from flask import (
     Blueprint,
+    abort,
     current_app,
     redirect,
     render_template,
@@ -18,6 +19,13 @@ from kampan.web import acl, forms
 from ... import redis_rq
 
 module = Blueprint("car_permissions", __name__, url_prefix="/car_permissions")
+
+
+@module.before_request
+def hide_when_legacy_approval_disabled():
+    # flow อนุมัติแบบเดิมของ DIIS ถูกซ่อนไว้ระหว่างย้ายไปใช้ car form templates
+    if not current_app.config.get("CAR_LEGACY_APPROVAL_ENABLED"):
+        abort(404)
 
 
 def notify_requester(car_application):

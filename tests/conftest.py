@@ -19,6 +19,7 @@ def app():
     flask_app.config["SECRET_KEY"] = "test-secret-key"
     flask_app.config["TESTING"] = True
     flask_app.config["WTF_CSRF_ENABLED"] = False
+    flask_app.config["CAR_LEGACY_APPROVAL_ENABLED"] = True  # test ของ flow เดิมยังรันอยู่
     flask_app.config["MONGODB_SETTINGS"] = {
         "db": "kampan_test_db",
         "mongo_client_class": mongomock.MongoClient,
