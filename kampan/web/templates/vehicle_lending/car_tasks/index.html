@@ -45,11 +45,17 @@
 {% endmacro %}
 
 {% macro close_button(car_application, extra='') %}
-  {% if car_application.id in closable_car_application_ids %}
+  {% set oldest = oldest_active_by_car.get(car_application.car.id) if car_application.car else None %}
+  {% if oldest and oldest.id == car_application.id %}
   <button class="btn btn-primary btn-sm whitespace-nowrap {{ extra }}" hx-target="#edit-modal" hx-swap="innerHTML"
     hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
     <i class="ph ph-gas-pump"></i> ปิดงาน / กรอกไมล์
   </button>
+  {% elif oldest %}
+  <span class="text-xs text-base-content/60 text-right leading-snug {{ extra }}" data-blocked-by="{{ oldest.id }}">
+    รอปิดงานก่อนหน้าของรถคันนี้<br>
+    {{ oldest.departure_datetime|format_thai_datetime_short_month if oldest.departure_datetime else '-' }}{% if oldest.driver %} · {{ oldest.driver.get_resources_fullname_th() }}{% endif %}
+  </span>
   {% endif %}
 {% endmacro %}
 
