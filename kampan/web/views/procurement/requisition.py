@@ -2,10 +2,12 @@ import datetime
 from decimal import Decimal  # เพิ่ม
 from io import BytesIO
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     abort,
     current_app,
+    flash,
     redirect,
     render_template,
     request,
@@ -316,7 +318,7 @@ def renewal_requested(requisition_procurement_id):
 
         requisitions = requisitions.order_by("-requisition_code")
         # print(requisitions[1].purchaser.to_json(indent=2))
-        mas_list = models.MAS.objects()
+        mas_list = models.MAS.objects(organization=organization)
 
         # Pagination
         page = request.args.get("page", default=1, type=int)
@@ -595,14 +597,60 @@ def requisition_action(requisition_id):
     manager_id = request.form.get("manager")
 
     organization = g.organization
+    if not organization:
+        abort(404)
+
     requisition = models.Requisition.objects(id=requisition_id, organization=organization).first()
-    members = organization.get_organization_users()
-    member_obj = next(
-        (m for m in members if str(getattr(m.user, "id", "")) == str(current_user.id)),
-        None,
-    )
+    member_obj = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status__ne="disactive",
+    ).first()
     if not member_obj or not requisition:
         abort(404)
+
+    if approver_role not in models.requisitions.APPROVAL_STEPS or action not in models.requisitions.APPROVAL_ACTIONS:
+        abort(400)
+
+    renewal_requested_url = url_for(
+        "procurement.requisitions.renewal_requested",
+        organization_id=organization.id,
+    )
+    # ตรวจสิทธิ์ ลำดับขั้น และการกดซ้ำ ก่อนเขียนข้อมูลใด ๆ (กติกาเดียวกับที่ template ใช้ซ่อน/ปิดปุ่ม)
+    approval_error = requisition.get_approval_error(approver_role, current_user._get_current_object())
+    if approval_error:
+        flash(approval_error, "error")
+        return redirect(renewal_requested_url)
+
+    manager_obj = None
+    if approver_role == "admin" and action == "approved" and manager_id:
+        if ObjectId.is_valid(manager_id):
+            manager_obj = models.OrganizationUserRole.objects(
+                id=manager_id,
+                organization=organization,
+                roles="manager",
+                status__ne="disactive",
+            ).first()
+        if not manager_obj:
+            abort(400)
+
+    approval = models.requisitions.ApprovalHistory(
+        approver=member_obj,
+        approver_role=approver_role,
+        action=action,
+        reason=reason if action == "rejected" and reason else None,
+        timestamp=datetime.datetime.now(),
+        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+        user_agent=request.headers.get("User-Agent"),
+    )
+    # จองขั้นนี้แบบ atomic ก่อนจัดสรรงบหรือส่งอีเมล กันกดซ้ำ/กดพร้อมกันแล้วตัดงบ MAS ซ้ำ
+    claimed = models.Requisition.objects(
+        id=requisition.id,
+        approval_history__not__elemMatch={"approver_role": approver_role},
+    ).update_one(push__approval_history=approval)
+    if not claimed:
+        flash("ขั้นนี้ดำเนินการแล้ว", "error")
+        return redirect(renewal_requested_url)
 
     if (approver_role == "head" or approver_role == "manager") and action == "approved":
         job = redis_rq.redis_queue.queue.enqueue(
@@ -619,7 +667,7 @@ def requisition_action(requisition_id):
         )
         print("=====> Approved email job submitted", job.get_id())
 
-    # Admin อนุมัติ: อัปเดตการจัดสรร MAS แบบหลายแหล่ง (ไม่กันการจัดสรรซ้ำ)
+    # Admin อนุมัติ: อัปเดตการจัดสรร MAS แบบหลายแหล่ง (กันการจัดสรรซ้ำด้วยการจองขั้นด้านบน)
     if approver_role == "admin" and action == "approved":
         # รวบรวม amounts ต่อ MAS จาก form: key = fund_amounts[<mas_id>]
         items = list(request.form.items(multi=True))  # แปลงเป็น list เพื่อใช้งาน/ debug ได้
@@ -643,7 +691,9 @@ def requisition_action(requisition_id):
             amt = input_amounts.get(fid, Decimal("0.00"))
             if amt <= 0:
                 continue
-            mas = models.MAS.objects(id=fid).first()
+            if not ObjectId.is_valid(fid):
+                continue
+            mas = models.MAS.objects(id=fid, organization=organization).first()
             if not mas:
                 continue
 
@@ -672,32 +722,22 @@ def requisition_action(requisition_id):
             requisition.fund_source = fund_source
 
         # 5) บันทึก Manager และส่งอีเมลถึง Manager
-        if manager_id:
+        if manager_obj:
             is_acting = request.form.get("Acting") == "True"
-            manager_obj = models.OrganizationUserRole.objects(id=manager_id).first()
-            if manager_obj:
-                requisition.selected_manager = models.requisitions.SelectedManager(
-                    manager=manager_obj,
-                    is_acting=is_acting,
-                )
+            requisition.selected_manager = models.requisitions.SelectedManager(
+                manager=manager_obj,
+                is_acting=is_acting,
+            )
 
-                job = redis_rq.redis_queue.queue.enqueue(
-                    utils.send_email_to_manager.send_email_to_manager,
-                    args=(requisition, current_app.config, manager_obj, organization),
-                    timeout=600,
-                    job_timeout=600,
-                )
-                print("=====> manager email job submitted", job.get_id())
+            job = redis_rq.redis_queue.queue.enqueue(
+                utils.send_email_to_manager.send_email_to_manager,
+                args=(requisition, current_app.config, manager_obj, organization),
+                timeout=600,
+                job_timeout=600,
+            )
+            print("=====> manager email job submitted", job.get_id())
 
-    approval = models.requisitions.ApprovalHistory(
-        approver=member_obj,
-        approver_role=approver_role,
-        action=action,
-        reason=reason if action == "rejected" and reason else None,
-        timestamp=datetime.datetime.now(),
-        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-        user_agent=request.headers.get("User-Agent"),
-    )
+    # approval ถูก push ลง DB แล้วตอนจองขั้น เพิ่มใน object ด้วยเพื่อให้ save() ด้านล่างเขียนตรงกัน
     if requisition.approval_history is None:
         requisition.approval_history = []
     requisition.approval_history.append(approval)

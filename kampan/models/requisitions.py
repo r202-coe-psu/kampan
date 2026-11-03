@@ -23,6 +23,11 @@ STATUS_CHOICES = [
     ("cancelled", "ยกเลิก"),
 ]
 
+# ลำดับขั้นการอนุมัติ: หัวหน้าฝ่าย → เจ้าหน้าที่พัสดุ → ผู้บริหาร
+APPROVAL_STEPS = ("head", "admin", "manager")
+APPROVAL_ACTIONS = ("approved", "rejected")
+APPROVAL_CLOSED_STATUSES = ("incomplete", "complete", "completed", "cancelled")
+
 SHOW_ITEM_CHOICES = [
     ("all", "แสดงทั้งหมด"),
     ("me", "แสดงเฉพาะของฉัน"),
@@ -136,3 +141,57 @@ class Requisition(me.Document):
         if self.items and len(self.items) > 0:
             return self.items[0].get_category_display()
         return "-"
+
+    def get_approval(self, approver_role: str):
+        for approval in self.approval_history or []:
+            if approval.approver_role == approver_role:
+                return approval
+        return None
+
+    def get_approval_error(self, approver_role: str, user) -> str | None:
+        """คืนเหตุผลที่ user ดำเนินการขั้น approver_role ไม่ได้ หรือ None ถ้าดำเนินการได้
+
+        ใช้ทั้งฝั่ง server (requisition_action) และ template เพื่อให้กติกาตรงกัน
+        global admin ดำเนินการแทนได้ทุกขั้น แต่ยังต้องเรียงลำดับขั้น
+        """
+        from .organizations import OrganizationUserRole
+
+        if approver_role not in APPROVAL_STEPS:
+            return "ขั้นการอนุมัติไม่ถูกต้อง"
+        if self.status in APPROVAL_CLOSED_STATUSES:
+            return "รายการนี้ปิดการอนุมัติแล้ว"
+        if self.get_approval(approver_role):
+            return "ขั้นนี้ดำเนินการแล้ว"
+
+        step_index = APPROVAL_STEPS.index(approver_role)
+        if step_index > 0:
+            previous = self.get_approval(APPROVAL_STEPS[step_index - 1])
+            if not previous or previous.action != "approved":
+                return "รอการอนุมัติจากขั้นก่อนหน้า"
+
+        if "admin" in user.roles:
+            return None
+
+        # template ส่ง current_user (LocalProxy) มา ต้องแปลงเป็น User ก่อนใช้ใน query
+        user = getattr(user, "_get_current_object", lambda: user)()
+        member = OrganizationUserRole.objects(
+            user=user, organization=self.organization, status__ne="disactive"
+        ).first()
+        if not member:
+            return "ไม่มีสิทธิ์ดำเนินการขั้นนี้"
+
+        if approver_role == "head":
+            if "head" not in member.roles:
+                return "ไม่มีสิทธิ์ดำเนินการขั้นนี้"
+            purchaser_division = self.purchaser.division if self.purchaser else None
+            if not member.division or purchaser_division != member.division:
+                return "อนุมัติได้เฉพาะคำขอของฝ่ายตัวเอง"
+        elif approver_role == "admin":
+            if "admin" not in member.roles:
+                return "ไม่มีสิทธิ์ดำเนินการขั้นนี้"
+        elif approver_role == "manager":
+            selected = self.selected_manager.manager if self.selected_manager else None
+            if selected != member:
+                return "อนุมัติได้เฉพาะผู้บริหารที่ถูกเลือก"
+
+        return None
