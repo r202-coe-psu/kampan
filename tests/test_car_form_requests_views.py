@@ -615,6 +615,68 @@ def test_paper_is_404_when_the_template_has_no_pdf(app, head_admin_setup, login_
     assert res.status_code == 404
 
 
+def _attach_paper(template, variables):
+    blank = BytesIO()
+    pdf = canvas.Canvas(blank, pagesize=(595, 842))
+    pdf.drawString(50, 800, "BLANK-FORM")
+    pdf.showPage()
+    pdf.save()
+    template.paper_file = models.car_form_templates.CarFormPaperFile(
+        organization=template.organization,
+        filename="form.pdf",
+        data=blank.getvalue(),
+        page_count=1,
+        page_sizes=[[595, 842]],
+    ).save()
+    template.placements = [
+        models.car_form_templates.PaperPlacement(page=0, x=0.1, y=0.1 + i * 0.05, w=0.6, h=0.03, variable=v)
+        for i, v in enumerate(variables)
+    ]
+    template.save()
+
+
+def test_preview_renders_the_paper_from_unsaved_partial_values(app, head_admin_setup, login_as):
+    """POST /new/<id>/preview ส่ง PDF จากค่าที่กรอกอยู่ โดยไม่บันทึกคำขอ แม้กรอกยังไม่ครบ"""
+    s = head_admin_setup
+    _attach_paper(s["template"], ["app.location", "app.departure.day"])
+    client = login_as(app.test_client(), s["staff"])
+
+    res = client.post(
+        f"{BASE}/new/{s['template'].id}/preview?organization_id={s['org'].id}",
+        data={"location": "PREVIEW-PLACE"},
+    )
+
+    assert res.status_code == 200
+    assert res.mimetype == "application/pdf"
+    text = PdfReader(BytesIO(res.data)).pages[0].extract_text()
+    assert "BLANK-FORM" in text
+    assert "PREVIEW-PLACE" in text
+    assert models.vehicle_applications.CarApplication.objects.count() == 0
+
+
+def test_preview_button_shows_only_when_the_template_has_a_paper(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    client = login_as(app.test_client(), s["staff"])
+    url = f"{BASE}/new/{s['template'].id}?organization_id={s['org'].id}"
+
+    without = client.get(url).get_data(as_text=True)
+    _attach_paper(s["template"], ["app.location"])
+    with_paper = client.get(url).get_data(as_text=True)
+
+    assert "ดูตัวอย่างเอกสาร" not in without
+    assert f'formaction="{BASE}/new/{s["template"].id}/preview?organization_id={s["org"].id}"' in with_paper
+
+
+def test_preview_is_404_without_a_paper(app, head_admin_setup, login_as):
+    s = head_admin_setup
+
+    res = login_as(app.test_client(), s["staff"]).post(
+        f"{BASE}/new/{s['template'].id}/preview?organization_id={s['org'].id}", data={}
+    )
+
+    assert res.status_code == 404
+
+
 def test_new_request_picker_lists_only_active_templates_of_the_current_org(
     app, head_admin_setup, login_as, create_org
 ):

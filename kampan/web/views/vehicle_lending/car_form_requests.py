@@ -167,25 +167,69 @@ def _apply_core_fields(car_application, form):
     car_application.updater = current_user._get_current_object()
 
 
-@module.route("/new/<template_id>", methods=["GET", "POST"])
-@acl.organization_roles_required(*REQUEST_ROLES)
-def create(template_id):
-    organization = g.organization
+def _active_template_or_404(organization, template_id):
     template = models.car_form_templates.CarFormTemplate.objects(
         id=template_id, organization=organization, status="active"
     ).first()
     if not template:
         abort(404)
+    return template
+
+
+def _requester_division(organization):
+    member = models.OrganizationUserRole.objects(
+        user=current_user.id, organization=organization, status__ne="disactive"
+    ).first()
+    return member.division if member else None
+
+
+def _combine(date, time):
+    return datetime.datetime.combine(date, time) if date and time else None
+
+
+@module.route("/new/<template_id>/preview", methods=["POST"])
+@acl.organization_roles_required(*REQUEST_ROLES)
+def preview(template_id):
+    """PDF ของคำขอจากค่าที่กรอกอยู่ ยังไม่บันทึก กรอกไม่ครบก็ได้ ช่องที่ขาดจะว่าง"""
+    organization = g.organization
+    template = _active_template_or_404(organization, template_id)
+    snapshot = _snapshot(template)
+    form = _request_form_class(snapshot["fields"], organization)()
+
+    car_application = models.vehicle_applications.CarApplication(
+        organization=organization,
+        template_snapshot=snapshot,
+        creator=current_user._get_current_object(),
+        division=_requester_division(organization),
+        details=form.details(),
+        phone=(form.phone.data or "").strip(),
+        location=(form.location.data or "").strip(),
+        request_reason=(form.request_reason.data or "").strip(),
+        passenger_number=form.passenger_number.data,
+        departure_datetime=_combine(form.departure_date.data, form.departure_time.data),
+        return_datetime=_combine(form.return_date.data, form.return_time.data),
+    )
+    pdf = utils.car_form_paper.render_pdf(car_application)
+    if pdf is None:
+        abort(404)
+    return Response(
+        pdf,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": "inline; filename=car_form_request_preview.pdf"},
+    )
+
+
+@module.route("/new/<template_id>", methods=["GET", "POST"])
+@acl.organization_roles_required(*REQUEST_ROLES)
+def create(template_id):
+    organization = g.organization
+    template = _active_template_or_404(organization, template_id)
 
     snapshot = _snapshot(template)
     form = _request_form_class(snapshot["fields"], organization)()
 
     if not form.validate_on_submit():
         return _render_request_form(organization, template, form)
-
-    member = models.OrganizationUserRole.objects(
-        user=current_user.id, organization=organization, status__ne="disactive"
-    ).first()
 
     car_application = models.vehicle_applications.CarApplication(
         organization=organization,
@@ -194,7 +238,7 @@ def create(template_id):
         status="pending",
         current_step=0,
         creator=current_user._get_current_object(),
-        division=member.division if member else None,
+        division=_requester_division(organization),
     )
     _apply_core_fields(car_application, form)
     utils.car_form_flow.record_submitted(car_application, current_user._get_current_object())

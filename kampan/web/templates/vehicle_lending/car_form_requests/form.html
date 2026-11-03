@@ -93,6 +93,12 @@
     {% if car_application %}
     <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> บันทึกการแก้ไข</button>
     {% else %}
+    {% if template.paper_file %}
+    <button type="submit" class="btn btn-outline" formnovalidate formtarget="_blank"
+            formaction="{{ url_for('vehicle_lending.car_form_requests.preview', template_id=template.id, organization_id=organization.id) }}">
+      <i class="ph ph-file-pdf"></i> ดูตัวอย่างเอกสาร
+    </button>
+    {% endif %}
     <button type="submit" class="btn btn-primary"><i class="ph ph-paper-plane-tilt"></i> ยื่นคำขอ</button>
     {% endif %}
   </div>

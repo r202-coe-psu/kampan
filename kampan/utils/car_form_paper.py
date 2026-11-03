@@ -31,10 +31,14 @@ THAI_MONTHS = [
 
 
 def _thai_date(dt):
+    if dt is None:
+        return {}
     return {"day": dt.day, "month_th": THAI_MONTHS[dt.month - 1], "year_be": dt.year + 543}
 
 
 def _thai_datetime(dt):
+    if dt is None:
+        return {}
     return {**_thai_date(dt), "time": dt.strftime("%H:%M")}
 
 
