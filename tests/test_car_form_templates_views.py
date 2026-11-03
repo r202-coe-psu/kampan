@@ -24,7 +24,6 @@ def valid_payload(org, **overrides):
         "organization_id": str(org.id),
         "name": "ใบขอใช้รถทั่วไป",
         "description": "ใช้กับงานทั่วไป",
-        "paper_html": "<p>{{ app.requester_name }}</p>",
         "fields_data": json.dumps(
             [
                 {"source": "catalog", "key": "district", "is_required": True},
@@ -63,7 +62,7 @@ def valid_payload(org, **overrides):
 
 
 def test_org_admin_creates_template_with_fields_and_steps(app, setup, login_as):
-    """An org admin creates a template by posting name, fields_data, steps_data and paper_html; it is saved for that org with the given fields and steps"""
+    """An org admin creates a template by posting name, fields_data, steps_data; it is saved for that org with the given fields and steps"""
     org = setup["org"]
     client = login_as(app.test_client(), setup["admin"])
 
@@ -75,7 +74,6 @@ def test_org_admin_creates_template_with_fields_and_steps(app, setup, login_as):
 
     template = models.car_form_templates.CarFormTemplate.objects(organization=org).get()
     assert template.name == "ใบขอใช้รถทั่วไป"
-    assert template.paper_html == "<p>{{ app.requester_name }}</p>"
     assert [(f.source, f.key, f.is_required) for f in template.fields] == [
         ("catalog", "district", True),
         ("custom", "note", False),

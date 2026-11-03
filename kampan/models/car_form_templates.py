@@ -13,6 +13,8 @@ CUSTOM_FIELD_TYPES = [
     ("radio", "เลือกข้อเดียว"),
     ("checkbox", "เลือกได้หลายข้อ"),
 ]
+PLACEMENT_KINDS = [("text", "ข้อความ"), ("check", "เครื่องหมายถูก")]
+PLACEMENT_ALIGNS = [("left", "ชิดซ้าย"), ("center", "กึ่งกลาง"), ("right", "ชิดขวา")]
 APPROVER_TYPES = [("role", "ตาม role"), ("user", "ระบุตัวคน")]
 
 
@@ -38,6 +40,35 @@ class ApprovalStepDef(me.EmbeddedDocument):
     assigns_vehicle = me.BooleanField(default=False)
 
 
+class CarFormPaperFile(me.Document):
+    """PDF ต้นฉบับของใบพิมพ์ (immutable: อัปโหลดใหม่ = เอกสารใหม่)"""
+
+    meta = {"collection": "car_form_paper_files", "indexes": ["organization"]}
+
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
+    filename = me.StringField(default="")
+    data = me.BinaryField(required=True)
+    page_count = me.IntField(required=True, min_value=1)
+    page_sizes = me.ListField(me.ListField(me.FloatField()))
+    uploaded_by = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+
+
+class PaperPlacement(me.EmbeddedDocument):
+    """ตำแหน่งวางค่าบนหน้า PDF เป็นสัดส่วน 0..1 ของหน้า origin มุมบนซ้าย"""
+
+    page = me.IntField(min_value=0, default=0)
+    x = me.FloatField(required=True)
+    y = me.FloatField(required=True)
+    w = me.FloatField(required=True)
+    h = me.FloatField(required=True)
+    variable = me.StringField(required=True)
+    kind = me.StringField(choices=PLACEMENT_KINDS, default="text")
+    match_value = me.StringField(default="")
+    font_size = me.FloatField(default=14)
+    align = me.StringField(choices=PLACEMENT_ALIGNS, default="left")
+
+
 class CarFormTemplate(me.Document):
     meta = {"collection": "car_form_templates", "indexes": ["organization"]}
 
@@ -46,7 +77,8 @@ class CarFormTemplate(me.Document):
     description = me.StringField(default="")
     fields = me.ListField(me.EmbeddedDocumentField(FormFieldDef))
     steps = me.ListField(me.EmbeddedDocumentField(ApprovalStepDef))
-    paper_html = me.StringField(default="")
+    paper_file = me.ReferenceField("CarFormPaperFile", dbref=True)
+    placements = me.ListField(me.EmbeddedDocumentField(PaperPlacement))
     status = me.StringField(
         default="active", choices=[("active", "ใช้งาน"), ("disactive", "ยกเลิก")]
     )
@@ -80,3 +112,35 @@ class CarFormTemplate(me.Document):
             raise me.ValidationError("ต้องมีอย่างน้อย 1 ขั้นอนุมัติ")
         if sum(1 for step in self.steps if step.assigns_vehicle) != 1:
             raise me.ValidationError("ต้องมีขั้นจัดรถ (assigns_vehicle) พอดี 1 ขั้น")
+
+        self._validate_placements()
+
+    def _validate_placements(self):
+        from kampan.utils.car_form_paper import available_variables
+
+        if not self.placements:
+            return
+        if not self.paper_file:
+            raise me.ValidationError("ต้องอัปโหลด PDF ก่อนวางตัวแปรบนกระดาษ")
+
+        variables = available_variables(self)
+        for placement in self.placements:
+            if placement.variable not in variables:
+                raise me.ValidationError(
+                    f"ตัวแปร '{placement.variable}' ไม่มีใน template นี้"
+                )
+            if placement.page >= self.paper_file.page_count:
+                raise me.ValidationError(
+                    f"หน้า {placement.page} เกินจำนวนหน้าของ PDF"
+                )
+            if (
+                placement.x < 0
+                or placement.y < 0
+                or placement.w <= 0
+                or placement.h <= 0
+                or placement.x + placement.w > 1 + 1e-9
+                or placement.y + placement.h > 1 + 1e-9
+            ):
+                raise me.ValidationError(
+                    f"ตำแหน่งของ '{placement.variable}' อยู่นอกหน้ากระดาษ"
+                )

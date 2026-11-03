@@ -61,3 +61,69 @@ def test_template_validation_rejects_invalid_definition(app, create_org, case):
 
     with pytest.raises(me.ValidationError):
         template.validate()
+
+
+def _paper_file(org, page_count=2):
+    paper_file = cft.CarFormPaperFile(
+        organization=org,
+        filename="form.pdf",
+        data=b"%PDF-1.4 stub",
+        page_count=page_count,
+        page_sizes=[[595, 842]] * page_count,
+    )
+    paper_file.save()
+    return paper_file
+
+
+def _placement(**overrides):
+    values = dict(page=0, x=0.1, y=0.1, w=0.3, h=0.05, variable="app.phone")
+    values.update(overrides)
+    return cft.PaperPlacement(**values)
+
+
+def _template_with_paper(org, placements, with_file=True):
+    template = _template(org, fields=[{"source": "catalog", "key": "province"}])
+    if with_file:
+        template.paper_file = _paper_file(org)
+    template.placements = placements
+    return template
+
+
+def test_template_accepts_placements_of_variables_the_template_really_has(app, create_org):
+    """placements ของตัวแปร app.*, details.<key ของฟิลด์>, approvals.<step>.*, org.name ที่ template มีจริง ต้องผ่าน validate()"""
+    placements = [
+        _placement(variable="app.phone"),
+        _placement(variable="app.departure.month_th", page=1),
+        _placement(variable="details.province"),
+        _placement(variable="approvals.admin.name"),
+        _placement(variable="org.name", x=0.7, w=0.3, y=0.95, h=0.05),
+    ]
+
+    _template_with_paper(create_org(name="องค์กรทดสอบ"), placements).validate()
+
+
+PLACEMENT_CASES = {
+    "unknown app variable": dict(placements=[_placement(variable="app.no_such")]),
+    "details key the template has no field for": dict(
+        placements=[_placement(variable="details.district")]
+    ),
+    "approval step the template does not have": dict(
+        placements=[_placement(variable="approvals.head.name")]
+    ),
+    "page beyond the PDF": dict(placements=[_placement(page=2)]),
+    "negative x": dict(placements=[_placement(x=-0.1)]),
+    "box sticking out right edge": dict(placements=[_placement(x=0.8, w=0.3)]),
+    "box sticking out bottom edge": dict(placements=[_placement(y=0.98, h=0.05)]),
+    "placements without a paper file": dict(
+        placements=[_placement()], with_file=False
+    ),
+}
+
+
+@pytest.mark.parametrize("case", PLACEMENT_CASES)
+def test_template_validation_rejects_invalid_placement(app, create_org, case):
+    """validate() ต้องปฏิเสธ placement ที่ตัวแปรไม่มีใน template, หน้าเกิน PDF, กล่องหลุดหน้า หรือไม่มี paper_file"""
+    template = _template_with_paper(create_org(name="องค์กรทดสอบ"), **PLACEMENT_CASES[case])
+
+    with pytest.raises(me.ValidationError):
+        template.validate()

@@ -1,10 +1,4 @@
-import datetime
-
-import pytest
-
 from kampan import models
-from kampan.web.views.vehicle_lending.car_form_requests import _snapshot
-from kampan.utils import car_form_paper
 from kampan.utils import car_form_seeds
 
 
@@ -43,40 +37,6 @@ def test_seeding_twice_does_not_create_duplicate_template(app, create_org):
 
     assert second.id == first.id
     assert models.car_form_templates.CarFormTemplate.objects(organization=org).count() == 1
-
-
-PAPER_TITLES = {
-    "diis_general": "ใบขอใช้รถยนต์ของสำนักนวัตกรรมดิจิทัลและระบบอัจฉริยะ",
-    "physical_domestic": "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ",
-}
-
-
-@pytest.mark.parametrize("key", list(PAPER_TITLES))
-def test_seeded_paper_renders_sample_request_with_form_title(
-    app, create_org, create_user, assign_user_to_org, create_car, key
-):
-    """paper ของ template ที่ seed ต้อง render คำขอตัวอย่างได้โดยไม่ error และมีชื่อแบบฟอร์ม"""
-    org = create_org(name="กองกายภาพ")
-    requester = create_user("Somchai", "Jaidee")
-    assign_user_to_org(requester, org, roles=["staff"])
-    template = car_form_seeds.seed_template(org, key)
-
-    application = models.vehicle_applications.CarApplication(
-        organization=org,
-        creator=requester,
-        car=create_car(org, license_plate="กข-1234"),
-        location="สงขลา",
-        request_reason="ไปราชการ",
-        departure_datetime=datetime.datetime(2026, 11, 3, 8, 30),
-        return_datetime=datetime.datetime(2026, 11, 3, 17, 0),
-        details={"vehicle_kind": "ตู้", "province": "สงขลา"},
-        template_snapshot=_snapshot(template),
-    )
-    application.save()
-
-    html = car_form_paper.render_paper(application)
-
-    assert PAPER_TITLES[key] in html
 
 
 def test_seeding_diis_general_creates_template_with_head_and_admin_steps_and_no_fields(

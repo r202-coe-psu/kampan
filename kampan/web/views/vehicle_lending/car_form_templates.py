@@ -32,7 +32,6 @@ class CarFormTemplateForm(FlaskForm):
         validators=[validators.DataRequired(message="กรุณาระบุชื่อแบบฟอร์ม")],
     )
     description = fields.StringField("รายละเอียด")
-    paper_html = fields.TextAreaField("HTML ของกระดาษ")
 
 
 class CarFormTemplateDeleteForm(FlaskForm):
@@ -240,7 +239,6 @@ def create_or_edit(template_id):
         )
         target.name = form.name.data
         target.description = form.description.data or ""
-        target.paper_html = form.paper_html.data or ""
         target.fields = parse_fields_payload(request.form.get("fields_data"))
         target.steps = parse_steps_payload(request.form.get("steps_data"), organization)
         target.last_updated_by = current_user._get_current_object()

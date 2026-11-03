@@ -1,6 +1,15 @@
 import datetime
 
-from flask import Blueprint, abort, g, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 
 from kampan import models, utils
@@ -27,7 +36,8 @@ def _snapshot(template):
             {**dict(s.to_mongo()), "user": str(s.user.id) if s.user else None}
             for s in template.steps
         ],
-        "paper_html": template.paper_html,
+        "paper_file_id": str(template.paper_file.id) if template.paper_file else None,
+        "placements": [dict(p.to_mongo()) for p in template.placements],
     }
 
 
@@ -76,11 +86,14 @@ def paper(car_application_id):
     if not car_application:
         abort(404)
 
-    return render_template(
-        "/vehicle_lending/car_form_requests/paper.html",
-        organization=organization,
-        car_application=car_application,
-        paper_html=utils.car_form_paper.render_paper(car_application),
+    pdf = utils.car_form_paper.render_pdf(car_application)
+    if pdf is None:
+        abort(404)
+
+    return Response(
+        pdf,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": "inline; filename=car_form_request.pdf"},
     )
 
 

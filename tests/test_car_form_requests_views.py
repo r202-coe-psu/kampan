@@ -1,7 +1,10 @@
 import datetime
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
+from PyPDF2 import PdfReader
+from reportlab.pdfgen import canvas
 
 from kampan import models
 from kampan.web import redis_rq
@@ -550,12 +553,30 @@ def test_inbox_shows_pending_request_only_to_users_who_can_act_on_its_current_st
     assert "ตำบลบ่อยาง-อินบ็อกซ์" in admin_after.get_data(as_text=True)
 
 
-def test_paper_shows_template_paper_rendered_with_request_values_to_org_members_only(
+def test_paper_returns_the_template_pdf_filled_with_request_values_to_org_members_only(
     app, head_admin_setup, login_as, create_org, create_user, assign_user_to_org
 ):
-    """GET /<id>/paper แสดงใบขอที่ render จาก paper_html ของ template ให้สมาชิก org เท่านั้น (org อื่นได้ 404)"""
+    """GET /<id>/paper ส่ง PDF ของ template ที่เขียนค่าคำขอทับตาม placements ให้สมาชิก org เท่านั้น (org อื่นได้ 404)"""
     s = head_admin_setup
-    s["template"].paper_html = "<p>เรียน ผอ. ขอใช้รถไป {{ app.location }}</p>"
+    blank = BytesIO()
+    pdf = canvas.Canvas(blank, pagesize=(595, 842))
+    pdf.drawString(50, 800, "BLANK-FORM")
+    pdf.showPage()
+    pdf.save()
+    paper_file = models.car_form_templates.CarFormPaperFile(
+        organization=s["org"],
+        filename="form.pdf",
+        data=blank.getvalue(),
+        page_count=1,
+        page_sizes=[[595, 842]],
+    )
+    paper_file.save()
+    s["template"].paper_file = paper_file
+    s["template"].placements = [
+        models.car_form_templates.PaperPlacement(
+            page=0, x=0.1, y=0.2, w=0.6, h=0.03, variable="app.location"
+        )
+    ]
     s["template"].save()
     car_app = _submit_and_get(app, login_as, s)
     org_b = create_org(name="หน่วยงาน B")
@@ -570,8 +591,22 @@ def test_paper_shows_template_paper_rendered_with_request_values_to_org_members_
     )
 
     assert own.status_code == 200
-    assert "เรียน ผอ. ขอใช้รถไป จ.สงขลา" in own.get_data(as_text=True)
+    assert own.mimetype == "application/pdf"
+    text = PdfReader(BytesIO(own.data)).pages[0].extract_text()
+    assert "BLANK-FORM" in text
+    assert "จ.สงขลา" in text
     assert outsider.status_code == 404
+
+
+def test_paper_is_404_when_the_template_has_no_pdf(app, head_admin_setup, login_as):
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+
+    res = login_as(app.test_client(), s["staff"]).get(
+        f"{BASE}/{car_app.id}/paper?organization_id={s['org'].id}"
+    )
+
+    assert res.status_code == 404
 
 
 def test_new_lists_only_active_templates_of_the_current_org(
