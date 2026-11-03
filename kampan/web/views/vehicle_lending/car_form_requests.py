@@ -99,7 +99,11 @@ def approve(car_application_id):
         if not car:
             abort(400)
         if request.form.get("driver"):
-            driver = models.User.objects(id=request.form.get("driver")).first()
+            driver = organization.get_all_drivers().filter(
+                id=request.form.get("driver")
+            ).first()
+            if not driver:
+                abort(400)
 
     utils.car_form_flow.approve(
         car_application,
