@@ -278,14 +278,15 @@ def get_car_applications():
     }
     datas = []
     for car_application in car_applications:
-        start = car_application.departure_datetime.strftime("%Y-%m-%d")
-        end = (
-            car_application.departure_datetime + datetime.timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-        if car_application.travel_type == "round trip":
-            end = (
-                car_application.return_datetime + datetime.timedelta(days=1)
-            ).strftime("%Y-%m-%d")
+        departure = car_application.departure_datetime
+        last_day = departure
+        # คำขอแบบใหม่บังคับกรอกวันกลับเสมอ (travel_type ค้างเป็น one way); แบบเดิมมีวันกลับเฉพาะไป-กลับ
+        # ปิดงานแล้ววันกลับคือเวลาที่กดปิด ซึ่งอาจก่อนวันออกเดินทาง จึงยืดเฉพาะเมื่อกลับหลังออก
+        has_return = car_application.form_template or car_application.travel_type == "round trip"
+        if has_return and car_application.return_datetime and car_application.return_datetime > departure:
+            last_day = car_application.return_datetime
+        start = departure.strftime("%Y-%m-%d")
+        end = (last_day + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         time = car_application.departure_datetime.strftime("%H:%M")
         creator_name = (
             car_application.creator.get_resources_fullname_th()
