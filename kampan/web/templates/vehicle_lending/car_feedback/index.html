@@ -1,74 +1,78 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% include '/procurement/components/car_qr_code_modal.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}จัดการแบบประเมินรถยนต์{% endblock %}
 
 {% block dashboard_title %}จัดการแบบประเมินรถยนต์{% endblock %}
 
 {% block content %}
-<div class="flex justify-end w-full gap-2">
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ templates|length }}</span> รายการ</p>
   <a href="{{ url_for('vehicle_lending.car_feedback.create_or_edit', organization_id=organization.id) }}"
     class="btn btn-primary">
     <i class="ph ph-plus"></i> สร้างแบบประเมินใหม่
   </a>
 </div>
 
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-2 rounded-xl">
-    <table class="table-auto w-full">
+{% macro car_chips(template) %}
+<div class="flex flex-wrap gap-1.5">
+  {% for car in template.cars %}
+  <span class="inline-flex items-center gap-1 rounded-field border border-base-300 bg-base-200 py-0.5 pl-2 pr-0.5">
+    <span class="text-xs font-semibold whitespace-nowrap">{{ car.license_plate }}</span>
+    <button type="button" class="btn btn-xs btn-circle btn-ghost qr-btn tooltip" data-tip="ดู QR Code" aria-label="ดู QR Code {{ car.license_plate }}"
+      data-license="{{ car.license_plate }}"
+      data-qr-url="{{ url_for('vehicle_lending.car_feedback.qr_code', template_id=template.id, car_id=car.id, organization_id=organization.id) }}"
+      data-feedback-url="{{ url_for('vehicle_lending.cars.feedback', car_id=car.id, template_id=template.id, organization_id=organization.id, _external=True) }}">
+      <i class="ph ph-qr-code text-base"></i>
+    </button>
+  </span>
+  {% else %}
+  <span class="text-base-content/50">-</span>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro feedback_actions(template) %}
+<a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
+  class="btn btn-sm btn-ghost btn-square tooltip" data-tip="ดูสถิติ/ผลตอบรับ" aria-label="ดูสถิติ/ผลตอบรับ">
+  <i class="ph ph-chart-bar text-lg"></i>
+</a>
+<a href="{{ url_for('vehicle_lending.car_feedback.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
+  class="btn btn-sm btn-ghost btn-square tooltip" data-tip="แก้ไข" aria-label="แก้ไข">
+  <i class="ph ph-pencil-simple text-lg"></i>
+</a>
+<button type="button" class="btn btn-sm btn-ghost btn-square text-error tooltip delete-btn" data-tip="ลบ" aria-label="ลบ"
+  data-name="{{ template.name }}"
+  data-delete-url="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}">
+  <i class="ph ph-trash text-lg"></i>
+</button>
+{% endmacro %}
+
+{% if templates %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-md:hidden">
+  <div class="overflow-x-auto">
+    <table class="table table-zebra">
       <thead>
         <tr>
-          <th class="table-style">ชื่อแบบประเมิน</th>
-          <th class="table-style">รถยนต์</th>
-          <th class="table-style">รายละเอียด</th>
-          <th class="table-style">จำนวนคำถาม</th>
-          <th class="table-style text-center">จัดการ</th>
+          <th>#</th>
+          <th>ชื่อแบบประเมิน</th>
+          <th>รถยนต์</th>
+          <th>รายละเอียด</th>
+          <th class="text-center">จำนวนคำถาม</th>
+          <th class="text-center">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for template in templates %}
-        <tr>
-          <td class="table-style font-medium">{{ template.name }}</td>
-          <td class="table-style">
-            <div class="flex flex-wrap gap-2">
-              {% for car in template.cars %}
-              <div class="flex items-center gap-1 bg-base-200 pl-2 pr-1 py-1 rounded-lg border border-base-300 group">
-                <span class="text-xs font-bold">{{ car.license_plate }}</span>
-                <button class="btn btn-xs btn-circle btn-ghost qr-btn tooltip" data-tip="ดู QR Code"
-                  data-license="{{ car.license_plate }}" 
-                  data-qr-url="{{ url_for('vehicle_lending.car_feedback.qr_code', template_id=template.id, car_id=car.id, organization_id=organization.id) }}"
-                  data-feedback-url="{{ url_for('vehicle_lending.cars.feedback', car_id=car.id, template_id=template.id, organization_id=organization.id, _external=True) }}">
-                  <i class="ph ph-qr-code"></i>
-                </button>
-              </div>
-              {% endfor %}
-            </div>
-          </td>
-          <td class="table-style truncate max-w-xs">{{ template.description }}</td>
-          <td class="table-style">{{ template.questions|length }}</td>
-          <td class="table-style text-center gap-2">
-            <div class="flex flex-wrap flex-row gap-2 justify-center">
-
-              <a href="{{ url_for('vehicle_lending.car_feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
-                class="btn btn-sm btn-ghost tooltip" data-tip="ดูสถิติ/ผลตอบรับ">
-                <i class="ph ph-chart-bar text-lg"></i>
-              </a>
-              <a href="{{ url_for('vehicle_lending.car_feedback.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
-                class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
-                <i class="ph ph-pencil-simple text-lg"></i>
-              </a>
-              <button type="button" class="btn btn-sm btn-ghost text-error tooltip delete-btn" data-tip="ลบ"
-                data-name="{{ template.name }}"
-                data-delete-url="{{ url_for('vehicle_lending.car_feedback.delete', template_id=template.id, organization_id=organization.id) }}">
-                <i class="ph ph-trash text-lg"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="5" class="text-center py-8 text-gray-500">
-            ยังไม่มีแบบประเมินข้อมูล กดที่ปุ่ม "สร้างแบบประเมินใหม่" เพื่อเริ่มสร้าง
+        <tr class="hover">
+          <td class="text-base-content/60">{{ loop.index }}</td>
+          <td class="font-medium min-w-40">{{ template.name }}</td>
+          <td class="min-w-48">{{ car_chips(template) }}</td>
+          <td class="max-w-xs truncate text-base-content/70" title="{{ template.description or '' }}">{{ template.description or '-' }}</td>
+          <td class="text-center">{{ template.questions|length }}</td>
+          <td>
+            <div class="flex justify-center gap-1">{{ feedback_actions(template) }}</div>
           </td>
         </tr>
         {% endfor %}
@@ -76,6 +80,28 @@
     </table>
   </div>
 </div>
+
+<div class="mt-4 flex flex-col gap-3 md:hidden">
+  {% for template in templates %}
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-2 p-4">
+      <div class="flex items-start justify-between gap-2">
+        <div class="font-semibold">{{ template.name }}</div>
+        <span class="badge badge-ghost badge-sm whitespace-nowrap">{{ template.questions|length }} คำถาม</span>
+      </div>
+      {% if template.description %}<p class="text-sm text-base-content/70">{{ template.description }}</p>{% endif %}
+      {{ car_chips(template) }}
+      <div class="card-actions justify-end">{{ feedback_actions(template) }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+{{ EmptyState('ph-chat-centered-text', 'ยังไม่มีแบบประเมิน',
+              description='กด “สร้างแบบประเมินใหม่” เพื่อเริ่มสร้าง',
+              action_label='สร้างแบบประเมินใหม่',
+              action_href=url_for('vehicle_lending.car_feedback.create_or_edit', organization_id=organization.id)) }}
+{% endif %}
 
 <dialog id="delete_feedback_modal" class="modal">
   <div class="modal-box max-w-md">
