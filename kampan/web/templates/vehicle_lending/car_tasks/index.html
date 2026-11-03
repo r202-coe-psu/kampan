@@ -1,9 +1,8 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
-{% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 
 {% block title %}รายการงาน{% endblock %}
-
 {% block dashboard_title %}รายการงาน{% endblock %}
 
 {% block breadcrumbs %}
@@ -12,11 +11,15 @@
 {% block content %}
 <div id="edit-modal"></div>
 
-{% macro using_type_label(car_application) %}
-  {% if car_application.using_type == 'general' %}
+{# ชื่อแบบฟอร์มสำหรับคำขอจาก template, ประเภทการใช้แบบเดิมสำหรับคำขอเก่า #}
+{% macro request_kind(car_application) %}
+  {% if car_application.form_template %}
+    {{ car_application.form_template.name }}
+  {% elif car_application.using_type == 'general' %}
     ใช้รถทั่วไป
   {% elif car_application.using_type == 'airport transfer' %}
     รับส่งสนามบิน
+    <div class="text-xs text-base-content/60">{{ car_application.get_airport_transfer_type_display() }}</div>
   {% elif car_application.using_type == 'out of town' %}
     ไปต่างจังหวัด
   {% else %}
@@ -24,231 +27,214 @@
   {% endif %}
 {% endmacro %}
 
+{% macro has_return(car_application) -%}
+  {{ 'yes' if car_application.return_datetime and (car_application.form_template or car_application.travel_type == 'round trip') else '' }}
+{%- endmacro %}
+
 {% macro row_number(index0) %}
   {{ paginated_car_applications.total - ((paginated_car_applications.page - 1) * paginated_car_applications.per_page) - index0 }}
 {% endmacro %}
 
-<div class="segment mt-4 overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-  <div class="border-b border-base-300 bg-base-100 px-4 py-5 sm:px-6">
-    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-      <form method="GET" action="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
-        class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(10rem,13rem)_minmax(15rem,1fr)_minmax(9rem,11rem)_auto] xl:items-end">
-      <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      
-      <div class="form-control">
-        <label class="label px-0 py-1" for="task-date">
-          <span class="label-text font-semibold">เลือกวันที่</span>
-        </label>
-        <input id="task-date" type="date" name="date" class="input input-bordered w-full"
-          value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
-      </div>
+{% macro detail_link(car_application, size='btn-sm') %}
+  {% if car_application.form_template and current_user.has_organization_roles('admin') %}
+  <a class="btn btn-ghost {{ size }} whitespace-nowrap"
+     href="{{ url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
+    <i class="ph ph-eye"></i> รายละเอียด
+  </a>
+  {% endif %}
+{% endmacro %}
 
-      <div class="form-control">
-        <label class="label px-0 py-1" for="task-sort-by">
-          <span class="label-text font-semibold">เรียงลำดับตาม</span>
+{% macro close_button(car_application, extra='') %}
+  {% if car_application.id in closable_car_application_ids %}
+  <button class="btn btn-primary btn-sm whitespace-nowrap {{ extra }}" hx-target="#edit-modal" hx-swap="innerHTML"
+    hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
+    <i class="ph ph-gas-pump"></i> ปิดงาน / กรอกไมล์
+  </button>
+  {% endif %}
+{% endmacro %}
+
+<section class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <form method="GET" action="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
+      class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(10rem,12rem)_minmax(11rem,14rem)_minmax(9rem,10rem)_auto] xl:items-end">
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      <fieldset class="fieldset py-0">
+        <legend class="fieldset-legend">ค้นหา</legend>
+        <label class="input w-full">
+          <i class="ph ph-magnifying-glass text-base-content/50" aria-hidden="true"></i>
+          <input type="search" name="q" value="{{ q }}" placeholder="สถานที่ เหตุผล ผู้ขอ ทะเบียน คนขับ" class="grow">
         </label>
-        <select id="task-sort-by" name="sort_by" class="select select-bordered w-full">
+      </fieldset>
+      <fieldset class="fieldset py-0">
+        <legend class="fieldset-legend">เลือกวันที่</legend>
+        <input id="task-date" type="date" name="date" class="input w-full"
+          value="{{ target_date.strftime('%Y-%m-%d') if target_date else '' }}">
+      </fieldset>
+      <fieldset class="fieldset py-0">
+        <legend class="fieldset-legend">เรียงลำดับตาม</legend>
+        <select id="task-sort-by" name="sort_by" class="select w-full">
           <option value="departure_datetime" {% if sort_by == 'departure_datetime' %}selected{% endif %}>วันเวลาออกเดินทาง</option>
           <option value="return_datetime" {% if sort_by == 'return_datetime' %}selected{% endif %}>วันเวลากลับ</option>
           <option value="created_date" {% if sort_by == 'created_date' %}selected{% endif %}>วันที่สร้าง</option>
         </select>
-      </div>
-
-      <div class="form-control">
-        <label class="label px-0 py-1" for="task-order">
-          <span class="label-text font-semibold">ลำดับ</span>
-        </label>
-        <select id="task-order" name="order" class="select select-bordered w-full">
+      </fieldset>
+      <fieldset class="fieldset py-0">
+        <legend class="fieldset-legend">ลำดับ</legend>
+        <select id="task-order" name="order" class="select w-full">
           <option value="asc" {% if order_dir == 'asc' %}selected{% endif %}>เก่าสุดก่อน</option>
           <option value="desc" {% if order_dir == 'desc' %}selected{% endif %}>ใหม่สุดก่อน</option>
         </select>
-      </div>
-
-      <div class="flex flex-wrap gap-2 pt-1">
-        <button type="submit" class="btn btn-primary flex-1 sm:flex-none">
-          <i class="ph ph-magnifying-glass"></i>
-          ค้นหา
-        </button>
+      </fieldset>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary flex-1 sm:flex-none"><i class="ph ph-magnifying-glass"></i> ค้นหา</button>
         <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id, date=today_date.strftime('%Y-%m-%d')) }}"
-          class="btn btn-outline flex-1 sm:flex-none">วันนี้</a>
+          class="btn btn-outline flex-1 sm:flex-none"><i class="ph ph-calendar-dot"></i> วันนี้</a>
         <a href="{{ url_for('vehicle_lending.car_tasks.index', organization_id=organization.id) }}"
-          class="btn btn-ghost flex-1 sm:flex-none">ล้างการค้นหา</a>
+          class="btn btn-ghost flex-1 sm:flex-none">ล้าง</a>
       </div>
-      </form>
-
-      <div class="flex shrink-0 items-center justify-between gap-3 xl:justify-end">
-        <span class="text-sm text-base-content/60">มุมมอง</span>
-        <div class="join" role="group" aria-label="เลือกมุมมองรายการงาน">
-          <button type="button" class="join-item btn btn-sm btn-primary" data-view-toggle="table"
-            aria-controls="task-table-view" aria-pressed="true">
-            <i class="ph ph-table"></i>
-            ตาราง
-          </button>
-          <button type="button" class="join-item btn btn-sm btn-outline" data-view-toggle="cards"
-            aria-controls="task-card-view" aria-pressed="false">
-            <i class="ph ph-device-mobile"></i>
-            มือถือ
-          </button>
-        </div>
-      </div>
-    </div>
+    </form>
   </div>
+</section>
 
-  <div class="flex flex-col gap-1 px-4 pb-4 pt-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-    <div>
-      <h2 class="text-lg font-bold text-base-content">
-        {% if target_date %}
-        งานของวันที่ {{ target_date|format_thai_date }}
-        {% else %}
-        งานที่ต้องดำเนินการ
-        {% endif %}
-      </h2>
-      <p class="mt-1 text-sm text-base-content/60">
-        {% if paginated_car_applications.total %}
-        พบ {{ paginated_car_applications.total }} รายการ
-        {% else %}
-        รายการงานจะแสดงที่นี่เมื่อมีงานที่ได้รับมอบหมาย
-        {% endif %}
-      </p>
-    </div>
-    {% if paginated_car_applications.total %}
-    <span class="text-sm text-base-content/60">หน้า {{ paginated_car_applications.page }} / {{ paginated_car_applications.pages }}</span>
-    {% endif %}
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h2 class="text-lg font-bold">
+      {% if target_date %}งานของวันที่ {{ target_date|format_thai_date }}{% else %}งานที่ต้องดำเนินการ{% endif %}
+    </h2>
+    <p class="text-sm text-base-content/60">
+      {% if paginated_car_applications.total %}
+      พบ {{ paginated_car_applications.total }} รายการ · หน้า {{ paginated_car_applications.page }} / {{ paginated_car_applications.pages }}
+      {% else %}
+      รายการงานจะแสดงที่นี่เมื่อมีงานที่ได้รับมอบหมาย
+      {% endif %}
+    </p>
   </div>
+  <div class="join" role="group" aria-label="เลือกมุมมองรายการงาน">
+    <button type="button" class="join-item btn btn-sm btn-primary" data-view-toggle="table"
+      aria-controls="task-table-view" aria-pressed="true"><i class="ph ph-table"></i> ตาราง</button>
+    <button type="button" class="join-item btn btn-sm btn-outline" data-view-toggle="cards"
+      aria-controls="task-card-view" aria-pressed="false"><i class="ph ph-cards"></i> การ์ด</button>
+  </div>
+</div>
 
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
   {% if paginated_car_applications.total %}
-  <div id="task-table-view" data-view-panel="table" class="overflow-x-auto px-4 sm:px-6">
-    <table class="table-auto w-full min-w-[1080px]">
+  <div id="task-table-view" data-view-panel="table" class="overflow-x-auto">
+    <table class="table table-zebra">
       <caption class="sr-only">ตารางรายการงานรถยนต์</caption>
       <thead>
-        <tr class="text-sm">
-          <th class="table-style">ลำดับ</th>
-          <th class="table-style">ออกเดินทาง</th>
-          <th class="table-style">กลับ</th>
-          <th class="table-style">ประเภทการใช้</th>
-          <th class="table-style">รถที่ใช้</th>
-          <th class="table-style">ผู้ขอใช้</th>
-          <th class="table-style min-w-48">สถานที่ไป</th>
-          <th class="table-style min-w-52">เหตุผล</th>
-          <th class="table-style">สถานะ</th>
-          <th class="table-style">ดำเนินการ</th>
+        <tr>
+          <th>#</th>
+          <th>ออกเดินทาง</th>
+          <th>กลับ</th>
+          <th>แบบฟอร์ม / ประเภท</th>
+          <th>รถ / คนขับ</th>
+          <th>ผู้ขอ</th>
+          <th>สถานที่ / เหตุผล</th>
+          <th>สถานะ</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
-      {% for car_application in paginated_car_applications.items %}
-      <tr>
-        <td class="table-style font-semibold text-primary">{{ row_number(loop.index0) }}</td>
-        <td class="table-style">
-          <div class="whitespace-nowrap font-semibold">{{ car_application.departure_datetime|format_thai_date }}</div>
-          <div class="mt-1 text-sm text-base-content/60">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</div>
-        </td>
-        <td class="table-style whitespace-nowrap">
-          {% if car_application.travel_type == 'round trip' and car_application.return_datetime %}
-          <div class="font-semibold">{{ car_application.return_datetime|format_thai_date }}</div>
-          <div class="mt-1 text-sm text-base-content/60">{{ car_application.return_datetime.strftime('%H:%M') }} น.</div>
-          {% else %}
-          <span class="text-base-content/40">เที่ยวเดียว</span>
-          {% endif %}
-        </td>
-        <td class="table-style">
-          <div class="font-medium">{{ using_type_label(car_application) }}</div>
-          {% if car_application.using_type == 'airport transfer' %}
-          <div class="mt-1 text-sm text-base-content/60">{{ car_application.get_airport_transfer_type_display() }}</div>
-          {% endif %}
-        </td>
-        <td class="table-style whitespace-nowrap font-medium">{{ car_application.car.license_plate if car_application.car else '-' }}</td>
-        <td class="table-style whitespace-nowrap">{{ car_application.creator.get_name() }}</td>
-        <td class="table-style max-w-60">{{ car_application.location }}</td>
-        <td class="table-style max-w-64">{{ car_application.request_reason }}</td>
-        <td class="table-style"><span class="badge badge-success badge-sm whitespace-nowrap">{{ car_application.get_status_display() }}</span></td>
-        <td class="table-style text-center">
-          {% if car_application.id in closable_car_application_ids %}
-          <button class="btn btn-primary btn-sm whitespace-nowrap" hx-target="#edit-modal" hx-swap="innerHTML"
-            hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
-            <i class="ph ph-gas-pump text-lg"></i>
-            <span>ปิดงาน / กรอกไมล์</span>
-          </button>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
+        {% for car_application in paginated_car_applications.items %}
+        <tr class="hover" data-request-id="{{ car_application.id }}">
+          <td class="text-base-content/60">{{ row_number(loop.index0) }}</td>
+          <td class="whitespace-nowrap">
+            <div class="font-semibold">{{ car_application.departure_datetime|format_thai_date }}</div>
+            <div class="text-xs text-base-content/60">{{ car_application.departure_datetime.strftime('%H:%M') }} น.</div>
+          </td>
+          <td class="whitespace-nowrap">
+            {% if has_return(car_application) %}
+            <div class="font-semibold">{{ car_application.return_datetime|format_thai_date }}</div>
+            <div class="text-xs text-base-content/60">{{ car_application.return_datetime.strftime('%H:%M') }} น.</div>
+            {% else %}
+            <span class="text-base-content/40">เที่ยวเดียว</span>
+            {% endif %}
+          </td>
+          <td class="min-w-40">{{ request_kind(car_application) }}</td>
+          <td class="whitespace-nowrap">
+            <div class="font-medium">{{ car_application.car.license_plate if car_application.car else '-' }}</div>
+            {% if car_application.driver %}<div class="text-xs text-base-content/60"><i class="ph ph-steering-wheel"></i> {{ car_application.driver.get_resources_fullname_th() }}</div>{% endif %}
+          </td>
+          <td class="whitespace-nowrap">{{ car_application.creator.get_name() if car_application.creator else '-' }}</td>
+          <td class="min-w-56">
+            <div class="font-semibold">{{ car_application.location or '-' }}</div>
+            <div class="text-xs text-base-content/60">{{ car_application.request_reason or '' }}</div>
+          </td>
+          <td>{{ status_badge.render(car_application) }}</td>
+          <td>
+            <div class="flex justify-end gap-1">
+              {{ detail_link(car_application) }}
+              {{ close_button(car_application) }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <div id="task-card-view" data-view-panel="cards" class="hidden px-4 sm:px-6">
-    <div class="grid grid-cols-1 gap-3">
+  <div id="task-card-view" data-view-panel="cards" class="hidden p-4">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
       {% for car_application in paginated_car_applications.items %}
-      <article class="rounded-xl border border-base-300 bg-base-100 p-4 transition-all hover:border-primary/40 hover:shadow-md sm:p-5">
-        <div class="flex items-start justify-between gap-3 border-b border-base-300 pb-3">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">รายการที่ {{ row_number(loop.index0) }}</p>
-            <p class="mt-1 font-semibold text-base-content">{{ car_application.departure_datetime|format_thai_datetime_short_month }}</p>
+      <article class="card border border-base-300 bg-base-100" data-request-id="{{ car_application.id }}">
+        <div class="card-body gap-3 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs text-base-content/50">รายการที่ {{ row_number(loop.index0) }}</p>
+              <p class="font-semibold">{{ car_application.departure_datetime|format_thai_datetime_short_month }}</p>
+            </div>
+            {{ status_badge.render(car_application) }}
           </div>
-          <span class="badge badge-success badge-sm whitespace-nowrap">{{ car_application.get_status_display() }}</span>
+          <dl class="grid grid-cols-1 gap-x-5 gap-y-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt class="text-base-content/60">วันเวลากลับ</dt>
+              <dd class="font-medium">{% if has_return(car_application) %}{{ car_application.return_datetime|format_thai_datetime_short_month }}{% else %}เที่ยวเดียว{% endif %}</dd>
+            </div>
+            <div>
+              <dt class="text-base-content/60">แบบฟอร์ม / ประเภท</dt>
+              <dd class="font-medium">{{ request_kind(car_application) }}</dd>
+            </div>
+            <div>
+              <dt class="text-base-content/60">รถ / คนขับ</dt>
+              <dd class="font-medium">{{ car_application.car.license_plate if car_application.car else '-' }}{% if car_application.driver %} · {{ car_application.driver.get_resources_fullname_th() }}{% endif %}</dd>
+            </div>
+            <div>
+              <dt class="text-base-content/60">ผู้ขอ</dt>
+              <dd class="font-medium">{{ car_application.creator.get_name() if car_application.creator else '-' }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+              <dt class="text-base-content/60">สถานที่ / เหตุผล</dt>
+              <dd class="font-medium">{{ car_application.location or '-' }}<div class="text-xs font-normal text-base-content/60">{{ car_application.request_reason or '' }}</div></dd>
+            </div>
+          </dl>
+          <div class="card-actions justify-end border-t border-base-300 pt-3">
+            {{ detail_link(car_application) }}
+            {{ close_button(car_application) }}
+          </div>
         </div>
-
-        <dl class="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt class="text-base-content/55">วันเวลากลับ</dt>
-            <dd class="mt-0.5 font-medium">
-              {% if car_application.travel_type == 'round trip' and car_application.return_datetime %}
-              {{ car_application.return_datetime|format_thai_datetime_short_month }}
-              {% else %}
-              เที่ยวเดียว
-              {% endif %}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-base-content/55">ประเภทการใช้</dt>
-            <dd class="mt-0.5 font-medium">{{ using_type_label(car_application) }}</dd>
-          </div>
-          <div>
-            <dt class="text-base-content/55">รถที่ใช้</dt>
-            <dd class="mt-0.5 font-medium">{{ car_application.car.license_plate if car_application.car else '-' }}</dd>
-          </div>
-          <div>
-            <dt class="text-base-content/55">ผู้ขอใช้</dt>
-            <dd class="mt-0.5 font-medium">{{ car_application.creator.get_name() }}</dd>
-          </div>
-          <div class="sm:col-span-2">
-            <dt class="text-base-content/55">สถานที่ไป</dt>
-            <dd class="mt-0.5 font-medium">{{ car_application.location }}</dd>
-          </div>
-          <div class="sm:col-span-2">
-            <dt class="text-base-content/55">เหตุผล</dt>
-            <dd class="mt-0.5 font-medium">{{ car_application.request_reason }}</dd>
-          </div>
-        </dl>
-
-        {% if car_application.id in closable_car_application_ids %}
-        <div class="mt-4 border-t border-base-300 pt-4">
-          <button class="btn btn-primary btn-sm w-full" hx-target="#edit-modal" hx-swap="innerHTML"
-            hx-get="{{ url_for('vehicle_lending.car_tasks.submit_task_modal', car_application_id=car_application.id, organization_id=organization.id) }}">
-            <i class="ph ph-gas-pump"></i>
-            ปิดงาน / กรอกไมล์
-          </button>
-        </div>
-        {% endif %}
       </article>
       {% endfor %}
     </div>
   </div>
 
   {% if paginated_car_applications.pages != 1 %}
-  <div class="px-4 pb-6 pt-5 sm:px-6">
+  <div class="px-4 pb-6 pt-2">
     {{ paginated.render_pagination(paginated_car_applications,"vehicle_lending.car_tasks.index", request.args) }}
   </div>
   {% endif %}
   {% else %}
-  <div class="flex flex-col items-center justify-center px-6 py-16 text-center text-base-content/60">
-    <i class="ph ph-calendar-check text-6xl text-base-300"></i>
-    {% if target_date %}
-    <div class="mt-4 text-xl font-bold text-base-content">ไม่มีรายการงานสำหรับวันที่เลือก</div>
-    <p class="mt-2 text-sm">เลือกวันที่อื่นเพื่อดูงานที่ต้องดำเนินการ</p>
+  <div class="card-body items-center text-center py-12">
+    <i class="ph ph-calendar-check text-5xl text-base-content/30"></i>
+    {% if q %}
+    <h2 class="text-lg font-semibold">ไม่พบงานที่ตรงกับ “{{ q }}”</h2>
+    <p class="text-sm text-base-content/60">ลองเปลี่ยนคำค้น</p>
+    {% elif target_date %}
+    <h2 class="text-lg font-semibold">ไม่มีรายการงานสำหรับวันที่เลือก</h2>
+    <p class="text-sm text-base-content/60">เลือกวันที่อื่นเพื่อดูงานที่ต้องดำเนินการ</p>
     {% else %}
-    <div class="mt-4 text-xl font-bold text-base-content">ไม่มีรายการงาน</div>
-    <p class="mt-2 text-sm">ยังไม่มีรายการงานที่ต้องดำเนินการในขณะนี้</p>
+    <h2 class="text-lg font-semibold">ไม่มีรายการงาน</h2>
+    <p class="text-sm text-base-content/60">ยังไม่มีรายการงานที่ต้องดำเนินการในขณะนี้</p>
     {% endif %}
   </div>
   {% endif %}
@@ -265,24 +251,21 @@
 
     const storageKey = 'vehicle-lending-task-view';
     const defaultView = window.matchMedia('(max-width: 1023px)').matches ? 'cards' : 'table';
-    const savedView = window.localStorage.getItem(storageKey);
+    let savedView = null;
+    try { savedView = window.localStorage.getItem(storageKey); } catch (e) {}
 
     const setView = (view, persist = true) => {
-      panels.forEach((panel) => {
-        panel.classList.toggle('hidden', panel.dataset.viewPanel !== view);
-      });
+      panels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.viewPanel !== view));
       toggles.forEach((toggle) => {
         const selected = toggle.dataset.viewToggle === view;
         toggle.setAttribute('aria-pressed', String(selected));
         toggle.classList.toggle('btn-primary', selected);
         toggle.classList.toggle('btn-outline', !selected);
       });
-      if (persist) window.localStorage.setItem(storageKey, view);
+      if (persist) { try { window.localStorage.setItem(storageKey, view); } catch (e) {} }
     };
 
-    toggles.forEach((toggle) => {
-      toggle.addEventListener('click', () => setView(toggle.dataset.viewToggle));
-    });
+    toggles.forEach((toggle) => toggle.addEventListener('click', () => setView(toggle.dataset.viewToggle)));
     setView(savedView === 'cards' || savedView === 'table' ? savedView : defaultView, false);
   })();
 </script>
