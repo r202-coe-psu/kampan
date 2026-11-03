@@ -1,13 +1,25 @@
+import io
 import json
 
 import mongoengine as me
-from flask import Blueprint, abort, g, redirect, render_template, request, url_for
+from PyPDF2 import PdfReader
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import fields, validators
 
 from kampan import models
 from kampan.utils.car_form_catalog import CATALOG
+from kampan.utils.car_form_paper import APPROVAL_PARTS, available_variables
 from kampan.web import acl
 
 module = Blueprint(
@@ -36,6 +48,10 @@ class CarFormTemplateForm(FlaskForm):
 
 class CarFormTemplateDeleteForm(FlaskForm):
     """ฟอร์มเปล่าไว้บังคับตรวจ CSRF token ของคำสั่งลบ"""
+
+
+class PaperForm(FlaskForm):
+    """ฟอร์มเปล่าไว้ตรวจ CSRF token ของการอัปโหลด PDF และบันทึกตำแหน่งตัวแปร"""
 
 
 class TemplatePayloadError(ValueError):
@@ -278,6 +294,253 @@ def delete(template_id):
     return redirect(
         url_for(
             "vehicle_lending.car_form_templates.index",
+            organization_id=organization.id,
+        )
+    )
+
+
+MAX_PDF_BYTES = 10 * 1024 * 1024
+
+
+class PaperUploadError(ValueError):
+    """ไฟล์ PDF ที่อัปโหลดใช้ไม่ได้"""
+
+
+def read_pdf_upload(upload):
+    """คืน (bytes, page_sizes) ถ้าเป็น PDF ที่อ่านได้และไม่เกินขนาดที่กำหนด"""
+    content = upload.read(MAX_PDF_BYTES + 1) if upload else b""
+    if not content:
+        raise PaperUploadError("กรุณาเลือกไฟล์ PDF")
+    if len(content) > MAX_PDF_BYTES:
+        raise PaperUploadError("ไฟล์ PDF ต้องมีขนาดไม่เกิน 10 MB")
+    if not content.lstrip().startswith(b"%PDF"):
+        raise PaperUploadError("ไฟล์ที่อัปโหลดต้องเป็น PDF")
+    try:
+        reader = PdfReader(io.BytesIO(content))
+        page_sizes = [
+            [float(page.mediabox.width), float(page.mediabox.height)]
+            for page in reader.pages
+        ]
+    except Exception:
+        raise PaperUploadError("อ่านไฟล์ PDF ไม่ได้ ไฟล์อาจเสียหาย")
+    if not page_sizes:
+        raise PaperUploadError("ไฟล์ PDF ไม่มีหน้า")
+    return content, page_sizes
+
+
+APPROVAL_PART_LABELS = {
+    "name": "ชื่อผู้อนุมัติ",
+    "date": "วันที่อนุมัติ",
+    "decision": "ผลการพิจารณา",
+    "comment": "ความเห็น",
+}
+APP_DATE_GROUPS = [
+    ("departure", "วันเวลาออกเดินทาง"),
+    ("return", "วันเวลากลับ"),
+    ("created", "วันที่ยื่นคำขอ"),
+]
+APP_DATE_PARTS = [
+    ("day", "วันที่"),
+    ("month_th", "เดือน"),
+    ("year_be", "ปี พ.ศ."),
+    ("time", "เวลา"),
+]
+
+
+def variable_catalog(template):
+    """ตัวแปรที่วางบนกระดาษได้ พร้อมป้ายชื่อและตัวเลือก (ใช้กับ check placement) เรียงตามชื่อ"""
+    labels = dict(APP_VARIABLES)
+    labels["org.name"] = "ชื่อหน่วยงาน"
+    for group, group_label in APP_DATE_GROUPS:
+        for part, part_label in APP_DATE_PARTS:
+            labels[f"app.{group}.{part}"] = f"{group_label} : {part_label}"
+
+    choices = {}
+    for field in template.fields:
+        name = f"details.{field.details_key()}"
+        catalog_field = CATALOG.get(field.key) if field.source == "catalog" else None
+        labels[name] = field.label or (catalog_field.default_label if catalog_field else field.key)
+        options = field.choices or (list(catalog_field.choices) if catalog_field else [])
+        if options:
+            choices[name] = list(options)
+    for step in template.steps:
+        for part in APPROVAL_PARTS:
+            name = f"approvals.{step.key}.{part}"
+            labels[name] = f"{step.label} : {APPROVAL_PART_LABELS[part]}"
+        choices[f"approvals.{step.key}.decision"] = ["approved", "denied"]
+
+    return [
+        {"name": name, "label": labels.get(name, name), "choices": choices.get(name, [])}
+        for name in sorted(available_variables(template))
+    ]
+
+
+def placements_to_payload(template):
+    return [
+        {
+            "page": p.page,
+            "x": p.x,
+            "y": p.y,
+            "w": p.w,
+            "h": p.h,
+            "variable": p.variable,
+            "kind": p.kind,
+            "match_value": p.match_value or "",
+            "font_size": p.font_size,
+            "align": p.align,
+        }
+        for p in template.placements
+    ]
+
+
+def render_paper_editor(template, organization, error=None, status=200):
+    paper_file = template.paper_file
+    return (
+        render_template(
+            "/vehicle_lending/car_form_templates/paper_editor.html",
+            template=template,
+            organization=organization,
+            error=error,
+            form=PaperForm(),
+            paper_file=paper_file,
+            variables=variable_catalog(template),
+            placements=placements_to_payload(template),
+            page_sizes=paper_file.page_sizes if paper_file else [],
+        ),
+        status,
+    )
+
+
+@module.route("/<template_id>/paper_editor", methods=["GET"])
+@acl.organization_roles_required("admin")
+def paper_editor(template_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    template = get_template(template_id, organization)
+    if not template:
+        abort(404)
+
+    return render_paper_editor(template, organization)
+
+
+@module.route("/<template_id>/paper_file", methods=["POST"])
+@acl.organization_roles_required("admin")
+def upload_paper_file(template_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    if not PaperForm().validate_on_submit():
+        abort(400, "Invalid CSRF token")
+
+    template = get_template(template_id, organization)
+    if not template:
+        abort(404)
+
+    upload = request.files.get("pdf")
+    try:
+        content, page_sizes = read_pdf_upload(upload)
+    except PaperUploadError as error:
+        return render_paper_editor(template, organization, error=str(error), status=400)
+
+    paper_file = models.car_form_templates.CarFormPaperFile(
+        organization=organization,
+        filename=upload.filename,
+        data=content,
+        page_count=len(page_sizes),
+        page_sizes=page_sizes,
+        uploaded_by=current_user._get_current_object(),
+    )
+    paper_file.save()
+
+    # เอกสารเดิมยังอยู่ เพราะ snapshot ของคำขอที่ยื่นไปแล้วชี้ id เดิม
+    template.paper_file = paper_file
+    template.last_updated_by = current_user._get_current_object()
+    template.save()
+
+    return redirect(
+        url_for(
+            "vehicle_lending.car_form_templates.paper_editor",
+            template_id=template.id,
+            organization_id=organization.id,
+        )
+    )
+
+
+@module.route("/<template_id>/paper_file", methods=["GET"])
+@acl.organization_roles_required("admin")
+def download_paper_file(template_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    template = get_template(template_id, organization)
+    if not template or not template.paper_file:
+        abort(404)
+
+    return Response(
+        bytes(template.paper_file.data),
+        mimetype="application/pdf",
+        headers={"Content-Disposition": "inline"},
+    )
+
+
+def parse_placements_payload(raw):
+    placements = []
+    for item in _load_list(raw, "ตำแหน่งตัวแปร"):
+        try:
+            placements.append(
+                models.car_form_templates.PaperPlacement(
+                    page=int(item.get("page", 0)),
+                    x=float(item["x"]),
+                    y=float(item["y"]),
+                    w=float(item["w"]),
+                    h=float(item["h"]),
+                    variable=str(item.get("variable") or ""),
+                    kind=item.get("kind") or "text",
+                    match_value=str(item.get("match_value") or ""),
+                    font_size=float(item.get("font_size") or 14),
+                    align=item.get("align") or "left",
+                )
+            )
+        except (KeyError, TypeError, ValueError):
+            raise TemplatePayloadError("รูปแบบข้อมูลตำแหน่งตัวแปรไม่ถูกต้อง")
+    return placements
+
+
+@module.route("/<template_id>/placements", methods=["POST"])
+@acl.organization_roles_required("admin")
+def save_placements(template_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    if not PaperForm().validate_on_submit():
+        abort(400, "Invalid CSRF token")
+
+    template = get_template(template_id, organization)
+    if not template:
+        abort(404)
+
+    try:
+        template.placements = parse_placements_payload(request.form.get("placements_data"))
+        template.last_updated_by = current_user._get_current_object()
+        template.save()
+    except (TemplatePayloadError, me.ValidationError) as error:
+        message = (
+            validation_message(error)
+            if isinstance(error, me.ValidationError)
+            else str(error)
+        )
+        template.reload()
+        return render_paper_editor(template, organization, error=message, status=400)
+
+    return redirect(
+        url_for(
+            "vehicle_lending.car_form_templates.paper_editor",
+            template_id=template.id,
             organization_id=organization.id,
         )
     )

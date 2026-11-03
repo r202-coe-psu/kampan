@@ -51,16 +51,23 @@
     <h2 class="flex items-center gap-2 text-lg font-semibold">
       <i class="ph ph-brackets-curly text-primary"></i> ตัวแปรที่ใช้ได้
     </h2>
-    <p class="mt-1 text-sm text-base-content/60">พิมพ์ในช่อง HTML ของกระดาษ เช่น <code class="font-mono">{{ '{{ app.requester_name }}' }}</code></p>
+    <p class="mt-1 text-sm text-base-content/60">ใช้ลากวางบนใบพิมพ์ในหน้าจัดวางตัวแปร
+      {% if template %}
+      <a class="link link-primary" href="{{ url_for('vehicle_lending.car_form_templates.paper_editor', template_id=template.id, organization_id=organization.id) }}">เปิดหน้าจัดวางตัวแปรบนใบพิมพ์ (PDF)</a>
+      (บันทึกฟิลด์และขั้นอนุมัติก่อน ตัวแปรจึงจะปรากฏ)
+      {% else %}
+      (บันทึกแบบฟอร์มก่อน จึงจะอัปโหลด PDF และจัดวางตัวแปรได้)
+      {% endif %}
+    </p>
     <ul class="mt-3 divide-y divide-base-300 rounded-box border border-base-300" id="variablesList">
       {% for name, label in app_variables %}
       <li class="flex flex-col gap-0.5 px-3 py-2">
-        <code class="font-mono text-sm text-primary select-all break-all">{{ '{{ ' ~ name ~ ' }}' }}</code>
+        <code class="font-mono text-sm text-primary select-all break-all">{{ name }}</code>
         <span class="text-sm text-base-content/70">{{ label }}</span>
       </li>
       {% endfor %}
       <li class="flex flex-col gap-0.5 px-3 py-2">
-        <code class="font-mono text-sm text-primary select-all break-all">{{ '{{ org.name }}' }}</code>
+        <code class="font-mono text-sm text-primary select-all break-all">org.name</code>
         <span class="text-sm text-base-content/70">ชื่อหน่วยงาน</span>
       </li>
     </ul>
@@ -202,7 +209,7 @@
     list.replaceChildren();
     const add = (name, label) => {
       list.appendChild(el("li", { class: "flex flex-col gap-0.5 px-3 py-2" }, [
-        el("code", { class: "font-mono text-sm text-primary select-all break-all" }, ["{{ " + name + " }}"]),
+        el("code", { class: "font-mono text-sm text-primary select-all break-all" }, [name]),
         el("span", { class: "text-sm text-base-content/70" }, [label]),
       ]));
     };

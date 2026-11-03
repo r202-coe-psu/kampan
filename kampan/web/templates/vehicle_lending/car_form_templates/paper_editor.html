@@ -1,0 +1,354 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+
+{% block title %}จัดวางตัวแปรบนใบพิมพ์ : {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6">
+  {% if error %}
+  <div role="alert" class="alert alert-error" id="paperError">
+    <i class="ph ph-warning-circle text-xl"></i>
+    <span>{{ error }}</span>
+  </div>
+  {% endif %}
+
+  <div role="alert" class="alert alert-info alert-soft">
+    <i class="ph ph-info text-xl"></i>
+    <span>
+      ตัวแปรของฟิลด์ (details.*) และขั้นอนุมัติ (approvals.*) จะปรากฏในรายการด้านล่างก็ต่อเมื่อ
+      <a class="link font-semibold" href="{{ url_for('vehicle_lending.car_form_templates.create_or_edit', template_id=template.id, organization_id=organization.id) }}">บันทึกฟิลด์และขั้นอนุมัติของแบบฟอร์ม</a>
+      เรียบร้อยแล้ว
+    </span>
+  </div>
+
+  <section class="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+    <h2 class="mb-1 text-xl font-bold">ไฟล์ PDF ต้นฉบับ</h2>
+    <p class="mb-3 text-sm text-base-content/60">
+      {% if paper_file %}
+      ใช้ไฟล์ <span class="font-semibold">{{ paper_file.filename }}</span> ({{ paper_file.page_count }} หน้า)
+      การอัปโหลดไฟล์ใหม่จะไม่กระทบคำขอที่ยื่นไปแล้ว แต่ตำแหน่งที่วางไว้ต้องตรวจสอบให้ตรงกับไฟล์ใหม่
+      {% else %}
+      ยังไม่มีไฟล์ อัปโหลด PDF เปล่าของหน่วยงาน (ไม่เกิน 10 MB) แล้วลากตัวแปรไปวางบนหน้ากระดาษ
+      {% endif %}
+    </p>
+    <form method="POST" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3"
+          action="{{ url_for('vehicle_lending.car_form_templates.upload_paper_file', template_id=template.id) }}">
+      {{ form.csrf_token }}
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      <input type="file" name="pdf" accept="application/pdf,.pdf" required class="file-input file-input-bordered file-input-sm">
+      <button type="submit" class="btn btn-sm btn-primary"><i class="ph ph-upload-simple"></i> อัปโหลด</button>
+    </form>
+  </section>
+
+  {% if paper_file %}
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+    <aside class="flex flex-col gap-4 self-start rounded-box border border-base-300 bg-base-100 p-4 shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-semibold">
+          <i class="ph ph-brackets-curly text-primary"></i> ตัวแปร
+        </h2>
+        <p class="mt-1 text-xs text-base-content/60">ลากตัวแปรไปวางบนหน้ากระดาษ</p>
+        <input type="search" id="variableSearch" class="input input-bordered input-sm mt-2 w-full" placeholder="ค้นหาตัวแปร">
+        <ul class="mt-2 flex flex-col gap-1" id="variablePalette"></ul>
+      </div>
+
+      <div id="propertiesPanel" class="hidden rounded-box border border-primary/40 bg-base-200 p-3">
+        <h3 class="mb-2 text-sm font-semibold">คุณสมบัติของกล่องที่เลือก</h3>
+        <div class="mb-2 break-all font-mono text-xs text-primary" id="propVariable"></div>
+        <div class="flex flex-col gap-2" id="propFields"></div>
+      </div>
+    </aside>
+
+    <section class="flex flex-col gap-4 lg:col-span-3">
+      <div id="pdfStatus" class="text-sm text-base-content/60">กำลังโหลด PDF...</div>
+      <div id="pagesContainer" class="flex flex-col items-center gap-6 overflow-x-auto"></div>
+
+      <form id="placementsForm" method="POST" class="flex justify-end gap-3"
+            action="{{ url_for('vehicle_lending.car_form_templates.save_placements', template_id=template.id) }}">
+        {{ form.csrf_token }}
+        <input type="hidden" name="organization_id" value="{{ organization.id }}">
+        <input type="hidden" name="placements_data" id="placementsData" value="">
+        <a href="{{ url_for('vehicle_lending.car_form_templates.index', organization_id=organization.id) }}" class="btn btn-ghost">กลับ</a>
+        <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> บันทึกตำแหน่ง</button>
+      </form>
+    </section>
+  </div>
+
+  <script type="application/json" id="variablesData">{{ variables | tojson }}</script>
+  <script type="application/json" id="placementsPreload">{{ placements | tojson }}</script>
+  <script type="application/json" id="pageSizesData">{{ page_sizes | tojson }}</script>
+  <script type="application/json" id="editorConfig">{{ {
+    'pdf_url': url_for('vehicle_lending.car_form_templates.download_paper_file', template_id=template.id, organization_id=organization.id),
+    'worker_src': 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+  } | tojson }}</script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+  (function () {
+    const readJson = (id) => JSON.parse(document.getElementById(id).textContent);
+    const variables = readJson("variablesData");
+    const pageSizes = readJson("pageSizesData");
+    const config = readJson("editorConfig");
+    const placements = readJson("placementsPreload");
+    const variableByName = Object.fromEntries(variables.map((v) => [v.name, v]));
+    const DEFAULT_W = 0.2;
+    const DEFAULT_H = 0.03;
+    const MIN_SIZE = 0.01;
+    const RENDER_WIDTH = 760;
+
+    const layers = {};      // page index -> overlay element
+    const boxes = new Map(); // placement object -> box element
+    let selected = null;
+
+    // DOM builders use textContent/value only, never innerHTML, so variable labels cannot inject markup
+    function el(tag, attrs, children) {
+      const node = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => {
+        if (k === "class") node.className = v;
+        else if (k === "value") node.value = v;
+        else node.setAttribute(k, v);
+      });
+      (children || []).forEach((c) => node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+      return node;
+    }
+    const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+    const round = (v) => Math.round(v * 1e6) / 1e6;
+
+    // palette
+    function renderPalette(filter) {
+      const list = document.getElementById("variablePalette");
+      list.replaceChildren();
+      const needle = (filter || "").trim().toLowerCase();
+      variables.filter((v) => !needle || v.name.toLowerCase().includes(needle) || v.label.toLowerCase().includes(needle)).forEach((v) => {
+        const item = el("li", {
+          class: "cursor-grab rounded-lg border border-base-300 bg-base-100 px-2 py-1 hover:border-primary",
+          draggable: "true",
+          title: v.name,
+        }, [
+          el("div", { class: "text-sm" }, [v.label]),
+          el("div", { class: "break-all font-mono text-[11px] text-base-content/60" }, [v.name]),
+        ]);
+        item.addEventListener("dragstart", (event) => {
+          event.dataTransfer.setData("text/plain", v.name);
+          event.dataTransfer.effectAllowed = "copy";
+        });
+        list.appendChild(item);
+      });
+    }
+
+    // placement boxes
+    function applyBoxStyle(placement, box, pageWidthPx) {
+      box.style.left = placement.x * 100 + "%";
+      box.style.top = placement.y * 100 + "%";
+      box.style.width = placement.w * 100 + "%";
+      box.style.height = placement.h * 100 + "%";
+      const pt = (pageSizes[placement.page] || [595])[0];
+      box.style.fontSize = Math.max(8, placement.font_size * (pageWidthPx / pt)) + "px";
+      box.style.textAlign = placement.align;
+      box.classList.toggle("ring-2", placement === selected);
+      box.classList.toggle("ring-primary", placement === selected);
+    }
+
+    function boxLabel(placement) {
+      if (placement.kind === "check") return "✓ " + placement.variable + (placement.match_value ? " = " + placement.match_value : "");
+      return placement.variable;
+    }
+
+    function refreshBox(placement) {
+      const box = boxes.get(placement);
+      const layer = layers[placement.page];
+      if (!box || !layer) return;
+      applyBoxStyle(placement, box, layer.getBoundingClientRect().width);
+      box.firstChild.textContent = boxLabel(placement);
+    }
+
+    function createBox(placement) {
+      const layer = layers[placement.page];
+      if (!layer) return;
+      const label = el("span", { class: "pointer-events-none block truncate" }, [boxLabel(placement)]);
+      const handle = el("span", { class: "absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm bg-primary" });
+      const box = el("div", {
+        class: "absolute cursor-move select-none border border-dashed border-primary bg-primary/10 text-primary-content",
+        style: "touch-action:none;color:#1d4ed8",
+      }, [label, handle]);
+      boxes.set(placement, box);
+      layer.appendChild(box);
+      applyBoxStyle(placement, box, layer.getBoundingClientRect().width);
+
+      let drag = null;
+      const begin = (mode) => (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        select(placement);
+        const rect = layer.getBoundingClientRect();
+        drag = { mode, rect, startX: event.clientX, startY: event.clientY, orig: { x: placement.x, y: placement.y, w: placement.w, h: placement.h } };
+        box.setPointerCapture(event.pointerId);
+      };
+      box.addEventListener("pointerdown", begin("move"));
+      handle.addEventListener("pointerdown", begin("resize"));
+      box.addEventListener("pointermove", (event) => {
+        if (!drag) return;
+        const dx = (event.clientX - drag.startX) / drag.rect.width;
+        const dy = (event.clientY - drag.startY) / drag.rect.height;
+        if (drag.mode === "move") {
+          placement.x = round(clamp(drag.orig.x + dx, 0, 1 - placement.w));
+          placement.y = round(clamp(drag.orig.y + dy, 0, 1 - placement.h));
+        } else {
+          placement.w = round(clamp(drag.orig.w + dx, MIN_SIZE, 1 - placement.x));
+          placement.h = round(clamp(drag.orig.h + dy, MIN_SIZE, 1 - placement.y));
+        }
+        refreshBox(placement);
+      });
+      const end = () => { drag = null; };
+      box.addEventListener("pointerup", end);
+      box.addEventListener("pointercancel", end);
+    }
+
+    function removePlacement(placement) {
+      const box = boxes.get(placement);
+      if (box) box.remove();
+      boxes.delete(placement);
+      placements.splice(placements.indexOf(placement), 1);
+      select(null);
+    }
+
+    // properties panel
+    function labeled(text, control) {
+      return el("label", { class: "flex flex-col gap-1 text-xs" }, [text, control]);
+    }
+
+    function select(placement) {
+      const previous = selected;
+      selected = placement;
+      if (previous) refreshBox(previous);
+      if (placement) refreshBox(placement);
+      renderProperties();
+    }
+
+    function renderProperties() {
+      const panel = document.getElementById("propertiesPanel");
+      const holder = document.getElementById("propFields");
+      holder.replaceChildren();
+      if (!selected) { panel.classList.add("hidden"); return; }
+      panel.classList.remove("hidden");
+      const placement = selected;
+      const info = variableByName[placement.variable] || { label: placement.variable, choices: [] };
+      document.getElementById("propVariable").textContent = info.label + " (" + placement.variable + ")";
+
+      const kind = el("select", { class: "select select-bordered select-sm" }, [
+        el("option", { value: "text" }, ["ข้อความ"]),
+        el("option", { value: "check" }, ["เครื่องหมายถูก"]),
+      ]);
+      kind.value = placement.kind;
+      kind.addEventListener("change", () => { placement.kind = kind.value; refreshBox(placement); renderProperties(); });
+      holder.appendChild(labeled("ชนิด", kind));
+
+      if (placement.kind === "check") {
+        let control;
+        if (info.choices.length) {
+          control = el("select", { class: "select select-bordered select-sm" }, [el("option", { value: "" }, ["- เลือกค่าที่ต้องติ๊ก -"])]);
+          info.choices.forEach((c) => control.appendChild(el("option", { value: c }, [c])));
+          if (placement.match_value && !info.choices.includes(placement.match_value)) {
+            control.appendChild(el("option", { value: placement.match_value }, [placement.match_value]));
+          }
+        } else {
+          control = el("input", { type: "text", class: "input input-bordered input-sm", placeholder: "ค่าที่ต้องติ๊ก" });
+        }
+        control.value = placement.match_value || "";
+        const onMatch = () => { placement.match_value = control.value; refreshBox(placement); };
+        control.addEventListener("change", onMatch);
+        control.addEventListener("input", onMatch);
+        holder.appendChild(labeled("ติ๊กเมื่อค่าเท่ากับ", control));
+      }
+
+      const size = el("input", { type: "number", min: "6", max: "72", step: "0.5", class: "input input-bordered input-sm" });
+      size.value = placement.font_size;
+      size.addEventListener("input", () => {
+        const n = parseFloat(size.value);
+        if (n > 0) { placement.font_size = n; refreshBox(placement); }
+      });
+      holder.appendChild(labeled("ขนาดตัวอักษร (pt)", size));
+
+      const align = el("select", { class: "select select-bordered select-sm" }, [
+        el("option", { value: "left" }, ["ชิดซ้าย"]),
+        el("option", { value: "center" }, ["กึ่งกลาง"]),
+        el("option", { value: "right" }, ["ชิดขวา"]),
+      ]);
+      align.value = placement.align;
+      align.addEventListener("change", () => { placement.align = align.value; refreshBox(placement); });
+      holder.appendChild(labeled("การจัดตำแหน่ง", align));
+
+      const del = el("button", { type: "button", class: "btn btn-sm btn-error btn-outline" }, [el("i", { class: "ph ph-trash" }), " ลบกล่องนี้"]);
+      del.addEventListener("click", () => removePlacement(placement));
+      holder.appendChild(del);
+    }
+
+    // pages
+    function addPage(index, canvas, pageWidthPx) {
+      const layer = el("div", { class: "absolute inset-0" });
+      const wrapper = el("div", { class: "relative bg-white shadow-md" }, [canvas, layer]);
+      wrapper.style.width = canvas.style.width;
+      wrapper.style.height = canvas.style.height;
+      layers[index] = layer;
+      layer.addEventListener("dragover", (event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; });
+      layer.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const name = event.dataTransfer.getData("text/plain");
+        if (!variableByName[name]) return;
+        const rect = layer.getBoundingClientRect();
+        const w = DEFAULT_W;
+        const h = DEFAULT_H;
+        const placement = {
+          page: index,
+          x: round(clamp((event.clientX - rect.left) / rect.width, 0, 1 - w)),
+          y: round(clamp((event.clientY - rect.top) / rect.height, 0, 1 - h)),
+          w, h, variable: name, kind: "text", match_value: "", font_size: 14, align: "left",
+        };
+        placements.push(placement);
+        createBox(placement);
+        select(placement);
+      });
+      layer.addEventListener("pointerdown", (event) => { if (event.target === layer) select(null); });
+      const label = el("div", { class: "mb-1 text-center text-xs text-base-content/60" }, ["หน้า " + (index + 1)]);
+      document.getElementById("pagesContainer").appendChild(el("div", {}, [label, wrapper]));
+    }
+
+    async function loadPdf() {
+      const status = document.getElementById("pdfStatus");
+      if (!window.pdfjsLib) { status.textContent = "โหลด pdf.js ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"; return; }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = config.worker_src;
+      try {
+        const pdf = await pdfjsLib.getDocument({ url: config.pdf_url, withCredentials: true }).promise;
+        const ratio = window.devicePixelRatio || 1;
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const page = await pdf.getPage(n);
+          const base = page.getViewport({ scale: 1 });
+          const scale = RENDER_WIDTH / base.width;
+          const viewport = page.getViewport({ scale: scale * ratio });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          canvas.style.width = RENDER_WIDTH + "px";
+          canvas.style.height = Math.floor(base.height * scale) + "px";
+          addPage(n - 1, canvas, RENDER_WIDTH);
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        }
+        status.textContent = "ลากตัวแปรจากด้านซ้ายไปวางบนหน้ากระดาษ คลิกกล่องเพื่อแก้ไขคุณสมบัติ";
+        placements.forEach(createBox);
+      } catch (error) {
+        console.error(error);
+        status.textContent = "แสดงไฟล์ PDF ไม่ได้";
+      }
+    }
+
+    document.getElementById("variableSearch").addEventListener("input", (event) => renderPalette(event.target.value));
+    document.getElementById("placementsForm").addEventListener("submit", () => {
+      document.getElementById("placementsData").value = JSON.stringify(placements);
+    });
+
+    renderPalette("");
+    loadPdf();
+  })();
+  </script>
+  {% endif %}
+</div>
+{% endblock %}

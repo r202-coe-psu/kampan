@@ -37,6 +37,10 @@
                  class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
                 <i class="ph ph-pencil-simple text-lg"></i>
               </a>
+              <a href="{{ url_for('vehicle_lending.car_form_templates.paper_editor', template_id=template.id, organization_id=organization.id) }}"
+                 class="btn btn-sm btn-ghost tooltip" data-tip="จัดวางตัวแปรบนใบพิมพ์">
+                <i class="ph ph-file-pdf text-lg"></i>
+              </a>
               <button type="button" class="btn btn-sm btn-ghost text-error tooltip delete-btn" data-tip="ลบ"
                       data-name="{{ template.name }}"
                       data-delete-url="{{ url_for('vehicle_lending.car_form_templates.delete', template_id=template.id, organization_id=organization.id) }}">
