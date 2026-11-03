@@ -31,7 +31,12 @@ def test_valid_template_with_catalog_and_custom_fields_passes_validation(app, cr
         create_org(name="องค์กรทดสอบ"),
         fields=[
             {"source": "catalog", "key": "vehicle_kind", "choices": ["ตู้", "เก๋ง"]},
-            {"source": "custom", "key": "project_no", "field_type": "text"},
+            {
+                "source": "custom",
+                "key": "project_no",
+                "label": "เลขที่โครงการ",
+                "field_type": "text",
+            },
         ],
     )
 
@@ -127,3 +132,134 @@ def test_template_validation_rejects_invalid_placement(app, create_org, case):
 
     with pytest.raises(me.ValidationError):
         template.validate()
+
+
+def _problems(org, **kwargs):
+    template = _template(org, **kwargs)
+    with pytest.raises(me.ValidationError) as error:
+        template.validate()
+    return error.value.errors["__all__"].problems
+
+
+def _custom(key, label, field_type="text"):
+    return {"source": "custom", "key": key, "label": label, "field_type": field_type}
+
+
+@pytest.mark.parametrize("label", [None, "", "   "])
+def test_custom_field_without_a_name_is_reported_by_position(app, create_org, label):
+    """ฟิลด์ custom ที่ไม่มีชื่อ (ว่างหรือเว้นวรรค) ต้องถูกแจ้งตามลำดับฟิลด์ ไม่ใช่ตาม key"""
+    problems = _problems(
+        create_org(name="องค์กรทดสอบ"),
+        fields=[_custom("f_aaaa", "วัตถุประสงค์"), _custom("f_bbbb", label)],
+    )
+
+    assert problems == ["ฟิลด์ที่ 2: ต้องกรอกชื่อฟิลด์"]
+
+
+def test_fields_with_the_same_name_are_reported_against_the_first_one(app, create_org):
+    """ฟิลด์ที่ชื่อซ้ำกัน (เทียบแบบ trim) ต้องแจ้งชื่อและลำดับของฟิลด์แรกที่ซ้ำด้วย"""
+    problems = _problems(
+        create_org(name="องค์กรทดสอบ"),
+        fields=[
+            _custom("f_aaaa", "วัตถุประสงค์"),
+            _custom("f_bbbb", "ผู้ติดต่อ"),
+            _custom("f_cccc", "  วัตถุประสงค์ "),
+        ],
+    )
+
+    assert problems == ["ฟิลด์ที่ 3: ชื่อ “วัตถุประสงค์” ซ้ำกับฟิลด์ที่ 1"]
+
+
+def test_custom_field_named_like_a_catalog_field_default_label_is_a_duplicate(
+    app, create_org
+):
+    """ฟิลด์ catalog ที่ไม่ตั้ง label แสดงด้วยชื่อ default ของ catalog จึงชนกับฟิลด์ custom ที่ตั้งชื่อเดียวกัน"""
+    problems = _problems(
+        create_org(name="องค์กรทดสอบ"),
+        fields=[
+            {"source": "catalog", "key": "province"},
+            _custom("f_aaaa", "จังหวัด"),
+        ],
+    )
+
+    assert problems == ["ฟิลด์ที่ 2: ชื่อ “จังหวัด” ซ้ำกับฟิลด์ที่ 1"]
+
+
+def test_same_catalog_field_chosen_twice_is_reported_once(app, create_org):
+    """เลือกฟิลด์ catalog ตัวเดียวกันซ้ำ ต้องแจ้งข้อความ 'เลือกซ้ำ' ข้อความเดียวต่อคู่ (ไม่ซ้ำด้วยข้อความชื่อซ้ำ/key ซ้ำ)"""
+    problems = _problems(
+        create_org(name="องค์กรทดสอบ"),
+        fields=[
+            {"source": "catalog", "key": "vehicle_count"},
+            _custom("f_aaaa", "ผู้ติดต่อ"),
+            {"source": "catalog", "key": "vehicle_count", "label": "จำนวนรถที่ขอ"},
+        ],
+    )
+
+    assert problems == ["ฟิลด์ที่ 3: เลือก “จำนวนรถ” ซ้ำกับฟิลด์ที่ 1"]
+
+
+def _named_step(key, label, assigns_vehicle=False):
+    step = _step(key, assigns_vehicle=assigns_vehicle)
+    step.label = label
+    return step
+
+
+def test_steps_with_the_same_name_are_reported_against_the_first_one(app, create_org):
+    """ขั้นอนุมัติที่ชื่อซ้ำกัน (เทียบแบบ trim) ต้องแจ้งชื่อและลำดับของขั้นแรกที่ซ้ำ"""
+    problems = _problems(
+        create_org(name="องค์กรทดสอบ"),
+        steps=[
+            _named_step("s_aaaa", "หัวหน้างาน"),
+            _named_step("s_bbbb", " หัวหน้างาน", assigns_vehicle=True),
+        ],
+    )
+
+    assert problems == ["ขั้นที่ 2: ชื่อ “หัวหน้างาน” ซ้ำกับขั้นที่ 1"]
+
+
+INTERNAL_PROBLEM = "ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่"
+
+BAD_FIELD_KEYS = {
+    "thai key": [_custom("ผู้บังคับบัญชา", "ผู้ติดต่อ")],
+    "uppercase key": [_custom("Admin", "ผู้ติดต่อ")],
+    "key starting with a digit": [_custom("1abc", "ผู้ติดต่อ")],
+    "duplicate custom key": [
+        _custom("f_aaaa", "ผู้ติดต่อ"),
+        _custom("f_aaaa", "วัตถุประสงค์"),
+    ],
+}
+
+
+@pytest.mark.parametrize("case", BAD_FIELD_KEYS)
+def test_custom_field_with_bad_internal_key_asks_user_to_re_add_it_without_saying_key(
+    app, create_org, case
+):
+    """ฟิลด์ custom ที่ key ผิดรูปแบบหรือซ้ำ ต้องแจ้งเป็น 'ข้อมูลภายในไม่ถูกต้อง' ตามลำดับฟิลด์ และไม่พูดถึงคำว่า key"""
+    fields = BAD_FIELD_KEYS[case]
+
+    problems = _problems(create_org(name="องค์กรทดสอบ"), fields=fields)
+
+    assert problems == [f"ฟิลด์ที่ {len(fields)}: {INTERNAL_PROBLEM}"]
+
+
+BAD_STEP_KEYS = {
+    "thai key": [_named_step("ผู้บังคับบัญชา", "ผู้บังคับบัญชา", assigns_vehicle=True)],
+    "uppercase key": [_named_step("Admin", "แอดมิน", assigns_vehicle=True)],
+    "duplicate step key": [
+        _named_step("s_aaaa", "หัวหน้างาน"),
+        _named_step("s_aaaa", "ผู้อำนวยการ", assigns_vehicle=True),
+    ],
+}
+
+
+@pytest.mark.parametrize("case", BAD_STEP_KEYS)
+def test_step_with_bad_internal_key_asks_user_to_re_add_it_without_saying_key(
+    app, create_org, case
+):
+    """ขั้นที่ key ผิดรูปแบบหรือซ้ำ ต้องแจ้งเป็น 'ข้อมูลภายในไม่ถูกต้อง' ตามลำดับขั้น และไม่พูดถึงคำว่า key"""
+    steps = BAD_STEP_KEYS[case]
+
+    problems = _problems(create_org(name="องค์กรทดสอบ"), steps=steps)
+
+    assert problems == [f"ขั้นที่ {len(steps)}: {INTERNAL_PROBLEM}"]

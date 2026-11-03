@@ -521,7 +521,7 @@ def test_keys_pasted_with_invisible_characters_are_cleaned_and_saved(app, setup,
     assert [s.key for s in template.steps] == ["head", "admin"]
 
 
-def test_invalid_step_key_shows_which_step_and_value_in_thai(app, setup, login_as):
+def test_malformed_step_key_asks_to_re_add_the_step_by_position_in_thai(app, setup, login_as):
     org = setup["org"]
     client = app.test_client()
     login_as(client, setup["admin"])
@@ -534,8 +534,7 @@ def test_invalid_step_key_shows_which_step_and_value_in_thai(app, setup, login_a
     body = res.get_data(as_text=True)
     assert res.status_code == 200
     assert count_templates(org) == 0
-    assert "ขั้นที่ 1" in body
-    assert "ผู้บังคับบัญชา" in body
+    assert "ขั้นที่ 1: ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่" in body
     assert "ValidationError" not in body
 
 
@@ -573,10 +572,11 @@ def test_every_problem_is_listed_in_readable_thai_at_once(app, setup, login_as):
     for expected in (
         "ฟิลด์ที่ 1 (ชนิดรถ): ตัวเลือก “รถตู้” ไม่มีใน catalog (ใช้ได้: บัส, ตู้, เก๋ง, มินิบัส)",
         "ฟิลด์ที่ 2: ต้องเลือกชนิดข้อมูล",
-        "ขั้นที่ 1: key “ผู้บังคับบัญชา”",
+        "ฟิลด์ที่ 2: ต้องกรอกชื่อฟิลด์",
+        "ขั้นที่ 1: ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่",
         "ขั้นที่ 1: ต้องกรอกชื่อขั้น",
         "ขั้นที่ 1: ต้องเลือก role",
-        "ขั้นที่ 3: key “admin” ซ้ำกับขั้นที่ 2",
+        "ขั้นที่ 3: ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่",
         "ต้องมีขั้นจัดรถพอดี 1 ขั้น (ตอนนี้มี 2 ขั้น)",
     ):
         assert expected in body, expected

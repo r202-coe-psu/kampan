@@ -95,7 +95,7 @@ class CarFormTemplate(me.Document):
             raise CarFormTemplateInvalid(problems)
 
 
-KEY_RULE = "ต้องขึ้นต้นด้วย a-z และใช้ได้แค่ a-z, 0-9, _ (เช่น head, admin)"
+INTERNAL_PROBLEM = "ข้อมูลภายในไม่ถูกต้อง กรุณาลบแล้วเพิ่มใหม่"
 ROLE_LABELS = dict(ORGANIZATION_ROLES)
 CUSTOM_TYPE_KEYS = {key for key, _ in CUSTOM_FIELD_TYPES}
 
@@ -131,6 +131,7 @@ def _field_problems(fields):
 
     problems = []
     seen = {}
+    seen_names = {}
     for index, field in enumerate(fields, start=1):
         where = f"ฟิลด์ที่ {index}"
         if field.source == "catalog":
@@ -142,6 +143,7 @@ def _field_problems(fields):
                     problems.append(f"{where}: ต้องเลือกฟิลด์จาก catalog")
                 continue
             label = field.label or catalog_field.default_label
+            name = label.strip()
             invalid = [c for c in field.choices if c not in catalog_field.choices]
             if invalid:
                 problems.append(
@@ -149,18 +151,32 @@ def _field_problems(fields):
                     f" (ใช้ได้: {', '.join(catalog_field.choices)})"
                 )
         else:
-            if not _valid_key(field.key):
-                problems.append(f"{where}: key {_quote(field.key)} {KEY_RULE}")
+            name = (field.label or "").strip()
+            if not name:
+                problems.append(f"{where}: ต้องกรอกชื่อฟิลด์")
             if field.field_type not in CUSTOM_TYPE_KEYS:
                 problems.append(f"{where}: ต้องเลือกชนิดข้อมูล")
             elif field.field_type in ("radio", "checkbox") and not field.choices:
                 problems.append(f"{where}: ต้องใส่ตัวเลือกอย่างน้อย 1 ค่า")
 
         details_key = field.details_key()
+        if field.source != "catalog" and not _valid_key(field.key):
+            problems.append(f"{where}: {INTERNAL_PROBLEM}")
+            continue
         if details_key in seen:
-            problems.append(f"{where}: key {_quote(field.key)} ซ้ำกับฟิลด์ที่ {seen[details_key]}")
-        else:
-            seen[details_key] = index
+            if field.source == "catalog":
+                problems.append(
+                    f"{where}: เลือก {_quote(catalog_field.default_label)} ซ้ำกับฟิลด์ที่ {seen[details_key]}"
+                )
+            else:
+                problems.append(f"{where}: {INTERNAL_PROBLEM}")
+            continue
+        seen[details_key] = index
+
+        if name in seen_names:
+            problems.append(f"{where}: ชื่อ {_quote(name)} ซ้ำกับฟิลด์ที่ {seen_names[name]}")
+        elif name:
+            seen_names[name] = index
     return problems
 
 
@@ -170,16 +186,20 @@ def _step_problems(steps):
 
     problems = []
     seen = {}
+    seen_names = {}
     for index, step in enumerate(steps, start=1):
         where = f"ขั้นที่ {index}"
-        if not _valid_key(step.key):
-            problems.append(f"{where}: key {_quote(step.key)} {KEY_RULE}")
-        elif step.key in seen:
-            problems.append(f"{where}: key {_quote(step.key)} ซ้ำกับขั้นที่ {seen[step.key]}")
+        if not _valid_key(step.key) or step.key in seen:
+            problems.append(f"{where}: {INTERNAL_PROBLEM}")
         else:
             seen[step.key] = index
-        if not (step.label or "").strip():
+        name = (step.label or "").strip()
+        if not name:
             problems.append(f"{where}: ต้องกรอกชื่อขั้น")
+        elif name in seen_names:
+            problems.append(f"{where}: ชื่อ {_quote(name)} ซ้ำกับขั้นที่ {seen_names[name]}")
+        else:
+            seen_names[name] = index
         if step.approver_type == "user":
             if not step.user:
                 problems.append(f"{where}: ต้องเลือกผู้อนุมัติ")
