@@ -115,3 +115,58 @@ def test_request_from_template_becomes_active_after_head_and_admin_approve(
     assert car_app.car == s["car"]
     assert [a.step_key for a in car_app.step_approvals] == ["head", "admin"]
     assert [a.decision for a in car_app.step_approvals] == ["approved", "approved"]
+
+
+def test_head_denial_with_reason_denies_request_and_blocks_further_approval(
+    app, head_admin_setup, login_as
+):
+    """head ที่เป็นผู้อนุมัติขั้นปัจจุบันปฏิเสธพร้อมเหตุผล คำขอต้องเป็น denied และอนุมัติต่อไม่ได้ (403)"""
+    s = head_admin_setup
+    org_id = str(s["org"].id)
+
+    staff_client = login_as(app.test_client(), s["staff"])
+    res = staff_client.post(
+        f"/vehicle_lending/car_form_requests/new/{s['template'].id}",
+        data={
+            "organization_id": org_id,
+            "phone": "0812345678",
+            "location": "จ.สงขลา",
+            "request_reason": "ตรวจงานก่อสร้าง",
+            "passenger_number": "3",
+            "departure_date": "2026-03-10",
+            "departure_time": "08:30",
+            "return_date": "2026-03-10",
+            "return_time": "16:30",
+        },
+    )
+    assert res.status_code == 302
+    car_app = models.vehicle_applications.CarApplication.objects(
+        organization=s["org"]
+    ).first()
+
+    head_client = login_as(app.test_client(), s["head"])
+    res = head_client.post(
+        f"/vehicle_lending/car_form_requests/{car_app.id}/deny",
+        data={"organization_id": org_id, "denied_reason": "รถไม่ว่าง"},
+    )
+    assert res.status_code == 302
+
+    car_app.reload()
+    assert car_app.status == "denied"
+    assert car_app.denied_reason == "รถไม่ว่าง"
+    assert [(a.step_key, a.decision) for a in car_app.step_approvals] == [
+        ("head", "denied")
+    ]
+
+    res = head_client.post(
+        f"/vehicle_lending/car_form_requests/{car_app.id}/approve",
+        data={"organization_id": org_id},
+    )
+    # acl แปลง 403 เป็น redirect ไปหน้า login (unauthorized_callback)
+    assert res.status_code in (302, 403)
+    if res.status_code == 302:
+        assert "/login" in res.headers["Location"]
+
+    car_app.reload()
+    assert car_app.status == "denied"
+    assert len(car_app.step_approvals) == 1

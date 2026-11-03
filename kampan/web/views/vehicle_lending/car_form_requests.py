@@ -114,3 +114,31 @@ def approve(car_application_id):
             organization_id=str(organization.id),
         )
     )
+
+
+@module.route("/<car_application_id>/deny", methods=["POST"])
+@acl.organization_roles_required(*REQUEST_ROLES)
+def deny(car_application_id):
+    organization = g.organization
+    car_application = models.vehicle_applications.CarApplication.objects(
+        id=car_application_id, organization=organization
+    ).first()
+    if not car_application:
+        abort(404)
+
+    if not utils.car_form_flow.can_act(
+        car_application, current_user._get_current_object(), organization
+    ):
+        abort(403)
+
+    utils.car_form_flow.deny(
+        car_application,
+        current_user._get_current_object(),
+        request.form.get("denied_reason", ""),
+    )
+    return redirect(
+        url_for(
+            "vehicle_lending.car_applications.index",
+            organization_id=str(organization.id),
+        )
+    )

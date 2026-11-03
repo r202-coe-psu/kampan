@@ -65,3 +65,24 @@ def approve(car_application, user, comment="", car=None, driver=None):
         car_application.status = "active"
     car_application.save()
     return car_application
+
+
+def deny(car_application, user, reason):
+    step = current_step_def(car_application)
+    if step is None:
+        raise ValueError("no step to deny")
+
+    car_application.step_approvals.append(
+        models.vehicle_applications.StepApproval(
+            step_key=step["key"],
+            label=step.get("label"),
+            decision="denied",
+            decided_by=user,
+            decided_at=datetime.datetime.now(),
+            comment=reason,
+        )
+    )
+    car_application.status = "denied"
+    car_application.denied_reason = reason
+    car_application.save()
+    return car_application
