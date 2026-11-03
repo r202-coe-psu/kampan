@@ -1004,7 +1004,7 @@
           </div>
         </div>
 
-        {% if current_user.get_current_division() %}
+        {% if config.get("CAR_LEGACY_FLOW_ENABLED") and current_user.get_current_division() %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
            href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id) }}">
           <i class="ph ph-arrow-right"></i> ไปที่หน้าการขอใช้รถยนต์
@@ -1111,7 +1111,7 @@
                  เมื่อหัวหน้าฝ่ายอนุมัติแล้วจึงไปที่พัสดุเพื่อจัดสรรรถ/คนขับ และส่งต่อไปที่หน้า &ldquo;ผอ. อนุมัติขอใช้รถยนต์&rdquo;',
                 'info', 'ph-info') }}
 
-        {% if config.get("CAR_LEGACY_APPROVAL_ENABLED") and (current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head")) %}
+        {% if config.get("CAR_LEGACY_FLOW_ENABLED") and (current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head")) %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
            href="{{ url_for('vehicle_lending.car_permissions.header_page', organization_id=organization.id) }}">
           <i class="ph ph-arrow-right"></i> ไปที่หน้าหัวหน้าฝ่ายอนุมัติ
@@ -1152,7 +1152,7 @@
           </li>
         </ol>
 
-        {% if config.get("CAR_LEGACY_APPROVAL_ENABLED") and (current_user.is_directer_organization() or current_user.has_organization_roles("admin")) %}
+        {% if config.get("CAR_LEGACY_FLOW_ENABLED") and (current_user.is_directer_organization() or current_user.has_organization_roles("admin")) %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
            href="{{ url_for('vehicle_lending.car_permissions.director_page', organization_id=organization.id) }}">
           <i class="ph ph-arrow-right"></i> ไปที่หน้า ผอ. อนุมัติ
@@ -1265,7 +1265,7 @@
                  ถ้ามีการส่งค่าเข้ามา backend จะบันทึกรถ/คนขับกับคำขอ และเมื่ออนุมัติแล้วระบบจะส่งอีเมลแจ้งคนขับ',
                 'info', 'ph-info', 'การจัดสรรงาน:') }}
 
-        {% if config.get("CAR_LEGACY_APPROVAL_ENABLED") and (current_user.has_organization_roles("admin")) %}
+        {% if config.get("CAR_LEGACY_FLOW_ENABLED") and (current_user.has_organization_roles("admin")) %}
         <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
            href="{{ url_for('vehicle_lending.car_permissions.admin_page', organization_id=organization.id) }}">
           <i class="ph ph-arrow-right"></i> ไปที่หน้าพัสดุอนุมัติ

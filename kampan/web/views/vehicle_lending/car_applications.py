@@ -19,6 +19,16 @@ from ... import redis_rq
 
 module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
+# หน้ายื่น/แก้/พิมพ์คำขอแบบเดิม ซ่อนไว้ระหว่างย้ายไปใช้ car form templates (ปฏิทินยังใช้ต่อ)
+LEGACY_ONLY_ENDPOINTS = {"index", "create_or_edit", "delete", "paper", "combine_paper"}
+
+
+@module.before_request
+def hide_legacy_request_pages():
+    endpoint = (request.endpoint or "").rsplit(".", 1)[-1]
+    if endpoint in LEGACY_ONLY_ENDPOINTS and not current_app.config.get("CAR_LEGACY_FLOW_ENABLED"):
+        abort(404)
+
 
 @module.route("", methods=["GET", "POST"])
 @acl.organization_roles_required(
@@ -62,6 +72,12 @@ def calendar():
         "/vehicle_lending/car_applications/calendar.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
+        new_request_url=url_for(
+            "vehicle_lending.car_applications.create_or_edit"
+            if current_app.config.get("CAR_LEGACY_FLOW_ENABLED")
+            else "vehicle_lending.car_form_requests.choose_template",
+            organization_id=organization.id,
+        ),
     )
 
 

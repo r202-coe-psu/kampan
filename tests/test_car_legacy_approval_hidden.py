@@ -3,10 +3,10 @@ import pytest
 
 @pytest.fixture
 def legacy_disabled(app):
-    previous = app.config.get("CAR_LEGACY_APPROVAL_ENABLED")
-    app.config["CAR_LEGACY_APPROVAL_ENABLED"] = False
+    previous = app.config.get("CAR_LEGACY_FLOW_ENABLED")
+    app.config["CAR_LEGACY_FLOW_ENABLED"] = False
     yield
-    app.config["CAR_LEGACY_APPROVAL_ENABLED"] = previous
+    app.config["CAR_LEGACY_FLOW_ENABLED"] = previous
 
 
 @pytest.fixture
@@ -34,3 +34,38 @@ def test_sidebar_hides_legacy_approval_menus_when_disabled(legacy_disabled, admi
     assert "ผอ. อนุมัติขอใช้รถยนต์" not in html
     assert "พัสดุอนุมัติขอใช้รถยนต์" not in html
     assert "รายการที่ต้องอนุมัติ" in html
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["", "/create", "/combine_paper", "/000000000000000000000000/edit", "/000000000000000000000000/paper", "/000000000000000000000000/delete"],
+)
+def test_legacy_request_pages_are_hidden_when_disabled(legacy_disabled, admin_client, path):
+    client, org = admin_client
+    resp = client.get(f"/vehicle_lending/car_applications{path}?organization_id={org.id}")
+    assert resp.status_code == 404
+
+
+def test_calendar_stays_and_its_new_request_button_goes_to_the_template_request_page(legacy_disabled, admin_client):
+    client, org = admin_client
+    resp = client.get(f"/vehicle_lending/car_applications/calendar?organization_id={org.id}")
+
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "/vehicle_lending/car_applications/create" not in html
+    assert f"/vehicle_lending/car_form_requests/new?organization_id={org.id}" in html
+    assert 'const url = "/vehicle_lending/car_form_requests/new?' in html or "dateClick" not in html
+
+
+def test_sidebar_hides_the_legacy_request_menu_but_keeps_the_calendar(legacy_disabled, admin_client):
+    from kampan import models
+
+    client, org = admin_client
+    member = models.OrganizationUserRole.objects(organization=org).first()
+    member.division = models.Division(name="ฝ่ายทดสอบ", organization=org).save()
+    member.save()
+    html = client.get(f"/vehicle_lending/car_form_requests/?organization_id={org.id}").get_data(as_text=True)
+
+    assert f'href="/vehicle_lending/car_applications?organization_id={org.id}"' not in html
+    assert "ph-hand-arrow-up" not in html
+    assert "ปฏิทินการขอใช้รถยนต์" in html

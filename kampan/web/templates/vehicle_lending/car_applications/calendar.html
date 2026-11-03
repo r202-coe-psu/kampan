@@ -22,7 +22,7 @@
   </div>
   <div class="flex justify-end w-full gap-2">
     <a class="btn btn-primary"
-      href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
+      href="{{ new_request_url }}">
       <i class="ph ph-plus"></i>
       เพิ่มคำขอใช้รถยนต์
     </a>
@@ -107,7 +107,7 @@
       {% if current_user.get_current_division() %}
       dateClick: function (info) {
     const selectedDate = info.dateStr;
-    const url = "{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + selectedDate;
+    const url = "{{ new_request_url }}" + "&date=" + selectedDate;
 
     window.location.href = url;
   }

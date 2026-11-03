@@ -37,12 +37,14 @@
     </li>
     {% endif %}
     {% if current_user.get_current_division() %}
+    {% if config.get("CAR_LEGACY_FLOW_ENABLED") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_applications' in request.path and '/vehicle_lending/car_applications/calendar' not in request.path else '' }}"
         href="{{ url_for('vehicle_lending.car_applications.index', organization_id=organization.id ) }}">
         <i class="ph ph-hand-arrow-up"></i> การขอใช้รถยนต์
       </a>
     </li>
+    {% endif %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_applications/calendar' in request.path else '' }}"
         href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id ) }}">
@@ -78,7 +80,7 @@
       </a>
     </li>
     {% endif %}
-    {% if config.get("CAR_LEGACY_APPROVAL_ENABLED") %}
+    {% if config.get("CAR_LEGACY_FLOW_ENABLED") %}
     {% if current_user.has_organization_roles("admin", "endorser", "supervisor supplier", "head") %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_permissions/header_page' in request.path else '' }}"

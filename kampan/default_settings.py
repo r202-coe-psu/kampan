@@ -12,4 +12,4 @@ KAMPAN_EMAIL_SENDER_NAME = "DIIS INVENTORY"
 DAIRY_TIME_TO_SEND_PAYMENT_NOTIFICATION = "00:10"
 
 # หน้าอนุมัติขอใช้รถแบบเดิม (หัวหน้าฝ่าย/ผอ./พัสดุ) ซ่อนไว้ระหว่างย้ายไปใช้ car form templates
-CAR_LEGACY_APPROVAL_ENABLED = False
+CAR_LEGACY_FLOW_ENABLED = False
