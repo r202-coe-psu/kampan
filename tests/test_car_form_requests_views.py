@@ -784,7 +784,7 @@ def test_requesters_vehicle_type_options_fall_back_to_the_catalog_when_no_car_ha
     ]
 
 
-def test_vehicle_step_inbox_lists_cars_of_the_requested_type_first_and_offers_a_show_all_types_toggle(
+def test_vehicle_step_detail_lists_cars_of_the_requested_type_first_and_offers_a_show_all_types_toggle(
     app, head_admin_setup, login_as, create_car
 ):
     """ขั้นจัดรถ: option รถมี data-vehicle-type, select บอกประเภทที่ขอ, รถประเภทที่ขอขึ้นก่อน และมี checkbox แสดงรถทุกประเภท"""
@@ -797,7 +797,7 @@ def test_vehicle_step_inbox_lists_cars_of_the_requested_type_first_and_offers_a_
     car_app.details = {"vehicle_kind": "ตู้"}
     car_app.save()
 
-    res = _inbox(login_as(app.test_client(), s["admin"]), s["org"])
+    res = _detail(login_as(app.test_client(), s["admin"]), car_app, s["org"])
 
     html = res.get_data(as_text=True)
     select = re.search(r'<select[^>]*name="car".*?</select>', html, re.S).group(0)
@@ -1061,20 +1061,35 @@ def test_detail_page_is_hidden_from_staff_who_did_not_submit_it_and_from_other_o
     assert _detail(login_as(app.test_client(), s["admin"]), car_app, s["org"]).status_code == 200
 
 
-def test_inbox_offers_approve_and_deny_in_modals_and_a_stepper_per_request(
+def test_inbox_is_a_table_with_a_view_button_and_approval_happens_on_the_detail_page(
     app, head_admin_setup, login_as
 ):
-    """หน้ารายการที่ต้องอนุมัติ: ปุ่มอนุมัติ/ปฏิเสธเปิด modal (dialog) ของคำขอนั้น และมี stepper"""
+    """หน้ารายการที่ต้องอนุมัติเป็นตาราง แต่ละแถวมีปุ่มดู (ไปหน้ารายละเอียด) ไม่มีฟอร์มอนุมัติในหน้า
+    ส่วนหน้ารายละเอียดของผู้อนุมัติขั้นปัจจุบันมี modal อนุมัติ/ปฏิเสธ"""
+    s = head_admin_setup
+    car_app = _submit_and_get(app, login_as, s)
+    head = login_as(app.test_client(), s["head"])
+
+    inbox = _inbox(head, s["org"]).get_data(as_text=True)
+    detail = _detail(head, car_app, s["org"]).get_data(as_text=True)
+
+    assert "<table" in inbox
+    assert f'data-request-id="{car_app.id}"' in inbox
+    assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in inbox
+    assert "<dialog" not in inbox
+    assert f'<dialog id="approve-{car_app.id}"' in detail
+    assert f'<dialog id="deny-{car_app.id}"' in detail
+    assert f"getElementById('approve-{car_app.id}').showModal()" in detail
+    assert 'data-step-state="current"' in detail
+
+
+def test_detail_page_has_no_approval_modals_for_someone_who_cannot_act(app, head_admin_setup, login_as):
     s = head_admin_setup
     car_app = _submit_and_get(app, login_as, s)
 
-    html = _inbox(login_as(app.test_client(), s["head"]), s["org"]).get_data(as_text=True)
+    detail = _detail(login_as(app.test_client(), s["staff"]), car_app, s["org"]).get_data(as_text=True)
 
-    assert f'<dialog id="approve-{car_app.id}"' in html
-    assert f'<dialog id="deny-{car_app.id}"' in html
-    assert f"getElementById('approve-{car_app.id}').showModal()" in html
-    assert 'data-step-state="current"' in html
-    assert f'href="{BASE}/{car_app.id}?organization_id={s["org"].id}"' in html
+    assert "<dialog" not in detail
 
 
 def test_approving_from_the_detail_page_returns_to_the_detail_page(app, head_admin_setup, login_as):

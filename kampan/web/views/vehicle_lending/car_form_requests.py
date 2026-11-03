@@ -99,7 +99,7 @@ def inbox():
         "/vehicle_lending/car_form_requests/inbox.html",
         organization=organization,
         car_applications=utils.car_form_flow.pending_for(user, organization),
-        **_action_context(organization),
+        current_step_def=utils.car_form_flow.current_step_def,
     )
 
 
