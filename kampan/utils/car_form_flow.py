@@ -190,6 +190,8 @@ def _approver_text(step):
 def step_progress(car_application):
     """สถานะของแต่ละขั้นสำหรับ stepper: done / current / denied / waiting / skipped"""
     steps = (car_application.template_snapshot or {}).get("steps", [])
+    if not steps:
+        return _legacy_step_progress(car_application)
     decisions = {a.step_key: a for a in car_application.step_approvals}
     progress = []
     for index, step in enumerate(steps):
@@ -214,6 +216,42 @@ def step_progress(car_application):
                 "decided_by": _display_user(decision.decided_by) if decision else "",
                 "decided_at": decision.decided_at if decision else None,
                 "comment": decision.comment if decision else "",
+            }
+        )
+    return progress
+
+
+def _legacy_step_progress(car_application):
+    """คำขอแบบเดิม (ไม่มี template): หัวหน้าฝ่าย → พัสดุ → ผอ. (เฉพาะไปต่างจังหวัด)"""
+    steps = [("header", "หัวหน้าฝ่าย", car_application.header_approval),
+             ("admin", "เจ้าหน้าที่พัสดุ", car_application.admin_approval)]
+    if car_application.using_type == "out of town":
+        steps.append(("director", "ผู้อำนวยการ", car_application.director_approval))
+    status = car_application.status
+    progress = []
+    for index, (key, label, approval) in enumerate(steps):
+        if approval and approval.approved_at:
+            state = "done"
+        elif status == f"denied by {key}":
+            state = "denied"
+        elif status == f"pending on {key}":
+            state = "current"
+        elif status.startswith("denied") or status == "disactive":
+            state = "skipped"
+        elif status in ("active", "completed"):
+            state = "done"
+        else:
+            state = "waiting"
+        progress.append(
+            {
+                "index": index + 1,
+                "label": label,
+                "approver": label,
+                "assigns_vehicle": key == "admin",
+                "state": state,
+                "decided_by": _display_user(approval.approved_by) if approval else "",
+                "decided_at": approval.approved_at if approval else None,
+                "comment": "",
             }
         )
     return progress

@@ -3,6 +3,55 @@ import datetime
 from kampan import models, utils
 
 
+def _states(progress):
+    return [(step["label"], step["state"]) for step in progress]
+
+
+def test_legacy_general_request_waiting_on_header(app, create_org, create_car, create_car_application):
+    org = create_org()
+    application = create_car_application(org, create_car(org), status="pending on header")
+
+    assert _states(utils.car_form_flow.step_progress(application)) == [
+        ("หัวหน้าฝ่าย", "current"),
+        ("เจ้าหน้าที่พัสดุ", "waiting"),
+    ]
+
+
+def test_legacy_out_of_town_request_approved_by_admin_waits_on_director(
+    app, create_org, create_user, create_car, create_car_application
+):
+    org = create_org()
+    admin = create_user("Admin", "User")
+    application = create_car_application(org, create_car(org), status="pending on director")
+    application.using_type = "out of town"
+    application.header_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_at=datetime.datetime(2026, 1, 10, 9, 0)
+    )
+    application.admin_approval = models.vehicle_applications.CarApplicationApproval(
+        approved_by=admin, approved_at=datetime.datetime(2026, 1, 11, 9, 0)
+    )
+    application.save()
+
+    progress = utils.car_form_flow.step_progress(application)
+
+    assert _states(progress) == [
+        ("หัวหน้าฝ่าย", "done"),
+        ("เจ้าหน้าที่พัสดุ", "done"),
+        ("ผู้อำนวยการ", "current"),
+    ]
+    assert progress[1]["decided_by"] == admin.get_resources_fullname_th()
+
+
+def test_legacy_request_denied_by_header_skips_the_rest(app, create_org, create_car, create_car_application):
+    org = create_org()
+    application = create_car_application(org, create_car(org), status="denied by header")
+
+    assert _states(utils.car_form_flow.step_progress(application)) == [
+        ("หัวหน้าฝ่าย", "denied"),
+        ("เจ้าหน้าที่พัสดุ", "skipped"),
+    ]
+
+
 def test_calendar_lists_pending_form_requests(
     app, create_org, create_user, assign_user_to_org, create_car, create_car_application, login_as
 ):
