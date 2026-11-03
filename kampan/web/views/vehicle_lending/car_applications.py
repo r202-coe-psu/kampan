@@ -268,13 +268,13 @@ def get_car_applications():
         ],
     )
 
-    color_of_event = {
-        "active": "green",
-        "pending": "orange",
-        "pending on header": "orange",
-        "pending on director": "orange",
-        "pending on admin": "orange",
-        "completed": "gray",
+    tone_of_event = {
+        "active": "success",
+        "pending": "warning",
+        "pending on header": "warning",
+        "pending on director": "warning",
+        "pending on admin": "warning",
+        "completed": "neutral",
     }
     datas = []
     for car_application in car_applications:
@@ -295,10 +295,10 @@ def get_car_applications():
         )
         data = {
             "id": str(car_application.id),
-            "title": f"{time} น. , {car_application.location or '-'}",
+            "title": f"{time} น. {car_application.location or '-'}",
             "start": start,
             "end": end,
-            "color": color_of_event.get(car_application.status, "gray"),
+            "classNames": [f"event-{tone_of_event.get(car_application.status, 'neutral')}"],
         }
         datas.append(data)
 

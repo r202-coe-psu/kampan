@@ -11,47 +11,75 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-row w-full justify-between">
-  <div class="flex justify-start w-full gap-2">
-    <div class="flex flex-col">
-      <div><span class="text-green-500 font-semibold">● สีเขียว:</span> อนุมัติสำเร็จ</div>
-      <div><span class="text-orange-500 font-semibold">● สีส้ม:</span> รอการอนุมัติ</div>
-      <div><span class="text-gray-500 font-semibold">● สีเทา:</span> เสร็จสิ้น</div>
-
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4 p-4 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <ul class="flex flex-wrap items-center gap-2 text-sm" aria-label="คำอธิบายสี">
+        <li class="badge badge-soft badge-warning tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-warning"></span> รออนุมัติ</li>
+        <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
+        <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
+      </ul>
+      <a class="btn btn-primary" href="{{ new_request_url }}">
+        <i class="ph ph-plus"></i> เพิ่มคำขอใช้รถยนต์
+      </a>
     </div>
+    {% if current_user.get_current_division() %}
+    <p class="text-xs text-base-content/60 -mt-2">กดที่วันในปฏิทินเพื่อยื่นคำขอวันนั้น · กดที่รายการเพื่อดูสถานะการอนุมัติ</p>
+    {% endif %}
+    <div id="calendar" class="tone-deep-success"></div>
   </div>
-  <div class="flex justify-end w-full gap-2">
-    <a class="btn btn-primary"
-      href="{{ new_request_url }}">
-      <i class="ph ph-plus"></i>
-      เพิ่มคำขอใช้รถยนต์
-    </a>
-  </div>
-</div>
-<div class="segment my-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm max-sm:h-[calc(100svh-10rem)]">
-  <div id='calendar' class="max-sm:h-full"></div>
 </div>
 
 <div id="modal_container"></div>
 
 <style>
-  .fc-view-harness {
-    display: block !important;
-    z-index: 0 !important;
+  #calendar {
+    --fc-border-color: var(--color-base-300);
+    --fc-page-bg-color: var(--color-base-100);
+    --fc-neutral-bg-color: var(--color-base-200);
+    --fc-today-bg-color: color-mix(in oklab, var(--color-primary) 8%, transparent);
+    --fc-button-bg-color: var(--color-base-100);
+    --fc-button-border-color: var(--color-base-300);
+    --fc-button-text-color: var(--color-base-content);
+    --fc-button-hover-bg-color: var(--color-base-200);
+    --fc-button-hover-border-color: var(--color-base-300);
+    --fc-button-active-bg-color: var(--color-primary);
+    --fc-button-active-border-color: var(--color-primary);
   }
+  #calendar .fc-toolbar-title { font-size: 1.125rem; font-weight: 700; }
+  #calendar .fc-button { border-radius: var(--radius-field); font-size: .875rem; box-shadow: none; text-transform: none; }
+  #calendar .fc-button-active { color: var(--color-primary-content); }
+  #calendar .fc-button:disabled { opacity: .5; }
+  #calendar .fc-col-header-cell-cushion { font-weight: 600; font-size: .8rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+  #calendar .fc-daygrid-day-number { font-size: .8rem; }
+  #calendar .fc-day-today .fc-daygrid-day-number { color: var(--color-primary); font-weight: 700; }
+  #calendar a { text-decoration: none; color: inherit; }
+  #calendar .fc-event { cursor: pointer; border-width: 0 0 0 3px; border-radius: 4px; padding: 1px 4px; font-size: .75rem; }
+  #calendar .event-success { --tone: var(--color-success); }
+  #calendar .event-warning { --tone: var(--color-warning); }
+  #calendar .event-neutral { --tone: color-mix(in oklab, var(--color-base-content) 45%, transparent); }
+  #calendar .fc-event[class*="event-"] {
+    background: color-mix(in oklab, var(--tone) 15%, var(--color-base-100));
+    border-color: var(--tone);
+    color: var(--color-base-content);
+  }
+  #calendar .fc-event[class*="event-"] .fc-event-main { color: inherit; }
+  #calendar .fc-event:hover { filter: brightness(.95); }
 
+  .fc-view-harness,
   .fc-view-harness-active {
     display: block !important;
     z-index: 0 !important;
   }
 
+  /* ชื่อรายการมีเวลาออกเดินทางอยู่แล้ว ไม่ต้องแสดงคอลัมน์ "all-day" ของมุมมองรายการ */
+  #calendar .fc-list-event-time { display: none; }
+  #calendar .fc-list-event[class*="event-"] { background: transparent; }
+  #calendar .fc-list-event-dot { border-color: var(--tone, var(--color-base-content)); }
+  #calendar .fc-list-event:hover td { background: var(--color-base-200); }
+
   @media (max-width: 640px) {
-    #calendar,
-    #calendar .fc,
-    #calendar .fc-view-harness,
-    #calendar .fc-view-harness-active {
-      height: 100% !important;
-    }
+    #calendar .fc-toolbar { flex-direction: column; gap: .5rem; }
   }
 </style>
 {% endblock %}
@@ -80,21 +108,25 @@
 
     const car_applications = await initUrl('{{ organization.id }}');
 
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
       locale: 'th',
-      initialView: 'dayGridMonth',
+      initialView: isMobile ? 'listMonth' : 'dayGridMonth',
+      height: isMobile ? 'auto' : undefined,
       events: car_applications,
       buttonText: {
         today: 'วันนี้',    // Rename "Today" button
         month: 'เดือน',    // Rename "Month" view
         week: 'สัปดาห์',   // Rename "Week" view
         day: 'วัน',       // Rename "Day" view
-        list: 'รายการ'    // Rename "List" view
+        list: 'รายการ',    // Rename "List" view
       },
+      moreLinkText: function (n) { return `+ อีก ${n} รายการ`; },
+      noEventsText: 'ไม่มีคำขอในเดือนนี้',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+      dayMaxEvents: 3,
       eventClick: async function (info) {
-        info.el.style.borderColor = 'black';
-
         try {
             const response = await fetch(`{{ url_for('vehicle_lending.car_applications.event_modal', car_application_id='CAR_APP_ID', organization_id=organization.id) }}`.replace('CAR_APP_ID', info.event.id));
             if (!response.ok) throw new Error('Network response was not ok');
@@ -118,14 +150,6 @@
 
   });
 
-</script>
-
-<script type="text/javascript">
-
-  function showDeleteModal(car_application_id) {
-    car_application_id ? $('.ui.modal.' + car_application_id).modal('show') : $('.ui.modal').modal('hide')
-      ;
-  }
 </script>
 
 {% endblock %}
