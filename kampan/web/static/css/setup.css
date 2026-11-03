@@ -241,6 +241,16 @@ fieldset {
   --color-success-content: oklch(98.2% 0.018 155.826);
 }
 
+/* ติ๊กถูกของ stepper เป็นเส้นมุมแหลม (miter) แทนตัวอักษร ✓ ของฟอนต์ที่โค้ง
+   วาดทับ background-color ของวงกลม (step-bg) */
+.steps .step[data-content="✓"]::after {
+  content: "";
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpolyline points='6 12.5 10 16.5 18 8'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 60%;
+}
+
 /* dropdown ของ .select (base-select) ไม่แสดงเครื่องหมายถูกหน้าตัวเลือกที่เลือกอยู่ */
 .select select option::checkmark {
   display: none;
