@@ -23,6 +23,11 @@ from kampan.repositories.history_car_lending import HistoryCarLendingRepository
 module = Blueprint("car_tasks", __name__, url_prefix="/car_tasks")
 
 
+def sees_only_own_tasks(organization):
+    """คนขับที่ไม่ใช่ admin เห็นและปิดได้เฉพาะงานที่ถูก assign ให้ตัวเอง"""
+    return not current_user.has_organization_roles("admin", organization=organization)
+
+
 @module.route("", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "driver")
 @login_required
@@ -40,6 +45,8 @@ def index():
     q = (filter_form.q.data or "").strip()
 
     query = Q(organization=organization, status="active")
+    if sees_only_own_tasks(organization):
+        query &= Q(driver=current_user._get_current_object())
 
     if target_date:
         start_of_day = datetime.datetime.combine(target_date, datetime.time.min)
@@ -91,6 +98,8 @@ def submit_task_modal(car_application_id):
     )
     if not car_application:
         abort(404)
+    if sees_only_own_tasks(organization) and car_application.driver != current_user._get_current_object():
+        abort(403)
     if car_application.id not in models.vehicle_applications.CarApplication.get_oldest_active_ids(organization):
         abort(403)
 
