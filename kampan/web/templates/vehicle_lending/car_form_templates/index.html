@@ -1,58 +1,59 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
+{% from '/base/components/empty_state.html' import EmptyState %}
 
 {% block title %}แบบฟอร์มใบขอใช้รถ (Template){% endblock %}
 
 {% block dashboard_title %}แบบฟอร์มใบขอใช้รถ (Template){% endblock %}
 
 {% block content %}
-<div class="flex justify-end w-full gap-2">
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ templates|length }}</span> รายการ</p>
   <a href="{{ url_for('vehicle_lending.car_form_templates.create_or_edit', organization_id=organization.id) }}"
      class="btn btn-primary">
     <i class="ph ph-plus"></i> สร้าง template ใหม่
   </a>
 </div>
 
-<div class="segment mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="overflow-x-auto mt-2 rounded-xl">
-    <table class="table-auto w-full">
+{% macro template_actions(template) %}
+<a href="{{ url_for('vehicle_lending.car_form_templates.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
+   class="btn btn-sm btn-ghost btn-square tooltip" data-tip="แก้ไข" aria-label="แก้ไข">
+  <i class="ph ph-pencil-simple text-lg"></i>
+</a>
+<a href="{{ url_for('vehicle_lending.car_form_templates.paper_editor', template_id=template.id, organization_id=organization.id) }}"
+   class="btn btn-sm btn-ghost btn-square tooltip" data-tip="จัดวางตัวแปรบนใบพิมพ์" aria-label="จัดวางตัวแปรบนใบพิมพ์">
+  <i class="ph ph-file-pdf text-lg"></i>
+</a>
+<button type="button" class="btn btn-sm btn-ghost btn-square text-error tooltip delete-btn" data-tip="ลบ" aria-label="ลบ"
+        data-name="{{ template.name }}"
+        data-delete-url="{{ url_for('vehicle_lending.car_form_templates.delete', template_id=template.id, organization_id=organization.id) }}">
+  <i class="ph ph-trash text-lg"></i>
+</button>
+{% endmacro %}
+
+{% if templates %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-md:hidden">
+  <div class="overflow-x-auto">
+    <table class="table table-zebra">
       <thead>
         <tr>
-          <th class="table-style">ชื่อ</th>
-          <th class="table-style">รายละเอียด</th>
-          <th class="table-style">จำนวนฟิลด์</th>
-          <th class="table-style">จำนวนขั้นอนุมัติ</th>
-          <th class="table-style text-center">จัดการ</th>
+          <th>#</th>
+          <th>ชื่อ</th>
+          <th>รายละเอียด</th>
+          <th class="text-center">จำนวนฟิลด์</th>
+          <th class="text-center">จำนวนขั้นอนุมัติ</th>
+          <th class="text-center">จัดการ</th>
         </tr>
       </thead>
       <tbody>
         {% for template in templates %}
-        <tr>
-          <td class="table-style font-medium">{{ template.name }}</td>
-          <td class="table-style truncate max-w-xs">{{ template.description }}</td>
-          <td class="table-style">{{ template.fields|length }}</td>
-          <td class="table-style">{{ template.steps|length }}</td>
-          <td class="table-style text-center">
-            <div class="flex flex-row gap-2 justify-center">
-              <a href="{{ url_for('vehicle_lending.car_form_templates.create_or_edit', template_id=template.id, organization_id=organization.id) }}"
-                 class="btn btn-sm btn-ghost tooltip" data-tip="แก้ไข">
-                <i class="ph ph-pencil-simple text-lg"></i>
-              </a>
-              <a href="{{ url_for('vehicle_lending.car_form_templates.paper_editor', template_id=template.id, organization_id=organization.id) }}"
-                 class="btn btn-sm btn-ghost tooltip" data-tip="จัดวางตัวแปรบนใบพิมพ์">
-                <i class="ph ph-file-pdf text-lg"></i>
-              </a>
-              <button type="button" class="btn btn-sm btn-ghost text-error tooltip delete-btn" data-tip="ลบ"
-                      data-name="{{ template.name }}"
-                      data-delete-url="{{ url_for('vehicle_lending.car_form_templates.delete', template_id=template.id, organization_id=organization.id) }}">
-                <i class="ph ph-trash text-lg"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="5" class="text-center py-8 text-gray-500">
-            ยังไม่มี template กดปุ่ม "สร้าง template ใหม่" เพื่อเริ่มสร้าง
+        <tr class="hover">
+          <td class="text-base-content/60">{{ loop.index }}</td>
+          <td class="font-medium min-w-40">{{ template.name }}</td>
+          <td class="max-w-xs truncate text-base-content/70" title="{{ template.description or '' }}">{{ template.description or '-' }}</td>
+          <td class="text-center">{{ template.fields|length }}</td>
+          <td class="text-center">{{ template.steps|length }}</td>
+          <td>
+            <div class="flex justify-center gap-1">{{ template_actions(template) }}</div>
           </td>
         </tr>
         {% endfor %}
@@ -60,6 +61,28 @@
     </table>
   </div>
 </div>
+
+<div class="mt-4 flex flex-col gap-3 md:hidden">
+  {% for template in templates %}
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-2 p-4">
+      <div class="font-semibold">{{ template.name }}</div>
+      {% if template.description %}<p class="text-sm text-base-content/70">{{ template.description }}</p>{% endif %}
+      <div class="flex flex-wrap gap-2">
+        <span class="badge badge-ghost badge-sm">{{ template.fields|length }} ฟิลด์</span>
+        <span class="badge badge-ghost badge-sm">{{ template.steps|length }} ขั้นอนุมัติ</span>
+      </div>
+      <div class="card-actions justify-end">{{ template_actions(template) }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+{{ EmptyState('ph-file-text', 'ยังไม่มี template',
+              description='กด “สร้าง template ใหม่” เพื่อเริ่มสร้าง',
+              action_label='สร้าง template ใหม่',
+              action_href=url_for('vehicle_lending.car_form_templates.create_or_edit', organization_id=organization.id)) }}
+{% endif %}
 
 <dialog id="delete_template_modal" class="modal">
   <div class="modal-box max-w-md">
