@@ -217,11 +217,17 @@
         {% if entry.changes %}
         <ul class="mt-1 text-sm flex flex-col gap-0.5">
           {% for change in entry.display_changes() %}
-          <li>
-            <span class="text-base-content/70">{{ change.label }}:</span>
-            <span class="line-through text-base-content/50">{{ change.old or '-' }}</span>
-            <i class="ph ph-arrow-right text-xs"></i>
-            <span class="font-medium">{{ change.new or '-' }}</span>
+          {% set assignable = change.field in ('car', 'driver') %}
+          <li class="text-base-content/70">
+            {% if change.old %}
+            {{ change.label }}เปลี่ยนจาก <span class="text-base-content/50">{{ change.old }}</span>
+            เป็น <span class="font-medium text-base-content">{{ change.new or '-' }}</span>
+            {% elif not change.new %}
+            {{ 'ไม่ได้มอบหมาย' ~ change.label if assignable else change.label ~ ': -' }}
+            {% else %}
+            {{ 'มอบหมาย' ~ change.label if assignable else change.label ~ 'เปลี่ยนเป็น' }}
+            <span class="font-medium text-base-content">{{ change.new }}</span>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>
