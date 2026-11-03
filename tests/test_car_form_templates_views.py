@@ -758,3 +758,61 @@ def test_renaming_and_reordering_keeps_keys_and_placements_pointing_at_the_same_
     assert labels["approvals.s_aaa111.decision"].startswith("หัวหน้างาน")
     assert labels["approvals.s_bbb222.name"].startswith("เจ้าหน้าที่จัดรถ")
 
+
+def paper_editor_variables(client, org, template):
+    page = client.get(
+        f"{BASE}/{template.id}/paper_editor", query_string={"organization_id": str(org.id)}
+    )
+    return json.loads(
+        re.search(r'id="variablesData">(.*?)</script>', page.get_data(as_text=True), re.S).group(1)
+    )
+
+
+def test_paper_editor_sends_choices_as_value_label_pairs(app, setup, login_as):
+    """Decision choices carry a Thai label while the stored value stays approved/denied; field choices use the value as its own label"""
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    template.fields = [
+        models.car_form_templates.FormFieldDef(
+            source="catalog", key="vehicle_kind", choices=["ตู้", "บัส"]
+        )
+    ]
+    template.save()
+    client = login_as(app.test_client(), setup["admin"])
+
+    variables = paper_editor_variables(client, org, template)
+
+    choices = {v["name"]: v["choices"] for v in variables}
+    assert choices["approvals.admin.decision"] == [
+        ["approved", "อนุมัติ"],
+        ["denied", "ไม่อนุมัติ"],
+    ]
+    assert choices["details.vehicle_kind"] == [["ตู้", "ตู้"], ["บัส", "บัส"]]
+    assert choices["app.location"] == []
+
+
+def test_paper_editor_appends_the_group_to_labels_that_collide(app, setup, login_as):
+    """Variables sharing a label get their group appended; labels that are unique stay as they are"""
+    org = setup["org"]
+    template, _ = template_with_paper(org, setup["admin"])
+    form_field = models.car_form_templates.FormFieldDef
+    template.fields = [
+        form_field(source="catalog", key="vehicle_kind"),
+        form_field(source="custom", key="f_kind", label="ชนิดรถ", field_type="text"),
+        form_field(source="custom", key="f_phone", label="เบอร์โทรศัพท์", field_type="text"),
+        form_field(source="custom", key="f_sign", label="ผู้จัดรถ : ชื่อผู้อนุมัติ", field_type="text"),
+    ]
+    template.save(validate=False)
+    client = login_as(app.test_client(), setup["admin"])
+
+    variables = paper_editor_variables(client, org, template)
+
+    labels = {v["name"]: v["label"] for v in variables}
+    assert labels["details.vehicle_kind"] == "ชนิดรถ (ฟิลด์มาตรฐาน)"
+    assert labels["details.custom_f_kind"] == "ชนิดรถ (ฟิลด์เพิ่มเติม)"
+    assert labels["details.custom_f_phone"] == "เบอร์โทรศัพท์ (ฟิลด์เพิ่มเติม)"
+    assert labels["app.phone"] == "เบอร์โทรศัพท์ (ข้อมูลคำขอ)"
+    assert labels["details.custom_f_sign"] == "ผู้จัดรถ : ชื่อผู้อนุมัติ (ฟิลด์เพิ่มเติม)"
+    assert labels["approvals.admin.name"] == "ผู้จัดรถ : ชื่อผู้อนุมัติ (ขั้นอนุมัติ)"
+    assert labels["app.requester_name"] == "ชื่อผู้ขอ"
+    assert labels["approvals.admin.date"] == "ผู้จัดรถ : วันที่อนุมัติ"

@@ -1,3 +1,4 @@
+from collections import Counter
 import io
 import json
 
@@ -373,6 +374,16 @@ APP_DATE_PARTS = [
 ]
 
 
+def _label_group(name):
+    if name.startswith("details.custom_"):
+        return "ฟิลด์เพิ่มเติม"
+    if name.startswith("details."):
+        return "ฟิลด์มาตรฐาน"
+    if name.startswith("approvals."):
+        return "ขั้นอนุมัติ"
+    return "ข้อมูลคำขอ"
+
+
 def variable_catalog(template):
     """ตัวแปรที่วางบนกระดาษได้ พร้อมป้ายชื่อและตัวเลือก (ใช้กับ check placement) เรียงตามชื่อ"""
     labels = dict(APP_VARIABLES)
@@ -388,22 +399,34 @@ def variable_catalog(template):
         labels[name] = field.label or (catalog_field.default_label if catalog_field else field.key)
         options = field.choices or (list(catalog_field.choices) if catalog_field else [])
         if options:
-            choices[name] = list(options)
+            choices[name] = [[option, option] for option in options]
     for step in template.steps:
         for part in APPROVAL_PARTS:
             name = f"approvals.{step.key}.{part}"
             labels[name] = f"{step.label} : {APPROVAL_PART_LABELS[part]}"
-        choices[f"approvals.{step.key}.decision"] = ["approved", "denied"]
+        choices[f"approvals.{step.key}.decision"] = [
+            ["approved", "อนุมัติ"],
+            ["denied", "ไม่อนุมัติ"],
+        ]
+
+    names = sorted(available_variables(template))
+    label_counts = Counter(labels.get(name, name) for name in names)
+    display = {}
+    for name in names:
+        label = labels.get(name, name)
+        if label_counts[label] > 1:
+            label = f"{label} ({_label_group(name)})"
+        display[name] = label
 
     samples = sample_values(template)
     return [
         {
             "name": name,
-            "label": labels.get(name, name),
+            "label": display[name],
             "choices": choices.get(name, []),
             "sample": samples.get(name, ""),
         }
-        for name in sorted(available_variables(template))
+        for name in names
     ]
 
 

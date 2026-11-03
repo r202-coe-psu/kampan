@@ -51,7 +51,7 @@
     <aside class="flex flex-col gap-4 self-start rounded-box border border-base-300 bg-base-100 p-4 shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
       <div id="propertiesPanel" class="hidden rounded-box border-2 border-primary bg-base-200 p-3 shadow">
         <h3 class="mb-2 text-sm font-semibold">คุณสมบัติของกล่องที่เลือก</h3>
-        <div class="mb-2 break-all font-mono text-xs text-primary" id="propVariable"></div>
+        <div class="mb-2 break-all text-sm font-semibold text-primary" id="propVariable"></div>
         <div class="flex flex-col gap-2" id="propFields"></div>
       </div>
       <div>
@@ -159,14 +159,12 @@
       const list = document.getElementById("variablePalette");
       list.replaceChildren();
       const needle = (filter || "").trim().toLowerCase();
-      variables.filter((v) => !needle || v.name.toLowerCase().includes(needle) || v.label.toLowerCase().includes(needle)).forEach((v) => {
+      variables.filter((v) => !needle || v.label.toLowerCase().includes(needle)).forEach((v) => {
         const item = el("li", {
           class: "cursor-grab rounded-lg border border-base-300 bg-base-100 px-2 py-1 hover:border-primary",
           draggable: "true",
-          title: v.name,
         }, [
           el("div", { class: "text-sm" }, [v.label]),
-          el("div", { class: "break-all font-mono text-[11px] text-base-content/60" }, [v.name]),
         ]);
         item.addEventListener("dragstart", (event) => {
           event.dataTransfer.setData("text/plain", v.name);
@@ -188,6 +186,14 @@
       return size;
     }
 
+    // ผู้ใช้เห็นแค่ป้ายชื่อ ชื่อตัวแปรดิบ (details.custom_f_xxx) โชว์เฉพาะกล่องที่ตัวแปรถูกลบไปแล้ว
+    const labelOf = (placement) => (variableByName[placement.variable] || {}).label || placement.variable;
+    function matchLabel(placement) {
+      if (placement.match_value === "*") return "มีค่า";
+      const choice = ((variableByName[placement.variable] || {}).choices || []).find(([v]) => v === placement.match_value);
+      return choice ? choice[1] : placement.match_value;
+    }
+
     function previewText(placement) {
       const info = variableByName[placement.variable] || {};
       if (placement.kind === "check") {
@@ -197,7 +203,7 @@
         if (placement.match_value === "*") return info.sample ? "✓" : "";
         return placement.match_value && info.sample === placement.match_value ? "✓" : "";
       }
-      return showSample ? (info.sample || placement.variable) : placement.variable;
+      return showSample ? (info.sample || labelOf(placement)) : labelOf(placement);
     }
 
     function applyBoxStyle(placement, box, pageWidthPx) {
@@ -237,7 +243,7 @@
       const layer = layers[placement.page];
       if (!box || !layer) return;
       box.querySelector(".sample-text").textContent = previewText(placement);
-      box.querySelector(".variable-tag").textContent = placement.variable + (placement.kind === "check" && placement.match_value ? " = " + placement.match_value : "");
+      box.querySelector(".variable-tag").textContent = labelOf(placement) + (placement.kind === "check" && placement.match_value ? " = " + matchLabel(placement) : "");
       applyBoxStyle(placement, box, layer.getBoundingClientRect().width);
       if (placement === selected) updateFitNote();
     }
@@ -246,7 +252,7 @@
       const layer = layers[placement.page];
       if (!layer) return;
       const label = el("span", { class: "sample-text pointer-events-none absolute" });
-      const tag = el("span", { class: "variable-tag pointer-events-none absolute -top-5 left-0 whitespace-nowrap rounded bg-primary px-1 font-mono text-[10px] text-primary-content" });
+      const tag = el("span", { class: "variable-tag pointer-events-none absolute -top-5 left-0 whitespace-nowrap rounded bg-primary px-1 text-[10px] text-primary-content" });
       const handle = el("span", { class: "absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm bg-primary" });
       const box = el("div", {
         class: "placement-box absolute cursor-move select-none border border-dashed border-primary bg-primary/5",
@@ -356,7 +362,7 @@
       panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
       const placement = selected;
       const info = variableByName[placement.variable] || { label: placement.variable, choices: [] };
-      document.getElementById("propVariable").textContent = info.label + " (" + placement.variable + ")";
+      document.getElementById("propVariable").textContent = info.label;
 
       const kind = el("select", { class: "select select-bordered select-sm" }, [
         el("option", { value: "text" }, ["ข้อความ"]),
@@ -370,8 +376,8 @@
         let control;
         if (info.choices.length) {
           control = el("select", { class: "select select-bordered select-sm" }, [el("option", { value: "" }, ["- เลือกค่าที่ต้องติ๊ก -"]), el("option", { value: "*" }, ["* (มีค่า)"])]);
-          info.choices.forEach((c) => control.appendChild(el("option", { value: c }, [c])));
-          if (placement.match_value && !info.choices.includes(placement.match_value)) {
+          info.choices.forEach(([value, label]) => control.appendChild(el("option", { value }, [label])));
+          if (placement.match_value && placement.match_value !== "*" && !info.choices.some(([value]) => value === placement.match_value)) {
             control.appendChild(el("option", { value: placement.match_value }, [placement.match_value]));
           }
         } else {
