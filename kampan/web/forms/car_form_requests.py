@@ -6,6 +6,11 @@ from wtforms import fields, validators
 from kampan.models.vehicle_applications import CAR_APPLICATION_STATUS
 
 
+# ช่องเหตุผลบนใบพิมพ์เป็นบรรทัดเดียว ช่องที่แคบสุด (215pt) ใส่ได้ ~60 ตัวที่ THSarabunNew ~11pt
+# เกินนี้ _draw_text ต้องย่อฟอนต์จนอ่านไม่ออกบนกระดาษ
+REQUEST_REASON_MAX_LENGTH = 60
+
+
 def _required(message):
     return [validators.DataRequired(message=message)]
 
@@ -21,8 +26,15 @@ class CarFormRequestForm(FlaskForm):
     location = fields.StringField(
         "สถานที่ที่ต้องการจะไป", validators=_required("กรุณากรอกสถานที่ที่ต้องการจะไป")
     )
-    request_reason = fields.TextAreaField(
-        "เหตุผลที่ต้องการใช้รถ", validators=_required("กรุณากรอกเหตุผลที่ต้องการใช้รถ")
+    request_reason = fields.StringField(
+        "เหตุผลที่ต้องการใช้รถ",
+        validators=_required("กรุณากรอกเหตุผลที่ต้องการใช้รถ")
+        + [
+            validators.Length(
+                max=REQUEST_REASON_MAX_LENGTH,
+                message=f"เหตุผลยาวเกิน {REQUEST_REASON_MAX_LENGTH} ตัวอักษร",
+            )
+        ],
     )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",

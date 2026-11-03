@@ -420,7 +420,12 @@ def test_submitted_catalog_values_are_stored_under_details_key_and_custom_under_
             {"source": "catalog", "key": "vehicle_kind"},
             {"source": "catalog", "key": "province"},
             {"source": "catalog", "key": "cost_responsibility"},
-            {"source": "custom", "key": "project_no", "field_type": "text"},
+            {
+                "source": "custom",
+                "key": "project_no",
+                "label": "เลขที่โครงการ",
+                "field_type": "text",
+            },
         ],
     )
 
@@ -1384,3 +1389,22 @@ def test_return_before_departure_is_reported_even_when_other_fields_are_missing(
     html = res.get_data(as_text=True)
     assert "กรุณากรอกเบอร์โทรศัพท์" in html
     assert "วันเวลากลับต้องอยู่หลังวันเวลาออกเดินทาง" in html
+
+
+def test_request_reason_is_limited_to_what_fits_one_line_on_the_paper_form(app, head_admin_setup, login_as):
+    """เหตุผลยาวเกิน 60 ตัวถูกปฏิเสธ (ช่องเหตุผลบนใบพิมพ์เป็นบรรทัดเดียว) 60 ตัวพอดียื่นได้ และช่องกรอกมี maxlength"""
+    s = head_admin_setup
+    client = login_as(app.test_client(), s["staff"])
+    CarApplication = models.vehicle_applications.CarApplication
+
+    too_long = _submit(client, s["template"], s["org"], request_reason="ก" * 61)
+    assert too_long.status_code == 400
+    assert "เหตุผลยาวเกิน 60 ตัวอักษร" in too_long.get_data(as_text=True)
+    assert CarApplication.objects(organization=s["org"]).count() == 0
+
+    exact = _submit(client, s["template"], s["org"], request_reason="ก" * 60)
+    assert exact.status_code == 302
+    assert CarApplication.objects(organization=s["org"]).first().request_reason == "ก" * 60
+
+    form = client.get(f"{BASE}/new/{s['template'].id}?organization_id={s['org'].id}")
+    assert 'maxlength="60"' in form.get_data(as_text=True)

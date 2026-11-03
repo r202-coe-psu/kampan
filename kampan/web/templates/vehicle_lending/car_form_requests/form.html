@@ -51,7 +51,7 @@
         {{ renderer.render_field(form.phone, placeholder="เช่น 074-282000") }}
         {{ renderer.render_number_field(form.passenger_number, min=0, disabled_optional_text=True) }}
         <div class="md:col-span-2">{{ renderer.render_field(form.location) }}</div>
-        <div class="md:col-span-2">{{ renderer.render_text_area_field(form.request_reason) }}</div>
+        <div class="md:col-span-2">{{ renderer.render_field(form.request_reason, placeholder="ไม่เกิน " ~ form.request_reason.flags.maxlength ~ " ตัวอักษร เช่น ประชุมวิชาการ") }}</div>
         {{ renderer.render_field(form.departure_date) }}
         {{ renderer.render_field(form.departure_time) }}
         {{ renderer.render_field(form.return_date) }}
