@@ -1214,13 +1214,15 @@ def completed_submit(requisition_timeline_id):
     "admin", "manager", "staff", "head", "endorser", "supervisor supplier"
 )
 def details_specified(requisition_timeline_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    requisition_timeline = models.RequisitionTimeline.objects(
+        id=requisition_timeline_id, organization=organization
     ).first()
-    requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
-    )
+    if not requisition_timeline:
+        abort(404)
 
     is_admin = current_user.has_organization_roles("admin")
     is_manager = current_user.has_organization_roles("manager")
@@ -1249,8 +1251,6 @@ def details_specified(requisition_timeline_id):
                 is_same_division = True
 
     if not (is_admin or is_manager or is_owner or is_same_division):
-        from flask import abort
-
         abort(403)
 
     requisition = requisition_timeline.requisition

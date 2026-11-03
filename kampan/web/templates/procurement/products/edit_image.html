@@ -22,7 +22,7 @@
                 {% if procurement.image %}
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">รูปภาพปัจจุบัน</label>
-                    <img src="{{ url_for('procurement.products.image', procurement_id=procurement.id, filename=procurement.image.filename) }}"
+                    <img src="{{ url_for('procurement.products.image', procurement_id=procurement.id, filename=procurement.image.filename, organization_id=organization.id) }}"
                         alt="รูปภาพปัจจุบัน" class="rounded-lg w-full max-h-64 object-contain border">
                 </div>
                 {% endif %}
