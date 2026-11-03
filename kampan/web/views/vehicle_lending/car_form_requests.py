@@ -53,16 +53,17 @@ def _active_car_types(organization):
     }
 
 
+def active_templates(organization):
+    return models.car_form_templates.CarFormTemplate.objects(
+        organization=organization, status="active"
+    ).order_by("name")
+
+
 @module.route("/new")
 @acl.organization_roles_required(*REQUEST_ROLES)
 def choose_template():
-    organization = g.organization
-    return render_template(
-        "/vehicle_lending/car_form_requests/choose_template.html",
-        organization=organization,
-        templates=models.car_form_templates.CarFormTemplate.objects(
-            organization=organization, status="active"
-        ).order_by("name"),
+    return redirect(
+        url_for("vehicle_lending.car_form_requests.index", organization_id=g.organization.id, new=1)
     )
 
 
@@ -91,6 +92,7 @@ def index():
         search_form=search_form,
         current_step_def=utils.car_form_flow.current_step_def,
         step_progress=utils.car_form_flow.step_progress,
+        new_request_templates=active_templates(organization),
     )
 
 

@@ -3,6 +3,7 @@
 {% import '/vehicle_lending/components/status_badge.html' as status_badge %}
 {% import '/vehicle_lending/car_form_requests/_components.html' as ui %}
 {% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/vehicle_lending/car_form_requests/_new_request_modal.html' import NewRequestModal %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 {% block dashboard_title %}คำขอใช้รถ{% endblock %}
@@ -10,10 +11,9 @@
 {% block content %}
 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
   <p class="text-sm text-base-content/70">ทั้งหมด <span class="font-semibold text-base-content">{{ car_applications|length }}</span> รายการ</p>
-  <a class="btn btn-primary"
-     href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">
+  <button type="button" class="btn btn-primary" onclick="openNewCarRequest()">
     <i class="ph ph-plus"></i> ยื่นคำขอใช้รถ
-  </a>
+  </button>
 </div>
 
 <div class="mt-4">
@@ -84,9 +84,11 @@
 {{ EmptyState('ph-car-simple', 'ยังไม่มีคำขอใช้รถ',
               description='กด “ยื่นคำขอใช้รถ” เพื่อเริ่มยื่นคำขอแรก',
               action_label='ยื่นคำขอใช้รถ',
-              action_href=url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id),
+              action_onclick='openNewCarRequest()',
               filtered=search_form.q.data or search_form.template_id.data or search_form.status.data,
               filtered_title='ไม่พบคำขอที่ตรงกับการค้นหา',
               clear_href=url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id)) }}
 {% endif %}
+
+{{ NewRequestModal(new_request_templates, organization, open=request.args.get('new')) }}
 {% endblock %}

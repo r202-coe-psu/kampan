@@ -27,7 +27,7 @@
     <li><a href="{{ url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) }}">{{ template.name }}</a></li>
     <li>แก้ไข</li>
     {% else %}
-    <li><a href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) }}">ยื่นคำขอใช้รถ</a></li>
+    <li><a href="{{ url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id) }}">คำขอใช้รถ</a></li>
     <li>{{ template.name }}</li>
     {% endif %}
   </ul>
@@ -40,7 +40,7 @@
   {% set cancel_url = url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) %}
 {% else %}
   {% set action_url = url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) %}
-  {% set cancel_url = url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id) %}
+  {% set cancel_url = url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id) %}
 {% endif %}
 <form method="post" novalidate action="{{ action_url }}"
       class="mt-4 flex flex-col gap-4">

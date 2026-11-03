@@ -1,0 +1,66 @@
+{# Modal เลือกแบบฟอร์มตอนยื่นคำขอใช้รถ
+
+   import:  {% from '/vehicle_lending/car_form_requests/_new_request_modal.html' import NewRequestModal %}
+   วาง:     {{ NewRequestModal(templates, organization, open=request.args.get('new')) }}
+   เปิด:    <button type="button" onclick="openNewCarRequest()">…</button>
+
+   มีแบบฟอร์มแบบเดียว openNewCarRequest() จะไปหน้าฟอร์มเลยโดยไม่เปิด modal
+#}
+
+{% macro NewRequestModal(templates, organization, open=False) %}
+{% set templates = templates | list %}
+<dialog id="new-car-request-modal" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box whitespace-normal text-left">
+    <div class="flex items-start gap-3">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <i class="ph ph-note-pencil text-xl"></i>
+      </div>
+      <div class="pt-1.5">
+        <h3 class="text-lg font-bold">ยื่นคำขอใช้รถ</h3>
+        <p class="text-sm text-base-content/60">เลือกแบบฟอร์มที่ต้องการยื่น</p>
+      </div>
+    </div>
+
+    {% if templates %}
+    <ul class="mt-4 flex flex-col gap-2" data-new-request-templates>
+      {% for template in templates %}
+      <li>
+        <a class="flex items-center gap-3 rounded-box border border-base-300 px-4 py-3 transition hover:border-primary hover:bg-primary/5"
+           href="{{ url_for('vehicle_lending.car_form_requests.create', template_id=template.id, organization_id=organization.id) }}">
+          <i class="ph ph-file-text text-xl text-primary"></i>
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">{{ template.name }}</span>
+            {% if template.description and template.description != template.name %}
+            <span class="block text-sm text-base-content/60">{{ template.description }}</span>
+            {% endif %}
+          </span>
+          <i class="ph ph-caret-right text-base-content/40"></i>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="mt-4 rounded-box border border-dashed border-base-300 bg-base-200/40 px-4 py-8 text-center text-base-content/60">
+      ยังไม่มีแบบฟอร์มที่เปิดใช้งาน
+    </div>
+    {% endif %}
+
+    <div class="modal-action">
+      <form method="dialog"><button class="btn btn-ghost">ยกเลิก</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>ยกเลิก</button></form>
+</dialog>
+<script>
+  function openNewCarRequest() {
+    {% if templates | length == 1 %}
+    window.location.href = "{{ url_for('vehicle_lending.car_form_requests.create', template_id=templates[0].id, organization_id=organization.id) }}";
+    {% else %}
+    document.getElementById('new-car-request-modal').showModal();
+    {% endif %}
+  }
+  {% if open %}
+  document.addEventListener('DOMContentLoaded', openNewCarRequest);
+  {% endif %}
+</script>
+{% endmacro %}

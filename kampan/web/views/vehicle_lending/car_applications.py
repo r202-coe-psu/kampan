@@ -16,6 +16,7 @@ import datetime
 from kampan.web import forms, acl
 from kampan import models, utils
 from ... import redis_rq
+from .car_form_requests import active_templates
 
 module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
@@ -72,12 +73,8 @@ def calendar():
         "/vehicle_lending/car_applications/calendar.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
-        new_request_url=url_for(
-            "vehicle_lending.car_applications.create_or_edit"
-            if current_app.config.get("CAR_LEGACY_FLOW_ENABLED")
-            else "vehicle_lending.car_form_requests.choose_template",
-            organization_id=organization.id,
-        ),
+        legacy_flow=current_app.config.get("CAR_LEGACY_FLOW_ENABLED"),
+        new_request_templates=active_templates(organization),
     )
 
 

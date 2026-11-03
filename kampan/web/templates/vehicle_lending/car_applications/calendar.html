@@ -1,6 +1,7 @@
 {% extends '/vehicle_lending/base/default-car-page.html' %}
 {% import '/base/components/forms.html' as render_form %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% from '/vehicle_lending/car_form_requests/_new_request_modal.html' import NewRequestModal %}
 
 
 {% block title %}ปฏิทินการขอใช้รถยนต์{% endblock %}
@@ -19,9 +20,15 @@
         <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
         <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
       </ul>
-      <a class="btn btn-primary" href="{{ new_request_url }}">
+      {% if legacy_flow %}
+      <a class="btn btn-primary" href="{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}">
         <i class="ph ph-plus"></i> เพิ่มคำขอใช้รถยนต์
       </a>
+      {% else %}
+      <button type="button" class="btn btn-primary" onclick="openNewCarRequest()">
+        <i class="ph ph-plus"></i> เพิ่มคำขอใช้รถยนต์
+      </button>
+      {% endif %}
     </div>
     {% if current_user.get_current_division() %}
     <p class="text-xs text-base-content/60 -mt-2">กดที่วันในปฏิทินเพื่อยื่นคำขอวันนั้น · กดที่รายการเพื่อดูสถานะการอนุมัติ</p>
@@ -31,6 +38,7 @@
 </div>
 
 <div id="modal_container"></div>
+{% if not legacy_flow %}{{ NewRequestModal(new_request_templates, organization) }}{% endif %}
 
 <style>
   #calendar {
@@ -138,10 +146,11 @@
       },
       {% if current_user.get_current_division() %}
       dateClick: function (info) {
-    const selectedDate = info.dateStr;
-    const url = "{{ new_request_url }}" + "&date=" + selectedDate;
-
-    window.location.href = url;
+    {% if legacy_flow %}
+    window.location.href = "{{ url_for('vehicle_lending.car_applications.create_or_edit', organization_id=organization.id) }}" + "&date=" + info.dateStr;
+    {% else %}
+    openNewCarRequest();
+    {% endif %}
   }
       {% endif %}
     });

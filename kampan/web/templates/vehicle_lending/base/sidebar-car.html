@@ -54,13 +54,7 @@
     {% endif %}
     {% if current_user.has_organization_roles("admin", "endorser", "staff", "head", "director", "supervisor supplier") %}
     <li>
-      <a class="{{ 'menu-active' if '/vehicle_lending/car_form_requests/new' in request.path else '' }}"
-        href="{{ url_for('vehicle_lending.car_form_requests.choose_template', organization_id=organization.id ) }}">
-        <i class="ph ph-note-pencil"></i> ยื่นคำขอใช้รถ (template)
-      </a>
-    </li>
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'vehicle_lending.car_form_requests.index' else '' }}"
+      <a class="{{ 'menu-active' if request.endpoint in ('vehicle_lending.car_form_requests.index', 'vehicle_lending.car_form_requests.create') else '' }}"
         href="{{ url_for('vehicle_lending.car_form_requests.index', organization_id=organization.id ) }}">
         <i class="ph ph-list-bullets"></i> คำขอใช้รถ
       </a>

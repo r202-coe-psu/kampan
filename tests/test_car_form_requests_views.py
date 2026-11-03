@@ -1,4 +1,5 @@
 import datetime
+import re
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
@@ -614,10 +615,10 @@ def test_paper_is_404_when_the_template_has_no_pdf(app, head_admin_setup, login_
     assert res.status_code == 404
 
 
-def test_new_lists_only_active_templates_of_the_current_org(
+def test_new_request_picker_lists_only_active_templates_of_the_current_org(
     app, head_admin_setup, login_as, create_org
 ):
-    """GET /new แสดงเฉพาะ template ที่ active ของ org ปัจจุบัน (ไม่แสดงของ org อื่น หรือที่ปิดใช้งาน)"""
+    """modal เลือกแบบฟอร์มในหน้าคำขอใช้รถแสดงเฉพาะ template ที่ active ของ org ปัจจุบัน"""
     s = head_admin_setup
     step = lambda: models.car_form_templates.ApprovalStepDef(
         key="admin", label="ผู้จัดรถ", approver_type="role", role="admin", assigns_vehicle=True
@@ -630,11 +631,11 @@ def test_new_lists_only_active_templates_of_the_current_org(
     ).save()
 
     res = login_as(app.test_client(), s["staff"]).get(
-        f"{BASE}/new?organization_id={s['org'].id}"
+        f"{BASE}/?organization_id={s['org'].id}"
     )
 
-    html = res.get_data(as_text=True)
     assert res.status_code == 200
+    html = re.search(r'<dialog id="new-car-request-modal".*?</dialog>', res.get_data(as_text=True), re.S).group(0)
     assert "head แล้ว admin จัดรถ" in html
     assert "แบบฟอร์มของ org อื่น" not in html
     assert "แบบฟอร์มที่ปิดแล้ว" not in html
@@ -706,7 +707,7 @@ def test_legacy_car_application_pages_render_a_template_request_without_using_ty
     assert calendar.status_code == 200
 
 
-def test_sidebar_links_to_new_request_and_inbox_for_staff_and_templates_for_admin_only(
+def test_sidebar_links_to_requests_and_inbox_for_staff_and_templates_for_admin_only(
     app, head_admin_setup, login_as
 ):
     """sidebar มีลิงก์ยื่นคำขอและรายการที่ต้องอนุมัติสำหรับ staff ส่วนลิงก์จัดการ template เห็นเฉพาะ admin"""
@@ -716,7 +717,7 @@ def test_sidebar_links_to_new_request_and_inbox_for_staff_and_templates_for_admi
     staff_html = login_as(app.test_client(), s["staff"]).get(f"{BASE}/inbox{org_q}").get_data(as_text=True)
     admin_html = login_as(app.test_client(), s["admin"]).get(f"{BASE}/inbox{org_q}").get_data(as_text=True)
 
-    assert f"{BASE}/new?organization_id={s['org'].id}" in staff_html
+    assert f"{BASE}/?organization_id={s['org'].id}" in staff_html
     assert f"{BASE}/inbox?organization_id={s['org'].id}" in staff_html
     assert "/vehicle_lending/car_form_templates/" not in staff_html
     assert f"/vehicle_lending/car_form_templates/?organization_id={s['org'].id}" in admin_html

@@ -27,7 +27,7 @@ def test_legacy_approval_pages_are_hidden_when_disabled(legacy_disabled, admin_c
 
 def test_sidebar_hides_legacy_approval_menus_when_disabled(legacy_disabled, admin_client):
     client, org = admin_client
-    resp = client.get(f"/vehicle_lending/car_form_requests/new?organization_id={org.id}")
+    resp = client.get(f"/vehicle_lending/car_form_requests/?organization_id={org.id}")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์" not in html
@@ -46,15 +46,15 @@ def test_legacy_request_pages_are_hidden_when_disabled(legacy_disabled, admin_cl
     assert resp.status_code == 404
 
 
-def test_calendar_stays_and_its_new_request_button_goes_to_the_template_request_page(legacy_disabled, admin_client):
+def test_calendar_stays_and_its_new_request_button_opens_the_template_picker(legacy_disabled, admin_client):
     client, org = admin_client
     resp = client.get(f"/vehicle_lending/car_applications/calendar?organization_id={org.id}")
 
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "/vehicle_lending/car_applications/create" not in html
-    assert f"/vehicle_lending/car_form_requests/new?organization_id={org.id}" in html
-    assert 'const url = "/vehicle_lending/car_form_requests/new?' in html or "dateClick" not in html
+    assert 'id="new-car-request-modal"' in html
+    assert 'onclick="openNewCarRequest()"' in html
 
 
 def test_sidebar_hides_the_legacy_request_menu_but_keeps_the_calendar(legacy_disabled, admin_client):
