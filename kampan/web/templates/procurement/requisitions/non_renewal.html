@@ -17,6 +17,19 @@
         <button type="submit" class="btn btn-sm btn-primary"><i class="ph ph-funnel"></i> กรอง</button>
       </form>
     {% endif %}
-    {{ render_non_renewal_items_table(items) }}
+    {{ render_non_renewal_items_table(items, paginated_procurements.total, (paginated_procurements.page - 1) * paginated_procurements.per_page) }}
+
+    {% set params = dict(request.args) %}
+    {% if 'page' in params %}
+      {% set _dummy = params.pop('page') %}
+    {% endif %}
+    {% if 'organization_id' not in params %}
+      {% set _dummy = params.update({"organization_id": organization.id}) %}
+    {% endif %}
+    {% if paginated_procurements.pages > 1 %}
+      <div class="mt-6 flex justify-center">
+        {{ paginated.render_pagination(paginated_procurements, "procurement.requisitions.non_renewal", params) }}
+      </div>
+    {% endif %}
   </div>
 {% endblock %}

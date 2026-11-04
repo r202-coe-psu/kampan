@@ -21,10 +21,16 @@ from PyPDF2 import PdfMerger
 
 from kampan import models, utils
 from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
-from kampan.models.procurement import attach_items, procurement_ids_of
+from kampan.models.procurement import (
+    attach_items,
+    procurement_ids_by_end_date,
+    procurement_ids_of,
+    procurements_in_order,
+)
 from kampan.web import feature_flags, forms
 
 from . import ma_permissions
+from .ma_pagination import paginate
 
 from ... import redis_rq
 
@@ -72,13 +78,15 @@ def generate_next_requisition_code():
     return f"{next_number:04d}/{buddhist_year}"
 
 
-def _sort_by_end_date(procurements, organization, reverse=False):
-    """เรียง MA ตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน (MA ที่ไม่มีรายการย่อยไว้ท้าย)"""
-    procurements = attach_items(procurements, organization)
-    with_end = [procurement for procurement in procurements if procurement.get_end_date()]
-    without_end = [procurement for procurement in procurements if not procurement.get_end_date()]
-    with_end.sort(key=lambda procurement: procurement.get_end_date(), reverse=reverse)
-    return with_end + without_end
+def _paginate_by_end_date(procurements, organization, default_per_page: int, reverse: bool = False):
+    """แบ่งหน้า MA ที่เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน (MA ที่ไม่มีรายการย่อยไว้ท้าย)
+
+    เรียงจาก id อย่างเดียว แล้วโหลดเอกสาร, รายการย่อย และผู้รับผิดชอบเฉพาะ MA ในหน้าที่แสดง
+    คืน (pagination, MA ของหน้านี้)
+    """
+    pagination = paginate(procurement_ids_by_end_date(procurements, organization, reverse=reverse), default_per_page)
+    page_procurements = procurements_in_order(pagination.items, organization)
+    return pagination, attach_items(page_procurements, organization, with_responsibles=True)
 
 
 @module.route("", methods=["GET", "POST"])
@@ -116,15 +124,11 @@ def index():
     if category or asset_code or expiration_date_range:
         procurements = procurements.filter(id__in=procurement_ids_of(items))
 
-    procurements = _sort_by_end_date(procurements, organization)
-
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=8, type=int)
-    paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
+    paginated_procurements, page_procurements = _paginate_by_end_date(procurements, organization, default_per_page=8)
     category_choices = models.ITEM_CATEGORY_CHOICES
     return render_template(
         "procurement/requisitions/index.html",
-        procurements=paginated_procurements.items,
+        procurements=page_procurements,
         can_change_renewal=ma_permissions.edit_checker(organization),
         form=form,
         paginated_procurements=paginated_procurements,
@@ -185,10 +189,13 @@ def non_renewal():
     procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
         status="disactive"
     )
-    procurements = _sort_by_end_date(procurements, organization, reverse=True)
+    paginated_procurements, page_procurements = _paginate_by_end_date(
+        procurements, organization, default_per_page=30, reverse=True
+    )
     return render_template(
         "procurement/requisitions/non_renewal.html",
-        items=procurements,
+        items=page_procurements,
+        paginated_procurements=paginated_procurements,
         organization=organization,
         category_choices=models.ITEM_CATEGORY_CHOICES,
         selected_category=category,

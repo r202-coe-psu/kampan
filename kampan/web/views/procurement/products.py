@@ -16,15 +16,15 @@ from flask import (
     g,
 )
 from flask_login import current_user, login_required
-from flask_mongoengine import Pagination
 from mongoengine.queryset.visitor import Q
 
 from kampan import models
-from kampan.models.procurement import attach_items, procurement_ids_of
+from kampan.models.procurement import attach_items, payment_statuses, procurement_ids_of
 from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 
 from . import ma_permissions
+from .ma_pagination import paginate
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
@@ -71,13 +71,6 @@ def search_procurements(procurements, organization, text: str):
     )
 
 
-def payment_statuses(procurement_ids, organization, today) -> dict:
-    """สถานะการจ่ายของหลาย MA ด้วย query เดียว {procurement_id: status}"""
-    procurements = list(models.Procurement.objects(organization=organization, id__in=list(procurement_ids)).only("id"))
-    attach_items(procurements, organization)
-    return {procurement.pk: procurement.get_payment_status(today) for procurement in procurements}
-
-
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
@@ -108,10 +101,8 @@ def index():
         )
     procurement_qs = procurement_qs.order_by("-created_date")
 
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=30, type=int)
-    paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
-    procurements = attach_items(paginated_procurements.items, organization)
+    paginated_procurements = paginate(procurement_qs, default_per_page=30)
+    procurements = attach_items(paginated_procurements.items, organization, with_responsibles=True)
 
     for procurement in procurements:
         end_date = procurement.get_end_date()

@@ -14,6 +14,10 @@ from collections.abc import Iterable
 import mongoengine as me
 from bson import ObjectId
 
+from .divisions import Division
+from .organizations import OrganizationUserRole
+from .users import User
+
 logger = logging.getLogger(__name__)
 
 CATEGORY_CHOICES = [
@@ -136,6 +140,42 @@ def _reference_id(document, field_name):
     return getattr(value, "id", value)
 
 
+def _reference_ids(document, field_name) -> list:
+    """id ของ ListField(ReferenceField) ตามลำดับเดิม โดยไม่ dereference"""
+    return [getattr(value, "id", value) for value in document._data.get(field_name) or []]
+
+
+def installment_status(due_date, paid_date, today: datetime.date | None = None) -> str:
+    """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
+    if paid_date is not None:
+        return "paid"
+    today = today or datetime.date.today()
+    due_date = _as_date(due_date)
+    if not due_date:
+        return "unpaid"
+    days_left = (due_date - today).days
+    if days_left < 0:
+        return "overdue"
+    if days_left <= UPCOMING_DAYS:
+        return "upcoming"
+    return "unpaid"
+
+
+def item_payment_status(installments: Iterable[tuple], today: datetime.date | None = None) -> str:
+    """สถานะของรายการย่อยจากงวด ``(due_date, paid_date)``: งวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด หรือ paid เมื่อจ่ายครบ"""
+    installments = list(installments)
+    unpaid_due_dates = [due_date for due_date, paid_date in installments if paid_date is None]
+    if not unpaid_due_dates:
+        return "paid" if installments else "unpaid"
+    next_due_date = min(unpaid_due_dates, key=lambda due_date: due_date or datetime.datetime.max)
+    return installment_status(next_due_date, None, today)
+
+
+def worst_payment_status(statuses: Iterable[str]) -> str:
+    """สถานะที่แย่ที่สุด (overdue > upcoming > unpaid > paid) ไม่มีรายการย่อยถือว่า unpaid"""
+    return max(statuses, key=lambda status: PAYMENT_STATUS_SEVERITY.get(status, 0), default="unpaid")
+
+
 def even_due_dates(start_date, end_date, count: int) -> list[datetime.date]:
     """วันครบกำหนด ``count`` งวดที่ห่างเท่า ๆ กันในช่วง start–end (งวดสุดท้ายตรงกับ end_date)
 
@@ -202,18 +242,7 @@ class Installment(me.EmbeddedDocument):
 
     def get_status(self, today: datetime.date | None = None) -> str:
         """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
-        if self.is_paid():
-            return "paid"
-        today = today or datetime.date.today()
-        due_date = _as_date(self.due_date)
-        if not due_date:
-            return "unpaid"
-        days_left = (due_date - today).days
-        if days_left < 0:
-            return "overdue"
-        if days_left <= UPCOMING_DAYS:
-            return "upcoming"
-        return "unpaid"
+        return installment_status(self.due_date, self.paid_date, today)
 
 
 class ProcurementItem(me.Document):
@@ -319,22 +348,30 @@ class ProcurementItem(me.Document):
                 return installment
         return None
 
+    def _installments_without_dereference(self) -> list[Installment]:
+        """งวดจาก ``_data`` ตรง ๆ: อ่าน ``self.installments`` จะ dereference ``paid_by`` ของทุกงวด
+        (1 query ต่อรายการย่อย) ซึ่งการคำนวณสถานะไม่ได้ใช้"""
+        return list(self._data.get("installments") or [])
+
     def get_next_unpaid_installment(self) -> Installment | None:
         """งวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วที่สุด"""
-        unpaid = [installment for installment in self.installments if not installment.is_paid()]
+        unpaid = [installment for installment in self._installments_without_dereference() if not installment.is_paid()]
         if not unpaid:
             return None
         return min(unpaid, key=lambda installment: installment.due_date or datetime.datetime.max)
 
     def get_paid_count(self) -> int:
-        return sum(1 for installment in self.installments if installment.is_paid())
+        return sum(1 for installment in self._installments_without_dereference() if installment.is_paid())
+
+    def get_installment_count(self) -> int:
+        return len(self._installments_without_dereference())
 
     def get_payment_status(self, today: datetime.date | None = None) -> str:
         """สถานะของงวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด (แย่สุดของรายการนี้) หรือ paid เมื่อจ่ายครบ"""
-        next_installment = self.get_next_unpaid_installment()
-        if not next_installment:
-            return "paid" if self.installments else "unpaid"
-        return next_installment.get_status(today)
+        return item_payment_status(
+            ((installment.due_date, installment.paid_date) for installment in self._installments_without_dereference()),
+            today,
+        )
 
     def get_responsible_ids(self) -> set:
         return {getattr(member, "id", member) for member in self._data.get("responsible_by") or []}
@@ -404,17 +441,14 @@ class Procurement(me.Document):
 
     def get_payment_status(self, today: datetime.date | None = None) -> str:
         """สถานะที่แย่ที่สุดของทุกรายการย่อย (overdue > upcoming > unpaid) หรือ paid เมื่อจ่ายครบทุกงวด"""
-        statuses = [item.get_payment_status(today) for item in self.get_items()]
-        if not statuses:
-            return "unpaid"
-        return max(statuses, key=lambda status: PAYMENT_STATUS_SEVERITY.get(status, 0))
+        return worst_payment_status(item.get_payment_status(today) for item in self.get_items())
 
     def get_installment_progress(self) -> tuple[int, int]:
         """(จำนวนงวดที่จ่ายแล้ว, จำนวนงวดทั้งหมด) ของทุกรายการย่อย"""
         items = self.get_items()
         return (
             sum(item.get_paid_count() for item in items),
-            sum(len(item.installments) for item in items),
+            sum(item.get_installment_count() for item in items),
         )
 
     def get_next_unpaid(self) -> tuple[ProcurementItem | None, Installment | None]:
@@ -434,27 +468,32 @@ class Procurement(me.Document):
         dates = [item.end_date for item in self.get_items() if item.end_date]
         return min(dates) if dates else None
 
-    def get_responsible_members(self) -> list:
-        members = []
+    def _unique_references(self, field_name: str, lookup_key: str) -> list:
+        """เอกสารใน ``field_name`` ของทุกรายการย่อย ไม่ซ้ำ ตามลำดับที่พบ
+
+        ถ้า ``attach_items(..., with_responsibles=True)`` โหลดเอกสารไว้ให้แล้วใช้ของที่โหลดไว้ (ไม่ query ต่อแถว)
+        """
+        lookup = self.__dict__.get(lookup_key)
+        documents = []
         seen = set()
         for item in self.get_items():
-            for member in item.responsible_by or []:
-                member_id = getattr(member, "id", None)
-                if member_id and member_id not in seen:
-                    seen.add(member_id)
-                    members.append(member)
-        return members
+            if lookup is None:
+                references = [(getattr(document, "id", None), document) for document in getattr(item, field_name) or []]
+            else:
+                references = [
+                    (document_id, lookup.get(document_id)) for document_id in _reference_ids(item, field_name)
+                ]
+            for document_id, document in references:
+                if document_id and document is not None and document_id not in seen:
+                    seen.add(document_id)
+                    documents.append(document)
+        return documents
+
+    def get_responsible_members(self) -> list:
+        return self._unique_references("responsible_by", "_responsible_members_by_id")
 
     def get_responsible_divisions(self) -> list:
-        divisions = []
-        seen = set()
-        for item in self.get_items():
-            for division in item.responsible_divisions or []:
-                division_id = getattr(division, "id", None)
-                if division_id and division_id not in seen:
-                    seen.add(division_id)
-                    divisions.append(division)
-        return divisions
+        return self._unique_references("responsible_divisions", "_responsible_divisions_by_id")
 
     def get_version(self) -> str:
         """เวลาแก้ไขล่าสุดของหัวและทุกรายการย่อย ใช้กันฟอร์มแก้ไขที่ค้างข้อมูลเก่าเขียนทับ"""
@@ -642,8 +681,14 @@ class Procurement(me.Document):
             logger.exception("restore after failed save_with_items failed for procurement %s", self.pk)
 
 
-def attach_items(procurements: Iterable[Procurement], organization) -> list[Procurement]:
-    """โหลดรายการย่อยของหลาย MA ด้วย query เดียว แล้ว cache ไว้ใน MA แต่ละตัว (กัน N+1 ในหน้ารายการ)"""
+def attach_items(
+    procurements: Iterable[Procurement], organization, with_responsibles: bool = False
+) -> list[Procurement]:
+    """โหลดรายการย่อยของหลาย MA ด้วย query เดียว แล้ว cache ไว้ใน MA แต่ละตัว (กัน N+1 ในหน้ารายการ)
+
+    ``with_responsibles``: โหลดผู้รับผิดชอบ (พร้อมผู้ใช้) และฝ่ายของทุก MA ด้วยอย่างละ 1 query
+    ให้ ``get_responsible_members`` / ``get_responsible_divisions`` / ``display_user_fullname`` ไม่ query ต่อแถว
+    """
     procurements = list(procurements)
     by_id = {procurement.pk: [] for procurement in procurements}
     if by_id:
@@ -654,7 +699,35 @@ def attach_items(procurements: Iterable[Procurement], organization) -> list[Proc
                 by_id[procurement_id].append(item)
     for procurement in procurements:
         procurement.__dict__["_items_cache"] = by_id[procurement.pk]
+    if with_responsibles:
+        _attach_responsibles(procurements, organization)
     return procurements
+
+
+def _attach_responsibles(procurements: list[Procurement], organization) -> None:
+    items = [item for procurement in procurements for item in procurement.get_items()]
+    member_ids = {member_id for item in items for member_id in _reference_ids(item, "responsible_by")}
+    division_ids = {division_id for item in items for division_id in _reference_ids(item, "responsible_divisions")}
+
+    members = (
+        list(OrganizationUserRole.objects(id__in=list(member_ids), organization=organization)) if member_ids else []
+    )
+    user_ids = {_reference_id(member, "user") for member in members} - {None}
+    users = {user.id: user for user in User.objects(id__in=list(user_ids))} if user_ids else {}
+    for member in members:
+        user = users.get(_reference_id(member, "user"))
+        if user is not None:
+            # ใส่ผู้ใช้ที่โหลดแล้วแทน DBRef ตรง ๆ ไม่ให้ member.user query ซ้ำ (ไม่ผ่าน setter จึงไม่ถูกนับว่าแก้ไข)
+            member._data["user"] = user
+    members_by_id = {member.id: member for member in members}
+    divisions_by_id = (
+        {division.id: division for division in Division.objects(id__in=list(division_ids), organization=organization)}
+        if division_ids
+        else {}
+    )
+    for procurement in procurements:
+        procurement.__dict__["_responsible_members_by_id"] = members_by_id
+        procurement.__dict__["_responsible_divisions_by_id"] = divisions_by_id
 
 
 def procurement_ids_of(item_queryset) -> list:
@@ -667,3 +740,60 @@ def procurement_ids_of(item_queryset) -> list:
             seen.add(procurement_id)
             ids.append(procurement_id)
     return ids
+
+
+def payment_statuses(procurement_ids: Iterable, organization, today: datetime.date | None = None) -> dict:
+    """สถานะการจ่ายของหลาย MA ``{procurement_id: status}`` ด้วย query เดียว ไม่ขึ้นกับจำนวน MA
+
+    อ่านเฉพาะวันครบกำหนด / วันจ่ายของงวดแบบดิบ (ไม่สร้างเอกสารและไม่ dereference ผู้บันทึกการจ่าย)
+    MA ที่ไม่มีรายการย่อยเป็น unpaid เหมือน ``Procurement.get_payment_status``
+    """
+    item_statuses = {procurement_id: [] for procurement_id in procurement_ids}
+    if not item_statuses:
+        return {}
+    rows = (
+        ProcurementItem.objects(organization=organization, procurement__in=list(item_statuses))
+        .only("procurement", "installments")
+        .as_pymongo()
+    )
+    for row in rows:
+        procurement_id = getattr(row["procurement"], "id", row["procurement"])
+        installments = row.get("installments") or []
+        item_statuses[procurement_id].append(
+            item_payment_status(
+                ((installment.get("due_date"), installment.get("paid_date")) for installment in installments), today
+            )
+        )
+    return {procurement_id: worst_payment_status(statuses) for procurement_id, statuses in item_statuses.items()}
+
+
+def procurement_ids_by_end_date(procurement_queryset, organization, reverse: bool = False) -> list:
+    """id ของ MA ใน queryset เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน (MA ที่ไม่มีรายการย่อยไว้ท้าย)
+
+    หาวันสิ้นสุดด้วย aggregation บน procurement_items ครั้งเดียว ไม่โหลดรายการย่อยทั้งหมด
+    วันเท่ากันเรียงตามลำดับเดิมของ queryset
+    """
+    procurement_ids = list(procurement_queryset.scalar("id"))
+    if not procurement_ids:
+        return []
+    pipeline = [{"$group": {"_id": "$procurement", "end_date": {"$min": "$end_date"}}}]
+    end_dates = {}
+    for row in ProcurementItem.objects(organization=organization, procurement__in=procurement_ids).aggregate(pipeline):
+        if row["end_date"] is not None:
+            end_dates[getattr(row["_id"], "id", row["_id"])] = row["end_date"]
+    with_end = sorted(
+        (procurement_id for procurement_id in procurement_ids if procurement_id in end_dates),
+        key=end_dates.get,
+        reverse=reverse,
+    )
+    without_end = [procurement_id for procurement_id in procurement_ids if procurement_id not in end_dates]
+    return with_end + without_end
+
+
+def procurements_in_order(procurement_ids: list, organization) -> list[Procurement]:
+    """MA ตาม id ที่ให้ (scope ด้วยหน่วยงาน) เรียงตามลำดับของ ``procurement_ids``"""
+    by_id = {
+        procurement.pk: procurement
+        for procurement in Procurement.objects(id__in=list(procurement_ids), organization=organization)
+    }
+    return [by_id[procurement_id] for procurement_id in procurement_ids if procurement_id in by_id]
