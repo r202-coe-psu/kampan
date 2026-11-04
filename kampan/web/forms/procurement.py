@@ -93,7 +93,10 @@ class InstallmentForm(Form):
 class ItemDetailForm(Form):
     brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=100)])
     model_name = fields.StringField("รุ่น", validators=[validators.Optional(), validators.Length(max=100)])
-    details = fields.TextAreaField("รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)", validators=[validators.Optional()])
+    details = fields.StringField(
+        "รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)",
+        validators=[validators.Optional(), validators.Length(max=255)],
+    )
 
     def is_blank(self) -> bool:
         return not any((field.data or "").strip() for field in (self.brand, self.model_name, self.details))

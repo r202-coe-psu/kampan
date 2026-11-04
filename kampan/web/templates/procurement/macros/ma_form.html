@@ -101,9 +101,9 @@
       {% if model_name %}{{ field_errors(model_name) }}{% endif %}
     </div>
     <div>
-      <textarea name="{{ name_prefix }}details" id="{{ name_prefix }}details" rows="2"
-                placeholder="เช่น S/N: ABC123 หรือ รหัสครุภัณฑ์: CC/www-x-yy/zz" aria-label="รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)"
-                class="textarea textarea-sm w-full{{ ' textarea-error' if details and details.errors else '' }}">{{ (details.data if details else '') or '' }}</textarea>
+      <input type="text" name="{{ name_prefix }}details" id="{{ name_prefix }}details" value="{{ (details.data if details else '') or '' }}" maxlength="255"
+             placeholder="S/N หรือรหัสครุภัณฑ์" aria-label="รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)"
+             class="input input-sm w-full{{ ' input-error' if details and details.errors else '' }}" />
       {% if details %}{{ field_errors(details) }}{% endif %}
     </div>
     <button type="button" class="btn btn-ghost btn-sm md:btn-square text-error justify-self-end" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
