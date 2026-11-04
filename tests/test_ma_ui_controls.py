@@ -170,3 +170,105 @@ def test_rendered_ma_pages_have_no_native_select_or_date_input(world, client_for
             assert re.search(r'class="[^"]*\binput\b', tag) or re.search(r'<label class="input\b[^>]*>[^<]*(<i[^>]*></i>)?\s*$', wrapper), tag
     for tag in re.findall(r"<textarea\b[^>]*>", html):
         assert "textarea" in tag, tag
+
+
+def test_create_ma_item_division_selection_and_default(world, client_for):
+    client = client_for(world.creator)  # creator has division_it
+    # 1. Open create form: verify division_it is checked by default
+    response = client.get(f"/procurement/products/create?{_q(world.org)}")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+
+    it_id = str(world.division_it.id)
+    fin_id = str(world.division_fin.id)
+    assert it_id in html
+    assert fin_id in html
+
+    # items-0: division_it must be checked by default, division_fin not checked
+    it_checkbox_0 = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{it_id}"[^>]*>', html).group(0)
+    assert "checked" in it_checkbox_0
+    fin_checkbox_0 = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{fin_id}"[^>]*>', html).group(0)
+    assert "checked" not in fin_checkbox_0
+
+    # Template prototype also defaults to user's division
+    template_it = re.search(rf'<input[^>]*name="items-__I__-responsible_divisions"[^>]*value="{it_id}"[^>]*>', html).group(0)
+    assert "checked" in template_it
+
+    # 2. Submit MA with division_fin explicitly selected
+    data = ma_form([
+        _item(
+            amount="30000.00",
+            name="[TEST] Custom Division Item",
+            responsible_by=[str(world.role_creator.id)],
+            responsible_divisions=[fin_id],
+        )
+    ], total_amount="30000.00", psu="PSU-CUSTOM-DIV")
+    create_res = _create(client, world, data)
+    assert create_res.status_code == 302
+
+    item = models.ProcurementItem.objects.get(name="[TEST] Custom Division Item")
+    assert [d.id for d in item.responsible_divisions] == [world.division_fin.id]
+    assert item.has_custom_responsible_divisions is True
+
+    # 3. Edit page pre-fills division_fin as checked and division_it as unchecked
+    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    edit_fin = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{fin_id}"[^>]*>', edit_html).group(0)
+    assert "checked" in edit_fin
+    edit_it = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{it_id}"[^>]*>', edit_html).group(0)
+    assert "checked" not in edit_it
+
+
+def test_payment_reminder_visibility_based_on_installment_mode(world, client_for):
+    client = client_for(world.admin)
+
+    # 1. Non-installment mode:
+    # Form: container has 'hidden' class
+    create_html = client.get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+    assert 'class="payment-reminder-container hidden" data-payment-reminder>' in create_html
+
+    # Create MA without installments
+    data_no_inst = ma_form([
+        _item(
+            amount="10000.00",
+            installment_mode="",  # False / off
+        )
+    ], total_amount="10000.00", psu="PSU-NO-INST")
+    res = _create(client, world, data_no_inst)
+    assert res.status_code == 302
+
+    ma_no_inst = models.Procurement.objects.get(psu_disbursement_number="PSU-NO-INST")
+    item_no_inst = ma_no_inst.get_items()[0]
+    assert item_no_inst.pays_in_installments() is False
+    assert item_no_inst.payment_reminder_offsets == []
+
+    # Detail page does NOT show "เตือนจ่ายงวดล่วงหน้า"
+    detail_html = client.get(f"/procurement/payment/{ma_no_inst.id}?{_q(world.org)}").get_data(as_text=True)
+    assert "เตือนหมดอายุล่วงหน้า" in detail_html
+    assert "เตือนจ่ายงวดล่วงหน้า" not in detail_html
+
+    # 2. Installment mode:
+    # Create MA with installments
+    data_inst = ma_form([
+        _item(
+            amount="20000.00",
+            installment_mode="y",
+            payment_reminder_offsets=["1m", "15d"],
+            installments=[{"due_date": "2026-06-30"}, {"due_date": "2026-12-31"}],
+        )
+    ], total_amount="20000.00", psu="PSU-WITH-INST")
+    res_inst = _create(client, world, data_inst)
+    assert res_inst.status_code == 302
+
+    ma_inst = models.Procurement.objects.get(psu_disbursement_number="PSU-WITH-INST")
+    item_inst = ma_inst.get_items()[0]
+    assert item_inst.pays_in_installments() is True
+    assert item_inst.payment_reminder_offsets == ["1m", "15d"]
+
+    # Detail page DOES show "เตือนจ่ายงวดล่วงหน้า"
+    detail_inst_html = client.get(f"/procurement/payment/{ma_inst.id}?{_q(world.org)}").get_data(as_text=True)
+    assert "เตือนหมดอายุล่วงหน้า" in detail_inst_html
+    assert "เตือนจ่ายงวดล่วงหน้า" in detail_inst_html
+
+    # Edit form for installment mode: container does not have hidden class
+    edit_html = client.get(f"/procurement/products/{ma_inst.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    assert 'class="payment-reminder-container" data-payment-reminder>' in edit_html

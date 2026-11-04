@@ -140,6 +140,18 @@ def _member_choices(organization) -> list[tuple[str, str]]:
     return [(str(member.id), member.display_user_fullname()) for member in members]
 
 
+def _division_choices(organization, extra_division_ids=()) -> list[tuple[str, str]]:
+    query = models.Division.objects(organization=organization)
+    divisions = list(query.filter(status="active").order_by("name"))
+    active_ids = {division.id for division in divisions}
+    if extra_division_ids:
+        missing_ids = [did for did in extra_division_ids if did not in active_ids]
+        if missing_ids:
+            extra = list(query.filter(id__in=missing_ids).order_by("name"))
+            divisions.extend(extra)
+    return [(str(division.id), division.name) for division in divisions]
+
+
 def _as_date(value):
     return value.date() if isinstance(value, datetime.datetime) else value
 
@@ -151,7 +163,9 @@ def _as_datetime(value):
 
 
 def _blank_item_data(member) -> dict:
+    my_division_id = str(member.division.id) if member and getattr(member, "division", None) else None
     return {
+        "responsible_divisions": [my_division_id] if my_division_id else [],
         "responsible_by": [str(member.id)] if member else [],
         "reminder_kind": "ma",
         "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
@@ -218,6 +232,7 @@ def _item_form_data(item) -> dict:
         "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
+        "responsible_divisions": [str(div.id) for div in item.responsible_divisions or [] if div],
         "responsible_by": [str(member_id) for member_id in item.get_responsible_ids()],
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
@@ -247,6 +262,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
+        "responsible_divisions": [str(div.id) for div in item.responsible_divisions or [] if div],
         # ผู้รับผิดชอบที่ออกจากหน่วยงานแล้วเลือกไม่ได้ จึงไม่ copy
         "responsible_by": [str(member_id) for member_id in item.get_responsible_ids() if member_id in active_member_ids],
         "reminder_kind": item.reminder_kind,
@@ -290,15 +306,30 @@ def _build_form(organization, procurement=None, member=None, renew_from=None) ->
     else:
         form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]})
     form.set_member_choices(_member_choices(organization))
+    extra_division_ids = []
+    source_items = procurement.get_items() if procurement else (renew_from.get_items() if renew_from else [])
+    for it in source_items:
+        for div in it.responsible_divisions or []:
+            if div:
+                extra_division_ids.append(getattr(div, "id", div))
+    form.set_division_choices(_division_choices(organization, extra_division_ids))
     return form
 
 
 def _render_form(form, organization, member, procurement=None, form_errors=(), renew_from=None):
     choices = _member_choices(organization)
+    extra_division_ids = []
+    source_items = procurement.get_items() if procurement else (renew_from.get_items() if renew_from else [])
+    for it in source_items:
+        for div in it.responsible_divisions or []:
+            if div:
+                extra_division_ids.append(getattr(div, "id", div))
+    division_choices = _division_choices(organization, extra_division_ids)
     item_prototype = forms.procurement.ProcurementItemForm(
         formdata=None, prefix="items-__I__-", data=_blank_item_data(member)
     )
     item_prototype.responsible_by.choices = choices
+    item_prototype.responsible_divisions.choices = division_choices
     installment_prototype = forms.procurement.InstallmentForm(formdata=None, prefix="items-__I__-installments-__J__-")
     return render_template(
         "/procurement/products/create.html",
@@ -368,6 +399,13 @@ def _build_items(form, organization, existing_items, user):
             id__in=list(member_ids), organization=organization, status="active"
         )
     }
+    division_ids = {div_id for entry in form.items for div_id in entry.form.responsible_divisions.data or []}
+    divisions = {
+        str(division.id): division
+        for division in models.Division.objects(
+            id__in=list(division_ids), organization=organization
+        )
+    }
 
     items = []
     for entry in form.items:
@@ -385,6 +423,13 @@ def _build_items(form, organization, existing_items, user):
         item.winner = (data.winner.data or "").strip() or None
         item.unit_price = data.unit_price.data
         item.note = data.note.data or ""
+        selected_division_ids = [div_id for div_id in data.responsible_divisions.data or [] if div_id in divisions]
+        if selected_division_ids:
+            item.responsible_divisions = [divisions[div_id] for div_id in selected_division_ids]
+            item.has_custom_responsible_divisions = True
+        else:
+            item.responsible_divisions = []
+            item.has_custom_responsible_divisions = False
         item.responsible_by = [members[member_id] for member_id in data.responsible_by.data or [] if member_id in members]
         item.reminder_kind = data.reminder_kind.data
         item.requires_activation = bool(data.requires_activation.data)

@@ -202,20 +202,42 @@
         </div>
       </section>
 
-      {# 2. ผู้รับผิดชอบ #}
-      <section class="flex flex-col gap-3 border-t border-base-300 pt-6" data-member-picker>
-        {{ section_heading("ph-users", f.responsible_by.label.text, "ได้รับอีเมลแจ้งเตือนของรายการนี้ และแก้ไขรายการนี้ได้") }}
-        <input type="text" class="input input-sm w-full md:w-80 member-filter" placeholder="ค้นหาผู้รับผิดชอบ..." aria-label="ค้นหาผู้รับผิดชอบ" />
-        <div class="member-list max-h-44 overflow-y-auto border border-base-300 rounded-box p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-          {% for value, label in f.responsible_by.choices %}
-            <label class="member-option flex items-center gap-2 py-1.5 px-2 rounded hover:bg-base-200 cursor-pointer">
-              <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.responsible_by.name }}" value="{{ value }}"
-                     {% if value in (f.responsible_by.data or []) %}checked{% endif %} />
-              <span class="text-sm">{{ label }}</span>
-            </label>
-          {% endfor %}
+      {# 2. ฝ่ายที่มองเห็น และ ผู้รับผิดชอบ #}
+      <section class="flex flex-col gap-5 border-t border-base-300 pt-6">
+        {# ฝ่ายที่มองเห็น #}
+        <div class="flex flex-col gap-2">
+          {{ section_heading("ph-buildings", f.responsible_divisions.label.text, "กำหนดฝ่ายที่สามารถมองเห็นรายการนี้ได้ (ค่าเริ่มต้นคือฝ่ายของผู้สร้าง)") }}
+          {% if f.responsible_divisions.choices %}
+            <div class="division-list max-h-44 overflow-y-auto border border-base-300 rounded-box p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+              {% for value, label in f.responsible_divisions.choices %}
+                <label class="division-option flex items-center gap-2 py-1.5 px-2 rounded hover:bg-base-200 cursor-pointer">
+                  <input type="checkbox" class="checkbox checkbox-primary checkbox-sm division-checkbox" name="{{ f.responsible_divisions.name }}" value="{{ value }}"
+                         {% if value in (f.responsible_divisions.data or []) %}checked{% endif %} />
+                  <span class="text-sm">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-xs text-base-content/50 italic">ยังไม่มีข้อมูลฝ่ายในหน่วยงาน</p>
+          {% endif %}
+          {{ field_errors(f.responsible_divisions) }}
         </div>
-        {{ field_errors(f.responsible_by) }}
+
+        {# ผู้รับผิดชอบ #}
+        <div class="flex flex-col gap-3" data-member-picker>
+          {{ section_heading("ph-users", f.responsible_by.label.text, "ได้รับอีเมลแจ้งเตือนของรายการนี้ และแก้ไขรายการนี้ได้") }}
+          <input type="text" class="input input-sm w-full md:w-80 member-filter" placeholder="ค้นหาผู้รับผิดชอบ..." aria-label="ค้นหาผู้รับผิดชอบ" />
+          <div class="member-list max-h-44 overflow-y-auto border border-base-300 rounded-box p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+            {% for value, label in f.responsible_by.choices %}
+              <label class="member-option flex items-center gap-2 py-1.5 px-2 rounded hover:bg-base-200 cursor-pointer">
+                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.responsible_by.name }}" value="{{ value }}"
+                       {% if value in (f.responsible_by.data or []) %}checked{% endif %} />
+                <span class="text-sm">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          {{ field_errors(f.responsible_by) }}
+        </div>
       </section>
 
       {# 3. การจ่ายเงิน: ปิด = จ่ายครั้งเดียวก่อนหมดอายุ (ระบบสร้างงวดเดียว ครบกำหนดวันสิ้นสุด) · เปิด = กรอกวันครบกำหนดแต่ละงวด #}
@@ -285,11 +307,14 @@
       </section>
 
       {# 5. การเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
-      {% call collapsible("ph-bell-ringing", "ตั้งค่าการเตือน", "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 3/2/1 เดือน และ 15/7 วัน)", reminder_has_error or custom_days or custom_dates) %}
+      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 3/2/1 เดือน และ 15/7 วัน)" %}
+      {% call collapsible("ph-bell-ringing", "ตั้งค่าการเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
         <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันครบกำหนด</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
           {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
-          {{ offset_checkboxes(f.payment_reminder_offsets, "ก่อนวันครบกำหนดของงวดที่ยังไม่จ่าย") }}
+          <div class="payment-reminder-container{% if not f.installment_mode.data %} hidden{% endif %}" data-payment-reminder>
+            {{ offset_checkboxes(f.payment_reminder_offsets, "ก่อนวันครบกำหนดของงวดที่ยังไม่จ่าย") }}
+          </div>
           {{ list_rows(f.reminder_offsets_days, "เช่น 45", "จำนวนวันก่อนวันที่สิ้นสุด (1–730 วัน) เพิ่มจากช่วงที่ติ๊ก", "เพิ่มจำนวนวัน", inputmode="numeric") }}
           {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
         </div>

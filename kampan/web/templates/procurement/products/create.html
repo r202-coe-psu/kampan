@@ -220,12 +220,18 @@
 
     // เปิด/ปิด "แบ่งจ่ายเป็นงวด": ปิดแล้วซ่อนตารางงวดและ disable ช่องงวด (ไม่ส่งไปกับฟอร์ม)
     // ระบบสร้างงวดเดียวจากวันสิ้นสุดเอง · เปิดแล้วไม่มีแถว ให้เพิ่มแถวแรกให้
+    // และซ่อน/แสดงช่องเตือนจ่ายงวดล่วงหน้า (เพราะไม่มีงวดให้เตือน)
     function syncInstallmentMode(card) {
       const on = card.querySelector('.installment-toggle').checked;
       const panel = card.querySelector('.installment-on');
       panel.classList.toggle('hidden', !on);
       card.querySelector('.installment-off-hint').classList.toggle('hidden', on);
       panel.querySelectorAll('input, button[data-action]').forEach(function (control) { control.disabled = !on; });
+      const reminder = card.querySelector('[data-payment-reminder]');
+      if (reminder) {
+        reminder.classList.toggle('hidden', !on);
+        reminder.querySelectorAll('input').forEach(function (control) { control.disabled = !on; });
+      }
       if (on && !card.querySelector('.installment-row')) addInstallment(card);
       renumber();
     }

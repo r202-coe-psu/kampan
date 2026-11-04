@@ -64,6 +64,15 @@ class MemberMultipleField(fields.SelectMultipleField):
             raise ValidationError("ผู้รับผิดชอบต้องเป็นสมาชิกของหน่วยงานนี้")
 
 
+class DivisionMultipleField(fields.SelectMultipleField):
+    """เลือกฝ่ายได้หลายฝ่าย choices ต้องเป็นฝ่ายของหน่วยงานที่กำลังดูอยู่เท่านั้น (view เติมให้)"""
+
+    def pre_validate(self, form):
+        allowed = {str(value) for value, _ in self.choices or []}
+        if any(str(value) not in allowed for value in self.data or []):
+            raise ValidationError("ฝ่ายต้องเป็นของหน่วยงานนี้")
+
+
 class OffsetCheckboxField(fields.SelectMultipleField):
     """checkbox ช่วงเตือนล่วงหน้า ค่าต้องอยู่ใน REMINDER_OFFSET_CHOICES"""
 
@@ -135,6 +144,7 @@ class ProcurementItemForm(Form):
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional(), validators.Length(max=200)])
     unit_price = money_field("ราคาต่อหน่วย (บาท)", required=False)
     note = fields.TextAreaField("หมายเหตุ", validators=[validators.Optional()])
+    responsible_divisions = DivisionMultipleField("ฝ่ายที่มองเห็น", choices=[], coerce=str)
     responsible_by = MemberMultipleField("ผู้รับผิดชอบ", choices=[], coerce=str)
     reminder_kind = fields.SelectField("ประเภทการเตือน", choices=models.REMINDER_KIND_CHOICES, default="ma")
     requires_activation = fields.BooleanField("ต้อง activate เมื่อครบกำหนด")
@@ -227,6 +237,10 @@ class ProcurementHeaderForm(FlaskForm):
     def set_member_choices(self, choices: list[tuple[str, str]]) -> None:
         for entry in self.items:
             entry.form.responsible_by.choices = choices
+
+    def set_division_choices(self, choices: list[tuple[str, str]]) -> None:
+        for entry in self.items:
+            entry.form.responsible_divisions.choices = choices
 
     def validate(self, extra_validators=None):
         valid = super().validate(extra_validators=extra_validators)

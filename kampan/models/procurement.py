@@ -376,8 +376,9 @@ class ProcurementItem(me.Document):
     note = me.StringField()
 
     responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
-    # คำนวณใหม่จาก responsible_by ทุกครั้งที่ save (ดู clean)
+    # ฝ่ายที่มองเห็น / รับผิดชอบ: เลือกได้ในฟอร์ม หรือคำนวณจาก responsible_by หากไม่ได้กำหนดเอง
     responsible_divisions = me.ListField(me.ReferenceField("Division", dbref=True))
+    has_custom_responsible_divisions = me.BooleanField(default=False)
 
     reminder_kind = me.StringField(choices=REMINDER_KIND_CHOICES, default="ma", required=True)
     requires_activation = me.BooleanField(default=False)
@@ -407,6 +408,11 @@ class ProcurementItem(me.Document):
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
 
+    def __init__(self, *args, **values):
+        super().__init__(*args, **values)
+        if "responsible_divisions" in values and "_created" not in values and "__auto_convert" not in values:
+            self.has_custom_responsible_divisions = True
+
     def clean(self):
         if not self.installments:
             raise me.ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
@@ -414,14 +420,21 @@ class ProcurementItem(me.Document):
             raise me.ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
 
         organization_id = getattr(self.organization, "id", None)
-        divisions = []
         for member in self.responsible_by or []:
             if _reference_id(member, "organization") != organization_id:
                 raise me.ValidationError("ผู้รับผิดชอบต้องเป็นสมาชิกของหน่วยงานเดียวกับ MA")
-            division = member.division
-            if division and all(division.id != existing.id for existing in divisions):
-                divisions.append(division)
-        self.responsible_divisions = divisions
+
+        if self.has_custom_responsible_divisions:
+            for division in self.responsible_divisions or []:
+                if _reference_id(division, "organization") != organization_id:
+                    raise me.ValidationError("ฝ่ายต้องเป็นของหน่วยงานเดียวกับ MA")
+        else:
+            divisions = []
+            for member in self.responsible_by or []:
+                division = member.division
+                if division and all(division.id != existing.id for existing in divisions):
+                    divisions.append(division)
+            self.responsible_divisions = divisions
 
     def get_category_label(self) -> str:
         return dict(ITEM_CATEGORY_CHOICES).get(self.category, self.category or "-")

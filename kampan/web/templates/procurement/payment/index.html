@@ -350,7 +350,9 @@
           <h4 class="font-semibold flex items-center gap-2 mb-2"><i class="ph ph-bell-ringing text-secondary"></i>ตั้งค่าการเตือน</h4>
           <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div><dt class="text-base-content/60">เตือนหมดอายุล่วงหน้า</dt><dd class="font-medium">{{ offset_list(item.expiry_reminder_offsets) }}{% for days in item.reminder_offsets_days %}, {{ days }} วัน{% endfor %} และในวันที่สิ้นสุด</dd></div>
-            <div><dt class="text-base-content/60">เตือนจ่ายงวดล่วงหน้า</dt><dd class="font-medium">{{ offset_list(item.payment_reminder_offsets) }} และในวันครบกำหนด</dd></div>
+            {% if item.pays_in_installments() %}
+              <div><dt class="text-base-content/60">เตือนจ่ายงวดล่วงหน้า</dt><dd class="font-medium">{{ offset_list(item.payment_reminder_offsets) }} และในวันครบกำหนด</dd></div>
+            {% endif %}
             <div class="md:col-span-2"><dt class="text-base-content/60">วันที่เตือนเจาะจง</dt><dd class="font-medium">{% for value in item.custom_reminder_dates | sort %}{{ thai_date_input(value) }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</dd></div>
           </dl>
         </div>
