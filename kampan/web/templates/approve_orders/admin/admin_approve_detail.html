@@ -18,6 +18,7 @@
 
 
 {% block content %}
+{% include "/approve_orders/flash_messages.html" %}
 <div class="flex flex-row justify-between">
   <div class="flex justify-start w-full gap-2">
     <a class="btn  btn-primary" href="{{ url_for('approve_orders.admin_index', organization_id=organization.id) }}">
@@ -49,8 +50,10 @@
 
 {% if order.status=="pending on admin" %}
 <dialog class="modal denied" id="denied">
-  <form action="{{ url_for('approve_orders.admin_denied',order_id=order.id, organization_id=organization.id)}}"
+  <form method="POST"
+    action="{{ url_for('approve_orders.admin_denied',order_id=order.id, organization_id=organization.id)}}"
     class="modal-box">
+    {{ action_form.hidden_tag() }}
 
     <div class="text-2xl font-bold">
       <span class="text-error">
@@ -64,8 +67,6 @@
     <fieldset class="fieldset">
       <legend class="fieldset-legend">เหตุผล</legend>
       <input type="text" id="reason" name="reason" class="input">
-      <input type="text" name="organization_id" id="organization_id" value="{{ organization.id|safe }}"
-        style="display: none;">
     </fieldset>
     <div class="modal-action">
       <button class="btn" type="button" onclick="denied.close()">

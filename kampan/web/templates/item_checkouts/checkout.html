@@ -43,10 +43,16 @@
       </a>
     </div>
     {{ form.hidden_tag() }}
+    {% if no_items %}
+    <div role="alert" class="alert alert-warning mt-2">
+      <i class="ph ph-warning-circle"></i>
+      <span>ไม่มีวัสดุให้เลือกเบิก (วัสดุทั้งหมดอยู่ในใบเบิกนี้แล้ว หรือยังไม่มีวัสดุในคลัง)</span>
+    </div>
+    {% endif %}
     {{ renderer.render_search_select_field(form.item) }}
     {{ renderer.render_field(form.piece) }}
     {{ renderer.datetime_field(form.created_date) }}
-    <button class="btn btn-primary mt-4" type="submit">ยืนยันข้อมูล</button>
+    <button class="btn btn-primary mt-4" type="submit" {% if no_items %}disabled{% endif %}>ยืนยันข้อมูล</button>
   </form>
 </div>
 

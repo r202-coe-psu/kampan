@@ -244,6 +244,8 @@ def checkout():
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
 
+    # ไม่มีวัสดุให้เลือก (เช่น เลือกครบทุกรายการแล้ว) ต้องเป็น dropdown ว่าง ไม่ใช่ None
+    form.item.choices = []
     if items:
         form.item.choices = [
             (
@@ -274,6 +276,7 @@ def checkout():
             form=form,
             order=order,
             organization=organization,
+            no_items=not form.item.choices,
         )
 
     # บันทึกข้อมูลการเบิกใหม่
@@ -472,14 +475,15 @@ def upload_file(order_id):
     if form.upload_file.data:
         # ตรวจสอบความถูกต้องของข้อมูลในไฟล์
         errors = utils.item_checkouts.validate_items_upload_engagement(
-            form.upload_file.data, organization
+            form.upload_file.data, g.organization
         )
         if not errors:
-            # ประมวลผลไฟล์และเพิ่มข้อมูลลงในใบเบิก
-            completed = utils.item_checkouts.process_items_upload_file(
-                form.upload_file.data, organization, order
+            # ประมวลผลไฟล์และเพิ่มข้อมูลลงในใบเบิก (ค้นวัสดุเฉพาะในหน่วยงานของใบเบิก)
+            form.upload_file.data.seek(0)
+            errors = utils.item_checkouts.process_items_upload_file(
+                form.upload_file.data, g.organization, order
             )
-        else:
+        if errors:
             # หากมีข้อผิดพลาด ให้แสดงผล
             return render_template(
                 "/item_checkouts/upload_file.html",

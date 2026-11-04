@@ -158,23 +158,50 @@ def update_item_fields(item, row, user, is_new=False, active=False):
         item.created_by = user
 
 
-def process_items_upload_file(file, organization, order):
+def process_items_upload_file(file, organization, order) -> list[str]:
+    """เพิ่มรายการเบิกจากไฟล์ลงใบเบิก คืน list ของ error (ว่าง = สำเร็จ)
+
+    ค้นวัสดุและรายการเบิกเฉพาะในหน่วยงานของใบเบิกเท่านั้น ถ้ามีแถวไหนหาวัสดุ
+    ไม่เจอจะไม่บันทึกอะไรเลย
+    """
+    if not organization or order.organization.id != organization.id:
+        return ["ใบเบิกไม่อยู่ในหน่วยงานนี้"]
+
     df = pandas.read_excel(file)
 
+    rows = []
+    errors = []
     for idx, row in df.iterrows():
-        item = models.Item.objects(name=str(row.get("ชื่อ", "")).strip()).first()
-        if item:
-            checkout_item = models.CheckoutItem.objects(item=item).first()
-            if not checkout_item:
-                checkout_item = models.CheckoutItem()
-            checkout_item.user = current_user._get_current_object()
-            checkout_item.order = order
-            checkout_item.item = item
-            checkout_item.piece = int(row.get("จำนวน", 0))
-            checkout_item.quantity = int(row.get("จำนวน", 0))
-            checkout_item.organization = organization
-            checkout_item.save()
-    return True
+        name = str(row.get("ชื่อ", "")).strip()
+        item = get_item_by_name(name, organization)
+        if not item:
+            errors.append(
+                f"ไม่พบวัสดุชื่อ {name} ในระบบ ในบรรทัดที่ {idx + 2} กรุณาตรวจสอบข้อมูล"
+            )
+            continue
+        rows.append((item, int(row.get("จำนวน", 0))))
+
+    if errors:
+        return errors
+
+    user = current_user._get_current_object()
+    for item, quantity in rows:
+        checkout_item = models.CheckoutItem.objects(
+            item=item,
+            order=order,
+            organization=organization,
+            status__ne="disactive",
+        ).first()
+        if not checkout_item:
+            checkout_item = models.CheckoutItem()
+        checkout_item.user = user
+        checkout_item.order = order
+        checkout_item.item = item
+        checkout_item.piece = quantity
+        checkout_item.quantity = quantity
+        checkout_item.organization = organization
+        checkout_item.save()
+    return []
 
 
 def process_edit_items_file(file, organization, user):

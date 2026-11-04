@@ -191,16 +191,16 @@ def _db_snapshot():
 FOREIGN_ID_REQUESTS = [
     # approve_orders.py
     ("GET", "/approve_orders/item_checkouts?order_id={b.order.id}", None),
-    ("GET", "/approve_orders/{b.order.id}/endorser_approve", None),
-    ("GET", "/approve_orders/{b.order.id}/endorser_denied", None),
+    ("POST", "/approve_orders/{b.order.id}/endorser_approve", {}),
+    ("POST", "/approve_orders/{b.order.id}/endorser_denied", {}),
     ("GET", "/approve_orders/{b.order.id}/endorser_approved_detail", None),
-    ("GET", "/approve_orders/{b.order.id}/supervisor_supplier_approve", None),
-    ("GET", "/approve_orders/{b.order.id}/supervisor_supplier_denied", None),
+    ("POST", "/approve_orders/{b.order.id}/supervisor_supplier_approve", {}),
+    ("POST", "/approve_orders/{b.order.id}/supervisor_supplier_denied", {}),
     ("GET", "/approve_orders/{b.order.id}/supervisor_supplier_approved_detail", None),
     ("GET", "/approve_orders/{b.order.id}/supervisor_supplier_approve_page", None),
     ("POST", "/approve_orders/{b.order.id}/supervisor_supplier_approve_page", {}),
-    ("GET", "/approve_orders/{b.order.id}/admin_approve", None),
-    ("GET", "/approve_orders/{b.order.id}/admin_denied", None),
+    ("POST", "/approve_orders/{b.order.id}/admin_approve", {}),
+    ("POST", "/approve_orders/{b.order.id}/admin_denied", {}),
     ("GET", "/approve_orders/{b.order.id}/admin_approved_detail", None),
     ("GET", "/approve_orders/{b.order.id}/admin_approve_page", None),
     (
@@ -209,9 +209,9 @@ FOREIGN_ID_REQUESTS = [
         {"sent_item_date": "2026-01-01 10:00:00"},
     ),
     (
-        "GET",
-        "/approve_orders/{b.order.id}/change_quantity/organization/{org_a}?{b.checkout.id}=0",
-        None,
+        "POST",
+        "/approve_orders/{b.order.id}/change_quantity/organization/{org_a}",
+        {"{b.checkout.id}": "0"},
     ),
     # item_checkouts.py
     ("GET", "/item_checkouts/order/{b.order.id}/catalogs", None),
@@ -335,7 +335,7 @@ def _with_org(url, organization):
 def test_foreign_org_object_returns_404_and_is_unchanged(world, client_for, no_enqueue, method, url, data):
     client = client_for(world.user_a)
     url = _with_org(_fill(url, world), world.org_a)
-    form = {key: _fill(value, world) for key, value in (data or {}).items()}
+    form = {_fill(key, world): _fill(value, world) for key, value in (data or {}).items()}
     before = _db_snapshot()
 
     if method == "GET":
@@ -400,7 +400,7 @@ def test_item_image_own_org_ok(world, client_for, gridfs_enabled):
 @pytest.mark.parametrize(
     "url",
     [
-        "/approve_orders/not-an-id/admin_approve",
+        "/approve_orders/not-an-id/admin_approved_detail",
         "/approve_orders/item_checkouts?order_id=not-an-id",
         "/item_checkouts/checkout?order_id=not-an-id",
         "/item_checkouts/checkout/not-an-id/edit",
@@ -661,7 +661,7 @@ def test_lost_break_lists_only_own_org(world, client_for, url):
 def test_admin_approve_own_order_deducts_stock(world, client_for):
     client = client_for(world.user_a)
 
-    response = client.get(f"/approve_orders/{world.a.order.id}/admin_approve?organization_id={world.org_a.id}")
+    response = client.post(f"/approve_orders/{world.a.order.id}/admin_approve?organization_id={world.org_a.id}")
 
     assert response.status_code == 302
     order = models.OrderItem.objects.get(id=world.a.order.id)
