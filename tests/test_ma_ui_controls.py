@@ -382,9 +382,34 @@ def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existi
     assert pay_res.status_code == 302
     assert pay_res.headers["Location"] == products_url
 
-    # Check products table reflects paid status
+    # Check products table reflects paid status and chevron size
     updated_html = client.get(products_url).get_data(as_text=True)
     assert "จ่ายครบแล้ว" in updated_html or "จ่ายแล้ว" in updated_html
     assert "PAY-QUICK-001" in updated_html
+    assert f'id="caret_{existing_ma.id}"' in updated_html
+    assert "text-[10px]" in updated_html
+
+    # Check unpay confirmation modal is present with CSRF token
+    unpay_modal_id = f"quick_unpay_{item.id}_{installment._id}"
+    assert f'id="{unpay_modal_id}"' in updated_html
+    assert "ยืนยันยกเลิกการบันทึกจ่าย" in updated_html
+    modal_part = updated_html.split(f'id="{unpay_modal_id}"', 1)[1].split("</dialog>", 1)[0]
+    token_match = re.search(r'name="csrf_token"\s+value="([^"]+)"', modal_part)
+    assert token_match is not None
+    token = token_match.group(1)
+
+    # 3. Quick-unpay from products table with CSRF token
+    unpay_url = f"/procurement/payment/{existing_ma.id}/items/{item.id}/installments/{installment._id}/unpay?{_q(world.org)}"
+    unpay_res = client.post(
+        unpay_url,
+        data={
+            "csrf_token": token,
+            "next": products_url,
+        },
+        follow_redirects=True,
+    )
+    assert unpay_res.status_code == 200
+    final_html = unpay_res.get_data(as_text=True)
+    assert "ยกเลิกการบันทึกจ่ายงวดแล้ว" in final_html
 
 

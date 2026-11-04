@@ -62,7 +62,7 @@
       </div>
     </section>
 
-    <div id="sum_bar" role="status" aria-live="polite" class="alert sticky top-2 z-10 shadow-sm">
+    <div id="sum_bar" role="status" aria-live="polite" class="alert sticky top-2 z-10 shadow-sm border bg-amber-100 text-amber-950 border-amber-400">
       <i class="ph ph-scales text-xl"></i>
       <div class="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 text-sm">
         <span>ยอด MA: <b id="sum_total">-</b> บาท</span>
@@ -150,18 +150,23 @@
       document.getElementById('sum_total').textContent = total === null ? '-' : formatSatang(total);
       document.getElementById('sum_items').textContent = formatSatang(sum);
       const diffText = document.getElementById('sum_diff');
-      bar.classList.remove('alert-success', 'alert-error', 'alert-warning');
+      bar.classList.remove(
+        'alert-success', 'alert-error', 'alert-warning',
+        'bg-amber-100', 'text-amber-950', 'border-amber-400',
+        'bg-emerald-100', 'text-emerald-950', 'border-emerald-400',
+        'bg-rose-100', 'text-rose-950', 'border-rose-400'
+      );
       if (!complete) {
-        bar.classList.add('alert-warning');
+        bar.classList.add('bg-amber-100', 'text-amber-950', 'border', 'border-amber-400');
         diffText.textContent = 'กรอกยอดเงินให้ครบ (ทศนิยมไม่เกิน 2 ตำแหน่ง)';
         return;
       }
       const diff = sum - total;
       if (diff === 0) {
-        bar.classList.add('alert-success');
+        bar.classList.add('bg-emerald-100', 'text-emerald-950', 'border', 'border-emerald-400');
         diffText.textContent = 'ยอดตรงกัน';
       } else {
-        bar.classList.add('alert-error');
+        bar.classList.add('bg-rose-100', 'text-rose-950', 'border', 'border-rose-400');
         diffText.textContent = (diff < 0 ? 'ขาด ' : 'เกิน ') + formatSatang(Math.abs(diff)) + ' บาท';
       }
     }

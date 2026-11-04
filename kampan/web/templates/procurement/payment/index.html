@@ -6,10 +6,10 @@
 
 {% block content %}
 {% set payment_badges = {
-  "paid": ("badge-success", "จ่ายแล้ว"),
-  "overdue": ("badge-error", "เลยกำหนด"),
-  "upcoming": ("badge-warning", "ใกล้ครบกำหนด"),
-  "unpaid": ("badge-ghost", "ยังไม่จ่าย"),
+  "paid": ("badge-outline badge-success font-medium", "จ่ายแล้ว"),
+  "overdue": ("badge-outline badge-error font-medium", "เลยกำหนด"),
+  "upcoming": ("badge-outline badge-warning font-medium", "ใกล้ครบกำหนด"),
+  "unpaid": ("badge-outline badge-ghost font-medium text-base-content/70", "ยังไม่จ่าย"),
 } %}
 {% set renewal_badges = {
   "pending": ("badge-warning", "รอตรวจสอบ"),
@@ -487,19 +487,33 @@
         </dialog>
 
         {% if installment.is_paid() %}
-          <dialog id="unpay_modal_{{ modal_key }}" class="modal">
+          <dialog id="unpay_modal_{{ modal_key }}" class="modal text-left">
             <div class="modal-box">
-              <h3 class="text-lg font-bold text-error mb-2">ยกเลิกการบันทึกจ่าย</h3>
-              <p class="text-sm">ต้องการยกเลิกการจ่ายงวดครบกำหนด {{ thai_date(installment.due_date) }} ของ {{ item.name }} ใช่หรือไม่ (วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังเก็บไว้)</p>
-              <div class="modal-action">
-                <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ปิด</button>
-                <form method="post" action="{{ url_for('procurement.payment.unpay_installment', **action_args) }}">
-                  {{ form.hidden_tag() }}
-                  <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
-                </form>
+              <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+                <i class="ph ph-warning-circle text-xl"></i> ยืนยันยกเลิกการบันทึกจ่าย
+              </h3>
+              <p class="py-2 text-base text-base-content">
+                คุณต้องการยกเลิกการบันทึกจ่ายงวดนี้ใช่หรือไม่?
+              </p>
+              <div class="bg-base-200 p-3 rounded-lg mb-4 text-sm space-y-1">
+                <div><strong>รายการ:</strong> {{ item.name }}</div>
+                <div><strong>กำหนดชำระ:</strong> {{ thai_date(installment.due_date) }}</div>
+                {% if installment.paid_date %}<div><strong>วันที่จ่ายเดิม:</strong> {{ thai_date(installment.paid_date) }}</div>{% endif %}
+                {% if installment.payment_number %}<div><strong>เลขที่เอกสาร:</strong> {{ installment.payment_number }}</div>{% endif %}
+                {% if installment.paid_amount is not none %}<div><strong>ยอดที่จ่าย:</strong> {{ installment.paid_amount | format_amount }} บาท</div>{% endif %}
               </div>
+              <p class="text-xs text-base-content/60 mb-4">
+                * วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังคงถูกบันทึกไว้ในประวัติ
+              </p>
+              <form method="post" action="{{ url_for('procurement.payment.unpay_installment', **action_args) }}" class="modal-action">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ยกเลิก</button>
+                <button type="submit" class="btn btn-error text-white gap-1">
+                  <i class="ph ph-check"></i> ยืนยันยกเลิกจ่าย
+                </button>
+              </form>
             </div>
-            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+            <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
           </dialog>
         {% endif %}
       {% endfor %}

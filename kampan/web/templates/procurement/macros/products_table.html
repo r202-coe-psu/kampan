@@ -1,8 +1,8 @@
 {% macro render_products_table(procurements, organization, today, can_edit) %}
 {% set status_badges = {
-  "overdue": ("badge-error", "border-l-error"),
-  "upcoming": ("badge-warning", "border-l-warning"),
-  "paid": ("badge-success", "border-l-success"),
+  "overdue": ("badge-outline badge-error", "border-l-error"),
+  "upcoming": ("badge-outline badge-warning", "border-l-warning"),
+  "paid": ("badge-outline badge-success", "border-l-success"),
 } %}
 <table class="table w-full">
   <thead class="bg-base-200 text-base-content/70">
@@ -41,7 +41,7 @@
                   id="btn_toggle_{{ item.id }}"
                   aria-expanded="false"
                   aria-controls="sub_items_{{ item.id }}">
-            <i class="ph ph-caret-right transition-transform duration-200" id="caret_{{ item.id }}"></i>
+            <i class="ph ph-caret-right text-[10px] transition-transform duration-200" id="caret_{{ item.id }}"></i>
             <span>รายการย่อย ({{ sub_items_list|length }})</span>
           </button>
         </div>
@@ -85,9 +85,9 @@
       <td class="text-center">
         <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
           {% if installment_count == 0 %}
-            <span class="badge badge-ghost badge-sm whitespace-nowrap">ไม่มีงวด</span>
+            <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
           {% elif paid_count == installment_count %}
-            <span class="badge badge-success badge-lg font-semibold whitespace-nowrap px-3 text-white gap-1 shadow-sm">
+            <span class="badge badge-outline badge-success badge-lg font-semibold whitespace-nowrap px-3 gap-1 shadow-xs">
               <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
             </span>
             <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
@@ -231,15 +231,15 @@
                     <td class="whitespace-nowrap">{{ installment.due_date | format_thai_date }}</td>
                     <td>
                       {% if installment.is_paid() %}
-                        <span class="badge badge-success badge-sm text-white font-medium gap-1 whitespace-nowrap shadow-xs">
+                        <span class="badge badge-outline badge-success badge-sm font-medium gap-1 whitespace-nowrap">
                           <i class="ph ph-check-circle"></i> จ่ายแล้ว
                         </span>
                       {% elif inst_status == "overdue" %}
-                        <span class="badge badge-error badge-sm text-white font-medium whitespace-nowrap">เกินกำหนด</span>
+                        <span class="badge badge-outline badge-error badge-sm font-medium whitespace-nowrap">เกินกำหนด</span>
                       {% elif inst_status == "upcoming" %}
-                        <span class="badge badge-warning badge-sm text-white font-medium whitespace-nowrap">ใกล้ครบกำหนด</span>
+                        <span class="badge badge-outline badge-warning badge-sm font-medium whitespace-nowrap">ใกล้ครบกำหนด</span>
                       {% else %}
-                        <span class="badge badge-ghost badge-sm text-base-content/60 font-medium whitespace-nowrap">ยังไม่จ่าย</span>
+                        <span class="badge badge-outline badge-ghost badge-sm text-base-content/60 font-medium whitespace-nowrap">ยังไม่จ่าย</span>
                       {% endif %}
                     </td>
                     <td class="whitespace-nowrap">
@@ -326,7 +326,7 @@
         * เมื่อยืนยัน รายการนี้จะเปลี่ยนสถานะเป็น <strong>"ขอต่ออายุ"</strong> และจะไปแสดงที่หน้ารายการ MA ขอต่ออายุ เพื่อให้ฝ่ายที่เกี่ยวข้องดำเนินการต่ออายุสัญญาใหม่หรือบันทึกไม่ต่ออายุต่อไป
       </p>
       <form method="POST" action="{{ url_for('procurement.products.request_renewal', procurement_id=item.id, organization_id=organization.id) }}" class="modal-action">
-        {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <button type="button" onclick="document.getElementById('modal_request_renewal_{{ item.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
         <button type="submit" class="btn btn-success text-white gap-1">
           <i class="ph ph-check"></i> ยืนยันขอต่ออายุ
@@ -359,8 +359,11 @@
               {% if installment.payment_number %}<div><strong>เลขที่เอกสาร:</strong> {{ installment.payment_number }}</div>{% endif %}
               {% if installment.paid_amount is not none %}<div><strong>ยอดที่จ่าย:</strong> {{ installment.paid_amount | format_amount }} บาท</div>{% endif %}
             </div>
+            <p class="text-xs text-base-content/60 mb-4">
+              * วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังคงถูกบันทึกไว้ในประวัติ
+            </p>
             <form method="POST" action="{{ url_for('procurement.payment.unpay_installment', procurement_id=item.id, item_id=p_item.id, installment_id=installment._id, organization_id=organization.id) }}" class="modal-action">
-              {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="next" value="{{ request.full_path }}"/>
               <button type="button" onclick="document.getElementById('quick_unpay_{{ p_item.id }}_{{ installment._id }}').close()" class="btn btn-ghost">ยกเลิก</button>
               <button type="submit" class="btn btn-error text-white gap-1">
@@ -383,7 +386,7 @@
               <div><strong>ยอดเงินของรายการ:</strong> {{ p_item.amount | format_amount }} บาท</div>
             </div>
             <form method="POST" action="{{ url_for('procurement.payment.pay_installment', procurement_id=item.id, item_id=p_item.id, installment_id=installment._id, organization_id=organization.id) }}" class="space-y-4">
-              {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="next" value="{{ request.full_path }}"/>
 
               <div class="form-control">

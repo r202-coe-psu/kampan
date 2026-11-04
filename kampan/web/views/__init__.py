@@ -106,6 +106,8 @@ def get_subblueprints(directory):
 
 
 def register_blueprint(app):
+    from flask_wtf.csrf import generate_csrf
+
     app.add_template_filter(template_filters.static_url)
     app.add_template_filter(template_filters.format_date)
     app.add_template_filter(template_filters.format_number)
@@ -115,6 +117,7 @@ def register_blueprint(app):
     app.add_template_filter(add_date_url)
     app.add_template_global(switch_organization_next_url)
     app.add_template_global(feature_flags.is_requisition_enabled)
+    app.add_template_global(generate_csrf, name="csrf_token")
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)
 
