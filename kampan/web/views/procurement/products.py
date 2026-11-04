@@ -29,6 +29,8 @@ module = Blueprint("products", __name__, url_prefix="/products")
 
 DUPLICATE_PAYMENT_NUMBER_MESSAGE = "เลขที่เอกสาร {numbers} ถูกใช้งานแล้วในหน่วยงานนี้"
 NO_EDIT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์แก้ไข MA รายการนี้"
+NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุ MA รายการนี้"
+ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
 STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
 
@@ -87,7 +89,8 @@ def index():
     payment_status = request.args.get("payment_status")
     upload_success = request.args.get("upload_success", "")
 
-    visible_qs = ma_permissions.visible_procurements(organization)
+    only_my_division = request.args.get("division") == "mine"
+    visible_qs = ma_permissions.visible_procurements(organization, only_my_division=only_my_division)
 
     # ตัวนับสถานะนับจาก MA ที่เห็นทั้งหมด ไม่ขึ้นกับคำค้นหรือ filter
     statuses = payment_statuses(visible_qs.scalar("id"), organization, today)
@@ -126,6 +129,8 @@ def index():
         upload_success=upload_success,
         status_count=status_count,
         can_edit=ma_permissions.edit_checker(organization),
+        my_division=ma_permissions.my_division_filter(organization),
+        only_my_division=only_my_division,
     )
 
 
@@ -188,9 +193,49 @@ def _item_form_data(item) -> dict:
     }
 
 
-def _build_form(organization, procurement=None, member=None) -> forms.procurement.ProcurementHeaderForm:
+def _renew_item_data(item, active_member_ids: set) -> dict:
+    """รายการย่อยของ MA ใหม่ที่ต่ออายุจาก ``item``
+
+    เว้นว่างวันเริ่ม-สิ้นสุด และไม่ copy งวด / สถานะการจ่าย (เหลือ 1 งวดว่างให้กรอก)
+    เมื่อมีค่าตั้งการเตือนของรายการย่อย (#28) ให้ copy ที่นี่ด้วย แต่ไม่ copy วันที่เตือนเจาะจง (#29)
+    """
+    return {
+        "name": item.name,
+        "category": item.category,
+        "account_code": item.account_code or "",
+        "amount": item.amount,
+        "details": item.details,
+        "brand": item.brand,
+        "model_name": item.model_name,
+        "winner": item.winner,
+        "unit_price": item.unit_price,
+        "note": item.note,
+        # ผู้รับผิดชอบที่ออกจากหน่วยงานแล้วเลือกไม่ได้ จึงไม่ copy
+        "responsible_by": [str(member_id) for member_id in item.get_responsible_ids() if member_id in active_member_ids],
+        "reminder_kind": item.reminder_kind,
+        "requires_activation": item.requires_activation,
+        "installments": [{}],
+    }
+
+
+def _renew_form_data(organization, old) -> dict:
+    """ข้อมูลตั้งต้นของฟอร์มต่ออายุ: หัวสัญญาและรายการย่อยจาก MA เดิม เว้นว่างเลขที่ ม.อ.เบิกจ่าย"""
+    active_member_ids = set(
+        models.OrganizationUserRole.objects(organization=organization, status="active").scalar("id")
+    )
+    return {
+        "name": old.name,
+        "company": old.company,
+        "total_amount": old.total_amount,
+        "items": [_renew_item_data(item, active_member_ids) for item in old.get_items()],
+    }
+
+
+def _build_form(organization, procurement=None, member=None, renew_from=None) -> forms.procurement.ProcurementHeaderForm:
     if request.method == "POST":
         form = forms.procurement.ProcurementHeaderForm()
+    elif renew_from:
+        form = forms.procurement.ProcurementHeaderForm(formdata=None, data=_renew_form_data(organization, renew_from))
     elif procurement:
         form = forms.procurement.ProcurementHeaderForm(
             formdata=None,
@@ -209,7 +254,7 @@ def _build_form(organization, procurement=None, member=None) -> forms.procuremen
     return form
 
 
-def _render_form(form, organization, member, procurement=None, form_errors=()):
+def _render_form(form, organization, member, procurement=None, form_errors=(), renew_from=None):
     choices = _member_choices(organization)
     item_prototype = forms.procurement.ProcurementItemForm(
         formdata=None, prefix="items-__I__-", data=_blank_item_data(member)
@@ -224,6 +269,7 @@ def _render_form(form, organization, member, procurement=None, form_errors=()):
         item_prototype=item_prototype,
         installment_prototype=installment_prototype,
         form_errors=[error for error in form_errors if error],
+        renew_from=renew_from,
     )
 
 
@@ -305,26 +351,15 @@ def find_duplicate_payment_numbers(organization, items, procurement=None) -> lis
     return sorted(duplicates)
 
 
-def _save_form(form, organization, procurement, existing_items, member):
-    user = current_user._get_current_object()
-    items, removed_items = _build_items(form, organization, existing_items, user)
-
-    duplicates = find_duplicate_payment_numbers(organization, items, procurement)
-    if duplicates:
-        message = DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(numbers=", ".join(duplicates))
-        return _render_form(form, organization, member, procurement, [message])
-
+def _apply_header(form, procurement, user) -> None:
     procurement.psu_disbursement_number = form.psu_disbursement_number.data.strip()
     procurement.name = form.name.data.strip()
     procurement.company = form.company.data.strip()
     procurement.total_amount = form.total_amount.data
     procurement.last_updated_by = user
 
-    try:
-        procurement.save_with_items(items, removed_items)
-    except me.ValidationError as error:
-        return _render_form(form, organization, member, procurement, [error.message])
 
+def _save_image(form, procurement) -> None:
     image = form.image.data
     if image and getattr(image, "filename", None):
         if procurement.image:
@@ -333,6 +368,29 @@ def _save_form(form, organization, procurement, existing_items, member):
             procurement.image.put(image, filename=image.filename, content_type=image.content_type)
         procurement.save()
 
+
+def _duplicate_payment_error(organization, items, procurement=None) -> str | None:
+    duplicates = find_duplicate_payment_numbers(organization, items, procurement)
+    if not duplicates:
+        return None
+    return DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(numbers=", ".join(duplicates))
+
+
+def _save_form(form, organization, procurement, existing_items, member):
+    user = current_user._get_current_object()
+    items, removed_items = _build_items(form, organization, existing_items, user)
+
+    duplicate_error = _duplicate_payment_error(organization, items, procurement)
+    if duplicate_error:
+        return _render_form(form, organization, member, procurement, [duplicate_error])
+
+    _apply_header(form, procurement, user)
+    try:
+        procurement.save_with_items(items, removed_items)
+    except me.ValidationError as error:
+        return _render_form(form, organization, member, procurement, [error.message])
+
+    _save_image(form, procurement)
     flash("บันทึก MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
@@ -366,9 +424,7 @@ def edit(procurement_id):
     organization = g.organization
     if not organization:
         abort(404)
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
+    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
 
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(NO_EDIT_PERMISSION_MESSAGE, "error")
@@ -385,6 +441,48 @@ def edit(procurement_id):
         return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
 
     return _save_form(form, organization, procurement, procurement.get_items(), member)
+
+
+@module.route("/<procurement_id>/renew", methods=["GET", "POST"])
+@login_required
+def renew(procurement_id):
+    """ต่ออายุ MA (#32): เปิดฟอร์มสร้าง MA ที่เติมข้อมูลจาก MA เดิม บันทึกแล้วได้ MA ใหม่ และ MA เดิมเป็น "ต่ออายุแล้ว" """
+    organization = g.organization
+    if not organization:
+        abort(404)
+    old = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
+    detail_url = url_for("procurement.payment.index", procurement_id=old.id, organization_id=organization.id)
+    if not ma_permissions.can_edit_procurement(old, organization):
+        flash(NO_RENEW_PERMISSION_MESSAGE, "error")
+        return redirect(detail_url)
+    if old.is_renewed():
+        flash(ALREADY_RENEWED_MESSAGE, "error")
+        return redirect(detail_url)
+
+    member = ma_permissions.get_member(organization)
+    form = _build_form(organization, member=member, renew_from=old)
+    if not form.validate_on_submit():
+        return _render_form(form, organization, member, renew_from=old)
+
+    user = current_user._get_current_object()
+    items, _ = _build_items(form, organization, [], user)
+    duplicate_error = _duplicate_payment_error(organization, items)
+    if duplicate_error:
+        return _render_form(form, organization, member, form_errors=[duplicate_error], renew_from=old)
+
+    new = models.Procurement(organization=organization, status="active", created_by=user)
+    _apply_header(form, new, user)
+    try:
+        old.renew_into(new, items)
+    except models.RenewalConflict:
+        flash(ALREADY_RENEWED_MESSAGE, "error")
+        return redirect(detail_url)
+    except me.ValidationError as error:
+        return _render_form(form, organization, member, form_errors=[error.message], renew_from=old)
+
+    _save_image(form, new)
+    flash("ต่ออายุ MA เรียบร้อยแล้ว", "success")
+    return redirect(url_for("procurement.payment.index", procurement_id=new.id, organization_id=organization.id))
 
 
 @module.route("/<organization_id>/download_template")
@@ -431,9 +529,7 @@ def image(procurement_id, filename):
     if not organization:
         abort(404)
 
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
+    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
     if not procurement.image or procurement.image.filename != filename:
         return abort(403)
     return send_file(
@@ -449,9 +545,7 @@ def edit_image(procurement_id):
     organization = g.organization
     if not organization:
         abort(404)
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
+    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(NO_EDIT_PERMISSION_MESSAGE, "error")
         return redirect(

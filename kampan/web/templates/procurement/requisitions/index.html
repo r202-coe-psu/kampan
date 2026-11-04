@@ -1,5 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
+{% from 'procurement/macros/division_filter.html' import my_division_checkbox %}
 {% block title %}รายการซอฟต์แวร์/บริการ ที่ใกล้หมดอายุหรือหมดอายุแล้ว{% endblock %}
 {% block content %}
 <div class="container mx-auto px-4 py-6">
@@ -20,6 +21,7 @@
       {{ renderer.base_render(form.product_number, placeholder="ค้นหาเลขที่ ม.อ.เบิกจ่าย") }}
       {{ renderer.base_render(form.asset_code, placeholder="ค้นหา S/N หรือรหัสครุภัณฑ์") }}
       {{ renderer.render_select_field(form.expiration_date_range) }}
+      {{ my_division_checkbox(my_division, only_my_division) }}
       <div>
         <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
           <i class="ph ph-magnifying-glass mr-2"></i>
@@ -154,71 +156,39 @@
               <span class="text-gray-400 text-xs italic">ไม่ระบุ</span>
               {% endif %}
             </div>
+            <div class="text-xs text-base-content/60 mt-2 flex items-center gap-1">
+              <i class="ph ph-users-three"></i>
+              ฝ่าย: {% for division in item.get_responsible_divisions() %}{{ division.name }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}
+            </div>
           </div>
         </div>
       </div>
       <!-- Card Footer -->
-      {% if item.status == 'pending' and can_change_renewal(item) %}
-      <div class="bg-gray-50 px-4 py-3 border-t">
+      {% if can_change_renewal(item) and not item.is_renewed() %}
+      <div class="bg-base-200 px-4 py-3 border-t">
         <div class="flex gap-2">
-          {% if is_requisition_enabled() %}
-          <button onclick="document.getElementById('renew_modal_{{ item.id }}').showModal()"
-            class="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
-            <i class="ph ph-check"></i>
+          <a href="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
+            class="btn btn-success btn-sm flex-1 text-white">
+            <i class="ph ph-arrows-clockwise"></i>
             ต่ออายุ
-          </button>
-          {% endif %}
-          <button onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
-            class="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
+          </a>
+          {% if item.status == 'pending' %}
+          <button type="button" onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
+            class="btn btn-error btn-sm flex-1 text-white">
             <i class="ph ph-x"></i>
             ไม่ต่ออายุ
           </button>
+          {% endif %}
         </div>
+      </div>
+      {% elif item.is_renewed() %}
+      <div class="bg-base-200 px-4 py-3 border-t text-sm text-base-content/70 flex items-center gap-2">
+        <i class="ph ph-check-circle"></i> ต่ออายุแล้ว
       </div>
       {% endif %}
     </div>
 
-    {% if is_requisition_enabled() %}
-    <!-- Renew Confirmation Modal -->
-    <dialog id="renew_modal_{{ item.id }}" class="modal">
-      <div class="modal-box">
-        <h3 class="text-lg font-bold text-emerald-600 mb-4">
-          <i class="ph ph-check-circle mr-2"></i>ยืนยันการต่ออายุ
-        </h3>
-        <p class="py-2">คุณต้องการดำเนินการต่ออายุรายการนี้ใช่หรือไม่?</p>
-        <div class="bg-gray-100 p-3 rounded-lg mb-4">
-          <p class="font-semibold">{{ item.name }}</p>
-          <p class="text-sm text-gray-600">เลขที่ ม.อ.เบิกจ่าย: {{ item.psu_disbursement_number or '-' }}</p>
-          <div class="flex justify-between mt-2 text-sm">
-            <span class="text-gray-500">วันที่สิ้นสุด:</span>
-            <span class="font-medium text-rose-700">{{ end_date.strftime("%d/%m/") ~ (end_date.year + 543) if end_date else '-' }}</span>
-          </div>
-        </div>
-        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
-          <div class="flex items-start gap-2">
-            <i class="ph ph-info text-emerald-600 mt-0.5"></i>
-            <p class="text-sm text-emerald-700">ระบบจะนำท่านไปยังหน้าฟอร์มการขอต่ออายุ</p>
-          </div>
-        </div>
-        <div class="modal-action">
-          <form method="dialog">
-            <button class="btn btn-outline">ยกเลิก</button>
-          </form>
-          <form method="post"
-            action="{{ url_for('procurement.requisitions.renewal_requested_action', requisition_procurement_id=item.id, organization_id=organization.id) }}">
-            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
-            <button type="submit" class="btn btn-success text-white">
-              <i class="ph ph-check mr-1"></i>ยืนยันต่ออายุ
-            </button>
-          </form>
-        </div>
-      </div>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
-    {% endif %}
-
+    {% if can_change_renewal(item) and item.status == 'pending' %}
     <!-- Don't Renew Confirmation Modal -->
     <dialog id="delete_modal_{{ item.id }}" class="modal">
       <div class="modal-box">
@@ -259,6 +229,7 @@
         <button>close</button>
       </form>
     </dialog>
+    {% endif %}
     {% endfor %}
   </div>
   {% endif %}

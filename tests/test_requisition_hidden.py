@@ -362,19 +362,16 @@ def test_switch_organization_lands_on_procurement_home(app, world, create_org, s
 # ---------------------------------------------------------------------------
 
 
-def test_ma_list_hides_old_renew_button_when_flag_off(world, client_for, set_flag):
+@pytest.mark.parametrize("enabled", (False, True))
+def test_ma_list_never_shows_old_renew_button(world, client_for, set_flag, enabled):
+    """ปุ่ม "ยื่นขอต่ออายุ" เดิม (สร้างคำขอซื้อ) ถูกถอดออกจากหน้า MA ไม่ว่า flag จะเป็นอะไร (#32 / คำตัดสินรอบ 3)"""
+    set_flag(enabled)
+
     html = client_for(world.users["admin"]).get(f"/procurement/requisitions?{_q(world)}").get_data(as_text=True)
 
     assert f"/procurement/requisitions/{world.procurement.id}/renewal-requested" not in html
+    assert f"/procurement/products/{world.procurement.id}/renew?" in html
     assert f"/procurement/requisitions/{world.procurement.id}/non-renewal" in html
-
-
-def test_ma_list_shows_old_renew_button_when_flag_on(world, client_for, set_flag):
-    set_flag(True)
-
-    html = client_for(world.users["admin"]).get(f"/procurement/requisitions?{_q(world)}").get_data(as_text=True)
-
-    assert f"/procurement/requisitions/{world.procurement.id}/renewal-requested" in html
 
 
 @pytest.mark.parametrize("enabled", (False, True))

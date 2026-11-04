@@ -96,7 +96,8 @@ def index():
     procurement_id = request.args.get("procurement_id", "")
     expiration_date_range = request.args.get("expiration_date_range", "3_months")
 
-    procurements = ma_permissions.visible_procurements(organization)
+    only_my_division = request.args.get("division") == "mine"
+    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division)
     if name:
         procurements = procurements.filter(name__icontains=name)
     # ช่อง "เลขที่เบิกจ่าย" ค้นเลขที่ ม.อ.เบิกจ่าย ของหัวสัญญา
@@ -134,6 +135,8 @@ def index():
         selected_product_number=product_number,
         selected_asset_code=asset_code,
         selected_expiration_date_range=expiration_date_range,
+        my_division=ma_permissions.my_division_filter(organization),
+        only_my_division=only_my_division,
     )
 
 
@@ -161,10 +164,7 @@ def non_renewal_action(requisition_procurement_id):
     if not organization:
         abort(404)
 
-    procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
-
+    procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
@@ -181,7 +181,10 @@ def non_renewal():
     if not organization:
         abort(404)
     category = request.args.get("category", "")
-    procurements = ma_permissions.visible_procurements(organization).filter(status="disactive")
+    only_my_division = request.args.get("division") == "mine"
+    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
+        status="disactive"
+    )
     procurements = _sort_by_end_date(procurements, organization, reverse=True)
     return render_template(
         "procurement/requisitions/non_renewal.html",
@@ -189,6 +192,8 @@ def non_renewal():
         organization=organization,
         category_choices=models.ITEM_CATEGORY_CHOICES,
         selected_category=category,
+        my_division=ma_permissions.my_division_filter(organization),
+        only_my_division=only_my_division,
     )
 
 

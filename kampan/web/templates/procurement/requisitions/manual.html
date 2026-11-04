@@ -376,17 +376,17 @@
               {% else %}
               <tr>
                 <td class="font-semibold">พนักงาน / บุคลากร<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
-                <td>ดูและติดตามสัญญา MA ที่ตนรับผิดชอบ, กดไม่ต่ออายุสัญญาที่ตนรับผิดชอบ</td>
+                <td>ดูและติดตามสัญญา MA ที่ตนรับผิดชอบ, ต่ออายุหรือไม่ต่ออายุสัญญาที่ตนรับผิดชอบ</td>
                 <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
               </tr>
               <tr>
                 <td class="font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head</span></td>
-                <td>ดูรายการสัญญา MA ของฝ่ายตน</td>
+                <td>ดูรายการสัญญา MA ทั้งหน่วยงาน (ติ๊ก &ldquo;เฉพาะฝ่ายของฉัน&rdquo; เพื่อดูเฉพาะของฝ่ายตน)</td>
                 <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
               </tr>
               <tr>
                 <td class="font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
-                <td>อัปโหลดไฟล์ Excel, จัดการรายการ MA, บันทึกการจ่ายเงิน, กดไม่ต่ออายุสัญญา</td>
+                <td>อัปโหลดไฟล์ Excel, จัดการรายการ MA, บันทึกการจ่ายเงิน, ต่ออายุหรือไม่ต่ออายุสัญญา</td>
                 <td>ทุกเมนูในระบบ</td>
               </tr>
               <tr>
@@ -833,19 +833,17 @@
             <span class="font-bold text-base-content">2. กรองช่วงเวลาหมดอายุ</span>
             <p class="mt-1 text-base-content/70">สามารถเลือกกรองเฉพาะรายการที่หมดอายุแล้ว, ภายใน 1 เดือน, 3 เดือน, 6 เดือน หรือ 1 ปี</p>
           </li>
-          {% if requisition_on %}
           <li class="text-sm">
-            <span class="font-bold text-base-content">3. การขอต่ออายุสัญญา</span>
-            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ต่ออายุ&rdquo; ระบบจะเปิดหน้าต่างยืนยัน และนำท่านไปยังแบบฟอร์มขอซื้อขอจ้าง พร้อมกรอกข้อมูลเดิมให้อัตโนมัติ และเปลี่ยนสถานะรายการเป็น <span class="badge badge-xs badge-info">ต่ออายุแล้ว</span></p>
+            <span class="font-bold text-base-content">3. การต่ออายุสัญญา</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ต่ออายุ&rdquo; (ในหน้านี้, หน้ารายการ MA หรือหน้ารายละเอียด MA) ระบบจะเปิดฟอร์มสร้าง MA ใหม่ที่คัดลอกหัวสัญญาและรายการย่อยจาก MA เดิมไว้ให้ กรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และงวดใหม่ แล้วกดบันทึก MA เดิมจะเปลี่ยนเป็น <span class="badge badge-xs badge-neutral">ต่ออายุแล้ว</span> และหน้ารายละเอียดของทั้งสองรายการจะลิงก์ถึงกัน</p>
           </li>
-          {% endif %}
           <li class="text-sm">
-            <span class="font-bold text-base-content">{{ 4 if requisition_on else 3 }}. การไม่ต่ออายุสัญญา</span>
+            <span class="font-bold text-base-content">4. การไม่ต่ออายุสัญญา</span>
             <p class="mt-1 text-base-content/70">สำหรับสัญญาที่ไม่ประสงค์จะต่ออายุ รายการจะถูกย้ายไปยังหน้า &ldquo;รายการ MA ไม่ต่ออายุ&rdquo; (สถานะ <span class="badge badge-xs badge-neutral">ไม่ต่ออายุ</span>)</p>
           </li>
         </ol>
 
-        {% call Demo('การ์ดรายการ MA พร้อมปุ่มต่ออายุ/ไม่ต่ออายุ' if requisition_on else 'การ์ดรายการ MA พร้อมปุ่มไม่ต่ออายุ', 'จัดการ MA &rarr; รายการ MA') %}
+        {% call Demo('การ์ดรายการ MA พร้อมปุ่มต่ออายุ/ไม่ต่ออายุ', 'จัดการ MA &rarr; รายการ MA') %}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
             <div class="flex justify-between items-center border-b pb-2">
@@ -858,9 +856,7 @@
               <div>ผู้รับผิดชอบ: นายสมชาย ใจดี</div>
             </div>
             <div class="flex gap-2 pt-2 border-t mt-2">
-              {% if requisition_on %}
-              <button class="btn btn-sm btn-success text-white flex-1"><i class="ph ph-check"></i> ต่ออายุ</button>
-              {% endif %}
+              <button class="btn btn-sm btn-success text-white flex-1"><i class="ph ph-arrows-clockwise"></i> ต่ออายุ</button>
               <button class="btn btn-sm btn-error text-white flex-1"><i class="ph ph-x"></i> ไม่ต่ออายุ</button>
             </div>
           </div>

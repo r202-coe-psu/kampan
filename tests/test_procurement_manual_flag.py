@@ -149,3 +149,17 @@ def test_manual_shows_requisition_when_flag_on(set_flag, get_manual, value):
     assert labels[2] == "1. อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ"
     assert labels[16] == "15. เอกสารคำขอและพิมพ์รายงาน"
     assert re.findall(r"โมดูลที่ (\d+)", html) == [str(n) for n in range(1, 16)]
+
+
+@pytest.mark.parametrize("value", [None, True])
+def test_manual_describes_renew_as_new_ma(set_flag, get_manual, value):
+    """ต่ออายุ = สร้าง MA ใหม่จาก MA เดิม (#32) ทั้งตอนเปิดและปิดขอซื้อขอจ้าง ไม่มีขั้นตอนต่ออายุผ่านคำขอซื้อแบบเดิม"""
+    if value is not None:
+        set_flag(value)
+    _, html = get_manual("admin")
+
+    section = html[html.index('<section id="procurement-list"'):html.index('<section id="non-renewal"')]
+    assert "3. การต่ออายุสัญญา" in section
+    assert "เลขที่ ม.อ.เบิกจ่าย" in section and "ต่ออายุแล้ว" in section
+    assert "4. การไม่ต่ออายุสัญญา" in section
+    assert "นำท่านไปยังแบบฟอร์มขอซื้อขอจ้าง" not in html

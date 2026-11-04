@@ -281,9 +281,11 @@ def test_index_template_renders_post_forms_with_organization(world, client_for):
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
-    for suffix in ("non-renewal", "renewal-requested"):
-        action = f"/procurement/requisitions/{procurement_a.id}/{suffix}?organization_id={world.org_a.id}"
-        assert f'action="{action}"' in html
+    action = f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}"
+    assert f'action="{action}"' in html
+    # ปุ่มต่ออายุเดิมที่สร้างคำขอซื้อถูกถอดออกจากหน้า MA (#32) ต่ออายุไปที่ฟอร์มสร้าง MA ใหม่แทน
+    assert "/renewal-requested" not in html
+    assert f'href="/procurement/products/{procurement_a.id}/renew?organization_id={world.org_a.id}"' in html
 
 
 # ---------------------------------------------------------------------------
@@ -757,7 +759,9 @@ def test_renewal_actions_refuse_users_without_permission(world, client_for, org_
 
     response = client.post(f"/procurement/requisitions/{procurement_a.id}/{suffix}?organization_id={world.org_a.id}")
 
-    assert response.status_code == 302
+    # หน้า MA ใช้กติกาการมองเห็น (#31): staff ที่ไม่ได้รับผิดชอบมองไม่เห็น MA จึงได้ 404
+    cannot_see = who == "other_staff" and suffix == "non-renewal"
+    assert response.status_code == (404 if cannot_see else 302)
     procurement_a.reload()
     assert procurement_a.status == "pending"
     assert models.Requisition.objects.count() == 0
@@ -773,4 +777,5 @@ def test_index_shows_renewal_buttons_only_to_permitted_users(world, client_for, 
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
-    assert (f"renew_modal_{procurement_a.id}').showModal()" in html) is sees_buttons
+    assert (f"/procurement/products/{procurement_a.id}/renew?" in html) is sees_buttons
+    assert (f"delete_modal_{procurement_a.id}').showModal()" in html) is sees_buttons

@@ -17,6 +17,7 @@ from .lost_break_items import LostBreakItem
 from .categories import Category
 from .procurement import (
     Procurement,
+    RenewalConflict,
     ProcurementItem,
     Installment,
     CATEGORY_CHOICES,

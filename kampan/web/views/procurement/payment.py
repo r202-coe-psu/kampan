@@ -28,10 +28,7 @@ def _get_procurement_or_404(procurement_id):
     organization = g.organization
     if not organization:
         abort(404)
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
-    return organization, procurement
+    return organization, ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
 
 
 def _detail_url(procurement, organization):
@@ -42,6 +39,14 @@ def _detail_url(procurement, organization):
 @login_required
 def index(procurement_id):
     organization, procurement = _get_procurement_or_404(procurement_id)
+
+    # สายการต่ออายุ (#32): MA ในสายที่ผู้ใช้มองไม่เห็นแสดงแค่ว่ามีอยู่ ไม่แสดงชื่อและไม่มีลิงก์
+    chain = procurement.get_renewal_chain()
+    position = chain.index(procurement)
+    visible_chain_ids = set(
+        ma_permissions.visible_procurements(organization).filter(id__in=[ma.id for ma in chain]).scalar("id")
+    )
+    member = ma_permissions.get_member(organization)
     return render_template(
         "procurement/payment/index.html",
         procurement=procurement,
@@ -50,6 +55,11 @@ def index(procurement_id):
         today=datetime.date.today(),
         can_edit=ma_permissions.can_edit_procurement(procurement, organization),
         form=forms.procurement.InstallmentPaymentForm(formdata=None),
+        renewal_chain=chain,
+        renewed_from_ma=chain[position - 1] if position > 0 else None,
+        renewed_to_ma=chain[position + 1] if position + 1 < len(chain) else None,
+        visible_chain_ids=visible_chain_ids,
+        my_division_id=member.division.id if member and member.division else None,
     )
 
 

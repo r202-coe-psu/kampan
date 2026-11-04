@@ -158,6 +158,10 @@ def check_item_sum(total_amount, amounts: Iterable) -> str | None:
     )
 
 
+class RenewalConflict(Exception):
+    """MA เดิมต่ออายุไปแล้ว หรือมีคำขออื่น claim ไปก่อน (เช่นกดบันทึกซ้ำ)"""
+
+
 class Installment(me.EmbeddedDocument):
     """งวดของรายการย่อย ไม่มีการแบ่งเงิน มีแค่วันครบกำหนดและสถานะการจ่าย"""
 
@@ -335,12 +339,18 @@ class Procurement(me.Document):
     # การต่ออายุ (#32): MA ใหม่ชี้ MA เดิม และ MA เดิมชี้ MA ใหม่
     renewed_from = me.ReferenceField("Procurement", dbref=True)
     renewed_to = me.ReferenceField("Procurement", dbref=True)
+    # สถานะก่อนถูก claim เพื่อต่ออายุ ใช้คืนสถานะเมื่อสร้าง MA ใหม่ไม่สำเร็จ
+    # (status = renewed แต่ยังไม่มี renewed_to คือกำลังต่ออายุอยู่)
+    status_before_renewal = me.StringField(choices=RENEWAL_STATUS_CHOICES)
 
     # Audit fields
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
+
+    def is_renewed(self) -> bool:
+        return self.status == "renewed" or _reference_id(self, "renewed_to") is not None
 
     # ------------------------------------------------------------------
     # รายการย่อย
@@ -482,6 +492,91 @@ class Procurement(me.Document):
 
         self.__dict__["_items_cache"] = items
         return self
+
+    def renew_into(self, new_procurement: "Procurement", items: Iterable[ProcurementItem]) -> "Procurement":
+        """ต่ออายุ MA นี้เป็น ``new_procurement`` (#32)
+
+        1. claim MA นี้แบบ atomic ก่อน (ยังไม่ต่ออายุ → status renewed) กันกดบันทึกซ้ำได้ MA ใหม่ 2 ตัว
+           ถ้า claim ไม่ได้ raise RenewalConflict
+        2. สร้าง MA ใหม่ผ่าน save_with_items (renewed_from ชี้ MA นี้)
+        3. ผูก renewed_to ของ MA นี้ไปที่ MA ใหม่
+        ถ้าข้อ 2–3 ล้ม ลบ MA ใหม่ที่เขียนไปแล้ว คืน claim แล้ว raise ต่อ (ValidationError ของข้อ 2 ใช้แสดงในฟอร์มได้)
+        """
+        previous_status = self.status
+        if previous_status == "renewed":
+            raise RenewalConflict()
+        # เงื่อนไข status เดิม: ถ้ามีคนเปลี่ยนสถานะ (รวมถึง claim ไปก่อน) หลังเราโหลด MA จะ claim ไม่ได้
+        claimed = Procurement.objects(
+            id=self.pk,
+            organization=self.organization,
+            status=previous_status,
+            renewed_to=None,
+        ).update_one(
+            set__status="renewed",
+            set__status_before_renewal=previous_status,
+            set__updated_date=datetime.datetime.now(),
+        )
+        if not claimed:
+            raise RenewalConflict()
+
+        new_procurement.organization = self.organization
+        new_procurement.renewed_from = self
+        try:
+            new_procurement.save_with_items(items)
+            linked = Procurement.objects(id=self.pk, organization=self.organization, renewed_to=None).update_one(
+                set__renewed_to=new_procurement
+            )
+            if not linked:
+                raise RenewalConflict()
+        except Exception:
+            logger.exception("renewing procurement %s failed, releasing the claim", self.pk)
+            self._discard_renewal(new_procurement, previous_status)
+            raise
+
+        self.status = "renewed"
+        self.status_before_renewal = previous_status
+        self.renewed_to = new_procurement
+        return new_procurement
+
+    def _discard_renewal(self, new_procurement, previous_status):
+        try:
+            if new_procurement.pk and Procurement.objects(id=new_procurement.pk).count():
+                ProcurementItem.objects(procurement=new_procurement.pk).delete()
+                Procurement.objects(id=new_procurement.pk).delete()
+            Procurement.objects(id=self.pk, organization=self.organization, status="renewed", renewed_to=None).update_one(
+                set__status=previous_status,
+                unset__status_before_renewal=True,
+            )
+        except Exception:
+            logger.exception("releasing the renewal claim of procurement %s failed", self.pk)
+
+    def get_renewal_chain(self) -> list["Procurement"]:
+        """สายการต่ออายุทั้งหมดที่ MA นี้อยู่ เรียงจาก MA แรกสุดไปล่าสุด (เดินตาม renewed_from / renewed_to ในหน่วยงานเดียวกัน)"""
+        chain = [self]
+        seen = {self.pk}
+
+        current = self
+        while True:
+            previous_id = _reference_id(current, "renewed_from")
+            if not previous_id or previous_id in seen:
+                break
+            current = Procurement.objects(id=previous_id, organization=self.organization).first()
+            if not current:
+                break
+            seen.add(current.pk)
+            chain.insert(0, current)
+
+        current = self
+        while True:
+            next_id = _reference_id(current, "renewed_to")
+            if not next_id or next_id in seen:
+                break
+            current = Procurement.objects(id=next_id, organization=self.organization).first()
+            if not current:
+                break
+            seen.add(current.pk)
+            chain.append(current)
+        return chain
 
     def _snapshot(self, items, removed_items, is_new) -> dict:
         if is_new:

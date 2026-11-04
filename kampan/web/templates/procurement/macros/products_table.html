@@ -102,6 +102,14 @@
               <i class="ph ph-magnifying-glass text-lg"></i>
             </a>
           </div>
+          {% if can_edit(item) and not item.is_renewed() %}
+          <div class="tooltip tooltip-left" data-tip="ต่ออายุ (สร้าง MA ใหม่จากรายการนี้)">
+            <a href="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
+               class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ต่ออายุ MA">
+              <i class="ph ph-arrows-clockwise text-lg"></i>
+            </a>
+          </div>
+          {% endif %}
           {% if can_edit(item) %}
           <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
             <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"

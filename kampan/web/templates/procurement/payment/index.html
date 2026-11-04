@@ -25,6 +25,15 @@
 
 {% macro thai_date(value) %}{{ value | format_thai_date if value else "-" }}{% endmacro %}
 
+{% macro ma_link(ma) %}
+  {% if ma.id in visible_chain_ids %}
+    <a class="link font-semibold" href="{{ url_for('procurement.payment.index', procurement_id=ma.id, organization_id=organization.id) }}">{{ ma.name }}</a>
+    <span class="text-base-content/60">(เลขที่ ม.อ.เบิกจ่าย {{ ma.psu_disbursement_number or "-" }})</span>
+  {% else %}
+    <span class="text-base-content/60">รายการที่คุณไม่มีสิทธิ์ดู</span>
+  {% endif %}
+{% endmacro %}
+
 {% set ma_status = procurement.get_payment_status(today) %}
 {% set paid_count, installment_count = procurement.get_installment_progress() %}
 <div class="container mx-auto px-3 md:px-4 lg:px-0 py-4 md:py-6 space-y-6">
@@ -33,11 +42,36 @@
       <i class="ph ph-arrow-left text-lg"></i> ย้อนกลับ
     </a>
     {% if can_edit %}
-      <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-primary btn-sm">
-        <i class="ph ph-pencil-simple"></i> แก้ไข MA
-      </a>
+      <div class="flex flex-wrap gap-2">
+        {% if not procurement.is_renewed() %}
+          <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-success btn-sm">
+            <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
+          </a>
+        {% endif %}
+        <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-primary btn-sm">
+          <i class="ph ph-pencil-simple"></i> แก้ไข MA
+        </a>
+      </div>
     {% endif %}
   </div>
+
+  {% if renewed_to_ma %}
+    <div role="alert" class="alert alert-info">
+      <i class="ph ph-arrow-circle-right text-xl"></i>
+      <span>ต่ออายุไปที่รายการ {{ ma_link(renewed_to_ma) }} แล้ว</span>
+    </div>
+  {% elif procurement.status == "renewed" %}
+    <div role="alert" class="alert alert-warning">
+      <i class="ph ph-hourglass text-xl"></i>
+      <span>MA นี้กำลังถูกต่ออายุ หากค้างอยู่นาน กรุณาแจ้งผู้ดูแลระบบ</span>
+    </div>
+  {% endif %}
+  {% if renewed_from_ma %}
+    <div role="alert" class="alert">
+      <i class="ph ph-arrow-circle-left text-xl"></i>
+      <span>ต่ออายุจากรายการ {{ ma_link(renewed_from_ma) }}</span>
+    </div>
+  {% endif %}
 
   <!-- หัวสัญญา -->
   <section class="card bg-base-100 border border-base-300 shadow-sm">
@@ -89,10 +123,37 @@
     </div>
   </section>
 
+  {% if renewal_chain|length > 1 %}
+    <!-- สายการต่ออายุ -->
+    <section class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body p-4 md:p-6">
+        <h3 class="font-bold text-lg flex items-center gap-2"><i class="ph ph-arrows-clockwise text-primary"></i>สายการต่ออายุ</h3>
+        <ul class="steps steps-vertical lg:steps-horizontal w-full">
+          {% set current_position = renewal_chain.index(procurement) %}
+          {% for ma in renewal_chain %}
+            <li class="step {{ 'step-primary' if loop.index0 <= current_position else '' }}">
+              <div class="text-sm text-left lg:text-center">
+                {% if ma.id == procurement.id %}
+                  <span class="font-semibold">{{ ma.name }}</span>
+                  <span class="text-base-content/60">(เลขที่ ม.อ.เบิกจ่าย {{ ma.psu_disbursement_number or "-" }}) · รายการนี้</span>
+                {% else %}
+                  {{ ma_link(ma) }}
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  {% endif %}
+
   <!-- รายการย่อย -->
   <section class="card bg-base-100 border border-base-300 shadow-sm">
     <div class="card-body p-4 md:p-6">
       <h3 class="font-bold text-lg flex items-center gap-2"><i class="ph ph-stack text-primary"></i>รายการย่อย ({{ items|length }})</h3>
+      {% if my_division_id %}
+        <p class="text-xs text-base-content/60">แถวที่มีพื้นสีคือรายการย่อยที่ฝ่ายของคุณรับผิดชอบ</p>
+      {% endif %}
       <div class="overflow-x-auto">
         <table class="table table-sm">
           <thead>
@@ -108,7 +169,8 @@
           </thead>
           <tbody>
             {% for item in items %}
-              <tr class="align-top">
+              {% set my_division_item = my_division_id and my_division_id in item.responsible_divisions | map(attribute="id") | list %}
+              <tr class="align-top{{ ' bg-primary/5' if my_division_item else '' }}">
                 <td>{{ loop.index }}</td>
                 <td class="min-w-48">
                   <a href="#item-{{ item.id }}" class="link link-hover font-semibold">{{ item.name }}</a>

@@ -40,6 +40,8 @@ def world(app, create_org, create_user, assign_user_to_org):
     creator, role_creator = member("Creator", org, ["staff"], division_it)
     responsible, role_responsible = member("Responsible", org, ["staff"], division_fin)
     other_staff, role_other_staff = member("Other", org, ["staff"], division_fin)
+    # เห็น MA ทั้งหน่วยงาน (#31) แต่ไม่ใช่ผู้แก้ไข MA ได้
+    head, role_head = member("Head", org, ["head"], division_fin)
     admin_b, role_admin_b = member("AdminB", other_org, ["admin"])
     return SimpleNamespace(**locals())
 
@@ -449,8 +451,8 @@ def test_edit_allowed_for_admin_creator_and_item_responsible(world, client_for, 
     assert models.ProcurementItem.objects(procurement=existing_ma).count() == 1
 
 
-def test_edit_refused_for_staff_who_is_not_creator_or_responsible(world, client_for, existing_ma):
-    client = client_for(world.other_staff)
+def test_edit_refused_for_viewer_who_is_not_creator_or_responsible(world, client_for, existing_ma):
+    client = client_for(world.head)
     url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
 
     get_response = client.get(url)
@@ -459,6 +461,16 @@ def test_edit_refused_for_staff_who_is_not_creator_or_responsible(world, client_
     for response in (get_response, post_response):
         assert response.status_code == 302
         assert f"/procurement/payment/{existing_ma.id}" in response.headers["Location"]
+    existing_ma.reload()
+    assert existing_ma.name == "[TEST] MA เดิม"
+
+
+def test_edit_by_staff_who_cannot_see_ma_is_404(world, client_for, existing_ma):
+    client = client_for(world.other_staff)
+    url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
+
+    assert client.get(url).status_code == 404
+    assert client.post(url, data=_edit_form(existing_ma)).status_code == 404
     existing_ma.reload()
     assert existing_ma.name == "[TEST] MA เดิม"
 
@@ -666,7 +678,7 @@ def test_installment_actions_reject_get(world, client_for, existing_ma, action):
 
 
 def test_pay_refused_for_user_who_cannot_edit(world, client_for, existing_ma):
-    response = client_for(world.other_staff).post(
+    response = client_for(world.head).post(
         f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}", data={"paid_date": "2026-11-01"}
     )
 
@@ -711,9 +723,11 @@ def test_detail_hides_edit_and_pay_buttons_from_viewer(world, client_for, existi
     edit_url = f"/procurement/products/{existing_ma.id}/edit"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
 
-    viewer_html = client_for(world.other_staff).get(detail_url).get_data(as_text=True)
+    viewer_response = client_for(world.head).get(detail_url)
+    viewer_html = viewer_response.get_data(as_text=True)
     editor_html = client_for(world.responsible).get(detail_url).get_data(as_text=True)
 
+    assert viewer_response.status_code == 200
     assert edit_url not in viewer_html and "/pay?" not in viewer_html
     assert edit_url in editor_html and "/pay?" in editor_html
 
@@ -723,7 +737,7 @@ def test_detail_hides_edit_and_pay_buttons_from_viewer(world, client_for, existi
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("who, allowed", [("creator", True), ("responsible", True), ("admin", True), ("other_staff", False)])
+@pytest.mark.parametrize("who, allowed", [("creator", True), ("responsible", True), ("admin", True), ("head", False)])
 def test_non_renewal_action_uses_can_edit_rule(world, client_for, existing_ma, who, allowed):
     response = client_for(getattr(world, who)).post(
         f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}"

@@ -1,8 +1,9 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row %}
 
-{% block title %}{{ "แก้ไข MA" if procurement and procurement.pk else "เพิ่ม MA" }}{% endblock %}
-{% block dashboard_title %}{{ "แก้ไข MA" if procurement and procurement.pk else "เพิ่ม MA" }}{% endblock %}
+{% set page_title = "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block dashboard_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 {% set is_edit = procurement and procurement.pk %}
@@ -13,11 +14,25 @@
     </div>
     <div>
       <h1 class="text-xl md:text-2xl font-bold text-base-content">
-        {{ "แก้ไข MA" if is_edit else "เพิ่ม MA ใหม่" }}
+        {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่ม MA ใหม่") }}
       </h1>
       <p class="text-base-content/60 text-sm">กรอกหัวสัญญา แล้วเพิ่มรายการย่อยและงวดของแต่ละรายการ</p>
     </div>
   </div>
+
+  {% if renew_from %}
+    <div role="alert" class="alert alert-info mb-6">
+      <i class="ph ph-arrows-clockwise text-xl"></i>
+      <div class="text-sm">
+        <p>
+          ต่ออายุจากรายการ
+          <a class="link font-semibold" href="{{ url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) }}">{{ renew_from.name }}</a>
+          (เลขที่ ม.อ.เบิกจ่าย {{ renew_from.psu_disbursement_number or "-" }})
+        </p>
+        <p>ข้อมูลหัวสัญญาและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และงวดใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น "ต่ออายุแล้ว"</p>
+      </div>
+    </div>
+  {% endif %}
 
   <form method="POST" action="" enctype="multipart/form-data" class="space-y-6" id="ma_form" novalidate>
     {{ form.hidden_tag() }}
@@ -83,7 +98,8 @@
     <template id="installment_template">{{ installment_row(installment_prototype) }}</template>
 
     <div class="flex justify-end gap-3 pt-6 border-t border-base-300">
-      <a href="{{ url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else url_for('procurement.products.index', organization_id=organization.id) }}"
+      {% set cancel_target = procurement if is_edit else renew_from %}
+      <a href="{{ url_for('procurement.payment.index', procurement_id=cancel_target.id, organization_id=organization.id) if cancel_target else url_for('procurement.products.index', organization_id=organization.id) }}"
          class="btn btn-ghost">
         <i class="ph ph-x"></i> ยกเลิก
       </a>
