@@ -130,6 +130,7 @@
     }
     let nextItemIndex = maxIndex(/^items-(\d+)-/) + 1;
     let nextInstallmentIndex = maxIndex(/-installments-(\d+)-/) + 1;
+    let nextListRowIndex = maxIndex(/-(?:reminder_offsets_days|custom_reminder_dates)-(\d+)$/) + 1;
 
     // เงินคำนวณเป็นสตางค์ (จำนวนเต็ม) เลี่ยง float · server เป็นตัวตัดสินสุดท้าย
     function parseSatang(value) {
@@ -272,6 +273,17 @@
           break;
         case 'generate-installments':
           generateInstallments(card);
+          break;
+        case 'add-list-row': {
+          const field = button.closest('.list-field');
+          const html = field.querySelector('.list-row-template').innerHTML.replaceAll('__ROW__', String(nextListRowIndex++));
+          const rows = field.querySelector('.list-rows');
+          rows.insertAdjacentHTML('beforeend', html);
+          rows.lastElementChild.querySelector('input').focus();
+          break;
+        }
+        case 'remove-list-row':
+          button.closest('.list-row').remove();
           break;
       }
     });

@@ -47,10 +47,11 @@ def index(procurement_id):
         ma_permissions.visible_procurements(organization).filter(id__in=[ma.id for ma in chain]).scalar("id")
     )
     member = ma_permissions.get_member(organization)
+    items = procurement.get_items()
     return render_template(
         "procurement/payment/index.html",
         procurement=procurement,
-        items=procurement.get_items(),
+        items=items,
         organization=organization,
         today=datetime.date.today(),
         can_edit=ma_permissions.can_edit_procurement(procurement, organization),
@@ -60,7 +61,19 @@ def index(procurement_id):
         renewed_to_ma=chain[position + 1] if position + 1 < len(chain) else None,
         visible_chain_ids=visible_chain_ids,
         my_division_id=member.division.id if member and member.division else None,
+        reminder_logs=_reminder_logs_by_item(procurement, organization),
+        manual_log_form=forms.procurement.ManualReminderLogForm(formdata=None),
+        offset_labels=dict(models.REMINDER_OFFSET_CHOICES),
     )
+
+
+def _reminder_logs_by_item(procurement, organization) -> dict:
+    """ประวัติการแจ้งเตือนของ MA นี้ แยกตามรายการย่อย ใหม่สุดก่อน {item_id: [log, ...]}"""
+    logs_by_item = {}
+    logs = models.ReminderLog.objects(organization=organization, procurement=procurement).order_by("-created_date")
+    for log in logs:
+        logs_by_item.setdefault(log._data["item"].id, []).append(log)
+    return logs_by_item
 
 
 def _get_installment_for_change(procurement_id, item_id, installment_id):

@@ -4,7 +4,8 @@ from flask_wtf import FlaskForm, file
 from wtforms import Form, ValidationError, fields, validators
 
 from kampan import models
-from kampan.models.procurement import check_item_sum
+from kampan.models.procurement import MAX_REMINDER_OFFSET_DAYS, check_item_sum
+from kampan.utils.date_utils import parse_thai_date
 
 from .money_validators import MoneyPlaces
 
@@ -43,6 +44,22 @@ class MemberMultipleField(fields.SelectMultipleField):
         allowed = {str(value) for value, _ in self.choices or []}
         if any(str(value) not in allowed for value in self.data or []):
             raise ValidationError("ผู้รับผิดชอบต้องเป็นสมาชิกของหน่วยงานนี้")
+
+
+class OffsetCheckboxField(fields.SelectMultipleField):
+    """checkbox ช่วงเตือนล่วงหน้า ค่าต้องอยู่ใน REMINDER_OFFSET_CHOICES"""
+
+    def pre_validate(self, form):
+        allowed = {value for value, _ in self.choices or []}
+        if any(value not in allowed for value in self.data or []):
+            raise ValidationError("ช่วงเตือนไม่ถูกต้อง")
+
+
+OFFSET_DAYS_MESSAGE = f"จำนวนวันเตือนต้องเป็นจำนวนเต็ม 1–{MAX_REMINDER_OFFSET_DAYS}"
+
+
+def _filled(field_list) -> list[str]:
+    return [(entry.data or "").strip() for entry in field_list.entries if (entry.data or "").strip()]
 
 
 class InstallmentForm(Form):
@@ -96,6 +113,11 @@ class ProcurementItemForm(Form):
     responsible_by = MemberMultipleField("ผู้รับผิดชอบ", choices=[], coerce=str)
     reminder_kind = fields.SelectField("ประเภทการเตือน", choices=models.REMINDER_KIND_CHOICES, default="ma")
     requires_activation = fields.BooleanField("ต้อง activate เมื่อครบกำหนด")
+    expiry_reminder_offsets = OffsetCheckboxField("เตือนหมดอายุล่วงหน้า", choices=models.REMINDER_OFFSET_CHOICES)
+    payment_reminder_offsets = OffsetCheckboxField("เตือนจ่ายงวดล่วงหน้า", choices=models.REMINDER_OFFSET_CHOICES)
+    # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก)
+    reminder_offsets_days = fields.FieldList(fields.StringField(), label="เตือนหมดอายุล่วงหน้า (วัน) กำหนดเอง")
+    custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
     installments = fields.FieldList(fields.FormField(InstallmentForm), min_entries=1)
 
     def validate_end_date(self, field):
@@ -105,6 +127,37 @@ class ProcurementItemForm(Form):
     def validate_installments(self, field):
         if not field.entries:
             raise ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
+
+    def validate_reminder_offsets_days(self, field):
+        days = []
+        for text in _filled(field):
+            if not text.isdigit() or not 1 <= int(text) <= MAX_REMINDER_OFFSET_DAYS:
+                raise ValidationError(f"{OFFSET_DAYS_MESSAGE} ({text})")
+            if int(text) in days:
+                raise ValidationError(f"จำนวนวันเตือนซ้ำ ({text})")
+            days.append(int(text))
+
+    def validate_custom_reminder_dates(self, field):
+        dates = []
+        for text in _filled(field):
+            try:
+                value = parse_thai_date(text)
+            except ValueError as error:
+                raise ValidationError(f"{error} ({text})")
+            if value in dates:
+                raise ValidationError(f"วันที่เตือนซ้ำ ({text})")
+            dates.append(value)
+
+    def get_reminder_offsets_days(self) -> list[int]:
+        """จำนวนวันที่กรอกเอง (เรียกหลัง validate ผ่านแล้ว)"""
+        return [int(text) for text in _filled(self.reminder_offsets_days)]
+
+    def get_custom_reminder_dates(self) -> list[datetime.datetime]:
+        """วันที่เตือนเจาะจงเป็น ค.ศ. เที่ยงคืน (เรียกหลัง validate ผ่านแล้ว)"""
+        return [
+            datetime.datetime.combine(parse_thai_date(text), datetime.time.min)
+            for text in _filled(self.custom_reminder_dates)
+        ]
 
 
 class ProcurementHeaderForm(FlaskForm):
@@ -161,6 +214,32 @@ class InstallmentPaymentForm(FlaskForm):
         validators=[validators.Optional(), validators.Length(max=128)],
     )
     paid_amount = money_field("ยอดที่จ่ายจริง (บาท)", required=False)
+
+
+class ManualReminderLogForm(FlaskForm):
+    """บันทึกการแจ้งเตือนที่ทำเอง เช่น โทรแจ้ง (#30)"""
+
+    contact_date = fields.StringField(
+        "วันที่ติดต่อ (พ.ศ.)",
+        validators=[validators.InputRequired(message="กรุณาระบุวันที่ติดต่อ")],
+    )
+    recipients = fields.StringField(
+        "ผู้ที่ติดต่อ",
+        validators=[validators.Optional(), validators.Length(max=255)],
+    )
+    note = fields.TextAreaField(
+        "บันทึก",
+        validators=[validators.InputRequired(message="กรุณากรอกบันทึก"), validators.Length(max=2000)],
+    )
+
+    def validate_contact_date(self, field):
+        try:
+            parse_thai_date(field.data)
+        except ValueError as error:
+            raise ValidationError(f"วันที่ติดต่อ: {error}")
+
+    def get_contact_date(self) -> datetime.datetime:
+        return datetime.datetime.combine(parse_thai_date(self.contact_date.data), datetime.time.min)
 
 
 class EditImageForm(FlaskForm):

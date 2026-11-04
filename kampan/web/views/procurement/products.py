@@ -21,6 +21,7 @@ from mongoengine.queryset.visitor import Q
 
 from kampan import models
 from kampan.models.procurement import attach_items, procurement_ids_of
+from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 
 from . import ma_permissions
@@ -158,8 +159,21 @@ def _blank_item_data(member) -> dict:
     return {
         "responsible_by": [str(member.id)] if member else [],
         "reminder_kind": "ma",
+        "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
+        "payment_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
         "installments": [{}],
     }
+
+
+def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
+    data = {
+        "expiry_reminder_offsets": list(item.expiry_reminder_offsets or []),
+        "payment_reminder_offsets": list(item.payment_reminder_offsets or []),
+        "reminder_offsets_days": [str(days) for days in item.reminder_offsets_days or []],
+    }
+    if include_custom_dates:
+        data["custom_reminder_dates"] = [format_thai_date_input(value) for value in item.custom_reminder_dates or []]
+    return data
 
 
 def _item_form_data(item) -> dict:
@@ -180,6 +194,7 @@ def _item_form_data(item) -> dict:
         "responsible_by": [str(member_id) for member_id in item.get_responsible_ids()],
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
+        **_reminder_settings_data(item),
         "installments": [
             {
                 "installment_id": str(installment._id),
@@ -197,7 +212,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
     """รายการย่อยของ MA ใหม่ที่ต่ออายุจาก ``item``
 
     เว้นว่างวันเริ่ม-สิ้นสุด และไม่ copy งวด / สถานะการจ่าย (เหลือ 1 งวดว่างให้กรอก)
-    เมื่อมีค่าตั้งการเตือนของรายการย่อย (#28) ให้ copy ที่นี่ด้วย แต่ไม่ copy วันที่เตือนเจาะจง (#29)
+    copy ค่าตั้งการเตือน (ช่วงเตือนและจำนวนวันที่กรอกเอง) แต่ไม่ copy วันที่เตือนเจาะจง เพราะเป็นวันของสัญญาเดิม
     """
     return {
         "name": item.name,
@@ -214,6 +229,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "responsible_by": [str(member_id) for member_id in item.get_responsible_ids() if member_id in active_member_ids],
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
+        **_reminder_settings_data(item, include_custom_dates=False),
         "installments": [{}],
     }
 
@@ -328,6 +344,10 @@ def _build_items(form, organization, existing_items, user):
         item.responsible_by = [members[member_id] for member_id in data.responsible_by.data or [] if member_id in members]
         item.reminder_kind = data.reminder_kind.data
         item.requires_activation = bool(data.requires_activation.data)
+        item.expiry_reminder_offsets = list(data.expiry_reminder_offsets.data or [])
+        item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or [])
+        item.reminder_offsets_days = data.get_reminder_offsets_days()
+        item.custom_reminder_dates = data.get_custom_reminder_dates()
         item.installments = _build_installments(data.installments, item.installments, user)
         item.last_updated_by = user
         items.append(item)

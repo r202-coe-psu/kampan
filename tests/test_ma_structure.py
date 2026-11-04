@@ -16,7 +16,7 @@ import pytest
 
 from kampan import models
 from kampan.controllers.procurement_status import ProcurementStatusUpdater
-from kampan.utils import ma_send_emails, upload_files
+from kampan.utils import upload_files
 from kampan.utils.money import MONEY_PLACES_ERROR
 
 
@@ -842,16 +842,3 @@ def test_procurement_status_moves_only_active_ma_near_expiry_to_pending(world, c
     stopped.reload()
     assert active.status == "pending"
     assert stopped.status == "disactive"
-
-
-def test_ma_email_context_collects_responsible_from_all_items(world, create_ma):
-    first = _model_item("50.00", responsible=[world.role_admin, world.role_responsible])
-    second = _model_item("50.00", responsible=[world.role_responsible])
-    second.details = "S/N: MAIL-1"
-    procurement = create_ma(world.org, user=world.admin, total_amount="100.00", items=[first, second])
-
-    context = ma_send_emails.get_procurement_email_context(procurement)
-
-    assert [person["email"] for person in context["responsible_by"]] == ["admin@test.com", "responsible@test.com"]
-    assert context["details"] == "S/N: MAIL-1"
-    assert context["end_date"] == "2026-12-31"

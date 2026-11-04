@@ -23,6 +23,19 @@
   <span class="badge {{ badge[0] }} badge-sm whitespace-nowrap">{{ badge[1] }}</span>
 {% endmacro %}
 
+{% set log_status_badges = {
+  "queued": "badge-info",
+  "sent": "badge-success",
+  "failed": "badge-error",
+  "manual": "badge-neutral",
+} %}
+
+{% macro thai_date_input(value) %}{{ "%02d/%02d/%d" | format(value.day, value.month, value.year + 543) }}{% endmacro %}
+
+{% macro offset_list(keys) %}
+  {%- for key in keys %}{{ offset_labels.get(key, key) }}{% if not loop.last %}, {% endif %}{% else %}ไม่เตือนล่วงหน้า{% endfor -%}
+{% endmacro %}
+
 {% macro thai_date(value) %}{{ value | format_thai_date if value else "-" }}{% endmacro %}
 
 {% macro ma_link(ma) %}
@@ -268,10 +281,93 @@
             </tbody>
           </table>
         </div>
+
+        <!-- ตั้งค่าการเตือน (#28, #29) -->
+        <div class="rounded-box border border-base-300 p-3 md:p-4 bg-base-200/40">
+          <h4 class="font-semibold flex items-center gap-2 mb-2"><i class="ph ph-bell-ringing text-secondary"></i>ตั้งค่าการเตือน</h4>
+          <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div><dt class="text-base-content/60">เตือนหมดอายุล่วงหน้า</dt><dd class="font-medium">{{ offset_list(item.expiry_reminder_offsets) }}{% for days in item.reminder_offsets_days %}, {{ days }} วัน{% endfor %} และในวันที่สิ้นสุด</dd></div>
+            <div><dt class="text-base-content/60">เตือนจ่ายงวดล่วงหน้า</dt><dd class="font-medium">{{ offset_list(item.payment_reminder_offsets) }} และในวันครบกำหนด</dd></div>
+            <div class="md:col-span-2"><dt class="text-base-content/60">วันที่เตือนเจาะจง</dt><dd class="font-medium">{% for value in item.custom_reminder_dates | sort %}{{ thai_date_input(value) }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</dd></div>
+          </dl>
+        </div>
+
+        <!-- ประวัติการแจ้งเตือน (#30) -->
+        {% set item_logs = reminder_logs.get(item.id, []) %}
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <h4 class="font-semibold flex items-center gap-2"><i class="ph ph-clock-counter-clockwise text-primary"></i>ประวัติการแจ้งเตือน</h4>
+            {% if can_edit %}
+              <button type="button" class="btn btn-sm btn-outline btn-primary" onclick="document.getElementById('log_modal_{{ item.id }}').showModal()">
+                <i class="ph ph-plus"></i> เพิ่มบันทึก
+              </button>
+            {% endif %}
+          </div>
+          {% if item_logs %}
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>ประเภท</th>
+                    <th>วันที่ถึงกำหนด / ติดต่อ</th>
+                    <th>ผู้รับ</th>
+                    <th>สถานะ</th>
+                    <th>หมายเหตุ</th>
+                    <th>ผู้บันทึก</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in item_logs %}
+                    <tr class="align-top{{ ' bg-error/10' if log.status == 'failed' else '' }}">
+                      <td class="whitespace-nowrap">{{ (log.sent_date or log.created_date) | format_thai_datetime_short_month }}</td>
+                      <td class="whitespace-nowrap">{{ log.get_kind_label() }}{% if log.installment_index %} งวดที่ {{ log.installment_index }}{% endif %}</td>
+                      <td class="whitespace-nowrap">{{ thai_date(log.trigger_date) }}</td>
+                      <td class="min-w-40 break-words">{% for recipient in log.recipients %}<div>{{ recipient }}</div>{% else %}-{% endfor %}</td>
+                      <td><span class="badge badge-sm whitespace-nowrap {{ log_status_badges.get(log.status, 'badge-ghost') }}">{{ log.get_status_label() }}</span></td>
+                      <td class="min-w-48 whitespace-pre-line break-words{{ ' text-error' if log.status == 'failed' else '' }}">{{ log.error if log.status == "failed" and log.error else (log.note or "-") }}</td>
+                      <td class="whitespace-nowrap">{{ log.created_by.get_name() if log.created_by else "ระบบ" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-sm text-base-content/60">ยังไม่มีประวัติการแจ้งเตือน</p>
+          {% endif %}
+        </div>
       </div>
     </section>
 
     {% if can_edit %}
+      <dialog id="log_modal_{{ item.id }}" class="modal">
+        <div class="modal-box">
+          <h3 class="text-lg font-bold mb-1">เพิ่มบันทึกการแจ้งเตือน</h3>
+          <p class="text-sm text-base-content/70 mb-3">{{ item.name }}</p>
+          <form method="post" action="{{ url_for('procurement.reminder_logs.create_manual', procurement_id=procurement.id, item_id=item.id, organization_id=organization.id) }}" class="space-y-2">
+            {{ manual_log_form.hidden_tag() }}
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{{ manual_log_form.contact_date.label.text }} <span class="text-error">*</span></legend>
+              <input type="text" name="contact_date" required class="input w-full" placeholder="28/05/2570" inputmode="numeric"
+                     value="{{ thai_date_input(today) }}" />
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{{ manual_log_form.recipients.label.text }} <span class="text-base-content/50">ไม่บังคับ</span></legend>
+              <input type="text" name="recipients" maxlength="255" class="input w-full" placeholder="เช่น ชื่อผู้ที่โทรหา" />
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{{ manual_log_form.note.label.text }} <span class="text-error">*</span></legend>
+              <textarea name="note" required maxlength="2000" rows="3" class="textarea w-full" placeholder="เช่น โทรแจ้งแล้ว"></textarea>
+            </fieldset>
+            <div class="modal-action">
+              <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ยกเลิก</button>
+              <button type="submit" class="btn btn-primary">บันทึก</button>
+            </div>
+          </form>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+      </dialog>
+
       {% for installment in item.installments %}
         {% set modal_key = item.id ~ "-" ~ installment._id %}
         {% set action_args = {"procurement_id": procurement.id, "item_id": item.id, "installment_id": installment._id, "organization_id": organization.id} %}

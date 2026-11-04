@@ -1,176 +1,174 @@
-from jinja2 import Template
+"""อีเมลแจ้งเตือน MA (#28): 1 reminder = อีเมล 1 ฉบับ ส่งให้ผู้รับผิดชอบรายการย่อยทีละคน
+
+รันใน worker (``send_reminder_job``) ผลการส่งเขียนลง ReminderLog เสมอ (sent / failed) ไม่ค้าง queued
+"""
+
+import datetime
 import logging
+
 from kampan import models
+from .date_utils import format_date_th
 from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
-email_subject_template = {
-    "90d": "[แจ้งเตือน] การต่ออายุซอฟต์แวร์/บริการ ครั้งที่ 1",
-    "30d": "[แจ้งเตือน] การต่ออายุซอฟต์แวร์/บริการ ครั้งที่ 2",
-    "expired": "[แจ้งเตือน] การต่ออายุซอฟต์แวร์/บริการ (เลยกำหนด)",
-    "default": "[แจ้งเตือน] การต่ออายุซอฟต์แวร์/บริการ",
+NO_RECIPIENT_ERROR = "ไม่มีผู้รับ"
+SMTP_LOGIN_ERROR = "เข้าสู่ระบบ SMTP ไม่สำเร็จ"
+
+# คำเรียกรายการย่อยตาม reminder_kind
+REMINDER_KIND_NOUNS = {
+    "ma": "MA",
+    "license": "License",
+    "rental": "สัญญาเช่า-จ้างเหมา",
 }
+OFFSET_LABELS = {
+    "6m": "6 เดือน",
+    "5m": "5 เดือน",
+    "4m": "4 เดือน",
+    "3m": "3 เดือน",
+    "2m": "2 เดือน",
+    "1m": "1 เดือน",
+    "15d": "15 วัน",
+    "7d": "7 วัน",
+}
+DUE_OFFSET = "due"
 
-# Email body template
-email_body_template = """
-    จากระบบงานพัสดุ (patsadu_diis@psu.ac.th) ถึงผู้เกี่ยวข้อง (ผู้รับผิดชอบ / หัวหน้าฝ่าย 
-/ รองผู้บริหารแต่ละฝ่าย / หัวหน้าเจ้าหน้าที่พัสดุ / เจ้าหน้าที่พัสดุ (3 คน))
+EMAIL_FOOTER = """
+ดูรายละเอียด: {ma_url}
 
-{% if notif_type == "90d" %}
-เรื่อง แจ้งเตือนการต่ออายุซอฟต์แวร์/บริการ ครั้งที่ 1
-เรียน ผู้เกี่ยวข้อง
-
-    {{ name }} ที่ท่านเป็นผู้รับผิดชอบ กำลังจะหมดอายุในอีก 3 เดือนข้างหน้า
-สามารถใช้งานได้ถึงวันที่ {{ end_date }} จึงขอให้ท่านวางแผนสำหรับการจัดซื้อจัดจ้างใหม่ 
-และส่งเอกสารมายังงานพัสดุโดยเร็ว
-
-{% elif notif_type == "30d" %}
-เรื่อง แจ้งเตือนการต่ออายุซอฟต์แวร์/บริการ ครั้งที่ 2
-เรียน ผู้เกี่ยวข้อง
-
-    {{ name }} ที่ท่านเป็นผู้รับผิดชอบ กำลังจะหมดอายุในอีก 1 เดือนข้างหน้า
-สามารถใช้งานได้ถึงวันที่ {{ end_date }} หากมีความประสงค์ที่จะดำเนินการจัดซื้อจัดจ้างใหม่
-โปรดส่งเอกสารมายังงานพัสดุโดยเร็ว
-
-{% elif notif_type == "expired" %}
-เรื่อง แจ้งเตือนการต่ออายุซอฟต์แวร์/บริการ (เลยกำหนด)
-เรียน ผู้เกี่ยวข้อง
-
-    {{ name }} ที่ท่านเป็นผู้รับผิดชอบ ได้หมดอายุเมื่อวันที่ {{ end_date }} 
-กรุณาดำเนินการจัดซื้อจัดจ้างใหม่โดยเร็ว เพื่อไม่ให้การใช้งานระบบหยุดชะงัก
-
-{% endif %}
-
-ระบบงานพัสดุ  
-Link : {{ ma_url }}
-
-ด้วยความเคารพ  
-งานพัสดุ  
-อีเมลติดต่อ
-patsadu_diis@psu.ac.th  
+ด้วยความเคารพ
+งานพัสดุ
+อีเมลติดต่อ patsadu_diis@psu.ac.th
 """
 
 
-CATEGORY_MAP = {
-    "software": "ซอฟต์แวร์",
-    "product": "ครุภัณฑ์",
-    "service": "จ้างเหมาบริการ",
-    "material": "วัสดุ",
-    "intangible": "สินทรัพย์ไม่มีตัวตน",
-}
+def _as_date(value):
+    return value.date() if isinstance(value, datetime.datetime) else value
 
 
-def get_procurement_email_context(procurement):
-    """ข้อมูลของอีเมลแจ้งเตือน MA ผู้รับคือผู้รับผิดชอบทุกรายการย่อย (ไม่ซ้ำ)
-
-    ระบบเตือนรายรายการย่อยจะมาแทนใน #28 ตอนนี้แค่ให้ทำงานกับโครงสร้างหัว → รายการย่อย
-    """
-    responsible_list = []
-    procurement = models.Procurement.objects(id=procurement.id).first()
-
-    if not procurement:
-        return
-
-    items = procurement.get_items()
-    due_dates = sorted(
-        installment.due_date.date()
-        for item in items
-        for installment in item.installments
-        if not installment.is_paid() and installment.due_date
-    )
-    for member in procurement.get_responsible_members():
-        organization = member.organization
-
-        # Get name and email from user or member directly
-        name = member.user.get_name() if member.user and member.user.get_name else member.display_name()
-        email = member.user.email if member.user else member.email
-
-        if email:
-            responsible_list.append(
-                {
-                    "name": name,
-                    "email": email,
-                    "organization": organization.id,
-                }
-            )
-
-    end_date = procurement.get_end_date()
-    text_format = {
-        "psu_disbursement_number": procurement.psu_disbursement_number or "",
-        "details": "\n".join(item.details for item in items if item.details),
-        "name": procurement.name,
-        "category": ", ".join(procurement.get_category_labels()),
-        "company": procurement.company,
-        "amount": procurement.total_amount,
-        "due_date": due_dates,
-        "end_date": end_date.strftime("%Y-%m-%d") if end_date else "",
-        "responsible_by": responsible_list,
-    }
-
-    return text_format
+def _offset_label(offset: str) -> str:
+    if offset in OFFSET_LABELS:
+        return OFFSET_LABELS[offset]
+    return f"{offset} วัน"
 
 
-def send_payment_notification_job(
-    procurement: models.Procurement,
-    notif_type,
-    days_left,
-    setting,
-):
-    logger.debug("use MA_send_mail")
+def _installment_due_date(log, item):
+    for installment in item.installments:
+        if installment._id == log.installment_id:
+            return _as_date(installment.due_date)
+    return _as_date(log.trigger_date)
 
-    text_format = get_procurement_email_context(procurement)
 
-    if not text_format or not text_format["responsible_by"]:
-        logger.debug("No responsible_by found")
-        return False
+def reminder_title(log) -> str:
+    """ประเภทการเตือนที่ใช้ใน subject เช่น "หมดอายุใน 3 เดือน", "ครบกำหนดจ่ายงวดที่ 2" """
+    if log.kind == "expiry":
+        return "ครบกำหนดหมดอายุ" if log.offset == DUE_OFFSET else f"หมดอายุใน {_offset_label(log.offset)}"
+    if log.kind == "payment":
+        installment = f"งวดที่ {log.installment_index}" if log.installment_index else "งวด"
+        if log.offset == DUE_OFFSET:
+            return f"ครบกำหนดจ่าย{installment}"
+        return f"จ่าย{installment} ใน {_offset_label(log.offset)}"
+    if log.kind == "activation":
+        return "ครบกำหนด activate"
+    return "เตือนตามวันที่กำหนด"
 
-    for person in text_format["responsible_by"]:
-        if not person["email"]:
-            logger.debug(f"attendant {person['name']} email is required")
-            return False
-    try:
-        psu_smtp = PSUSMTP(setting)
-        if not psu_smtp.login():
-            logger.debug("email cannot login")
-            return False
 
-        subject_template_str = email_subject_template.get(
-            notif_type, email_subject_template["default"]
+def _days_text(target: datetime.date, from_date: datetime.date) -> str:
+    days = (target - from_date).days
+    if days > 0:
+        return f"(อีก {days} วัน)"
+    if days == 0:
+        return "(วันนี้)"
+    return f"(เลยมาแล้ว {-days} วัน)"
+
+
+def _reminder_message(log, item, noun: str) -> str:
+    trigger = _as_date(log.trigger_date)
+    end_date = _as_date(item.end_date)
+    end_text = f"{format_date_th(end_date)} {_days_text(end_date, trigger)}"
+    ending = "สิ้นสุดสัญญา" if item.reminder_kind == "rental" else "หมดอายุ"
+
+    if log.kind == "expiry":
+        return (
+            f"{noun} รายการนี้จะ{ending}ในวันที่ {end_text}\n"
+            "กรุณาวางแผนการจัดซื้อจัดจ้างใหม่หรือต่ออายุ และส่งเอกสารมายังงานพัสดุโดยเร็ว"
         )
+    if log.kind == "payment":
+        due_date = _installment_due_date(log, item)
+        installment = f"งวดที่ {log.installment_index}" if log.installment_index else "งวด"
+        return (
+            f"{installment} ครบกำหนดจ่ายวันที่ {format_date_th(due_date)} {_days_text(due_date, trigger)}\n"
+            "กรุณาดำเนินการเบิกจ่าย และบันทึกการจ่ายในระบบเมื่อจ่ายแล้ว"
+        )
+    if log.kind == "activation":
+        return f"{noun} รายการนี้ครบกำหนดในวันที่ {end_text}\nกรุณา activate ให้เรียบร้อย"
+    return f"แจ้งเตือนตามวันที่ที่ตั้งไว้ ({format_date_th(trigger)})\n{noun} รายการนี้{ending}วันที่ {end_text}"
 
-        template_subject = Template(subject_template_str)
-        template_body = Template(email_body_template)
 
-        if text_format and text_format["responsible_by"]:
-            for person in text_format["responsible_by"]:
-                host_url = get_host_url(setting)
-                ma_url = f"{host_url}/procurement/payment/{procurement.id}?organization_id={person['organization']}"
+def build_reminder_email(log, settings) -> tuple[str, str]:
+    """(subject, body) ของ reminder นี้"""
+    item = log.item
+    procurement = log.procurement
+    noun = REMINDER_KIND_NOUNS.get(item.reminder_kind, "MA")
+    psu_number = procurement.psu_disbursement_number or "-"
+    subject = f"[แจ้งเตือน] {reminder_title(log)} {item.name} (ม.อ.เบิกจ่าย {psu_number})"
 
-                context = {
-                    **text_format,
-                    "responsible_name": person["name"],
-                    "notif_type": notif_type,
-                    "days_left": days_left.get("days_left", ""),
-                    "ma_url": ma_url,
-                }
+    ma_url = (
+        f"{get_host_url(settings)}/procurement/payment/{procurement.id}"
+        f"?organization_id={log._data['organization'].id}#item-{item.id}"
+    )
+    body = (
+        "เรียน ผู้รับผิดชอบ\n\n"
+        f"{noun}: {item.name}\n"
+        f"สัญญา MA: {procurement.name} (เลขที่ ม.อ.เบิกจ่าย {psu_number})\n"
+        f"บริษัท: {procurement.company or '-'}\n"
+        f"ช่วงสัญญา: {format_date_th(_as_date(item.start_date))} – {format_date_th(_as_date(item.end_date))}\n\n"
+        f"{_reminder_message(log, item, noun)}\n" + EMAIL_FOOTER.format(ma_url=ma_url)
+    )
+    return subject, body
 
-                email_subject = template_subject.render(context)
-                email_body = template_body.render(context)
 
-                logger.debug(f"send email to {person['email']}")
-                psu_smtp.send_email(person["email"], email_subject, email_body)
+def _deliver(log, settings) -> tuple[str, str | None]:
+    """ส่งอีเมลของ log นี้ คืน (status, error)"""
+    recipients = list(log.recipients or [])
+    if not recipients:
+        return "failed", NO_RECIPIENT_ERROR
 
-                # Debug render result
-                # print("\n------------------ RENDERED EMAIL ------------------")
-                # print(f"To: {person['email']}")
-                # print(f"Subject: {email_subject}")
-                # print("Body:")
-                # print(email_body)
-                # print("----------------------------------------------------\n")
+    subject, body = build_reminder_email(log, settings)
+    psu_smtp = PSUSMTP(settings)
+    try:
+        if not psu_smtp.login():
+            return "failed", SMTP_LOGIN_ERROR
+        failed = [receiver for receiver in recipients if not psu_smtp.send_email(receiver, subject, body)]
+    finally:
+        try:
+            psu_smtp.quit()
+        except Exception:
+            logger.warning("SMTP quit failed for reminder %s", log.id)
 
-        psu_smtp.quit()
-        return True
-    except Exception as e:
-        logger.error(f"send_payment_notification_job error: {e}")
+    if failed:
+        return "failed", "ส่งไม่ถึง: " + ", ".join(failed)
+    return "sent", None
+
+
+def send_reminder_job(log_id: str, settings) -> bool:
+    """งานใน worker: ส่งอีเมลของ ReminderLog ที่ยัง queued แล้วเขียนสถานะสุดท้ายใน finally (failed ไม่ retry เอง)"""
+    log = models.ReminderLog.objects(id=log_id, status="queued").first()
+    if not log:
+        logger.info("reminder log %s is not queued, skip", log_id)
         return False
+
+    status, error = "failed", None
+    try:
+        status, error = _deliver(log, settings)
+    except Exception as exception:
+        logger.exception("send_reminder_job %s failed", log_id)
+        status, error = "failed", f"เกิดข้อผิดพลาด: {exception}"
+    finally:
+        updates = {"set__status": status}
+        if error:
+            updates["set__error"] = error
+        if status == "sent":
+            updates["set__sent_date"] = datetime.datetime.now()
+        models.ReminderLog.objects(id=log.id, status="queued").update_one(**updates)
+    return status == "sent"

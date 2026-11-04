@@ -36,6 +36,52 @@
   </fieldset>
 {% endmacro %}
 
+{% macro offset_checkboxes(field, hint) %}
+  <fieldset class="fieldset w-full">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    <p class="text-xs text-base-content/60">{{ hint }}</p>
+    <div class="flex flex-wrap gap-x-4 gap-y-1">
+      {% for value, label in field.choices %}
+        <label class="flex items-center gap-2 py-1 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ field.name }}" value="{{ value }}"
+                 {% if value in (field.data or []) %}checked{% endif %} />
+          <span class="text-sm">{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro list_row(name, value="", placeholder="", inputmode="text", has_error=False) %}
+  <div class="list-row flex items-center gap-1">
+    <input type="text" name="{{ name }}" value="{{ value or '' }}" placeholder="{{ placeholder }}" inputmode="{{ inputmode }}"
+           class="input input-sm w-36{{ ' input-error' if has_error else '' }}" aria-label="{{ placeholder }}" />
+    <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-list-row" title="ลบ">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+{% endmacro %}
+
+{# รายการช่องข้อความที่เพิ่ม/ลบแถวได้ (FieldList ของ StringField) แถวว่างไม่นับ #}
+{% macro list_rows(field, placeholder, hint, add_label, inputmode="text") %}
+  {% set has_error = field.errors | select("string") | list | length > 0 %}
+  <fieldset class="fieldset w-full list-field">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    <p class="text-xs text-base-content/60">{{ hint }}</p>
+    <div class="list-rows flex flex-wrap gap-2">
+      {% for entry in field %}
+        {{ list_row(entry.name, entry.data, placeholder, inputmode, has_error) }}
+      {% endfor %}
+    </div>
+    <template class="list-row-template">{{ list_row(field.name ~ "-__ROW__", "", placeholder, inputmode) }}</template>
+    <button type="button" class="btn btn-ghost btn-sm text-primary justify-start w-fit" data-action="add-list-row">
+      <i class="ph ph-plus-circle"></i> {{ add_label }}
+    </button>
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
 {% macro installment_row(f) %}
   <tr class="installment-row">
     <td class="installment-number font-semibold text-base-content/70 align-top pt-4"></td>
@@ -103,6 +149,19 @@
             <span class="text-sm text-base-content">{{ f.requires_activation.label.text }}</span>
           </label>
         </fieldset>
+      </div>
+
+      <div class="rounded-box border border-base-300 p-3 md:p-4 bg-base-200/40">
+        <h4 class="font-semibold text-base-content flex items-center gap-2">
+          <i class="ph ph-bell-ringing text-secondary"></i> ตั้งค่าการเตือน
+        </h4>
+        <p class="text-xs text-base-content/60">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันครบกำหนด</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
+          {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
+          {{ offset_checkboxes(f.payment_reminder_offsets, "ก่อนวันครบกำหนดของงวดที่ยังไม่จ่าย") }}
+          {{ list_rows(f.reminder_offsets_days, "เช่น 45", "จำนวนวันก่อนวันที่สิ้นสุด (1–730 วัน) เพิ่มจากช่วงที่ติ๊ก", "เพิ่มจำนวนวัน", inputmode="numeric") }}
+          {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
+        </div>
       </div>
 
       <fieldset class="fieldset w-full">

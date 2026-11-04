@@ -32,6 +32,26 @@ REMINDER_KIND_CHOICES = [
     ("rental", "เช่า-จ้างเหมา"),
 ]
 
+# ช่วงเตือนล่วงหน้าที่เลือกได้ (#28) ใช้ทั้งเตือนหมดอายุ (ก่อน end_date) และเตือนจ่ายงวด (ก่อน due_date)
+REMINDER_OFFSET_CHOICES = [
+    ("6m", "6 เดือน"),
+    ("5m", "5 เดือน"),
+    ("4m", "4 เดือน"),
+    ("3m", "3 เดือน"),
+    ("2m", "2 เดือน"),
+    ("1m", "1 เดือน"),
+    ("15d", "15 วัน"),
+    ("7d", "7 วัน"),
+]
+DEFAULT_REMINDER_OFFSETS = ["3m", "2m", "1m", "15d", "7d"]
+# จำนวนวันเตือนที่กรอกเอง (#29)
+MAX_REMINDER_OFFSET_DAYS = 730
+
+
+def default_reminder_offsets() -> list[str]:
+    return list(DEFAULT_REMINDER_OFFSETS)
+
+
 # ผังบัญชี ใช้ร่วมกันระหว่างรายการย่อยของ MA และขั้นที่ 3 ของขอซื้อขอจ้าง
 ACCOUNT_CODE_CHOICES = [
     ("12030201 อาคารและสิ่งปลูกสร้าง", "12030201 อาคารและสิ่งปลูกสร้าง"),
@@ -245,6 +265,20 @@ class ProcurementItem(me.Document):
 
     reminder_kind = me.StringField(choices=REMINDER_KIND_CHOICES, default="ma", required=True)
     requires_activation = me.BooleanField(default=False)
+
+    # ตั้งค่าการเตือน (#28, #29) ดู kampan/utils/reminders.py
+    expiry_reminder_offsets = me.ListField(
+        me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
+    )
+    payment_reminder_offsets = me.ListField(
+        me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
+    )
+    # จำนวนวันก่อน end_date ที่กรอกเอง (เตือนหมดอายุ)
+    reminder_offsets_days = me.ListField(
+        me.IntField(min_value=1, max_value=MAX_REMINDER_OFFSET_DAYS), default=list
+    )
+    # วันที่เตือนเจาะจง (เก็บ ค.ศ. เที่ยงคืน กรอกเป็น พ.ศ. ในฟอร์ม)
+    custom_reminder_dates = me.ListField(me.DateTimeField(), default=list)
 
     installments = me.EmbeddedDocumentListField(Installment)
 
