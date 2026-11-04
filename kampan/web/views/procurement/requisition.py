@@ -20,7 +20,7 @@ from flask_mongoengine import Pagination
 from PyPDF2 import PdfMerger
 
 from kampan import models, utils
-from kampan.web import forms
+from kampan.web import feature_flags, forms
 
 from ... import redis_rq
 
@@ -217,6 +217,7 @@ def non_renewal():
 
 
 @module.route("/<requisition_procurement_id>/renewal-requested", methods=["POST"])
+@feature_flags.requisition_required
 @login_required
 def renewal_requested_action(requisition_procurement_id):
     organization = g.organization
@@ -273,6 +274,7 @@ def renewal_requested_action(requisition_procurement_id):
 
 
 @module.route("/renewal_requested")
+@feature_flags.requisition_required
 @login_required
 def renewal_requested():
     organization = g.organization
@@ -428,6 +430,7 @@ def renewal_requested():
 
 
 @module.route("/<requisition_procurement_id>/document")
+@feature_flags.requisition_required
 @login_required
 def document(requisition_procurement_id):
     organization = g.organization
@@ -458,6 +461,7 @@ def document(requisition_procurement_id):
 
 @module.route("/create", methods=["GET", "POST"], defaults=dict(requisition_procurement_id=None))
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
+@feature_flags.requisition_required
 @login_required
 def create_or_edit(requisition_procurement_id):
     organization = g.organization
@@ -603,6 +607,7 @@ def create_or_edit(requisition_procurement_id):
 
 # รวมไฟล์ ToR และ QT เป็น PDF เดียวแล้วดาวน์โหลดทั้งหมด
 @module.route("/<requisition_procurement_id>/download/all")
+@feature_flags.requisition_required
 @login_required
 def download(requisition_procurement_id):
     organization = g.organization
@@ -654,6 +659,7 @@ def download(requisition_procurement_id):
 
 
 @module.route("/<requisition_id>/action", methods=["POST"])
+@feature_flags.requisition_required
 @login_required
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")

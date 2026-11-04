@@ -10,7 +10,7 @@ from flask import (
 from flask_login import login_required, current_user
 import datetime
 
-from ... import models, forms, acl, redis_rq
+from ... import acl, feature_flags, forms, models, redis_rq
 from .... import utils
 from ....utils.upload_files import (
     MAS_COLUMNS,
@@ -27,6 +27,8 @@ import pandas as pd
 from io import BytesIO
 
 module = Blueprint("upload_files", __name__, url_prefix="/upload_files")
+
+MAS_UPLOAD_DISABLED_MESSAGE = "ปิดการนำเข้าไฟล์แหล่งเงิน (MAS) แล้ว"
 
 
 @module.route("/")
@@ -61,6 +63,11 @@ def upload_or_edit(document_id):
         document = models.Document.objects(id=document_id, organization=organization).first()
 
     form = forms.upload_files.FileForm(obj=document)
+    mas_enabled = feature_flags.is_requisition_enabled()
+    if not mas_enabled:
+        form.category.choices = [
+            choice for choice in form.category.choices if choice[0] != "mas"
+        ]
 
     if not form.validate_on_submit():
         return render_template(
@@ -98,9 +105,10 @@ def upload_or_edit(document_id):
             if df is not None:
                 cols = set(df.columns)
                 cols_lower = set(col.lower() for col in df.columns)
-                if set(MAS_COLUMN_MAP.values()).issubset(cols) or set(
-                    MAS_COLUMNS
-                ).issubset(cols_lower):
+                if mas_enabled and (
+                    set(MAS_COLUMN_MAP.values()).issubset(cols)
+                    or set(MAS_COLUMNS).issubset(cols_lower)
+                ):
                     category = "mas"
                 elif set(MA_COLUMN_MAP.values()).issubset(cols) or set(
                     MA_COLUMNS
@@ -144,9 +152,10 @@ def upload_or_edit(document_id):
             if df is not None:
                 cols = set(df.columns)
                 cols_lower = set(col.lower() for col in df.columns)
-                if set(MAS_COLUMN_MAP.values()).issubset(cols) or set(
-                    MAS_COLUMNS
-                ).issubset(cols_lower):
+                if mas_enabled and (
+                    set(MAS_COLUMN_MAP.values()).issubset(cols)
+                    or set(MAS_COLUMNS).issubset(cols_lower)
+                ):
                     document.category = "mas"
                 elif set(MA_COLUMN_MAP.values()).issubset(cols) or set(
                     MA_COLUMNS
@@ -182,6 +191,7 @@ def upload_or_edit(document_id):
 
 
 @module.route("/template/mas")
+@feature_flags.requisition_required
 @login_required
 @acl.organization_roles_required("admin")
 def download_mas_template():
@@ -258,7 +268,9 @@ def processing(document_id):
     category = document.category or "unknown"
 
     errors = []
-    if category == "mas":
+    if category == "mas" and not feature_flags.is_requisition_enabled():
+        errors = [MAS_UPLOAD_DISABLED_MESSAGE]
+    elif category == "mas":
         errors = validate_mas_file(document)
     elif category == "ma":
         errors = validate_ma_file(document)

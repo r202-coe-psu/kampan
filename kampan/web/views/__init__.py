@@ -6,6 +6,7 @@ import pathlib
 from flask import request, url_for
 
 from kampan.utils import template_filters
+from kampan.web import feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ MODULE_HOME_ENDPOINTS = {
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
     "organizations": "organizations.overview.index",
 }
+# หน้าแรกของ procurement เมื่อปิดระบบขอซื้อขอจ้าง (เหลือแต่ระบบ MA)
+PROCUREMENT_MA_HOME_ENDPOINT = "procurement.products.index"
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
 NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
@@ -37,6 +40,9 @@ def switch_organization_next_url(organization):
 
     module_name = request.endpoint.split(".")[0]
     endpoint = MODULE_HOME_ENDPOINTS.get(module_name)
+
+    if module_name == "procurement" and not feature_flags.is_requisition_enabled():
+        endpoint = PROCUREMENT_MA_HOME_ENDPOINT
 
     if module_name == "vehicle_lending" and "motorcycle" in request.endpoint:
         endpoint = MOTORCYCLE_HOME_ENDPOINT
@@ -108,6 +114,7 @@ def register_blueprint(app):
     app.add_template_filter(template_filters.format_thai_date)
     app.add_template_filter(add_date_url)
     app.add_template_global(switch_organization_next_url)
+    app.add_template_global(feature_flags.is_requisition_enabled)
     parent = pathlib.Path(__file__).parent
     blueprints = get_subblueprints(parent)
 

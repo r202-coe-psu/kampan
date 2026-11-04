@@ -44,6 +44,7 @@
                   <span class="truncate">อัพโหลดไฟล์</span>
                 </a>
               </li>
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -78,6 +79,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -112,6 +114,7 @@
                   </ul>
                 </details>
               </li>
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -130,6 +133,7 @@
                 </details>
 
               </li>
+              {% endif %}
             </ul>
           </details>
           <ul class="ml-1 mt-4 w-full">
@@ -157,6 +161,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับบุคคลากร</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -183,6 +188,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -245,6 +251,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับหัวหน้าฝ่าย</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -281,6 +288,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -342,6 +350,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับทีมบริหาร</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -378,6 +387,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">

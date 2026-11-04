@@ -161,11 +161,13 @@
       {% if item.status == 'pending' and can_change_renewal(item) %}
       <div class="bg-gray-50 px-4 py-3 border-t">
         <div class="flex gap-2">
+          {% if is_requisition_enabled() %}
           <button onclick="document.getElementById('renew_modal_{{ item.id }}').showModal()"
             class="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
             <i class="ph ph-check"></i>
             ต่ออายุ
           </button>
+          {% endif %}
           <button onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
             class="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md text-sm">
             <i class="ph ph-x"></i>
@@ -176,6 +178,7 @@
       {% endif %}
     </div>
 
+    {% if is_requisition_enabled() %}
     <!-- Renew Confirmation Modal -->
     <dialog id="renew_modal_{{ item.id }}" class="modal">
       <div class="modal-box">
@@ -215,6 +218,7 @@
         <button>close</button>
       </form>
     </dialog>
+    {% endif %}
 
     <!-- Don't Renew Confirmation Modal -->
     <dialog id="delete_modal_{{ item.id }}" class="modal">

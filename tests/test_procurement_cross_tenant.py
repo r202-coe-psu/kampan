@@ -99,6 +99,12 @@ def _make_timeline_item(organization, timeline, requisition, code):
     return item
 
 
+@pytest.fixture(autouse=True)
+def requisition_enabled(app, monkeypatch):
+    """ขอซื้อขอจ้างปิดอยู่โดยค่าตั้งต้น (#18) เทสต์ในไฟล์นี้ทดสอบ flow ตอนเปิดใช้"""
+    monkeypatch.setitem(app.config, "PROCUREMENT_REQUISITION_ENABLED", True)
+
+
 @pytest.fixture
 def world(app, create_org, create_user, assign_user_to_org):
     """Two organizations, each with an admin, plus one cross-org member."""

@@ -11,13 +11,14 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import acl, forms, redis_rq
+from kampan.web import acl, feature_flags, forms, redis_rq
 from kampan import models, utils
 
 import mongoengine as me
 import datetime
 
 module = Blueprint("mas", __name__, url_prefix="/mas")
+module.before_request(feature_flags.abort_if_requisition_disabled)
 
 
 @module.route("/")

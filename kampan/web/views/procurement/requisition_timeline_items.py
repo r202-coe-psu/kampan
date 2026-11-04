@@ -18,7 +18,7 @@ from bson.errors import InvalidId
 from PyPDF2 import PdfMerger
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms, acl
+from kampan.web import acl, feature_flags, forms
 from kampan import models, utils
 from kampan.utils.hash import hash_mongo_metadata
 from ... import redis_rq
@@ -30,6 +30,7 @@ import hashlib
 module = Blueprint(
     "requisition_timeline_items", __name__, url_prefix="/requisition_timeline_items"
 )
+module.before_request(feature_flags.abort_if_requisition_disabled)
 
 
 @module.route("/", methods=["GET"])
