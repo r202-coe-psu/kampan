@@ -1,325 +1,279 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row %}
 
-{% block title %}ระบบขอซื้อขอจ้าง{% endblock %}
-{% block dashboard_title %}ครุภัณฑ์{% endblock %}
+{% block title %}{{ "แก้ไข MA" if procurement and procurement.pk else "เพิ่ม MA" }}{% endblock %}
+{% block dashboard_title %}{{ "แก้ไข MA" if procurement and procurement.pk else "เพิ่ม MA" }}{% endblock %}
 
 {% block content %}
+{% set is_edit = procurement and procurement.pk %}
+<div class="w-full bg-base-100 shadow-lg rounded-xl p-4 md:p-8">
+  <div class="flex items-center mb-6">
+    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+      <i class="ph {{ 'ph-pencil-simple' if is_edit else 'ph-plus' }} text-2xl text-primary"></i>
+    </div>
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-base-content">
+        {{ "แก้ไข MA" if is_edit else "เพิ่ม MA ใหม่" }}
+      </h1>
+      <p class="text-base-content/60 text-sm">กรอกหัวสัญญา แล้วเพิ่มรายการย่อยและงวดของแต่ละรายการ</p>
+    </div>
+  </div>
 
-<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-8">
-    <div class="flex items-center mb-8">
-        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-            <i class="ph ph-plus text-2xl text-primary"></i>
-        </div>
+  <form method="POST" action="" enctype="multipart/form-data" class="space-y-6" id="ma_form" novalidate>
+    {{ form.hidden_tag() }}
+
+    {% if form_errors %}
+      <div role="alert" class="alert alert-error">
+        <i class="ph ph-warning-circle text-xl"></i>
         <div>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-800">เพิ่มรายการขอซื้อขอจ้างใหม่</h1>
-            <p class="text-gray-500 text-sm">กรอกข้อมูลรายการที่ต้องการขอซื้อขอจ้าง</p>
+          {% for error in form_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
+      </div>
+    {% endif %}
+
+    <section class="rounded-box bg-base-200/60 p-4 md:p-6">
+      <h2 class="text-lg font-semibold text-base-content mb-2 flex items-center gap-2">
+        <i class="ph ph-file-text text-primary"></i> หัวสัญญา
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4">
+        {{ input_field(form.psu_disbursement_number, required=True) }}
+        {{ input_field(form.name, required=True) }}
+        {{ input_field(form.company, required=True) }}
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.total_amount.label.text }} <span class="text-error">*</span></legend>
+          {{ form.total_amount(class_="input w-full" ~ (" input-error" if form.total_amount.errors else ""), id="total_amount", step="0.01", min="0", inputmode="decimal") }}
+          {{ field_errors(form.total_amount) }}
+        </fieldset>
+        <fieldset class="fieldset w-full md:col-span-2">
+          <legend class="fieldset-legend">{{ form.image.label.text }} (PNG, JPG)</legend>
+          {{ form.image(class_="file-input w-full", accept="image/png,image/jpeg") }}
+          {{ field_errors(form.image) }}
+          {% if is_edit and procurement.image %}
+            <p class="text-xs text-base-content/60 mt-1">มีรูปภาพอยู่แล้ว เลือกไฟล์ใหม่เมื่อต้องการเปลี่ยน</p>
+          {% endif %}
+        </fieldset>
+      </div>
+    </section>
+
+    <div id="sum_bar" role="status" aria-live="polite" class="alert sticky top-2 z-10 shadow-sm">
+      <i class="ph ph-scales text-xl"></i>
+      <div class="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 text-sm">
+        <span>ยอด MA: <b id="sum_total">-</b> บาท</span>
+        <span>ผลรวมรายการย่อย: <b id="sum_items">-</b> บาท</span>
+        <span id="sum_diff" class="font-semibold"></span>
+      </div>
     </div>
 
-    <form method="POST" action="" enctype="multipart/form-data" class="space-y-8" id="product_form">
-        {{ form.hidden_tag() }}
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-base-content flex items-center gap-2">
+        <i class="ph ph-stack text-primary"></i> รายการย่อย
+      </h2>
+      <div id="items_container" class="space-y-4">
+        {% for entry in form.items %}
+          {{ item_card(entry.form) }}
+        {% endfor %}
+      </div>
+      <p id="items_error" class="text-error text-sm hidden"></p>
+      <button type="button" class="btn btn-outline btn-primary" data-action="add-item">
+        <i class="ph ph-plus-circle"></i> เพิ่มรายการย่อย
+      </button>
+    </section>
 
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
-                ข้อมูลพื้นฐาน
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div>
-                    {{ renderer.base_render(form.name) }}
-                </div>
-                <div>
-                    {{ renderer.render_select_field(form.category) }}
-                </div>
-                <div>
-                    {{ renderer.base_render(form.company) }}
-                </div>
+    <template id="item_template">{{ item_card(item_prototype) }}</template>
+    <template id="installment_template">{{ installment_row(installment_prototype) }}</template>
 
-                <div class="lg:col-span-3">
-                    <div class="form-control w-full">
-                        <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
-                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">เลขที่สินค้า (S/N) & รหัสครุภัณฑ์ (ระบุได้หลายรายการ)</span>
-                            <span id="paired_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
-                        </label>
-                        
-                        <div id="paired_container" class="space-y-2">
-                            {% set max_len = [form.asset_codes|length, form.product_numbers|length]|max %}
-                            {% if max_len == 0 %}
-                                {% set max_len = 1 %}
-                            {% endif %}
-                            {% for i in range(max_len) %}
-                            {% set sn_field = form.product_numbers[i] if i < form.product_numbers|length else None %}
-                            {% set ac_field = form.asset_codes[i] if i < form.asset_codes|length else None %}
-                            <div class="flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row" id="paired_row_{{ i }}">
-                                {% if sn_field %}
-                                    {{ sn_field(class="input input-bordered w-full text-sm", placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)") }}
-                                {% else %}
-                                    <input type="text" name="product_numbers-{{ i }}" value="" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)" class="input input-bordered w-full text-sm">
-                                {% endif %}
-                                
-                                {% if ac_field %}
-                                    {{ ac_field(class="input input-bordered w-full text-sm", placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz") }}
-                                {% else %}
-                                    <input type="text" name="asset_codes-{{ i }}" value="" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz" class="input input-bordered w-full text-sm">
-                                {% endif %}
-                                
-                                <button type="button" onclick="removePairedInput({{ i }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                                    <i class="ph ph-trash text-lg"></i>
-                                </button>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if form.product_numbers.errors or form.asset_codes.errors %}
-                        <p class="text-error text-xs mt-1.5 font-medium">มีข้อผิดพลาดในข้อมูล S/N หรือรหัสครุภัณฑ์</p>
-                        {% endif %}
-
-                        <div class="mt-2 flex justify-start">
-                            <button type="button" onclick="addPairedInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
-                                <i class="ph ph-plus-circle"></i>
-                                เพิ่มรายการ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                    let pairedIndex = {{ [form.asset_codes|length, form.product_numbers|length, 1]|max }};
-
-                    document.addEventListener('DOMContentLoaded', function () {
-                        updatePairedState();
-                    });
-
-                    function addPairedInput(snValue = "", acValue = "") {
-                        const container = document.getElementById('paired_container');
-                        const index = pairedIndex++;
-
-                        const row = document.createElement('div');
-                        row.className = 'flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row';
-                        row.id = `paired_row_${index}`;
-
-                        row.innerHTML = `
-                            <input type="text" name="product_numbers-${index}" value="${snValue}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
-                                class="input input-bordered w-full text-sm">
-                            <input type="text" name="asset_codes-${index}" value="${acValue}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
-                                class="input input-bordered w-full text-sm">
-                            <button type="button" onclick="removePairedInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
-                        `;
-
-                        container.appendChild(row);
-                        updatePairedState();
-                    }
-
-                    function removePairedInput(index) {
-                        const container = document.getElementById('paired_container');
-                        if (container.querySelectorAll('.paired-row').length <= 1) {
-                            alert('ต้องมีรายการอย่างน้อย 1 รายการ');
-                            return;
-                        }
-                        const row = document.getElementById(`paired_row_${index}`);
-                        if (row) {
-                            row.remove();
-                        }
-                        updatePairedState();
-                    }
-
-                    function updatePairedState() {
-                        const rows = document.querySelectorAll('.paired-row');
-                        const badge = document.getElementById('paired_count_badge');
-                        if (badge) {
-                            badge.innerText = `จำนวน ${rows.length} รายการ`;
-                        }
-                    }
-                </script>
-            </div>
-        </div>
-
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-calendar-check text-xl text-green-600 mr-2"></i>
-                ข้อมูลระยะเวลาและการเงิน
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                    {{ renderer.date_field(form.start_date) }}
-                </div>
-                <div>
-                    {{ renderer.date_field(form.end_date) }}
-                </div>
-                <div>
-                    {{ renderer.render_number_field(form.amount, min=0, id="amount") }}
-                </div>
-                <div>
-                    {{ renderer.render_number_field(form.period, min=1, id="period") }}
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-users text-xl text-purple-600 mr-2"></i>
-                ผู้รับผิดชอบ
-            </h2>
-            <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label }}</label>
-            
-            <div class="dropdown w-full">
-                <div tabindex="0" role="button" class="select select-bordered w-full h-auto min-h-12 flex flex-wrap gap-1.5 p-2 items-center bg-base-100" id="selected_users_trigger">
-                    <span class="text-base-content/50" id="no_users_placeholder">เลือกผู้รับผิดชอบ...</span>
-                </div>
-                <div tabindex="0" class="dropdown-content z-[2] menu p-4 shadow-lg bg-base-100 border border-base-200 rounded-box w-full mt-1">
-                    <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                        class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
-                    <div id="responsible_by_list" class="max-h-48 overflow-y-auto border border-base-200 rounded p-2 bg-base-50 flex flex-col gap-1">
-                        {% for user in form.responsible_by.queryset %}
-                        {% set is_checked = form.responsible_by.data and (user.id|string in form.responsible_by.data or user in form.responsible_by.data) %}
-                        <label class="flex items-center space-x-2 py-1.5 px-2 rounded hover:bg-primary/10 cursor-pointer">
-                            <input type="checkbox" name="responsible_by" value="{{ user.id }}" class="checkbox checkbox-primary checkbox-sm user-checkbox" data-name="{{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}" {% if is_checked %}checked{% endif %} onchange="updateSelectedUsersBadge()">
-                            <span class="text-sm font-medium text-base-content">
-                                {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
-                            </span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% if form.responsible_by.errors %}
-            <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
-            {% endif %}
-        </div>
-
-        <!-- Image Upload Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-image text-xl text-orange-600 mr-2"></i>
-                รูปภาพประกอบ
-            </h2>
-            <div class="space-y-3">
-                <label class="block text-gray-700 font-medium mb-2" for="image">
-                    อัปโหลดรูปภาพ
-                </label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="image"
-                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-500">
-                                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
-                            </p>
-                            <p class="text-xs text-gray-400 mt-1">PNG, JPG หรือ JPEG (ขนาดไม่เกิน 5MB)</p>
-                        </div>
-                        {{ form.image(class_="hidden", id="image") }}
-                    </label>
-                </div>
-                {% if form.image.errors %}
-                <p class="text-red-500 text-xs mt-2 flex items-center">
-                    {{ form.image.errors[0] }}
-                </p>
-                {% endif %}
-                <div id="image_preview" class="hidden mt-4">
-                    <img id="preview_img" src="" alt="ตัวอย่างรูปภาพ" class="max-w-xs rounded-lg shadow-md">
-                </div>
-            </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <a href="{{ url_for('procurement.products.index', organization=organization.id) }}"
-                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
-                <i class="ph ph-x mr-2"></i>
-                ยกเลิก
-            </a>
-            <button type="submit" id="submit_btn"
-                class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
-                <i class="ph ph-check mr-2"></i>
-                บันทึกรายการ
-            </button>
-        </div>
-    </form>
+    <div class="flex justify-end gap-3 pt-6 border-t border-base-300">
+      <a href="{{ url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else url_for('procurement.products.index', organization_id=organization.id) }}"
+         class="btn btn-ghost">
+        <i class="ph ph-x"></i> ยกเลิก
+      </a>
+      <button type="submit" id="submit_btn" class="btn btn-primary">
+        <i class="ph ph-check"></i> บันทึก MA
+      </button>
+    </div>
+  </form>
 </div>
+{% endblock %}
 
+{% block additional_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Image preview functionality
-        const imageInput = document.getElementById('image');
-        const imagePreview = document.getElementById('image_preview');
-        const previewImg = document.getElementById('preview_img');
+  (function () {
+    const form = document.getElementById('ma_form');
+    const itemsContainer = document.getElementById('items_container');
+    const itemTemplate = document.getElementById('item_template');
+    const installmentTemplate = document.getElementById('installment_template');
+    const DAY_MS = 86400000;
 
-        imageInput.addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    previewImg.src = e.target.result;
-                    imagePreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+    function maxIndex(pattern) {
+      let max = -1;
+      form.querySelectorAll('[name]').forEach(function (input) {
+        const match = pattern.exec(input.name);
+        if (match) max = Math.max(max, parseInt(match[1], 10));
+      });
+      return max;
+    }
+    let nextItemIndex = maxIndex(/^items-(\d+)-/) + 1;
+    let nextInstallmentIndex = maxIndex(/-installments-(\d+)-/) + 1;
 
-                // Hide image error message if exists
-                const imageError = document.getElementById('image_error');
-                if (imageError) {
-                    imageError.style.display = 'none';
-                }
-            } else {
-                imagePreview.classList.add('hidden');
-            }
+    // เงินคำนวณเป็นสตางค์ (จำนวนเต็ม) เลี่ยง float · server เป็นตัวตัดสินสุดท้าย
+    function parseSatang(value) {
+      const match = /^\s*(\d+)(?:\.(\d{0,2}))?\s*$/.exec(value || '');
+      if (!match) return null;
+      return parseInt(match[1], 10) * 100 + parseInt((match[2] || '').padEnd(2, '0'), 10);
+    }
+    function formatSatang(satang) {
+      const baht = Math.floor(satang / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return baht + '.' + String(satang % 100).padStart(2, '0');
+    }
+
+    function updateSum() {
+      const bar = document.getElementById('sum_bar');
+      const total = parseSatang(document.getElementById('total_amount').value);
+      let sum = 0;
+      let complete = total !== null;
+      itemsContainer.querySelectorAll('.item-amount').forEach(function (input) {
+        const value = parseSatang(input.value);
+        if (value === null) complete = false;
+        else sum += value;
+      });
+      document.getElementById('sum_total').textContent = total === null ? '-' : formatSatang(total);
+      document.getElementById('sum_items').textContent = formatSatang(sum);
+      const diffText = document.getElementById('sum_diff');
+      bar.classList.remove('alert-success', 'alert-error', 'alert-warning');
+      if (!complete) {
+        bar.classList.add('alert-warning');
+        diffText.textContent = 'กรอกยอดเงินให้ครบ (ทศนิยมไม่เกิน 2 ตำแหน่ง)';
+        return;
+      }
+      const diff = sum - total;
+      if (diff === 0) {
+        bar.classList.add('alert-success');
+        diffText.textContent = 'ยอดตรงกัน';
+      } else {
+        bar.classList.add('alert-error');
+        diffText.textContent = (diff < 0 ? 'ขาด ' : 'เกิน ') + formatSatang(Math.abs(diff)) + ' บาท';
+      }
+    }
+
+    function renumber() {
+      itemsContainer.querySelectorAll('.ma-item').forEach(function (card, index) {
+        card.querySelector('.item-number').textContent = index + 1;
+        card.querySelectorAll('.installment-row').forEach(function (row, rowIndex) {
+          row.querySelector('.installment-number').textContent = rowIndex + 1;
         });
+      });
+    }
+
+    function showError(element, message) {
+      element.textContent = message;
+      element.classList.toggle('hidden', !message);
+    }
+
+    function addItem() {
+      const html = itemTemplate.innerHTML.replaceAll('__I__', String(nextItemIndex++));
+      itemsContainer.insertAdjacentHTML('beforeend', html);
+      showError(document.getElementById('items_error'), '');
+      renumber();
+      updateSum();
+    }
+
+    function addInstallment(card, dueDate) {
+      const html = installmentTemplate.innerHTML
+        .replaceAll('items-__I__-', card.dataset.prefix)
+        .replaceAll('__J__', String(nextInstallmentIndex++));
+      const tbody = card.querySelector('.installment-rows');
+      tbody.insertAdjacentHTML('beforeend', html);
+      if (dueDate) tbody.lastElementChild.querySelector('.installment-due').value = dueDate;
+      showError(card.querySelector('.installment-error'), '');
+    }
+
+    // สูตรเดียวกับ even_due_dates ใน kampan/models/procurement.py
+    function evenDueDates(startValue, endValue, count) {
+      const start = Date.parse(startValue + 'T00:00:00Z');
+      const end = Date.parse(endValue + 'T00:00:00Z');
+      if (isNaN(start) || isNaN(end) || end < start || !(count >= 1)) return [];
+      const totalDays = Math.round((end - start) / DAY_MS) + 1;
+      const perPeriod = Math.floor(totalDays / count);
+      const remainder = totalDays % count;
+      const dates = [];
+      let current = start;
+      for (let i = 0; i < count; i++) {
+        const days = perPeriod + (i < remainder ? 1 : 0);
+        const due = Math.min(current + (Math.max(days, 1) - 1) * DAY_MS, end);
+        dates.push(new Date(due).toISOString().slice(0, 10));
+        current = due + DAY_MS;
+      }
+      return dates;
+    }
+
+    function generateInstallments(card) {
+      const prefix = card.dataset.prefix;
+      const start = form.querySelector('[name="' + prefix + 'start_date"]').value;
+      const end = form.querySelector('[name="' + prefix + 'end_date"]').value;
+      const count = parseInt(card.querySelector('.generate-count').value, 10);
+      const dates = evenDueDates(start, end, count);
+      const error = card.querySelector('.installment-error');
+      if (!dates.length || count > 120) {
+        showError(error, 'กรุณาระบุวันที่เริ่มต้น-สิ้นสุดของรายการย่อย และจำนวนงวด 1-120 งวด');
+        return;
+      }
+      // งวดที่บันทึกจ่ายแล้วเก็บไว้ แทนที่เฉพาะงวดที่ยังไม่จ่าย
+      card.querySelectorAll('.installment-row').forEach(function (row) {
+        if (!row.querySelector('.installment-paid').value) row.remove();
+      });
+      dates.forEach(function (date) { addInstallment(card, date); });
+      renumber();
+    }
+
+    form.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const card = button.closest('.ma-item');
+      switch (button.dataset.action) {
+        case 'add-item':
+          addItem();
+          break;
+        case 'remove-item':
+          if (itemsContainer.querySelectorAll('.ma-item').length <= 1) {
+            showError(document.getElementById('items_error'), 'MA ต้องมีรายการย่อยอย่างน้อย 1 รายการ');
+            return;
+          }
+          card.remove();
+          renumber();
+          updateSum();
+          break;
+        case 'add-installment':
+          addInstallment(card);
+          renumber();
+          break;
+        case 'remove-installment':
+          if (card.querySelectorAll('.installment-row').length <= 1) {
+            showError(card.querySelector('.installment-error'), 'รายการย่อยต้องมีอย่างน้อย 1 งวด');
+            return;
+          }
+          button.closest('.installment-row').remove();
+          renumber();
+          break;
+        case 'generate-installments':
+          generateInstallments(card);
+          break;
+      }
     });
 
-    function filterResponsibleBy() {
-        const input = document.getElementById('responsible_by_search');
-        const filter = input.value.toLowerCase();
-        const list = document.getElementById('responsible_by_list');
-        const labels = list.getElementsByTagName('label');
-        for (let i = 0; i < labels.length; i++) {
-            const text = labels[i].innerText.toLowerCase();
-            labels[i].style.display = text.includes(filter) ? '' : 'none';
-        }
-    }
-
-    function updateSelectedUsersBadge() {
-        const trigger = document.getElementById('selected_users_trigger');
-        const placeholder = document.getElementById('no_users_placeholder');
-        const checkboxes = document.querySelectorAll('.user-checkbox');
-        
-        // Remove existing badges
-        const badges = trigger.querySelectorAll('.badge');
-        badges.forEach(b => b.remove());
-        
-        let selectedCount = 0;
-        
-        checkboxes.forEach(cb => {
-            if (cb.checked) {
-                selectedCount++;
-                const name = cb.getAttribute('data-name');
-                const badge = document.createElement('span');
-                badge.className = 'badge badge-primary gap-1 font-medium py-2.5 px-3 text-white rounded-lg text-xs';
-                badge.innerHTML = `${name} <span class="cursor-pointer font-bold hover:text-red-200 ml-1 text-sm leading-none" onclick="removeUserSelection(event, '${cb.value}')">×</span>`;
-                trigger.appendChild(badge);
-            }
+    form.addEventListener('input', function (event) {
+      if (event.target.id === 'total_amount' || event.target.classList.contains('item-amount')) {
+        updateSum();
+      }
+      if (event.target.classList.contains('member-filter')) {
+        const keyword = event.target.value.toLowerCase();
+        event.target.closest('fieldset').querySelectorAll('.member-option').forEach(function (option) {
+          option.classList.toggle('hidden', !option.textContent.toLowerCase().includes(keyword));
         });
-        
-        if (selectedCount > 0) {
-            placeholder.classList.add('hidden');
-        } else {
-            placeholder.classList.remove('hidden');
-        }
-    }
-    
-    function removeUserSelection(event, userId) {
-        event.stopPropagation(); // Prevent opening/closing dropdown
-        const checkbox = document.querySelector(`.user-checkbox[value="${userId}"]`);
-        if (checkbox) {
-            checkbox.checked = false;
-            updateSelectedUsersBadge();
-        }
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        updateSelectedUsersBadge();
+      }
     });
+
+    renumber();
+    updateSum();
+  })();
 </script>
-
-
 {% endblock %}

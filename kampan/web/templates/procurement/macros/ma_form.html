@@ -1,0 +1,169 @@
+{# ส่วนประกอบของฟอร์มสร้าง / แก้ไข MA (หัวสัญญา → รายการย่อย → งวด) #}
+
+{% macro field_errors(field) %}
+  {% for error in field.errors %}
+    {% if error is string %}
+      <p class="text-error text-xs mt-1">{{ error }}</p>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro input_field(field, required=False, wrapper_class="", extra_class="") %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">
+      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
+    </legend>
+    {{ field(class_="input w-full " ~ extra_class ~ (" input-error" if field.errors else ""), **kwargs) }}
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro select_field(field, required=False, wrapper_class="") %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">
+      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
+    </legend>
+    {{ field(class_="select w-full" ~ (" select-error" if field.errors else ""), **kwargs) }}
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro textarea_field(field, wrapper_class="") %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    {{ field(class_="textarea w-full" ~ (" textarea-error" if field.errors else ""), rows=3, **kwargs) }}
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro installment_row(f) %}
+  <tr class="installment-row">
+    <td class="installment-number font-semibold text-base-content/70 align-top pt-4"></td>
+    <td class="align-top min-w-36">
+      {{ f.installment_id() }}
+      {{ f.due_date(class_="input input-sm w-full installment-due" ~ (" input-error" if f.due_date.errors else ""), **{"aria-label": "วันครบกำหนด"}) }}
+      {{ field_errors(f.due_date) }}
+    </td>
+    <td class="align-top min-w-36">
+      {{ f.paid_date(class_="input input-sm w-full installment-paid" ~ (" input-error" if f.paid_date.errors else ""), **{"aria-label": "วันที่จ่าย"}) }}
+      {{ field_errors(f.paid_date) }}
+    </td>
+    <td class="align-top min-w-32">
+      {{ f.payment_number(class_="input input-sm w-full" ~ (" input-error" if f.payment_number.errors else ""), placeholder="เลขที่เอกสาร", **{"aria-label": "เลขที่เอกสาร"}) }}
+      {{ field_errors(f.payment_number) }}
+    </td>
+    <td class="align-top min-w-32">
+      {{ f.paid_amount(class_="input input-sm w-full" ~ (" input-error" if f.paid_amount.errors else ""), step="0.01", min="0", placeholder="ไม่บังคับ", **{"aria-label": "ยอดที่จ่ายจริง"}) }}
+      {{ field_errors(f.paid_amount) }}
+    </td>
+    <td class="align-top">
+      <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-installment" title="ลบงวด">
+        <i class="ph ph-trash text-lg"></i>
+      </button>
+    </td>
+  </tr>
+{% endmacro %}
+
+{% macro item_card(f) %}
+  {% set prefix = f.item_id.name[:-("item_id"|length)] %}
+  <div class="ma-item card bg-base-100 border border-base-300 shadow-sm" data-prefix="{{ prefix }}">
+    <div class="card-body p-4 md:p-6 gap-4">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-base md:text-lg font-semibold text-base-content flex items-center gap-2">
+          <i class="ph ph-list-bullets text-primary"></i>
+          รายการย่อยที่ <span class="item-number"></span>
+        </h3>
+        <button type="button" class="btn btn-ghost btn-sm text-error" data-action="remove-item">
+          <i class="ph ph-trash"></i> ลบรายการย่อย
+        </button>
+      </div>
+      {{ f.item_id() }}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4">
+        {{ input_field(f.name, required=True, wrapper_class="md:col-span-2") }}
+        {{ select_field(f.category, required=True) }}
+        {{ select_field(f.account_code) }}
+        {{ input_field(f.start_date, required=True) }}
+        {{ input_field(f.end_date, required=True) }}
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ f.amount.label.text }} <span class="text-error">*</span></legend>
+          {{ f.amount(class_="input w-full item-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal") }}
+          {{ field_errors(f.amount) }}
+        </fieldset>
+        {{ input_field(f.unit_price, step="0.01", min="0", placeholder="ไม่บังคับ") }}
+        {{ input_field(f.brand, placeholder="ไม่บังคับ") }}
+        {{ input_field(f.model_name, placeholder="ไม่บังคับ") }}
+        {{ input_field(f.winner, placeholder="ไม่บังคับ") }}
+        {{ select_field(f.reminder_kind) }}
+        {{ textarea_field(f.details, wrapper_class="md:col-span-2", placeholder="เช่น S/N: ABC123 หรือ รหัสครุภัณฑ์: CC/www-x-yy/zz (บรรทัดละ 1 รายการ)") }}
+        {{ textarea_field(f.note, wrapper_class="md:col-span-2") }}
+        <fieldset class="fieldset w-full md:col-span-2 lg:col-span-4">
+          <label class="label cursor-pointer justify-start gap-2">
+            {{ f.requires_activation(class_="checkbox checkbox-primary checkbox-sm") }}
+            <span class="text-sm text-base-content">{{ f.requires_activation.label.text }}</span>
+          </label>
+        </fieldset>
+      </div>
+
+      <fieldset class="fieldset w-full">
+        <legend class="fieldset-legend">{{ f.responsible_by.label.text }}</legend>
+        <input type="text" class="input input-sm w-full md:w-80 member-filter" placeholder="ค้นหาผู้รับผิดชอบ..." aria-label="ค้นหาผู้รับผิดชอบ" />
+        <div class="member-list max-h-44 overflow-y-auto border border-base-300 rounded-box p-2 mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {% for value, label in f.responsible_by.choices %}
+            <label class="member-option flex items-center gap-2 py-1 px-2 rounded hover:bg-base-200 cursor-pointer">
+              <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.responsible_by.name }}" value="{{ value }}"
+                     {% if value in (f.responsible_by.data or []) %}checked{% endif %} />
+              <span class="text-sm">{{ label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {{ field_errors(f.responsible_by) }}
+      </fieldset>
+
+      <div class="rounded-box border border-base-300 p-3 md:p-4 bg-base-200/40">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-2">
+          <div>
+            <h4 class="font-semibold text-base-content flex items-center gap-2">
+              <i class="ph ph-calendar-dots text-secondary"></i> งวด
+            </h4>
+            <p class="text-xs text-base-content/60">งวดไม่แบ่งเงิน ใช้จำว่าจ่ายไปแล้วกี่งวด ต้องมีอย่างน้อย 1 งวด</p>
+          </div>
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="flex items-center gap-2 text-sm">
+              จำนวน
+              <input type="number" min="1" max="120" value="{{ f.installments.entries|length or 1 }}" class="input input-sm w-20 generate-count" aria-label="จำนวนงวดที่จะสร้าง" />
+              งวด
+            </label>
+            <button type="button" class="btn btn-sm btn-outline btn-secondary" data-action="generate-installments"
+                    title="แทนที่งวดที่ยังไม่จ่ายด้วยวันครบกำหนดที่ห่างเท่า ๆ กันในช่วงวันที่ของรายการย่อย">
+              <i class="ph ph-magic-wand"></i> สร้างวันครบกำหนดเท่า ๆ กัน
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>งวดที่</th>
+                <th>วันครบกำหนด <span class="text-error">*</span></th>
+                <th>วันที่จ่าย</th>
+                <th>เลขที่เอกสาร</th>
+                <th>ยอดที่จ่ายจริง (บาท)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody class="installment-rows">
+              {% for entry in f.installments %}
+                {{ installment_row(entry.form) }}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="installment-error text-error text-xs mt-1 hidden"></p>
+        <button type="button" class="btn btn-sm btn-ghost text-primary mt-1" data-action="add-installment">
+          <i class="ph ph-plus-circle"></i> เพิ่มงวด
+        </button>
+      </div>
+    </div>
+  </div>
+{% endmacro %}

@@ -21,7 +21,10 @@ from PyPDF2 import PdfMerger
 
 from kampan import models, utils
 from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
+from kampan.models.procurement import attach_items, procurement_ids_of
 from kampan.web import feature_flags, forms
+
+from . import ma_permissions
 
 from ... import redis_rq
 
@@ -29,6 +32,7 @@ module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 
 
 def apply_expiration_date_filter(procurements, date_range):
+    """กรองตามช่วงวันหมดอายุ (end_date) ใช้กับ queryset ของรายการย่อย MA"""
     if not date_range:
         return procurements
 
@@ -68,12 +72,22 @@ def generate_next_requisition_code():
     return f"{next_number:04d}/{buddhist_year}"
 
 
+def _sort_by_end_date(procurements, organization, reverse=False):
+    """เรียง MA ตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน (MA ที่ไม่มีรายการย่อยไว้ท้าย)"""
+    procurements = attach_items(procurements, organization)
+    with_end = [procurement for procurement in procurements if procurement.get_end_date()]
+    without_end = [procurement for procurement in procurements if not procurement.get_end_date()]
+    with_end.sort(key=lambda procurement: procurement.get_end_date(), reverse=reverse)
+    return with_end + without_end
+
+
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
     organization = g.organization
+    if not organization:
+        abort(404)
     form = forms.requisitions.RequisitionFilterForm(request.args)
-    query = {}
 
     category = request.args.get("category", "")
     name = request.args.get("name", "")
@@ -82,50 +96,35 @@ def index():
     procurement_id = request.args.get("procurement_id", "")
     expiration_date_range = request.args.get("expiration_date_range", "3_months")
 
-    if category:
-        query["category"] = category
+    procurements = ma_permissions.visible_procurements(organization)
     if name:
-        query["name__icontains"] = name
+        procurements = procurements.filter(name__icontains=name)
+    # ช่อง "เลขที่เบิกจ่าย" ค้นเลขที่ ม.อ.เบิกจ่าย ของหัวสัญญา
     if product_number:
-        query["product_numbers__icontains"] = product_number
+        procurements = procurements.filter(psu_disbursement_number__icontains=product_number)
+    if procurement_id:
+        procurements = procurements.filter(id__in=[procurement_id] if ObjectId.is_valid(procurement_id) else [])
+
+    # ประเภท, รหัสครุภัณฑ์ (ค้นใน details) และช่วงวันหมดอายุ อยู่ที่รายการย่อย
+    items = models.ProcurementItem.objects(organization=organization)
+    if category:
+        items = items.filter(category=category)
     if asset_code:
-        query["asset_codes__icontains"] = asset_code
-    if procurement_id:
-        query["id__icontains"] = procurement_id
-    query["organization"] = organization
+        items = items.filter(details__icontains=asset_code)
+    items = apply_expiration_date_filter(items, expiration_date_range)
+    if category or asset_code or expiration_date_range:
+        procurements = procurements.filter(id__in=procurement_ids_of(items))
 
-    procurements = models.Procurement.objects(**query)
-    procurements = apply_expiration_date_filter(procurements, expiration_date_range)
-
-    # ถ้ากด redirect button มาจากหน้ารายการ MA ให้ดึงค่าต่างๆ มาแสดงในช่องค้นหา
-    if procurement_id:
-        procurement = procurements.filter(id=procurement_id).first()
-        if procurement:
-            category = procurement.category
-            name = procurement.name
-            asset_code = ", ".join(procurement.asset_codes) if procurement.asset_codes else ""
-            product_number = ", ".join(procurement.product_numbers) if procurement.product_numbers else ""
-
-    # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object(),
-        organization=organization,
-        status="active",
-    ).first()
-    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-        procurements = procurements.filter(responsible_by=org_user_role)
-
-    # Order by expiration date (earliest first)
-    procurements = procurements.order_by("end_date")
+    procurements = _sort_by_end_date(procurements, organization)
 
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=8, type=int)
     paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
-    category_choices = models.procurement.CATEGORY_CHOICES
+    category_choices = models.ITEM_CATEGORY_CHOICES
     return render_template(
         "procurement/requisitions/index.html",
         procurements=paginated_procurements.items,
-        can_change_renewal=renewal_permission_checker(organization),
+        can_change_renewal=ma_permissions.edit_checker(organization),
         form=form,
         paginated_procurements=paginated_procurements,
         organization=organization,
@@ -139,23 +138,6 @@ def index():
 
 
 PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุหรือไม่ต่ออายุ MA รายการนี้"
-
-
-def renewal_permission_checker(organization):
-    """สิทธิ์กดต่ออายุ / ไม่ต่ออายุ MA: admin ได้ทุกรายการในหน่วยงาน · staff ได้เฉพาะ MA ที่ตัวเองเป็นผู้รับผิดชอบ"""
-    if current_user.has_organization_roles("admin", organization=organization):
-        return lambda procurement: True
-    if not current_user.has_organization_roles("staff", organization=organization):
-        return lambda procurement: False
-
-    member = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object(), organization=organization, status="active"
-    ).first()
-    if not member:
-        return lambda procurement: False
-    return lambda procurement: any(
-        getattr(responsible, "id", None) == member.id for responsible in (procurement.responsible_by or [])
-    )
 
 
 PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอดำเนินการ"
@@ -183,7 +165,7 @@ def non_renewal_action(requisition_procurement_id):
     if not procurement:
         abort(404)
 
-    if not renewal_permission_checker(organization)(procurement):
+    if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
@@ -196,23 +178,16 @@ def non_renewal_action(requisition_procurement_id):
 @login_required
 def non_renewal():
     organization = g.organization
+    if not organization:
+        abort(404)
     category = request.args.get("category", "")
-    query = {"status": "disactive", "organization": organization}
-    procurements = models.Procurement.objects(**query)
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object(),
-        organization=organization,
-        status="active",
-    ).first()
-    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-        procurements = procurements.filter(responsible_by=org_user_role)
-    procurements = procurements.order_by("-end_date")
-    category_choices = models.procurement.CATEGORY_CHOICES
+    procurements = ma_permissions.visible_procurements(organization).filter(status="disactive")
+    procurements = _sort_by_end_date(procurements, organization, reverse=True)
     return render_template(
         "procurement/requisitions/non_renewal.html",
         items=procurements,
         organization=organization,
-        category_choices=category_choices,
+        category_choices=models.ITEM_CATEGORY_CHOICES,
         selected_category=category,
     )
 
@@ -229,7 +204,7 @@ def renewal_requested_action(requisition_procurement_id):
     if not procurement:
         abort(404)
 
-    if not renewal_permission_checker(organization)(procurement):
+    if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
@@ -240,21 +215,25 @@ def renewal_requested_action(requisition_procurement_id):
 
     # สร้างรหัส requisition_code ใหม่
     requisition_code = generate_next_requisition_code()
-    # สร้าง Requisition ใหม่
+    ma_items = procurement.get_items()
+    first_responsible = ma_items[0].responsible_by if ma_items else []
+    requisition_categories = {value for value, _ in models.CATEGORY_CHOICES}
+    # สร้าง Requisition ใหม่ 1 รายการสินค้าต่อ 1 รายการย่อยของ MA
     requisition = models.Requisition(
         requisition_code=requisition_code,
-        purchaser=(procurement.responsible_by[0] if procurement.responsible_by else None),
+        purchaser=(first_responsible[0] if first_responsible else None),
         phone=None,
         reason=f"Renewal requested for procurement {procurement.name}",
-        start_date=procurement.end_date,
+        start_date=procurement.get_end_date(),
         items=[
             models.RequisitionItem(
-                product_name=procurement.name,
-                category=procurement.category,
-                amount=procurement.amount,
+                product_name=item.name[:100],
+                category=item.category if item.category in requisition_categories else "service",
+                amount=item.amount,
                 currency=None,
                 quantity=1,
             )
+            for item in ma_items
         ],
         # ensure at least one committee entry exists so model validation passes
         committees=None,

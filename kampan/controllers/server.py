@@ -127,7 +127,8 @@ class ControllerServer:
                     )
                     await asyncio.sleep(time_to_check)
 
-                procurements = models.Procurement.objects(payment_status__ne="paid")
+                # สถานะการจ่ายคำนวณสดจากงวด งานนี้เหลือแค่ย้าย MA ที่ใกล้หมดอายุเป็น pending
+                procurements = models.Procurement.objects(status="active").only("id")
                 for procurement in procurements:
                     data = {
                         "action": "process",
@@ -179,20 +180,17 @@ class ControllerServer:
                     )
                     await asyncio.sleep(time_to_check)
 
-                procurements = models.Procurement.objects(
-                    payment_status__in=["unpaid", "upcoming", "overdue"]
-                )
+                # งวดอยู่ที่รายการย่อย (#26) ดูงวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุดของแต่ละ MA
+                # ตัวส่งนี้จะถูกแทนด้วยระบบเตือนรายรายการย่อยใน #28
+                procurements = models.Procurement.objects(status__ne="renewed")
 
                 for notification in procurements:
-                    status = notification.get_current_payment_status()
+                    status = notification.get_payment_status()
                     if status in ("upcoming", "overdue", "unpaid"):
-                        due_dates = notification.get_payment_due_dates()
-                        next_idx = notification.get_next_payment_index()
-
-                        if next_idx < len(due_dates):
-                            due_date = due_dates[next_idx]
-                        else:
+                        _, next_installment = notification.get_next_unpaid()
+                        if not next_installment or not next_installment.due_date:
                             continue
+                        due_date = next_installment.due_date.date()
 
                         days_left = (due_date - datetime.date.today()).days
 

@@ -3,7 +3,7 @@ from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators
 
 from kampan import models
-from kampan.models.procurement import CATEGORY_CHOICES
+from kampan.models.procurement import CATEGORY_CHOICES, ITEM_CATEGORY_CHOICES
 from kampan.models.requisitions import (
     COMMITTEE_TYPE_CHOICES,
     COMMITTEE_POSITION_CHOICES,
@@ -100,21 +100,23 @@ class RequisitionForm(BaseRequisitionForm):
 
 
 class RequisitionFilterForm(FlaskForm):
+    """ตัวกรองหน้ารายการ MA ขอต่ออายุ (ชื่อ field คงเดิมเพื่อไม่ให้ลิงก์เดิมเสีย)"""
+
     name = fields.StringField(
-        "ชื่อรายการ",
+        "ชื่อ MA",
         validators=[validators.Optional()],
     )
     category = fields.SelectField(
         "หมวดหมู่",
-        choices=[("", "ทั้งหมด")] + CATEGORY_CHOICES,
+        choices=[("", "ทั้งหมด")] + ITEM_CATEGORY_CHOICES,
         validators=[validators.Optional()],
     )
     product_number = fields.StringField(
-        "เลขที่เบิกจ่าย",
+        "เลขที่ ม.อ.เบิกจ่าย",
         validators=[validators.Optional()],
     )
     asset_code = fields.StringField(
-        "รหัสครุภัณฑ์",
+        "รายละเอียด (S/N, รหัสครุภัณฑ์)",
         validators=[validators.Optional()],
     )
     expiration_date_range = fields.SelectField(

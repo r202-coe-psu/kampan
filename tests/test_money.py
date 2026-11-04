@@ -97,9 +97,11 @@ def test_money_places_validator(app, raw, valid):
 @pytest.mark.parametrize(
     "form_factory, field_name",
     [
-        (lambda: forms.procurement.ProcurementForm(), "amount"),
-        (lambda: forms.procurement.PaymentRecordForm(), "amount"),
-        (lambda: forms.procurement.PaymentForm(), "amount"),
+        (lambda: forms.procurement.ProcurementHeaderForm(), "total_amount"),
+        (lambda: forms.procurement.ProcurementItemForm(request.form), "amount"),
+        (lambda: forms.procurement.ProcurementItemForm(request.form), "unit_price"),
+        (lambda: forms.procurement.InstallmentForm(request.form), "paid_amount"),
+        (lambda: forms.procurement.InstallmentPaymentForm(), "paid_amount"),
         (lambda: forms.inventories.InventoryForm(), "price"),
         (lambda: forms.mas.MASForm(), "amount"),
         (lambda: forms.requisitions.RequisitionItemForm(request.form), "amount"),
@@ -215,42 +217,40 @@ def test_fund_usage_amounts_reads_legacy_double_as_decimal(
 # ---------------------------------------------------------------------------
 
 
-def _procurement(org, records=()):
+def _procurement_items(org, amounts):
     now = datetime.datetime(2026, 1, 1)
-    return models.Procurement(
-        name="สัญญา",
-        company="บริษัท",
-        category="service",
-        amount=Decimal("1000.00"),
-        period=2,
-        organization=org,
-        start_date=now,
-        end_date=now + datetime.timedelta(days=60),
-        payment_records=[
-            models.PaymentRecord(period_index=i, amount=amount, paid_date=now, due_date=now)
-            for i, amount in enumerate(records)
-        ],
-    )
+    return [
+        models.ProcurementItem(
+            name=f"รายการ {i}",
+            category="service",
+            amount=Decimal(amount),
+            start_date=now,
+            end_date=now + datetime.timedelta(days=60),
+            installments=[models.Installment(due_date=now)],
+        )
+        for i, amount in enumerate(amounts)
+    ]
 
 
-def test_total_payment_record_is_exact_decimal(app, create_org):
+def test_ma_item_sum_is_exact_decimal(app, create_org):
+    """0.10 + 0.20 ต้องเท่ายอด MA 0.30 พอดี (float จะได้ 0.30000000000000004)"""
     with app.app_context():
-        procurement = _procurement(create_org(), [Decimal("0.10"), Decimal("0.20")]).save()
+        org = create_org()
+        procurement = models.Procurement(name="สัญญา", company="บริษัท", total_amount=Decimal("0.30"), organization=org)
+
+        procurement.save_with_items(_procurement_items(org, ["0.10", "0.20"]))
+
         procurement.reload()
-
-        total = procurement.get_total_payment_record()
-
-        assert isinstance(total, Decimal)
-        assert total == Decimal("0.30")
-        assert procurement.get_remaining_amount() == Decimal("999.70")
+        assert procurement.total_amount == Decimal("0.30")
+        assert models.ProcurementItem.objects(procurement=procurement).count() == 2
 
 
-def test_total_payment_record_without_records_is_decimal_zero(app, create_org):
-    with app.app_context():
-        total = _procurement(create_org()).get_total_payment_record()
+def test_ma_item_sum_check_message_shows_difference_in_baht():
+    message = models.procurement.check_item_sum(Decimal("100000.00"), [Decimal("95000.00")])
 
-        assert isinstance(total, Decimal)
-        assert total == Decimal("0")
+    assert message == "ผลรวมรายการย่อย 95,000.00 บาท ไม่ตรงกับยอด MA 100,000.00 บาท (ขาด 5,000.00 บาท)"
+    assert "เกิน 0.01 บาท" in models.procurement.check_item_sum(Decimal("1.00"), [Decimal("0.50"), Decimal("0.51")])
+    assert models.procurement.check_item_sum(Decimal("0"), []) is None
 
 
 def _item(org, piece_per_set=2):

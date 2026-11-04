@@ -24,21 +24,31 @@ def _is_login_redirect(response):
 
 
 def _make_procurement(organization, user, name="MA contract", status="pending", responsible=None):
+    """MA 1 หัว + 1 รายการย่อย (ยอดตรงกัน) ผู้รับผิดชอบอยู่ที่รายการย่อย"""
+    now = datetime.datetime.now()
     procurement = models.Procurement(
+        psu_disbursement_number="PSU-1",
         name=name,
-        category="product",
         company="Vendor Co.",
         organization=organization,
         status=status,
-        amount=Decimal("1000.00"),
-        period=1,
-        start_date=datetime.datetime.now(),
-        end_date=datetime.datetime.now() + datetime.timedelta(days=30),
+        total_amount=Decimal("1000.00"),
         created_by=user,
         last_updated_by=user,
-        responsible_by=responsible or [],
     )
-    procurement.save()
+    procurement.save_with_items(
+        [
+            models.ProcurementItem(
+                name=name,
+                category="product",
+                amount=Decimal("1000.00"),
+                start_date=now,
+                end_date=now + datetime.timedelta(days=30),
+                responsible_by=responsible or [],
+                installments=[models.Installment(due_date=now + datetime.timedelta(days=30))],
+            )
+        ]
+    )
     return procurement
 
 

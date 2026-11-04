@@ -49,7 +49,7 @@ def mock_queue(monkeypatch):
 
 
 @pytest.fixture
-def world(app, create_org, create_user, assign_user_to_org):
+def world(app, create_org, create_user, assign_user_to_org, create_ma):
     org = create_org("[TEST] Org")
     division = models.Division(name="[TEST] ฝ่าย", organization=org)
     division.save()
@@ -93,21 +93,13 @@ def world(app, create_org, create_user, assign_user_to_org):
     )
     mas.save()
 
-    procurement = models.Procurement(
+    procurement = create_ma(
+        org,
+        user=users["admin"],
         name="[TEST] MA",
-        category="product",
-        company="Vendor Co.",
-        organization=org,
         status="pending",
-        amount=Decimal("1000.00"),
-        period=1,
-        start_date=datetime.datetime.now(),
-        end_date=datetime.datetime.now() + datetime.timedelta(days=30),
-        created_by=users["admin"],
-        last_updated_by=users["admin"],
-        responsible_by=[roles["staff"]],
+        responsible=[roles["staff"]],
     )
-    procurement.save()
 
     return SimpleNamespace(
         org=org,

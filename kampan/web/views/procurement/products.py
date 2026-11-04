@@ -1,10 +1,13 @@
 import datetime
+from collections import Counter
 from io import BytesIO
 
+import mongoengine as me
 import pandas as pd
 from flask import (
     Blueprint,
     abort,
+    flash,
     redirect,
     render_template,
     request,
@@ -14,11 +17,19 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from flask_mongoengine import Pagination
+from mongoengine.queryset.visitor import Q
 
 from kampan import models
+from kampan.models.procurement import attach_items, procurement_ids_of
 from kampan.web import acl, forms
 
+from . import ma_permissions
+
 module = Blueprint("products", __name__, url_prefix="/products")
+
+DUPLICATE_PAYMENT_NUMBER_MESSAGE = "เลขที่เอกสาร {numbers} ถูกใช้งานแล้วในหน่วยงานนี้"
+NO_EDIT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์แก้ไข MA รายการนี้"
+STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
 
 def calculate_months_days(start_date, end_date):
@@ -42,6 +53,28 @@ def calculate_months_days(start_date, end_date):
     return months, days
 
 
+def search_procurements(procurements, organization, text: str):
+    """ค้นด้วยเลขที่ ม.อ.เบิกจ่าย, ชื่อหัวสัญญา หรือชื่อ / รายละเอียดของรายการย่อย (scope ด้วยหน่วยงาน)"""
+    text = (text or "").strip()
+    if not text:
+        return procurements
+    item_matches = models.ProcurementItem.objects(organization=organization).filter(
+        Q(name__icontains=text) | Q(details__icontains=text)
+    )
+    return procurements.filter(
+        Q(psu_disbursement_number__icontains=text)
+        | Q(name__icontains=text)
+        | Q(id__in=procurement_ids_of(item_matches))
+    )
+
+
+def payment_statuses(procurement_ids, organization, today) -> dict:
+    """สถานะการจ่ายของหลาย MA ด้วย query เดียว {procurement_id: status}"""
+    procurements = list(models.Procurement.objects(organization=organization, id__in=list(procurement_ids)).only("id"))
+    attach_items(procurements, organization)
+    return {procurement.pk: procurement.get_payment_status(today) for procurement in procurements}
+
+
 @module.route("", methods=["GET", "POST"])
 @login_required
 def index():
@@ -50,82 +83,258 @@ def index():
     if not organization:
         abort(404)
     today = datetime.date.today()
-    name = request.args.get("name")
     category = request.args.get("category")
     payment_status = request.args.get("payment_status")
     upload_success = request.args.get("upload_success", "")
 
-    query = {}
-    if name:
-        query["name__icontains"] = name
+    visible_qs = ma_permissions.visible_procurements(organization)
+
+    # ตัวนับสถานะนับจาก MA ที่เห็นทั้งหมด ไม่ขึ้นกับคำค้นหรือ filter
+    statuses = payment_statuses(visible_qs.scalar("id"), organization, today)
+    status_count = Counter(statuses.values())
+    status_count = {status: status_count.get(status, 0) for status, _ in models.PAYEMENT_STATUS_CHOICES}
+
+    procurement_qs = search_procurements(visible_qs, organization, request.args.get("name"))
     if category:
-        query["category"] = category
+        category_items = models.ProcurementItem.objects(organization=organization, category=category)
+        procurement_qs = procurement_qs.filter(id__in=procurement_ids_of(category_items))
     if payment_status:
-        query["payment_status"] = payment_status
-    query["organization"] = organization
+        procurement_qs = procurement_qs.filter(
+            id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
+        )
+    procurement_qs = procurement_qs.order_by("-created_date")
 
-    procurement_qs = models.Procurement.objects(**query).order_by("-created_date")
-
-    # Filter for staff role (not admin)
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object(),
-        organization=organization,
-        status="active",
-    ).first()
-
-    is_staff = current_user.has_organization_roles("staff")
-    is_admin = current_user.has_organization_roles("admin")
-    is_head = current_user.has_organization_roles("head")
-    is_manager = current_user.has_organization_roles("manager")
-
-    if org_user_role and is_staff and not (is_admin or is_head or is_manager):
-        procurement_qs = procurement_qs.filter(responsible_by=org_user_role)
-
-    if org_user_role and is_head and not (is_admin or is_manager):
-        division_procurements = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-        procurement_qs = procurement_qs.filter(responsible_by__in=division_procurements)
-
-    # --- Status count section ---
-    # Count all procurements for this organization/user role (not paginated, not filtered by category/payment_status)
-    base_qs = models.Procurement.objects(organization=organization)
-
-    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-        base_qs = base_qs.filter(responsible_by=org_user_role)
-    status_count = {}
-    for status, _ in models.procurement.PAYEMENT_STATUS_CHOICES:
-        status_count[status] = base_qs.filter(payment_status=status).count()
-    # --- End status count section ---
-
-    # Pagination
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=30, type=int)
     paginated_procurements = Pagination(procurement_qs, page=page, per_page=per_page)
+    procurements = attach_items(paginated_procurements.items, organization)
 
-    # Calculate durations
-    for p in paginated_procurements.items:
-        months, days = calculate_months_days(p.start_date, p.end_date)
-        p.duration_months = months
-        p.duration_days = days
-
-    # Choices for filters
-    all_procurements = models.Procurement.objects(organization=organization)
-
-    category_choices = models.procurement.CATEGORY_CHOICES
-    payment_status_choices = models.procurement.PAYEMENT_STATUS_CHOICES
+    for procurement in procurements:
+        end_date = procurement.get_end_date()
+        procurement.is_expired = bool(end_date and end_date.date() < today)
+        months, days = (None, None) if procurement.is_expired else calculate_months_days(today, end_date)
+        procurement.duration_months = months
+        procurement.duration_days = days
 
     return render_template(
         "/procurement/products/index.html",
         organization=organization,
-        procurements=paginated_procurements.items,
+        procurements=procurements,
         paginated_procurements=paginated_procurements,
         form=form,
         today=today,
-        category_choices=category_choices,
-        payment_status_choices=payment_status_choices,
         upload_success=upload_success,
-        all_procurements=all_procurements,
         status_count=status_count,
+        can_edit=ma_permissions.edit_checker(organization),
     )
+
+
+# ---------------------------------------------------------------------------
+# ฟอร์มสร้าง / แก้ไข MA
+# ---------------------------------------------------------------------------
+
+
+def _member_choices(organization) -> list[tuple[str, str]]:
+    members = models.OrganizationUserRole.objects(organization=organization, status="active")
+    return [(str(member.id), member.display_user_fullname()) for member in members]
+
+
+def _as_date(value):
+    return value.date() if isinstance(value, datetime.datetime) else value
+
+
+def _as_datetime(value):
+    if value is None:
+        return None
+    return datetime.datetime.combine(value, datetime.time.min)
+
+
+def _blank_item_data(member) -> dict:
+    return {
+        "responsible_by": [str(member.id)] if member else [],
+        "reminder_kind": "ma",
+        "installments": [{}],
+    }
+
+
+def _item_form_data(item) -> dict:
+    return {
+        "item_id": str(item.id),
+        "name": item.name,
+        "category": item.category,
+        "account_code": item.account_code or "",
+        "start_date": _as_date(item.start_date),
+        "end_date": _as_date(item.end_date),
+        "amount": item.amount,
+        "details": item.details,
+        "brand": item.brand,
+        "model_name": item.model_name,
+        "winner": item.winner,
+        "unit_price": item.unit_price,
+        "note": item.note,
+        "responsible_by": [str(member_id) for member_id in item.get_responsible_ids()],
+        "reminder_kind": item.reminder_kind,
+        "requires_activation": item.requires_activation,
+        "installments": [
+            {
+                "installment_id": str(installment._id),
+                "due_date": _as_date(installment.due_date),
+                "paid_date": _as_date(installment.paid_date),
+                "payment_number": installment.payment_number,
+                "paid_amount": installment.paid_amount,
+            }
+            for installment in item.get_sorted_installments()
+        ],
+    }
+
+
+def _build_form(organization, procurement=None, member=None) -> forms.procurement.ProcurementHeaderForm:
+    if request.method == "POST":
+        form = forms.procurement.ProcurementHeaderForm()
+    elif procurement:
+        form = forms.procurement.ProcurementHeaderForm(
+            formdata=None,
+            data={
+                "psu_disbursement_number": procurement.psu_disbursement_number,
+                "name": procurement.name,
+                "company": procurement.company,
+                "total_amount": procurement.total_amount,
+                "items": [_item_form_data(item) for item in procurement.get_items()],
+                "version": procurement.get_version(),
+            },
+        )
+    else:
+        form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]})
+    form.set_member_choices(_member_choices(organization))
+    return form
+
+
+def _render_form(form, organization, member, procurement=None, form_errors=()):
+    choices = _member_choices(organization)
+    item_prototype = forms.procurement.ProcurementItemForm(
+        formdata=None, prefix="items-__I__-", data=_blank_item_data(member)
+    )
+    item_prototype.responsible_by.choices = choices
+    installment_prototype = forms.procurement.InstallmentForm(formdata=None, prefix="items-__I__-installments-__J__-")
+    return render_template(
+        "/procurement/products/create.html",
+        form=form,
+        organization=organization,
+        procurement=procurement,
+        item_prototype=item_prototype,
+        installment_prototype=installment_prototype,
+        form_errors=[error for error in form_errors if error],
+    )
+
+
+def _build_installments(installment_entries, existing_installments, user) -> list:
+    existing = {str(installment._id): installment for installment in existing_installments}
+    installments = []
+    for entry in installment_entries:
+        data = entry.form
+        installment = existing.pop(data.installment_id.data or "", None) or models.Installment()
+        installment.due_date = _as_datetime(data.due_date.data)
+        if data.paid_date.data:
+            if not installment.paid_date:
+                installment.paid_by = user
+            installment.paid_date = _as_datetime(data.paid_date.data)
+            installment.payment_number = (data.payment_number.data or "").strip() or None
+            installment.paid_amount = data.paid_amount.data
+        else:
+            installment.paid_date = None
+            installment.paid_by = None
+            installment.payment_number = None
+            installment.paid_amount = None
+        installments.append(installment)
+    return installments
+
+
+def _build_items(form, organization, existing_items, user):
+    """แปลงฟอร์มเป็นรายการย่อย คืน (รายการที่จะบันทึก, รายการเดิมที่ถูกลบออกจากฟอร์ม)
+
+    item_id ในฟอร์มใช้ได้เฉพาะ id ของรายการย่อยใน MA นี้ id อื่นถือเป็นรายการใหม่
+    """
+    existing = {str(item.id): item for item in existing_items}
+    member_ids = {member_id for entry in form.items for member_id in entry.form.responsible_by.data or []}
+    members = {
+        str(member.id): member
+        for member in models.OrganizationUserRole.objects(
+            id__in=list(member_ids), organization=organization, status="active"
+        )
+    }
+
+    items = []
+    for entry in form.items:
+        data = entry.form
+        item = existing.pop(data.item_id.data or "", None) or models.ProcurementItem(created_by=user)
+        item.name = data.name.data.strip()
+        item.category = data.category.data
+        item.account_code = data.account_code.data or None
+        item.start_date = _as_datetime(data.start_date.data)
+        item.end_date = _as_datetime(data.end_date.data)
+        item.amount = data.amount.data
+        item.details = data.details.data or ""
+        item.brand = (data.brand.data or "").strip() or None
+        item.model_name = (data.model_name.data or "").strip() or None
+        item.winner = (data.winner.data or "").strip() or None
+        item.unit_price = data.unit_price.data
+        item.note = data.note.data or ""
+        item.responsible_by = [members[member_id] for member_id in data.responsible_by.data or [] if member_id in members]
+        item.reminder_kind = data.reminder_kind.data
+        item.requires_activation = bool(data.requires_activation.data)
+        item.installments = _build_installments(data.installments, item.installments, user)
+        item.last_updated_by = user
+        items.append(item)
+    return items, list(existing.values())
+
+
+def find_duplicate_payment_numbers(organization, items, procurement=None) -> list[str]:
+    """เลขที่เอกสารของงวดต้องไม่ซ้ำภายในหน่วยงาน (ซ้ำข้ามหน่วยงานได้)"""
+    numbers = [
+        installment.payment_number for item in items for installment in item.installments if installment.payment_number
+    ]
+    duplicates = {number for number, count in Counter(numbers).items() if count > 1}
+    if numbers:
+        others = models.ProcurementItem.objects(organization=organization, installments__payment_number__in=numbers)
+        if procurement and procurement.pk:
+            others = others.filter(procurement__ne=procurement)
+        for item in others.only("installments"):
+            duplicates.update(
+                installment.payment_number for installment in item.installments if installment.payment_number in numbers
+            )
+    return sorted(duplicates)
+
+
+def _save_form(form, organization, procurement, existing_items, member):
+    user = current_user._get_current_object()
+    items, removed_items = _build_items(form, organization, existing_items, user)
+
+    duplicates = find_duplicate_payment_numbers(organization, items, procurement)
+    if duplicates:
+        message = DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(numbers=", ".join(duplicates))
+        return _render_form(form, organization, member, procurement, [message])
+
+    procurement.psu_disbursement_number = form.psu_disbursement_number.data.strip()
+    procurement.name = form.name.data.strip()
+    procurement.company = form.company.data.strip()
+    procurement.total_amount = form.total_amount.data
+    procurement.last_updated_by = user
+
+    try:
+        procurement.save_with_items(items, removed_items)
+    except me.ValidationError as error:
+        return _render_form(form, organization, member, procurement, [error.message])
+
+    image = form.image.data
+    if image and getattr(image, "filename", None):
+        if procurement.image:
+            procurement.image.replace(image, filename=image.filename, content_type=image.content_type)
+        else:
+            procurement.image.put(image, filename=image.filename, content_type=image.content_type)
+        procurement.save()
+
+    flash("บันทึก MA เรียบร้อยแล้ว", "success")
+    return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
 
 @module.route("/create", methods=["GET", "POST"])
@@ -134,67 +343,48 @@ def index():
 def create():
     organization = g.organization
     # ผู้ดูแลระบบระดับ global ผ่าน decorator ไปก่อนที่จะมีการตรวจหน่วยงาน
-    # ถ้าไม่มีหน่วยงานที่กำลังดูอยู่ จะเรียก method ของ organization ไม่ได้
     if not organization:
-        return abort(403)
+        abort(404)
 
-    members = organization.get_organization_users()
-
-    if request.method == "POST":
-        form = forms.procurement.ProcurementForm(request.form)
-    else:
-        # MA สร้างจากหน้ารายการ MA เท่านั้น ไม่รับค่าตั้งต้นจาก query string แล้ว
-        form = forms.procurement.ProcurementForm(
-            formdata=None, asset_codes=[""], product_numbers=[""]
-        )
-
-    form.responsible_by.queryset = members
-    if form.responsible_by.data is None:
-        form.responsible_by.data = []
-
+    member = ma_permissions.get_member(organization)
+    # MA สร้างจากหน้ารายการ MA เท่านั้น ไม่รับค่าตั้งต้นจาก query string
+    form = _build_form(organization, member=member)
     if not form.validate_on_submit():
-        print(form.errors)
-        return render_template(
-            "/procurement/products/create.html",
-            form=form,
-            organization=organization,
+        return _render_form(form, organization, member)
+
+    procurement = models.Procurement(
+        organization=organization,
+        status="active",
+        created_by=current_user._get_current_object(),
+    )
+    return _save_form(form, organization, procurement, [], member)
+
+
+@module.route("/<procurement_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(procurement_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+
+    if not ma_permissions.can_edit_procurement(procurement, organization):
+        flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(
+            url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
         )
 
-    procurement = models.Procurement()
-    image = form.image.data
-    del form.image
+    member = ma_permissions.get_member(organization)
+    form = _build_form(organization, procurement=procurement, member=member)
+    if not form.validate_on_submit():
+        return _render_form(form, organization, member, procurement)
 
-    form.populate_obj(procurement)
+    if form.version.data != procurement.get_version():
+        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
 
-    # Save the array of asset codes and product numbers from form data
-    asset_codes = [c.strip() for c in form.asset_codes.data if c and c.strip()]
-    product_numbers = [c.strip() for c in form.product_numbers.data if c and c.strip()]
-    
-    procurement.asset_codes = asset_codes
-    procurement.product_numbers = product_numbers
-
-    # set quantity based on max of asset_codes or product_numbers
-    procurement.quantity = max(len(asset_codes), len(product_numbers), 1)
-
-    procurement.created_by = procurement.last_updated_by = current_user._get_current_object()
-    procurement.organization = organization
-
-    # Save image if uploaded
-    if image:
-        if procurement.image:
-            procurement.image.replace(
-                image,
-                filename=image.filename,
-                content_type=image.content_type,
-            )
-        else:
-            procurement.image.put(
-                image,
-                filename=image.filename,
-                content_type=image.content_type,
-            )
-    procurement.save()
-    return redirect(url_for("procurement.products.index", organization=organization))
+    return _save_form(form, organization, procurement, procurement.get_items(), member)
 
 
 @module.route("/<organization_id>/download_template")
@@ -257,9 +447,16 @@ def image(procurement_id, filename):
 @login_required
 def edit_image(procurement_id):
     organization = g.organization
+    if not organization:
+        abort(404)
     procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
     if not procurement:
         abort(404)
+    if not ma_permissions.can_edit_procurement(procurement, organization):
+        flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(
+            url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
+        )
 
     form = forms.procurement.EditImageForm(obj=procurement)
     if not form.validate_on_submit():
@@ -286,4 +483,4 @@ def edit_image(procurement_id):
             )
         procurement.last_updated_by = current_user._get_current_object()
         procurement.save()
-    return redirect(url_for("procurement.products.index", organization=organization))
+    return redirect(url_for("procurement.products.index", organization_id=organization.id))

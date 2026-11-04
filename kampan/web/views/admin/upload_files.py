@@ -298,10 +298,9 @@ def processing(document_id):
         )
         print("=====> MAS creation job submitted", job.get_id())
     elif category == "ma":
-        ma = models.Procurement.objects()
         job = redis_rq.redis_queue.queue.enqueue(
             utils.upload_files.save_ma_db,
-            args=(document, ma, current_user.id),
+            args=(document, None, current_user.id),
             timeout=600,
             job_timeout=600,
         )

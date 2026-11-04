@@ -17,8 +17,12 @@ from .lost_break_items import LostBreakItem
 from .categories import Category
 from .procurement import (
     Procurement,
-    PaymentRecord,
+    ProcurementItem,
+    Installment,
     CATEGORY_CHOICES,
+    ITEM_CATEGORY_CHOICES,
+    ACCOUNT_CODE_CHOICES,
+    REMINDER_KIND_CHOICES,
     PAYEMENT_STATUS_CHOICES,
     RENEWAL_STATUS_CHOICES,
 )

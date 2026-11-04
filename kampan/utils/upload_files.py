@@ -31,6 +31,15 @@ MA_COLUMN_MAP = {
     "company": "บริษัท",
 }
 MA_COLUMNS = list(MA_COLUMN_MAP.keys())
+# คอลัมน์ที่เว้นว่างได้ (S/N และรหัสครุภัณฑ์ต่อเข้า details ของรายการย่อย)
+MA_BLANK_ALLOWED_COLUMNS = {"product_number", "asset_code"}
+MA_REQUIRED_COLUMNS = [column for column in MA_COLUMNS if column not in MA_BLANK_ALLOWED_COLUMNS]
+# คอลัมน์เพิ่มเติม (ไม่บังคับ) ไฟล์รูปแบบเดิมที่ไม่มีคอลัมน์เหล่านี้ยังนำเข้าได้
+MA_OPTIONAL_COLUMN_MAP = {
+    "psu_disbursement_number": "เลขที่ ม.อ.เบิกจ่าย",
+    "details": "รายละเอียด",
+}
+MA_ALL_COLUMN_MAP = {**MA_COLUMN_MAP, **MA_OPTIONAL_COLUMN_MAP}
 
 
 def _normalize_columns(df: pd.DataFrame, column_map: dict) -> pd.DataFrame:
@@ -108,6 +117,7 @@ def generate_ma_template() -> io.BytesIO:
 
     example_rows = [
         {
+            "เลขที่ ม.อ.เบิกจ่าย": "มอ.011/2567-0001",
             "เลขที่สินค้า/เลขที่เอกสาร": "DOC-2024-001",
             "ชื่อรายการ": "เครื่องคอมพิวเตอร์โน้ตบุ๊ก",
             "รหัสครุภัณฑ์": "IT-NB-0001",
@@ -118,8 +128,10 @@ def generate_ma_template() -> io.BytesIO:
             "ประเภท": "ครุภัณฑ์",
             "ผู้รับผิดชอบ": "สมชาย ใจดี",
             "บริษัท": "บริษัท เทคโนโลยี จำกัด",
+            "รายละเอียด": "รุ่น X1 จำนวน 1 เครื่อง",
         },
         {
+            "เลขที่ ม.อ.เบิกจ่าย": "มอ.011/2567-0002",
             "เลขที่สินค้า/เลขที่เอกสาร": "DOC-2024-002",
             "ชื่อรายการ": "ซอฟต์แวร์บัญชี",
             "รหัสครุภัณฑ์": "SW-ACC-0001",
@@ -130,9 +142,12 @@ def generate_ma_template() -> io.BytesIO:
             "ประเภท": "ซอฟต์แวร์",
             "ผู้รับผิดชอบ": "สมหญิง รักสงบ",
             "บริษัท": "บริษัท ซอฟต์แวร์ไทย จำกัด",
+            "รายละเอียด": "",
         },
     ]
-    headers = list(MA_COLUMN_MAP.values())
+    headers = [MA_OPTIONAL_COLUMN_MAP["psu_disbursement_number"]] + list(MA_COLUMN_MAP.values()) + [
+        MA_OPTIONAL_COLUMN_MAP["details"]
+    ]
     df = pd.DataFrame(example_rows, columns=headers)
 
     buf = io.BytesIO()
@@ -177,7 +192,7 @@ def generate_ma_template() -> io.BytesIO:
         ws.cell(
             row=note_row,
             column=1,
-            value="หมายเหตุ: ประเภท (ประเภท) ให้ระบุเป็น: ครุภัณฑ์, ซอฟต์แวร์, จ้างเหมาบริการ, วัสดุ",
+            value="หมายเหตุ: ประเภท (ประเภท) ให้ระบุเป็น: ครุภัณฑ์, ซอฟต์แวร์, จ้างเหมาบริการ, วัสดุ, สินทรัพย์ไม่มีตัวตน · 1 แถว = MA 1 สัญญาที่มีรายการย่อย 1 รายการ",
         )
         ws.cell(row=note_row, column=1).font = Font(color="FF0000", italic=True, size=9)
         ws.cell(
@@ -297,7 +312,7 @@ def validate_ma_file(document) -> list:
         file_bytes = document.file.read()
         df = pd.read_excel(io.BytesIO(file_bytes))
         df.columns = df.columns.str.strip()
-        df = _normalize_columns(df, MA_COLUMN_MAP)
+        df = _normalize_columns(df, MA_ALL_COLUMN_MAP)
     except Exception as e:
         return [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
 
@@ -310,7 +325,7 @@ def validate_ma_file(document) -> list:
         row_num = idx + 2
         missing = [
             MA_COLUMN_MAP.get(k, k)
-            for k in MA_COLUMNS
+            for k in MA_REQUIRED_COLUMNS
             if is_missing_required(row.get(k))
         ]
         if missing:
@@ -536,17 +551,69 @@ def parse_date(val):
         return pd.to_datetime(val, errors="coerce")
 
 
+def _excel_text(value) -> str:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ""
+    return str(value).strip()
+
+
+def _ma_row_details(row) -> str:
+    """details ของรายการย่อย = รายละเอียด + บรรทัด S/N + บรรทัดรหัสครุภัณฑ์ (ถ้ามี)"""
+    lines = []
+    details = _excel_text(row.get("details"))
+    if details:
+        lines.append(details)
+    product_number = _excel_text(row.get("product_number"))
+    if product_number:
+        lines.append(f"S/N: {product_number}")
+    asset_code = _excel_text(row.get("asset_code"))
+    if asset_code:
+        lines.append(f"รหัสครุภัณฑ์: {asset_code}")
+    return "\n".join(lines)
+
+
+def _find_ma_members(organization, value) -> list:
+    """แปลงชื่อผู้รับผิดชอบ (บรรทัดละ 1 คน "ชื่อ นามสกุล") เป็นสมาชิกของหน่วยงานนี้เท่านั้น"""
+    members = []
+    for line in _excel_text(value).splitlines():
+        fullname = line.strip().split(" ", 1)
+        if len(fullname) != 2:
+            continue
+        member = models.OrganizationUserRole.objects(
+            organization=organization,
+            status="active",
+            first_name=fullname[0].strip(),
+            last_name=fullname[1].strip(),
+        ).first()
+        if member and member not in members:
+            members.append(member)
+    return members
+
+
+def _is_duplicate_ma_row(organization, name, company, start_date, end_date, amount) -> bool:
+    """ข้อมูลซ้ำ = รายการย่อยชื่อ, ช่วงวันที่ และยอดเดียวกัน ภายใต้หัวสัญญาของบริษัทเดียวกัน"""
+    candidates = models.ProcurementItem.objects(
+        organization=organization,
+        name=name,
+        start_date=start_date,
+        end_date=end_date,
+        amount=amount,
+    )
+    procurement_ids = models.procurement.procurement_ids_of(candidates)
+    if not procurement_ids:
+        return False
+    return bool(models.Procurement.objects(organization=organization, id__in=procurement_ids, company=company).count())
+
+
 def save_ma_db(document, ma, user_id):
+    """อ่านข้อมูล MA จากไฟล์ Excel แล้วสร้าง MA (1 แถว = หัวสัญญา 1 + รายการย่อย 1) ลงฐานข้อมูล"""
     print("=====> Start processing MA document:", document.id)
-    """
-    อ่านข้อมูล MA จากไฟล์ Excel แล้วสร้าง MA แต่ละตัวลงฐานข้อมูล
-    """
     errors = []
     processed_user = models.User.objects(id=user_id).first()
     document = models.Document.objects(id=document.id).first()
     created_count = 0
     if not document:
-        print(f"Document not found.")
+        print("Document not found.")
         return False
 
     # Clear previous errors
@@ -557,7 +624,7 @@ def save_ma_db(document, ma, user_id):
         file_bytes = document.file.read()
         df = pd.read_excel(io.BytesIO(file_bytes))
         df.columns = df.columns.str.strip()
-        df = _normalize_columns(df, MA_COLUMN_MAP)
+        df = _normalize_columns(df, MA_ALL_COLUMN_MAP)
     except Exception as e:
         document.status = "failed"
         document.error_messages = [f"ไม่สามารถอ่านไฟล์ได้: {e}"]
@@ -573,116 +640,85 @@ def save_ma_db(document, ma, user_id):
         print("Cannot find user.")
         return False
 
-    column_map = {
-        "product_number": "product_numbers",
-        "name": "name",
-        "asset_code": "asset_codes",
-        "start_date": "start_date",
-        "end_date": "end_date",
-        "amount": "amount",
-        "period": "period",
-        "category": "category",
-        "responsible_by": "responsible_by",
-        "company": "company",
-    }
     category_map = {
         "ซอฟต์แวร์": "software",
         "ครุภัณฑ์": "product",
         "จ้างเหมาบริการ": "service",
         "วัสดุ": "material",
+        "สินทรัพย์ไม่มีตัวตน": "intangible",
     }
-
-    required_columns = list(column_map.keys())
+    organization = document.organization
 
     for idx, row in df.iterrows():
         row_num = idx + 2
-        missing = False
-        for col in required_columns:
-            if pd.isnull(row.get(col)) or str(row.get(col)).strip() == "":
-                msg = f"แถวที่ {row_num}: ขาดข้อมูล '{MA_COLUMN_MAP.get(col, col)}'"
-                print(msg)
-                errors.append(msg)
-                missing = True
-                break
+        missing = [col for col in MA_REQUIRED_COLUMNS if pd.isnull(row.get(col)) or str(row.get(col)).strip() == ""]
         if missing:
+            msg = f"แถวที่ {row_num}: ขาดข้อมูล '{MA_COLUMN_MAP.get(missing[0], missing[0])}'"
+            print(msg)
+            errors.append(msg)
             continue
 
-        data = {}
         try:
-            for excel_col, model_field in column_map.items():
-                value = row.get(excel_col)
-                try:
-                    if model_field in ["start_date", "end_date"]:
-                        value = parse_date(value)
-                    if model_field == "amount":
-                        value = (
-                            to_decimal(value) if pd.notnull(value) else Decimal("0.00")
-                        )
-                    if model_field == "period":
-                        value = int(value) if pd.notnull(value) else 1
-                    if model_field == "asset_codes":
-                        value = [str(value).strip()] if pd.notnull(value) and str(value).strip() else []
-                    if model_field == "product_numbers":
-                        value = [str(value).strip()] if pd.notnull(value) and str(value).strip() else []
-                    if model_field == "category":
-                        value = category_map.get(str(value).strip(), "other")
-                    if model_field == "responsible_by":
-                        responsible_by_list = []
-                        names = str(value).strip().splitlines()
-                        for name in names:
-                            name = name.strip()
-                            if not name:
-                                continue
-                            fullname = name.split(" ", 1)
-                            if len(fullname) == 2:
-                                first_name, last_name = fullname
-                                user_role = models.OrganizationUserRole.objects(
-                                    first_name=first_name.strip(),
-                                    last_name=last_name.strip(),
-                                ).first()
-                                if user_role:
-                                    responsible_by_list.append(user_role)
-                        data[model_field] = responsible_by_list
-                        continue
-                    data[model_field] = value
-                except Exception as field_e:
-                    msg = f"แถวที่ {row_num}: คอลัมน์ '{MA_COLUMN_MAP.get(excel_col, excel_col)}' ผิดพลาด: {field_e}"
-                    print(msg)
-                    errors.append(msg)
+            name = _excel_text(row.get("name"))
+            company = _excel_text(row.get("company"))
+            start_date = parse_date(row.get("start_date"))
+            end_date = parse_date(row.get("end_date"))
+            if start_date is None or pd.isna(start_date) or end_date is None or pd.isna(end_date):
+                raise ValueError("รูปแบบวันที่ไม่ถูกต้อง")
+            start_date = pd.Timestamp(start_date).to_pydatetime()
+            end_date = pd.Timestamp(end_date).to_pydatetime()
+            amount = to_decimal(row.get("amount"))
+            period = int(float(row.get("period")))
+            if period < 1:
+                raise ValueError(f"{MA_COLUMN_MAP['period']} ต้องมากกว่า 0")
+            category = category_map.get(_excel_text(row.get("category")))
+            if not category:
+                raise ValueError(f"ไม่รู้จักประเภท '{_excel_text(row.get('category'))}'")
 
-            duplicate_query = {
-                "organization": document.organization,
-                "name": data.get("name"),
-                "asset_codes": data.get("asset_codes"),
-                "start_date": data.get("start_date"),
-                "end_date": data.get("end_date"),
-                "amount": data.get("amount"),
-                "period": data.get("period"),
-                "company": data.get("company"),
-                "category": data.get("category"),
-                "responsible_by": data.get("responsible_by"),
-            }
-            if models.Procurement.objects(**duplicate_query).first():
+            if _is_duplicate_ma_row(organization, name, company, start_date, end_date, amount):
                 msg = f"แถวที่ {row_num}: ข้อมูลซ้ำกับที่มีในระบบแล้ว"
                 print(msg)
                 errors.append(msg)
                 continue
 
             procurement = models.Procurement(
-                organization=document.organization,
-                **data,
+                organization=organization,
+                psu_disbursement_number=_excel_text(row.get("psu_disbursement_number")) or None,
+                name=name,
+                company=company,
+                total_amount=amount,
+                status="active",
                 created_by=processed_user,
                 last_updated_by=processed_user,
-                status="active",
             )
-            procurement.save()
+            item = models.ProcurementItem(
+                name=name,
+                category=category,
+                start_date=start_date,
+                end_date=end_date,
+                amount=amount,
+                details=_ma_row_details(row),
+                responsible_by=_find_ma_members(organization, row.get("responsible_by")),
+                reminder_kind="ma",
+                installments=[
+                    models.Installment(due_date=datetime.datetime.combine(due_date, datetime.time.min))
+                    for due_date in models.procurement.even_due_dates(start_date, end_date, period)
+                ],
+                created_by=processed_user,
+                last_updated_by=processed_user,
+            )
+            # ทางบันทึกเดียวกับฟอร์ม: ตรวจผลรวมยอดและ validate ทั้งหมดก่อนเขียน
+            procurement.save_with_items([item])
             created_count += 1
-            print(f"Saved procurement: {', '.join(procurement.product_numbers) if procurement.product_numbers else 'N/A'}")
+            print(f"Saved procurement: {procurement.name}")
+        except me.ValidationError as e:
+            msg = f"แถวที่ {row_num}: ข้อมูลไม่ถูกต้อง: {e.message}"
+            print(msg)
+            errors.append(msg)
         except Exception as e:
             msg = f"แถวที่ {row_num}: เกิดข้อผิดพลาด: {e}"
             print(msg)
             errors.append(msg)
-            continue
 
     document.updated_date = datetime.datetime.now()
     document.error_messages = errors

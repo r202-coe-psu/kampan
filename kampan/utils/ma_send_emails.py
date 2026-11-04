@@ -57,27 +57,33 @@ CATEGORY_MAP = {
     "product": "ครุภัณฑ์",
     "service": "จ้างเหมาบริการ",
     "material": "วัสดุ",
+    "intangible": "สินทรัพย์ไม่มีตัวตน",
 }
 
 
 def get_procurement_email_context(procurement):
+    """ข้อมูลของอีเมลแจ้งเตือน MA ผู้รับคือผู้รับผิดชอบทุกรายการย่อย (ไม่ซ้ำ)
+
+    ระบบเตือนรายรายการย่อยจะมาแทนใน #28 ตอนนี้แค่ให้ทำงานกับโครงสร้างหัว → รายการย่อย
+    """
     responsible_list = []
     procurement = models.Procurement.objects(id=procurement.id).first()
 
     if not procurement:
         return
 
-    due_dates = procurement.get_payment_due_dates()
-    for member in procurement.responsible_by:
-        division = member.division
-        organization = division.organization
+    items = procurement.get_items()
+    due_dates = sorted(
+        installment.due_date.date()
+        for item in items
+        for installment in item.installments
+        if not installment.is_paid() and installment.due_date
+    )
+    for member in procurement.get_responsible_members():
+        organization = member.organization
 
         # Get name and email from user or member directly
-        name = (
-            member.user.get_name()
-            if member.user and member.user.get_name
-            else member.display_name()
-        )
+        name = member.user.get_name() if member.user and member.user.get_name else member.display_name()
         email = member.user.email if member.user else member.email
 
         if email:
@@ -89,15 +95,16 @@ def get_procurement_email_context(procurement):
                 }
             )
 
+    end_date = procurement.get_end_date()
     text_format = {
-        "product_number": ", ".join(procurement.product_numbers) if procurement.product_numbers else "",
-        "asset_code": ", ".join(procurement.asset_codes) if procurement.asset_codes else "",
+        "psu_disbursement_number": procurement.psu_disbursement_number or "",
+        "details": "\n".join(item.details for item in items if item.details),
         "name": procurement.name,
-        "category": procurement.category,
+        "category": ", ".join(procurement.get_category_labels()),
         "company": procurement.company,
-        "amount": procurement.amount,
+        "amount": procurement.total_amount,
         "due_date": due_dates,
-        "end_date": procurement.end_date.strftime("%Y-%m-%d"),
+        "end_date": end_date.strftime("%Y-%m-%d") if end_date else "",
         "responsible_by": responsible_list,
     }
 

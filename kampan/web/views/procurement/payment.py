@@ -1,8 +1,11 @@
+"""หน้ารายละเอียด MA (หัวสัญญา + รายการย่อย + งวด) และการบันทึกจ่ายรายงวด"""
+
 import datetime
 
 from flask import (
     Blueprint,
     abort,
+    flash,
     g,
     redirect,
     render_template,
@@ -13,109 +16,140 @@ from flask_login import current_user, login_required
 from kampan import models
 from kampan.web import forms
 
+from . import ma_permissions
+
 module = Blueprint("payment", __name__, url_prefix="/payment")
 
+NO_PAYMENT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์บันทึกการจ่ายของ MA รายการนี้"
+DUPLICATE_PAYMENT_NUMBER_MESSAGE = "เลขที่เอกสาร {number} ถูกใช้งานแล้วในหน่วยงานนี้"
 
-@module.route("/<procurement_id>", methods=["GET", "POST"])
+
+def _get_procurement_or_404(procurement_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+    return organization, procurement
+
+
+def _detail_url(procurement, organization):
+    return url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
+
+
+@module.route("/<procurement_id>", methods=["GET"])
 @login_required
 def index(procurement_id):
-    today = datetime.date.today()
-    organization = g.organization
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
-        abort(404)
-    form = forms.procurement.PaymentForm()
+    organization, procurement = _get_procurement_or_404(procurement_id)
     return render_template(
         "procurement/payment/index.html",
-        item=procurement,
+        procurement=procurement,
+        items=procurement.get_items(),
         organization=organization,
-        today=today,
-        form=form,
-        is_last_period=procurement.is_last_period(),
-        remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
+        today=datetime.date.today(),
+        can_edit=ma_permissions.can_edit_procurement(procurement, organization),
+        form=forms.procurement.InstallmentPaymentForm(formdata=None),
     )
 
 
-@module.route("/<procurement_id>/set_paid", methods=["POST"])
-@login_required
-def set_paid(procurement_id):
-    organization = g.organization
-    procurement = models.Procurement.objects(id=procurement_id, organization=organization).first()
-    if not procurement:
+def _get_installment_for_change(procurement_id, item_id, installment_id):
+    """โหลด MA / รายการย่อย / งวด (scope ด้วยหน่วยงาน ไม่พบ = 404) แล้วตรวจสิทธิ์ผู้แก้ไข MA ได้"""
+    organization, procurement = _get_procurement_or_404(procurement_id)
+    item = models.ProcurementItem.objects(id=item_id, procurement=procurement, organization=organization).first()
+    if not item:
         abort(404)
+    installment = item.get_installment(installment_id)
+    if not installment:
+        abort(404)
+    allowed = ma_permissions.can_edit_procurement(procurement, organization)
+    return organization, procurement, item, installment, allowed
 
-    form = forms.procurement.PaymentForm()
 
-    if not form.validate_on_submit():
-        return render_template(
-            "procurement/payment/index.html",
-            item=procurement,
+def _payment_number_taken(organization, number: str, item, installment) -> bool:
+    """เลขที่เอกสารซ้ำกับงวดอื่นในหน่วยงานเดียวกันไหม (ซ้ำข้ามหน่วยงานได้)"""
+    for other in models.ProcurementItem.objects(organization=organization, installments__payment_number=number).only(
+        "installments"
+    ):
+        for other_installment in other.installments:
+            if other_installment.payment_number != number:
+                continue
+            if other.id == item.id and other_installment._id == installment._id:
+                continue
+            return True
+    return False
+
+
+def _update_installment(organization, item, installment, **values) -> bool:
+    """แก้งวดเดียวแบบ atomic ด้วย positional operator (ไม่เขียนทับงวด / รายการย่อยที่คนอื่นแก้พร้อมกัน)"""
+    updates = {f"set__installments__S__{name}": value for name, value in values.items()}
+    return bool(
+        models.ProcurementItem.objects(
+            id=item.id,
             organization=organization,
-            form=form,
-            today=datetime.date.today(),
-            is_last_period=procurement.is_last_period(),
-            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
+            __raw__={"installments._id": installment._id},
+        ).update_one(
+            set__last_updated_by=current_user._get_current_object(),
+            set__updated_date=datetime.datetime.now(),
+            **updates,
         )
-
-    amount = form.amount.data
-    new_payment_number = form.payment_number.data
-
-    # --- ตรวจสอบจำนวนเงิน ---
-    if procurement.amount is not None and amount > procurement.amount:
-        form.amount.errors.append("จำนวนเงินไม่สามารถเกินยอดรวมของโครงการ")
-        return render_template(
-            "procurement/payment/index.html",
-            item=procurement,
-            organization=organization,
-            form=form,
-            today=datetime.date.today(),
-            is_last_period=procurement.is_last_period(),
-            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
-        )
-
-    # --- ตรวจสอบเลขที่ใบจ่ายเงินซ้ำ ---
-    if new_payment_number:
-        existing = models.Procurement.objects(organization=organization, payment_records__payment_number=new_payment_number).first()
-        if existing:
-            form.payment_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
-            return render_template(
-                "procurement/payment/index.html",
-                item=procurement,
-                organization=organization,
-                form=form,
-                today=datetime.date.today(),
-                is_last_period=procurement.is_last_period(),
-                remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
-            )
-
-    # --- บันทึกข้อมูลการจ่าย ---
-    next_period_index = len(procurement.payment_records)
-
-    final_amount = procurement.get_remaining_amount() if procurement.is_last_period() else amount
-    procurement.add_payment_record(
-        period_index=next_period_index,
-        paid_by=current_user._get_current_object(),
-        amount=final_amount,
-        payment_number=new_payment_number,
     )
 
-    procurement.paid_period_index = next_period_index
-    procurement.payment_status = procurement.get_current_payment_status(datetime.date.today())
-    procurement.last_updated_by = current_user._get_current_object()
 
-    try:
-        procurement.save()
-    except Exception:
-        form.payment_number.errors.append("เลขที่ใบจ่ายเงินนี้ถูกใช้งานแล้ว")
-        return render_template(
-            "procurement/payment/index.html",
-            item=procurement,
-            organization=organization,
-            form=form,
-            today=datetime.date.today(),
-            is_last_period=procurement.is_last_period(),
-            remaining_amount=(procurement.get_remaining_amount() if procurement.is_last_period() else None),
-        )
+@module.route("/<procurement_id>/items/<item_id>/installments/<installment_id>/pay", methods=["POST"])
+@login_required
+def pay_installment(procurement_id, item_id, installment_id):
+    organization, procurement, item, installment, allowed = _get_installment_for_change(
+        procurement_id, item_id, installment_id
+    )
+    detail_url = _detail_url(procurement, organization)
+    if not allowed:
+        flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
+        return redirect(detail_url)
 
-    # ต้องส่ง organization_id ไม่ใช่ organization เพราะ url_for จะแปะ object ลง query string
-    return redirect(url_for("procurement.products.index", organization_id=organization.id))
+    form = forms.procurement.InstallmentPaymentForm()
+    if not form.validate_on_submit():
+        errors = [error for field_errors in form.errors.values() for error in field_errors]
+        flash(errors[0] if errors else "ข้อมูลการจ่ายไม่ถูกต้อง", "error")
+        return redirect(detail_url)
+
+    payment_number = (form.payment_number.data or "").strip() or None
+    if payment_number and _payment_number_taken(organization, payment_number, item, installment):
+        flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
+        return redirect(detail_url)
+
+    _update_installment(
+        organization,
+        item,
+        installment,
+        paid_date=datetime.datetime.combine(form.paid_date.data, datetime.time.min),
+        paid_by=current_user._get_current_object(),
+        payment_number=payment_number,
+        paid_amount=form.paid_amount.data,
+    )
+    flash("บันทึกการจ่ายงวดเรียบร้อยแล้ว", "success")
+    return redirect(detail_url)
+
+
+@module.route("/<procurement_id>/items/<item_id>/installments/<installment_id>/unpay", methods=["POST"])
+@login_required
+def unpay_installment(procurement_id, item_id, installment_id):
+    organization, procurement, item, installment, allowed = _get_installment_for_change(
+        procurement_id, item_id, installment_id
+    )
+    detail_url = _detail_url(procurement, organization)
+    if not allowed:
+        flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
+        return redirect(detail_url)
+
+    _update_installment(
+        organization,
+        item,
+        installment,
+        paid_date=None,
+        paid_by=None,
+        payment_number=None,
+        paid_amount=None,
+    )
+    flash("ยกเลิกการบันทึกจ่ายงวดแล้ว", "success")
+    return redirect(detail_url)

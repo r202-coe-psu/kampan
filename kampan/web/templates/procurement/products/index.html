@@ -3,8 +3,8 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/html-renderer.html' as renderer %}
 
-{% block title %}รายการซอฟต์แวร์/บริการ{% endblock %}
-{% block dashboard_title %}รายการซอฟต์แวร์/บริการ{% endblock %}
+{% block title %}รายการ MA{% endblock %}
+{% block dashboard_title %}รายการ MA (สัญญาซอฟต์แวร์/บริการ){% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
         <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
            class="btn btn-primary btn-sm shadow-md">
           <i class="ph ph-plus"></i>
-          เพิ่มรายการใหม่
+          เพิ่ม MA ใหม่
         </a>
       {% endif %}
     </div>
@@ -28,8 +28,8 @@
     <!-- Filter Form -->
     <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
       <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
-        <input type="hidden" name="organization_id" value="{{ organization_id }}" />
-        {{ renderer.base_render(form.name) }}
+        <input type="hidden" name="organization_id" value="{{ organization.id }}" />
+        {{ renderer.base_render(form.name, placeholder="เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย") }}
         {{ renderer.render_select_field(form.category) }}
         {{ renderer.render_select_field(form.payment_status) }}
         <div>
@@ -94,7 +94,7 @@
     <div class="card bg-base-100 border border-base-200 shadow-sm">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          {{ render_products_table(procurements, current_user, organization, today) }}
+          {{ render_products_table(procurements, organization, today, can_edit) }}
         </div>
       </div>
     </div>
