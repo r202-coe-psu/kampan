@@ -27,12 +27,7 @@ function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
   const buttonText = document.getElementById(buttonTextId);
 
   if (input.value) {
-    const parts = input.value.split('-');
-    if (parts.length === 3) {
-      buttonText.innerText = `${parts[2]}/${parts[1]}/${parts[0]}`;
-    } else {
-      buttonText.innerText = input.value;
-    }
+    buttonText.innerText = formatPickerDate(input.value, isBuddhistPicker(button));
   }
 
   button.addEventListener("click", function () {
@@ -48,9 +43,17 @@ function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
 }
 
 // ===== date picker แบบ data attribute (ใช้กับแถวที่เพิ่มด้วย JS ซึ่ง <script> ใน HTML ที่แทรกไม่ทำงาน) =====
-function formatPickerDate(iso) {
+// buddhist: แสดงปี พ.ศ. (ค่าที่ส่งกลับ / hidden input ยังเป็น ISO ค.ศ. เสมอ)
+function isBuddhistPicker(element) {
+  const container = element && element.closest("[data-date-picker]");
+  return !!(container && container.dataset.buddhist);
+}
+
+function formatPickerDate(iso, buddhist) {
   const parts = (iso || "").split("-");
-  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : iso || "";
+  if (parts.length !== 3) return iso || "";
+  const year = buddhist ? String(parseInt(parts[0], 10) + 543) : parts[0];
+  return `${parts[2]}/${parts[1]}/${year}`;
 }
 
 // วางปฏิทินแบบ fixed ใต้ปุ่ม (ไม่ถูกตัดด้วย overflow-x-auto ของตาราง) ถ้าที่ล่างไม่พอให้ขึ้นด้านบน
@@ -78,7 +81,7 @@ function setDatePickerValue(input, iso) {
   if (container) {
     const label = document.getElementById(container.dataset.labelId);
     const calendar = container.querySelector("calendar-date");
-    if (label) label.innerText = iso ? formatPickerDate(iso) : container.dataset.placeholder || "";
+    if (label) label.innerText = iso ? formatPickerDate(iso, !!container.dataset.buddhist) : container.dataset.placeholder || "";
     if (calendar) calendar.value = iso || "";
     syncDatePickerClear(container);
   }
@@ -116,6 +119,13 @@ function initDatePickersIn(root) {
     }
     const calendar = popover.querySelector("calendar-date");
     if (calendar) calendar.addEventListener("change", function () { syncDatePickerClear(container); });
+    if (calendar && container.dataset.buddhist) {
+      // แบบ พ.ศ. ไม่มี onchange inline: ตั้งค่าและปิดปฏิทินที่นี่
+      calendar.addEventListener("change", function () {
+        setDatePickerValue(input, calendar.value);
+        popover.classList.add("hidden");
+      });
+    }
     const clear = container.querySelector("[data-date-clear]");
     if (clear) {
       clear.addEventListener("click", function () {

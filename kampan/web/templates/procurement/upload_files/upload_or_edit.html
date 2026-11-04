@@ -44,10 +44,14 @@
         <form method="POST" enctype="multipart/form-data" id="editForm" class="p-6">
             {{ form.hidden_tag() }}
             <!-- Category Selection -->
-            {{ renderer.render_select_field(form.category , optionals={'required': True}) }}
+            {{ renderer.dropdown_select(form.category, required=True) }}
 
             <!-- File Upload -->
-            {{ renderer.file_input(form.document_upload, optionals={'required': True}) }}
+            <fieldset class="fieldset w-full mt-4">
+                <legend class="fieldset-legend">{{ form.document_upload.label.text }} <span class="text-error">*</span></legend>
+                {{ form.document_upload(class_="file-input w-full" ~ (" file-input-error" if form.document_upload.errors else ""), required=True) }}
+                {% for error in form.document_upload.errors %}<p class="text-error text-xs mt-1">{{ error }}</p>{% endfor %}
+            </fieldset>
 
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 pt-6 mt-6 border-t border-gray-200">
