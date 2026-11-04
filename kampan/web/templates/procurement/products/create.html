@@ -187,6 +187,7 @@
       initDatePickersIn(card);
       initDropdownSelectsIn(card);
       syncInstallmentMode(card);
+      syncSubItemToggles(card);
       showError(document.getElementById('items_error'), '');
       renumber();
       updateSum();
@@ -212,6 +213,7 @@
       }
       const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
       rows.insertAdjacentHTML('beforeend', html);
+      syncSubItemToggles(card);
       showError(error, '');
       rows.lastElementChild.querySelector('input').focus();
     }
@@ -226,6 +228,28 @@
       panel.querySelectorAll('input, button[data-action]').forEach(function (control) { control.disabled = !on; });
       if (on && !card.querySelector('.installment-row')) addInstallment(card);
       renumber();
+    }
+
+    // เปิด/ปิด การระบุ S/N และ รหัสครุภัณฑ์ ในแถวย่อย
+    function syncSubItemToggles(card) {
+      const snToggle = card.querySelector('.sub-item-toggle-sn');
+      const assetToggle = card.querySelector('.sub-item-toggle-asset');
+      const showSn = snToggle ? snToggle.checked : false;
+      const showAsset = assetToggle ? assetToggle.checked : false;
+
+      card.querySelectorAll('[data-sub-item-col="sn"]').forEach(function (col) {
+        col.classList.toggle('hidden', !showSn);
+        col.querySelectorAll('input').forEach(function (input) {
+          input.disabled = !showSn;
+        });
+      });
+
+      card.querySelectorAll('[data-sub-item-col="asset"]').forEach(function (col) {
+        col.classList.toggle('hidden', !showAsset);
+        col.querySelectorAll('input').forEach(function (input) {
+          input.disabled = !showAsset;
+        });
+      });
     }
 
     form.addEventListener('click', function (event) {
@@ -292,6 +316,9 @@
 
     form.addEventListener('change', function (event) {
       if (event.target.classList.contains('installment-toggle')) syncInstallmentMode(event.target.closest('.ma-item'));
+      if (event.target.classList.contains('sub-item-toggle-sn') || event.target.classList.contains('sub-item-toggle-asset')) {
+        syncSubItemToggles(event.target.closest('.ma-item'));
+      }
     });
 
     form.addEventListener('input', function (event) {
@@ -308,7 +335,10 @@
 
     initDatePickersIn(form);
     initDropdownSelectsIn(form);
-    itemsContainer.querySelectorAll('.ma-item').forEach(syncInstallmentMode);
+    itemsContainer.querySelectorAll('.ma-item').forEach(function (card) {
+      syncInstallmentMode(card);
+      syncSubItemToggles(card);
+    });
     renumber();
     updateSum();
   })();

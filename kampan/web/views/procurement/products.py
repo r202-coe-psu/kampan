@@ -64,6 +64,8 @@ def search_procurements(procurements, organization, text: str):
         Q(name__icontains=text)
         | Q(sub_items__brand__icontains=text)
         | Q(sub_items__model_name__icontains=text)
+        | Q(sub_items__serial_number__icontains=text)
+        | Q(sub_items__asset_code__icontains=text)
         | Q(sub_items__details__icontains=text)
     )
     return procurements.filter(
@@ -154,6 +156,8 @@ def _blank_item_data(member) -> dict:
         "reminder_kind": "ma",
         "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
         "payment_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
+        "has_sub_item_sn": False,
+        "has_sub_item_asset": False,
         "sub_items": [{}],
         "installment_mode": False,
         "installments": [{}],
@@ -172,15 +176,26 @@ def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
 
 
 def _sub_items_form_data(item) -> list[dict]:
-    return [{"brand": row.brand, "model_name": row.model_name, "details": row.details} for row in item.sub_items]
+    return [
+        {
+            "brand": row.brand,
+            "model_name": row.model_name,
+            "serial_number": row.serial_number or (row.get_serial_number() if hasattr(row, "get_serial_number") else ""),
+            "asset_code": row.asset_code or (row.get_asset_code() if hasattr(row, "get_asset_code") else ""),
+            "details": row.details,
+        }
+        for row in item.sub_items
+    ]
 
 
 def _build_sub_items(sub_item_entries) -> list:
-    """แถวที่ว่างทั้ง 3 ช่องไม่บันทึก"""
+    """แถวที่ว่างทุกช่องไม่บันทึก"""
     return [
         models.ItemDetail(
             brand=(entry.form.brand.data or "").strip() or None,
             model_name=(entry.form.model_name.data or "").strip() or None,
+            serial_number=(entry.form.serial_number.data or "").strip() or None,
+            asset_code=(entry.form.asset_code.data or "").strip() or None,
             details=(entry.form.details.data or "").strip() or None,
         )
         for entry in sub_item_entries
@@ -197,6 +212,8 @@ def _item_form_data(item) -> dict:
         "start_date": _as_date(item.start_date),
         "end_date": _as_date(item.end_date),
         "amount": item.amount,
+        "has_sub_item_sn": item.has_sn(),
+        "has_sub_item_asset": item.has_asset(),
         "sub_items": _sub_items_form_data(item),
         "winner": item.winner,
         "unit_price": item.unit_price,
@@ -224,6 +241,8 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "category": item.category,
         "account_code": item.account_code or "",
         "amount": item.amount,
+        "has_sub_item_sn": item.has_sn(),
+        "has_sub_item_asset": item.has_asset(),
         "sub_items": _sub_items_form_data(item),
         "winner": item.winner,
         "unit_price": item.unit_price,
@@ -360,6 +379,8 @@ def _build_items(form, organization, existing_items, user):
         item.start_date = _as_datetime(data.start_date.data)
         item.end_date = _as_datetime(data.end_date.data)
         item.amount = data.amount.data
+        item.has_sub_item_sn = bool(data.has_sub_item_sn.data)
+        item.has_sub_item_asset = bool(data.has_sub_item_asset.data)
         item.sub_items = _build_sub_items(data.sub_items)
         item.winner = (data.winner.data or "").strip() or None
         item.unit_price = data.unit_price.data

@@ -1348,3 +1348,102 @@ def test_invalid_date_post_shows_error_and_error_style_on_picker(world, client_f
     assert "input-error" in button
     fieldset = html.split('id="field-items-0-end_date"', 1)[1].split("</fieldset>", 1)[0]
     assert "text-error" in fieldset
+
+
+def test_create_and_edit_ma_with_separate_sn_and_asset_code(world, client_for):
+    client = client_for(world.admin)
+    data = ma_form([
+        _item(
+            amount="50000.00",
+            has_sub_item_sn="y",
+            has_sub_item_asset="y",
+            sub_items=[
+                {"brand": "Apple", "model_name": "MacBook Pro", "serial_number": "SN-MBP-001", "asset_code": "AC-MBP-01"},
+                {"brand": "Apple", "model_name": "MacBook Air", "serial_number": "SN-MBA-002", "asset_code": ""},
+                {"brand": "Dell", "model_name": "UltraSharp", "serial_number": "", "asset_code": "AC-DEL-03"},
+            ],
+        )
+    ], total_amount="50000.00", psu="PSU-SEPARATE-FIELDS")
+
+    response = _create(client, world, data)
+    assert response.status_code == 302
+
+    item = models.ProcurementItem.objects.get()
+    assert item.has_sn() is True
+    assert item.has_asset() is True
+    assert len(item.sub_items) == 3
+    assert item.sub_items[0].serial_number == "SN-MBP-001"
+    assert item.sub_items[0].asset_code == "AC-MBP-01"
+    assert item.sub_items[1].serial_number == "SN-MBA-002"
+    assert item.sub_items[1].asset_code is None
+    assert item.sub_items[2].serial_number is None
+    assert item.sub_items[2].asset_code == "AC-DEL-03"
+
+    # Detail page: dynamic table columns check
+    html = client.get(f"/procurement/payment/{item.procurement.id}?{_q(world.org)}").get_data(as_text=True)
+    table_html = html.split('class="table table-sm sub-items-table"', 1)[1].split("</table>", 1)[0]
+    assert "<th>ยี่ห้อ</th>" in table_html
+    assert "<th>รุ่น</th>" in table_html
+    assert "<th>S/N</th>" in table_html
+    assert "<th>รหัสครุภัณฑ์</th>" in table_html
+    assert "<th>รายละเอียด</th>" not in table_html
+    assert "SN-MBP-001" in table_html
+    assert "AC-MBP-01" in table_html
+    assert "SN-MBA-002" in table_html
+    assert "AC-DEL-03" in table_html
+
+    # Edit form prefilling
+    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    sn_tag = re.search(r'<input[^>]*name="items-0-has_sub_item_sn"[^>]*>', edit_html).group(0)
+    assert "checked" in sn_tag
+    asset_tag = re.search(r'<input[^>]*name="items-0-has_sub_item_asset"[^>]*>', edit_html).group(0)
+    assert "checked" in asset_tag
+    assert 'name="items-0-sub_items-0-serial_number"' in edit_html and "SN-MBP-001" in edit_html
+    assert 'name="items-0-sub_items-0-asset_code"' in edit_html and "AC-MBP-01" in edit_html
+
+
+def test_payment_table_columns_dynamic_detection(world, client_for, create_ma):
+    client = client_for(world.admin)
+
+    # Case 1: only S/N
+    item_sn = _model_item("1000.00", responsible=[world.role_admin])
+    item_sn.has_sub_item_sn = True
+    item_sn.sub_items = [models.ItemDetail(brand="Lenovo", model_name="T14", serial_number="SN-LENOVO-01")]
+    ma_sn = create_ma(world.org, user=world.admin, name="[TEST] S/N Only", total_amount="1000.00", items=[item_sn])
+
+    html_sn = client.get(f"/procurement/payment/{ma_sn.id}?{_q(world.org)}").get_data(as_text=True)
+    table_sn = html_sn.split('class="table table-sm sub-items-table"', 1)[1].split("</table>", 1)[0]
+    assert "<th>S/N</th>" in table_sn
+    assert "<th>รหัสครุภัณฑ์</th>" not in table_sn
+    assert "SN-LENOVO-01" in table_sn
+
+    # Case 2: only Asset Code
+    item_asset = _model_item("2000.00", responsible=[world.role_admin])
+    item_asset.has_sub_item_asset = True
+    item_asset.sub_items = [models.ItemDetail(brand="HP", model_name="ProBook", asset_code="AC-HP-01")]
+    ma_asset = create_ma(world.org, user=world.admin, name="[TEST] Asset Only", total_amount="2000.00", items=[item_asset])
+
+    html_asset = client.get(f"/procurement/payment/{ma_asset.id}?{_q(world.org)}").get_data(as_text=True)
+    table_asset = html_asset.split('class="table table-sm sub-items-table"', 1)[1].split("</table>", 1)[0]
+    assert "<th>S/N</th>" not in table_asset
+    assert "<th>รหัสครุภัณฑ์</th>" in table_asset
+    assert "AC-HP-01" in table_asset
+
+
+def test_search_matches_sub_items_serial_number_and_asset_code(world, client_for, create_ma):
+    item = _model_item("5000.00", responsible=[world.role_admin])
+    item.has_sub_item_sn = True
+    item.has_sub_item_asset = True
+    item.sub_items = [
+        models.ItemDetail(brand="Cisco", model_name="Catalyst", serial_number="SN-CISCO-SEARCH-99", asset_code="AC-CISCO-SEARCH-88")
+    ]
+    procurement = create_ma(world.org, user=world.admin, name="[TEST] Cisco Switch", total_amount="5000.00", items=[item])
+
+    # Search by S/N
+    html = client_for(world.admin).get(f"/procurement/products?q=SN-CISCO-SEARCH-99&{_q(world.org)}").get_data(as_text=True)
+    assert procurement.psu_disbursement_number in html
+
+    # Search by asset code
+    html = client_for(world.admin).get(f"/procurement/products?q=AC-CISCO-SEARCH-88&{_q(world.org)}").get_data(as_text=True)
+    assert procurement.psu_disbursement_number in html
+

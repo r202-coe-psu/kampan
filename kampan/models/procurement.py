@@ -9,6 +9,7 @@
 import datetime
 import decimal
 import logging
+import re
 from collections.abc import Iterable
 
 import mongoengine as me
@@ -284,11 +285,49 @@ class Installment(me.EmbeddedDocument):
 
 
 class ItemDetail(me.EmbeddedDocument):
-    """แถวย่อยของรายการย่อย: ยี่ห้อ / รุ่น / รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ) เพิ่มได้หลายแถว"""
+    """แถวย่อยของรายการย่อย: ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด เพิ่มได้หลายแถว"""
 
     brand = me.StringField(max_length=100)
     model_name = me.StringField(max_length=100)
+    serial_number = me.StringField(max_length=100)
+    asset_code = me.StringField(max_length=100)
     details = me.StringField()
+
+    def get_serial_number(self) -> str:
+        if self.serial_number:
+            return self.serial_number
+        if self.details:
+            match = re.search(r"(?:S/N|SN|Serial(?:\s*Number)?)\s*[:=]\s*([^\n\r]+)", self.details, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        return ""
+
+    def get_asset_code(self) -> str:
+        if self.asset_code:
+            return self.asset_code
+        if self.details:
+            match = re.search(r"(?:รหัสครุภัณฑ์|Asset(?:\s*Code)?|ครุภัณฑ์)\s*[:=]\s*([^\n\r]+)", self.details, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        return ""
+
+    def get_other_details(self) -> str:
+        """รายละเอียดอื่น ๆ ที่ไม่ใช่ S/N หรือรหัสครุภัณฑ์ (กรณีข้อมูลเก่าเก็บปนกันใน details)"""
+        if self.serial_number or self.asset_code:
+            return (self.details or "").strip()
+        if not self.details:
+            return ""
+        lines = []
+        for line in self.details.splitlines():
+            line_s = line.strip()
+            if not line_s:
+                continue
+            if re.match(r"^(?:S/N|SN|Serial(?:\s*Number)?)\s*[:=]", line_s, re.IGNORECASE):
+                continue
+            if re.match(r"^(?:รหัสครุภัณฑ์|Asset(?:\s*Code)?|ครุภัณฑ์)\s*[:=]", line_s, re.IGNORECASE):
+                continue
+            lines.append(line_s)
+        return "\n".join(lines)
 
 
 class ProcurementItem(me.Document):
@@ -320,8 +359,11 @@ class ProcurementItem(me.Document):
         precision=2,
         rounding=decimal.ROUND_HALF_EVEN,
     )
-    # ยี่ห้อ / รุ่น / รายละเอียด (S/N, รหัสครุภัณฑ์) เป็นแถวย่อย เพิ่มได้ตามต้องการ
+    # ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด เป็นแถวย่อย เพิ่มได้ตามต้องการ
     sub_items = me.EmbeddedDocumentListField(ItemDetail)
+    # เปิด/ปิด การระบุ S/N และ รหัสครุภัณฑ์ ในฟอร์ม
+    has_sub_item_sn = me.BooleanField(default=None)
+    has_sub_item_asset = me.BooleanField(default=None)
 
     # ช่องจากขั้นที่ 3 ของขอซื้อขอจ้างเดิม (#27) ผู้ชนะและราคาต่อหน่วยไม่บังคับ
     winner = me.StringField(max_length=200)
@@ -391,6 +433,19 @@ class ProcurementItem(me.Document):
         if self.installment_mode is not None:
             return bool(self.installment_mode)
         return self.get_installment_count() > 1
+
+    def has_sn(self) -> bool:
+        if self.has_sub_item_sn is not None:
+            return bool(self.has_sub_item_sn)
+        return any(bool(sub.serial_number) for sub in self.sub_items or [])
+
+    def has_asset(self) -> bool:
+        if self.has_sub_item_asset is not None:
+            return bool(self.has_sub_item_asset)
+        return any(bool(sub.asset_code) for sub in self.sub_items or [])
+
+    def has_other_details(self) -> bool:
+        return any(bool(sub.details and sub.details.strip()) for sub in self.sub_items or [])
 
     def get_sorted_installments(self) -> list[Installment]:
         return sorted(self.installments, key=lambda installment: installment.due_date or datetime.datetime.max)

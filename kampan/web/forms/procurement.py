@@ -93,13 +93,18 @@ class InstallmentForm(Form):
 class ItemDetailForm(Form):
     brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=100)])
     model_name = fields.StringField("รุ่น", validators=[validators.Optional(), validators.Length(max=100)])
+    serial_number = fields.StringField("S/N", validators=[validators.Optional(), validators.Length(max=100)])
+    asset_code = fields.StringField("รหัสครุภัณฑ์", validators=[validators.Optional(), validators.Length(max=100)])
     details = fields.StringField(
-        "รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)",
+        "รายละเอียด",
         validators=[validators.Optional(), validators.Length(max=255)],
     )
 
     def is_blank(self) -> bool:
-        return not any((field.data or "").strip() for field in (self.brand, self.model_name, self.details))
+        return not any(
+            (field.data or "").strip()
+            for field in (self.brand, self.model_name, self.serial_number, self.asset_code, self.details)
+        )
 
 
 class ProcurementItemForm(Form):
@@ -123,6 +128,8 @@ class ProcurementItemForm(Form):
         validators=[validators.InputRequired(message="กรุณาระบุวันที่สิ้นสุด")],
     )
     amount = money_field("ยอดเงินของรายการย่อย (บาท)")
+    has_sub_item_sn = fields.BooleanField("ระบุ S/N")
+    has_sub_item_asset = fields.BooleanField("ระบุรหัสครุภัณฑ์")
     # อ่านไม่เกิน MAX + 1 แถว แล้วให้ validate_sub_items ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     sub_items = fields.FieldList(fields.FormField(ItemDetailForm), min_entries=0, max_entries=MAX_SUB_ITEMS_PER_ITEM + 1)
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional(), validators.Length(max=200)])

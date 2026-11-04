@@ -585,10 +585,20 @@ def _ma_row_sub_items(row) -> list:
     """แถวย่อย 1 แถวจากยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ของแถวใน Excel ไม่มีข้อมูลเลยคือไม่มีแถวย่อย"""
     brand = _excel_text(row.get("brand"))
     model_name = _excel_text(row.get("model_name"))
+    product_number = _excel_text(row.get("product_number"))
+    asset_code = _excel_text(row.get("asset_code"))
     details = _ma_row_details(row)
     if not (brand or model_name or details):
         return []
-    return [models.ItemDetail(brand=brand or None, model_name=model_name or None, details=details or None)]
+    return [
+        models.ItemDetail(
+            brand=brand or None,
+            model_name=model_name or None,
+            serial_number=product_number or None,
+            asset_code=asset_code or None,
+            details=details or None,
+        )
+    ]
 
 
 def _find_ma_members(organization, value) -> list:
@@ -721,6 +731,8 @@ def save_ma_db(document, ma, user_id):
                 end_date=end_date,
                 amount=amount,
                 sub_items=_ma_row_sub_items(row),
+                has_sub_item_sn=bool(_excel_text(row.get("product_number"))),
+                has_sub_item_asset=bool(_excel_text(row.get("asset_code"))),
                 responsible_by=_find_ma_members(organization, row.get("responsible_by")),
                 reminder_kind="ma",
                 # จำนวนงวด > 1 = แบ่งจ่ายเป็นงวด (วันครบกำหนดห่างเท่า ๆ กัน) ไม่เช่นนั้นจ่ายครั้งเดียวในวันสิ้นสุด

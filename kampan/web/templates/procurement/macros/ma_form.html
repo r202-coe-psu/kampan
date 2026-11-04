@@ -84,29 +84,43 @@
   </fieldset>
 {% endmacro %}
 
-{# แถวย่อย ยี่ห้อ / รุ่น / รายละเอียด ใช้ name_prefix เช่น items-0-sub_items-0- (หรือ ...-__K__- ในแม่แบบ) #}
-{% macro sub_item_row(name_prefix, f=None) %}
+{# แถวย่อย ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด ใช้ name_prefix เช่น items-0-sub_items-0- (หรือ ...-__K__- ในแม่แบบ) #}
+{% macro sub_item_row(name_prefix, f=None, show_sn=False, show_asset=False) %}
   {% set brand = f.brand if f else None %}
   {% set model_name = f.model_name if f else None %}
+  {% set serial_number = f.serial_number if f else None %}
+  {% set asset_code = f.asset_code if f else None %}
   {% set details = f.details if f else None %}
-  <div class="sub-item-row grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_auto] gap-2 items-start">
-    <div>
+  <div class="sub-item-row flex flex-col md:flex-row items-start gap-2">
+    <div class="flex-1 w-full min-w-0">
       <input type="text" name="{{ name_prefix }}brand" id="{{ name_prefix }}brand" value="{{ (brand.data if brand else '') or '' }}" maxlength="100"
              placeholder="ยี่ห้อ" aria-label="ยี่ห้อ" class="input input-sm w-full{{ ' input-error' if brand and brand.errors else '' }}" />
       {% if brand %}{{ field_errors(brand) }}{% endif %}
     </div>
-    <div>
+    <div class="flex-1 w-full min-w-0">
       <input type="text" name="{{ name_prefix }}model_name" id="{{ name_prefix }}model_name" value="{{ (model_name.data if model_name else '') or '' }}" maxlength="100"
              placeholder="รุ่น" aria-label="รุ่น" class="input input-sm w-full{{ ' input-error' if model_name and model_name.errors else '' }}" />
       {% if model_name %}{{ field_errors(model_name) }}{% endif %}
     </div>
-    <div>
+    <div data-sub-item-col="sn" class="flex-1 w-full min-w-0{{ '' if show_sn else ' hidden' }}">
+      <input type="text" name="{{ name_prefix }}serial_number" id="{{ name_prefix }}serial_number" value="{{ (serial_number.data if serial_number else '') or '' }}" maxlength="100"
+             placeholder="S/N" aria-label="S/N" class="input input-sm w-full{{ ' input-error' if serial_number and serial_number.errors else '' }}"
+             {% if not show_sn %}disabled{% endif %} />
+      {% if serial_number %}{{ field_errors(serial_number) }}{% endif %}
+    </div>
+    <div data-sub-item-col="asset" class="flex-1 w-full min-w-0{{ '' if show_asset else ' hidden' }}">
+      <input type="text" name="{{ name_prefix }}asset_code" id="{{ name_prefix }}asset_code" value="{{ (asset_code.data if asset_code else '') or '' }}" maxlength="100"
+             placeholder="รหัสครุภัณฑ์" aria-label="รหัสครุภัณฑ์" class="input input-sm w-full{{ ' input-error' if asset_code and asset_code.errors else '' }}"
+             {% if not show_asset %}disabled{% endif %} />
+      {% if asset_code %}{{ field_errors(asset_code) }}{% endif %}
+    </div>
+    <div data-sub-item-col="details" class="flex-1 w-full min-w-0">
       <input type="text" name="{{ name_prefix }}details" id="{{ name_prefix }}details" value="{{ (details.data if details else '') or '' }}" maxlength="255"
-             placeholder="S/N หรือรหัสครุภัณฑ์" aria-label="รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)"
+             placeholder="รายละเอียด" aria-label="รายละเอียด"
              class="input input-sm w-full{{ ' input-error' if details and details.errors else '' }}" />
       {% if details %}{{ field_errors(details) }}{% endif %}
     </div>
-    <button type="button" class="btn btn-ghost btn-sm md:btn-square text-error justify-self-end" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
+    <button type="button" class="btn btn-ghost btn-sm md:btn-square text-error shrink-0 self-start md:self-auto" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
       <i class="ph ph-trash text-lg"></i><span class="md:hidden">ลบแถว</span>
     </button>
   </div>
@@ -230,16 +244,28 @@
       </section>
 
       {# 4. ยี่ห้อ / รุ่น / รายละเอียด: เพิ่มแถวได้ไม่จำกัด (สูงสุด 100) แสดงเสมอ ไม่พับ #}
-      <section class="flex flex-col gap-4 border-t border-base-300 pt-6">
-        {{ section_heading("ph-note-pencil", "ยี่ห้อ / รุ่น / รายละเอียด", "ใส่ยี่ห้อ รุ่น และรายละเอียด (S/N รหัสครุภัณฑ์ ฯลฯ) ได้หลายแถว กด \"เพิ่มแถว\" เมื่อมีหลายเครื่อง · ไม่บังคับ แถวที่ว่างไม่บันทึก") }}
+      {% set show_sn = true if f.has_sub_item_sn.data else false %}
+      {% set show_asset = true if f.has_sub_item_asset.data else false %}
+      <section class="flex flex-col gap-4 border-t border-base-300 pt-6" data-sub-items-section>
+        {{ section_heading("ph-note-pencil", "ยี่ห้อ / รุ่น / รายละเอียด", "ใส่ยี่ห้อ รุ่น และรายละเอียดได้หลายแถว กด \"เพิ่มแถว\" เมื่อมีหลายเครื่อง · ไม่บังคับ แถวที่ว่างไม่บันทึก") }}
+        <div class="flex flex-wrap items-center gap-6">
+          <label class="flex items-center gap-2 cursor-pointer w-fit">
+            {{ f.has_sub_item_sn(class_="toggle toggle-primary toggle-sm sub-item-toggle-sn") }}
+            <span class="text-sm font-medium text-base-content">{{ f.has_sub_item_sn.label.text }}</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer w-fit">
+            {{ f.has_sub_item_asset(class_="toggle toggle-primary toggle-sm sub-item-toggle-asset") }}
+            <span class="text-sm font-medium text-base-content">{{ f.has_sub_item_asset.label.text }}</span>
+          </label>
+        </div>
         <div class="sub-item-rows flex flex-col gap-3">
           {% for entry in f.sub_items %}
-            {{ sub_item_row(entry.name ~ "-", entry.form) }}
+            {{ sub_item_row(entry.name ~ "-", entry.form, show_sn=show_sn, show_asset=show_asset) }}
           {% else %}
-            {{ sub_item_row(prefix ~ "sub_items-0-") }}
+            {{ sub_item_row(prefix ~ "sub_items-0-", show_sn=show_sn, show_asset=show_asset) }}
           {% endfor %}
         </div>
-        <template class="sub-item-template">{{ sub_item_row(prefix ~ "sub_items-__K__-") }}</template>
+        <template class="sub-item-template">{{ sub_item_row(prefix ~ "sub_items-__K__-", show_sn=show_sn, show_asset=show_asset) }}</template>
         {{ field_errors(f.sub_items) }}
         <p class="sub-item-error text-error text-sm hidden"></p>
         <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-sub-item">

@@ -234,6 +234,9 @@
         </dl>
 
         {% if item.sub_items %}
+          {% set has_sn = item.has_sn() %}
+          {% set has_asset = item.has_asset() %}
+          {% set has_details = item.has_other_details() %}
           <div class="overflow-x-auto">
             <table class="table table-sm sub-items-table">
               <caption class="text-left text-sm text-base-content/60 pb-1">ยี่ห้อ / รุ่น / รายละเอียด ({{ item.sub_items | length }} แถว)</caption>
@@ -241,7 +244,9 @@
                 <tr>
                   <th>ยี่ห้อ</th>
                   <th>รุ่น</th>
-                  <th>รายละเอียด</th>
+                  {% if has_sn %}<th>S/N</th>{% endif %}
+                  {% if has_asset %}<th>รหัสครุภัณฑ์</th>{% endif %}
+                  {% if has_details or (not has_sn and not has_asset) %}<th>รายละเอียด</th>{% endif %}
                 </tr>
               </thead>
               <tbody>
@@ -249,7 +254,15 @@
                   <tr>
                     <td class="align-top">{{ row.brand or "-" }}</td>
                     <td class="align-top">{{ row.model_name or "-" }}</td>
-                    <td class="align-top whitespace-pre-line break-words">{{ row.details or "-" }}</td>
+                    {% if has_sn %}
+                      <td class="align-top">{{ row.serial_number or "-" }}</td>
+                    {% endif %}
+                    {% if has_asset %}
+                      <td class="align-top">{{ row.asset_code or "-" }}</td>
+                    {% endif %}
+                    {% if has_details or (not has_sn and not has_asset) %}
+                      <td class="align-top whitespace-pre-line break-words">{{ row.details or "-" }}</td>
+                    {% endif %}
                   </tr>
                 {% endfor %}
               </tbody>
