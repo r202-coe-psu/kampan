@@ -1,3 +1,4 @@
+from bson import ObjectId
 from flask import (
     Blueprint,
     render_template,
@@ -5,6 +6,8 @@ from flask import (
     url_for,
     request,
     current_app,
+    abort,
+    g,
 )
 from flask_login import current_user
 from kampan.models import inventories
@@ -17,6 +20,15 @@ from .. import redis_rq
 module = Blueprint("approve_orders", __name__, url_prefix="/approve_orders")
 
 
+def get_order(organization, order_id):
+    if not organization or not ObjectId.is_valid(order_id):
+        abort(404)
+    order = models.OrderItem.objects(id=order_id, organization=organization).first()
+    if not order:
+        abort(404)
+    return order
+
+
 @module.route("/item_checkouts", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser")
 def item_checkouts():
@@ -25,7 +37,7 @@ def item_checkouts():
         id=organization_id, status="active"
     ).first()
     order_id = request.args.get("order_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=30)
@@ -89,7 +101,7 @@ def endorser_index():
 def endorser_approve(order_id):
     organization_id = request.args.get("organization_id")
 
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
 
     for checkout in checkout_items:
@@ -119,7 +131,7 @@ def endorser_approve(order_id):
 @acl.organization_roles_required("head", "endorser")
 def endorser_denied(order_id):
     organization_id = request.args.get("organization_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
@@ -142,7 +154,7 @@ def endorser_approved_detail(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
@@ -205,7 +217,7 @@ def supervisor_supplier_index():
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_approve(order_id):
     organization_id = request.args.get("organization_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     order.status = "pending on admin"
     order.remark = request.args.get("reason", default="", type=str)
 
@@ -228,7 +240,7 @@ def supervisor_supplier_approve(order_id):
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_denied(order_id):
     organization_id = request.args.get("organization_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "denied"
     order.status = "denied"
@@ -257,7 +269,7 @@ def supervisor_supplier_approved_detail(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
@@ -275,7 +287,7 @@ def supervisor_supplier_approved_detail(order_id):
 @acl.organization_roles_required("supervisor supplier")
 def supervisor_supplier_approve_page(order_id):
     form = forms.approve_orders.SupplierApproveForm()
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -364,7 +376,7 @@ def admin_index():
 def admin_approve(order_id):
     organization_id = request.args.get("organization_id")
 
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
 
     for checkout in checkout_items:
@@ -412,7 +424,7 @@ def admin_approve(order_id):
 @acl.organization_roles_required("admin")
 def admin_denied(order_id):
     organization_id = request.args.get("organization_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
     order.approval_status = "admin denied"
     order.status = "admin denied"
@@ -439,7 +451,7 @@ def admin_approved_detail(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order, status="active")
     page = request.args.get("page", default=1, type=int)
     paginated_checkouts = Pagination(checkouts, page=page, per_page=100)
@@ -457,7 +469,7 @@ def admin_approved_detail(order_id):
 @acl.organization_roles_required("admin")
 def admin_approve_page(order_id):
     form = forms.approve_orders.AdminApproveForm()
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(
         id=organization_id, status="active"
@@ -494,7 +506,7 @@ def admin_approve_page(order_id):
 )
 @acl.organization_roles_required("supervisor supplier", "admin")
 def change_quantity(order_id, organization_id):
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkout_items = models.CheckoutItem.objects(order=order, status="active")
 
     for checkout in checkout_items:

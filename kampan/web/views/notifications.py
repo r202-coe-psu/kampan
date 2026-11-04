@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models
@@ -41,7 +42,11 @@ def index():
 def set_status(item_id):
     organization_id = request.args.get("organization_id")
 
-    item = models.Item.objects(id=item_id).first()
+    if not g.organization or not ObjectId.is_valid(item_id):
+        abort(404)
+    item = models.Item.objects(id=item_id, organization=g.organization).first()
+    if not item:
+        abort(404)
     if item.notification_status:
         item.notification_status = False
     else:

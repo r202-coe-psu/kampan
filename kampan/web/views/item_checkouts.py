@@ -2,7 +2,8 @@ from atexit import register
 from calendar import calendar
 from pyexpat import model
 from typing import OrderedDict
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
@@ -12,6 +13,26 @@ import datetime
 
 # สร้าง Blueprint สำหรับจัดการการเบิกพัสดุ
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
+
+
+def get_order(organization, order_id):
+    if not organization or not ObjectId.is_valid(order_id):
+        abort(404)
+    order = models.OrderItem.objects(id=order_id, organization=organization).first()
+    if not order:
+        abort(404)
+    return order
+
+
+def get_checkout_item(organization, checkout_item_id):
+    if not organization or not ObjectId.is_valid(checkout_item_id):
+        abort(404)
+    checkout_item = models.CheckoutItem.objects(
+        id=checkout_item_id, organization=organization
+    ).first()
+    if not checkout_item:
+        abort(404)
+    return checkout_item
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -43,7 +64,7 @@ def index():
         ).order_by("-created_date")
 
     # เตรียมฟอร์มสำหรับค้นหา
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=organization)
     form = forms.inventories.SearchStartEndDateForm()
     form.item.choices = [("", "เลือกวัสดุ")] + [
         (str(item.id), f"{item.barcode_id} ({item.name})") for item in items
@@ -116,7 +137,7 @@ def catalogs(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects(id=order_id).first()
+    order = get_order(g.organization, order_id)
     form = forms.items.SearcCategoryForm()
 
     items = models.Item.objects(
@@ -197,11 +218,11 @@ def checkout():
         id=organization_id, status="active"
     ).first()
     form = forms.item_checkouts.CheckoutItemForm()
-    order = models.OrderItem.objects(id=request.args.get("order_id")).first()
-    
+    order = get_order(g.organization, request.args.get("order_id"))
+
     # ตรวจสอบว่าสินค้านี้ถูกเบิกในใบเบิกนี้แล้วหรือยัง
     checkout_item = None
-    if order and item_id:
+    if item_id and ObjectId.is_valid(item_id):
         checkout_item = models.CheckoutItem.objects(
             item=item_id, order=order, status__ne="disactive"
         ).first()
@@ -218,7 +239,7 @@ def checkout():
         )
         
     # เตรียมข้อมูลสำหรับฟอร์ม
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=g.organization)
     # ไม่แสดงสินค้าที่อยู่ในใบเบิกนี้แล้ว
     if order.get_item_in_bill():
         items = items.filter(id__nin=order.get_item_in_bill())
@@ -256,7 +277,7 @@ def checkout():
         )
 
     # บันทึกข้อมูลการเบิกใหม่
-    item = models.Item.objects(id=form.item.data).first()
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
     checkout_item = models.CheckoutItem()
     checkout_item.user = current_user._get_current_object()
     checkout_item.order = order
@@ -289,7 +310,7 @@ def bill_checkout():
         id=organization_id, status="active"
     ).first()
     order_id = request.args.get("order_id")
-    order = models.OrderItem.objects.get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order, status__ne="disactive")
 
     # จัดการ Pagination
@@ -318,19 +339,23 @@ def edit(checkout_item_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
-    order = models.OrderItem.objects(id=checkout_item.order.id).first()
+    checkout_item = get_checkout_item(g.organization, checkout_item_id)
+    order = get_order(g.organization, checkout_item.order.id)
 
     form = forms.item_checkouts.CheckoutItemForm(obj=checkout_item)
     
     # เตรียมข้อมูล Dropdown รายการสินค้า
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=g.organization)
     if order.get_item_in_bill():
         # กรองสินค้าที่อยู่ในบิลนี้แล้วออก แต่ยังคงแสดงสินค้าตัวที่กำลังแก้ไขอยู่
         items = items.filter(id__nin=order.get_item_in_bill())
         items = list(items)
         if checkout_item.item:
-            items.append(models.Item.objects(id=checkout_item.item.id).first())
+            items.append(
+                models.Item.objects(
+                    id=checkout_item.item.id, organization=g.organization
+                ).first()
+            )
             
     if items:
         form.item.choices = [
@@ -364,13 +389,12 @@ def edit(checkout_item_id):
         )
         
     # บันทึกข้อมูลที่แก้ไข
-    item = models.Item.objects(id=form.item.data).first()
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
     checkout_item.user = current_user._get_current_object()
     checkout_item.item = item
     checkout_item.created_date = form.created_date.data
     checkout_item.quantity = form.piece.data
     checkout_item.piece = form.piece.data
-    checkout_item.organization = organization
     checkout_item.save()
     
     return render_template(
@@ -394,8 +418,8 @@ def delete(checkout_item_id):
     """
     organization_id = request.args.get("organization_id")
 
-    checkout_item = models.CheckoutItem.objects(id=checkout_item_id).first()
-    
+    checkout_item = get_checkout_item(g.organization, checkout_item_id)
+
     # ตรวจสอบว่าใบเบิกยังไม่ถูกส่งอนุมัติหรืออนุมัติไปแล้ว
     if checkout_item.order.approval_status != "pending":
         # หากใบเบิกถูกดำเนินการไปแล้ว จะไม่สามารถลบได้
@@ -433,7 +457,7 @@ def upload_file(order_id):
     ).first()
     form = forms.items.UploadFileForm()
     errors = request.args.getlist("errors")
-    order = models.OrderItem.objects(id=order_id).first()
+    order = get_order(g.organization, order_id)
 
     if not form.validate_on_submit():
         return render_template(

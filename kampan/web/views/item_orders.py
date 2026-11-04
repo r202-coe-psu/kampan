@@ -1,6 +1,7 @@
 from calendar import calendar
 from pyexpat import model
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 import mongoengine as me
@@ -9,6 +10,15 @@ from kampan.web import forms, acl
 from kampan import models
 
 module = Blueprint("item_orders", __name__, url_prefix="/item_orders")
+
+
+def get_order(organization, order_id):
+    if not organization or not ObjectId.is_valid(order_id):
+        abort(404)
+    order = models.OrderItem.objects(id=order_id, organization=organization).first()
+    if not order:
+        abort(404)
+    return order
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -126,7 +136,7 @@ def edit(order_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    order = models.OrderItem.objects().get(id=order_id)
+    order = get_order(g.organization, order_id)
     form = forms.item_orders.OrderItemForm(obj=order)
 
     member = models.OrganizationUserRole.objects(
@@ -162,7 +172,6 @@ def edit(order_id):
 
     if current_user._get_current_object().get_current_division():
         order.division = current_user._get_current_object().get_current_division()
-    order.organization = organization
 
     order.save()
 
@@ -182,7 +191,7 @@ def edit(order_id):
 def delete(order_id):
     organization_id = request.args.get("organization_id")
 
-    order = models.OrderItem.objects().get(id=order_id)
+    order = get_order(g.organization, order_id)
     checkouts = models.CheckoutItem.objects(order=order)
     for checkout in checkouts:
         checkout.status = "disactive"

@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models
@@ -9,11 +10,21 @@ from flask_mongoengine import Pagination
 module = Blueprint("categories", __name__, url_prefix="/categories")
 
 
+def get_category(organization, category_id):
+    if not organization or not ObjectId.is_valid(category_id):
+        abort(404)
+    category = models.Category.objects(
+        id=category_id, organization=organization
+    ).first()
+    if not category:
+        abort(404)
+    return category
+
+
 @module.route("/", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def index():
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects.get(id=organization_id)
+    organization = g.organization
     categories = models.Category.objects(organization=organization, status="active")
     page = request.args.get("page", default=1, type=int)
     paginated_categories = Pagination(categories, page=page, per_page=30)
@@ -29,12 +40,12 @@ def index():
 @acl.organization_roles_required("admin")
 def create_or_edit(category_id):
     organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects.get(id=organization_id)
+    organization = g.organization
 
     category = None
     form = forms.categories.CategoryForm()
     if category_id:
-        category = models.Category.objects(id=category_id).first()
+        category = get_category(g.organization, category_id)
     if not form.validate_on_submit():
         if category:
             form.name.data = category.name
@@ -47,9 +58,9 @@ def create_or_edit(category_id):
     if not category_id:
         category = models.Category()
         category.created_by = current_user
+        category.organization = organization
     form.populate_obj(category)
     category.last_updated_by = current_user
-    category.organization = organization
     category.save()
     return redirect(url_for("categories.index", organization_id=organization_id))
 
@@ -58,9 +69,8 @@ def create_or_edit(category_id):
 @acl.organization_roles_required("admin")
 def delete(category_id):
     organization_id = request.args.get("organization_id")
-    category = models.Category.objects(id=category_id).first()
-    if category:
-        category.status = "disactive"
-        category.save()
+    category = get_category(g.organization, category_id)
+    category.status = "disactive"
+    category.save()
 
     return redirect(url_for("categories.index", organization_id=organization_id))

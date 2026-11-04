@@ -1,5 +1,15 @@
 from calendar import calendar
-from flask import Blueprint, render_template, redirect, url_for, request, current_app
+from bson import ObjectId
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    request,
+    current_app,
+    abort,
+    g,
+)
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
@@ -11,6 +21,17 @@ from .. import redis_rq
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
 
 
+def get_lost_break_item(organization, lost_break_item_id):
+    if not organization or not ObjectId.is_valid(lost_break_item_id):
+        abort(404)
+    lost_break_item = models.LostBreakItem.objects(
+        id=lost_break_item_id, organization=organization
+    ).first()
+    if not lost_break_item:
+        abort(404)
+    return lost_break_item
+
+
 @module.route("/", methods=["GET", "POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
 def index():
@@ -18,9 +39,9 @@ def index():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    lost_break_items = models.LostBreakItem.objects(status__ne="disactive").order_by(
-        "-created_date"
-    )
+    lost_break_items = models.LostBreakItem.objects(
+        status__ne="disactive", organization=organization
+    ).order_by("-created_date")
     form = forms.lost_break.SearchLostBreakForm()
     if not form.validate_on_submit():
         start_date = request.args.get("start_date")
@@ -88,7 +109,7 @@ def add():
         id=organization_id, status="active"
     ).first()
     form = forms.lost_break.ItemLostBreakForm()
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=g.organization)
     if items:
         item_choices = [
             (str(item.id), f"{item.barcode_id} ({item.name})")
@@ -104,7 +125,7 @@ def add():
             organization=organization,
             error_message=error_message,
         )
-    item = models.Item.objects(id=form.item.data).first()
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
     inventories = models.Inventory.objects(item=item,remain__gt=0, status="active").order_by("-remain")
@@ -155,9 +176,9 @@ def edit(lost_break_item_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
+    lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
     form = forms.lost_break.ItemLostBreakForm(obj=lost_break_item)
-    items = models.Item.objects(status="active")
+    items = models.Item.objects(status="active", organization=g.organization)
     if items:
         item_choices = [
             (str(item.id), f"{item.barcode_id} ({item.name})")
@@ -183,7 +204,7 @@ def edit(lost_break_item_id):
             form=form,
             organization=organization,
         )
-    item = models.Item.objects(id=form.item.data).first()
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
     if quantity > item.get_amount_pieces():
@@ -202,7 +223,6 @@ def edit(lost_break_item_id):
         lost_break_item.lost_from = inventory
         lost_break_item.warehouse = inventory.warehouse
         lost_break_item.description = form.description.data
-        lost_break_item.organization = organization
 
         if inventory.remain >= quantity:
             inventory.remain += quantity
@@ -237,7 +257,7 @@ def edit(lost_break_item_id):
 def delete(lost_break_item_id):
     organization_id = request.args.get("organization_id")
 
-    lost_break_item = models.LostBreakItem.objects().get(id=lost_break_item_id)
+    lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
     lost_break_item.status = "disactive"
     lost_break_item.save()
 
@@ -256,7 +276,9 @@ def supervisor_supplier_approve_page():
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    lost_break_items = models.LostBreakItem.objects(status="pending")
+    lost_break_items = models.LostBreakItem.objects(
+        status="pending", organization=organization
+    )
     return render_template(
         "/lost_breaks/supervisor_supplier_approve_page.html",
         lost_break_items=lost_break_items,
@@ -269,15 +291,16 @@ def supervisor_supplier_approve_page():
 def decide(lost_break_item_id, decide_choice):
     organization_id = request.args.get("organization_id")
 
-    lost_break_item = models.LostBreakItem.objects(id=lost_break_item_id).first()
+    lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
     if decide_choice == "approve":
         lost_break_item.status = "active"
         if lost_break_item.quantity != 0:
             
-            return_inventory = (
-                models.Inventory.objects(id=lost_break_item.lost_from.id)
-                .first()
-            )
+            return_inventory = models.Inventory.objects(
+                id=lost_break_item.lost_from.id, organization=g.organization
+            ).first()
+            if not return_inventory:
+                abort(404)
             print(return_inventory.remain)
             print(return_inventory.id)
             print(return_inventory.item.id)
@@ -288,8 +311,13 @@ def decide(lost_break_item_id, decide_choice):
         lost_break_item.status = "denied"
         if lost_break_item.quantity != 0:
             return_inventory = models.Inventory.objects(
-                id=lost_break_item.lost_from.id, status="active", remain__gte=0
+                id=lost_break_item.lost_from.id,
+                status="active",
+                remain__gte=0,
+                organization=g.organization,
             ).first()
+            if not return_inventory:
+                abort(404)
             return_inventory.remain -= lost_break_item.quantity
             return_inventory.save()
     lost_break_item.save()
