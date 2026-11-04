@@ -4,18 +4,34 @@ from flask_wtf import FlaskForm, file
 from wtforms import Form, ValidationError, fields, validators
 
 from kampan import models
-from kampan.models.procurement import MAX_REMINDER_OFFSET_DAYS, check_item_sum
+from kampan.models.procurement import (
+    MAX_INSTALLMENTS_MESSAGE,
+    MAX_INSTALLMENTS_PER_ITEM,
+    MAX_REMINDER_OFFSET_DAYS,
+    check_item_sum,
+)
 from kampan.utils.date_utils import parse_thai_date
 
 from .money_validators import MoneyPlaces
 
 MONEY_RANGE_MESSAGE = "จำนวนเงินต้องอยู่ระหว่าง 0 ถึง 1,000,000,000,000"
 REQUIRED_MESSAGE = "กรุณากรอกข้อมูล"
+MONEY_INVALID_MESSAGE = "จำนวนเงินไม่ถูกต้อง"
+
+
+class MoneyDecimalField(fields.DecimalField):
+    """DecimalField ที่ไม่รับ NaN / sNaN / Infinity (sNaN ทำให้ NumberRange ล่มเป็น 500)"""
+
+    def process_formdata(self, valuelist):
+        super().process_formdata(valuelist)
+        if self.data is not None and not self.data.is_finite():
+            self.data = None
+            raise ValueError(MONEY_INVALID_MESSAGE)
 
 
 def money_field(label: str, required: bool = True) -> fields.DecimalField:
     presence = validators.InputRequired(message=REQUIRED_MESSAGE) if required else validators.Optional()
-    return fields.DecimalField(
+    return MoneyDecimalField(
         label,
         places=2,
         rounding=None,
@@ -118,7 +134,10 @@ class ProcurementItemForm(Form):
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก)
     reminder_offsets_days = fields.FieldList(fields.StringField(), label="เตือนหมดอายุล่วงหน้า (วัน) กำหนดเอง")
     custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
-    installments = fields.FieldList(fields.FormField(InstallmentForm), min_entries=1)
+    # อ่านไม่เกิน MAX + 1 งวด (กัน request ที่ส่งงวดมาหลักหมื่น) แล้วให้ validate_installments ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
+    installments = fields.FieldList(
+        fields.FormField(InstallmentForm), min_entries=1, max_entries=MAX_INSTALLMENTS_PER_ITEM + 1
+    )
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data < self.start_date.data:
@@ -127,6 +146,8 @@ class ProcurementItemForm(Form):
     def validate_installments(self, field):
         if not field.entries:
             raise ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
+        if len(field.entries) > MAX_INSTALLMENTS_PER_ITEM:
+            raise ValidationError(MAX_INSTALLMENTS_MESSAGE)
 
     def validate_reminder_offsets_days(self, field):
         days = []
@@ -201,6 +222,10 @@ class ProcurementHeaderForm(FlaskForm):
             self.total_amount.errors.append(self.sum_error)
             return False
         return valid
+
+
+class ConfirmActionForm(FlaskForm):
+    """ปุ่มยืนยันที่ไม่มีช่องกรอก (ยกเลิกบันทึกจ่าย, ไม่ต่ออายุ): บังคับ POST + CSRF ผ่าน validate_on_submit"""
 
 
 class InstallmentPaymentForm(FlaskForm):

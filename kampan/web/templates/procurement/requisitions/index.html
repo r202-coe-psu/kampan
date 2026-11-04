@@ -218,7 +218,7 @@
           </form>
           <form method="post"
             action="{{ url_for('procurement.requisitions.non_renewal_action', requisition_procurement_id=item.id, organization_id=organization.id) }}">
-            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+            {{ action_form.hidden_tag() }}
             <button type="submit" class="btn btn-error text-white">
               <i class="ph ph-x mr-1"></i>ยืนยันไม่ต่ออายุ
             </button>

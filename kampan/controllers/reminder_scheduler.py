@@ -16,10 +16,14 @@ from kampan.utils.reminders import Reminder, due_reminders
 logger = logging.getLogger(__name__)
 
 JOB_TIMEOUT = 600
+ENQUEUE_ERROR = "เข้าคิวส่งอีเมลไม่สำเร็จ"
 
 
-def _create_log(reminder: Reminder) -> models.ReminderLog | None:
-    """log queued ของ reminder นี้ ถ้ามี log key เดียวกันอยู่แล้ว (รันซ้ำ / รันพร้อมกัน) คืน None"""
+def _create_log(reminder: Reminder, today: datetime.date) -> models.ReminderLog | None:
+    """log queued ของ reminder นี้ ถ้ามี log key เดียวกันอยู่แล้ว (รันซ้ำ / รันพร้อมกัน) คืน None
+
+    created_date เป็นวันของรอบเตือนนี้ (ปกติคือวันนี้) อีเมลใช้นับจำนวนวันที่เหลือจริงถึงวันครบกำหนด
+    """
     item = reminder.item
     log = models.ReminderLog(
         organization=item.organization,
@@ -33,6 +37,7 @@ def _create_log(reminder: Reminder) -> models.ReminderLog | None:
         recipients=reminder.recipients,
         status="queued",
         dedupe_key=reminder.dedupe_key,
+        created_date=datetime.datetime.combine(today, datetime.datetime.now().time()),
     )
     try:
         return log.save(force_insert=True)
@@ -48,7 +53,7 @@ def enqueue_due_reminders(today: datetime.date, settings, queue) -> list[models.
     """
     logs = []
     for reminder in due_reminders(today):
-        log = _create_log(reminder)
+        log = _create_log(reminder, today)
         if not log:
             continue
         logs.append(log)
@@ -59,10 +64,12 @@ def enqueue_due_reminders(today: datetime.date, settings, queue) -> list[models.
                 job_timeout=JOB_TIMEOUT,
             )
             logger.info("enqueued reminder %s as job %s", log.dedupe_key, getattr(job, "id", None))
-        except Exception as error:
+        except Exception:
+            # รายละเอียดของ exception (อาจมี host ของ Redis) อยู่ใน log ของ controller เท่านั้น
+            # ไม่เก็บใน ReminderLog ที่แสดงบนหน้าเว็บ
             logger.exception("enqueue reminder %s failed", log.dedupe_key)
             models.ReminderLog.objects(id=log.id, status="queued").update_one(
                 set__status="failed",
-                set__error=f"เข้าคิวส่งอีเมลไม่สำเร็จ: {error}",
+                set__error=ENQUEUE_ERROR,
             )
     return logs

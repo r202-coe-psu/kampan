@@ -131,6 +131,7 @@ def index():
         procurements=page_procurements,
         can_change_renewal=ma_permissions.edit_checker(organization),
         form=form,
+        action_form=forms.procurement.ConfirmActionForm(formdata=None),
         paginated_procurements=paginated_procurements,
         organization=organization,
         category_choices=category_choices,
@@ -148,6 +149,7 @@ PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ
 
 
 PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอดำเนินการ"
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง"
 
 
 def claim_pending_procurement(procurement, organization, new_status: str) -> bool:
@@ -171,6 +173,9 @@ def non_renewal_action(requisition_procurement_id):
     procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
+        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+    if not forms.procurement.ConfirmActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
     if not claim_pending_procurement(procurement, organization, "disactive"):

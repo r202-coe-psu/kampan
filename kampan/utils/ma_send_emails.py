@@ -12,8 +12,10 @@ from .email_utils import PSUSMTP, get_host_url
 
 logger = logging.getLogger(__name__)
 
+# ข้อความใน ReminderLog.error แสดงบนหน้าเว็บ จึงเก็บแค่ประเภทสาเหตุ รายละเอียดของ exception อยู่ใน log ของ worker
 NO_RECIPIENT_ERROR = "ไม่มีผู้รับ"
 SMTP_LOGIN_ERROR = "เข้าสู่ระบบ SMTP ไม่สำเร็จ"
+SEND_ERROR = "ส่งอีเมลไม่สำเร็จ"
 
 # คำเรียกรายการย่อยตาม reminder_kind
 REMINDER_KIND_NOUNS = {
@@ -31,7 +33,6 @@ OFFSET_LABELS = {
     "15d": "15 วัน",
     "7d": "7 วัน",
 }
-DUE_OFFSET = "due"
 
 EMAIL_FOOTER = """
 ดูรายละเอียด: {ma_url}
@@ -46,12 +47,6 @@ def _as_date(value):
     return value.date() if isinstance(value, datetime.datetime) else value
 
 
-def _offset_label(offset: str) -> str:
-    if offset in OFFSET_LABELS:
-        return OFFSET_LABELS[offset]
-    return f"{offset} วัน"
-
-
 def _installment_due_date(log, item):
     for installment in item.installments:
         if installment._id == log.installment_id:
@@ -59,18 +54,48 @@ def _installment_due_date(log, item):
     return _as_date(log.trigger_date)
 
 
-def reminder_title(log) -> str:
-    """ประเภทการเตือนที่ใช้ใน subject เช่น "หมดอายุใน 3 เดือน", "ครบกำหนดจ่ายงวดที่ 2" """
-    if log.kind == "expiry":
-        return "ครบกำหนดหมดอายุ" if log.offset == DUE_OFFSET else f"หมดอายุใน {_offset_label(log.offset)}"
+def _send_date(log) -> datetime.date:
+    """วันที่ส่ง reminder นี้ (วันของรอบเตือนที่สร้าง log) ใช้นับจำนวนวันที่เหลือจริง ไม่ใช่วัน trigger"""
+    return _as_date(log.created_date) or datetime.date.today()
+
+
+def _target_date(log, item):
+    """วันครบกำหนดจริงที่ reminder นี้เตือน: end_date (หมดอายุ / activate) หรือ due_date ของงวด"""
+    if log.kind == "payment":
+        return _installment_due_date(log, item)
+    return _as_date(item.end_date)
+
+
+def reminder_title(log, item) -> str:
+    """ประเภทการเตือนที่ใช้ใน subject จำนวนวันนับจากวันที่ส่งถึงวันครบกำหนดจริง
+
+    ใช้ชื่อช่วงเตือน (เช่น "3 เดือน") เฉพาะตอนส่งตรงวัน trigger
+    ถ้าส่งช้า (MA สร้างทีหลัง / controller ล่ม) ใช้จำนวนวันจริง
+    เช่น "หมดอายุใน 3 เดือน", "หมดอายุใน 10 วัน", "ครบกำหนดหมดอายุวันนี้", "เลยกำหนดจ่ายงวดที่ 2 มาแล้ว 3 วัน"
+    """
+    if log.kind == "custom":
+        return "เตือนตามวันที่กำหนด"
+
+    sent = _send_date(log)
+    target = _target_date(log, item)
+    days = (target - sent).days if target else 0
+    on_time = sent == _as_date(log.trigger_date) and log.offset in OFFSET_LABELS
+    ahead = OFFSET_LABELS[log.offset] if on_time else f"{days} วัน"
+
     if log.kind == "payment":
         installment = f"งวดที่ {log.installment_index}" if log.installment_index else "งวด"
-        if log.offset == DUE_OFFSET:
-            return f"ครบกำหนดจ่าย{installment}"
-        return f"จ่าย{installment} ใน {_offset_label(log.offset)}"
+        if days > 0:
+            return f"จ่าย{installment} ใน {ahead}"
+        if days == 0:
+            return f"ครบกำหนดจ่าย{installment} วันนี้"
+        return f"เลยกำหนดจ่าย{installment} มาแล้ว {-days} วัน"
     if log.kind == "activation":
-        return "ครบกำหนด activate"
-    return "เตือนตามวันที่กำหนด"
+        return "ครบกำหนด activate วันนี้" if days >= 0 else f"เลยกำหนด activate มาแล้ว {-days} วัน"
+    if days > 0:
+        return f"หมดอายุใน {ahead}"
+    if days == 0:
+        return "ครบกำหนดหมดอายุวันนี้"
+    return f"เลยกำหนดหมดอายุมาแล้ว {-days} วัน"
 
 
 def _days_text(target: datetime.date, from_date: datetime.date) -> str:
@@ -83,9 +108,9 @@ def _days_text(target: datetime.date, from_date: datetime.date) -> str:
 
 
 def _reminder_message(log, item, noun: str) -> str:
-    trigger = _as_date(log.trigger_date)
+    sent = _send_date(log)
     end_date = _as_date(item.end_date)
-    end_text = f"{format_date_th(end_date)} {_days_text(end_date, trigger)}"
+    end_text = f"{format_date_th(end_date)} {_days_text(end_date, sent)}"
     ending = "สิ้นสุดสัญญา" if item.reminder_kind == "rental" else "หมดอายุ"
 
     if log.kind == "expiry":
@@ -97,11 +122,12 @@ def _reminder_message(log, item, noun: str) -> str:
         due_date = _installment_due_date(log, item)
         installment = f"งวดที่ {log.installment_index}" if log.installment_index else "งวด"
         return (
-            f"{installment} ครบกำหนดจ่ายวันที่ {format_date_th(due_date)} {_days_text(due_date, trigger)}\n"
+            f"{installment} ครบกำหนดจ่ายวันที่ {format_date_th(due_date)} {_days_text(due_date, sent)}\n"
             "กรุณาดำเนินการเบิกจ่าย และบันทึกการจ่ายในระบบเมื่อจ่ายแล้ว"
         )
     if log.kind == "activation":
         return f"{noun} รายการนี้ครบกำหนดในวันที่ {end_text}\nกรุณา activate ให้เรียบร้อย"
+    trigger = _as_date(log.trigger_date)
     return f"แจ้งเตือนตามวันที่ที่ตั้งไว้ ({format_date_th(trigger)})\n{noun} รายการนี้{ending}วันที่ {end_text}"
 
 
@@ -111,7 +137,7 @@ def build_reminder_email(log, settings) -> tuple[str, str]:
     procurement = log.procurement
     noun = REMINDER_KIND_NOUNS.get(item.reminder_kind, "MA")
     psu_number = procurement.psu_disbursement_number or "-"
-    subject = f"[แจ้งเตือน] {reminder_title(log)} {item.name} (ม.อ.เบิกจ่าย {psu_number})"
+    subject = f"[แจ้งเตือน] {reminder_title(log, item)} {item.name} (ม.อ.เบิกจ่าย {psu_number})"
 
     ma_url = (
         f"{get_host_url(settings)}/procurement/payment/{procurement.id}"
@@ -161,9 +187,9 @@ def send_reminder_job(log_id: str, settings) -> bool:
     status, error = "failed", None
     try:
         status, error = _deliver(log, settings)
-    except Exception as exception:
+    except Exception:
         logger.exception("send_reminder_job %s failed", log_id)
-        status, error = "failed", f"เกิดข้อผิดพลาด: {exception}"
+        status, error = "failed", SEND_ERROR
     finally:
         updates = {"set__status": status}
         if error:

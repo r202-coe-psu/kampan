@@ -25,8 +25,9 @@ OFFSET_DELTAS = {
 DUE_OFFSET = "due"
 # MA ที่หยุดเตือนทั้งหมด: ไม่ต่ออายุ / ต่ออายุแล้ว
 STOPPED_STATUSES = ["disactive", "renewed"]
-# วันที่เตือนเจาะจงที่เลยมาเกินกี่วันจะไม่ส่งแล้ว (กันกรอกวันในอดีตหรือ controller ล่มนาน)
-CUSTOM_DATE_GRACE_DAYS = 7
+# trigger ที่เลยมาเกินกี่วันจะไม่ส่งแล้ว ใช้กับทุก kind (กันนำเข้า MA ที่มีงวดค้างย้อนหลัง,
+# กรอกวันในอดีต หรือ controller ล่มนานแล้วยิงเมลย้อนหลัง)
+REMINDER_GRACE_DAYS = 7
 
 
 @dataclasses.dataclass
@@ -60,11 +61,19 @@ def _offset_triggers(target: datetime.date, offsets, extra_days=()) -> list[tupl
     return triggers
 
 
+def _oldest_sendable(today: datetime.date) -> datetime.date:
+    return today - datetime.timedelta(days=REMINDER_GRACE_DAYS)
+
+
 def _latest_due(triggers, today):
+    """trigger ล่าสุดที่ถึงกำหนดแล้ว ถ้าเก่ากว่า today − 7 วันถือว่าเลยรอบไปแล้ว ไม่ส่ง"""
     due = [trigger for trigger in triggers if trigger[0] <= today]
     if not due:
         return None
-    return max(due, key=lambda trigger: trigger[0])
+    latest = max(due, key=lambda trigger: trigger[0])
+    if latest[0] < _oldest_sendable(today):
+        return None
+    return latest
 
 
 def _recipients(item) -> list[str]:
@@ -112,7 +121,7 @@ def _item_candidates(item, today: datetime.date) -> list[dict]:
         latest = _latest_due(_offset_triggers(end_date, item.expiry_reminder_offsets, item.reminder_offsets_days), today)
         if latest:
             candidates.append({"kind": "expiry", "trigger": latest})
-        if item.requires_activation and end_date <= today:
+        if item.requires_activation and _oldest_sendable(today) <= end_date <= today:
             candidates.append({"kind": "activation", "trigger": (end_date, DUE_OFFSET)})
 
     for index, installment in enumerate(item.get_sorted_installments(), start=1):
@@ -125,9 +134,8 @@ def _item_candidates(item, today: datetime.date) -> list[dict]:
                 {"kind": "payment", "trigger": latest, "installment_id": installment._id, "installment_index": index}
             )
 
-    oldest_custom = today - datetime.timedelta(days=CUSTOM_DATE_GRACE_DAYS)
     for value in sorted({_as_date(value) for value in item.custom_reminder_dates or [] if value}):
-        if oldest_custom <= value <= today:
+        if _oldest_sendable(today) <= value <= today:
             candidates.append({"kind": "custom", "trigger": (value, "date"), "exact": True})
     return candidates
 
@@ -138,7 +146,8 @@ def due_reminders(today: datetime.date) -> list[Reminder]:
     - expiry: ทุกช่วงที่ติ๊ก + จำนวนวันที่กรอกเอง ก่อน end_date และ 1 ครั้งในวัน end_date
     - payment: ต่องวดที่ยังไม่จ่าย ทุกช่วงที่ติ๊กก่อน due_date และ 1 ครั้งในวัน due_date
     - activation: 1 ครั้งในวัน end_date ถ้า requires_activation
-    - custom: ในวันที่เจาะจง ข้ามวันที่ที่เก่ากว่า today − 7 วัน
+    - custom: ในวันที่เจาะจง
+    - ทุก kind: ข้าม trigger ที่เก่ากว่า today − 7 วัน (REMINDER_GRACE_DAYS) เช่น MA นำเข้าที่มีงวดค้างย้อนหลัง
     - collapse: ต่อ (รายการย่อย, kind[, งวด]) คืนเฉพาะ trigger ล่าสุดที่ถึงกำหนด ถ้ามี log ที่ trigger_date >= ตัวนั้นแล้วข้าม
       (controller ล่มหลายวันแล้วไม่ยิงเมลค้างหลายฉบับ และไม่มีการเตือนซ้ำหลังเลยกำหนด)
     - MA ที่ไม่ต่ออายุ / ต่ออายุแล้ว ไม่เตือนเลย

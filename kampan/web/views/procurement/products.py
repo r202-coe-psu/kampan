@@ -398,6 +398,8 @@ def _save_form(form, organization, procurement, existing_items, member):
     _apply_header(form, procurement, user)
     try:
         procurement.save_with_items(items, removed_items)
+    except models.ConcurrentEditConflict:
+        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
     except me.ValidationError as error:
         return _render_form(form, organization, member, procurement, [error.message])
 

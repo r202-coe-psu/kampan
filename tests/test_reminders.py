@@ -153,7 +153,8 @@ def test_unchecked_offsets_do_not_fire(world):
 
     assert _triggers(datetime.date(2027, 2, 28)) == []
     assert _triggers(datetime.date(2027, 3, 31)) == []
-    assert _triggers(datetime.date(2027, 5, 16)) == [("expiry", datetime.date(2027, 4, 30), "1m")]
+    assert _triggers(datetime.date(2027, 5, 7)) == [("expiry", datetime.date(2027, 4, 30), "1m")]
+    assert _triggers(datetime.date(2027, 5, 16)) == []
 
 
 def test_custom_offset_days_fire_before_end_date(world):
@@ -412,7 +413,8 @@ def test_tick_marks_log_failed_when_enqueue_fails(world):
 
     log = models.ReminderLog.objects.get()
     assert log.status == "failed"
-    assert "redis down" in log.error
+    # ข้อความดิบของ exception (อาจมี host / รหัสผ่านของ Redis) ไม่เก็บใน log ที่ผู้ใช้เห็น
+    assert log.error == "เข้าคิวส่งอีเมลไม่สำเร็จ"
 
 
 # ---------------------------------------------------------------------------
@@ -508,14 +510,16 @@ def test_job_without_recipients_marks_failed(world, smtp):
     assert smtp.instances == []
 
 
-def test_job_exception_never_leaves_log_queued(world, smtp):
+def test_job_exception_never_leaves_log_queued(world, smtp, caplog):
     smtp.raise_on_send = RuntimeError("smtp exploded")
     log = _queued_log(world, datetime.date(2027, 2, 28))
 
     assert ma_send_emails.send_reminder_job(str(log.id), SETTINGS) is False
 
     log.reload()
-    assert log.status == "failed" and "smtp exploded" in log.error
+    # ข้อความดิบของ exception ไปอยู่ใน log ของ worker เท่านั้น ไม่เก็บใน ReminderLog ที่แสดงบนหน้าเว็บ
+    assert log.status == "failed" and log.error == "ส่งอีเมลไม่สำเร็จ"
+    assert "smtp exploded" in caplog.text
 
 
 def test_job_ignores_log_that_is_not_queued(world, smtp):
@@ -531,7 +535,7 @@ def test_job_ignores_log_that_is_not_queued(world, smtp):
 @pytest.mark.parametrize(
     "today, fields, expected_subject",
     [
-        (datetime.date(2027, 5, 31), {}, "[แจ้งเตือน] ครบกำหนดหมดอายุ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"),
+        (datetime.date(2027, 5, 31), {}, "[แจ้งเตือน] ครบกำหนดหมดอายุวันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"),
         (
             datetime.date(2027, 4, 16),
             {"expiry_reminder_offsets": [], "reminder_offsets_days": [45]},
@@ -540,10 +544,10 @@ def test_job_ignores_log_that_is_not_queued(world, smtp):
         (
             datetime.date(2027, 4, 30),
             {"expiry_reminder_offsets": [], "installments": [models.Installment(due_date=datetime.datetime(2027, 4, 30))]},
-            "[แจ้งเตือน] ครบกำหนดจ่ายงวดที่ 1 [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
+            "[แจ้งเตือน] ครบกำหนดจ่ายงวดที่ 1 วันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
         ),
         (
-            datetime.date(2027, 3, 31),
+            datetime.date(2027, 3, 30),
             {"expiry_reminder_offsets": [], "installments": [models.Installment(due_date=datetime.datetime(2027, 4, 30))]},
             "[แจ้งเตือน] จ่ายงวดที่ 1 ใน 1 เดือน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
         ),
@@ -569,7 +573,8 @@ def test_job_activation_subject(world, smtp):
 
     ma_send_emails.send_reminder_job(str(log.id), SETTINGS)
 
-    assert smtp.instances[0].sent[0][1] == "[แจ้งเตือน] ครบกำหนด activate [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    expected = "[แจ้งเตือน] ครบกำหนด activate วันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    assert smtp.instances[0].sent[0][1] == expected
 
 
 def test_inactive_responsible_member_gets_no_email(world):
@@ -580,3 +585,78 @@ def test_inactive_responsible_member_gets_no_email(world):
     (reminder,) = due_reminders(datetime.date(2027, 5, 31))
 
     assert reminder.recipients == ["alice@test.com"]
+
+
+# ---------------------------------------------------------------------------
+# trigger เก่าเกิน 7 วันไม่ส่ง + ข้อความจำนวนวันนับจากวันที่ส่ง
+# ---------------------------------------------------------------------------
+
+from dateutil.relativedelta import relativedelta  # noqa: E402
+
+
+def _monthly_installments(first_due: datetime.date, count: int) -> list:
+    first = datetime.datetime.combine(first_due, datetime.time.min)
+    return [models.Installment(due_date=first + relativedelta(months=n)) for n in range(count)]
+
+
+def test_imported_ma_with_past_unpaid_installments_reminds_only_within_seven_days(world):
+    # นำเข้า MA ที่มี 12 งวดค้างจ่าย (15/02/2569 – 15/01/2570) รอบแรกต้องไม่ยิงเมลย้อนหลังทุกงวด
+    _ma(world, _payment_item(world, *_monthly_installments(datetime.date(2026, 2, 15), 12)))
+
+    logs = enqueue_due_reminders(datetime.date(2027, 1, 20), SETTINGS, FakeQueue())
+
+    assert [(log.kind, log.trigger_date, log.offset, log.installment_index) for log in logs] == [
+        ("payment", datetime.datetime(2027, 1, 15), "due", 12)
+    ]
+
+
+def test_expiry_and_activation_older_than_seven_days_are_skipped(world):
+    _ma(world, _item(world, requires_activation=True))  # end_date 31/05/2570
+
+    assert _triggers(datetime.date(2027, 6, 7)) == [
+        ("activation", datetime.date(2027, 5, 31), "due"),
+        ("expiry", datetime.date(2027, 5, 31), "due"),
+    ]
+    assert _triggers(datetime.date(2027, 6, 8)) == []
+
+
+def _sent_subject_and_body(smtp):
+    _, subject, body = smtp.instances[0].sent[0]
+    return subject, body
+
+
+def test_late_offset_reminder_states_real_days_left(world, smtp):
+    # MA สร้างตอนเหลือ 10 วัน: trigger ล่าสุดที่ถึงคือ 15 วัน แต่ข้อความต้องบอกว่าเหลือ 10 วัน
+    log = _queued_log(world, datetime.date(2027, 5, 21))
+    assert log.offset == "15d"
+
+    ma_send_emails.send_reminder_job(str(log.id), SETTINGS)
+
+    subject, body = _sent_subject_and_body(smtp)
+    assert subject == "[แจ้งเตือน] หมดอายุใน 10 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    assert "(อีก 10 วัน)" in body and "15 วัน" not in body
+
+
+def test_late_due_date_reminder_says_how_many_days_ago(world, smtp):
+    log = _queued_log(world, datetime.date(2027, 6, 3))
+
+    ma_send_emails.send_reminder_job(str(log.id), SETTINGS)
+
+    subject, body = _sent_subject_and_body(smtp)
+    assert subject == "[แจ้งเตือน] เลยกำหนดหมดอายุมาแล้ว 3 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    assert "(เลยมาแล้ว 3 วัน)" in body and "(วันนี้)" not in body
+
+
+def test_payment_due_today_says_today(world, smtp):
+    log = _queued_log(
+        world,
+        datetime.date(2027, 4, 30),
+        expiry_reminder_offsets=[],
+        installments=[models.Installment(due_date=datetime.datetime(2027, 4, 30))],
+    )
+
+    ma_send_emails.send_reminder_job(str(log.id), SETTINGS)
+
+    subject, body = _sent_subject_and_body(smtp)
+    assert subject == "[แจ้งเตือน] ครบกำหนดจ่ายงวดที่ 1 วันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    assert "(วันนี้)" in body

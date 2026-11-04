@@ -352,10 +352,13 @@ def validate_ma_file(document) -> list:
 
         if pd.notna(row.get("period")):
             try:
-                if int(float(row.get("period"))) < 1:
+                period = int(float(row.get("period")))
+                if period < 1:
                     errors.append(
                         f"แถวที่ {row_num}: {MA_COLUMN_MAP['period']} ต้องมากกว่า 0"
                     )
+                elif period > models.procurement.MAX_INSTALLMENTS_PER_ITEM:
+                    errors.append(f"แถวที่ {row_num}: {models.procurement.MAX_INSTALLMENTS_MESSAGE}")
             except (ValueError, TypeError):
                 errors.append(f"แถวที่ {row_num}: {MA_COLUMN_MAP['period']} ต้องเป็นตัวเลข")
 
@@ -671,6 +674,10 @@ def save_ma_db(document, ma, user_id):
             period = int(float(row.get("period")))
             if period < 1:
                 raise ValueError(f"{MA_COLUMN_MAP['period']} ต้องมากกว่า 0")
+            if period > models.procurement.MAX_INSTALLMENTS_PER_ITEM:
+                msg = f"แถวที่ {row_num}: {models.procurement.MAX_INSTALLMENTS_MESSAGE}"
+                errors.append(msg)
+                continue
             category = category_map.get(_excel_text(row.get("category")))
             if not category:
                 raise ValueError(f"ไม่รู้จักประเภท '{_excel_text(row.get('category'))}'")

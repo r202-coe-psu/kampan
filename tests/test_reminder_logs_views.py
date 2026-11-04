@@ -114,7 +114,7 @@ def test_history_lists_logs_of_each_item_newest_first(world, client_for):
     )
     _log(world, world.item2, datetime.datetime(2026, 9, 15), kind="payment", note="ของรายการ 2")
 
-    response = client_for(world.head).get(_detail_url(world))
+    response = client_for(world.admin).get(_detail_url(world))
 
     assert response.status_code == 200
     html = response.get_data(as_text=True)
@@ -124,6 +124,16 @@ def test_history_lists_logs_of_each_item_newest_first(world, client_for):
     assert "ส่งไม่สำเร็จ" in first and "ส่งแล้ว" in first
     assert "ของรายการ 2" not in first
     assert "ของรายการ 2" in _section(html, world.item2)
+
+
+def test_failed_log_error_detail_only_shown_to_users_who_can_edit(world, client_for):
+    _log(world, world.item1, datetime.datetime(2026, 10, 1), status="failed", error="ส่งไม่ถึง: b@test.com")
+
+    viewer = _section(client_for(world.head).get(_detail_url(world)).get_data(as_text=True), world.item1)
+    editor = _section(client_for(world.responsible).get(_detail_url(world)).get_data(as_text=True), world.item1)
+
+    assert "ส่งไม่ถึง" not in viewer and "ส่งอีเมลไม่สำเร็จ" in viewer
+    assert "ส่งไม่ถึง: b@test.com" in editor
 
 
 def test_history_empty_message(world, client_for):

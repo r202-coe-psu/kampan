@@ -50,6 +50,9 @@ REMINDER_OFFSET_CHOICES = [
 DEFAULT_REMINDER_OFFSETS = ["3m", "2m", "1m", "15d", "7d"]
 # จำนวนวันเตือนที่กรอกเอง (#29)
 MAX_REMINDER_OFFSET_DAYS = 730
+# จำนวนงวดสูงสุดต่อรายการย่อย (ฟอร์มและนำเข้า Excel)
+MAX_INSTALLMENTS_PER_ITEM = 120
+MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เกิน {MAX_INSTALLMENTS_PER_ITEM}"
 
 
 def default_reminder_offsets() -> list[str]:
@@ -220,6 +223,10 @@ def check_item_sum(total_amount, amounts: Iterable) -> str | None:
 
 class RenewalConflict(Exception):
     """MA เดิมต่ออายุไปแล้ว หรือมีคำขออื่น claim ไปก่อน (เช่นกดบันทึกซ้ำ)"""
+
+
+class ConcurrentEditConflict(Exception):
+    """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
 
 
 class Installment(me.EmbeddedDocument):
@@ -517,6 +524,8 @@ class Procurement(me.Document):
 
         - ตรวจผลรวมยอด หัว และทุกรายการย่อยก่อนเขียนเอกสารใด ๆ ถ้าไม่ผ่าน raise ValidationError
         - เขียนหัว → รายการย่อย → ลบรายการที่ถูกเอาออก ถ้าเขียนไม่สำเร็จกลางทาง คืนข้อมูลเดิมแล้ว raise ต่อ
+        - เอกสารที่มีอยู่แล้วเขียน / ลบเฉพาะเมื่อ ``updated_date`` ใน DB ยังเท่ากับตอนโหลด
+          ถ้ามีคนแก้หรือบันทึกจ่ายงวดไปก่อน คืนส่วนที่เขียนไปแล้วแล้ว raise ConcurrentEditConflict
         """
         items = list(items)
         removed_items = [item for item in removed_items if item.pk]
@@ -532,8 +541,14 @@ class Procurement(me.Document):
             # ตั้ง id ก่อน รายการย่อยจึง validate ReferenceField ได้ทั้งที่ยังไม่ได้เขียนหัว
             self.id = ObjectId()
 
+        # เวลาแก้ไขตอนโหลด ใช้เป็นเงื่อนไขการเขียน (กันเขียนทับการแก้ / จ่ายงวดที่เกิดหลังโหลด)
+        loaded_header_date = None if is_new else self.updated_date
+        loaded_item_dates = {item.pk: item.updated_date for item in items + removed_items if item.pk}
+
         # auto_now ของ DateTimeField ไม่มีผลใน MongoEngine จึงตั้งเวลาแก้ไขเอง (ใช้ตรวจการแก้ไขชนกันด้วย)
+        # ตัดเหลือมิลลิวินาทีให้ตรงกับที่ Mongo เก็บ จึงใช้เป็นเงื่อนไขตอนคืนข้อมูลได้
         now = datetime.datetime.now()
+        now = now.replace(microsecond=now.microsecond // 1000 * 1000)
         self.updated_date = now
         for item in items:
             item.procurement = self
@@ -550,17 +565,30 @@ class Procurement(me.Document):
             raise
 
         snapshot = self._snapshot(items, removed_items, is_new)
-        written_items = []
+        written = {"header": False, "items": [], "deleted": []}
         try:
-            self.save(force_insert=is_new, validate=False)
+            if is_new:
+                self.save(force_insert=True, validate=False)
+            else:
+                self.save(validate=False, save_condition={"updated_date": loaded_header_date})
+            written["header"] = True
             for item in items:
-                item.save(validate=False)
-                written_items.append(item)
+                if item.pk in loaded_item_dates:
+                    item.save(validate=False, save_condition={"updated_date": loaded_item_dates[item.pk]})
+                else:
+                    item.save(validate=False)
+                written["items"].append(item)
             for item in removed_items:
-                item.delete()
+                if not ProcurementItem.objects(id=item.pk, updated_date=loaded_item_dates[item.pk]).delete():
+                    raise ConcurrentEditConflict()
+                written["deleted"].append(item)
+        except (me.errors.SaveConditionError, ConcurrentEditConflict) as error:
+            logger.info("save_with_items conflict for procurement %s, restoring", self.pk)
+            self._restore(snapshot, written, is_new, now)
+            raise ConcurrentEditConflict() from error
         except Exception:
             logger.exception("save_with_items failed for procurement %s, restoring", self.pk)
-            self._restore(snapshot, written_items, is_new)
+            self._restore(snapshot, written, is_new, now)
             raise
 
         self.__dict__["_items_cache"] = items
@@ -660,23 +688,32 @@ class Procurement(me.Document):
             "items": list(ProcurementItem._get_collection().find({"_id": {"$in": item_ids}})),
         }
 
-    def _restore(self, snapshot, written_items, is_new):
+    def _restore(self, snapshot, written, is_new, now):
+        """คืนเฉพาะเอกสารที่ save_with_items เขียน / ลบไปแล้ว
+
+        เอกสารที่เขียนแล้วคืนเมื่อ ``updated_date`` ยังเป็นของรอบนี้ (``now``) เท่านั้น ไม่ทับการแก้ของคนอื่นที่ตามมา
+        """
         items_collection = ProcurementItem._get_collection()
         try:
             if is_new:
-                for item in written_items:
+                for item in written["items"]:
                     items_collection.delete_one({"_id": item.pk})
                 self._get_collection().delete_one({"_id": self.pk})
                 return
 
-            known_ids = {raw["_id"] for raw in snapshot["items"]}
-            for item in written_items:
-                if item.pk not in known_ids:
+            snapshot_items = {raw["_id"]: raw for raw in snapshot["items"]}
+            for item in written["items"]:
+                raw = snapshot_items.get(item.pk)
+                if raw is None:
                     items_collection.delete_one({"_id": item.pk})
-            for raw in snapshot["items"]:
-                items_collection.replace_one({"_id": raw["_id"]}, raw, upsert=True)
-            if snapshot["procurement"]:
-                self._get_collection().replace_one({"_id": self.pk}, snapshot["procurement"])
+                else:
+                    items_collection.replace_one({"_id": item.pk, "updated_date": now}, raw)
+            for item in written["deleted"]:
+                raw = snapshot_items.get(item.pk)
+                if raw is not None:
+                    items_collection.replace_one({"_id": item.pk}, raw, upsert=True)
+            if written["header"] and snapshot["procurement"]:
+                self._get_collection().replace_one({"_id": self.pk, "updated_date": now}, snapshot["procurement"])
         except Exception:
             logger.exception("restore after failed save_with_items failed for procurement %s", self.pk)
 

@@ -2,6 +2,7 @@
 
 import datetime
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     abort,
@@ -22,6 +23,8 @@ module = Blueprint("payment", __name__, url_prefix="/payment")
 
 NO_PAYMENT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์บันทึกการจ่ายของ MA รายการนี้"
 DUPLICATE_PAYMENT_NUMBER_MESSAGE = "เลขที่เอกสาร {number} ถูกใช้งานแล้วในหน่วยงานนี้"
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง"
+INSTALLMENT_NOT_UPDATED_MESSAGE = "ไม่พบงวดนี้ หรือข้อมูลถูกแก้ไขแล้ว"
 
 
 def _get_procurement_or_404(procurement_id):
@@ -79,6 +82,8 @@ def _reminder_logs_by_item(procurement, organization) -> dict:
 def _get_installment_for_change(procurement_id, item_id, installment_id):
     """โหลด MA / รายการย่อย / งวด (scope ด้วยหน่วยงาน ไม่พบ = 404) แล้วตรวจสิทธิ์ผู้แก้ไข MA ได้"""
     organization, procurement = _get_procurement_or_404(procurement_id)
+    if not ObjectId.is_valid(item_id) or not ObjectId.is_valid(installment_id):
+        abort(404)
     item = models.ProcurementItem.objects(id=item_id, procurement=procurement, organization=organization).first()
     if not item:
         abort(404)
@@ -141,7 +146,7 @@ def pay_installment(procurement_id, item_id, installment_id):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
         return redirect(detail_url)
 
-    _update_installment(
+    updated = _update_installment(
         organization,
         item,
         installment,
@@ -150,6 +155,9 @@ def pay_installment(procurement_id, item_id, installment_id):
         payment_number=payment_number,
         paid_amount=form.paid_amount.data,
     )
+    if not updated:
+        flash(INSTALLMENT_NOT_UPDATED_MESSAGE, "error")
+        return redirect(detail_url)
     flash("บันทึกการจ่ายงวดเรียบร้อยแล้ว", "success")
     return redirect(detail_url)
 
@@ -164,8 +172,11 @@ def unpay_installment(procurement_id, item_id, installment_id):
     if not allowed:
         flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
         return redirect(detail_url)
+    if not forms.procurement.ConfirmActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(detail_url)
 
-    _update_installment(
+    updated = _update_installment(
         organization,
         item,
         installment,
@@ -174,5 +185,8 @@ def unpay_installment(procurement_id, item_id, installment_id):
         payment_number=None,
         paid_amount=None,
     )
+    if not updated:
+        flash(INSTALLMENT_NOT_UPDATED_MESSAGE, "error")
+        return redirect(detail_url)
     flash("ยกเลิกการบันทึกจ่ายงวดแล้ว", "success")
     return redirect(detail_url)

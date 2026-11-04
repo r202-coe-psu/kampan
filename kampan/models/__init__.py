@@ -18,6 +18,7 @@ from .categories import Category
 from .procurement import (
     Procurement,
     RenewalConflict,
+    ConcurrentEditConflict,
     ProcurementItem,
     Installment,
     CATEGORY_CHOICES,

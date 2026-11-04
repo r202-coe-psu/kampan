@@ -325,7 +325,7 @@
                       <td class="whitespace-nowrap">{{ thai_date(log.trigger_date) }}</td>
                       <td class="min-w-40 break-words">{% for recipient in log.recipients %}<div>{{ recipient }}</div>{% else %}-{% endfor %}</td>
                       <td><span class="badge badge-sm whitespace-nowrap {{ log_status_badges.get(log.status, 'badge-ghost') }}">{{ log.get_status_label() }}</span></td>
-                      <td class="min-w-48 whitespace-pre-line break-words{{ ' text-error' if log.status == 'failed' else '' }}">{{ log.error if log.status == "failed" and log.error else (log.note or "-") }}</td>
+                      <td class="min-w-48 whitespace-pre-line break-words{{ ' text-error' if log.status == 'failed' else '' }}">{% if log.status == "failed" %}{{ (log.error or "ส่งอีเมลไม่สำเร็จ") if can_edit else "ส่งอีเมลไม่สำเร็จ" }}{% else %}{{ log.note or "-" }}{% endif %}</td>
                       <td class="whitespace-nowrap">{{ log.created_by.get_name() if log.created_by else "ระบบ" }}</td>
                     </tr>
                   {% endfor %}

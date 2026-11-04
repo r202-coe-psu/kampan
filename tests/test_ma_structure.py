@@ -842,3 +842,282 @@ def test_procurement_status_moves_only_active_ma_near_expiry_to_pending(world, c
     stopped.reload()
     assert active.status == "pending"
     assert stopped.status == "disactive"
+
+
+# ---------------------------------------------------------------------------
+# CSRF: POST ที่เปลี่ยนสถานะต้องมี token (แอปไม่มี CSRFProtect ทั้งระบบ ตรวจผ่าน FlaskForm เท่านั้น)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def csrf_enabled(app, monkeypatch):
+    monkeypatch.setitem(app.config, "WTF_CSRF_ENABLED", True)
+
+
+def _csrf_token(html):
+    match = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html)
+    assert match, "หน้าเว็บไม่ได้ render csrf_token"
+    return match.group(1)
+
+
+def _pay(client, world, procurement, **data):
+    data.setdefault("paid_date", "2026-11-01")
+    return client.post(f"{_installment_url(procurement, 'pay')}?{_q(world.org)}", data=data)
+
+
+def test_unpay_without_csrf_token_is_refused(world, client_for, existing_ma, csrf_enabled, monkeypatch):
+    client = client_for(world.responsible)
+    with monkeypatch.context() as patch:
+        patch.setitem(client.application.config, "WTF_CSRF_ENABLED", False)
+        _pay(client, world, existing_ma, payment_number="PAY-CSRF")
+
+    client.post(f"{_installment_url(existing_ma, 'unpay')}?{_q(world.org)}")
+
+    assert _first_installment(existing_ma).payment_number == "PAY-CSRF"
+
+
+def test_unpay_with_csrf_token_from_detail_page(world, client_for, existing_ma, csrf_enabled, monkeypatch):
+    client = client_for(world.responsible)
+    with monkeypatch.context() as patch:
+        patch.setitem(client.application.config, "WTF_CSRF_ENABLED", False)
+        _pay(client, world, existing_ma, payment_number="PAY-CSRF")
+    token = _csrf_token(client.get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True))
+
+    client.post(f"{_installment_url(existing_ma, 'unpay')}?{_q(world.org)}", data={"csrf_token": token})
+
+    assert _first_installment(existing_ma).paid_date is None
+
+
+def test_non_renewal_without_csrf_token_is_refused(world, client_for, existing_ma, csrf_enabled):
+    client_for(world.admin).post(f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}")
+
+    existing_ma.reload()
+    assert existing_ma.status == "pending"
+
+
+def test_non_renewal_with_csrf_token_from_renewal_list(world, client_for, existing_ma, csrf_enabled):
+    client = client_for(world.admin)
+    html = client.get(f"/procurement/requisitions?{_q(world.org)}").get_data(as_text=True)
+    assert f"/procurement/requisitions/{existing_ma.id}/non-renewal" in html
+
+    client.post(
+        f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}",
+        data={"csrf_token": _csrf_token(html)},
+    )
+
+    existing_ma.reload()
+    assert existing_ma.status == "disactive"
+
+
+def test_other_ma_posts_without_csrf_token_change_nothing(world, client_for, existing_ma, csrf_enabled):
+    client = client_for(world.admin)
+    item = existing_ma.get_items()[0]
+
+    _pay(client, world, existing_ma, payment_number="PAY-NO-TOKEN")
+    client.post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=_edit_form(existing_ma))
+    client.post(
+        f"/procurement/reminder_logs/{existing_ma.id}/items/{item.id}/manual?{_q(world.org)}",
+        data={"contact_date": "01/11/2569", "note": "โทรแจ้ง"},
+    )
+    client.post(f"/procurement/products/{existing_ma.id}/renew?{_q(world.org)}", data=_edit_form(existing_ma))
+    _create(client, world, _two_item_form(world))
+
+    existing_ma.reload()
+    assert existing_ma.name == "[TEST] MA เดิม" and existing_ma.status == "pending"
+    assert _first_installment(existing_ma).paid_date is None
+    assert models.ReminderLog.objects.count() == 0
+    assert models.Procurement.objects.count() == 1
+
+
+# ---------------------------------------------------------------------------
+# input ที่ประกอบขึ้นเองต้องไม่ทำให้ 500 / บันทึกจ่ายที่ไม่ได้เขียนอะไรต้องไม่แจ้งว่าสำเร็จ
+# ---------------------------------------------------------------------------
+
+
+def _flashes(client):
+    with client.session_transaction() as session:
+        return list(session.get("_flashes", []))
+
+
+@pytest.mark.parametrize("action", ["pay", "unpay"])
+@pytest.mark.parametrize("bad", ["item", "installment"])
+def test_installment_action_with_non_objectid_is_404(world, client_for, existing_ma, action, bad):
+    item = existing_ma.get_items()[0]
+    item_id = "not-an-id" if bad == "item" else item.id
+    installment_id = "not-an-id" if bad == "installment" else item.installments[0]._id
+
+    response = client_for(world.admin).post(
+        f"/procurement/payment/{existing_ma.id}/items/{item_id}/installments/{installment_id}/{action}?{_q(world.org)}",
+        data={"paid_date": "2026-11-01"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize("amount", ["sNaN", "NaN", "Infinity", "-Infinity", "snan"])
+def test_pay_with_non_finite_amount_is_a_validation_error(world, client_for, existing_ma, amount):
+    client = client_for(world.admin)
+
+    response = _pay(client, world, existing_ma, paid_amount=amount)
+
+    assert response.status_code == 302
+    assert _first_installment(existing_ma).paid_date is None
+    assert [category for category, _ in _flashes(client)] == ["error"]
+
+
+@pytest.mark.parametrize("amount", ["sNaN", "NaN", "Infinity"])
+def test_ma_form_with_non_finite_amount_is_a_validation_error(world, client_for, existing_ma, amount):
+    data = _edit_form(existing_ma)
+    data["total_amount"] = amount
+    data["items-0-amount"] = amount
+
+    response = client_for(world.admin).post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=data)
+
+    assert response.status_code == 200
+    existing_ma.reload()
+    assert existing_ma.name == "[TEST] MA เดิม"
+
+
+@pytest.fixture
+def installment_removed_before_write(monkeypatch):
+    """จำลองคนอื่นลบงวดนี้ (แก้ MA) หลังจากเราโหลดงวดแล้ว แต่ก่อนเขียน"""
+    from kampan.web.views.procurement import payment
+
+    original = payment._get_installment_for_change
+
+    def load_then_remove(*args):
+        loaded = original(*args)
+        item = loaded[2]
+        models.ProcurementItem.objects(id=item.id).update_one(
+            set__installments=[models.Installment(due_date=datetime.datetime(2026, 12, 31))]
+        )
+        return loaded
+
+    monkeypatch.setattr(payment, "_get_installment_for_change", load_then_remove)
+
+
+@pytest.mark.parametrize("action", ["pay", "unpay"])
+def test_installment_action_that_writes_nothing_reports_error(
+    world, client_for, existing_ma, installment_removed_before_write, action
+):
+    client = client_for(world.admin)
+
+    client.post(f"{_installment_url(existing_ma, action)}?{_q(world.org)}", data={"paid_date": "2026-11-01"})
+
+    assert _flashes(client) == [("error", "ไม่พบงวดนี้ หรือข้อมูลถูกแก้ไขแล้ว")]
+    assert _first_installment(existing_ma).paid_date is None
+
+
+# ---------------------------------------------------------------------------
+# แก้ไข MA ชนกับการบันทึกจ่ายที่เกิดหลังตรวจ version แต่ก่อนเขียน
+# ---------------------------------------------------------------------------
+
+
+def _pay_directly(procurement, payment_number):
+    """บันทึกจ่ายแบบเดียวกับ payment.pay_installment (positional update + ตั้ง updated_date)"""
+    item = models.ProcurementItem.objects(procurement=procurement).get()
+    models.ProcurementItem.objects(id=item.id, __raw__={"installments._id": item.installments[0]._id}).update_one(
+        set__installments__S__paid_date=datetime.datetime(2026, 11, 1),
+        set__installments__S__payment_number=payment_number,
+        set__updated_date=datetime.datetime.now() + datetime.timedelta(seconds=1),
+    )
+
+
+def test_edit_refused_when_payment_lands_between_version_check_and_write(world, client_for, existing_ma, monkeypatch):
+    original = models.Procurement.save_with_items
+
+    def pay_then_save(self, *args, **kwargs):
+        _pay_directly(existing_ma, "PAY-RACE")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(models.Procurement, "save_with_items", pay_then_save)
+
+    response = client_for(world.admin).post(
+        f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=_edit_form(existing_ma)
+    )
+
+    assert response.status_code == 200
+    assert "ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่น" in response.get_data(as_text=True)
+    assert _first_installment(existing_ma).payment_number == "PAY-RACE"
+    existing_ma.reload()
+    assert existing_ma.name == "[TEST] MA เดิม"
+
+
+def test_save_with_items_rolls_back_header_when_an_item_changed_after_load(world):
+    procurement = _header(world.org)
+    procurement.save_with_items([_model_item("60.00"), _model_item("40.00")])
+    loaded = models.Procurement.objects.get(id=procurement.id)
+    first, second = loaded.get_items()
+    models.ProcurementItem.objects(id=second.id).update_one(
+        set__note="แก้โดยคนอื่น", set__updated_date=datetime.datetime.now() + datetime.timedelta(seconds=1)
+    )
+
+    loaded.name = "[TEST] แก้ทับ"
+    first.note = "แก้ของเรา"
+    second.note = "แก้ทับของคนอื่น"
+    with pytest.raises(models.ConcurrentEditConflict):
+        loaded.save_with_items([first, second])
+
+    assert models.Procurement.objects.get(id=procurement.id).name == "[TEST] MA"
+    assert models.ProcurementItem.objects.get(id=first.id).note != "แก้ของเรา"
+    assert models.ProcurementItem.objects.get(id=second.id).note == "แก้โดยคนอื่น"
+
+
+def test_save_with_items_refuses_when_header_changed_after_load(world):
+    procurement = _header(world.org)
+    procurement.save_with_items([_model_item("100.00")])
+    loaded = models.Procurement.objects.get(id=procurement.id)
+    models.Procurement.objects(id=procurement.id).update_one(
+        set__status="pending", set__updated_date=datetime.datetime.now() + datetime.timedelta(seconds=1)
+    )
+
+    loaded.name = "[TEST] แก้ทับ"
+    with pytest.raises(models.ConcurrentEditConflict):
+        loaded.save_with_items(loaded.get_items())
+
+    stored = models.Procurement.objects.get(id=procurement.id)
+    assert (stored.name, stored.status) == ("[TEST] MA", "pending")
+
+
+# ---------------------------------------------------------------------------
+# จำนวนงวดต่อรายการย่อยไม่เกิน 120 (Excel และฟอร์ม)
+# ---------------------------------------------------------------------------
+
+
+def test_upload_rejects_more_than_120_installments(world, gridfs_enabled):
+    document = _upload_document(
+        world,
+        [
+            _excel_row(**{"จำนวนงวด": 121}),
+            _excel_row(**{"ชื่อรายการ": "[TEST] 120 งวด", "จำนวนงวด": 120, "วันที่สิ้นสุด": "31/12/2035"}),
+        ],
+    )
+
+    assert upload_files.validate_ma_file(document) == ["แถวที่ 2: จำนวนงวดต้องไม่เกิน 120"]
+
+    upload_files.save_ma_db(document, None, world.admin.id)
+
+    item = models.ProcurementItem.objects.get()
+    assert item.name == "[TEST] 120 งวด" and len(item.installments) == 120
+    document.reload()
+    assert document.error_messages == ["แถวที่ 2: จำนวนงวดต้องไม่เกิน 120"]
+
+
+def test_ma_form_rejects_more_than_120_installments(world, client_for):
+    installments = [{"due_date": "2026-12-31"}] * 121
+    data = ma_form([_item(amount="100000.00", installments=installments)])
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 200
+    assert "จำนวนงวดต้องไม่เกิน 120" in response.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 0
+
+
+def test_ma_form_accepts_120_installments(world, client_for):
+    data = ma_form([_item(amount="100000.00", installments=[{"due_date": "2026-12-31"}] * 120)])
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 302
+    assert len(models.ProcurementItem.objects.get().installments) == 120
