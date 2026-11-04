@@ -6,6 +6,7 @@ from flask_mongoengine import Pagination
 
 from kampan.web import forms, acl
 from kampan import models
+from kampan.utils.money import money_sum, to_money
 
 module = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 subviews = []
@@ -52,8 +53,8 @@ def daily_dashboard():
         approval_status="approved",
     )
 
-    total_values = sum(
-        [approved_order.get_all_price() for approved_order in approved_orders]
+    total_values = money_sum(
+        approved_order.get_all_price() for approved_order in approved_orders
     )
     page = request.args.get("page", default=1, type=int)
     if form.start_date.data:
@@ -133,10 +134,13 @@ def monthly_dashboard():
             pipeline_approved_checkout_items
         )
     )
-    trend_checkout_items = [0] * days_month(today)
+    # $sum ฝั่ง Mongo คิดบน double ต้องแปลงเป็น Decimal ก่อนรวม
+    daily_totals = [to_money(0)] * days_month(today)
     for checkout_item in approved_checkout_items:
-        trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
-    total_values = sum(trend_checkout_items)
+        daily_totals[checkout_item["_id"] - 1] = to_money(checkout_item["total"])
+    total_values = money_sum(daily_totals)
+    # ส่งให้กราฟ JS เป็นตัวเลขธรรมดา (แปลงตอน serialize เท่านั้น)
+    trend_checkout_items = [float(total) for total in daily_totals]
     months = [
         "มกราคม",
         "กุมภาพันธ์",
@@ -215,10 +219,11 @@ def yearly_dashboard():
     checkout_items = models.inventories.ApprovedCheckoutItem.objects().aggregate(
         pipeline_checkout_item
     )
-    trend_checkout_items = [0] * 12
+    monthly_totals = [to_money(0)] * 12
     for checkout_item in checkout_items:
-        trend_checkout_items[checkout_item["_id"] - 1] = checkout_item["total"]
-    total_values = sum(trend_checkout_items)
+        monthly_totals[checkout_item["_id"] - 1] = to_money(checkout_item["total"])
+    total_values = money_sum(monthly_totals)
+    trend_checkout_items = [float(total) for total in monthly_totals]
     this_year = today.year
     return render_template(
         "/admin/dashboard/yearly_dashboard.html",

@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import mongoengine as me
 
@@ -29,7 +30,13 @@ class PaymentRecord(me.EmbeddedDocument):
 
     period_index = me.IntField(required=True)
     payment_number = me.StringField(max_length=128, required=False)
-    amount = me.DecimalField(required=True, min_value=0, precision=2, max_value=1e12)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        precision=2,
+        max_value=1e12,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
     paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
     due_date = me.DateTimeField(required=True)  # วันที่ครบกำหนดของงวดนี้
@@ -46,7 +53,13 @@ class Procurement(me.Document):
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
     start_date = me.DateTimeField(required=True)
     end_date = me.DateTimeField(required=True)
-    amount = me.DecimalField(required=True, min_value=0, precision=2, max_value=1e12)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        precision=2,
+        max_value=1e12,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     period = me.IntField(required=True, min_value=1)
     quantity = me.IntField(min_value=1, default=1)
     # status: สถานะการต่ออายุ (renewal process)
@@ -101,10 +114,10 @@ class Procurement(me.Document):
         return len(self.payment_records)
 
     def get_total_payment_record(self):
-        total = 0
-        for record in self.payment_records:
-            total += record.amount
-        return total
+        # import ในฟังก์ชัน: kampan.utils import models กลับมา (circular import)
+        from kampan.utils.money import money_sum
+
+        return money_sum(record.amount for record in self.payment_records)
 
     def get_remaining_amount(self):
         total_paid = self.get_total_payment_record()

@@ -11,6 +11,7 @@ from kampan import models
 from kampan.models import mas
 from kampan.models.export_file import ExportFile
 from kampan.utils.date_utils import format_date_th
+from kampan.utils.money import to_money
 
 EXPORT_MAS_COLUMN_MAP = {
     "mas_code": "รหัสงบประมาณ",
@@ -164,12 +165,12 @@ def get_purchased_items_in_mas(ws, mas_id, start_row, start_date, end_date):
         if req_id not in grouped:
             grouped[req_id] = {
                 "requisition": req,
-                "actual_amount": float(res.actual_amount or 0),
+                "actual_amount": to_money(res.actual_amount),
                 "order_confirmed_ts": order_confirmed_ts,
                 "quotation_winner": quotation_winner,
             }
         else:
-            grouped[req_id]["actual_amount"] += float(res.actual_amount or 0)
+            grouped[req_id]["actual_amount"] += to_money(res.actual_amount)
 
     # --- write rows ---
     current_row = start_row
@@ -232,7 +233,8 @@ def get_purchased_items_in_mas(ws, mas_id, start_row, start_date, end_date):
         )
 
         # --- Column D: total amount (merged for all items in this requisition) ---
-        ws.cell(row=first_row, column=4).value = data["actual_amount"]
+        # สะสมเป็น Decimal แล้วแปลงเป็น float ตอนเขียนเซลล์เท่านั้น
+        ws.cell(row=first_row, column=4).value = float(data["actual_amount"])
         ws.cell(row=first_row, column=4).number_format = "#,##0.00"
         ws.cell(row=first_row, column=4).alignment = Alignment(
             horizontal="right", vertical="center"

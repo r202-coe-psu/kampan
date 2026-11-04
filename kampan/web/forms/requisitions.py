@@ -10,6 +10,8 @@ from kampan.models.requisitions import (
     STATUS_CHOICES,
 )
 
+from .money_validators import MoneyPlaces
+
 BaseRequisitionForm = model_form(
     models.Requisition,
     FlaskForm,
@@ -49,6 +51,7 @@ class RequisitionItemForm(Form):
         [
             validators.DataRequired(),
             validators.NumberRange(max=1e12, message="จำนวนเงินต้องไม่เกิน 1e12"),
+            MoneyPlaces(),
         ],
     )
     currency = fields.StringField("หน่วยนับ")

@@ -3,6 +3,7 @@ from email.policy import default
 import mongoengine as me
 from mongoengine import Q
 import datetime, calendar
+import decimal
 from kampan import models
 
 
@@ -97,21 +98,26 @@ class Item(me.Document):
         return 0
 
     def get_last_price_per_piece(self):
+        # import ในฟังก์ชัน: kampan.utils import models กลับมา (circular import)
+        from kampan.utils.money import to_money
+
         value = self.get_last_price()
         if value != None:
 
-            return round(value / self.piece_per_set, 2)
+            return to_money(value / self.piece_per_set)
 
         return 0
 
     def get_remaining_balance(self):
+        from kampan.utils.money import to_money
+
         value = self.get_last_price()
         amount_item = self.get_amount_items()
         amount_piece = self.get_amount_pieces()
         if value:
             set_remaining = (value * amount_item) + (
                 (amount_piece % self.piece_per_set)
-                * round(value / self.piece_per_set, 2)
+                * to_money(value / self.piece_per_set)
             )
             return set_remaining
         return ""
@@ -148,10 +154,17 @@ class ItemSnapshot(me.Document):
 
     item = me.ReferenceField("Item", dbref=True)
     amount = me.IntField()
-    last_price = me.DecimalField()
-    last_price_per_piece = me.DecimalField()
+    # ค่าที่ระบบคำนวณจากข้อมูลจริง อาจติดลบได้ (พบใน DB) จึงไม่ตั้ง min_value
+    last_price = me.DecimalField(
+        max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
+    last_price_per_piece = me.DecimalField(
+        max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )
 
-    remaining_balance = me.DecimalField() # มูลค่าสินค้าคงเหลือ
+    remaining_balance = me.DecimalField(
+        max_value=1e12, precision=2, rounding=decimal.ROUND_HALF_EVEN
+    )  # มูลค่าสินค้าคงเหลือ
     status = me.StringField(default="active")
 
     organization = me.ReferenceField("Organization", dbref=True)

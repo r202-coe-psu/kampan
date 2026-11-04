@@ -4,6 +4,8 @@ from wtforms import ValidationError, fields, validators
 
 from kampan import models
 
+from .money_validators import MoneyPlaces
+
 BaseProcurementForm = model_form(
     models.Procurement,
     FlaskForm,
@@ -19,7 +21,7 @@ BaseProcurementForm = model_form(
     field_args={
         "name": {"label": "ชื่อรายการ"},
         "category": {"label": "ประเภท"},
-        "amount": {"label": "จำนวนเงินทั้งหมด (บาท)"},
+        "amount": {"label": "จำนวนเงินทั้งหมด (บาท)", "validators": [MoneyPlaces()]},
         "period": {"label": "จำนวนงวด"},
         "company": {"label": "บริษัท"},
         "responsible_by": {"label": "ผู้รับผิดชอบ"},
@@ -83,7 +85,7 @@ BasePaymentRecordForm = model_form(
     ],
     field_args={
         "payment_number": {"label": "เลขที่ใบจ่ายเงิน"},
-        "amount": {"label": "จำนวนเงิน"},
+        "amount": {"label": "จำนวนเงิน", "validators": [MoneyPlaces()]},
     },
 )
 
@@ -96,6 +98,7 @@ class PaymentRecordForm(BasePaymentRecordForm):
         validators=[
             validators.InputRequired(),
             validators.NumberRange(min=0, max=1e12, message="จำนวนเงินต้องอยู่ระหว่าง 0 ถึง 1,000,000,000,000"),
+            MoneyPlaces(),
         ],
     )
 
@@ -107,6 +110,7 @@ class PaymentForm(FlaskForm):
         validators=[
             validators.InputRequired(),
             validators.NumberRange(min=0, message="จำนวนเงินต้องมากกว่าหรือเท่ากับ 0"),
+            MoneyPlaces(),
         ],
     )
     payment_number = fields.StringField(

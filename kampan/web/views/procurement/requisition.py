@@ -20,6 +20,7 @@ from flask_mongoengine import Pagination
 from PyPDF2 import PdfMerger
 
 from kampan import models, utils
+from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
 from kampan.web import feature_flags, forms
 
 from ... import redis_rq
@@ -817,14 +818,19 @@ def requisition_action(requisition_id):
 def get_fund_allocations(organization, fund_id, fund_ids):
     """อ่านยอดจัดสรรจาก form (key = fund_amounts[<mas_id>]) คืน ([(mas, amount)], error)"""
     input_amounts = {}
+    invalid_places = set()
     for key, value in request.form.items(multi=True):
         if key.startswith("fund_amounts[") and key.endswith("]"):
             mas_id = key[len("fund_amounts[") : -1]
             try:
-                amount = Decimal(str(value or "0")).quantize(Decimal("0.01"))
+                amount = Decimal(str(value or "0").strip() or "0")
             except Exception:
                 amount = Decimal("0.00")
-            input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + amount
+            # ปฏิเสธทศนิยมเกิน 2 ตำแหน่ง ไม่ปัดยอดที่ผู้ใช้กรอกให้เอง
+            if not has_money_places(amount):
+                invalid_places.add(mas_id)
+                continue
+            input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + to_money(amount)
 
     if not fund_ids and fund_id:
         fund_ids = [fund_id]  # fallback เดิม
@@ -839,6 +845,8 @@ def get_fund_allocations(organization, fund_id, fund_ids):
             mas = models.MAS.objects(id=mas_id, organization=organization).first()
         if not mas:
             return [], "แหล่งเงินที่เลือกไม่ถูกต้อง"
+        if mas_id in invalid_places:
+            return [], f"{MONEY_PLACES_ERROR} ({mas.mas_code})"
         amount = input_amounts.get(mas_id, Decimal("0.00"))
         if amount <= 0:
             return [], f"กรุณากรอกจำนวนเงินสำหรับ {mas.mas_code} ให้ถูกต้อง"

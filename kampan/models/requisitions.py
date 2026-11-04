@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import mongoengine as me
 from bson.objectid import ObjectId
@@ -45,7 +46,13 @@ FUND_CHOICES = [
 class Funds(me.EmbeddedDocument):
     mas = me.ReferenceField("MAS", dbref=True)
     reservation = me.ReferenceField("Reservation", dbref=True)
-    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     assigned_by = me.ReferenceField("User", dbref=True)
     assigned_date = me.DateTimeField(required=True, default=datetime.datetime.now)
 
@@ -63,7 +70,13 @@ class RequisitionItem(me.EmbeddedDocument):
     company = me.StringField(max_length=100)
     quantity = me.IntField(min_value=1, required=True)
     category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
-    amount = me.DecimalField(required=True, min_value=0, max_value=1e12, precision=2)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     currency = me.StringField(max_length=10)
     brand = me.StringField(max_length=100)
     model_name = me.StringField(max_length=100)

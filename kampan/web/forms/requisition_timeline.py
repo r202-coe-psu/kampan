@@ -5,6 +5,8 @@ from wtforms import fields, Form, validators, TextAreaField, HiddenField, Decima
 from kampan import models
 from kampan.models.requisition_timeline import PROGRESS_STATUS_CHOICES
 
+from .money_validators import MoneyPlaces
+
 ACCOUNT_TYPE_CHOICES = [
     ("12030201 อาคารและสิ่งปลูกสร้าง", "12030201 อาคารและสิ่งปลูกสร้าง"),
     ("12030203 ส่วนปรับปรุงอาคาร", "12030203 ส่วนปรับปรุงอาคาร"),
@@ -104,7 +106,7 @@ class ReservationPaymentForm(Form):
         places=2,
         rounding=None,
         default=0,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )
     item_amount = fields.IntegerField(
         default=0,
@@ -123,7 +125,7 @@ class BillingItemForm(Form):
         places=2,
         rounding=None,
         default=0,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )
     single_qty = fields.IntegerField(
         default=0,
@@ -170,7 +172,7 @@ class ItemListForm(FlaskForm):
         "เลขที่สินค้า", validators=[validators.Optional()]
     )
     price_per_piece = fields.DecimalField(
-        "ราคาต่อชิ้น", validators=[validators.Optional()]
+        "ราคาต่อชิ้น", validators=[validators.Optional(), MoneyPlaces()]
     )
 
 
@@ -279,7 +281,11 @@ class DetailsSpecifiedItemForm(FlaskForm):
         "ราคาต่อหน่วย (บาท)",
         places=2,
         rounding=None,
-        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=0),
+            MoneyPlaces(),
+        ],
     )
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional()])
     account_code = fields.SelectField(
