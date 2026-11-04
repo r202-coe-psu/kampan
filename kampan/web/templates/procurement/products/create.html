@@ -34,7 +34,7 @@
     </div>
   {% endif %}
 
-  <form method="POST" action="" enctype="multipart/form-data" class="space-y-6" id="ma_form" novalidate>
+  <form method="POST" action="" enctype="multipart/form-data" class="space-y-8" id="ma_form" novalidate>
     {{ form.hidden_tag() }}
 
     {% if form_errors %}
@@ -46,11 +46,11 @@
       </div>
     {% endif %}
 
-    <section class="rounded-box bg-base-200/60 p-4 md:p-6">
-      <h2 class="text-lg font-semibold text-base-content mb-2 flex items-center gap-2">
+    <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
+      <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
         <i class="ph ph-file-text text-primary"></i> หัวสัญญา
       </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
         {{ input_field(form.psu_disbursement_number, required=True) }}
         {{ input_field(form.name, required=True) }}
         {{ input_field(form.company, required=True) }}
@@ -79,17 +79,17 @@
       </div>
     </div>
 
-    <section class="space-y-4">
-      <h2 class="text-lg font-semibold text-base-content flex items-center gap-2">
+    <section class="flex flex-col gap-5">
+      <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
         <i class="ph ph-stack text-primary"></i> รายการย่อย
       </h2>
-      <div id="items_container" class="space-y-4">
+      <div id="items_container" class="flex flex-col gap-6">
         {% for entry in form.items %}
           {{ item_card(entry.form) }}
         {% endfor %}
       </div>
       <p id="items_error" class="text-error text-sm hidden"></p>
-      <button type="button" class="btn btn-outline btn-primary" data-action="add-item">
+      <button type="button" class="btn btn-outline btn-primary w-fit" data-action="add-item">
         <i class="ph ph-plus-circle"></i> เพิ่มรายการย่อย
       </button>
     </section>
@@ -130,6 +130,9 @@
     }
     let nextItemIndex = maxIndex(/^items-(\d+)-/) + 1;
     let nextInstallmentIndex = maxIndex(/-installments-(\d+)-/) + 1;
+    // แถวย่อยที่ได้จากแม่แบบของรายการใหม่ใช้ index 0 จึงเริ่มนับที่ 1 อย่างน้อย
+    let nextSubItemIndex = Math.max(maxIndex(/-sub_items-(\d+)-/) + 1, 1);
+    const MAX_SUB_ITEMS = 100;
     let nextListRowIndex = maxIndex(/-(?:reminder_offsets_days|custom_reminder_dates)-(\d+)$/) + 1;
 
     // เงินคำนวณเป็นสตางค์ (จำนวนเต็ม) เลี่ยง float · server เป็นตัวตัดสินสุดท้าย
@@ -189,6 +192,7 @@
     function addItem() {
       const html = itemTemplate.innerHTML.replaceAll('__I__', String(nextItemIndex++));
       itemsContainer.insertAdjacentHTML('beforeend', html);
+      initDatePickersIn(itemsContainer.lastElementChild);
       showError(document.getElementById('items_error'), '');
       renumber();
       updateSum();
@@ -200,8 +204,22 @@
         .replaceAll('__J__', String(nextInstallmentIndex++));
       const tbody = card.querySelector('.installment-rows');
       tbody.insertAdjacentHTML('beforeend', html);
-      if (dueDate) tbody.lastElementChild.querySelector('.installment-due').value = dueDate;
+      initDatePickersIn(tbody.lastElementChild);
+      if (dueDate) setDatePickerValue(tbody.lastElementChild.querySelector('.installment-due'), dueDate);
       showError(card.querySelector('.installment-error'), '');
+    }
+
+    function addSubItem(card) {
+      const error = card.querySelector('.sub-item-error');
+      const rows = card.querySelector('.sub-item-rows');
+      if (rows.querySelectorAll('.sub-item-row').length >= MAX_SUB_ITEMS) {
+        showError(error, 'เพิ่มแถวได้ไม่เกิน ' + MAX_SUB_ITEMS + ' แถว');
+        return;
+      }
+      const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
+      rows.insertAdjacentHTML('beforeend', html);
+      showError(error, '');
+      rows.lastElementChild.querySelector('input').focus();
     }
 
     // สูตรเดียวกับ even_due_dates ใน kampan/models/procurement.py
@@ -271,6 +289,20 @@
           button.closest('.installment-row').remove();
           renumber();
           break;
+        case 'add-sub-item':
+          addSubItem(card);
+          break;
+        case 'remove-sub-item': {
+          const row = button.closest('.sub-item-row');
+          if (card.querySelectorAll('.sub-item-row').length <= 1) {
+            // แถวสุดท้ายไม่ลบ แค่ล้างค่า เพื่อให้ช่องยังเห็นอยู่
+            row.querySelectorAll('input, textarea').forEach(function (field) { field.value = ''; });
+          } else {
+            row.remove();
+          }
+          showError(card.querySelector('.sub-item-error'), '');
+          break;
+        }
         case 'generate-installments':
           generateInstallments(card);
           break;
@@ -288,18 +320,29 @@
       }
     });
 
+    // กด Enter ในช่องค้นหา / ช่องจำนวนงวดต้องไม่ส่งฟอร์มทั้งหน้า (เดิมทำให้หน้าโหลดใหม่และเด้งไปส่วนล่าง)
+    form.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && event.target.matches('.member-filter, .generate-count')) {
+        event.preventDefault();
+        if (event.target.classList.contains('generate-count')) {
+          generateInstallments(event.target.closest('.ma-item'));
+        }
+      }
+    });
+
     form.addEventListener('input', function (event) {
       if (event.target.id === 'total_amount' || event.target.classList.contains('item-amount')) {
         updateSum();
       }
       if (event.target.classList.contains('member-filter')) {
         const keyword = event.target.value.toLowerCase();
-        event.target.closest('fieldset').querySelectorAll('.member-option').forEach(function (option) {
+        event.target.closest('[data-member-picker]').querySelectorAll('.member-option').forEach(function (option) {
           option.classList.toggle('hidden', !option.textContent.toLowerCase().includes(keyword));
         });
       }
     });
 
+    initDatePickersIn(form);
     renumber();
     updateSum();
   })();

@@ -73,7 +73,6 @@ def _item(**overrides):
         "start_date": "2026-01-01",
         "end_date": "2026-12-31",
         "amount": "50000.00",
-        "details": "",
         "reminder_kind": "ma",
         "responsible_by": [],
         "installments": [{"due_date": "2026-12-31"}],
@@ -88,8 +87,12 @@ def ma_form(items, total_amount="100000.00", psu="PSU-25/2569", name="[TEST] MA"
     for index, item in enumerate(items):
         item = dict(item)
         installments = item.pop("installments")
+        sub_items = item.pop("sub_items", [])
         for key, value in item.items():
             data[f"items-{index}-{key}"] = value
+        for sub_index, sub_item in enumerate(sub_items):
+            for key, value in sub_item.items():
+                data[f"items-{index}-sub_items-{sub_index}-{key}"] = value
         for installment_index, installment in enumerate(installments):
             for key, value in installment.items():
                 data[f"items-{index}-installments-{installment_index}-{key}"] = value
@@ -104,9 +107,11 @@ def _two_item_form(world):
                 category="intangible",
                 account_code="1204010101 สินทรัพย์ไม่มีตัวตน",
                 amount="60000.00",
-                details="S/N: ABC-001\nรหัสครุภัณฑ์: CC/1",
-                brand="ยี่ห้อ A",
-                model_name="รุ่น A",
+                sub_items=[
+                    {"brand": "ยี่ห้อ A", "model_name": "รุ่น A", "details": "S/N: ABC-001\nรหัสครุภัณฑ์: CC/1"},
+                    {"brand": "ยี่ห้อ B", "model_name": "", "details": "S/N: ABC-002"},
+                    {"brand": "", "model_name": "", "details": "รหัสครุภัณฑ์: CC/3"},
+                ],
                 winner="บริษัท ผู้ชนะ",
                 unit_price="30000.00",
                 note="หมายเหตุ A",
@@ -153,8 +158,13 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert first.category == "intangible"
     assert first.account_code == "1204010101 สินทรัพย์ไม่มีตัวตน"
     assert first.amount == Decimal("60000.00")
-    assert first.details == "S/N: ABC-001\nรหัสครุภัณฑ์: CC/1"
-    assert (first.brand, first.model_name, first.winner, first.note) == ("ยี่ห้อ A", "รุ่น A", "บริษัท ผู้ชนะ", "หมายเหตุ A")
+    assert [(row.brand, row.model_name, row.details) for row in first.sub_items] == [
+        ("ยี่ห้อ A", "รุ่น A", "S/N: ABC-001\nรหัสครุภัณฑ์: CC/1"),
+        ("ยี่ห้อ B", None, "S/N: ABC-002"),
+        (None, None, "รหัสครุภัณฑ์: CC/3"),
+    ]
+    assert (first.winner, first.note) == ("บริษัท ผู้ชนะ", "หมายเหตุ A")
+    assert second.sub_items == []
     assert first.unit_price == Decimal("30000.00")
     assert first.reminder_kind == "license"
     assert first.requires_activation is True
@@ -175,10 +185,115 @@ def test_detail_page_shows_every_item_with_details_line_breaks(world, client_for
 
     html = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}").get_data(as_text=True)
 
-    for text in ("PSU-25/2569", "[TEST] License A", "[TEST] MA B", "1204010101 สินทรัพย์ไม่มีตัวตน", "รุ่น A", "บริษัท ผู้ชนะ"):
+    for text in ("PSU-25/2569", "[TEST] License A", "[TEST] MA B", "1204010101 สินทรัพย์ไม่มีตัวตน", "ยี่ห้อ A", "ยี่ห้อ B", "รุ่น A", "S/N: ABC-002", "บริษัท ผู้ชนะ"):
         assert text in html
     assert "whitespace-pre-line" in html and "S/N: ABC-001\nรหัสครุภัณฑ์: CC/1" in html
     assert "[TEST] ฝ่ายไอที" in html and "[TEST] ฝ่ายการเงิน" in html
+
+
+def _sub_item_rows(count):
+    return [{"brand": f"ยี่ห้อ {i}", "model_name": f"รุ่น {i}", "details": f"S/N: SN-{i}"} for i in range(count)]
+
+
+def test_create_ignores_fully_empty_sub_item_rows(world, client_for):
+    rows = [{"brand": "", "model_name": "", "details": ""}, {"brand": " ", "model_name": "", "details": "  \n"}]
+    rows += _sub_item_rows(1)
+    data = ma_form([_item(amount="100000.00", sub_items=rows)])
+
+    assert _create(client_for(world.admin), world, data).status_code == 302
+
+    item = models.ProcurementItem.objects.get()
+    assert [row.details for row in item.sub_items] == ["S/N: SN-0"]
+
+
+def test_create_accepts_100_sub_items_and_rejects_101(world, client_for):
+    ok = ma_form([_item(amount="100000.00", sub_items=_sub_item_rows(100))])
+    assert _create(client_for(world.admin), world, ok).status_code == 302
+    assert len(models.ProcurementItem.objects.get().sub_items) == 100
+
+    response = _create(client_for(world.admin), world, ma_form([_item(amount="100000.00", sub_items=_sub_item_rows(101))], psu="PSU-2"))
+
+    assert response.status_code == 200
+    assert "จำนวนแถวยี่ห้อ / รุ่น / รายละเอียดต้องไม่เกิน 100 แถว" in response.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 1
+
+
+def test_create_rejects_too_long_brand(world, client_for):
+    rows = [{"brand": "x" * 101, "model_name": "", "details": ""}]
+
+    response = _create(client_for(world.admin), world, ma_form([_item(amount="100000.00", sub_items=rows)]))
+
+    assert response.status_code == 200
+    assert models.Procurement.objects.count() == 0
+
+
+def test_edit_adds_removes_and_changes_sub_items(world, client_for, create_ma):
+    item = _model_item("1000.00", responsible=[world.role_admin])
+    item.sub_items = [
+        models.ItemDetail(brand="เดิม 1", details="S/N: OLD-1"),
+        models.ItemDetail(brand="เดิม 2", details="S/N: OLD-2"),
+    ]
+    procurement = create_ma(world.org, user=world.admin, name="[TEST] MA", total_amount="1000.00", items=[item])
+    item = procurement.get_items()[0]
+    rows = [
+        {"brand": "เดิม 1 แก้", "model_name": "รุ่นใหม่", "details": "S/N: OLD-1"},
+        {"brand": "ใหม่ 3", "model_name": "", "details": "S/N: NEW-3"},
+    ]
+    data = ma_form(
+        [
+            _item(
+                item_id=str(item.id),
+                name=item.name,
+                amount="1000.00",
+                sub_items=rows,
+                responsible_by=[str(world.role_admin.id)],
+                installments=[{"installment_id": str(item.installments[0]._id), "due_date": "2026-12-31"}],
+            )
+        ],
+        total_amount="1000.00",
+        version=procurement.get_version(),
+    )
+
+    response = client_for(world.admin).post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}", data=data)
+
+    assert response.status_code == 302
+    item.reload()
+    assert [(row.brand, row.model_name, row.details) for row in item.sub_items] == [
+        ("เดิม 1 แก้", "รุ่นใหม่", "S/N: OLD-1"),
+        ("ใหม่ 3", None, "S/N: NEW-3"),
+    ]
+
+
+def test_edit_form_prefills_sub_items(world, client_for, create_ma):
+    item = _model_item("1000.00", responsible=[world.role_admin])
+    item.sub_items = [models.ItemDetail(brand="ยี่ห้อ-EDIT", model_name="รุ่น-EDIT", details="S/N: EDIT-1")]
+    procurement = create_ma(world.org, user=world.admin, name="[TEST] MA", total_amount="1000.00", items=[item])
+
+    html = client_for(world.admin).get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+
+    assert 'name="items-0-sub_items-0-brand"' in html and "ยี่ห้อ-EDIT" in html
+    assert 'name="items-0-sub_items-0-model_name"' in html and "รุ่น-EDIT" in html
+    assert 'name="items-0-sub_items-0-details"' in html and "S/N: EDIT-1" in html
+
+
+def test_create_page_shows_sub_item_section_open_and_with_row_template(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    heading = html.index("ยี่ห้อ / รุ่น / รายละเอียด")
+    # ส่วนนี้ต้องไม่อยู่ใน <details> ที่พับไว้ และเริ่มต้นมี 1 แถวว่างให้เห็นช่อง
+    open_details = html[:heading].count("<details") - html[:heading].count("</details>")
+    assert open_details == 0
+    assert 'name="items-0-sub_items-0-brand"' in html
+    assert 'name="items-0-sub_items-0-details"' in html
+    assert 'data-action="add-sub-item"' in html
+    assert "items-0-sub_items-__K__-brand" in html and "items-__I__-sub_items-__K__-details" in html
+    assert "รายละเอียดเพิ่มเติม" not in html
+
+
+def test_detail_page_hides_sub_item_table_when_item_has_none(world, client_for, existing_ma):
+    html = client_for(world.admin).get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
+
+    assert "sub-items-table" not in html
 
 
 @pytest.mark.parametrize(
@@ -260,10 +375,45 @@ def test_create_form_defaults_responsible_to_current_member(world, client_for):
     assert str(world.role_admin_b.id) not in html
 
 
-def test_create_refused_for_non_admin(world, client_for):
-    response = _create(client_for(world.creator), world, ma_form([_item(amount="100000.00")]))
+@pytest.mark.parametrize("roles", (["staff"], ["head"], ["manager"], ["endorser"], ["driver"], ["director"], ["supervisor supplier"]))
+def test_any_active_member_can_create_ma_and_then_edit_it(world, client_for, assign_user_to_org, create_user, roles):
+    user = create_user("Member", "Tester")
+    role = assign_user_to_org(user, world.org, roles=roles)
+    client = client_for(user)
+
+    response = _create(client, world, ma_form([_item(amount="100000.00", responsible_by=[str(role.id)])]))
 
     assert response.status_code == 302
+    procurement = models.Procurement.objects.get()
+    assert procurement.created_by.id == user.id
+    # ผู้สร้างแก้ไขและเห็น MA ของตัวเองได้เสมอ แม้ role จะไม่ใช่กลุ่มเห็นทั้งหน่วยงาน
+    assert client.get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}").status_code == 200
+
+
+def test_member_filter_script_targets_an_existing_container(world, client_for):
+    """ช่องค้นหาผู้รับผิดชอบกรองด้วย closest('[data-member-picker]') ต้องมี container นั้นอยู่จริงรอบช่องค้นหา"""
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    assert "closest('[data-member-picker]')" in html
+    picker = html.split("data-member-picker", 1)[1].split("</section>", 1)[0]
+    assert "member-filter" in picker and "member-option" in picker
+
+
+def test_create_page_button_is_shown_to_every_member(world, client_for):
+    html = client_for(world.creator).get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+
+    assert f"/procurement/products/create?{_q(world.org)}" in html
+
+
+def test_create_refused_for_other_org_member_and_removed_member(world, client_for, assign_user_to_org, create_user):
+    removed = create_user("Removed", "Tester")
+    role = assign_user_to_org(removed, world.org, roles=["staff"])
+    role.status = "disactive"
+    role.save()
+
+    for user in (world.admin_b, removed):
+        response = _create(client_for(user), world, ma_form([_item(amount="100000.00")]))
+        assert response.status_code in (302, 403, 404)
     assert models.Procurement.objects.count() == 0
 
 
@@ -594,11 +744,13 @@ def test_form_rejects_payment_number_used_elsewhere_in_org(world, client_for, cr
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("keyword", ["PSU-SEARCH", "หัวสัญญาค้นได้", "รายการย่อยค้นได้", "SN-XYZ-99"])
-def test_products_search_matches_psu_header_item_name_and_details(world, client_for, create_ma, keyword):
+@pytest.mark.parametrize(
+    "keyword", ["PSU-SEARCH", "หัวสัญญาค้นได้", "รายการย่อยค้นได้", "SN-XYZ-99", "ยี่ห้อค้นได้", "รุ่นค้นได้"]
+)
+def test_products_search_matches_psu_header_item_name_and_sub_items(world, client_for, create_ma, keyword):
     item = _model_item("100.00")
     item.name = "[TEST] รายการย่อยค้นได้"
-    item.details = "S/N: SN-XYZ-99"
+    item.sub_items = [models.ItemDetail(brand="ยี่ห้อค้นได้", model_name="รุ่นค้นได้", details="S/N: SN-XYZ-99")]
     create_ma(world.org, user=world.admin, name="[TEST] หัวสัญญาค้นได้", psu_disbursement_number="PSU-SEARCH-1", total_amount="100.00", items=[item])
     create_ma(world.org, user=world.admin, name="[TEST] MA ไม่เกี่ยว", psu_disbursement_number="OTHER-1", total_amount="1000.00")
 
@@ -610,10 +762,10 @@ def test_products_search_matches_psu_header_item_name_and_details(world, client_
 
 def test_products_search_does_not_leak_other_org(world, client_for, create_ma):
     item_b = _model_item("100.00")
-    item_b.details = "S/N: SECRET-B"
+    item_b.sub_items = [models.ItemDetail(brand="BRAND-SECRET-B", details="S/N: SECRET-B")]
     create_ma(world.other_org, user=world.admin_b, name="[TEST] MA ของ B", psu_disbursement_number="SECRET-B", total_amount="100.00", items=[item_b])
 
-    for keyword in ("SECRET-B", "MA ของ B"):
+    for keyword in ("SECRET-B", "BRAND-SECRET-B", "MA ของ B"):
         html = client_for(world.admin).get(f"/procurement/products?{_q(world.org)}&name={keyword}").get_data(as_text=True)
         assert "[TEST] MA ของ B" not in html
 
@@ -809,7 +961,9 @@ def test_upload_save_ma_db_creates_header_and_item(world, gridfs_enabled):
     assert procurement.total_amount == Decimal("1200")
     item = models.ProcurementItem.objects.get()
     assert item.procurement.id == procurement.id
-    assert item.details == "S/N: SN-IMPORT\nรหัสครุภัณฑ์: AC-IMPORT"
+    assert [(row.brand, row.model_name, row.details) for row in item.sub_items] == [
+        (None, None, "S/N: SN-IMPORT\nรหัสครุภัณฑ์: AC-IMPORT")
+    ]
     assert [member.id for member in item.responsible_by] == [world.role_responsible.id]
     assert len(item.installments) == 4
     assert item.installments[-1].due_date == datetime.datetime(2026, 12, 31)
@@ -817,6 +971,25 @@ def test_upload_save_ma_db_creates_header_and_item(world, gridfs_enabled):
     # แถวที่ 2 ซ้ำกับแถวแรก
     assert document.status == "incomplete"
     assert document.error_messages == ["แถวที่ 3: ข้อมูลซ้ำกับที่มีในระบบแล้ว"]
+
+
+def test_upload_optional_brand_and_model_columns_go_into_the_sub_row(world, gridfs_enabled):
+    document = _upload_document(world, [_excel_row(**{"ยี่ห้อ": "Dell", "รุ่น": "X1"})])
+
+    upload_files.save_ma_db(document, None, world.admin.id)
+
+    item = models.ProcurementItem.objects.get()
+    assert [(row.brand, row.model_name, row.details) for row in item.sub_items] == [
+        ("Dell", "X1", "S/N: SN-IMPORT\nรหัสครุภัณฑ์: AC-IMPORT")
+    ]
+
+
+def test_upload_without_sn_asset_brand_or_model_creates_no_sub_row(world, gridfs_enabled):
+    document = _upload_document(world, [_excel_row(**{"เลขที่สินค้า/เลขที่เอกสาร": "", "รหัสครุภัณฑ์": ""})])
+
+    upload_files.save_ma_db(document, None, world.admin.id)
+
+    assert models.ProcurementItem.objects.get().sub_items == []
 
 
 def test_upload_responsible_lookup_is_scoped_to_document_org(world, gridfs_enabled):
@@ -1121,3 +1294,65 @@ def test_ma_form_accepts_120_installments(world, client_for):
 
     assert response.status_code == 302
     assert len(models.ProcurementItem.objects.get().installments) == 120
+
+
+# ---------------------------------------------------------------------------
+# ตัวควบคุมฟอร์ม: ใช้ DaisyUI (date picker Cally, select ใน label.select) ไม่ใช้ของ native
+# ---------------------------------------------------------------------------
+
+
+def _picker_inputs(html):
+    """คืน [(hidden input id/name/value, label text)] ของ date picker ทุกตัวนอก <template>"""
+    html = re.sub(r"<template.*?</template>", "", html, flags=re.S)
+    result = []
+    for match in re.finditer(r'<div class="relative w-full" data-date-picker[^>]*data-input-id="([^"]+)"[^>]*data-label-id="([^"]+)"', html):
+        input_id, label_id = match.groups()
+        hidden = re.search(rf'<input type="hidden" id="{re.escape(input_id)}" name="([^"]+)"([^>]*)>', html)
+        value = re.search(r'value="([^"]*)"', hidden.group(2))
+        label = re.search(rf'id="{re.escape(label_id)}"[^>]*>\s*([^<]*?)\s*</span>', html)
+        result.append((hidden.group(1), value.group(1) if value else "", label.group(1)))
+    return result
+
+
+def test_create_form_uses_daisyui_controls_not_native_date_or_bare_select(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+
+    assert 'type="date"' not in html
+    form_html = html.split('id="ma_form"', 1)[1].split("</form>", 1)[0]
+    selects = re.findall(r"<label class=\"select[^\"]*\">\s*<select", form_html)
+    assert len(selects) == len(re.findall(r"<select", form_html)) > 0
+    names = [name for name, _, _ in _picker_inputs(html)]
+    assert "items-0-start_date" in names and "items-0-end_date" in names
+    assert "items-0-installments-0-due_date" in names and "items-0-installments-0-paid_date" in names
+    # แถวที่เพิ่มด้วย JS มาจาก <template> ซึ่งต้องมี container ให้ initDatePickersIn ด้วย
+    template = html.split('<template id="installment_template">', 1)[1].split("</template>", 1)[0]
+    assert "data-date-picker" in template and "__J__" in template and 'type="date"' not in template
+
+
+def test_edit_form_shows_existing_dates_as_iso_value_and_ddmmyyyy_label(world, client_for, existing_ma):
+    html = client_for(world.admin).get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}").get_data(as_text=True)
+
+    item = existing_ma.get_items()[0]
+    pickers = {name: (value, label) for name, value, label in _picker_inputs(html)}
+    start = item.start_date.date() if hasattr(item.start_date, "date") else item.start_date
+    value, label = pickers["items-0-start_date"]
+    assert value == start.strftime("%Y-%m-%d")
+    assert label == start.strftime("%d/%m/%Y")
+    due = item.installments[0].due_date
+    due = due.date() if hasattr(due, "date") else due
+    value, label = pickers["items-0-installments-0-due_date"]
+    assert (value, label) == (due.strftime("%Y-%m-%d"), due.strftime("%d/%m/%Y"))
+
+
+def test_invalid_date_post_shows_error_and_error_style_on_picker(world, client_for):
+    data = _two_item_form(world)
+    data["items-0-end_date"] = "not-a-date"
+
+    response = _create(client_for(world.admin), world, data)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    button = re.search(r'<button type="button" id="cally-items-0-end_date" class="([^"]*)"', html).group(1)
+    assert "input-error" in button
+    fieldset = html.split('id="field-items-0-end_date"', 1)[1].split("</fieldset>", 1)[0]
+    assert "text-error" in fieldset

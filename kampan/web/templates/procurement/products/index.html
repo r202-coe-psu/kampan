@@ -17,13 +17,11 @@
         <i class="ph ph-list-numbers"></i>
         จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
       </span>
-      {% if current_user.has_organization_roles("admin") %}
-        <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
-           class="btn btn-primary btn-sm shadow-md">
-          <i class="ph ph-plus"></i>
-          เพิ่ม MA ใหม่
-        </a>
-      {% endif %}
+      <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
+         class="btn btn-primary btn-sm shadow-md">
+        <i class="ph ph-plus"></i>
+        เพิ่ม MA ใหม่
+      </a>
     </div>
 
     <!-- Filter Form -->

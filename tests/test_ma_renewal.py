@@ -55,9 +55,10 @@ def world(app, create_org, create_user, assign_user_to_org):
                 start_date=datetime.datetime(2025, 1, 1),
                 end_date=datetime.datetime(2025, 12, 31),
                 amount=Decimal("60000.00"),
-                details="S/N: ABC-001",
-                brand="ยี่ห้อ A",
-                model_name="รุ่น A",
+                sub_items=[
+                    models.ItemDetail(brand="ยี่ห้อ A", model_name="รุ่น A", details="S/N: ABC-001"),
+                    models.ItemDetail(brand="ยี่ห้อ B", details="S/N: ABC-002"),
+                ],
                 winner="บริษัท ผู้ชนะ",
                 unit_price=Decimal("30000.00"),
                 note="หมายเหตุ A",
@@ -120,11 +121,13 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     assert _input_value(html, "psu_disbursement_number") == ""
     assert _input_value(html, "items-0-name") == "[TEST] License A"
     assert _input_value(html, "items-0-amount") == "60000.00"
-    assert _input_value(html, "items-0-brand") == "ยี่ห้อ A"
+    assert _input_value(html, "items-0-sub_items-0-brand") == "ยี่ห้อ A"
+    assert _input_value(html, "items-0-sub_items-0-model_name") == "รุ่น A"
+    assert _input_value(html, "items-0-sub_items-1-brand") == "ยี่ห้อ B"
     assert _input_value(html, "items-0-winner") == "บริษัท ผู้ชนะ"
     assert _input_value(html, "items-0-unit_price") == "30000.00"
     assert _input_value(html, "items-1-name") == "[TEST] MA B"
-    assert "S/N: ABC-001" in html and "หมายเหตุ A" in html
+    assert "S/N: ABC-001" in html and "S/N: ABC-002" in html and "หมายเหตุ A" in html
     # วันเริ่ม-สิ้นสุดเว้นว่าง งวดเหลือ 1 แถวว่าง และไม่มีข้อมูลการจ่ายของ MA เดิม
     for index in (0, 1):
         assert _input_value(html, f"items-{index}-start_date") == ""
@@ -159,7 +162,11 @@ def _renew_form(world, psu="PSU-NEW-1", **overrides):
         "items-0-start_date": "2026-01-01",
         "items-0-end_date": "2026-12-31",
         "items-0-amount": "60000.00",
-        "items-0-details": "S/N: ABC-001",
+        "items-0-sub_items-0-brand": "ยี่ห้อ A",
+        "items-0-sub_items-0-model_name": "รุ่น A",
+        "items-0-sub_items-0-details": "S/N: ABC-001",
+        "items-0-sub_items-1-brand": "ยี่ห้อ B",
+        "items-0-sub_items-1-details": "S/N: ABC-002",
         "items-0-reminder_kind": "license",
         "items-0-requires_activation": "y",
         "items-0-responsible_by": [str(world.role_responsible.id)],
@@ -199,6 +206,10 @@ def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     assert [item.name for item in new_items] == ["[TEST] License A", "[TEST] MA B"]
     assert new_items[0].start_date == datetime.datetime(2026, 1, 1)
     assert all(not installment.is_paid() for item in new_items for installment in item.installments)
+    assert [(row.brand, row.model_name, row.details) for row in new_items[0].sub_items] == [
+        ("ยี่ห้อ A", "รุ่น A", "S/N: ABC-001"),
+        ("ยี่ห้อ B", None, "S/N: ABC-002"),
+    ]
 
     world.old.reload()
     assert world.old.status == "renewed"

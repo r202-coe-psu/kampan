@@ -226,42 +226,74 @@ file_input -->
   {{ render_select_field(field, top_left_label=field.label, type="toggle", **kwargs) }}
 {% endmacro %}
 
+{#
+  date_field: ปุ่ม + ปฏิทิน Cally (hidden input เก็บค่า ISO ใช้ชื่อ field เดิม)
+  พารามิเตอร์เสริม (ค่าเริ่มต้นคงพฤติกรรมเดิม):
+    compact       ปุ่มขนาด input-sm
+    hide_label    ไม่มี fieldset/legend (ใช้ในเซลล์ตาราง) ใช้คู่กับ aria_label
+    aria_label    ข้อความอ่านออกเสียงของปุ่ม
+    required      แสดง * (นอกเหนือจาก flag ของ field)
+    clearable     มีปุ่มล้างค่า
+    placeholder_text  ข้อความตอนยังไม่เลือก
+    fixed_popover ปฏิทินแบบ fixed ไม่ถูกตัดด้วย overflow ของตาราง
+    show_errors   False = ผู้เรียกแสดง error เอง
+    auto_init     False = ไม่ฝัง <script> เริ่มต้น (แถวที่เพิ่มด้วย JS เรียก initDatePickersIn แทน)
+    input_class   class เพิ่มบน hidden input (ให้ JS ของหน้าอ้างอิง)
+#}
 {% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
   calendar_id='calendar',
-  readonly=False, field_id='') %}
+  readonly=False, field_id='', compact=False, hide_label=False, aria_label="", required=False,
+  clearable=False, placeholder_text="", fixed_popover=False, show_errors=True, auto_init=True,
+  input_class="") %}
   {% set fid = field_id if field_id else field.id %}
   {% set style = "input flex items-center gap-2 w-full" %}
+  {% if compact %}
+    {% set style = style + " input-sm" %}
+  {% endif %}
   {% if field.errors | count > 0 %}
     {% set style = style + " input-error" %}
   {% endif %}
   {% if class_ != "" %}
     {% set style = style + " " + class_ %}
   {% endif %}
+  {% set empty_text = placeholder_text or field.placeholder or 'กรุณาเลือกวันที่' %}
 
+  {% if hide_label %}<div class="w-full" id="field-{{ fid }}">{% else %}
   <fieldset class="fieldset w-full" id="field-{{ fid }}">
     <legend class="fieldset-legend">
       {{ field.label.text }}
-      {% if field.flags.required %}<span class="text-error">*</span>{% endif %}
+      {% if field.flags.required or required %}<span class="text-error">*</span>{% endif %}
     </legend>
+  {% endif %}
 
-    <div class="relative w-full">
-      <input type="hidden" id="{{ fid }}" name="{{ field.name }}" class="w-full cursor-pointer input validator"
+    <div class="relative w-full" data-date-picker data-button-id="cally-{{ fid }}"
+         data-popover-id="cally-popover-{{ fid }}" data-input-id="{{ fid }}"
+         data-label-id="cally-data-{{ fid }}" data-placeholder="{{ empty_text }}">
+      <input type="hidden" id="{{ fid }}" name="{{ field.name }}" class="w-full cursor-pointer input validator {{ input_class }}"
         autocomplete="off" placeholder="{{ field.label.text }}" {% if field.data %}
         value="{{ field.data|format_date("%Y-%m-%d") if field.data else '' }}" {% endif %} {% if disabled %} disabled {%
         endif %} {% if readonly %}readonly{% endif %}>
 
-        <button type="button" id="cally-{{ fid }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}" {%
+        <button type="button" id="cally-{{ fid }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}"
+          {% if aria_label %}aria-label="{{ aria_label }}"{% endif %} aria-haspopup="dialog" {%
           if disabled %} disabled {% endif %}>
           <div class="flex items-center justify-between w-full">
-            <span id="cally-data-{{ fid }}">
-              {{ field.placeholder if field.placeholder else 'กรุณาเลือกวันที่' }}
+            <span id="cally-data-{{ fid }}" class="{{ 'truncate' if compact else '' }}">
+              {{ field.data.strftime("%d/%m/%Y") if field.data else empty_text }}
             </span>
             <i class="ph ph-size ph-calendar-blank"></i>
           </div>
         </button>
+        {% if clearable and not (readonly or disabled) %}
+          <button type="button" data-date-clear
+                  class="hidden absolute top-1/2 -translate-y-1/2 right-10 btn btn-ghost btn-xs btn-circle text-base-content/60"
+                  aria-label="ล้างวันที่{{ ' ' ~ aria_label if aria_label else '' }}" title="ล้างวันที่">
+            <i class="ph ph-x"></i>
+          </button>
+        {% endif %}
 
         <div id="cally-popover-{{ fid }}"
-             class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
+             class="{{ 'fixed' if fixed_popover else 'absolute' }} z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
              style="max-height: 400px;
                     overflow-y: auto"
              {% if readonly or disabled %}hidden{% endif %}>
@@ -273,7 +305,7 @@ file_input -->
         </div>
       </div>
 
-      {% if field.errors %}
+      {% if field.errors and show_errors %}
         <p class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
             {% if 'This field is required' in error %}
@@ -285,11 +317,13 @@ file_input -->
           {% endfor %}
         </p>
       {% endif %}
-    </fieldset>
+    {% if hide_label %}</div>{% else %}</fieldset>{% endif %}
 
+    {% if auto_init %}
     <script>
         initDatePicker("cally-{{ fid }}", "cally-popover-{{ fid }}", "{{ fid }}", "cally-data-{{ fid }}");
     </script>
+    {% endif %}
   {% endmacro %}
 
   {% macro date_range_field(start_field, end_field, class_="", placeholder="", prefix_icon="", suffix_icon="",

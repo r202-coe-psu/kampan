@@ -228,13 +228,34 @@
           {{ payment_badge(item.get_payment_status(today)) }}
         </div>
         <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
-          <div><dt class="text-base-content/60">ยี่ห้อ</dt><dd class="font-medium">{{ item.brand or "-" }}</dd></div>
-          <div><dt class="text-base-content/60">รุ่น</dt><dd class="font-medium">{{ item.model_name or "-" }}</dd></div>
           <div><dt class="text-base-content/60">ผู้ชนะ</dt><dd class="font-medium">{{ item.winner or "-" }}</dd></div>
           <div><dt class="text-base-content/60">ราคาต่อหน่วย</dt><dd class="font-medium">{{ (item.unit_price | format_number) ~ " บาท" if item.unit_price is not none else "-" }}</dd></div>
-          <div class="sm:col-span-2"><dt class="text-base-content/60">รายละเอียด</dt><dd class="font-medium whitespace-pre-line break-words">{{ item.details or "-" }}</dd></div>
           <div class="sm:col-span-2"><dt class="text-base-content/60">หมายเหตุ</dt><dd class="font-medium whitespace-pre-line break-words">{{ item.note or "-" }}</dd></div>
         </dl>
+
+        {% if item.sub_items %}
+          <div class="overflow-x-auto">
+            <table class="table table-sm sub-items-table">
+              <caption class="text-left text-sm text-base-content/60 pb-1">ยี่ห้อ / รุ่น / รายละเอียด ({{ item.sub_items | length }} แถว)</caption>
+              <thead>
+                <tr>
+                  <th>ยี่ห้อ</th>
+                  <th>รุ่น</th>
+                  <th>รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in item.sub_items %}
+                  <tr>
+                    <td class="align-top">{{ row.brand or "-" }}</td>
+                    <td class="align-top">{{ row.model_name or "-" }}</td>
+                    <td class="align-top whitespace-pre-line break-words">{{ row.details or "-" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
 
         <div class="overflow-x-auto">
           <table class="table table-sm">

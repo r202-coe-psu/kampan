@@ -52,6 +52,8 @@ DEFAULT_REMINDER_OFFSETS = ["3m", "2m", "1m", "15d", "7d"]
 MAX_REMINDER_OFFSET_DAYS = 730
 # จำนวนงวดสูงสุดต่อรายการย่อย (ฟอร์มและนำเข้า Excel)
 MAX_INSTALLMENTS_PER_ITEM = 120
+MAX_SUB_ITEMS_PER_ITEM = 100
+MAX_SUB_ITEMS_MESSAGE = f"จำนวนแถวยี่ห้อ / รุ่น / รายละเอียดต้องไม่เกิน {MAX_SUB_ITEMS_PER_ITEM} แถว"
 MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เกิน {MAX_INSTALLMENTS_PER_ITEM}"
 
 
@@ -252,11 +254,20 @@ class Installment(me.EmbeddedDocument):
         return installment_status(self.due_date, self.paid_date, today)
 
 
+class ItemDetail(me.EmbeddedDocument):
+    """แถวย่อยของรายการย่อย: ยี่ห้อ / รุ่น / รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ) เพิ่มได้หลายแถว"""
+
+    brand = me.StringField(max_length=100)
+    model_name = me.StringField(max_length=100)
+    details = me.StringField()
+
+
 class ProcurementItem(me.Document):
     """รายการย่อยของ MA (collection แยก) ทุก query ต้อง scope ด้วย organization"""
 
     meta = {
         "collection": "procurement_items",
+        "strict": False,  # เอกสารเก่าที่ยังมี brand / model_name / details ระดับรายการต้องยังโหลดได้
         "indexes": [
             "procurement",
             ("organization", "responsible_by"),
@@ -280,12 +291,10 @@ class ProcurementItem(me.Document):
         precision=2,
         rounding=decimal.ROUND_HALF_EVEN,
     )
-    # ข้อความอิสระ ใช้แทน S/N และรหัสครุภัณฑ์แบบแยกช่องเดิม
-    details = me.StringField()
+    # ยี่ห้อ / รุ่น / รายละเอียด (S/N, รหัสครุภัณฑ์) เป็นแถวย่อย เพิ่มได้ตามต้องการ
+    sub_items = me.EmbeddedDocumentListField(ItemDetail)
 
     # ช่องจากขั้นที่ 3 ของขอซื้อขอจ้างเดิม (#27) ผู้ชนะและราคาต่อหน่วยไม่บังคับ
-    brand = me.StringField(max_length=100)
-    model_name = me.StringField(max_length=100)
     winner = me.StringField(max_length=200)
     unit_price = me.DecimalField(
         min_value=0,

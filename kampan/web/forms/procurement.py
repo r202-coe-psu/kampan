@@ -7,6 +7,8 @@ from kampan import models
 from kampan.models.procurement import (
     MAX_INSTALLMENTS_MESSAGE,
     MAX_INSTALLMENTS_PER_ITEM,
+    MAX_SUB_ITEMS_MESSAGE,
+    MAX_SUB_ITEMS_PER_ITEM,
     MAX_REMINDER_OFFSET_DAYS,
     check_item_sum,
 )
@@ -96,6 +98,15 @@ class InstallmentForm(Form):
             raise ValidationError("กรุณาระบุวันที่จ่าย")
 
 
+class ItemDetailForm(Form):
+    brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=100)])
+    model_name = fields.StringField("รุ่น", validators=[validators.Optional(), validators.Length(max=100)])
+    details = fields.TextAreaField("รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)", validators=[validators.Optional()])
+
+    def is_blank(self) -> bool:
+        return not any((field.data or "").strip() for field in (self.brand, self.model_name, self.details))
+
+
 class ProcurementItemForm(Form):
     item_id = fields.HiddenField()
     name = fields.StringField(
@@ -117,12 +128,8 @@ class ProcurementItemForm(Form):
         validators=[validators.InputRequired(message="กรุณาระบุวันที่สิ้นสุด")],
     )
     amount = money_field("ยอดเงินของรายการย่อย (บาท)")
-    details = fields.TextAreaField(
-        "รายละเอียด (S/N, รหัสครุภัณฑ์ ฯลฯ)",
-        validators=[validators.Optional()],
-    )
-    brand = fields.StringField("ยี่ห้อ", validators=[validators.Optional(), validators.Length(max=100)])
-    model_name = fields.StringField("รุ่น", validators=[validators.Optional(), validators.Length(max=100)])
+    # อ่านไม่เกิน MAX + 1 แถว แล้วให้ validate_sub_items ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
+    sub_items = fields.FieldList(fields.FormField(ItemDetailForm), min_entries=0, max_entries=MAX_SUB_ITEMS_PER_ITEM + 1)
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional(), validators.Length(max=200)])
     unit_price = money_field("ราคาต่อหน่วย (บาท)", required=False)
     note = fields.TextAreaField("หมายเหตุ", validators=[validators.Optional()])
@@ -142,6 +149,10 @@ class ProcurementItemForm(Form):
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data < self.start_date.data:
             raise ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
+
+    def validate_sub_items(self, field):
+        if len(field.entries) > MAX_SUB_ITEMS_PER_ITEM:
+            raise ValidationError(MAX_SUB_ITEMS_MESSAGE)
 
     def validate_installments(self, field):
         if not field.entries:

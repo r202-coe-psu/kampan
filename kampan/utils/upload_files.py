@@ -31,13 +31,15 @@ MA_COLUMN_MAP = {
     "company": "บริษัท",
 }
 MA_COLUMNS = list(MA_COLUMN_MAP.keys())
-# คอลัมน์ที่เว้นว่างได้ (S/N และรหัสครุภัณฑ์ต่อเข้า details ของรายการย่อย)
+# คอลัมน์ที่เว้นว่างได้ (S/N และรหัสครุภัณฑ์ต่อเข้า details ของแถวย่อย)
 MA_BLANK_ALLOWED_COLUMNS = {"product_number", "asset_code"}
 MA_REQUIRED_COLUMNS = [column for column in MA_COLUMNS if column not in MA_BLANK_ALLOWED_COLUMNS]
 # คอลัมน์เพิ่มเติม (ไม่บังคับ) ไฟล์รูปแบบเดิมที่ไม่มีคอลัมน์เหล่านี้ยังนำเข้าได้
 MA_OPTIONAL_COLUMN_MAP = {
     "psu_disbursement_number": "เลขที่ ม.อ.เบิกจ่าย",
     "details": "รายละเอียด",
+    "brand": "ยี่ห้อ",
+    "model_name": "รุ่น",
 }
 MA_ALL_COLUMN_MAP = {**MA_COLUMN_MAP, **MA_OPTIONAL_COLUMN_MAP}
 
@@ -143,10 +145,14 @@ def generate_ma_template() -> io.BytesIO:
             "ผู้รับผิดชอบ": "สมหญิง รักสงบ",
             "บริษัท": "บริษัท ซอฟต์แวร์ไทย จำกัด",
             "รายละเอียด": "",
+            "ยี่ห้อ": "",
+            "รุ่น": "",
         },
     ]
     headers = [MA_OPTIONAL_COLUMN_MAP["psu_disbursement_number"]] + list(MA_COLUMN_MAP.values()) + [
-        MA_OPTIONAL_COLUMN_MAP["details"]
+        MA_OPTIONAL_COLUMN_MAP["details"],
+        MA_OPTIONAL_COLUMN_MAP["brand"],
+        MA_OPTIONAL_COLUMN_MAP["model_name"],
     ]
     df = pd.DataFrame(example_rows, columns=headers)
 
@@ -561,7 +567,7 @@ def _excel_text(value) -> str:
 
 
 def _ma_row_details(row) -> str:
-    """details ของรายการย่อย = รายละเอียด + บรรทัด S/N + บรรทัดรหัสครุภัณฑ์ (ถ้ามี)"""
+    """details ของแถวย่อย = รายละเอียด + บรรทัด S/N + บรรทัดรหัสครุภัณฑ์ (ถ้ามี)"""
     lines = []
     details = _excel_text(row.get("details"))
     if details:
@@ -573,6 +579,16 @@ def _ma_row_details(row) -> str:
     if asset_code:
         lines.append(f"รหัสครุภัณฑ์: {asset_code}")
     return "\n".join(lines)
+
+
+def _ma_row_sub_items(row) -> list:
+    """แถวย่อย 1 แถวจากยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ของแถวใน Excel ไม่มีข้อมูลเลยคือไม่มีแถวย่อย"""
+    brand = _excel_text(row.get("brand"))
+    model_name = _excel_text(row.get("model_name"))
+    details = _ma_row_details(row)
+    if not (brand or model_name or details):
+        return []
+    return [models.ItemDetail(brand=brand or None, model_name=model_name or None, details=details or None)]
 
 
 def _find_ma_members(organization, value) -> list:
@@ -704,7 +720,7 @@ def save_ma_db(document, ma, user_id):
                 start_date=start_date,
                 end_date=end_date,
                 amount=amount,
-                details=_ma_row_details(row),
+                sub_items=_ma_row_sub_items(row),
                 responsible_by=_find_ma_members(organization, row.get("responsible_by")),
                 reminder_kind="ma",
                 installments=[

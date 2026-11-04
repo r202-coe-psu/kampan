@@ -47,6 +47,86 @@ function initDatePicker(buttonId, popoverId, inputId, buttonTextId) {
   });
 }
 
+// ===== date picker แบบ data attribute (ใช้กับแถวที่เพิ่มด้วย JS ซึ่ง <script> ใน HTML ที่แทรกไม่ทำงาน) =====
+function formatPickerDate(iso) {
+  const parts = (iso || "").split("-");
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : iso || "";
+}
+
+// วางปฏิทินแบบ fixed ใต้ปุ่ม (ไม่ถูกตัดด้วย overflow-x-auto ของตาราง) ถ้าที่ล่างไม่พอให้ขึ้นด้านบน
+function positionFixedPopover(button, popover) {
+  if (popover.classList.contains("hidden")) return;
+  const rect = button.getBoundingClientRect();
+  const width = popover.offsetWidth;
+  const height = popover.offsetHeight;
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
+  let left = Math.min(rect.left, viewportWidth - POPOVER_VIEWPORT_MARGIN - width);
+  left = Math.max(POPOVER_VIEWPORT_MARGIN, left);
+  let top = rect.bottom + 4;
+  if (top + height > viewportHeight - POPOVER_VIEWPORT_MARGIN && rect.top - 4 - height >= POPOVER_VIEWPORT_MARGIN) {
+    top = rect.top - 4 - height;
+  }
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
+}
+
+// ตั้งค่า date picker ด้วยโค้ด: hidden input (ISO) + ข้อความบนปุ่ม (dd/mm/yyyy) + ปฏิทิน แล้วยิง change ที่ hidden input
+function setDatePickerValue(input, iso) {
+  const container = input.closest("[data-date-picker]");
+  input.value = iso || "";
+  if (container) {
+    const label = document.getElementById(container.dataset.labelId);
+    const calendar = container.querySelector("calendar-date");
+    if (label) label.innerText = iso ? formatPickerDate(iso) : container.dataset.placeholder || "";
+    if (calendar) calendar.value = iso || "";
+    syncDatePickerClear(container);
+  }
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function syncDatePickerClear(container) {
+  const clear = container.querySelector("[data-date-clear]");
+  const input = document.getElementById(container.dataset.inputId);
+  if (clear && input) clear.classList.toggle("hidden", !input.value);
+}
+
+// เริ่มต้น date picker ทุกตัวใน root (เรียกซ้ำได้ ไม่ผูก event ซ้ำ)
+function initDatePickersIn(root) {
+  (root || document).querySelectorAll("[data-date-picker]").forEach(function (container) {
+    if (container.dataset.dateInit) return;
+    container.dataset.dateInit = "1";
+    const { buttonId, popoverId, inputId, labelId } = container.dataset;
+    const input = document.getElementById(inputId);
+    const popover = document.getElementById(popoverId);
+    const button = document.getElementById(buttonId);
+    if (!input || !popover || !button) return;
+    initDatePicker(buttonId, popoverId, inputId, labelId);
+
+    const fixed = popover.classList.contains("fixed");
+    if (fixed) {
+      button.addEventListener("click", function () {
+        positionFixedPopover(button, popover);
+        requestAnimationFrame(function () { positionFixedPopover(button, popover); });
+      });
+      window.addEventListener("resize", function () { popover.classList.add("hidden"); });
+      window.addEventListener("scroll", function (event) {
+        if (!popover.contains(event.target)) popover.classList.add("hidden");
+      }, true);
+    }
+    const calendar = popover.querySelector("calendar-date");
+    if (calendar) calendar.addEventListener("change", function () { syncDatePickerClear(container); });
+    const clear = container.querySelector("[data-date-clear]");
+    if (clear) {
+      clear.addEventListener("click", function () {
+        setDatePickerValue(input, "");
+        popover.classList.add("hidden");
+      });
+    }
+    syncDatePickerClear(container);
+  });
+}
+
 function initDateRange(buttonId, popoverId, startId, endId, buttonTextId) {
   const button = document.getElementById(buttonId);
   const popover = document.getElementById(popoverId);

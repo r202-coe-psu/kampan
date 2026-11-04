@@ -57,12 +57,15 @@ def calculate_months_days(start_date, end_date):
 
 
 def search_procurements(procurements, organization, text: str):
-    """ค้นด้วยเลขที่ ม.อ.เบิกจ่าย, ชื่อหัวสัญญา หรือชื่อ / รายละเอียดของรายการย่อย (scope ด้วยหน่วยงาน)"""
+    """ค้นด้วยเลขที่ ม.อ.เบิกจ่าย, ชื่อหัวสัญญา, ชื่อรายการย่อย หรือยี่ห้อ / รุ่น / รายละเอียดของแถวย่อย (scope ด้วยหน่วยงาน)"""
     text = (text or "").strip()
     if not text:
         return procurements
     item_matches = models.ProcurementItem.objects(organization=organization).filter(
-        Q(name__icontains=text) | Q(details__icontains=text)
+        Q(name__icontains=text)
+        | Q(sub_items__brand__icontains=text)
+        | Q(sub_items__model_name__icontains=text)
+        | Q(sub_items__details__icontains=text)
     )
     return procurements.filter(
         Q(psu_disbursement_number__icontains=text)
@@ -152,6 +155,7 @@ def _blank_item_data(member) -> dict:
         "reminder_kind": "ma",
         "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
         "payment_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
+        "sub_items": [{}],
         "installments": [{}],
     }
 
@@ -167,6 +171,23 @@ def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
     return data
 
 
+def _sub_items_form_data(item) -> list[dict]:
+    return [{"brand": row.brand, "model_name": row.model_name, "details": row.details} for row in item.sub_items]
+
+
+def _build_sub_items(sub_item_entries) -> list:
+    """แถวที่ว่างทั้ง 3 ช่องไม่บันทึก"""
+    return [
+        models.ItemDetail(
+            brand=(entry.form.brand.data or "").strip() or None,
+            model_name=(entry.form.model_name.data or "").strip() or None,
+            details=(entry.form.details.data or "").strip() or None,
+        )
+        for entry in sub_item_entries
+        if not entry.form.is_blank()
+    ]
+
+
 def _item_form_data(item) -> dict:
     return {
         "item_id": str(item.id),
@@ -176,9 +197,7 @@ def _item_form_data(item) -> dict:
         "start_date": _as_date(item.start_date),
         "end_date": _as_date(item.end_date),
         "amount": item.amount,
-        "details": item.details,
-        "brand": item.brand,
-        "model_name": item.model_name,
+        "sub_items": _sub_items_form_data(item),
         "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
@@ -210,9 +229,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "category": item.category,
         "account_code": item.account_code or "",
         "amount": item.amount,
-        "details": item.details,
-        "brand": item.brand,
-        "model_name": item.model_name,
+        "sub_items": _sub_items_form_data(item),
         "winner": item.winner,
         "unit_price": item.unit_price,
         "note": item.note,
@@ -326,9 +343,7 @@ def _build_items(form, organization, existing_items, user):
         item.start_date = _as_datetime(data.start_date.data)
         item.end_date = _as_datetime(data.end_date.data)
         item.amount = data.amount.data
-        item.details = data.details.data or ""
-        item.brand = (data.brand.data or "").strip() or None
-        item.model_name = (data.model_name.data or "").strip() or None
+        item.sub_items = _build_sub_items(data.sub_items)
         item.winner = (data.winner.data or "").strip() or None
         item.unit_price = data.unit_price.data
         item.note = data.note.data or ""
@@ -410,14 +425,17 @@ def _save_form(form, organization, procurement, existing_items, member):
 
 @module.route("/create", methods=["GET", "POST"])
 @login_required
-@acl.organization_roles_required("admin")
+@acl.organization_roles_required(*(role for role, _ in models.organizations.ORGANIZATION_ROLES))
 def create():
     organization = g.organization
     # ผู้ดูแลระบบระดับ global ผ่าน decorator ไปก่อนที่จะมีการตรวจหน่วยงาน
     if not organization:
         abort(404)
 
+    # สมาชิกทุก role สร้าง MA ได้ (ผู้สร้างแก้ไขและเห็น MA ของตัวเองได้เสมอ) แต่ต้องเป็นสมาชิกที่ active
     member = ma_permissions.get_member(organization)
+    if not member and "admin" not in current_user.roles:
+        abort(403)
     # MA สร้างจากหน้ารายการ MA เท่านั้น ไม่รับค่าตั้งต้นจาก query string
     form = _build_form(organization, member=member)
     if not form.validate_on_submit():

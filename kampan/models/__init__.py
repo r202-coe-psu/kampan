@@ -21,6 +21,7 @@ from .procurement import (
     ConcurrentEditConflict,
     ProcurementItem,
     Installment,
+    ItemDetail,
     CATEGORY_CHOICES,
     ITEM_CATEGORY_CHOICES,
     ACCOUNT_CODE_CHOICES,
