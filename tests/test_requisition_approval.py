@@ -239,6 +239,30 @@ def test_admin_cannot_reserve_mas_of_other_organization(app, login_as, setup, cr
         assert foreign_mas.reservable_amount == Decimal("50000.00")
         assert foreign_mas.editable is True
         assert models.Reservation.objects(mas=foreign_mas).count() == 0
+        # ขั้นพัสดุต้องไม่ผ่านแบบไม่มีแหล่งเงิน
+        assert roles_in_history(setup["requisition"]) == [("head", "approved")]
+
+
+@pytest.mark.parametrize(
+    "data_factory",
+    [
+        pytest.param(lambda setup: {"manager": str(setup["manager_role"].id)}, id="no-fund"),
+        pytest.param(lambda setup: admin_approve_data(setup, amount="0"), id="zero-amount"),
+        pytest.param(
+            lambda setup: {**admin_approve_data(setup), "fund_ids": [str(setup["mas"].id), "not-an-id"]},
+            id="invalid-fund-id",
+        ),
+    ],
+)
+def test_admin_approval_requires_valid_fund_allocation(app, login_as, setup, data_factory):
+    with app.test_client() as client, app.app_context():
+        post_action(client, login_as, setup["head"], setup, "head")
+        post_action(client, login_as, setup["admin"], setup, "admin", **data_factory(setup))
+
+        setup["mas"].reload()
+        assert roles_in_history(setup["requisition"]) == [("head", "approved")]
+        assert models.Reservation.objects(requisition=setup["requisition"]).count() == 0
+        assert setup["mas"].reservable_amount == Decimal("100000.00")
 
 
 def test_admin_cannot_select_manager_of_other_organization(

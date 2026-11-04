@@ -10,7 +10,6 @@ from flask import (
     flash,
     redirect,
     render_template,
-    flash,
     request,
     send_file,
     url_for,
@@ -823,15 +822,20 @@ def get_fund_allocations(organization, fund_id, fund_ids):
 
     if not fund_ids and fund_id:
         fund_ids = [fund_id]  # fallback เดิม
+    # กติกาเดียวกับ validateMasForm ในหน้าจอ: ต้องเลือกอย่างน้อย 1 แหล่งเงิน และทุกแหล่งต้องมียอด > 0
+    if not fund_ids:
+        return [], "กรุณาเลือกอย่างน้อย 1 แหล่งเงิน"
 
     allocations = []
-    for mas_id in dict.fromkeys(fund_ids or []):
-        amount = input_amounts.get(mas_id, Decimal("0.00"))
-        if amount <= 0 or not ObjectId.is_valid(mas_id):
-            continue
-        mas = models.MAS.objects(id=mas_id, organization=organization).first()
+    for mas_id in dict.fromkeys(fund_ids):
+        mas = None
+        if ObjectId.is_valid(mas_id):
+            mas = models.MAS.objects(id=mas_id, organization=organization).first()
         if not mas:
-            continue
+            return [], "แหล่งเงินที่เลือกไม่ถูกต้อง"
+        amount = input_amounts.get(mas_id, Decimal("0.00"))
+        if amount <= 0:
+            return [], f"กรุณากรอกจำนวนเงินสำหรับ {mas.mas_code} ให้ถูกต้อง"
         if amount > (mas.reservable_amount or Decimal("0")):
             return [], f"ยอดจัดสรรจาก {mas.mas_code} เกินยอดที่จองได้"
         allocations.append((mas, amount))
