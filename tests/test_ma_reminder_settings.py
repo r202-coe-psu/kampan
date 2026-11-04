@@ -186,7 +186,7 @@ def test_detail_page_shows_reminder_settings(world, client):
     html = client.get(f"/procurement/payment/{procurement.id}?organization_id={world.org.id}").get_data(as_text=True)
 
     assert "ตั้งค่าการเตือน" in html
-    assert "2 เดือน" in html and "45 วัน" in html and "28/05/2570" in html
+    assert "60 วัน" in html and "45 วัน" in html and "28/05/2570" in html
 
 
 def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client):

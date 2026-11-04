@@ -343,7 +343,7 @@
                               {% set by = pay_log_users.get(entry.get_by_id()) %}
                               <li>
                                 <span class="whitespace-nowrap text-base-content/60">{{ thai_datetime(entry.pressed_at) }}</span>
-                                · <span class="font-medium {{ 'text-error' if entry.action == 'unpaid' else '' }}">{{ entry.get_action_label() }}</span>
+                                · <span class="font-medium {{ 'text-error' if entry.action == 'unpaid' else ('text-primary' if entry.action == 'edited' else '') }}">{{ entry.get_action_label() }}</span>
                                 {% if entry.paid_date %}(วันที่จ่าย {{ thai_date(entry.paid_date) }}){% endif %}
                                 {% if entry.payment_number %}· เลขที่เอกสาร {{ entry.payment_number }}{% endif %}
                                 {% if entry.paid_amount is not none %}· {{ entry.paid_amount | format_number }} บาท{% endif %}
@@ -459,8 +459,14 @@
             <form method="post" action="{{ url_for('procurement.payment.pay_installment', **action_args) }}" class="space-y-2">
               {{ form.hidden_tag() }}
               <fieldset class="fieldset">
-                <legend class="fieldset-legend">วันที่จ่าย <span class="text-error">*</span></legend>
-                {{ date_field(form.paid_date, field_id="paid-" ~ modal_key, value=(installment.paid_date.date() if installment.paid_date else today), hide_label=True, aria_label="วันที่จ่าย", fixed_popover=True, show_errors=False, auto_init=False, buddhist=True) }}
+                <legend class="fieldset-legend">วันที่จ่าย</legend>
+                <div class="relative w-full">
+                  <input type="hidden" name="paid_date" value="{{ (installment.paid_date.date() if installment.paid_date else today).strftime('%Y-%m-%d') }}" />
+                  <div class="input flex items-center justify-between w-full bg-base-200 text-base-content/80 cursor-not-allowed select-none">
+                    <span>{{ thai_date(installment.paid_date if installment.paid_date else today) }}</span>
+                    <i class="ph ph-calendar-blank text-base-content/50"></i>
+                  </div>
+                </div>
               </fieldset>
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">เลขที่เอกสาร</legend>

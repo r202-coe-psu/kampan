@@ -165,10 +165,11 @@ def pay_installment(procurement_id, item_id, installment_id):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
         return redirect(redirect_url)
 
+    was_paid = installment.is_paid()
     user = current_user._get_current_object()
     paid_date = datetime.datetime.combine(form.paid_date.data, datetime.time.min)
     log_entry = models.PayLogEntry(
-        action="paid",
+        action="edited" if was_paid else "paid",
         pressed_at=datetime.datetime.now(),
         paid_date=paid_date,
         by=user,
@@ -188,7 +189,10 @@ def pay_installment(procurement_id, item_id, installment_id):
     if not updated:
         flash(INSTALLMENT_NOT_UPDATED_MESSAGE, "error")
         return redirect(redirect_url)
-    flash("บันทึกการจ่ายงวดเรียบร้อยแล้ว", "success")
+    flash(
+        "แก้ไขข้อมูลการจ่ายงวดเรียบร้อยแล้ว" if was_paid else "บันทึกการจ่ายงวดเรียบร้อยแล้ว",
+        "success",
+    )
     return redirect(redirect_url)
 
 

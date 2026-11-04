@@ -334,14 +334,43 @@ def test_detail_page_shows_pay_log_newest_first_with_who_and_be_date(world, clie
     assert "จ่ายแล้ว" in html  # ปุ่มบันทึกจ่ายของงวดที่ยังไม่จ่าย
 
 
-def test_pay_modal_uses_be_date_picker_with_iso_value(world, client_for, existing_ma):
+def test_pay_modal_uses_readonly_thai_date_with_iso_value(world, client_for, existing_ma):
     html = client_for(world.admin).get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
 
     modal = html.split('id="pay_modal_', 1)[1].split("</dialog>", 1)[0]
     today = datetime.date.today()
-    assert 'type="date"' not in modal and "data-buddhist" in modal
+    from kampan.utils.template_filters import format_thai_date
+    assert 'type="date"' not in modal
     assert f'value="{today.isoformat()}"' in modal
-    assert f"{today.day:02d}/{today.month:02d}/{today.year + 543}" in modal
+    assert format_thai_date(today) in modal
+
+
+def test_edit_paid_installment_logs_edited_action_and_shows_label(world, client_for, existing_ma):
+    # ครั้งที่ 1: บันทึกจ่าย
+    resp1 = _pay(client_for(world.responsible), world, existing_ma, paid_date="2026-11-01", payment_number="INV-001")
+    assert resp1.status_code == 302
+    item = _item_doc(existing_ma)
+    inst = item.installments[0]
+    assert len(inst.pay_log) == 1
+    assert inst.pay_log[0].action == "paid"
+
+    # ครั้งที่ 2: แก้ไขการจ่าย (เช่น เปลี่ยนเลขที่เอกสาร)
+    resp2 = _pay(client_for(world.admin), world, existing_ma, paid_date="2026-11-01", payment_number="INV-002", paid_amount="5000.00")
+    assert resp2.status_code == 302
+
+    # ตรวจสอบประวัติการกดใน DB
+    item.reload()
+    inst = item.installments[0]
+    assert len(inst.pay_log) == 2
+    assert inst.pay_log[1].action == "edited"
+    assert inst.pay_log[1].payment_number == "INV-002"
+    assert inst.pay_log[1].get_action_label() == "แก้ไขการบันทึก"
+
+    # ตรวจสอบการแสดงผลในหน้าเว็บ
+    html = client_for(world.admin).get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
+    assert "แก้ไขการบันทึก" in html
+    assert "INV-002" in html
+    assert "5,000" in html
 
 
 # ---------------------------------------------------------------------------
