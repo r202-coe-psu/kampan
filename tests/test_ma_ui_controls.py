@@ -272,3 +272,33 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
     # Edit form for installment mode: container does not have hidden class
     edit_html = client.get(f"/procurement/products/{ma_inst.id}/edit?{_q(world.org)}").get_data(as_text=True)
     assert 'class="payment-reminder-container" data-payment-reminder>' in edit_html
+
+
+def test_edit_buttons_in_detail_and_requisition_pages(world, client_for, existing_ma):
+    item = existing_ma.get_items()[0]
+    edit_url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
+    item_edit_url = f"{edit_url}#item-{item.id}"
+    detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
+    requisition_url = f"/procurement/requisitions?{_q(world.org)}"
+
+    # 1. Editor (admin or responsible) sees edit buttons
+    editor_client = client_for(world.admin)
+    detail_html = editor_client.get(detail_url).get_data(as_text=True)
+    assert item_edit_url in detail_html
+    assert edit_url in detail_html
+
+    req_html = editor_client.get(requisition_url).get_data(as_text=True)
+    assert edit_url in req_html
+
+    # Edit form anchors to item id
+    edit_form_html = editor_client.get(edit_url).get_data(as_text=True)
+    assert f'id="item-{item.id}"' in edit_form_html
+
+    # 2. Viewer (head without edit rights) cannot see edit buttons
+    viewer_client = client_for(world.head)
+    viewer_detail = viewer_client.get(detail_url).get_data(as_text=True)
+    assert f"/procurement/products/{existing_ma.id}/edit" not in viewer_detail
+
+    viewer_req = viewer_client.get(requisition_url).get_data(as_text=True)
+    assert f"/procurement/products/{existing_ma.id}/edit" not in viewer_req
+

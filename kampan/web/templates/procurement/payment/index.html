@@ -186,7 +186,15 @@
               <tr class="align-top{{ ' bg-primary/5' if my_division_item else '' }}">
                 <td>{{ loop.index }}</td>
                 <td class="min-w-48">
-                  <a href="#item-{{ item.id }}" class="link link-hover font-semibold">{{ item.name }}</a>
+                  <div class="flex items-center gap-1.5">
+                    <a href="#item-{{ item.id }}" class="link link-hover font-semibold">{{ item.name }}</a>
+                    {% if can_edit %}
+                      <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
+                         class="btn btn-ghost btn-xs text-primary btn-square" title="แก้ไขรายการย่อยนี้" aria-label="แก้ไขรายการย่อย {{ item.name }}">
+                        <i class="ph ph-pencil-simple"></i>
+                      </a>
+                    {% endif %}
+                  </div>
                   <div class="text-xs text-base-content/60">{{ item.get_reminder_kind_label() }}{% if item.requires_activation %} · ต้อง activate{% endif %}</div>
                 </td>
                 <td class="min-w-40">
@@ -224,7 +232,15 @@
     <section id="item-{{ item.id }}" class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body p-4 md:p-6 gap-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="font-bold text-lg">รายการย่อยที่ {{ loop.index }}: {{ item.name }}</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="font-bold text-lg">รายการย่อยที่ {{ loop.index }}: {{ item.name }}</h3>
+            {% if can_edit %}
+              <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
+                 class="btn btn-outline btn-primary btn-xs gap-1">
+                <i class="ph ph-pencil-simple"></i> แก้ไข
+              </a>
+            {% endif %}
+          </div>
           {{ payment_badge(item.get_payment_status(today)) }}
         </div>
         <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">

@@ -173,7 +173,7 @@
   {% set custom_days = f.reminder_offsets_days.data | select | list %}
   {% set custom_dates = f.custom_reminder_dates.data | select | list %}
   {% set reminder_has_error = (f.expiry_reminder_offsets.errors or f.payment_reminder_offsets.errors or f.reminder_offsets_days.errors or f.custom_reminder_dates.errors) | length > 0 %}
-  <div class="ma-item card bg-base-100 border border-base-300" data-prefix="{{ prefix }}">
+  <div class="ma-item card bg-base-100 border border-base-300" data-prefix="{{ prefix }}"{% if f.item_id.data %} id="item-{{ f.item_id.data }}"{% endif %}>
     <div class="card-body p-4 md:p-8 gap-8">
       <div class="flex items-center justify-between gap-2">
         <h3 class="text-lg font-bold text-base-content">
