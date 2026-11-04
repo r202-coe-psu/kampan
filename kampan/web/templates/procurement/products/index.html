@@ -2,7 +2,7 @@
 {% from 'procurement/macros/products_table.html' import render_products_table %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/html-renderer.html' as renderer %}
-{% from 'procurement/macros/division_filter.html' import my_division_checkbox %}
+{% from 'procurement/macros/filter_bar.html' import filter_bar %}
 
 {% block title %}รายการ MA{% endblock %}
 {% block dashboard_title %}รายการ MA (สัญญาซอฟต์แวร์/บริการ){% endblock %}
@@ -24,29 +24,12 @@
       </a>
     </div>
 
-    <!-- Filter Form -->
-    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-      <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
-        <input type="hidden" name="organization_id" value="{{ organization.id }}" />
-        {{ renderer.base_render(form.name, placeholder="เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย") }}
-        {{ renderer.render_select_field(form.category) }}
-        {{ renderer.render_select_field(form.payment_status) }}
-        {{ my_division_checkbox(my_division, only_my_division) }}
-        <div>
-          <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
-            <i class="ph ph-magnifying-glass mr-2"></i>
-            ค้นหา
-          </button>
-        </div>
-        <div class="min-w-fit">
-          <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
-             class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
-            <i class="ph ph-x mr-2"></i>
-            ล้างการค้นหา
-          </a>
-        </div>
-      </form>
-    </div>
+    {% call filter_bar(organization, form.name, "เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย", form.sort,
+                       paginated_procurements.total, url_for('procurement.products.index', organization_id=organization.id),
+                       my_division, only_my_division) %}
+      {{ renderer.dropdown_select(form.category) }}
+      {{ renderer.dropdown_select(form.payment_status) }}
+    {% endcall %}
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">

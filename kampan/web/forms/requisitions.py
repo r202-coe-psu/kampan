@@ -11,6 +11,7 @@ from kampan.models.requisitions import (
 )
 
 from .money_validators import MoneyPlaces
+from .procurement import sort_field
 
 BaseRequisitionForm = model_form(
     models.Requisition,
@@ -132,6 +133,7 @@ class RequisitionFilterForm(FlaskForm):
         default="3_months",
         validators=[validators.Optional()],
     )
+    sort = sort_field()
 
 
 class RenewalRequestedFilterForm(FlaskForm):

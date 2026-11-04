@@ -1,9 +1,12 @@
-{# checkbox "เฉพาะฝ่ายของฉัน" (#31) แสดงเฉพาะกลุ่มเห็นทั้งหน่วยงานที่มีฝ่าย · ต้องอยู่ใน form method="get" #}
+{# checkbox "เฉพาะฝ่ายของฉัน" (#31) แสดงเฉพาะกลุ่มเห็นทั้งหน่วยงานที่มีฝ่าย · ต้องอยู่ใน form method="get" ของ filter_bar #}
 {% macro my_division_checkbox(my_division, checked) %}
   {% if my_division %}
-    <label class="label cursor-pointer gap-2 min-w-fit md:pb-2" title="แสดงเฉพาะ MA ที่มีรายการย่อยซึ่ง{{ my_division.name }}รับผิดชอบ">
-      <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="division" value="mine"{% if checked %} checked{% endif %} />
-      <span class="text-sm text-base-content">เฉพาะฝ่ายของฉัน <span class="text-base-content/60">({{ my_division.name }})</span></span>
-    </label>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">ขอบเขต</legend>
+      <label class="flex items-center gap-2 h-10 cursor-pointer" title="แสดงเฉพาะ MA ที่มีรายการย่อยซึ่ง{{ my_division.name }}รับผิดชอบ">
+        <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="division" value="mine"{% if checked %} checked{% endif %} />
+        <span class="text-sm text-base-content">เฉพาะฝ่ายของฉัน <span class="text-base-content/60">({{ my_division.name }})</span></span>
+      </label>
+    </fieldset>
   {% endif %}
 {% endmacro %}

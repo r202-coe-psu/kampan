@@ -138,7 +138,7 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     assert "PAY-OLD-1" not in html
     # ผู้รับผิดชอบ, ประเภทการเตือน และต้อง activate ถูก copy
     assert re.search(rf'name="items-0-responsible_by" value="{world.role_responsible.id}"\s+checked', html)
-    assert re.search(r'<option selected value="license">', html)
+    assert _input_value(html, "items-0-reminder_kind") == "license"
     assert re.search(r'name="items-0-requires_activation"[^>]*checked', html) or re.search(
         r'checked[^>]*name="items-0-requires_activation"', html
     )

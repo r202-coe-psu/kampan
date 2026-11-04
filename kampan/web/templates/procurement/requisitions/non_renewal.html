@@ -2,7 +2,8 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% from '/procurement/macros/non_renewal_table.html' import render_non_renewal_items_table %}
 {% from '/base/components/breadcrumbs.html' import RenderBreadcrumb %}
-{% from 'procurement/macros/division_filter.html' import my_division_checkbox %}
+{% import '/base/html-renderer.html' as renderer %}
+{% from 'procurement/macros/filter_bar.html' import filter_bar, filter_text, filter_date %}
 
 {% block title %}รายการที่ไม่ต่ออายุแล้ว{% endblock %}
 {% block dashboard_title %}รายการซอฟต์แวร์/บริการ ที่ไม่ต่ออายุแล้ว{% endblock %}
@@ -10,13 +11,15 @@
 
 {% block content %}
   <div class="container mx-auto px-4 py-6">
-    {% if my_division %}
-      <form method="get" class="flex flex-wrap items-center gap-2">
-        <input type="hidden" name="organization_id" value="{{ organization.id }}" />
-        {{ my_division_checkbox(my_division, only_my_division) }}
-        <button type="submit" class="btn btn-sm btn-primary"><i class="ph ph-funnel"></i> กรอง</button>
-      </form>
-    {% endif %}
+    {% call filter_bar(organization, form.name, "เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย", form.sort,
+                       paginated_procurements.total, url_for('procurement.requisitions.non_renewal', organization_id=organization.id),
+                       my_division, only_my_division) %}
+      {{ renderer.dropdown_select(form.category) }}
+      {{ renderer.dropdown_select(form.responsible) }}
+      {{ filter_text(form.company, "ชื่อบริษัท") }}
+      {{ filter_date(form.end_from) }}
+      {{ filter_date(form.end_to) }}
+    {% endcall %}
     {{ render_non_renewal_items_table(items, paginated_procurements.total, (paginated_procurements.page - 1) * paginated_procurements.per_page) }}
 
     {% set params = dict(request.args) %}
@@ -32,4 +35,8 @@
       </div>
     {% endif %}
   </div>
+{% endblock %}
+
+{% block additional_js %}
+<script>initDatePickersIn(document);</script>
 {% endblock %}

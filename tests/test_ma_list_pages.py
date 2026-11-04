@@ -358,3 +358,168 @@ def test_list_pages_show_each_rows_responsible_divisions(world, path):
         assert f"[TEST] ฝ่าย {index}" in html
         if path != NON_RENEWAL:
             assert f"Owner{index} Test" in html
+
+
+# ---------------------------------------------------------------------------
+# เรียงลำดับ (?sort=) และแถบตัวกรอง
+# ---------------------------------------------------------------------------
+
+DEFAULT_SORT = {PRODUCTS: "created_desc", RENEWAL: "end_asc", NON_RENEWAL: "end_desc"}
+
+
+def _sort_set(world, path):
+    """MA 4 ตัว: สร้างตามลำดับ A, B, C, D · ชื่อและวันสิ้นสุดสลับกันจนทุกตัวเลือกเรียงไม่เหมือนกัน
+    คืนชื่อเรียงตามแต่ละตัวเลือก"""
+    status = "disactive" if path == NON_RENEWAL else "active"
+    mas = {}
+    for key, name_number, end_in in (("a", 30, 40), ("b", 10, 10), ("c", 40, 30), ("d", 20, 20)):
+        ma = _create_ma(world, end_in_days=end_in, status=status)
+        name = f"[TEST] MA-{name_number:04d}"
+        models.Procurement.objects(id=ma.id).update(set__name=name)
+        mas[key] = name
+    order = lambda keys: [mas[key] for key in keys]  # noqa: E731
+    return {
+        "created_desc": order("dcba"),
+        "created_asc": order("abcd"),
+        "end_asc": order("bdca"),
+        "end_desc": order("acdb"),
+        "name_asc": order("bdac"),
+    }
+
+
+@pytest.mark.parametrize("sort", ["created_desc", "created_asc", "end_asc", "end_desc", "name_asc"])
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_list_pages_sort_options(world, path, sort):
+    expected = _sort_set(world, path)
+
+    assert _shown_mas(_get(world, path, sort=sort)) == expected[sort]
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_list_pages_default_sort_and_unknown_sort_use_the_page_default(world, path):
+    expected = _sort_set(world, path)
+    default = expected[DEFAULT_SORT[path]]
+
+    assert _shown_mas(_get(world, path)) == default
+    for bad in ("nope", "", "created_desc;drop", "-created_date"):
+        response = _get(world, path, sort=bad)
+        assert response.status_code == 200
+        assert _shown_mas(response) == default
+        html = response.get_data(as_text=True)
+        assert re.search(rf'name="sort"[^>]*value="{DEFAULT_SORT[path]}"', html)
+
+
+def test_products_default_order_is_newest_created_first(world):
+    mas = _ma_names(_create_mas(world, 3))
+
+    assert _shown_mas(_get(world, PRODUCTS)) == list(reversed(mas))
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_sort_control_shows_the_selected_option_as_dropdown(world, path):
+    _sort_set(world, path)
+
+    html = _get(world, path, sort="name_asc").get_data(as_text=True)
+
+    assert re.search(r'<input type="hidden" name="sort" id="sort" value="name_asc"', html)
+    button = re.search(r'id="dd-button-sort".*?<span data-dd-label[^>]*>([^<]*)</span>', html, re.S)
+    assert button and button.group(1) == "ชื่อ ก → ฮ"
+    for label in ("สร้างล่าสุด → เก่าสุด", "สร้างเก่าสุด → ล่าสุด", "หมดอายุเร็วสุด", "หมดอายุช้าสุด"):
+        assert label in html
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_sort_is_kept_in_page_links_with_other_filters(world, path):
+    status = "disactive" if path == NON_RENEWAL else "active"
+    _create_mas(world, 5, status=status, responsible=world.admin_role)
+
+    html = _get(world, path, sort="name_asc", division="mine", per_page=2).get_data(as_text=True)
+
+    links = [link.replace("&amp;", "&") for link in re.findall(r'href="([^"]*page=\d[^"]*)"', html)]
+    assert links
+    for link in links:
+        params = link.split("?")[1].split("&")
+        assert "sort=name_asc" in params and "division=mine" in params and "per_page=2" in params
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_sorted_pages_paginate_without_losing_or_repeating_rows(world, path):
+    expected = _sort_set(world, path)
+
+    for sort, names in expected.items():
+        first = _shown_mas(_get(world, path, sort=sort, per_page=3))
+        second = _shown_mas(_get(world, path, sort=sort, per_page=3, page=2))
+        assert first + second == names, sort
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+@pytest.mark.parametrize("sort", ["created_desc", "end_asc", "name_asc"])
+def test_sorted_list_query_count_does_not_grow_with_ma_count(world, query_counter, path, sort):
+    status = "disactive" if path == NON_RENEWAL else "active"
+    _create_mas(world, 3, status=status)
+    few = _query_count(world, query_counter, f"{path}?sort={sort}")
+
+    _create_mas(world, 30, status=status)
+    many = _query_count(world, query_counter, f"{path}?sort={sort}")
+
+    assert many == few
+
+
+def _non_renewal(world, name, **overrides):
+    ma = _create_ma(world, status="disactive", **{k: v for k, v in overrides.items() if k in ("end_in_days", "responsible")})
+    updates = {"set__name": name}
+    if "company" in overrides:
+        updates["set__company"] = overrides["company"]
+    models.Procurement.objects(id=ma.id).update(**updates)
+    return ma
+
+
+def test_non_renewal_filters_by_search_company_category_responsible_and_end_range(world):
+    owner = _add_member(world, 90)
+    alpha = _non_renewal(world, "[TEST] MA-0101", company="บริษัท อัลฟา", end_in_days=10, responsible=owner)
+    beta = _non_renewal(world, "[TEST] MA-0102", company="บริษัท เบตา", end_in_days=100)
+    models.ProcurementItem.objects(procurement=beta).update(set__category="software")
+
+    def shown(**params):
+        return set(_shown_mas(_get(world, NON_RENEWAL, **params)))
+
+    assert shown() == {"[TEST] MA-0101", "[TEST] MA-0102"}
+    assert shown(name="MA-0102") == {"[TEST] MA-0102"}
+    assert shown(name="PSU-" + alpha.psu_disbursement_number.split("-")[1]) == {"[TEST] MA-0101"}
+    assert shown(company="เบตา") == {"[TEST] MA-0102"}
+    assert shown(category="software") == {"[TEST] MA-0102"}
+    assert shown(responsible=owner.id) == {"[TEST] MA-0101"}
+    end_alpha = (TODAY + datetime.timedelta(days=10)).strftime("%Y-%m-%d")
+    assert shown(end_from=end_alpha, end_to=end_alpha) == {"[TEST] MA-0101"}
+    assert shown(end_from=(TODAY + datetime.timedelta(days=11)).strftime("%Y-%m-%d")) == {"[TEST] MA-0102"}
+    assert shown(end_to=(TODAY + datetime.timedelta(days=11)).strftime("%Y-%m-%d")) == {"[TEST] MA-0101"}
+    # ค่าที่ไม่ถูกต้องไม่ทำให้หน้า 500 และไม่กรองอะไร
+    assert shown(end_from="not-a-date", responsible="zzz") == {"[TEST] MA-0101", "[TEST] MA-0102"}
+
+
+def test_non_renewal_filters_never_leak_other_organizations(world, create_org):
+    other_org = create_org("[TEST] Org อื่น")
+    foreign = models.Procurement(
+        organization=other_org, name="[TEST] MA-0999", company="บริษัท อื่น", total_amount=Decimal("100.00"), status="disactive"
+    )
+    member = models.OrganizationUserRole(
+        user=world.admin, organization=other_org, roles=["staff"], status="active", added_by=world.admin, last_modifier=world.admin
+    ).save()
+    foreign.save_with_items([_item(999, member, 5, [_installment(5)])])
+    _non_renewal(world, "[TEST] MA-0100")
+
+    for params in ({}, {"company": "อื่น"}, {"name": "MA-0999"}, {"responsible": member.id}):
+        assert "[TEST] MA-0999" not in _get(world, NON_RENEWAL, **params).get_data(as_text=True)
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
+    status = "disactive" if path == NON_RENEWAL else "active"
+    _create_mas(world, 2, status=status)
+
+    html = _get(world, path).get_data(as_text=True)
+
+    assert "<select" not in html.split('id="ma_filter_form"', 1)[1].split("</form>", 1)[0]
+    form_html = html.split('id="ma_filter_form"', 1)[1].split("</form>", 1)[0]
+    assert "ล้างตัวกรอง" in form_html and "พบ <span" in form_html
+    assert re.search(r'href="[^"]*%s[^"]*"[^>]*>\s*<i class="ph ph-x"></i> ล้างตัวกรอง' % re.escape(path), form_html)

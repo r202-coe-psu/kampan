@@ -1,6 +1,7 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
-{% from 'procurement/macros/division_filter.html' import my_division_checkbox %}
+{% import '/base/html-renderer.html' as renderer %}
+{% from 'procurement/macros/filter_bar.html' import filter_bar, filter_text %}
 {% block title %}รายการซอฟต์แวร์/บริการ ที่ใกล้หมดอายุหรือหมดอายุแล้ว{% endblock %}
 {% block content %}
 <div class="container mx-auto px-4 py-6">
@@ -12,31 +13,14 @@
       <span>{{ paginated_procurements.total }}</span>
     </span>
   </div>
-  <!-- Filter Form -->
-  <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
-      <input type="hidden" name="organization_id" value="{{ organization.id }}">
-      {{ renderer.base_render(form.name, placeholder="ค้นหาชื่อ MA") }}
-      {{ renderer.render_select_field(form.category) }}
-      {{ renderer.base_render(form.product_number, placeholder="ค้นหาเลขที่ ม.อ.เบิกจ่าย") }}
-      {{ renderer.base_render(form.asset_code, placeholder="ค้นหา S/N หรือรหัสครุภัณฑ์") }}
-      {{ renderer.render_select_field(form.expiration_date_range) }}
-      {{ my_division_checkbox(my_division, only_my_division) }}
-      <div>
-        <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
-          <i class="ph ph-magnifying-glass mr-2"></i>
-          ค้นหา
-        </button>
-      </div>
-      <div class="min-w-fit">
-        <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
-          class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
-          <i class="ph ph-x mr-2"></i>
-          ล้างการค้นหา
-        </a>
-      </div>
-    </form>
-  </div>
+  {% call filter_bar(organization, form.name, "ค้นหาชื่อ MA", form.sort, paginated_procurements.total,
+                     url_for('procurement.requisitions.index', organization_id=organization.id),
+                     my_division, only_my_division) %}
+    {{ renderer.dropdown_select(form.category) }}
+    {{ renderer.dropdown_select(form.expiration_date_range) }}
+    {{ filter_text(form.product_number, "เลขที่ ม.อ.เบิกจ่าย") }}
+    {{ filter_text(form.asset_code, "S/N หรือรหัสครุภัณฑ์") }}
+  {% endcall %}
   <!-- Cards Grid -->
   {% if procurements|length == 0 %}
   <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border-2 border-dashed border-gray-200 p-12">
