@@ -109,7 +109,7 @@ def index():
     if category or asset_code or expiration_date_range:
         procurements = procurements.filter(id__in=procurement_ids_of(items))
 
-    # หน้านี้เน้นวันหมดอายุ: เรียงจากหมดอายุเร็วสุดก่อนเป็นค่าตั้งต้น
+    # หน้านี้เน้นวันหมดอายุ: เรียงจากใกล้หมดอายุที่สุดก่อนเป็นค่าตั้งต้น
     sort = resolve_sort("end_asc")
     form.sort.data = sort
     paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)

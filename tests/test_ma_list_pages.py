@@ -424,7 +424,7 @@ def test_sort_control_shows_the_selected_option_as_dropdown(world, path):
     assert re.search(r'<input type="hidden" name="sort" id="sort" value="name_asc"', html)
     button = re.search(r'id="dd-button-sort".*?<span data-dd-label[^>]*>([^<]*)</span>', html, re.S)
     assert button and button.group(1) == "ชื่อ ก → ฮ"
-    for label in ("สร้างล่าสุด → เก่าสุด", "สร้างเก่าสุด → ล่าสุด", "หมดอายุเร็วสุด", "หมดอายุช้าสุด"):
+    for label in ("สร้างล่าสุด → เก่าสุด", "สร้างเก่าสุด → ล่าสุด", "ใกล้หมดอายุที่สุด", "หมดอายุหลังสุด"):
         assert label in html
 
 

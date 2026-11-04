@@ -283,8 +283,8 @@ class ManualReminderLogForm(FlaskForm):
 SORT_OPTIONS = [
     ("created_desc", "สร้างล่าสุด → เก่าสุด"),
     ("created_asc", "สร้างเก่าสุด → ล่าสุด"),
-    ("end_asc", "หมดอายุเร็วสุด"),
-    ("end_desc", "หมดอายุช้าสุด"),
+    ("end_asc", "ใกล้หมดอายุที่สุด"),
+    ("end_desc", "หมดอายุหลังสุด"),
     ("name_asc", "ชื่อ ก → ฮ"),
 ]
 
