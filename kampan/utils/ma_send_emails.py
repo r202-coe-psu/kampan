@@ -165,7 +165,7 @@ def _deliver(log, settings) -> tuple[str, str | None]:
     try:
         if not psu_smtp.login():
             return "failed", SMTP_LOGIN_ERROR
-        failed = [receiver for receiver in recipients if not psu_smtp.send_email(receiver, subject, body)]
+        failed = [receiver for receiver in recipients if not psu_smtp.send_email(receiver, subject, body, html=True)]
     finally:
         try:
             psu_smtp.quit()
