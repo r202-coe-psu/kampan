@@ -1,6 +1,6 @@
 import datetime
 
-from flask_wtf import FlaskForm, file
+from flask_wtf import FlaskForm
 from wtforms import Form, ValidationError, fields, validators
 
 from kampan import models
@@ -81,21 +81,13 @@ def _filled(field_list) -> list[str]:
 
 
 class InstallmentForm(Form):
+    """งวด: กรอกแค่วันครบกำหนด (การจ่ายบันทึกด้วยปุ่ม "จ่ายแล้ว" ที่หน้ารายละเอียด)"""
+
     installment_id = fields.HiddenField()
     due_date = DateInputField(
         "วันครบกำหนด",
         validators=[validators.InputRequired(message="กรุณาระบุวันครบกำหนด")],
     )
-    paid_date = DateInputField("วันที่จ่าย", validators=[validators.Optional()])
-    payment_number = fields.StringField(
-        "เลขที่เอกสาร",
-        validators=[validators.Optional(), validators.Length(max=128)],
-    )
-    paid_amount = money_field("ยอดที่จ่ายจริง (บาท)", required=False)
-
-    def validate_paid_date(self, field):
-        if field.data is None and (self.payment_number.data or self.paid_amount.data is not None):
-            raise ValidationError("กรุณาระบุวันที่จ่าย")
 
 
 class ItemDetailForm(Form):
@@ -141,10 +133,18 @@ class ProcurementItemForm(Form):
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก)
     reminder_offsets_days = fields.FieldList(fields.StringField(), label="เตือนหมดอายุล่วงหน้า (วัน) กำหนดเอง")
     custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
+    # เปิด = แบ่งจ่ายเป็นงวด (กรอกวันครบกำหนดเอง) ปิด = จ่ายครั้งเดียว งวดเดียวครบกำหนดในวันสิ้นสุด (ระบบตั้งให้)
+    installment_mode = fields.BooleanField("แบ่งจ่ายเป็นงวด")
     # อ่านไม่เกิน MAX + 1 งวด (กัน request ที่ส่งงวดมาหลักหมื่น) แล้วให้ validate_installments ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     installments = fields.FieldList(
         fields.FormField(InstallmentForm), min_entries=1, max_entries=MAX_INSTALLMENTS_PER_ITEM + 1
     )
+
+    def validate(self, extra_validators=None):
+        # ปิดแบ่งงวด: ไม่ใช้แถวงวดที่ส่งมา (ระบบสร้างงวดเดียวจากวันสิ้นสุด) จึงไม่ validate
+        if not self.installment_mode.data:
+            self.installments.entries = []
+        return super().validate(extra_validators=extra_validators)
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data < self.start_date.data:
@@ -155,6 +155,8 @@ class ProcurementItemForm(Form):
             raise ValidationError(MAX_SUB_ITEMS_MESSAGE)
 
     def validate_installments(self, field):
+        if not self.installment_mode.data:
+            return
         if not field.entries:
             raise ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
         if len(field.entries) > MAX_INSTALLMENTS_PER_ITEM:
@@ -206,10 +208,6 @@ class ProcurementHeaderForm(FlaskForm):
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
     total_amount = money_field("ยอดเงินรวมของ MA (บาท)")
-    image = fields.FileField(
-        "รูปภาพ",
-        validators=[file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
-    )
     items = fields.FieldList(fields.FormField(ProcurementItemForm), min_entries=1)
     # เวลาแก้ไขล่าสุดตอนเปิดฟอร์มแก้ไข (กันบันทึกทับการแก้ / การจ่ายงวดของคนอื่นที่เกิดระหว่างนั้น)
     version = fields.HiddenField()
@@ -278,11 +276,18 @@ class ManualReminderLogForm(FlaskForm):
         return datetime.datetime.combine(parse_thai_date(self.contact_date.data), datetime.time.min)
 
 
-class EditImageForm(FlaskForm):
-    image = fields.FileField(
-        "รูปภาพใหม่",
-        validators=[file.FileAllowed(["png", "jpg", "jpeg"], "อนุญาตเฉพาะไฟล์ png และ jpg")],
-    )
+# ตัวเลือกเรียงลำดับของหน้ารายการ MA (query string ``sort``) ดู views/procurement/ma_pagination.py
+SORT_OPTIONS = [
+    ("created_desc", "สร้างล่าสุด → เก่าสุด"),
+    ("created_asc", "สร้างเก่าสุด → ล่าสุด"),
+    ("end_asc", "หมดอายุเร็วสุด"),
+    ("end_desc", "หมดอายุช้าสุด"),
+    ("name_asc", "ชื่อ ก → ฮ"),
+]
+
+
+def sort_field() -> fields.SelectField:
+    return fields.SelectField("เรียงลำดับ", choices=SORT_OPTIONS, validators=[validators.Optional()])
 
 
 class ProductFilterForm(FlaskForm):
@@ -300,3 +305,27 @@ class ProductFilterForm(FlaskForm):
         choices=[("", "ทั้งหมด")] + models.PAYEMENT_STATUS_CHOICES,
         validators=[validators.Optional()],
     )
+    sort = sort_field()
+
+
+class NonRenewalFilterForm(FlaskForm):
+    """ตัวกรองหน้ารายการไม่ต่ออายุ (query string ทั้งหมดเป็น GET จึงไม่ใช้ CSRF)"""
+
+    class Meta:
+        csrf = False
+
+    name = fields.StringField(
+        "ค้นหา",
+        validators=[validators.Optional(), validators.Length(max=128)],
+    )
+    category = fields.SelectField(
+        "ประเภท",
+        choices=[("", "ทั้งหมด")] + models.ITEM_CATEGORY_CHOICES,
+        validators=[validators.Optional()],
+    )
+    company = fields.StringField("บริษัท", validators=[validators.Optional(), validators.Length(max=128)])
+    # choices เติมจากสมาชิกของหน่วยงานที่กำลังดูอยู่ (view)
+    responsible = fields.SelectField("ผู้รับผิดชอบ", choices=[("", "ทั้งหมด")], validators=[validators.Optional()])
+    end_from = DateInputField("สิ้นสุดตั้งแต่", validators=[validators.Optional()])
+    end_to = DateInputField("สิ้นสุดถึง", validators=[validators.Optional()])
+    sort = sort_field()

@@ -118,6 +118,7 @@ def _two_item_form(world):
                 reminder_kind="license",
                 requires_activation="y",
                 responsible_by=[str(world.role_admin.id), str(world.role_responsible.id)],
+                installment_mode="y",
                 installments=[{"due_date": "2026-06-30"}, {"due_date": "2026-12-31"}],
             ),
             _item(
@@ -173,6 +174,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
         datetime.datetime(2026, 12, 31),
     ]
     assert all(installment.paid_date is None for installment in first.installments)
+    assert first.installment_mode is True and second.installment_mode is False
     assert {member.id for member in first.responsible_by} == {world.role_admin.id, world.role_responsible.id}
     assert second.winner is None and second.unit_price is None
     assert len(second.installments) == 1
@@ -314,12 +316,10 @@ def test_create_sum_mismatch_saves_nothing_and_shows_difference(world, client_fo
     assert models.ProcurementItem.objects.count() == 0
 
 
-@pytest.mark.parametrize("field", ["total_amount", "items-0-amount", "items-0-unit_price", "items-0-installments-0-paid_amount"])
+@pytest.mark.parametrize("field", ["total_amount", "items-0-amount", "items-0-unit_price"])
 def test_create_rejects_money_with_more_than_two_decimals(world, client_for, field):
     data = ma_form([_item(amount="100000.00")])
     data[field] = "1.234"
-    if field.endswith("paid_amount"):
-        data["items-0-installments-0-paid_date"] = "2026-06-30"
 
     response = _create(client_for(world.admin), world, data)
 
@@ -340,7 +340,7 @@ def test_create_zero_amount_item_with_one_installment_ok(world, client_for):
 
 
 def test_create_item_without_installment_rejected(world, client_for):
-    data = ma_form([_item(amount="100000.00", installments=[])])
+    data = ma_form([_item(amount="100000.00", installment_mode="y", installments=[])])
 
     response = _create(client_for(world.admin), world, data)
 
@@ -705,38 +705,26 @@ def test_edit_with_stale_form_is_rejected_and_keeps_payment(world, client_for, e
     assert _first_installment(existing_ma).payment_number == "PAY-STALE"
 
 
-def test_edit_keeps_paid_by_of_paid_installment(world, client_for, existing_ma):
+def test_edit_keeps_paid_state_and_pay_log_of_paid_installment(world, client_for, existing_ma):
     client_for(world.responsible).post(
-        f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}", data={"paid_date": "2026-11-01"}
+        f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}",
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-KEEP", "paid_amount": "10.50"},
     )
     existing_ma = models.Procurement.objects.get(id=existing_ma.id)
     data = _edit_form(existing_ma)
-    data["items-0-installments-0-paid_date"] = "2026-11-03"
-    data["items-0-installments-0-payment_number"] = "PAY-EDIT"
+    # ฟอร์มแก้ไขไม่มีช่องการจ่าย: ค่าที่ส่งมาเกินจากฟอร์มต้องไม่ทับสถานะที่บันทึกไว้
+    data["items-0-installments-0-paid_date"] = ""
+    data["items-0-installments-0-payment_number"] = "HACK"
 
     response = client_for(world.admin).post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=data)
 
     assert response.status_code == 302
     installment = _first_installment(existing_ma)
-    assert installment.paid_date == datetime.datetime(2026, 11, 3)
-    assert installment.payment_number == "PAY-EDIT"
+    assert installment.paid_date == datetime.datetime(2026, 11, 1)
+    assert installment.payment_number == "PAY-KEEP"
+    assert installment.paid_amount == Decimal("10.50")
     assert installment.paid_by.id == world.responsible.id
-
-
-def test_form_rejects_payment_number_used_elsewhere_in_org(world, client_for, create_ma):
-    used = create_ma(world.org, user=world.admin, name="[TEST] MA ใช้เลขแล้ว")
-    client_for(world.admin).post(
-        f"{_installment_url(used, 'pay')}?{_q(world.org)}", data={"paid_date": "2026-11-01", "payment_number": "USED-1"}
-    )
-    data = ma_form(
-        [_item(amount="100000.00", installments=[{"due_date": "2026-06-30", "paid_date": "2026-06-30", "payment_number": "USED-1"}])]
-    )
-
-    response = _create(client_for(world.admin), world, data)
-
-    assert response.status_code == 200
-    assert "เลขที่เอกสาร USED-1 ถูกใช้งานแล้วในหน่วยงานนี้" in response.get_data(as_text=True)
-    assert models.Procurement.objects.count() == 1
+    assert [entry.action for entry in installment.pay_log] == ["paid"]
 
 
 # ---------------------------------------------------------------------------
@@ -1278,7 +1266,7 @@ def test_upload_rejects_more_than_120_installments(world, gridfs_enabled):
 
 def test_ma_form_rejects_more_than_120_installments(world, client_for):
     installments = [{"due_date": "2026-12-31"}] * 121
-    data = ma_form([_item(amount="100000.00", installments=installments)])
+    data = ma_form([_item(amount="100000.00", installment_mode="y", installments=installments)])
 
     response = _create(client_for(world.admin), world, data)
 
@@ -1288,7 +1276,7 @@ def test_ma_form_rejects_more_than_120_installments(world, client_for):
 
 
 def test_ma_form_accepts_120_installments(world, client_for):
-    data = ma_form([_item(amount="100000.00", installments=[{"due_date": "2026-12-31"}] * 120)])
+    data = ma_form([_item(amount="100000.00", installment_mode="y", installments=[{"due_date": "2026-12-31"}] * 120)])
 
     response = _create(client_for(world.admin), world, data)
 
@@ -1319,29 +1307,33 @@ def test_create_form_uses_daisyui_controls_not_native_date_or_bare_select(world,
 
     assert 'type="date"' not in html
     form_html = html.split('id="ma_form"', 1)[1].split("</form>", 1)[0]
-    selects = re.findall(r"<label class=\"select[^\"]*\">\s*<select", form_html)
-    assert len(selects) == len(re.findall(r"<select", form_html)) > 0
+    assert "<select" not in form_html
+    # ประเภท, ผังบัญชี และประเภทการเตือนเป็น dropdown ของ DaisyUI (hidden input เก็บค่าด้วย name เดิม)
+    for name in ("items-0-category", "items-0-account_code", "items-0-reminder_kind"):
+        assert re.search(rf'<input type="hidden" name="{name}" id="{name}"', form_html), name
     names = [name for name, _, _ in _picker_inputs(html)]
     assert "items-0-start_date" in names and "items-0-end_date" in names
-    assert "items-0-installments-0-due_date" in names and "items-0-installments-0-paid_date" in names
-    # แถวที่เพิ่มด้วย JS มาจาก <template> ซึ่งต้องมี container ให้ initDatePickersIn ด้วย
+    assert "items-0-installments-0-due_date" in names
+    # แถวที่เพิ่มด้วย JS มาจาก <template> ซึ่งต้องมี container ให้ initDatePickersIn / initDropdownSelectsIn
     template = html.split('<template id="installment_template">', 1)[1].split("</template>", 1)[0]
     assert "data-date-picker" in template and "__J__" in template and 'type="date"' not in template
+    item_template = html.split('<template id="item_template">', 1)[1].split("</template>", 1)[0]
+    assert "data-dropdown-select" in item_template and "__I__" in item_template and "<select" not in item_template
 
 
-def test_edit_form_shows_existing_dates_as_iso_value_and_ddmmyyyy_label(world, client_for, existing_ma):
+def test_edit_form_shows_existing_dates_as_iso_value_and_buddhist_era_label(world, client_for, existing_ma):
     html = client_for(world.admin).get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}").get_data(as_text=True)
 
     item = existing_ma.get_items()[0]
     pickers = {name: (value, label) for name, value, label in _picker_inputs(html)}
-    start = item.start_date.date() if hasattr(item.start_date, "date") else item.start_date
-    value, label = pickers["items-0-start_date"]
-    assert value == start.strftime("%Y-%m-%d")
-    assert label == start.strftime("%d/%m/%Y")
-    due = item.installments[0].due_date
-    due = due.date() if hasattr(due, "date") else due
-    value, label = pickers["items-0-installments-0-due_date"]
-    assert (value, label) == (due.strftime("%Y-%m-%d"), due.strftime("%d/%m/%Y"))
+
+    def be(value):
+        value = value.date() if hasattr(value, "date") else value
+        return value.strftime("%Y-%m-%d"), f"{value.day:02d}/{value.month:02d}/{value.year + 543}"
+
+    assert pickers["items-0-start_date"] == be(item.start_date)
+    assert pickers["items-0-end_date"] == be(item.end_date)
+    assert pickers["items-0-installments-0-due_date"] == be(item.installments[0].due_date)
 
 
 def test_invalid_date_post_shows_error_and_error_style_on_picker(world, client_for):

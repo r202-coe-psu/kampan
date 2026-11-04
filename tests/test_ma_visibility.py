@@ -206,7 +206,6 @@ def test_staff_creator_sees_own_ma_without_being_responsible(world, client_for):
     [
         "/procurement/payment/{id}",
         "/procurement/products/{id}/edit",
-        "/procurement/products/{id}/edit_image",
     ],
 )
 def test_per_ma_pages_404_for_ma_user_cannot_see(world, client_for, path):

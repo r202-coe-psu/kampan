@@ -1,4 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
+{% from '/base/html-renderer.html' import date_field %}
 
 {% block title %}รายละเอียด MA{% endblock %}
 {% block dashboard_title %}รายละเอียด MA{% endblock %}
@@ -35,6 +36,9 @@
 {% macro offset_list(keys) %}
   {%- for key in keys %}{{ offset_labels.get(key, key) }}{% if not loop.last %}, {% endif %}{% else %}ไม่เตือนล่วงหน้า{% endfor -%}
 {% endmacro %}
+
+{# วัน/เดือน/พ.ศ. ชั่วโมง:นาที (เวลาที่กดปุ่ม) #}
+{% macro thai_datetime(value) %}{{ "%02d/%02d/%d %02d:%02d" | format(value.day, value.month, value.year + 543, value.hour, value.minute) }}{% endmacro %}
 
 {% macro thai_date(value) %}{{ value | format_thai_date if value else "-" }}{% endmacro %}
 
@@ -129,10 +133,6 @@
           <p class="font-medium">{{ procurement.updated_date | format_thai_datetime_short_month }}</p>
         </div>
       </div>
-      {% if procurement.image %}
-        <img src="{{ url_for('procurement.products.image', procurement_id=procurement.id, filename=procurement.image.filename if procurement.image.filename else 'image', organization_id=organization.id) }}"
-             alt="รูปภาพประกอบ MA" class="rounded-box max-h-64 w-auto object-contain mt-2 border border-base-300" />
-      {% endif %}
     </div>
   </section>
 
@@ -257,50 +257,79 @@
           </div>
         {% endif %}
 
-        <div class="overflow-x-auto">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>งวดที่</th>
-                <th>วันครบกำหนด</th>
-                <th>สถานะ</th>
-                <th>วันที่จ่าย</th>
-                <th>เลขที่เอกสาร</th>
-                <th class="text-right">ยอดที่จ่ายจริง (บาท)</th>
-                <th>ผู้บันทึก</th>
-                {% if can_edit %}<th></th>{% endif %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for installment in item.get_sorted_installments() %}
-                {% set modal_key = item.id ~ "-" ~ installment._id %}
+        <div>
+          <h4 class="font-semibold flex items-center gap-2 mb-2">
+            <i class="ph ph-calendar-dots text-primary"></i>
+            {{ "งวดการจ่าย" if item.pays_in_installments() else "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" }}
+          </h4>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
                 <tr>
-                  <td>{{ loop.index }}</td>
-                  <td class="whitespace-nowrap">{{ thai_date(installment.due_date) }}</td>
-                  <td>{{ payment_badge(installment.get_status(today)) }}</td>
-                  <td class="whitespace-nowrap">{{ thai_date(installment.paid_date) }}</td>
-                  <td>{{ installment.payment_number or "-" }}</td>
-                  <td class="text-right">{{ installment.paid_amount | format_number if installment.paid_amount is not none else "-" }}</td>
-                  <td>{{ installment.paid_by.get_name() if installment.paid_by else "-" }}</td>
-                  {% if can_edit %}
-                    <td class="whitespace-nowrap text-right">
-                      <button type="button" class="btn btn-xs {{ 'btn-ghost' if installment.is_paid() else 'btn-success' }}"
-                              onclick="document.getElementById('pay_modal_{{ modal_key }}').showModal()">
-                        <i class="ph {{ 'ph-pencil-simple' if installment.is_paid() else 'ph-check' }}"></i>
-                        {{ "แก้ไขการจ่าย" if installment.is_paid() else "บันทึกการจ่าย" }}
-                      </button>
-                      {% if installment.is_paid() %}
-                        <button type="button" class="btn btn-xs btn-ghost text-error"
-                                onclick="document.getElementById('unpay_modal_{{ modal_key }}').showModal()">
-                          <i class="ph ph-arrow-counter-clockwise"></i> ยกเลิก
-                        </button>
-                      {% endif %}
-                    </td>
-                  {% endif %}
+                  <th>งวดที่</th>
+                  <th>วันครบกำหนด</th>
+                  <th>สถานะ</th>
+                  <th>วันที่จ่าย</th>
+                  <th>เลขที่เอกสาร</th>
+                  <th class="text-right">ยอดที่จ่ายจริง (บาท)</th>
+                  <th>ผู้บันทึก</th>
+                  {% if can_edit %}<th></th>{% endif %}
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for installment in item.get_sorted_installments() %}
+                  {% set modal_key = item.id ~ "-" ~ installment._id %}
+                  <tr class="align-top">
+                    <td>{{ loop.index }}</td>
+                    <td class="whitespace-nowrap">{{ thai_date(installment.due_date) }}</td>
+                    <td>{{ payment_badge(installment.get_status(today)) }}</td>
+                    <td class="whitespace-nowrap">{{ thai_date(installment.paid_date) }}</td>
+                    <td>{{ installment.payment_number or "-" }}</td>
+                    <td class="text-right">{{ installment.paid_amount | format_number if installment.paid_amount is not none else "-" }}</td>
+                    <td>{{ installment.paid_by.get_name() if installment.paid_by else "-" }}</td>
+                    {% if can_edit %}
+                      <td class="whitespace-nowrap text-right">
+                        <button type="button" class="btn btn-xs {{ 'btn-ghost' if installment.is_paid() else 'btn-success' }}"
+                                onclick="document.getElementById('pay_modal_{{ modal_key }}').showModal()">
+                          <i class="ph {{ 'ph-pencil-simple' if installment.is_paid() else 'ph-check' }}"></i>
+                          {{ "แก้ไขการจ่าย" if installment.is_paid() else "จ่ายแล้ว" }}
+                        </button>
+                        {% if installment.is_paid() %}
+                          <button type="button" class="btn btn-xs btn-ghost text-error"
+                                  onclick="document.getElementById('unpay_modal_{{ modal_key }}').showModal()">
+                            <i class="ph ph-arrow-counter-clockwise"></i> ยกเลิกการจ่าย
+                          </button>
+                        {% endif %}
+                      </td>
+                    {% endif %}
+                  </tr>
+                  {% if installment.pay_log %}
+                    <tr class="pay-log">
+                      <td></td>
+                      <td colspan="{{ 7 if can_edit else 6 }}" class="pt-0">
+                        <details class="text-sm">
+                          <summary class="cursor-pointer text-base-content/70">ประวัติการกด ({{ installment.pay_log | length }})</summary>
+                          <ul class="mt-1 space-y-0.5">
+                            {% for entry in installment.pay_log | reverse %}
+                              {% set by = pay_log_users.get(entry.get_by_id()) %}
+                              <li>
+                                <span class="whitespace-nowrap text-base-content/60">{{ thai_datetime(entry.pressed_at) }}</span>
+                                · <span class="font-medium {{ 'text-error' if entry.action == 'unpaid' else '' }}">{{ entry.get_action_label() }}</span>
+                                {% if entry.paid_date %}(วันที่จ่าย {{ thai_date(entry.paid_date) }}){% endif %}
+                                {% if entry.payment_number %}· เลขที่เอกสาร {{ entry.payment_number }}{% endif %}
+                                {% if entry.paid_amount is not none %}· {{ entry.paid_amount | format_number }} บาท{% endif %}
+                                · โดย {{ by.get_name() if by else "-" }}
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        </details>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- ตั้งค่าการเตือน (#28, #29) -->
@@ -394,14 +423,13 @@
         {% set action_args = {"procurement_id": procurement.id, "item_id": item.id, "installment_id": installment._id, "organization_id": organization.id} %}
         <dialog id="pay_modal_{{ modal_key }}" class="modal">
           <div class="modal-box">
-            <h3 class="text-lg font-bold mb-1">{{ "แก้ไขการจ่าย" if installment.is_paid() else "บันทึกการจ่าย" }}</h3>
+            <h3 class="text-lg font-bold mb-1">{{ "แก้ไขการจ่าย" if installment.is_paid() else "จ่ายแล้ว" }}</h3>
             <p class="text-sm text-base-content/70 mb-3">{{ item.name }} · ครบกำหนด {{ thai_date(installment.due_date) }}</p>
             <form method="post" action="{{ url_for('procurement.payment.pay_installment', **action_args) }}" class="space-y-2">
               {{ form.hidden_tag() }}
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">วันที่จ่าย <span class="text-error">*</span></legend>
-                <input type="date" name="paid_date" required class="input w-full"
-                       value="{{ (installment.paid_date.date() if installment.paid_date else today).isoformat() }}" />
+                {{ date_field(form.paid_date, field_id="paid-" ~ modal_key, value=(installment.paid_date.date() if installment.paid_date else today), hide_label=True, aria_label="วันที่จ่าย", fixed_popover=True, show_errors=False, auto_init=False, buddhist=True) }}
               </fieldset>
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">เลขที่เอกสาร</legend>
@@ -425,7 +453,7 @@
           <dialog id="unpay_modal_{{ modal_key }}" class="modal">
             <div class="modal-box">
               <h3 class="text-lg font-bold text-error mb-2">ยกเลิกการบันทึกจ่าย</h3>
-              <p class="text-sm">ต้องการยกเลิกการบันทึกจ่ายงวดครบกำหนด {{ thai_date(installment.due_date) }} ของ {{ item.name }} ใช่หรือไม่ (วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง)</p>
+              <p class="text-sm">ต้องการยกเลิกการจ่ายงวดครบกำหนด {{ thai_date(installment.due_date) }} ของ {{ item.name }} ใช่หรือไม่ (วันที่จ่าย เลขที่เอกสาร และยอดที่จ่ายจะถูกล้าง แต่ประวัติการกดยังเก็บไว้)</p>
               <div class="modal-action">
                 <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ปิด</button>
                 <form method="post" action="{{ url_for('procurement.payment.unpay_installment', **action_args) }}">
@@ -441,4 +469,8 @@
     {% endif %}
   {% endfor %}
 </div>
+{% endblock %}
+
+{% block additional_js %}
+<script>initDatePickersIn(document);</script>
 {% endblock %}

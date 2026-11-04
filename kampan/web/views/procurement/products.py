@@ -19,16 +19,15 @@ from flask_login import current_user, login_required
 from mongoengine.queryset.visitor import Q
 
 from kampan import models
-from kampan.models.procurement import attach_items, payment_statuses, procurement_ids_of
+from kampan.models.procurement import payment_statuses, procurement_ids_of
 from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 
 from . import ma_permissions
-from .ma_pagination import paginate
+from .ma_pagination import paginate_sorted, resolve_sort
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
-DUPLICATE_PAYMENT_NUMBER_MESSAGE = "เลขที่เอกสาร {numbers} ถูกใช้งานแล้วในหน่วยงานนี้"
 NO_EDIT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์แก้ไข MA รายการนี้"
 NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุ MA รายการนี้"
 ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
@@ -102,10 +101,10 @@ def index():
         procurement_qs = procurement_qs.filter(
             id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
         )
-    procurement_qs = procurement_qs.order_by("-created_date")
 
-    paginated_procurements = paginate(procurement_qs, default_per_page=30)
-    procurements = attach_items(paginated_procurements.items, organization, with_responsibles=True)
+    sort = resolve_sort("created_desc")
+    form.sort.data = sort
+    paginated_procurements, procurements = paginate_sorted(procurement_qs, organization, sort, default_per_page=30)
 
     for procurement in procurements:
         end_date = procurement.get_end_date()
@@ -156,6 +155,7 @@ def _blank_item_data(member) -> dict:
         "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
         "payment_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
         "sub_items": [{}],
+        "installment_mode": False,
         "installments": [{}],
     }
 
@@ -205,14 +205,9 @@ def _item_form_data(item) -> dict:
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
         **_reminder_settings_data(item),
+        "installment_mode": item.pays_in_installments(),
         "installments": [
-            {
-                "installment_id": str(installment._id),
-                "due_date": _as_date(installment.due_date),
-                "paid_date": _as_date(installment.paid_date),
-                "payment_number": installment.payment_number,
-                "paid_amount": installment.paid_amount,
-            }
+            {"installment_id": str(installment._id), "due_date": _as_date(installment.due_date)}
             for installment in item.get_sorted_installments()
         ],
     }
@@ -238,6 +233,7 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
         "reminder_kind": item.reminder_kind,
         "requires_activation": item.requires_activation,
         **_reminder_settings_data(item, include_custom_dates=False),
+        "installment_mode": False,
         "installments": [{}],
     }
 
@@ -297,25 +293,46 @@ def _render_form(form, organization, member, procurement=None, form_errors=(), r
     )
 
 
-def _build_installments(installment_entries, existing_installments, user) -> list:
+class InstallmentChangeError(Exception):
+    """แก้งวดตามฟอร์มไม่ได้ (เช่นลบงวดที่จ่ายแล้ว) ข้อความใช้แสดงในฟอร์ม"""
+
+
+PAID_INSTALLMENT_REMOVED_MESSAGE = "งวดที่จ่ายแล้วลบไม่ได้ ({item}: งวดครบกำหนด {due})"
+MANY_PAID_INSTALLMENTS_MESSAGE = "{item}: มีงวดที่จ่ายแล้วมากกว่า 1 งวด ปิดการแบ่งจ่ายเป็นงวดไม่ได้"
+
+
+def _due_label(installment) -> str:
+    due = _as_date(installment.due_date)
+    return f"{due.day:02d}/{due.month:02d}/{due.year + 543}" if due else "-"
+
+
+def _single_installment(item_name, existing_installments, due_date) -> list:
+    """จ่ายครั้งเดียว: เหลืองวดเดียว ครบกำหนดวันสิ้นสุด งวดเดิมที่จ่ายแล้วเก็บสถานะการจ่ายและประวัติไว้ (แก้แค่วันครบกำหนด)"""
+    paid = [installment for installment in existing_installments if installment.is_paid()]
+    if len(paid) > 1:
+        raise InstallmentChangeError(MANY_PAID_INSTALLMENTS_MESSAGE.format(item=item_name))
+    if paid:
+        keep = paid[0]
+    elif existing_installments:
+        keep = sorted(existing_installments, key=lambda installment: installment.due_date or datetime.datetime.max)[-1]
+    else:
+        keep = models.Installment()
+    keep.due_date = due_date
+    return [keep]
+
+
+def _build_installments(item_name, installment_entries, existing_installments) -> list:
+    """งวดจากฟอร์ม (โหมดแบ่งงวด) จับคู่กับงวดเดิมด้วย installment_id เก็บสถานะการจ่ายและประวัติของงวดเดิมไว้เหมือนเดิม
+    งวดเดิมที่ไม่ได้ส่งมาลบได้เฉพาะที่ยังไม่จ่าย"""
     existing = {str(installment._id): installment for installment in existing_installments}
     installments = []
     for entry in installment_entries:
-        data = entry.form
-        installment = existing.pop(data.installment_id.data or "", None) or models.Installment()
-        installment.due_date = _as_datetime(data.due_date.data)
-        if data.paid_date.data:
-            if not installment.paid_date:
-                installment.paid_by = user
-            installment.paid_date = _as_datetime(data.paid_date.data)
-            installment.payment_number = (data.payment_number.data or "").strip() or None
-            installment.paid_amount = data.paid_amount.data
-        else:
-            installment.paid_date = None
-            installment.paid_by = None
-            installment.payment_number = None
-            installment.paid_amount = None
+        installment = existing.pop(entry.form.installment_id.data or "", None) or models.Installment()
+        installment.due_date = _as_datetime(entry.form.due_date.data)
         installments.append(installment)
+    for removed in existing.values():
+        if removed.is_paid():
+            raise InstallmentChangeError(PAID_INSTALLMENT_REMOVED_MESSAGE.format(item=item_name, due=_due_label(removed)))
     return installments
 
 
@@ -354,27 +371,14 @@ def _build_items(form, organization, existing_items, user):
         item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or [])
         item.reminder_offsets_days = data.get_reminder_offsets_days()
         item.custom_reminder_dates = data.get_custom_reminder_dates()
-        item.installments = _build_installments(data.installments, item.installments, user)
+        item.installment_mode = bool(data.installment_mode.data)
+        if item.installment_mode:
+            item.installments = _build_installments(item.name, data.installments, item.installments)
+        else:
+            item.installments = _single_installment(item.name, list(item.installments), item.end_date)
         item.last_updated_by = user
         items.append(item)
     return items, list(existing.values())
-
-
-def find_duplicate_payment_numbers(organization, items, procurement=None) -> list[str]:
-    """เลขที่เอกสารของงวดต้องไม่ซ้ำภายในหน่วยงาน (ซ้ำข้ามหน่วยงานได้)"""
-    numbers = [
-        installment.payment_number for item in items for installment in item.installments if installment.payment_number
-    ]
-    duplicates = {number for number, count in Counter(numbers).items() if count > 1}
-    if numbers:
-        others = models.ProcurementItem.objects(organization=organization, installments__payment_number__in=numbers)
-        if procurement and procurement.pk:
-            others = others.filter(procurement__ne=procurement)
-        for item in others.only("installments"):
-            duplicates.update(
-                installment.payment_number for installment in item.installments if installment.payment_number in numbers
-            )
-    return sorted(duplicates)
 
 
 def _apply_header(form, procurement, user) -> None:
@@ -385,30 +389,12 @@ def _apply_header(form, procurement, user) -> None:
     procurement.last_updated_by = user
 
 
-def _save_image(form, procurement) -> None:
-    image = form.image.data
-    if image and getattr(image, "filename", None):
-        if procurement.image:
-            procurement.image.replace(image, filename=image.filename, content_type=image.content_type)
-        else:
-            procurement.image.put(image, filename=image.filename, content_type=image.content_type)
-        procurement.save()
-
-
-def _duplicate_payment_error(organization, items, procurement=None) -> str | None:
-    duplicates = find_duplicate_payment_numbers(organization, items, procurement)
-    if not duplicates:
-        return None
-    return DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(numbers=", ".join(duplicates))
-
-
 def _save_form(form, organization, procurement, existing_items, member):
     user = current_user._get_current_object()
-    items, removed_items = _build_items(form, organization, existing_items, user)
-
-    duplicate_error = _duplicate_payment_error(organization, items, procurement)
-    if duplicate_error:
-        return _render_form(form, organization, member, procurement, [duplicate_error])
+    try:
+        items, removed_items = _build_items(form, organization, existing_items, user)
+    except InstallmentChangeError as error:
+        return _render_form(form, organization, member, procurement, [str(error)])
 
     _apply_header(form, procurement, user)
     try:
@@ -418,7 +404,6 @@ def _save_form(form, organization, procurement, existing_items, member):
     except me.ValidationError as error:
         return _render_form(form, organization, member, procurement, [error.message])
 
-    _save_image(form, procurement)
     flash("บันทึก MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
@@ -497,9 +482,6 @@ def renew(procurement_id):
 
     user = current_user._get_current_object()
     items, _ = _build_items(form, organization, [], user)
-    duplicate_error = _duplicate_payment_error(organization, items)
-    if duplicate_error:
-        return _render_form(form, organization, member, form_errors=[duplicate_error], renew_from=old)
 
     new = models.Procurement(organization=organization, status="active", created_by=user)
     _apply_header(form, new, user)
@@ -511,7 +493,6 @@ def renew(procurement_id):
     except me.ValidationError as error:
         return _render_form(form, organization, member, form_errors=[error.message], renew_from=old)
 
-    _save_image(form, new)
     flash("ต่ออายุ MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=new.id, organization_id=organization.id))
 
@@ -568,44 +549,3 @@ def image(procurement_id, filename):
         download_name=procurement.image.filename,
         mimetype=procurement.image.content_type,
     )
-
-
-@module.route("/<procurement_id>/edit_image", methods=["GET", "POST"])
-@login_required
-def edit_image(procurement_id):
-    organization = g.organization
-    if not organization:
-        abort(404)
-    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
-    if not ma_permissions.can_edit_procurement(procurement, organization):
-        flash(NO_EDIT_PERMISSION_MESSAGE, "error")
-        return redirect(
-            url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
-        )
-
-    form = forms.procurement.EditImageForm(obj=procurement)
-    if not form.validate_on_submit():
-        return render_template(
-            "/procurement/products/edit_image.html",
-            form=form,
-            procurement=procurement,
-            organization=organization,
-        )
-
-    # Save new image if uploaded
-    if form.image.data:
-        if procurement.image:
-            procurement.image.replace(
-                form.image.data,
-                filename=form.image.data.filename,
-                content_type=form.image.data.content_type,
-            )
-        else:
-            procurement.image.put(
-                form.image.data,
-                filename=form.image.data.filename,
-                content_type=form.image.data.content_type,
-            )
-        procurement.last_updated_by = current_user._get_current_object()
-        procurement.save()
-    return redirect(url_for("procurement.products.index", organization_id=organization.id))

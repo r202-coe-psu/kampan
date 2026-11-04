@@ -1,5 +1,5 @@
 {# ส่วนประกอบของฟอร์มสร้าง / แก้ไข MA (หัวสัญญา → รายการย่อย → งวด) #}
-{% from '/base/html-renderer.html' import date_field %}
+{% from '/base/html-renderer.html' import date_field, dropdown_select %}
 
 {% macro field_errors(field) %}
   {% for error in field.errors %}
@@ -19,21 +19,14 @@
   </fieldset>
 {% endmacro %}
 
+{# เลือกจากรายการ: DaisyUI dropdown (ไม่ใช้ <select> ของเบราว์เซอร์) #}
 {% macro select_field(field, required=False, wrapper_class="") %}
-  <fieldset class="fieldset w-full {{ wrapper_class }}">
-    <legend class="fieldset-legend">
-      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
-    </legend>
-    <label class="select w-full validator{{ ' select-error' if field.errors else '' }}">
-      {{ field(class_="w-full bg-transparent bg-none appearance-none outline-none border-none", **kwargs) }}
-    </label>
-    {{ field_errors(field) }}
-  </fieldset>
+  {{ dropdown_select(field, required=required, wrapper_class=wrapper_class) }}
 {% endmacro %}
 
-{# วันที่ในฟอร์ม MA: ใช้ date_field (Cally) ของระบบ ไม่ใช้ <input type="date"> ของเบราว์เซอร์ #}
+{# วันที่ในฟอร์ม MA: date_field (Cally) แสดงปี พ.ศ. ค่าที่ส่งกลับเป็น ISO ค.ศ. ไม่ใช้ <input type="date"> #}
 {% macro date_picker(field, required=False, clearable=False) %}
-  {{ date_field(field, required=required, clearable=clearable, auto_init=False, show_errors=False) }}
+  {{ date_field(field, required=required, clearable=clearable, auto_init=False, show_errors=False, buddhist=True) }}
   {{ field_errors(field) }}
 {% endmacro %}
 
@@ -120,31 +113,17 @@
 {% endmacro %}
 
 {% macro installment_row(f) %}
-  <tr class="installment-row">
-    <td class="installment-number font-semibold text-base-content/70 align-top pt-5"></td>
-    <td class="align-top min-w-36">
+  <div class="installment-row flex items-start gap-2">
+    <span class="installment-number font-semibold text-base-content/70 w-8 shrink-0 pt-2 text-right"></span>
+    <div class="flex-1 min-w-0 max-w-64">
       {{ f.installment_id() }}
-      {{ date_field(f.due_date, compact=True, hide_label=True, aria_label="วันครบกำหนด", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-due") }}
+      {{ date_field(f.due_date, compact=True, hide_label=True, aria_label="วันครบกำหนด", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-due", buddhist=True) }}
       {{ field_errors(f.due_date) }}
-    </td>
-    <td class="align-top min-w-36">
-      {{ date_field(f.paid_date, compact=True, hide_label=True, aria_label="วันที่จ่าย", placeholder_text="ไม่บังคับ", clearable=True, fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-paid") }}
-      {{ field_errors(f.paid_date) }}
-    </td>
-    <td class="align-top min-w-32">
-      {{ f.payment_number(class_="input input-sm w-full" ~ (" input-error" if f.payment_number.errors else ""), placeholder="เลขที่เอกสาร", **{"aria-label": "เลขที่เอกสาร"}) }}
-      {{ field_errors(f.payment_number) }}
-    </td>
-    <td class="align-top min-w-32">
-      {{ f.paid_amount(class_="input input-sm w-full" ~ (" input-error" if f.paid_amount.errors else ""), step="0.01", min="0", placeholder="ไม่บังคับ", **{"aria-label": "ยอดที่จ่ายจริง"}) }}
-      {{ field_errors(f.paid_amount) }}
-    </td>
-    <td class="align-top">
-      <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-installment" title="ลบงวด">
-        <i class="ph ph-trash text-lg"></i>
-      </button>
-    </td>
-  </tr>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-installment" title="ลบงวด" aria-label="ลบงวดนี้">
+      <i class="ph ph-trash text-lg"></i>
+    </button>
+  </div>
 {% endmacro %}
 
 {# หัวข้อของแต่ละส่วนในการ์ดรายการย่อย #}
@@ -225,46 +204,29 @@
         {{ field_errors(f.responsible_by) }}
       </section>
 
-      {# 3. งวด #}
-      <section class="flex flex-col gap-4 border-t border-base-300 pt-6">
-        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
-          {{ section_heading("ph-calendar-dots", "งวด", "งวดไม่แบ่งเงิน ใช้จำว่าจ่ายไปแล้วกี่งวด ต้องมีอย่างน้อย 1 งวด") }}
-          <div class="flex flex-wrap items-center gap-2">
-            <label class="flex items-center gap-2 text-sm">
-              จำนวน
-              <input type="number" min="1" max="120" value="{{ f.installments.entries|length or 1 }}" class="input input-sm w-20 generate-count" aria-label="จำนวนงวดที่จะสร้าง" />
-              งวด
-            </label>
-            <button type="button" class="btn btn-sm btn-outline btn-secondary" data-action="generate-installments"
-                    title="แทนที่งวดที่ยังไม่จ่ายด้วยวันครบกำหนดที่ห่างเท่า ๆ กันในช่วงวันที่ของรายการย่อย">
-              <i class="ph ph-magic-wand"></i> สร้างวันครบกำหนดเท่า ๆ กัน
-            </button>
+      {# 3. การจ่ายเงิน: ปิด = จ่ายครั้งเดียวก่อนหมดอายุ (ระบบสร้างงวดเดียว ครบกำหนดวันสิ้นสุด) · เปิด = กรอกวันครบกำหนดแต่ละงวด #}
+      <section class="installment-section flex flex-col gap-4 border-t border-base-300 pt-6" data-installment-section>
+        {{ section_heading("ph-calendar-dots", "การจ่ายเงิน", "งวดไม่แบ่งเงิน ใช้จำและเตือนว่าต้องจ่ายวันไหน · วันที่จ่ายจริงกดบันทึกที่หน้ารายละเอียดหลังสร้างแล้ว") }}
+        <label class="flex items-center gap-3 cursor-pointer w-fit">
+          {{ f.installment_mode(class_="toggle toggle-primary installment-toggle") }}
+          <span class="text-sm font-medium text-base-content">{{ f.installment_mode.label.text }}</span>
+        </label>
+        {{ field_errors(f.installment_mode) }}
+        <p class="installment-off-hint text-sm text-base-content/70">
+          ไม่แบ่งงวด: จ่ายครั้งเดียวก่อนสิ้นสุดสัญญา ระบบตั้งวันครบกำหนดเป็นวันที่สิ้นสุดของรายการย่อยให้เอง
+        </p>
+        <div class="installment-on flex flex-col gap-3">
+          <div class="installment-rows flex flex-col gap-2">
+            {% for entry in f.installments %}
+              {{ installment_row(entry.form) }}
+            {% endfor %}
           </div>
+          {{ field_errors(f.installments) }}
+          <p class="installment-error text-error text-sm hidden"></p>
+          <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-installment">
+            <i class="ph ph-plus-circle"></i> เพิ่มงวด
+          </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>งวดที่</th>
-                <th>วันครบกำหนด <span class="text-error">*</span></th>
-                <th>วันที่จ่าย</th>
-                <th>เลขที่เอกสาร</th>
-                <th>ยอดที่จ่ายจริง (บาท)</th>
-                <th><span class="sr-only">ลบ</span></th>
-              </tr>
-            </thead>
-            <tbody class="installment-rows">
-              {% for entry in f.installments %}
-                {{ installment_row(entry.form) }}
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {{ field_errors(f.installments) }}
-        <p class="installment-error text-error text-sm hidden"></p>
-        <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-installment">
-          <i class="ph ph-plus-circle"></i> เพิ่มงวด
-        </button>
       </section>
 
       {# 4. ยี่ห้อ / รุ่น / รายละเอียด: เพิ่มแถวได้ไม่จำกัด (สูงสุด 100) แสดงเสมอ ไม่พับ #}

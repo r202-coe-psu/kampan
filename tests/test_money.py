@@ -100,7 +100,6 @@ def test_money_places_validator(app, raw, valid):
         (lambda: forms.procurement.ProcurementHeaderForm(), "total_amount"),
         (lambda: forms.procurement.ProcurementItemForm(request.form), "amount"),
         (lambda: forms.procurement.ProcurementItemForm(request.form), "unit_price"),
-        (lambda: forms.procurement.InstallmentForm(request.form), "paid_amount"),
         (lambda: forms.procurement.InstallmentPaymentForm(), "paid_amount"),
         (lambda: forms.inventories.InventoryForm(), "price"),
         (lambda: forms.mas.MASForm(), "amount"),

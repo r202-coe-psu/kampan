@@ -231,8 +231,35 @@ class ConcurrentEditConflict(Exception):
     """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
 
 
+PAY_LOG_ACTIONS = [("paid", "บันทึกจ่าย"), ("unpaid", "ยกเลิกการจ่าย")]
+
+
+class PayLogEntry(me.EmbeddedDocument):
+    """ประวัติการกดจ่าย / ยกเลิกจ่ายของงวด (เพิ่มทุกครั้งที่กด ไม่แก้ไม่ลบ)"""
+
+    action = me.StringField(choices=PAY_LOG_ACTIONS, required=True)
+    pressed_at = me.DateTimeField(required=True, default=datetime.datetime.now)  # เวลาที่กดปุ่ม
+    # วันที่จ่ายที่บันทึก (action=unpaid: วันที่จ่ายเดิมที่ถูกยกเลิก)
+    paid_date = me.DateTimeField()
+    by = me.ReferenceField("User", dbref=True)
+    payment_number = me.StringField(max_length=128)
+    paid_amount = me.DecimalField(
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
+
+    def get_by_id(self):
+        return _reference_id(self, "by")
+
+    def get_action_label(self) -> str:
+        return dict(PAY_LOG_ACTIONS).get(self.action, self.action or "-")
+
+
 class Installment(me.EmbeddedDocument):
-    """งวดของรายการย่อย ไม่มีการแบ่งเงิน มีแค่วันครบกำหนดและสถานะการจ่าย"""
+    """งวดของรายการย่อย ไม่มีการแบ่งเงิน มีแค่วันครบกำหนดและสถานะการจ่าย
+    (ผู้ใช้กรอกแค่วันครบกำหนด ส่วนการจ่ายบันทึกด้วยปุ่ม "จ่ายแล้ว" ที่หน้ารายละเอียด)"""
 
     _id = me.ObjectIdField(required=True, default=ObjectId)
     due_date = me.DateTimeField(required=True)
@@ -245,6 +272,8 @@ class Installment(me.EmbeddedDocument):
         precision=2,
         rounding=decimal.ROUND_HALF_EVEN,
     )
+    # ประวัติการกดจ่าย / ยกเลิกจ่าย (เก่าสุดก่อน)
+    pay_log = me.EmbeddedDocumentListField(PayLogEntry)
 
     def is_paid(self) -> bool:
         return self.paid_date is not None
@@ -325,6 +354,9 @@ class ProcurementItem(me.Document):
     # วันที่เตือนเจาะจง (เก็บ ค.ศ. เที่ยงคืน กรอกเป็น พ.ศ. ในฟอร์ม)
     custom_reminder_dates = me.ListField(me.DateTimeField(), default=list)
 
+    # แบ่งจ่ายเป็นงวดไหม: False = จ่ายครั้งเดียวก่อนหมดอายุ (งวดเดียว due_date = end_date ระบบตั้งให้)
+    # None = เอกสารที่สร้างก่อนมี field นี้ ใช้จำนวนงวด (>1 = แบ่งงวด) ดู pays_in_installments
+    installment_mode = me.BooleanField(default=None)
     installments = me.EmbeddedDocumentListField(Installment)
 
     # Audit fields
@@ -354,6 +386,11 @@ class ProcurementItem(me.Document):
 
     def get_reminder_kind_label(self) -> str:
         return dict(REMINDER_KIND_CHOICES).get(self.reminder_kind, self.reminder_kind or "-")
+
+    def pays_in_installments(self) -> bool:
+        if self.installment_mode is not None:
+            return bool(self.installment_mode)
+        return self.get_installment_count() > 1
 
     def get_sorted_installments(self) -> list[Installment]:
         return sorted(self.installments, key=lambda installment: installment.due_date or datetime.datetime.max)

@@ -16,7 +16,7 @@
       <h1 class="text-xl md:text-2xl font-bold text-base-content">
         {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่ม MA ใหม่") }}
       </h1>
-      <p class="text-base-content/60 text-sm">กรอกหัวสัญญา แล้วเพิ่มรายการย่อยและงวดของแต่ละรายการ</p>
+      <p class="text-base-content/60 text-sm">กรอกหัวสัญญา แล้วเพิ่มรายการย่อย และเลือกว่าแต่ละรายการจ่ายครั้งเดียวหรือแบ่งจ่ายเป็นงวด</p>
     </div>
   </div>
 
@@ -29,12 +29,12 @@
           <a class="link font-semibold" href="{{ url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) }}">{{ renew_from.name }}</a>
           (เลขที่ ม.อ.เบิกจ่าย {{ renew_from.psu_disbursement_number or "-" }})
         </p>
-        <p>ข้อมูลหัวสัญญาและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และงวดใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น "ต่ออายุแล้ว"</p>
+        <p>ข้อมูลหัวสัญญาและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และเลือกการจ่ายเงินใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น "ต่ออายุแล้ว"</p>
       </div>
     </div>
   {% endif %}
 
-  <form method="POST" action="" enctype="multipart/form-data" class="space-y-8" id="ma_form" novalidate>
+  <form method="POST" action="" class="space-y-8" id="ma_form" novalidate>
     {{ form.hidden_tag() }}
 
     {% if form_errors %}
@@ -58,14 +58,6 @@
           <legend class="fieldset-legend">{{ form.total_amount.label.text }} <span class="text-error">*</span></legend>
           {{ form.total_amount(class_="input w-full" ~ (" input-error" if form.total_amount.errors else ""), id="total_amount", step="0.01", min="0", inputmode="decimal") }}
           {{ field_errors(form.total_amount) }}
-        </fieldset>
-        <fieldset class="fieldset w-full md:col-span-2">
-          <legend class="fieldset-legend">{{ form.image.label.text }} (PNG, JPG)</legend>
-          {{ form.image(class_="file-input w-full", accept="image/png,image/jpeg") }}
-          {{ field_errors(form.image) }}
-          {% if is_edit and procurement.image %}
-            <p class="text-xs text-base-content/60 mt-1">มีรูปภาพอยู่แล้ว เลือกไฟล์ใหม่เมื่อต้องการเปลี่ยน</p>
-          {% endif %}
         </fieldset>
       </div>
     </section>
@@ -118,7 +110,6 @@
     const itemsContainer = document.getElementById('items_container');
     const itemTemplate = document.getElementById('item_template');
     const installmentTemplate = document.getElementById('installment_template');
-    const DAY_MS = 86400000;
 
     function maxIndex(pattern) {
       let max = -1;
@@ -192,20 +183,23 @@
     function addItem() {
       const html = itemTemplate.innerHTML.replaceAll('__I__', String(nextItemIndex++));
       itemsContainer.insertAdjacentHTML('beforeend', html);
-      initDatePickersIn(itemsContainer.lastElementChild);
+      const card = itemsContainer.lastElementChild;
+      initDatePickersIn(card);
+      initDropdownSelectsIn(card);
+      syncInstallmentMode(card);
       showError(document.getElementById('items_error'), '');
       renumber();
       updateSum();
     }
 
-    function addInstallment(card, dueDate) {
+    function addInstallment(card) {
       const html = installmentTemplate.innerHTML
         .replaceAll('items-__I__-', card.dataset.prefix)
         .replaceAll('__J__', String(nextInstallmentIndex++));
-      const tbody = card.querySelector('.installment-rows');
-      tbody.insertAdjacentHTML('beforeend', html);
-      initDatePickersIn(tbody.lastElementChild);
-      if (dueDate) setDatePickerValue(tbody.lastElementChild.querySelector('.installment-due'), dueDate);
+      const rows = card.querySelector('.installment-rows');
+      rows.insertAdjacentHTML('beforeend', html);
+      initDatePickersIn(rows.lastElementChild);
+      renumber();
       showError(card.querySelector('.installment-error'), '');
     }
 
@@ -222,41 +216,15 @@
       rows.lastElementChild.querySelector('input').focus();
     }
 
-    // สูตรเดียวกับ even_due_dates ใน kampan/models/procurement.py
-    function evenDueDates(startValue, endValue, count) {
-      const start = Date.parse(startValue + 'T00:00:00Z');
-      const end = Date.parse(endValue + 'T00:00:00Z');
-      if (isNaN(start) || isNaN(end) || end < start || !(count >= 1)) return [];
-      const totalDays = Math.round((end - start) / DAY_MS) + 1;
-      const perPeriod = Math.floor(totalDays / count);
-      const remainder = totalDays % count;
-      const dates = [];
-      let current = start;
-      for (let i = 0; i < count; i++) {
-        const days = perPeriod + (i < remainder ? 1 : 0);
-        const due = Math.min(current + (Math.max(days, 1) - 1) * DAY_MS, end);
-        dates.push(new Date(due).toISOString().slice(0, 10));
-        current = due + DAY_MS;
-      }
-      return dates;
-    }
-
-    function generateInstallments(card) {
-      const prefix = card.dataset.prefix;
-      const start = form.querySelector('[name="' + prefix + 'start_date"]').value;
-      const end = form.querySelector('[name="' + prefix + 'end_date"]').value;
-      const count = parseInt(card.querySelector('.generate-count').value, 10);
-      const dates = evenDueDates(start, end, count);
-      const error = card.querySelector('.installment-error');
-      if (!dates.length || count > 120) {
-        showError(error, 'กรุณาระบุวันที่เริ่มต้น-สิ้นสุดของรายการย่อย และจำนวนงวด 1-120 งวด');
-        return;
-      }
-      // งวดที่บันทึกจ่ายแล้วเก็บไว้ แทนที่เฉพาะงวดที่ยังไม่จ่าย
-      card.querySelectorAll('.installment-row').forEach(function (row) {
-        if (!row.querySelector('.installment-paid').value) row.remove();
-      });
-      dates.forEach(function (date) { addInstallment(card, date); });
+    // เปิด/ปิด "แบ่งจ่ายเป็นงวด": ปิดแล้วซ่อนตารางงวดและ disable ช่องงวด (ไม่ส่งไปกับฟอร์ม)
+    // ระบบสร้างงวดเดียวจากวันสิ้นสุดเอง · เปิดแล้วไม่มีแถว ให้เพิ่มแถวแรกให้
+    function syncInstallmentMode(card) {
+      const on = card.querySelector('.installment-toggle').checked;
+      const panel = card.querySelector('.installment-on');
+      panel.classList.toggle('hidden', !on);
+      card.querySelector('.installment-off-hint').classList.toggle('hidden', on);
+      panel.querySelectorAll('input, button[data-action]').forEach(function (control) { control.disabled = !on; });
+      if (on && !card.querySelector('.installment-row')) addInstallment(card);
       renumber();
     }
 
@@ -303,9 +271,6 @@
           showError(card.querySelector('.sub-item-error'), '');
           break;
         }
-        case 'generate-installments':
-          generateInstallments(card);
-          break;
         case 'add-list-row': {
           const field = button.closest('.list-field');
           const html = field.querySelector('.list-row-template').innerHTML.replaceAll('__ROW__', String(nextListRowIndex++));
@@ -320,14 +285,13 @@
       }
     });
 
-    // กด Enter ในช่องค้นหา / ช่องจำนวนงวดต้องไม่ส่งฟอร์มทั้งหน้า (เดิมทำให้หน้าโหลดใหม่และเด้งไปส่วนล่าง)
+    // กด Enter ในช่องค้นหาผู้รับผิดชอบต้องไม่ส่งฟอร์มทั้งหน้า (เดิมทำให้หน้าโหลดใหม่และเด้งไปส่วนล่าง)
     form.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' && event.target.matches('.member-filter, .generate-count')) {
-        event.preventDefault();
-        if (event.target.classList.contains('generate-count')) {
-          generateInstallments(event.target.closest('.ma-item'));
-        }
-      }
+      if (event.key === 'Enter' && event.target.matches('.member-filter')) event.preventDefault();
+    });
+
+    form.addEventListener('change', function (event) {
+      if (event.target.classList.contains('installment-toggle')) syncInstallmentMode(event.target.closest('.ma-item'));
     });
 
     form.addEventListener('input', function (event) {
@@ -343,6 +307,8 @@
     });
 
     initDatePickersIn(form);
+    initDropdownSelectsIn(form);
+    itemsContainer.querySelectorAll('.ma-item').forEach(syncInstallmentMode);
     renumber();
     updateSum();
   })();

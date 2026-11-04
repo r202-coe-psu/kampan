@@ -723,9 +723,13 @@ def save_ma_db(document, ma, user_id):
                 sub_items=_ma_row_sub_items(row),
                 responsible_by=_find_ma_members(organization, row.get("responsible_by")),
                 reminder_kind="ma",
+                # จำนวนงวด > 1 = แบ่งจ่ายเป็นงวด (วันครบกำหนดห่างเท่า ๆ กัน) ไม่เช่นนั้นจ่ายครั้งเดียวในวันสิ้นสุด
+                installment_mode=period > 1,
                 installments=[
                     models.Installment(due_date=datetime.datetime.combine(due_date, datetime.time.min))
-                    for due_date in models.procurement.even_due_dates(start_date, end_date, period)
+                    for due_date in (
+                        models.procurement.even_due_dates(start_date, end_date, period) if period > 1 else [end_date]
+                    )
                 ],
                 created_by=processed_user,
                 last_updated_by=processed_user,

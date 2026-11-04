@@ -67,7 +67,19 @@ def index(procurement_id):
         reminder_logs=_reminder_logs_by_item(procurement, organization),
         manual_log_form=forms.procurement.ManualReminderLogForm(formdata=None),
         offset_labels=dict(models.REMINDER_OFFSET_CHOICES),
+        pay_log_users=_pay_log_users(items),
     )
+
+
+def _pay_log_users(items) -> dict:
+    """ผู้กดจ่ายในประวัติของทุกงวด {user_id: User} ด้วย query เดียว (ไม่ dereference ทีละรายการ)"""
+    user_ids = {
+        entry.get_by_id()
+        for item in items
+        for installment in item._data.get("installments") or []
+        for entry in installment._data.get("pay_log") or []
+    } - {None}
+    return {user.id: user for user in models.User.objects(id__in=list(user_ids))} if user_ids else {}
 
 
 def _reminder_logs_by_item(procurement, organization) -> dict:
@@ -108,9 +120,13 @@ def _payment_number_taken(organization, number: str, item, installment) -> bool:
     return False
 
 
-def _update_installment(organization, item, installment, **values) -> bool:
-    """แก้งวดเดียวแบบ atomic ด้วย positional operator (ไม่เขียนทับงวด / รายการย่อยที่คนอื่นแก้พร้อมกัน)"""
+def _update_installment(organization, item, installment, log_entry, **values) -> bool:
+    """แก้งวดเดียวแบบ atomic ด้วย positional operator (ไม่เขียนทับงวด / รายการย่อยที่คนอื่นแก้พร้อมกัน)
+    และต่อประวัติการกด (``log_entry``) ในการเขียนครั้งเดียวกัน"""
     updates = {f"set__installments__S__{name}": value for name, value in values.items()}
+    # ต่อประวัติด้วย $set ทั้ง array (ไม่ใช้ $push แบบ positional เพราะ mongomock ของเทสต์ไม่รองรับ)
+    # กดพร้อมกันบนงวดเดียวกันอาจเหลือประวัติแค่รายการเดียว สถานะจ่ายของงวดยังถูกต้อง
+    updates["set__installments__S__pay_log"] = [*installment.pay_log, log_entry]
     return bool(
         models.ProcurementItem.objects(
             id=item.id,
@@ -146,12 +162,23 @@ def pay_installment(procurement_id, item_id, installment_id):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
         return redirect(detail_url)
 
+    user = current_user._get_current_object()
+    paid_date = datetime.datetime.combine(form.paid_date.data, datetime.time.min)
+    log_entry = models.PayLogEntry(
+        action="paid",
+        pressed_at=datetime.datetime.now(),
+        paid_date=paid_date,
+        by=user,
+        payment_number=payment_number,
+        paid_amount=form.paid_amount.data,
+    )
     updated = _update_installment(
         organization,
         item,
         installment,
-        paid_date=datetime.datetime.combine(form.paid_date.data, datetime.time.min),
-        paid_by=current_user._get_current_object(),
+        log_entry,
+        paid_date=paid_date,
+        paid_by=user,
         payment_number=payment_number,
         paid_amount=form.paid_amount.data,
     )
@@ -176,10 +203,19 @@ def unpay_installment(procurement_id, item_id, installment_id):
         flash(INVALID_REQUEST_MESSAGE, "error")
         return redirect(detail_url)
 
+    log_entry = models.PayLogEntry(
+        action="unpaid",
+        pressed_at=datetime.datetime.now(),
+        paid_date=installment.paid_date,
+        by=current_user._get_current_object(),
+        payment_number=installment.payment_number,
+        paid_amount=installment.paid_amount,
+    )
     updated = _update_installment(
         organization,
         item,
         installment,
+        log_entry,
         paid_date=None,
         paid_by=None,
         payment_number=None,
