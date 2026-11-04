@@ -161,7 +161,7 @@
             <i class="ph ph-pencil-simple"></i>
             แก้ไข
           </a>
-          {% if item.status == 'pending' %}
+          {% if item.status in ['pending', 'renewal-requested'] %}
           <button type="button" onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
             class="btn btn-error btn-sm flex-1 text-white">
             <i class="ph ph-x"></i>
@@ -183,7 +183,7 @@
       {% endif %}
     </div>
 
-    {% if can_change_renewal(item) and item.status == 'pending' %}
+    {% if can_change_renewal(item) and item.status in ['pending', 'renewal-requested'] %}
     <!-- Don't Renew Confirmation Modal -->
     <dialog id="delete_modal_{{ item.id }}" class="modal">
       <div class="modal-box">

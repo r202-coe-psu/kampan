@@ -12,9 +12,9 @@
       <th class="font-semibold text-base text-center w-48">ผู้รับผิดชอบ / ฝ่าย</th>
       <th class="font-semibold text-base text-center w-36">ผู้ให้บริการ</th>
       <th class="font-semibold text-base text-center w-28">ยอดเงินรวม</th>
-      <th class="font-semibold text-base text-center w-36">การจ่ายเงิน</th>
+      <th class="font-semibold text-base text-center w-44">การจ่ายเงิน</th>
       <th class="font-semibold text-base text-center w-32">สถานะ</th>
-      <th class="font-semibold text-base text-center w-12"></th>
+      <th class="font-semibold text-base text-center w-16"></th>
     </tr>
   </thead>
   <tbody>
@@ -23,6 +23,7 @@
     {% set badge = status_badges.get(status, ("bg-base-300 text-base-content", "border-l-base-300")) %}
     {% set paid_count, installment_count = item.get_installment_progress() %}
     {% set next_item, next_installment = item.get_next_unpaid() %}
+    {% set sub_items_list = item.get_items() %}
     <tr class="border-l-4 {{ badge[1] }} hover:bg-base-200/40 transition-colors">
       <td>
         <div class="text-xs text-base-content/60">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</div>
@@ -32,7 +33,17 @@
           {% for label in item.get_category_labels() %}
             <span class="badge badge-sm badge-neutral font-medium">{{ label }}</span>
           {% endfor %}
-          <span class="badge badge-sm badge-ghost">{{ item.get_items()|length }} รายการย่อย</span>
+        </div>
+        <div class="mt-2">
+          <button type="button"
+                  onclick="toggleMaSubItems('{{ item.id }}', this)"
+                  class="btn btn-ghost btn-xs gap-1 text-primary hover:bg-primary/10 border border-primary/20"
+                  id="btn_toggle_{{ item.id }}"
+                  aria-expanded="false"
+                  aria-controls="sub_items_{{ item.id }}">
+            <i class="ph ph-caret-right transition-transform duration-200" id="caret_{{ item.id }}"></i>
+            <span>รายการย่อย ({{ sub_items_list|length }})</span>
+          </button>
         </div>
       </td>
       <td class="text-center">
@@ -72,26 +83,40 @@
         </span>
       </td>
       <td class="text-center">
-        <div class="flex flex-col items-center gap-1">
-          <div class="badge {{ badge[0] }} badge-lg font-semibold whitespace-nowrap px-3">
-            งวด {{ paid_count }}/{{ installment_count }}
-          </div>
-          {% if next_installment %}
-            <div class="text-sm text-base-content/60">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+        <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
+          {% if installment_count == 0 %}
+            <span class="badge badge-ghost badge-sm whitespace-nowrap">ไม่มีงวด</span>
+          {% elif paid_count == installment_count %}
+            <span class="badge badge-success badge-lg font-semibold whitespace-nowrap px-3 text-white gap-1 shadow-sm">
+              <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
+            </span>
+            <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
+          {% else %}
+            <div class="badge {{ badge[0] }} badge-lg font-semibold whitespace-nowrap px-3">
+              งวด {{ paid_count }}/{{ installment_count }}
+            </div>
+            {% if next_installment %}
+              <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+            {% endif %}
           {% endif %}
+          <span class="text-[11px] text-primary hover:underline flex items-center gap-0.5 mt-0.5">
+            <i class="ph ph-list-bullets"></i> ดูสถานะการจ่าย
+          </span>
         </div>
       </td>
       <td class="text-center">
         {% if item.status == "pending" %}
         <span class="badge badge-warning badge-lg whitespace-nowrap px-3">รอตรวจสอบ</span>
         {% elif item.status == "disactive" %}
-        <span class="badge badge-error badge-lg whitespace-nowrap px-3">หยุดต่ออายุ</span>
+        <span class="badge badge-error badge-lg whitespace-nowrap px-3">ไม่ต่ออายุ</span>
         {% elif item.status == "active" %}
         <span class="badge badge-success badge-lg whitespace-nowrap px-3">กำลังใช้งาน</span>
         {% elif item.status == "renewed" %}
         <span class="badge badge-neutral badge-lg whitespace-nowrap px-3">ต่ออายุแล้ว</span>
+        {% elif item.status == "renewal-requested" %}
+        <span class="badge badge-info badge-lg whitespace-nowrap px-3 text-white">ขอต่ออายุ</span>
         {% else %}
-        <span class="badge badge-info badge-lg whitespace-nowrap px-3">ยื่นขอต่ออายุ</span>
+        <span class="badge badge-info badge-lg whitespace-nowrap px-3">{{ item.status }}</span>
         {% endif %}
       </td>
       <td class="text-center">
@@ -103,12 +128,22 @@
             </a>
           </div>
           {% if can_edit(item) and not item.is_renewed() %}
-          <div class="tooltip tooltip-left" data-tip="ต่ออายุ (สร้าง MA ใหม่จากรายการนี้)">
-            <a href="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
-               class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ต่ออายุ MA">
-              <i class="ph ph-arrows-clockwise text-lg"></i>
-            </a>
-          </div>
+            {% if item.status == "renewal-requested" %}
+            <div class="tooltip tooltip-left" data-tip="ยื่นขอต่ออายุแล้ว (คลิกเพื่อดูรายการขอต่ออายุ)">
+              <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                 class="btn btn-info btn-sm btn-circle text-white shadow-sm" aria-label="ยื่นขอต่ออายุแล้ว">
+                <i class="ph ph-clock-countdown text-lg"></i>
+              </a>
+            </div>
+            {% else %}
+            <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
+              <button type="button"
+                      onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
+                      class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ขอต่ออายุ MA">
+                <i class="ph ph-arrows-clockwise text-lg"></i>
+              </button>
+            </div>
+            {% endif %}
           {% endif %}
           {% if can_edit(item) %}
           <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
@@ -121,6 +156,144 @@
         </div>
       </td>
     </tr>
+
+    <!-- Expandable Sub-items and Payment Status Row -->
+    <tr id="sub_items_{{ item.id }}" class="hidden bg-base-200/50 border-l-4 {{ badge[1] }}">
+      <td colspan="8" class="p-3 md:p-5">
+        <div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-base-200 pb-2">
+            <div class="flex items-center gap-2">
+              <i class="ph ph-list-checks text-primary text-xl"></i>
+              <span class="font-semibold text-base">รายการย่อยและการจ่ายเงิน</span>
+              <span class="badge badge-neutral badge-sm">{{ sub_items_list|length }} รายการ</span>
+            </div>
+            <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+               class="btn btn-ghost btn-xs text-primary gap-1">
+              <i class="ph ph-arrow-square-out"></i> หน้ารายละเอียดเต็ม
+            </a>
+          </div>
+
+          {% for p_item in sub_items_list %}
+          <div class="border border-base-200 rounded-lg p-3 bg-base-100 space-y-2">
+            <!-- Sub-item header -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="badge badge-neutral badge-sm">{{ loop.index }}</span>
+                <span class="font-semibold text-base text-base-content">{{ p_item.name }}</span>
+                <span class="badge badge-outline badge-sm">{{ p_item.get_category_label() }}</span>
+              </div>
+              <div class="text-sm">
+                ยอดเงิน: <span class="font-semibold text-primary">{{ p_item.amount | format_amount }} บาท</span>
+              </div>
+            </div>
+
+            <!-- Item Details: S/N, Asset Code, Brand, Model -->
+            {% if p_item.sub_items %}
+            <div class="text-xs text-base-content/80 flex flex-wrap gap-x-4 gap-y-1 bg-base-200/50 p-2 rounded">
+              {% for row in p_item.sub_items %}
+                <div class="flex items-center gap-1.5">
+                  {% if row.brand or row.model_name %}
+                    <span class="font-medium text-base-content/70">{{ row.brand }} {{ row.model_name }}</span>
+                  {% endif %}
+                  {% if row.serial_number %}
+                    <span class="badge badge-ghost badge-xs font-mono">S/N: {{ row.serial_number }}</span>
+                  {% endif %}
+                  {% if row.asset_code %}
+                    <span class="badge badge-ghost badge-xs font-mono">ครุภัณฑ์: {{ row.asset_code }}</span>
+                  {% endif %}
+                  {% if row.details and not row.serial_number and not row.asset_code %}
+                    <span class="text-base-content/60">{{ row.details }}</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Installments Table for this sub-item -->
+            <div class="overflow-x-auto mt-2">
+              <table class="table table-xs w-full bg-base-100">
+                <thead class="bg-base-200/60 text-base-content/70">
+                  <tr>
+                    <th class="w-16">งวดที่</th>
+                    <th class="w-32">วันครบกำหนด</th>
+                    <th class="w-36">สถานะการจ่าย</th>
+                    <th class="w-32">วันที่จ่าย</th>
+                    <th class="w-36">เลขที่เอกสาร</th>
+                    <th class="w-32 text-right">ยอดที่จ่าย (บาท)</th>
+                    {% if can_edit(item) %}<th class="w-24 text-center">จัดการ</th>{% endif %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for installment in p_item.get_sorted_installments() %}
+                  {% set inst_status = installment.get_status(today) %}
+                  <tr class="hover:bg-base-200/30">
+                    <td class="font-medium">{{ loop.index }}</td>
+                    <td class="whitespace-nowrap">{{ installment.due_date | format_thai_date }}</td>
+                    <td>
+                      {% if installment.is_paid() %}
+                        <span class="badge badge-success badge-sm text-white font-medium gap-1 whitespace-nowrap shadow-xs">
+                          <i class="ph ph-check-circle"></i> จ่ายแล้ว
+                        </span>
+                      {% elif inst_status == "overdue" %}
+                        <span class="badge badge-error badge-sm text-white font-medium whitespace-nowrap">เกินกำหนด</span>
+                      {% elif inst_status == "upcoming" %}
+                        <span class="badge badge-warning badge-sm text-white font-medium whitespace-nowrap">ใกล้ครบกำหนด</span>
+                      {% else %}
+                        <span class="badge badge-ghost badge-sm text-base-content/60 font-medium whitespace-nowrap">ยังไม่จ่าย</span>
+                      {% endif %}
+                    </td>
+                    <td class="whitespace-nowrap">
+                      {% if installment.paid_date %}
+                        <span class="text-success font-semibold">{{ installment.paid_date | format_thai_date }}</span>
+                      {% else %}
+                        <span class="text-base-content/30">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if installment.payment_number %}
+                        <span class="font-mono text-xs font-semibold text-base-content">{{ installment.payment_number }}</span>
+                      {% else %}
+                        <span class="text-base-content/30">-</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-right">
+                      {% if installment.paid_amount is not none %}
+                        <span class="font-semibold text-success">{{ installment.paid_amount | format_amount }}</span>
+                      {% else %}
+                        <span class="text-base-content/30">-</span>
+                      {% endif %}
+                    </td>
+                    {% if can_edit(item) %}
+                    <td class="text-center">
+                      {% if installment.is_paid() %}
+                        <button type="button"
+                                onclick="document.getElementById('quick_unpay_{{ p_item.id }}_{{ installment._id }}').showModal()"
+                                class="btn btn-ghost btn-xs text-error gap-0.5 hover:bg-error/10">
+                          <i class="ph ph-arrow-counter-clockwise"></i> ยกเลิก
+                        </button>
+                      {% else %}
+                        <button type="button"
+                                onclick="document.getElementById('quick_pay_{{ p_item.id }}_{{ installment._id }}').showModal()"
+                                class="btn btn-success btn-xs text-white gap-0.5 shadow-sm">
+                          <i class="ph ph-check"></i> จ่ายแล้ว
+                        </button>
+                      {% endif %}
+                    </td>
+                    {% endif %}
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="{{ 7 if can_edit(item) else 6 }}" class="text-center text-base-content/40 py-2">ไม่มีงวดการจ่าย</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </td>
+    </tr>
     {% else %}
     <tr>
       <td colspan="8" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
@@ -128,4 +301,138 @@
     {% endfor %}
   </tbody>
 </table>
+
+<!-- Modals for Request Renewal and Quick Payment -->
+{% for item in procurements %}
+  {% if can_edit(item) and not item.is_renewed() and item.status != "renewal-requested" %}
+  <dialog id="modal_request_renewal_{{ item.id }}" class="modal text-left">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
+        <i class="ph ph-arrows-clockwise text-xl"></i> ยืนยันการขอต่ออายุสัญญา MA
+      </h3>
+      <p class="py-2 text-base text-base-content">
+        คุณต้องการยื่นขอต่ออายุสัญญา MA รายการนี้ใช่หรือไม่?
+      </p>
+      <div class="bg-base-200 p-4 rounded-lg mb-3 space-y-1">
+        <div class="font-semibold text-base text-base-content">{{ item.name }}</div>
+        <div class="text-sm text-base-content/70">ม.อ.เบิกจ่าย: {{ item.psu_disbursement_number or '-' }}</div>
+        {% if item.get_end_date() %}
+        <div class="text-sm text-base-content/70">
+          วันสิ้นสุดสัญญา: <span class="font-semibold text-error">{{ item.get_end_date() | format_thai_date }}</span>
+        </div>
+        {% endif %}
+      </div>
+      <p class="text-xs text-base-content/60 mb-4">
+        * เมื่อยืนยัน รายการนี้จะเปลี่ยนสถานะเป็น <strong>"ขอต่ออายุ"</strong> และจะไปแสดงที่หน้ารายการ MA ขอต่ออายุ เพื่อให้ฝ่ายที่เกี่ยวข้องดำเนินการต่ออายุสัญญาใหม่หรือบันทึกไม่ต่ออายุต่อไป
+      </p>
+      <form method="POST" action="{{ url_for('procurement.products.request_renewal', procurement_id=item.id, organization_id=organization.id) }}" class="modal-action">
+        {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+        <button type="button" onclick="document.getElementById('modal_request_renewal_{{ item.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
+        <button type="submit" class="btn btn-success text-white gap-1">
+          <i class="ph ph-check"></i> ยืนยันขอต่ออายุ
+        </button>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>ปิด</button>
+    </form>
+  </dialog>
+  {% endif %}
+
+  {% if can_edit(item) %}
+    {% for p_item in item.get_items() %}
+      {% for installment in p_item.get_sorted_installments() %}
+        {% if installment.is_paid() %}
+        <!-- Unpay Modal -->
+        <dialog id="quick_unpay_{{ p_item.id }}_{{ installment._id }}" class="modal text-left">
+          <div class="modal-box">
+            <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+              <i class="ph ph-warning-circle text-xl"></i> ยืนยันยกเลิกการบันทึกจ่าย
+            </h3>
+            <p class="py-2 text-base text-base-content">
+              คุณต้องการยกเลิกการบันทึกจ่ายงวดนี้ใช่หรือไม่?
+            </p>
+            <div class="bg-base-200 p-3 rounded-lg mb-4 text-sm space-y-1">
+              <div><strong>รายการ:</strong> {{ p_item.name }}</div>
+              <div><strong>กำหนดชำระ:</strong> {{ installment.due_date | format_thai_date }}</div>
+              {% if installment.paid_date %}<div><strong>วันที่จ่ายเดิม:</strong> {{ installment.paid_date | format_thai_date }}</div>{% endif %}
+              {% if installment.payment_number %}<div><strong>เลขที่เอกสาร:</strong> {{ installment.payment_number }}</div>{% endif %}
+              {% if installment.paid_amount is not none %}<div><strong>ยอดที่จ่าย:</strong> {{ installment.paid_amount | format_amount }} บาท</div>{% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('procurement.payment.unpay_installment', procurement_id=item.id, item_id=p_item.id, installment_id=installment._id, organization_id=organization.id) }}" class="modal-action">
+              {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+              <input type="hidden" name="next" value="{{ request.full_path }}"/>
+              <button type="button" onclick="document.getElementById('quick_unpay_{{ p_item.id }}_{{ installment._id }}').close()" class="btn btn-ghost">ยกเลิก</button>
+              <button type="submit" class="btn btn-error text-white gap-1">
+                <i class="ph ph-check"></i> ยืนยันยกเลิกจ่าย
+              </button>
+            </form>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+        </dialog>
+        {% else %}
+        <!-- Quick Pay Modal -->
+        <dialog id="quick_pay_{{ p_item.id }}_{{ installment._id }}" class="modal text-left">
+          <div class="modal-box">
+            <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
+              <i class="ph ph-check-circle text-xl"></i> บันทึกการจ่ายงวด
+            </h3>
+            <div class="bg-base-200 p-3 rounded-lg mb-4 text-sm space-y-1">
+              <div><strong>รายการ:</strong> {{ p_item.name }}</div>
+              <div><strong>กำหนดชำระ:</strong> {{ installment.due_date | format_thai_date }}</div>
+              <div><strong>ยอดเงินของรายการ:</strong> {{ p_item.amount | format_amount }} บาท</div>
+            </div>
+            <form method="POST" action="{{ url_for('procurement.payment.pay_installment', procurement_id=item.id, item_id=p_item.id, installment_id=installment._id, organization_id=organization.id) }}" class="space-y-4">
+              {% if csrf_token is defined and csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
+              <input type="hidden" name="next" value="{{ request.full_path }}"/>
+
+              <div class="form-control">
+                <label class="label py-1"><span class="label-text font-medium">วันที่จ่ายจริง <span class="text-error">*</span></span></label>
+                <input type="text" name="paid_date" required value="{{ today.strftime('%Y-%m-%d') }}" class="input input-bordered input-sm w-full"/>
+              </div>
+
+              <div class="form-control">
+                <label class="label py-1"><span class="label-text font-medium">เลขที่เอกสาร / ใบจ่ายเงิน</span></label>
+                <input type="text" name="payment_number" placeholder="เช่น PAY-6701-001" class="input input-bordered input-sm w-full"/>
+              </div>
+
+              <div class="form-control">
+                <label class="label py-1"><span class="label-text font-medium">ยอดเงินที่จ่ายจริง (บาท)</span></label>
+                <input type="number" step="0.01" min="0" name="paid_amount" placeholder="{{ p_item.amount or '' }}" class="input input-bordered input-sm w-full"/>
+              </div>
+
+              <div class="modal-action">
+                <button type="button" onclick="document.getElementById('quick_pay_{{ p_item.id }}_{{ installment._id }}').close()" class="btn btn-ghost btn-sm">ยกเลิก</button>
+                <button type="submit" class="btn btn-success btn-sm text-white gap-1">
+                  <i class="ph ph-check"></i> บันทึกจ่าย
+                </button>
+              </div>
+            </form>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+        </dialog>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+<script>
+function toggleMaSubItems(id, btn) {
+  const row = document.getElementById('sub_items_' + id);
+  const caret = document.getElementById('caret_' + id);
+  const button = btn || document.getElementById('btn_toggle_' + id);
+  if (!row) return;
+  const isHidden = row.classList.contains('hidden');
+  if (isHidden) {
+    row.classList.remove('hidden');
+    if (caret) caret.classList.add('rotate-90');
+    if (button) button.setAttribute('aria-expanded', 'true');
+  } else {
+    row.classList.add('hidden');
+    if (caret) caret.classList.remove('rotate-90');
+    if (button) button.setAttribute('aria-expanded', 'false');
+  }
+}
+</script>
 {% endmacro %}

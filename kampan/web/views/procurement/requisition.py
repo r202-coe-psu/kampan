@@ -90,7 +90,9 @@ def index():
     expiration_date_range = request.args.get("expiration_date_range", "3_months")
 
     only_my_division = request.args.get("division") == "mine"
-    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division)
+    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
+        status__in=["renewal-requested", "pending"]
+    )
     if name:
         procurements = procurements.filter(name__icontains=name)
     # ช่อง "เลขที่เบิกจ่าย" ค้นเลขที่ ม.อ.เบิกจ่าย ของหัวสัญญา
@@ -141,9 +143,11 @@ INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรื�
 
 
 def claim_pending_procurement(procurement, organization, new_status: str) -> bool:
-    """เปลี่ยนสถานะ MA จาก pending แบบ atomic · คืน False ถ้าสถานะไม่ใช่ pending แล้ว (เช่นกดซ้ำ)"""
+    """เปลี่ยนสถานะ MA จาก pending หรือ renewal-requested แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)"""
     return bool(
-        models.Procurement.objects(id=procurement.id, organization=organization, status="pending").update_one(
+        models.Procurement.objects(
+            id=procurement.id, organization=organization, status__in=["pending", "renewal-requested"]
+        ).update_one(
             set__status=new_status,
             set__last_updated_by=current_user._get_current_object(),
             set__updated_date=datetime.datetime.now(),

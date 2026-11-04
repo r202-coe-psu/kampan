@@ -23,6 +23,14 @@ RENEWAL = "/procurement/requisitions"
 NON_RENEWAL = "/procurement/requisitions/non-renewal"
 LIST_PAGES = [PRODUCTS, RENEWAL, NON_RENEWAL]
 
+
+def _status_for_path(path):
+    if path == NON_RENEWAL:
+        return "disactive"
+    if path == RENEWAL:
+        return "renewal-requested"
+    return "active"
+
 TODAY = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
 
@@ -148,7 +156,7 @@ def _query_count(world, query_counter, path):
 
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_list_page_query_count_does_not_grow_with_ma_count(world, query_counter, path):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 3, status=status)
     few = _query_count(world, query_counter, path)
 
@@ -178,7 +186,7 @@ def _ma_names(procurements) -> list[str]:
 
 def _five_mas_for(world, path):
     """MA 5 ตัว วันสิ้นสุดห่างกันทีละวัน คืนชื่อตามลำดับที่หน้านั้นแสดง"""
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     mas = _ma_names(_create_ma(world, end_in_days=10 + index, status=status) for index in range(5))
     if path == RENEWAL:
         return mas  # วันสิ้นสุดใกล้สุดก่อน
@@ -217,7 +225,7 @@ def test_empty_list_page_with_page_number_is_not_404(world, path):
 
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_per_page_is_capped_at_100(world, path):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 101, status=status, responsible=world.admin_role)
 
     response = _get(world, path, per_page=100000)
@@ -329,10 +337,10 @@ def test_products_status_counts_and_filter_follow_worst_unpaid_installment(world
 
 
 def test_renewal_page_sorts_by_earliest_item_end_date_across_pages(world):
-    in_40 = _create_ma(world, end_in_days=40)
-    in_10 = _create_ma(world, end_in_days=10)
-    two_items = _create_ma(world, items=[(50, [_installment(50)]), (5, [_installment(5)])])
-    in_25 = _create_ma(world, end_in_days=25)
+    in_40 = _create_ma(world, end_in_days=40, status="renewal-requested")
+    in_10 = _create_ma(world, end_in_days=10, status="renewal-requested")
+    two_items = _create_ma(world, items=[(50, [_installment(50)]), (5, [_installment(5)])], status="renewal-requested")
+    in_25 = _create_ma(world, end_in_days=25, status="renewal-requested")
     expected = _ma_names([two_items, in_10, in_25, in_40])
 
     assert _shown_mas(_get(world, RENEWAL, per_page=3)) == expected[:3]
@@ -349,7 +357,7 @@ def test_non_renewal_page_sorts_by_latest_end_date_first(world):
 
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_list_pages_show_each_rows_responsible_divisions(world, path):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 3, status=status)
 
     html = _get(world, path).get_data(as_text=True)
@@ -370,7 +378,7 @@ DEFAULT_SORT = {PRODUCTS: "created_desc", RENEWAL: "end_asc", NON_RENEWAL: "end_
 def _sort_set(world, path):
     """MA 4 ตัว: สร้างตามลำดับ A, B, C, D · ชื่อและวันสิ้นสุดสลับกันจนทุกตัวเลือกเรียงไม่เหมือนกัน
     คืนชื่อเรียงตามแต่ละตัวเลือก"""
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     mas = {}
     for key, name_number, end_in in (("a", 30, 40), ("b", 10, 10), ("c", 40, 30), ("d", 20, 20)):
         ma = _create_ma(world, end_in_days=end_in, status=status)
@@ -430,7 +438,7 @@ def test_sort_control_shows_the_selected_option_as_dropdown(world, path):
 
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_sort_is_kept_in_page_links_with_other_filters(world, path):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 5, status=status, responsible=world.admin_role)
 
     html = _get(world, path, sort="name_asc", division="mine", per_page=2).get_data(as_text=True)
@@ -455,7 +463,7 @@ def test_sorted_pages_paginate_without_losing_or_repeating_rows(world, path):
 @pytest.mark.parametrize("path", LIST_PAGES)
 @pytest.mark.parametrize("sort", ["created_desc", "end_asc", "name_asc"])
 def test_sorted_list_query_count_does_not_grow_with_ma_count(world, query_counter, path, sort):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 3, status=status)
     few = _query_count(world, query_counter, f"{path}?sort={sort}")
 
@@ -514,7 +522,7 @@ def test_non_renewal_filters_never_leak_other_organizations(world, create_org):
 
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
-    status = "disactive" if path == NON_RENEWAL else "active"
+    status = _status_for_path(path)
     _create_mas(world, 2, status=status)
 
     html = _get(world, path).get_data(as_text=True)

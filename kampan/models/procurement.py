@@ -859,17 +859,27 @@ def _attach_responsibles(procurements: list[Procurement], organization) -> None:
     items = [item for procurement in procurements for item in procurement.get_items()]
     member_ids = {member_id for item in items for member_id in _reference_ids(item, "responsible_by")}
     division_ids = {division_id for item in items for division_id in _reference_ids(item, "responsible_divisions")}
+    paid_by_ids = {
+        _reference_id(installment, "paid_by")
+        for item in items
+        for installment in (item._data.get("installments") or [])
+    } - {None}
 
     members = (
         list(OrganizationUserRole.objects(id__in=list(member_ids), organization=organization)) if member_ids else []
     )
-    user_ids = {_reference_id(member, "user") for member in members} - {None}
+    user_ids = ({_reference_id(member, "user") for member in members} | paid_by_ids) - {None}
     users = {user.id: user for user in User.objects(id__in=list(user_ids))} if user_ids else {}
     for member in members:
         user = users.get(_reference_id(member, "user"))
         if user is not None:
             # ใส่ผู้ใช้ที่โหลดแล้วแทน DBRef ตรง ๆ ไม่ให้ member.user query ซ้ำ (ไม่ผ่าน setter จึงไม่ถูกนับว่าแก้ไข)
             member._data["user"] = user
+    for item in items:
+        for installment in (item._data.get("installments") or []):
+            user = users.get(_reference_id(installment, "paid_by"))
+            if user is not None:
+                installment._data["paid_by"] = user
     members_by_id = {member.id: member for member in members}
     divisions_by_id = (
         {division.id: division for division in Division.objects(id__in=list(division_ids), organization=organization)}

@@ -107,6 +107,12 @@ def _url(path, organization, **params):
 
 
 def _visible_names(client, page, organization, **params):
+    if page == "renewal":
+        models.Procurement.objects(organization=organization).update(set__status="renewal-requested")
+    elif page == "non_renewal":
+        models.Procurement.objects(organization=organization).update(set__status="disactive")
+    else:
+        models.Procurement.objects(organization=organization).update(set__status="active")
     response = client.get(_url(LIST_PAGES[page], organization, **params))
     assert response.status_code == 200
     html = response.get_data(as_text=True)
@@ -241,6 +247,12 @@ def test_non_renewal_action_on_invisible_ma_is_404(world, client_for):
 
 @pytest.mark.parametrize("page", LIST_PAGES)
 def test_list_pages_show_responsible_division_names(world, client_for, page):
+    if page == "renewal":
+        models.Procurement.objects(organization=world.org).update(set__status="renewal-requested")
+    elif page == "non_renewal":
+        models.Procurement.objects(organization=world.org).update(set__status="disactive")
+    else:
+        models.Procurement.objects(organization=world.org).update(set__status="active")
     response = client_for(world.admin).get(_url(LIST_PAGES[page], world.org))
 
     html = response.get_data(as_text=True)

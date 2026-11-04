@@ -413,7 +413,10 @@ def test_ma_pages_have_no_old_renewal_request_path(world, client_for, app, monke
 
     assert "/renewal-requested" not in html
     assert "renew_modal_" not in html
-    assert _renew_url(world) in html
+    if page == "products":
+        assert f"/procurement/products/{world.old.id}/request-renewal" in html
+    else:
+        assert _renew_url(world) in html
 
 
 @pytest.mark.parametrize("page", MA_PAGES)

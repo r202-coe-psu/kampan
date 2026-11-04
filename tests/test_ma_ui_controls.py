@@ -302,3 +302,89 @@ def test_edit_buttons_in_detail_and_requisition_pages(world, client_for, existin
     viewer_req = viewer_client.get(requisition_url).get_data(as_text=True)
     assert f"/procurement/products/{existing_ma.id}/edit" not in viewer_req
 
+
+def test_renewal_request_and_non_renewal_workflow(world, client_for, existing_ma):
+    client = client_for(world.admin)
+    products_url = f"/procurement/products?{_q(world.org)}"
+    requisitions_url = f"/procurement/requisitions?{_q(world.org)}"
+    non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
+
+    # 1. On products page, existing_ma has request-renewal button & modal
+    products_html = client.get(products_url).get_data(as_text=True)
+    assert f"modal_request_renewal_{existing_ma.id}" in products_html
+    assert f"/procurement/products/{existing_ma.id}/request-renewal" in products_html
+
+    # In requisitions page initially, existing_ma (status 'pending') is shown
+    # Let's change existing_ma to 'active'
+    existing_ma.status = "active"
+    existing_ma.save()
+
+    # When active, it is NOT in requisitions page (only renewal-requested or pending are shown)
+    req_html_before = client.get(requisitions_url).get_data(as_text=True)
+    assert existing_ma.name not in req_html_before
+
+    # 2. Request renewal from products page
+    req_post = client.post(
+        f"/procurement/products/{existing_ma.id}/request-renewal?{_q(world.org)}",
+        follow_redirects=True,
+    )
+    assert req_post.status_code == 200
+    existing_ma.reload()
+    assert existing_ma.status == "renewal-requested"
+
+    # Now it appears in requisitions page with "ต่ออายุ" and "ไม่ต่ออายุ" buttons
+    req_html_after = client.get(requisitions_url).get_data(as_text=True)
+    assert existing_ma.name in req_html_after
+    assert f"delete_modal_{existing_ma.id}" in req_html_after
+    assert "ไม่ต่ออายุ" in req_html_after
+
+    # 3. Mark non-renewal
+    non_renew_res = client.post(
+        f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}",
+        follow_redirects=True,
+    )
+    assert non_renew_res.status_code == 200
+    existing_ma.reload()
+    assert existing_ma.status == "disactive"
+
+    # Now it is NOT in requisitions, but IS in non-renewal page
+    req_html_final = client.get(requisitions_url).get_data(as_text=True)
+    assert existing_ma.name not in req_html_final
+
+    non_renew_html = client.get(non_renewal_url).get_data(as_text=True)
+    assert existing_ma.name in non_renew_html
+
+
+def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existing_ma):
+    client = client_for(world.admin)
+    products_url = f"/procurement/products?{_q(world.org)}"
+
+    # 1. Products page has toggle button and sub-items expandable row
+    html = client.get(products_url).get_data(as_text=True)
+    assert f'id="btn_toggle_{existing_ma.id}"' in html
+    assert f'id="sub_items_{existing_ma.id}"' in html
+    item = existing_ma.get_items()[0]
+    assert item.name in html
+
+    # 2. Quick-pay an installment with next url
+    installment = item.installments[0]
+    pay_url = f"/procurement/payment/{existing_ma.id}/items/{item.id}/installments/{installment._id}/pay?{_q(world.org)}"
+    pay_res = client.post(
+        pay_url,
+        data={
+            "paid_date": "2026-11-05",
+            "payment_number": "PAY-QUICK-001",
+            "paid_amount": "50000.00",
+            "next": products_url,
+        },
+    )
+    # Redirects back to next_url (products)
+    assert pay_res.status_code == 302
+    assert pay_res.headers["Location"] == products_url
+
+    # Check products table reflects paid status
+    updated_html = client.get(products_url).get_data(as_text=True)
+    assert "จ่ายครบแล้ว" in updated_html or "จ่ายแล้ว" in updated_html
+    assert "PAY-QUICK-001" in updated_html
+
+

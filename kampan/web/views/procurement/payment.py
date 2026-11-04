@@ -10,6 +10,7 @@ from flask import (
     g,
     redirect,
     render_template,
+    request,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -147,20 +148,22 @@ def pay_installment(procurement_id, item_id, installment_id):
         procurement_id, item_id, installment_id
     )
     detail_url = _detail_url(procurement, organization)
+    next_url = request.form.get("next") or request.args.get("next")
+    redirect_url = next_url if next_url and next_url.startswith("/") else detail_url
     if not allowed:
         flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
 
     form = forms.procurement.InstallmentPaymentForm()
     if not form.validate_on_submit():
         errors = [error for field_errors in form.errors.values() for error in field_errors]
         flash(errors[0] if errors else "ข้อมูลการจ่ายไม่ถูกต้อง", "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
 
     payment_number = (form.payment_number.data or "").strip() or None
     if payment_number and _payment_number_taken(organization, payment_number, item, installment):
         flash(DUPLICATE_PAYMENT_NUMBER_MESSAGE.format(number=payment_number), "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
 
     user = current_user._get_current_object()
     paid_date = datetime.datetime.combine(form.paid_date.data, datetime.time.min)
@@ -184,9 +187,9 @@ def pay_installment(procurement_id, item_id, installment_id):
     )
     if not updated:
         flash(INSTALLMENT_NOT_UPDATED_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
     flash("บันทึกการจ่ายงวดเรียบร้อยแล้ว", "success")
-    return redirect(detail_url)
+    return redirect(redirect_url)
 
 
 @module.route("/<procurement_id>/items/<item_id>/installments/<installment_id>/unpay", methods=["POST"])
@@ -196,12 +199,14 @@ def unpay_installment(procurement_id, item_id, installment_id):
         procurement_id, item_id, installment_id
     )
     detail_url = _detail_url(procurement, organization)
+    next_url = request.form.get("next") or request.args.get("next")
+    redirect_url = next_url if next_url and next_url.startswith("/") else detail_url
     if not allowed:
         flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
     if not forms.procurement.ConfirmActionForm().validate_on_submit():
         flash(INVALID_REQUEST_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
 
     log_entry = models.PayLogEntry(
         action="unpaid",
@@ -223,6 +228,6 @@ def unpay_installment(procurement_id, item_id, installment_id):
     )
     if not updated:
         flash(INSTALLMENT_NOT_UPDATED_MESSAGE, "error")
-        return redirect(detail_url)
+        return redirect(redirect_url)
     flash("ยกเลิกการบันทึกจ่ายงวดแล้ว", "success")
-    return redirect(detail_url)
+    return redirect(redirect_url)
