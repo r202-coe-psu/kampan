@@ -193,6 +193,7 @@
       initDropdownSelectsIn(card);
       syncInstallmentMode(card);
       syncSubItemToggles(card);
+      card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
       showError(document.getElementById('items_error'), '');
       renumber();
       updateSum();
@@ -263,6 +264,71 @@
       });
     }
 
+    function syncSelectedMembers(picker) {
+      if (!picker) return;
+      const list = picker.querySelector('.member-list');
+      const selectedContainer = picker.querySelector('.selected-members');
+      const countBadge = picker.querySelector('.selected-count');
+      const emptyHint = picker.querySelector('.selected-empty');
+      const clearBtn = picker.querySelector('[data-action="clear-all-members"]');
+      if (!list || !selectedContainer) return;
+
+      const checkboxes = list.querySelectorAll('input[type="checkbox"]');
+      let count = 0;
+
+      selectedContainer.querySelectorAll('.selected-badge').forEach(function (badge) {
+        badge.remove();
+      });
+
+      checkboxes.forEach(function (cb) {
+        const option = cb.closest('.member-option');
+        if (cb.checked) {
+          count++;
+          if (option) option.classList.add('bg-primary/10', 'font-medium', 'text-primary');
+          const labelSpan = option ? option.querySelector('.member-label') : null;
+          const labelText = (labelSpan ? labelSpan.textContent : cb.value).trim();
+
+          const badge = document.createElement('span');
+          badge.className = 'selected-badge badge badge-primary badge-outline gap-1.5 py-3 px-2.5 text-xs inline-flex items-center';
+          badge.dataset.memberId = cb.value;
+
+          const userIcon = document.createElement('i');
+          userIcon.className = 'ph ph-user';
+          badge.appendChild(userIcon);
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'truncate max-w-xs';
+          textSpan.textContent = labelText;
+          badge.appendChild(textSpan);
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'btn btn-ghost btn-circle btn-xs -mr-1 h-5 w-5 min-h-0 text-base-content/60 hover:text-error';
+          removeBtn.dataset.action = 'deselect-member';
+          removeBtn.dataset.memberId = cb.value;
+          removeBtn.title = 'นำออก';
+          removeBtn.setAttribute('aria-label', 'นำ ' + labelText + ' ออก');
+
+          const xIcon = document.createElement('i');
+          xIcon.className = 'ph ph-x text-xs';
+          removeBtn.appendChild(xIcon);
+
+          badge.appendChild(removeBtn);
+          if (emptyHint) {
+            selectedContainer.insertBefore(badge, emptyHint);
+          } else {
+            selectedContainer.appendChild(badge);
+          }
+        } else {
+          if (option) option.classList.remove('bg-primary/10', 'font-medium', 'text-primary');
+        }
+      });
+
+      if (countBadge) countBadge.textContent = count;
+      if (emptyHint) emptyHint.classList.toggle('hidden', count > 0);
+      if (clearBtn) clearBtn.classList.toggle('hidden', count === 0);
+    }
+
     form.addEventListener('click', function (event) {
       const button = event.target.closest('[data-action]');
       if (!button) return;
@@ -317,6 +383,28 @@
         case 'remove-list-row':
           button.closest('.list-row').remove();
           break;
+        case 'deselect-member': {
+          const picker = button.closest('[data-member-picker]');
+          const memberId = button.dataset.memberId;
+          if (picker && memberId) {
+            const cb = picker.querySelector('.member-list input[value="' + memberId + '"]');
+            if (cb) {
+              cb.checked = false;
+              syncSelectedMembers(picker);
+            }
+          }
+          break;
+        }
+        case 'clear-all-members': {
+          const picker = button.closest('[data-member-picker]');
+          if (picker) {
+            picker.querySelectorAll('.member-list input[type="checkbox"]').forEach(function (cb) {
+              cb.checked = false;
+            });
+            syncSelectedMembers(picker);
+          }
+          break;
+        }
       }
     });
 
@@ -329,6 +417,10 @@
       if (event.target.classList.contains('installment-toggle')) syncInstallmentMode(event.target.closest('.ma-item'));
       if (event.target.classList.contains('sub-item-toggle-sn') || event.target.classList.contains('sub-item-toggle-asset')) {
         syncSubItemToggles(event.target.closest('.ma-item'));
+      }
+      const picker = event.target.closest('[data-member-picker]');
+      if (picker && event.target.matches('.member-list input[type="checkbox"]')) {
+        syncSelectedMembers(picker);
       }
     });
 
@@ -349,6 +441,7 @@
     itemsContainer.querySelectorAll('.ma-item').forEach(function (card) {
       syncInstallmentMode(card);
       syncSubItemToggles(card);
+      card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
     });
     renumber();
     updateSum();

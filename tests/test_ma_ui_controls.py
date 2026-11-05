@@ -202,6 +202,40 @@ def test_create_ma_item_division_selection_removed_and_auto_derived(world, clien
     assert 'name="items-0-responsible_divisions"' not in edit_html
 
 
+def test_responsible_by_shows_selected_members_in_form(world, client_for):
+    client = client_for(world.creator)
+    # 1. On create form, the creator is pre-selected by default and displayed in selected-members box
+    res = client.get(f"/procurement/products/create?{_q(world.org)}")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert "ผู้รับผิดชอบที่เลือกแล้ว:" in html
+    assert f'data-member-id="{world.role_creator.id}"' in html
+    assert world.role_creator.display_user_fullname() in html
+    assert 'data-action="deselect-member"' in html
+    assert 'data-action="clear-all-members"' in html
+
+    # 2. Create MA with two responsible members
+    data = ma_form([
+        _item(
+            amount="50000.00",
+            name="[TEST] Multi Member MA",
+            responsible_by=[str(world.role_creator.id), str(world.role_admin.id)],
+        )
+    ], total_amount="50000.00", psu="PSU-MULTI-RESP")
+    create_res = _create(client, world, data)
+    assert create_res.status_code == 302
+
+    item = models.ProcurementItem.objects.get(name="[TEST] Multi Member MA")
+    assert len(item.responsible_by) == 2
+
+    # 3. On edit form, both members are shown in selected-members box
+    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    assert f'data-member-id="{world.role_creator.id}"' in edit_html
+    assert f'data-member-id="{world.role_admin.id}"' in edit_html
+    assert world.role_creator.display_user_fullname() in edit_html
+    assert world.role_admin.display_user_fullname() in edit_html
+
+
 def test_payment_reminder_visibility_based_on_installment_mode(world, client_for):
     client = client_for(world.admin)
 
