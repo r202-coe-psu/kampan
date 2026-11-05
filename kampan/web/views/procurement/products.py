@@ -399,14 +399,6 @@ def _build_items(form, organization, existing_items, user):
             id__in=list(member_ids), organization=organization, status="active"
         )
     }
-    division_ids = {div_id for entry in form.items for div_id in entry.form.responsible_divisions.data or []}
-    divisions = {
-        str(division.id): division
-        for division in models.Division.objects(
-            id__in=list(division_ids), organization=organization
-        )
-    }
-
     items = []
     for entry in form.items:
         data = entry.form
@@ -423,13 +415,8 @@ def _build_items(form, organization, existing_items, user):
         item.winner = (data.winner.data or "").strip() or None
         item.unit_price = data.unit_price.data
         item.note = data.note.data or ""
-        selected_division_ids = [div_id for div_id in data.responsible_divisions.data or [] if div_id in divisions]
-        if selected_division_ids:
-            item.responsible_divisions = [divisions[div_id] for div_id in selected_division_ids]
-            item.has_custom_responsible_divisions = True
-        else:
-            item.responsible_divisions = []
-            item.has_custom_responsible_divisions = False
+        item.responsible_divisions = []
+        item.has_custom_responsible_divisions = False
         item.responsible_by = [members[member_id] for member_id in data.responsible_by.data or [] if member_id in members]
         item.reminder_kind = data.reminder_kind.data
         item.requires_activation = bool(data.requires_activation.data)

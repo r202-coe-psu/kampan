@@ -172,50 +172,34 @@ def test_rendered_ma_pages_have_no_native_select_or_date_input(world, client_for
         assert "textarea" in tag, tag
 
 
-def test_create_ma_item_division_selection_and_default(world, client_for):
+def test_create_ma_item_division_selection_removed_and_auto_derived(world, client_for):
     client = client_for(world.creator)  # creator has division_it
-    # 1. Open create form: verify division_it is checked by default
+    # 1. Open create form: verify responsible_divisions checkboxes are NOT present
     response = client.get(f"/procurement/products/create?{_q(world.org)}")
     assert response.status_code == 200
     html = response.get_data(as_text=True)
 
-    it_id = str(world.division_it.id)
-    fin_id = str(world.division_fin.id)
-    assert it_id in html
-    assert fin_id in html
+    assert 'name="items-0-responsible_divisions"' not in html
+    assert 'name="items-__I__-responsible_divisions"' not in html
 
-    # items-0: division_it must be checked by default, division_fin not checked
-    it_checkbox_0 = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{it_id}"[^>]*>', html).group(0)
-    assert "checked" in it_checkbox_0
-    fin_checkbox_0 = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{fin_id}"[^>]*>', html).group(0)
-    assert "checked" not in fin_checkbox_0
-
-    # Template prototype also defaults to user's division
-    template_it = re.search(rf'<input[^>]*name="items-__I__-responsible_divisions"[^>]*value="{it_id}"[^>]*>', html).group(0)
-    assert "checked" in template_it
-
-    # 2. Submit MA with division_fin explicitly selected
+    # 2. Submit MA: responsible_divisions automatically follows responsible_by member's division
     data = ma_form([
         _item(
             amount="30000.00",
-            name="[TEST] Custom Division Item",
+            name="[TEST] Auto Division Item",
             responsible_by=[str(world.role_creator.id)],
-            responsible_divisions=[fin_id],
         )
-    ], total_amount="30000.00", psu="PSU-CUSTOM-DIV")
+    ], total_amount="30000.00", psu="PSU-AUTO-DIV")
     create_res = _create(client, world, data)
     assert create_res.status_code == 302
 
-    item = models.ProcurementItem.objects.get(name="[TEST] Custom Division Item")
-    assert [d.id for d in item.responsible_divisions] == [world.division_fin.id]
-    assert item.has_custom_responsible_divisions is True
+    item = models.ProcurementItem.objects.get(name="[TEST] Auto Division Item")
+    assert [d.id for d in item.responsible_divisions] == [world.division_it.id]
+    assert item.has_custom_responsible_divisions is False
 
-    # 3. Edit page pre-fills division_fin as checked and division_it as unchecked
+    # 3. Edit page also does not render division selector
     edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
-    edit_fin = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{fin_id}"[^>]*>', edit_html).group(0)
-    assert "checked" in edit_fin
-    edit_it = re.search(rf'<input[^>]*name="items-0-responsible_divisions"[^>]*value="{it_id}"[^>]*>', edit_html).group(0)
-    assert "checked" not in edit_it
+    assert 'name="items-0-responsible_divisions"' not in edit_html
 
 
 def test_payment_reminder_visibility_based_on_installment_mode(world, client_for):
