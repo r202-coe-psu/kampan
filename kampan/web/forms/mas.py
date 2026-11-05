@@ -5,6 +5,8 @@ from wtforms import ValidationError
 from kampan import models
 from wtforms import fields, validators, widgets
 
+from .money_validators import MoneyPlaces
+
 BaseMASForm = model_form(
     models.MAS,
     FlaskForm,
@@ -22,7 +24,7 @@ BaseMASForm = model_form(
     field_args={
         "mas_code": {"label": "รหัสแหล่งเงิน (MAS Code)"},
         "description": {"label": "รายละเอียด"},
-        "amount": {"label": "งบประมาณทั้งหมด"},
+        "amount": {"label": "งบประมาณทั้งหมด", "validators": [MoneyPlaces()]},
         "direction": {"label": "ทิศทาง"},
         "year": {"label": "ปีงบประมาณ (พ.ศ.)"},
     },
@@ -44,7 +46,9 @@ class MASSearchForm(FlaskForm):
         "รายละเอียด", render_kw={"placeholder": "รายละเอียด"}
     )
     amount = fields.DecimalField(
-        "จำนวนเงินที่ขอจัดตั้ง", render_kw={"placeholder": "จำนวนเงินที่ขอจัดตั้ง"}
+        "จำนวนเงินที่ขอจัดตั้ง",
+        validators=[validators.Optional(), MoneyPlaces()],
+        render_kw={"placeholder": "จำนวนเงินที่ขอจัดตั้ง"},
     )
 
 

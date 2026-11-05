@@ -21,3 +21,9 @@ class AdminApproveForm(FlaskForm):
         validators=[validators.InputRequired()],
         default=datetime.datetime.now,
     )
+
+
+class OrderActionForm(FlaskForm):
+    """ปุ่มอนุมัติ / ไม่อนุมัติใบเบิก: บังคับ POST + CSRF และรับเหตุผล (ถ้ามี)"""
+
+    reason = fields.StringField("เหตุผล", validators=[validators.Optional()])

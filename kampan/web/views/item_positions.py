@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models
@@ -8,6 +9,17 @@ import mongoengine as me
 import datetime
 
 module = Blueprint("item_positions", __name__, url_prefix="/item-positions")
+
+
+def get_item_position(organization, item_position_id):
+    if not organization or not ObjectId.is_valid(item_position_id):
+        abort(404)
+    item_position = models.ItemPosition.objects(
+        id=item_position_id, organization=organization
+    ).first()
+    if not item_position:
+        abort(404)
+    return item_position
 
 
 @module.route("/")
@@ -43,7 +55,7 @@ def add_or_edit(item_position_id):
 
     item_position = None
     if item_position_id:
-        item_position = models.ItemPosition.objects().get(id=item_position_id)
+        item_position = get_item_position(g.organization, item_position_id)
         form = forms.item_positions.ItemPositionForm(obj=item_position)
 
     if not form.validate_on_submit():
@@ -59,37 +71,8 @@ def add_or_edit(item_position_id):
     form.populate_obj(item_position)
     if not item_position_id:
         item_position.created_by = current_user._get_current_object()
+        item_position.organization = organization
     item_position.last_updated_by = current_user._get_current_object()
-    item_position.organization = organization
-    item_position.save()
-
-    return redirect(
-        url_for(
-            "item_positions.index",
-            organization_id=organization_id,
-        )
-    )
-
-
-@module.route("/<item_position_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
-def edit(item_position_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    item_position = models.Warehouse.objects().get(id=item_position_id)
-    form = forms.item_positions.WarehouseForm(obj=item_position)
-
-    if not form.validate_on_submit():
-        return render_template(
-            "/item_positions/add-edit.html",
-            form=form,
-            organization=organization,
-        )
-
-    form.populate_obj(item_position)
-    item_position.organization = organization
     item_position.save()
 
     return redirect(
@@ -105,7 +88,7 @@ def edit(item_position_id):
 def delete(item_position_id):
     organization_id = request.args.get("organization_id")
 
-    item_position = models.ItemPosition.objects().get(id=item_position_id)
+    item_position = get_item_position(g.organization, item_position_id)
     item_position.status = "disactive"
     item_position.save()
 

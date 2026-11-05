@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm, file
 from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators, TextAreaField, HiddenField, DecimalField
 
+from .money_validators import MoneyPlaces
+
 
 class SearchReservationForm(FlaskForm):
     requisition_code = fields.StringField("เลขที่ใบขอซื้อ")
@@ -18,11 +20,11 @@ class SearchReservationForm(FlaskForm):
         "จำนวนเงินที่จอง",
         places=2,
         rounding=None,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )
     actual_amount = DecimalField(
         "จำนวนเงินที่ใช้จริง",
         places=2,
         rounding=None,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )

@@ -15,7 +15,7 @@ _env = Environment(
 )
 
 _URL = re.compile(r"https?://[^\s<>\"]+")
-_LINK_LINE = re.compile(r"^(?:link|ลิงก์|ลิงค์)?\s*:?\s*(https?://\S+)$", re.IGNORECASE)
+_LINK_LINE = re.compile(r"^(?:link|ลิงก์|ลิงค์|ดูรายละเอียด)?\s*:?\s*(https?://\S+)$", re.IGNORECASE)
 _LABEL_LINE = re.compile(r"^([^:]{1,40}):\s+(.+)$")
 _LIST_ITEM = re.compile(r"^(?:[-*•]|\d+\.)\s+")
 

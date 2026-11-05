@@ -1,4 +1,4 @@
-{% macro render_non_renewal_items_table(disactive_items) %}
+{% macro render_non_renewal_items_table(disactive_items, total=none, start_index=0) %}
   <div class="mt-12">
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-xl font-bold text-rose-600 flex items-center gap-3">
@@ -8,7 +8,7 @@
         รายการที่ไม่ต่ออายุ
       </h3>
       <div class="bg-rose-50 border border-rose-200 rounded-full px-4 py-2">
-        <span class="text-rose-700 font-semibold text-sm">{{ disactive_items|length }} รายการ</span>
+        <span class="text-rose-700 font-semibold text-sm">{{ total if total is not none else disactive_items|length }} รายการ</span>
       </div>
     </div>
     {% if disactive_items|length == 0 %}
@@ -32,7 +32,7 @@
             <thead class="bg-gradient-to-r">
               <tr>
                 <th class="text-center font-semibold text-base-content text-sm py-4 w-32">ลำดับ</th>
-                <th class="font-semibold text-base-content text-sm w-48">เลขที่เบิกจ่าย</th>
+                <th class="font-semibold text-base-content text-sm w-48">เลขที่ ม.อ.เบิกจ่าย</th>
                 <th class="font-semibold text-base-content text-sm w-72">ชื่อรายการ</th>
                 <th class="font-semibold text-base-content text-sm text-center w-48">ประเภท</th>
                 <th class="font-semibold text-base-content text-sm text-center w-48">วันที่สิ้นสุด</th>
@@ -46,15 +46,15 @@
                 <tr class="hover:bg-rose-50 transition-colors duration-200">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-sm font-bold">
-                      {{ loop.index }}
+                      {{ start_index + loop.index }}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900">
-                      {{ item.product_numbers | join(", ") if item.product_numbers else item.product_number }}
+                      {{ item.psu_disbursement_number or "-" }}
                     </div>
                     <div class="text-xs text-gray-500 flex items-center gap-1">
-                      <i class="ph ph-barcode"></i>{{ item.asset_codes | join(", ") if item.asset_codes else item.asset_code }}
+                      <i class="ph ph-stack"></i>{{ item.get_items()|length }} รายการย่อย
                     </div>
                   </td>
                   <td class="px-6 py-4">
@@ -62,23 +62,22 @@
                       {{
                       item.name }}
                     </div>
+                    <div class="text-xs text-base-content/60">
+                      ฝ่าย: {% for division in item.get_responsible_divisions() %}{{ division.name }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    {% set category_badge = {
-                                          'ซอฟต์แวร์': 'bg-blue-50 text-blue-700 border border-blue-200',
-                                          'ครุภัณฑ์': 'bg-amber-50 text-amber-700 border border-amber-200',
-                                          'จ้างเหมาบริการ': 'bg-purple-50 text-purple-700 border border-purple-200',
-                                          'วัสดุ': 'bg-gray-50 text-gray-700 border border-gray-200'
-                                        }.get(item.get_category_display(), 'bg-gray-50 text-gray-700 border border-gray-200') %}
-                    <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ category_badge }}">
-                      {{ item.get_category_display() }}
+                    {% for label in item.get_category_labels() %}
+                    <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-700 border border-gray-200">
+                      {{ label }}
                     </span>
+                    {% endfor %}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       <i class="ph ph-calendar-x text-rose-500"></i>
-                      <span class="text-sm font-medium text-rose-700">{{ item.end_date.strftime("%d/%m/") ~ (item.end_date.year + 543) if
-                      item.end_date }}</span>
+                      {% set end_date = item.get_end_date() %}
+                      <span class="text-sm font-medium text-rose-700">{{ end_date.strftime("%d/%m/") ~ (end_date.year + 543) if end_date }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
@@ -89,7 +88,7 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right">
                     <div class="text-lg font-bold text-rose-600">
-                      {{ item.amount | format_amount if item.amount is not none else '0.00' }}
+                      {{ item.total_amount | format_amount if item.total_amount is not none else '0.00' }}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center">

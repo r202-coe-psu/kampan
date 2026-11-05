@@ -3,56 +3,13 @@ from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators, TextAreaField, HiddenField, DecimalField
 
 from kampan import models
+from kampan.models.procurement import ACCOUNT_CODE_CHOICES
 from kampan.models.requisition_timeline import PROGRESS_STATUS_CHOICES
 
-ACCOUNT_TYPE_CHOICES = [
-    ("12030201 อาคารและสิ่งปลูกสร้าง", "12030201 อาคารและสิ่งปลูกสร้าง"),
-    ("12030203 ส่วนปรับปรุงอาคาร", "12030203 ส่วนปรับปรุงอาคาร"),
-    ("12030302 ครุภัณฑ์", "12030302 ครุภัณฑ์"),
-    (
-        "12030402 งานระหว่างก่อสร้าง-ที่ดิน อาคาร และอุปกรณ์",
-        "12030402 งานระหว่างก่อสร้าง-ที่ดิน อาคาร และอุปกรณ์",
-    ),
-    ("1204010101 สินทรัพย์ไม่มีตัวตน", "1204010101 สินทรัพย์ไม่มีตัวตน"),
-    ("12070101 ถนน", "12070101 ถนน"),
-    (
-        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
-        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
-    ),
-    (
-        "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
-        "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
-    ),
-    ("51010208 งานเบี้ยประกันสุขภาพ", "51010208 งานเบี้ยประกันสุขภาพ"),
-    (
-        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
-        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
-    ),
-    (
-        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
-        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
-    ),
-    ("51040301 ค่าซ่อมแซมและค่าบำรุงรักษา", "51040301 ค่าซ่อมแซมและค่าบำรุงรักษา"),
-    (
-        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
-        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
-    ),
-    ("51040601 ค่าจ้างที่ปรึกษา", "51040601 ค่าจ้างที่ปรึกษา"),
-    ("51040701 ค่าเบี้ยประกันภัย", "51040701 ค่าเบี้ยประกันภัย"),
-    ("51040901 ค่ารับรองและพิธีการ", "51040901 ค่ารับรองและพิธีการ"),
-    (
-        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
-        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
-    ),
-    ("51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก", "51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก"),
-    ("51041101 ค่าประชาสัมพันธ์", "51041101 ค่าประชาสัมพันธ์"),
-    ("51041301 ค่าเชื้อเพลิง", "51041301 ค่าเชื้อเพลิง"),
-    ("51041306 เงินชดเชยค่างานสิ่งก่อสร้าง", "51041306 เงินชดเชยค่างานสิ่งก่อสร้าง"),
-    ("5104130804 ค่าใช้สอยอื่นๆ", "5104130804 ค่าใช้สอยอื่นๆ"),
-    ("5105010101 ค่าวัสดุ", "5105010101 ค่าวัสดุ"),
-    ("51050102 ค่าครุภัณฑ์ต่ำกว่าเกณฑ์", "51050102 ค่าครุภัณฑ์ต่ำกว่าเกณฑ์"),
-    ("51060101 ค่าไฟฟ้า", "51060101 ค่าไฟฟ้า"),
-]
+from .money_validators import MoneyPlaces
+
+# choices อยู่ใน models เพื่อใช้ร่วมกับรายการย่อยของ MA
+ACCOUNT_TYPE_CHOICES = ACCOUNT_CODE_CHOICES
 
 BaseRequisitionTimelineForm = model_form(
     models.RequisitionTimeline,
@@ -104,7 +61,7 @@ class ReservationPaymentForm(Form):
         places=2,
         rounding=None,
         default=0,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )
     item_amount = fields.IntegerField(
         default=0,
@@ -123,7 +80,7 @@ class BillingItemForm(Form):
         places=2,
         rounding=None,
         default=0,
-        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        validators=[validators.Optional(), validators.NumberRange(min=0), MoneyPlaces()],
     )
     single_qty = fields.IntegerField(
         default=0,
@@ -170,7 +127,7 @@ class ItemListForm(FlaskForm):
         "เลขที่สินค้า", validators=[validators.Optional()]
     )
     price_per_piece = fields.DecimalField(
-        "ราคาต่อชิ้น", validators=[validators.Optional()]
+        "ราคาต่อชิ้น", validators=[validators.Optional(), MoneyPlaces()]
     )
 
 
@@ -279,7 +236,11 @@ class DetailsSpecifiedItemForm(FlaskForm):
         "ราคาต่อหน่วย (บาท)",
         places=2,
         rounding=None,
-        validators=[validators.DataRequired(), validators.NumberRange(min=0)],
+        validators=[
+            validators.DataRequired(),
+            validators.NumberRange(min=0),
+            MoneyPlaces(),
+        ],
     )
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional()])
     account_code = fields.SelectField(

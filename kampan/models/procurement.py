@@ -1,12 +1,115 @@
+"""ทะเบียนสัญญาบริการ (MA): หัวสัญญา (Procurement) → รายการย่อย (ProcurementItem) → งวด (Installment)
+
+- หัวสัญญาเก็บเลขที่ ม.อ.เบิกจ่าย, ชื่อ, บริษัท และยอดเงินรวม
+- รายการย่อยเก็บประเภท, ผังบัญชี, ช่วงวันที่, ยอดเงิน, ผู้รับผิดชอบ และงวด
+- งวดไม่มีการแบ่งเงิน เป็นแค่ตัวช่วยจำว่าจ่ายไปแล้วกี่งวด (ยอดที่จ่ายจริงไม่บังคับ)
+- ผลรวมยอดรายการย่อยต้องเท่ายอดรวมของหัว ตรวจใน ``Procurement.save_with_items``
+"""
+
 import datetime
+import decimal
+import logging
+import re
+from collections.abc import Iterable
 
 import mongoengine as me
+from bson import ObjectId
+
+from .divisions import Division
+from .organizations import OrganizationUserRole
+from .users import User
+
+logger = logging.getLogger(__name__)
 
 CATEGORY_CHOICES = [
     ("material", "วัสดุ"),
     ("product", "ครุภัณฑ์"),
     ("service", "จ้างเหมาบริการ"),
     ("software", "ซอฟต์แวร์"),
+]
+
+# รายการย่อยของ MA มีประเภท "สินทรัพย์ไม่มีตัวตน" เพิ่ม (คำขอซื้อยังใช้ CATEGORY_CHOICES เดิม)
+ITEM_CATEGORY_CHOICES = CATEGORY_CHOICES + [("intangible", "สินทรัพย์ไม่มีตัวตน")]
+
+REMINDER_KIND_CHOICES = [
+    ("ma", "MA"),
+    ("license", "License"),
+    ("rental", "เช่า-จ้างเหมา"),
+]
+
+# ช่วงเตือนล่วงหน้าที่เลือกได้ (#28) ใช้ทั้งเตือนหมดอายุ (ก่อน end_date) และเตือนจ่ายงวด (ก่อน due_date)
+REMINDER_OFFSET_CHOICES = [
+    ("6m", "180 วัน"),
+    ("5m", "150 วัน"),
+    ("4m", "120 วัน"),
+    ("3m", "90 วัน"),
+    ("2m", "60 วัน"),
+    ("1m", "30 วัน"),
+    ("15d", "15 วัน"),
+    ("7d", "7 วัน"),
+]
+DEFAULT_REMINDER_OFFSETS = ["3m", "2m", "1m", "15d", "7d"]
+# จำนวนวันเตือนที่กรอกเอง (#29)
+MAX_REMINDER_OFFSET_DAYS = 730
+# จำนวนงวดสูงสุดต่อรายการย่อย (ฟอร์มและนำเข้า Excel)
+MAX_INSTALLMENTS_PER_ITEM = 120
+MAX_SUB_ITEMS_PER_ITEM = 100
+MAX_SUB_ITEMS_MESSAGE = f"จำนวนแถวยี่ห้อ / รุ่น / รายละเอียดต้องไม่เกิน {MAX_SUB_ITEMS_PER_ITEM} แถว"
+MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เกิน {MAX_INSTALLMENTS_PER_ITEM}"
+
+
+def default_reminder_offsets() -> list[str]:
+    return list(DEFAULT_REMINDER_OFFSETS)
+
+
+# ผังบัญชี ใช้ร่วมกันระหว่างรายการย่อยของ MA และขั้นที่ 3 ของขอซื้อขอจ้าง
+ACCOUNT_CODE_CHOICES = [
+    ("12030201 อาคารและสิ่งปลูกสร้าง", "12030201 อาคารและสิ่งปลูกสร้าง"),
+    ("12030203 ส่วนปรับปรุงอาคาร", "12030203 ส่วนปรับปรุงอาคาร"),
+    ("12030302 ครุภัณฑ์", "12030302 ครุภัณฑ์"),
+    (
+        "12030402 งานระหว่างก่อสร้าง-ที่ดิน อาคาร และอุปกรณ์",
+        "12030402 งานระหว่างก่อสร้าง-ที่ดิน อาคาร และอุปกรณ์",
+    ),
+    ("1204010101 สินทรัพย์ไม่มีตัวตน", "1204010101 สินทรัพย์ไม่มีตัวตน"),
+    ("12070101 ถนน", "12070101 ถนน"),
+    (
+        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
+        "12070201 สินทรัพย์โครงสร้างพื้นฐานอื่น",
+    ),
+    (
+        "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
+        "12070302 งานระหว่างก่อสร้าง-สินทรัพย์โครงสร้างพื้นฐาน",
+    ),
+    ("51010208 งานเบี้ยประกันสุขภาพ", "51010208 งานเบี้ยประกันสุขภาพ"),
+    (
+        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
+        "51040102 ค่าใช้จ่ายด้านฝึกอบรม-ในประเทศ",
+    ),
+    (
+        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
+        "51040105 ค่าใช้จ่ายด้านฝึกอบรมบุคคลภายนอก",
+    ),
+    ("51040301 ค่าซ่อมแซมและค่าบำรุงรักษา", "51040301 ค่าซ่อมแซมและค่าบำรุงรักษา"),
+    (
+        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
+        "5104040101 ค่าจ้างเหมาบริการ-บุคคลภายนอก",
+    ),
+    ("51040601 ค่าจ้างที่ปรึกษา", "51040601 ค่าจ้างที่ปรึกษา"),
+    ("51040701 ค่าเบี้ยประกันภัย", "51040701 ค่าเบี้ยประกันภัย"),
+    ("51040901 ค่ารับรองและพิธีการ", "51040901 ค่ารับรองและพิธีการ"),
+    (
+        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
+        "51041002 ค่าเช่าอสังหาริมทรัพย์-บุคคลภายนอก",
+    ),
+    ("51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก", "51041004 ค่าเช่าเบ็ดเตล็ด-บุคคลภายนอก"),
+    ("51041101 ค่าประชาสัมพันธ์", "51041101 ค่าประชาสัมพันธ์"),
+    ("51041301 ค่าเชื้อเพลิง", "51041301 ค่าเชื้อเพลิง"),
+    ("51041306 เงินชดเชยค่างานสิ่งก่อสร้าง", "51041306 เงินชดเชยค่างานสิ่งก่อสร้าง"),
+    ("5104130804 ค่าใช้สอยอื่นๆ", "5104130804 ค่าใช้สอยอื่นๆ"),
+    ("5105010101 ค่าวัสดุ", "5105010101 ค่าวัสดุ"),
+    ("51050102 ค่าครุภัณฑ์ต่ำกว่าเกณฑ์", "51050102 ค่าครุภัณฑ์ต่ำกว่าเกณฑ์"),
+    ("51060101 ค่าไฟฟ้า", "51060101 ค่าไฟฟ้า"),
 ]
 
 PAYEMENT_STATUS_CHOICES = [
@@ -21,147 +124,841 @@ RENEWAL_STATUS_CHOICES = [
     ("renewal-requested", "ยื่นขอต่ออายุ"),
     ("disactive", "ไม่อนุมัติ"),
     ("active", "จัดซื้อเรียบร้อย"),
+    ("renewed", "ต่ออายุแล้ว"),
+]
+
+# งวดที่ครบกำหนดภายในกี่วันนับเป็น "ใกล้ครบกำหนด"
+UPCOMING_DAYS = 7
+
+# ใช้หาสถานะที่แย่ที่สุดของ MA จากทุกรายการย่อย
+PAYMENT_STATUS_SEVERITY = {"paid": 0, "unpaid": 1, "upcoming": 2, "overdue": 3}
+
+
+def _as_date(value):
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    return value
+
+
+def _reference_id(document, field_name):
+    """id ของ ReferenceField โดยไม่ dereference (ค่าดิบเป็น DBRef จนกว่าจะถูกอ่านผ่าน attribute)"""
+    value = document._data.get(field_name)
+    return getattr(value, "id", value)
+
+
+def _reference_ids(document, field_name) -> list:
+    """id ของ ListField(ReferenceField) ตามลำดับเดิม โดยไม่ dereference"""
+    return [getattr(value, "id", value) for value in document._data.get(field_name) or []]
+
+
+def installment_status(due_date, paid_date, today: datetime.date | None = None) -> str:
+    """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
+    if paid_date is not None:
+        return "paid"
+    today = today or datetime.date.today()
+    due_date = _as_date(due_date)
+    if not due_date:
+        return "unpaid"
+    days_left = (due_date - today).days
+    if days_left < 0:
+        return "overdue"
+    if days_left <= UPCOMING_DAYS:
+        return "upcoming"
+    return "unpaid"
+
+
+def item_payment_status(installments: Iterable[tuple], today: datetime.date | None = None) -> str:
+    """สถานะของรายการย่อยจากงวด ``(due_date, paid_date)``: งวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด หรือ paid เมื่อจ่ายครบ"""
+    installments = list(installments)
+    unpaid_due_dates = [due_date for due_date, paid_date in installments if paid_date is None]
+    if not unpaid_due_dates:
+        return "paid" if installments else "unpaid"
+    next_due_date = min(unpaid_due_dates, key=lambda due_date: due_date or datetime.datetime.max)
+    return installment_status(next_due_date, None, today)
+
+
+def worst_payment_status(statuses: Iterable[str]) -> str:
+    """สถานะที่แย่ที่สุด (overdue > upcoming > unpaid > paid) ไม่มีรายการย่อยถือว่า unpaid"""
+    return max(statuses, key=lambda status: PAYMENT_STATUS_SEVERITY.get(status, 0), default="unpaid")
+
+
+def even_due_dates(start_date, end_date, count: int) -> list[datetime.date]:
+    """วันครบกำหนด ``count`` งวดที่ห่างเท่า ๆ กันในช่วง start–end (งวดสุดท้ายตรงกับ end_date)
+
+    ใช้เติมค่าเริ่มต้นของงวดเท่านั้น (ฟอร์มใช้สูตรเดียวกันใน JS) ผู้ใช้แก้วันเองได้
+    """
+    start = _as_date(start_date)
+    end = _as_date(end_date)
+    if not start or not end or not count or count < 1 or end < start:
+        return []
+
+    total_days = (end - start).days + 1  # รวมวันสุดท้าย
+    days_per_period, remainder = divmod(total_days, count)
+
+    due_dates = []
+    current_start = start
+    for index in range(count):
+        days_this_period = days_per_period + (1 if index < remainder else 0)
+        current_end = current_start + datetime.timedelta(days=max(days_this_period, 1) - 1)
+        current_end = min(current_end, end)
+        due_dates.append(current_end)
+        current_start = current_end + datetime.timedelta(days=1)
+    return due_dates
+
+
+def check_item_sum(total_amount, amounts: Iterable) -> str | None:
+    """ข้อความ error ถ้าผลรวมยอดรายการย่อยไม่เท่ายอดรวม MA (เทียบเท่ากันเป๊ะด้วย Decimal) ถ้าตรงคืน None"""
+    # import ในฟังก์ชัน: kampan.utils import models กลับมา (circular import)
+    from kampan.utils.money import money_sum, to_money
+
+    total = to_money(total_amount)
+    items_sum = money_sum(amounts)
+    difference = items_sum - total
+    if difference == 0:
+        return None
+
+    word = "ขาด" if difference < 0 else "เกิน"
+    return (
+        f"ผลรวมรายการย่อย {items_sum:,.2f} บาท ไม่ตรงกับยอด MA {total:,.2f} บาท "
+        f"({word} {abs(difference):,.2f} บาท)"
+    )
+
+
+class RenewalConflict(Exception):
+    """MA เดิมต่ออายุไปแล้ว หรือมีคำขออื่น claim ไปก่อน (เช่นกดบันทึกซ้ำ)"""
+
+
+class ConcurrentEditConflict(Exception):
+    """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
+
+
+PAY_LOG_ACTIONS = [
+    ("paid", "บันทึกจ่าย"),
+    ("edited", "แก้ไขการบันทึก"),
+    ("unpaid", "ยกเลิกการจ่าย"),
 ]
 
 
-class PaymentRecord(me.EmbeddedDocument):
-    """Record for each payment period"""
+class PayLogEntry(me.EmbeddedDocument):
+    """ประวัติการกดจ่าย / ยกเลิกจ่ายของงวด (เพิ่มทุกครั้งที่กด ไม่แก้ไม่ลบ)"""
 
-    period_index = me.IntField(required=True)
-    payment_number = me.StringField(max_length=128, required=False)
-    amount = me.DecimalField(required=True, min_value=0, precision=2, max_value=1e12)
-    paid_date = me.DateTimeField(required=True)  # วันที่จ่าย
-    paid_by = me.ReferenceField("User", dbref=True)  # ผู้ยืนยันการจ่าย
-    due_date = me.DateTimeField(required=True)  # วันที่ครบกำหนดของงวดนี้
+    action = me.StringField(choices=PAY_LOG_ACTIONS, required=True)
+    pressed_at = me.DateTimeField(required=True, default=datetime.datetime.now)  # เวลาที่กดปุ่ม
+    # วันที่จ่ายที่บันทึก (action=unpaid: วันที่จ่ายเดิมที่ถูกยกเลิก)
+    paid_date = me.DateTimeField()
+    by = me.ReferenceField("User", dbref=True)
+    payment_number = me.StringField(max_length=128)
+    paid_amount = me.DecimalField(
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
+
+    def get_by_id(self):
+        return _reference_id(self, "by")
+
+    def get_action_label(self) -> str:
+        return dict(PAY_LOG_ACTIONS).get(self.action, self.action or "-")
+
+
+class Installment(me.EmbeddedDocument):
+    """งวดของรายการย่อย ไม่มีการแบ่งเงิน มีแค่วันครบกำหนดและสถานะการจ่าย
+    (ผู้ใช้กรอกแค่วันครบกำหนด ส่วนการจ่ายบันทึกด้วยปุ่ม "จ่ายแล้ว" ที่หน้ารายละเอียด)"""
+
+    _id = me.ObjectIdField(required=True, default=ObjectId)
+    due_date = me.DateTimeField(required=True)
+    paid_date = me.DateTimeField()
+    paid_by = me.ReferenceField("User", dbref=True)  # ผู้บันทึกการจ่าย
+    payment_number = me.StringField(max_length=128)  # เลขที่เอกสาร / ใบจ่ายเงิน
+    paid_amount = me.DecimalField(
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
+    # ประวัติการกดจ่าย / ยกเลิกจ่าย (เก่าสุดก่อน)
+    pay_log = me.EmbeddedDocumentListField(PayLogEntry)
+
+    def is_paid(self) -> bool:
+        return self.paid_date is not None
+
+    def get_status(self, today: datetime.date | None = None) -> str:
+        """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
+        return installment_status(self.due_date, self.paid_date, today)
+
+
+class ItemDetail(me.EmbeddedDocument):
+    """แถวย่อยของรายการย่อย: ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด เพิ่มได้หลายแถว"""
+
+    brand = me.StringField(max_length=100)
+    model_name = me.StringField(max_length=100)
+    serial_number = me.StringField(max_length=100)
+    asset_code = me.StringField(max_length=100)
+    details = me.StringField()
+
+    def get_serial_number(self) -> str:
+        if self.serial_number:
+            return self.serial_number
+        if self.details:
+            match = re.search(r"(?:S/N|SN|Serial(?:\s*Number)?)\s*[:=]\s*([^\n\r]+)", self.details, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        return ""
+
+    def get_asset_code(self) -> str:
+        if self.asset_code:
+            return self.asset_code
+        if self.details:
+            match = re.search(r"(?:รหัสครุภัณฑ์|Asset(?:\s*Code)?|ครุภัณฑ์)\s*[:=]\s*([^\n\r]+)", self.details, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        return ""
+
+    def get_other_details(self) -> str:
+        """รายละเอียดอื่น ๆ ที่ไม่ใช่ S/N หรือรหัสครุภัณฑ์ (กรณีข้อมูลเก่าเก็บปนกันใน details)"""
+        if self.serial_number or self.asset_code:
+            return (self.details or "").strip()
+        if not self.details:
+            return ""
+        lines = []
+        for line in self.details.splitlines():
+            line_s = line.strip()
+            if not line_s:
+                continue
+            if re.match(r"^(?:S/N|SN|Serial(?:\s*Number)?)\s*[:=]", line_s, re.IGNORECASE):
+                continue
+            if re.match(r"^(?:รหัสครุภัณฑ์|Asset(?:\s*Code)?|ครุภัณฑ์)\s*[:=]", line_s, re.IGNORECASE):
+                continue
+            lines.append(line_s)
+        return "\n".join(lines)
+
+
+class ProcurementItem(me.Document):
+    """รายการย่อยของ MA (collection แยก) ทุก query ต้อง scope ด้วย organization"""
+
+    meta = {
+        "collection": "procurement_items",
+        "strict": False,  # เอกสารเก่าที่ยังมี brand / model_name / details ระดับรายการต้องยังโหลดได้
+        "indexes": [
+            "procurement",
+            ("organization", "responsible_by"),
+            ("organization", "responsible_divisions"),
+            ("organization", "end_date"),
+        ],
+    }
+
+    organization = me.ReferenceField("Organization", dbref=True, required=True)
+    procurement = me.ReferenceField("Procurement", dbref=True, required=True)
+
+    name = me.StringField(max_length=255, required=True)
+    category = me.StringField(max_length=20, choices=ITEM_CATEGORY_CHOICES, required=True)
+    account_code = me.StringField(max_length=200, choices=ACCOUNT_CODE_CHOICES)
+    start_date = me.DateTimeField(required=True)
+    end_date = me.DateTimeField(required=True)
+    amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
+    # ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด เป็นแถวย่อย เพิ่มได้ตามต้องการ
+    sub_items = me.EmbeddedDocumentListField(ItemDetail)
+    # เปิด/ปิด การระบุ S/N และ รหัสครุภัณฑ์ ในฟอร์ม
+    has_sub_item_sn = me.BooleanField(default=None)
+    has_sub_item_asset = me.BooleanField(default=None)
+
+    # ช่องจากขั้นที่ 3 ของขอซื้อขอจ้างเดิม (#27) ผู้ชนะและราคาต่อหน่วยไม่บังคับ
+    winner = me.StringField(max_length=200)
+    unit_price = me.DecimalField(
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
+    note = me.StringField()
+
+    responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
+    # ฝ่ายที่มองเห็น / รับผิดชอบ: เลือกได้ในฟอร์ม หรือคำนวณจาก responsible_by หากไม่ได้กำหนดเอง
+    responsible_divisions = me.ListField(me.ReferenceField("Division", dbref=True))
+    has_custom_responsible_divisions = me.BooleanField(default=False)
+
+    reminder_kind = me.StringField(choices=REMINDER_KIND_CHOICES, default="ma", required=True)
+    requires_activation = me.BooleanField(default=False)
+
+    # ตั้งค่าการเตือน (#28, #29) ดู kampan/utils/reminders.py
+    expiry_reminder_offsets = me.ListField(
+        me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
+    )
+    payment_reminder_offsets = me.ListField(
+        me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
+    )
+    # จำนวนวันก่อน end_date ที่กรอกเอง (เตือนหมดอายุ)
+    reminder_offsets_days = me.ListField(
+        me.IntField(min_value=1, max_value=MAX_REMINDER_OFFSET_DAYS), default=list
+    )
+    # วันที่เตือนเจาะจง (เก็บ ค.ศ. เที่ยงคืน กรอกเป็น พ.ศ. ในฟอร์ม)
+    custom_reminder_dates = me.ListField(me.DateTimeField(), default=list)
+
+    # แบ่งจ่ายเป็นงวดไหม: False = จ่ายครั้งเดียวก่อนหมดอายุ (งวดเดียว due_date = end_date ระบบตั้งให้)
+    # None = เอกสารที่สร้างก่อนมี field นี้ ใช้จำนวนงวด (>1 = แบ่งงวด) ดู pays_in_installments
+    installment_mode = me.BooleanField(default=None)
+    installments = me.EmbeddedDocumentListField(Installment)
+
+    # Audit fields
+    created_by = me.ReferenceField("User", dbref=True)
+    last_updated_by = me.ReferenceField("User", dbref=True)
+    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
+    updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
+
+    def __init__(self, *args, **values):
+        super().__init__(*args, **values)
+        if "responsible_divisions" in values and "_created" not in values and "__auto_convert" not in values:
+            self.has_custom_responsible_divisions = True
+
+    def clean(self):
+        if not self.installments:
+            raise me.ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise me.ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
+
+        organization_id = getattr(self.organization, "id", None)
+        for member in self.responsible_by or []:
+            if _reference_id(member, "organization") != organization_id:
+                raise me.ValidationError("ผู้รับผิดชอบต้องเป็นสมาชิกของหน่วยงานเดียวกับ MA")
+
+        if self.has_custom_responsible_divisions:
+            for division in self.responsible_divisions or []:
+                if _reference_id(division, "organization") != organization_id:
+                    raise me.ValidationError("ฝ่ายต้องเป็นของหน่วยงานเดียวกับ MA")
+        else:
+            divisions = []
+            for member in self.responsible_by or []:
+                division = member.division
+                if division and all(division.id != existing.id for existing in divisions):
+                    divisions.append(division)
+            self.responsible_divisions = divisions
+
+    def get_category_label(self) -> str:
+        return dict(ITEM_CATEGORY_CHOICES).get(self.category, self.category or "-")
+
+    def get_reminder_kind_label(self) -> str:
+        return dict(REMINDER_KIND_CHOICES).get(self.reminder_kind, self.reminder_kind or "-")
+
+    def pays_in_installments(self) -> bool:
+        if self.installment_mode is not None:
+            return bool(self.installment_mode)
+        return self.get_installment_count() > 1
+
+    def has_sn(self) -> bool:
+        if self.has_sub_item_sn is not None:
+            return bool(self.has_sub_item_sn)
+        return any(bool(sub.serial_number) for sub in self.sub_items or [])
+
+    def has_asset(self) -> bool:
+        if self.has_sub_item_asset is not None:
+            return bool(self.has_sub_item_asset)
+        return any(bool(sub.asset_code) for sub in self.sub_items or [])
+
+    def has_other_details(self) -> bool:
+        return any(bool(sub.details and sub.details.strip()) for sub in self.sub_items or [])
+
+    def get_sorted_installments(self) -> list[Installment]:
+        return sorted(self.installments, key=lambda installment: installment.due_date or datetime.datetime.max)
+
+    def get_installment(self, installment_id) -> Installment | None:
+        for installment in self.installments:
+            if str(installment._id) == str(installment_id):
+                return installment
+        return None
+
+    def _installments_without_dereference(self) -> list[Installment]:
+        """งวดจาก ``_data`` ตรง ๆ: อ่าน ``self.installments`` จะ dereference ``paid_by`` ของทุกงวด
+        (1 query ต่อรายการย่อย) ซึ่งการคำนวณสถานะไม่ได้ใช้"""
+        return list(self._data.get("installments") or [])
+
+    def get_next_unpaid_installment(self) -> Installment | None:
+        """งวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วที่สุด"""
+        unpaid = [installment for installment in self._installments_without_dereference() if not installment.is_paid()]
+        if not unpaid:
+            return None
+        return min(unpaid, key=lambda installment: installment.due_date or datetime.datetime.max)
+
+    def get_paid_count(self) -> int:
+        return sum(1 for installment in self._installments_without_dereference() if installment.is_paid())
+
+    def get_installment_count(self) -> int:
+        return len(self._installments_without_dereference())
+
+    def get_payment_status(self, today: datetime.date | None = None) -> str:
+        """สถานะของงวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด (แย่สุดของรายการนี้) หรือ paid เมื่อจ่ายครบ"""
+        return item_payment_status(
+            ((installment.due_date, installment.paid_date) for installment in self._installments_without_dereference()),
+            today,
+        )
+
+    def get_responsible_ids(self) -> set:
+        return {getattr(member, "id", member) for member in self._data.get("responsible_by") or []}
 
 
 class Procurement(me.Document):
-    meta = {"collection": "procurements"}
+    """หัวสัญญา MA (collection procurements เดิม)"""
 
-    # Core fields
+    meta = {
+        "collection": "procurements",
+        # เอกสารรูปแบบเก่าที่ยังหลงเหลือ (มี field ที่ถูกลบไปแล้ว) ต้องไม่ทำให้หน้าเว็บ 500
+        "strict": False,
+        "indexes": [
+            ("organization", "psu_disbursement_number"),
+            ("organization", "status"),
+        ],
+    }
+
     image = me.ImageField()
-    product_numbers = me.ListField(me.StringField(), default=list)
-    asset_codes = me.ListField(me.StringField(), default=list)
+    # บังคับในฟอร์ม แต่ไม่บังคับใน model และซ้ำได้
+    psu_disbursement_number = me.StringField(max_length=128)
     name = me.StringField(max_length=255, required=True)
-    category = me.StringField(max_length=20, choices=CATEGORY_CHOICES, required=True)
-    start_date = me.DateTimeField(required=True)
-    end_date = me.DateTimeField(required=True)
-    amount = me.DecimalField(required=True, min_value=0, precision=2, max_value=1e12)
-    period = me.IntField(required=True, min_value=1)
-    quantity = me.IntField(min_value=1, default=1)
+    company = me.StringField(max_length=255, required=True)
+    total_amount = me.DecimalField(
+        required=True,
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
     # status: สถานะการต่ออายุ (renewal process)
     status = me.StringField(choices=RENEWAL_STATUS_CHOICES, default="active")
 
-    # References
     organization = me.ReferenceField("Organization", dbref=True, required=True)
-    company = me.StringField(max_length=255, required=True)
-    payment_status = me.StringField(default=PAYEMENT_STATUS_CHOICES[0][0])
-    responsible_by = me.ListField(me.ReferenceField("OrganizationUserRole", dbref=True))
+
+    # การต่ออายุ (#32): MA ใหม่ชี้ MA เดิม และ MA เดิมชี้ MA ใหม่
+    renewed_from = me.ReferenceField("Procurement", dbref=True)
+    renewed_to = me.ReferenceField("Procurement", dbref=True)
+    # สถานะก่อนถูก claim เพื่อต่ออายุ ใช้คืนสถานะเมื่อสร้าง MA ใหม่ไม่สำเร็จ
+    # (status = renewed แต่ยังไม่มี renewed_to คือกำลังต่ออายุอยู่)
+    status_before_renewal = me.StringField(choices=RENEWAL_STATUS_CHOICES)
 
     # Audit fields
     last_updated_by = me.ReferenceField("User", dbref=True)
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
-    paid_period_index = me.IntField(default=-1)  # เปลี่ยนกลับเป็น -1
-    payment_records = me.ListField(me.EmbeddedDocumentField(PaymentRecord))  # ประวัติการจ่ายเงิน
 
-    def get_payment_due_dates(self):
-        """
-        Return a list of due dates (datetime.date) for each payment period.
-        """
-        if not self.start_date or not self.end_date or not self.period or self.period < 1:
-            return []
+    def is_renewed(self) -> bool:
+        return self.status == "renewed" or _reference_id(self, "renewed_to") is not None
 
-        start = self.start_date.date() if isinstance(self.start_date, datetime.date) else self.start_date
-        end = self.end_date.date() if isinstance(self.end_date, datetime.date) else self.end_date
+    # ------------------------------------------------------------------
+    # รายการย่อย
+    # ------------------------------------------------------------------
 
-        total_days = (end - start).days + 1  # รวมวันสุดท้าย
-        days_per_period = total_days // self.period
-        remainder = total_days % self.period
+    def get_items(self) -> list[ProcurementItem]:
+        """รายการย่อยเรียงตามลำดับที่สร้าง (cache ไว้ในตัวเอกสาร ดู attach_items)"""
+        cached = self.__dict__.get("_items_cache")
+        if cached is None:
+            if not self.pk:
+                return []
+            cached = list(
+                ProcurementItem.objects(procurement=self, organization=self.organization).order_by("id")
+            )
+            self.__dict__["_items_cache"] = cached
+        return cached
 
-        due_dates = []
-        current_start = start
-        for i in range(self.period):
-            days_this_period = days_per_period + (1 if i < remainder else 0)
-            current_end = current_start + datetime.timedelta(days=days_this_period - 1)
-            # ป้องกันเกิน end_date
-            if current_end > end:
-                current_end = end
-            due_dates.append(current_end)
-            current_start = current_end + datetime.timedelta(days=1)
-        return due_dates
+    def get_payment_status(self, today: datetime.date | None = None) -> str:
+        """สถานะที่แย่ที่สุดของทุกรายการย่อย (overdue > upcoming > unpaid) หรือ paid เมื่อจ่ายครบทุกงวด"""
+        return worst_payment_status(item.get_payment_status(today) for item in self.get_items())
 
-    def get_next_payment_index(self):
-        """
-        Return the index (0-based) of the next unpaid period.
-        """
-        if len(self.payment_records) >= self.period:
-            return self.period
-        return len(self.payment_records)
-
-    def get_total_payment_record(self):
-        total = 0
-        for record in self.payment_records:
-            total += record.amount
-        return total
-
-    def get_remaining_amount(self):
-        total_paid = self.get_total_payment_record()
-        remaining = self.amount - total_paid
-        return remaining
-
-    def is_last_period(self):
-        return self.get_next_payment_index() == self.period - 1
-
-    def get_current_payment_status(self, today=None):
-        """
-        Return payment status string: 'unpaid', 'upcoming', 'overdue', or 'paid'
-        - ดูเฉพาะงวดถัดไปที่ยังไม่จ่าย
-        """
-        if today is None:
-            today = datetime.date.today()
-        due_dates = self.get_payment_due_dates()
-
-        # ถ้าจ่ายครบทุกงวดแล้ว
-        if len(self.payment_records) >= self.period:
-            return "paid"
-
-        if not due_dates:
-            return "unpaid"
-
-        # หางวดถัดไปที่ยังไม่จ่าย
-        next_idx = len(self.payment_records)
-        if next_idx >= len(due_dates):
-            return "paid"
-
-        due_date = due_dates[next_idx]
-        if today > due_date:
-            return "overdue"
-        elif 0 <= (due_date - today).days <= 7:
-            return "upcoming"
-        else:
-            return "unpaid"
-
-    def add_payment_record(self, period_index, paid_by, amount, payment_number=None):
-        """Add payment record for specific period"""
-        due_dates = self.get_payment_due_dates()
-        due_date = None
-        if 0 <= period_index < len(due_dates):
-            due_date = datetime.datetime.combine(due_dates[period_index], datetime.time.min)
-        payment_record = PaymentRecord(
-            period_index=period_index,
-            paid_date=datetime.datetime.now(),
-            paid_by=paid_by,
-            due_date=due_date,
-            amount=amount,
-            payment_number=payment_number,
+    def get_installment_progress(self) -> tuple[int, int]:
+        """(จำนวนงวดที่จ่ายแล้ว, จำนวนงวดทั้งหมด) ของทุกรายการย่อย"""
+        items = self.get_items()
+        return (
+            sum(item.get_paid_count() for item in items),
+            sum(item.get_installment_count() for item in items),
         )
-        self.payment_records.append(payment_record)
 
-    def get_payment_record_for_period(self):
-        """Get payment record for specific period"""
-        for record in self.payment_records:
-            if record.period_index == (self.paid_period_index or -1) + 1:
-                return record
-        return None
+    def get_next_unpaid(self) -> tuple[ProcurementItem | None, Installment | None]:
+        """งวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วที่สุดของทั้ง MA"""
+        candidates = [(item, item.get_next_unpaid_installment()) for item in self.get_items()]
+        candidates = [(item, installment) for item, installment in candidates if installment]
+        if not candidates:
+            return None, None
+        return min(candidates, key=lambda pair: pair[1].due_date or datetime.datetime.max)
+
+    def get_start_date(self):
+        dates = [item.start_date for item in self.get_items() if item.start_date]
+        return min(dates) if dates else None
+
+    def get_end_date(self):
+        """วันสิ้นสุดของรายการย่อยที่หมดอายุก่อน ใช้กับการต่ออายุและการเรียงตามวันหมดอายุ"""
+        dates = [item.end_date for item in self.get_items() if item.end_date]
+        return min(dates) if dates else None
+
+    def _unique_references(self, field_name: str, lookup_key: str) -> list:
+        """เอกสารใน ``field_name`` ของทุกรายการย่อย ไม่ซ้ำ ตามลำดับที่พบ
+
+        ถ้า ``attach_items(..., with_responsibles=True)`` โหลดเอกสารไว้ให้แล้วใช้ของที่โหลดไว้ (ไม่ query ต่อแถว)
+        """
+        lookup = self.__dict__.get(lookup_key)
+        documents = []
+        seen = set()
+        for item in self.get_items():
+            if lookup is None:
+                references = [(getattr(document, "id", None), document) for document in getattr(item, field_name) or []]
+            else:
+                references = [
+                    (document_id, lookup.get(document_id)) for document_id in _reference_ids(item, field_name)
+                ]
+            for document_id, document in references:
+                if document_id and document is not None and document_id not in seen:
+                    seen.add(document_id)
+                    documents.append(document)
+        return documents
+
+    def get_responsible_members(self) -> list:
+        return self._unique_references("responsible_by", "_responsible_members_by_id")
+
+    def get_responsible_divisions(self) -> list:
+        return self._unique_references("responsible_divisions", "_responsible_divisions_by_id")
+
+    def get_version(self) -> str:
+        """เวลาแก้ไขล่าสุดของหัวและทุกรายการย่อย ใช้กันฟอร์มแก้ไขที่ค้างข้อมูลเก่าเขียนทับ"""
+        dates = [self.updated_date] + [item.updated_date for item in self.get_items()]
+        return max(date for date in dates if date).isoformat(timespec="milliseconds")
+
+    def get_category_labels(self) -> list[str]:
+        labels = []
+        for item in self.get_items():
+            label = item.get_category_label()
+            if label not in labels:
+                labels.append(label)
+        return labels
+
+    # ------------------------------------------------------------------
+    # บันทึกหัว + รายการย่อย
+    # ------------------------------------------------------------------
+
+    def save_with_items(self, items: Iterable[ProcurementItem], removed_items: Iterable[ProcurementItem] = ()):
+        """ทางบันทึกเดียวของ MA (สร้าง, แก้ไข, นำเข้า Excel และต่ออายุ)
+
+        - ตรวจผลรวมยอด หัว และทุกรายการย่อยก่อนเขียนเอกสารใด ๆ ถ้าไม่ผ่าน raise ValidationError
+        - เขียนหัว → รายการย่อย → ลบรายการที่ถูกเอาออก ถ้าเขียนไม่สำเร็จกลางทาง คืนข้อมูลเดิมแล้ว raise ต่อ
+        - เอกสารที่มีอยู่แล้วเขียน / ลบเฉพาะเมื่อ ``updated_date`` ใน DB ยังเท่ากับตอนโหลด
+          ถ้ามีคนแก้หรือบันทึกจ่ายงวดไปก่อน คืนส่วนที่เขียนไปแล้วแล้ว raise ConcurrentEditConflict
+        """
+        items = list(items)
+        removed_items = [item for item in removed_items if item.pk]
+        if not items:
+            raise me.ValidationError("MA ต้องมีรายการย่อยอย่างน้อย 1 รายการ")
+
+        sum_error = check_item_sum(self.total_amount, (item.amount for item in items))
+        if sum_error:
+            raise me.ValidationError(sum_error)
+
+        is_new = self.pk is None
+        if is_new:
+            # ตั้ง id ก่อน รายการย่อยจึง validate ReferenceField ได้ทั้งที่ยังไม่ได้เขียนหัว
+            self.id = ObjectId()
+
+        # เวลาแก้ไขตอนโหลด ใช้เป็นเงื่อนไขการเขียน (กันเขียนทับการแก้ / จ่ายงวดที่เกิดหลังโหลด)
+        loaded_header_date = None if is_new else self.updated_date
+        loaded_item_dates = {item.pk: item.updated_date for item in items + removed_items if item.pk}
+
+        # auto_now ของ DateTimeField ไม่มีผลใน MongoEngine จึงตั้งเวลาแก้ไขเอง (ใช้ตรวจการแก้ไขชนกันด้วย)
+        # ตัดเหลือมิลลิวินาทีให้ตรงกับที่ Mongo เก็บ จึงใช้เป็นเงื่อนไขตอนคืนข้อมูลได้
+        now = datetime.datetime.now()
+        now = now.replace(microsecond=now.microsecond // 1000 * 1000)
+        self.updated_date = now
+        for item in items:
+            item.procurement = self
+            item.organization = self.organization
+            item.updated_date = now
+
+        try:
+            self.validate()
+            for item in items:
+                item.validate()
+        except me.ValidationError:
+            if is_new:
+                self.id = None
+            raise
+
+        snapshot = self._snapshot(items, removed_items, is_new)
+        written = {"header": False, "items": [], "deleted": []}
+        try:
+            if is_new:
+                self.save(force_insert=True, validate=False)
+            else:
+                self.save(validate=False, save_condition={"updated_date": loaded_header_date})
+            written["header"] = True
+            for item in items:
+                if item.pk in loaded_item_dates:
+                    item.save(validate=False, save_condition={"updated_date": loaded_item_dates[item.pk]})
+                else:
+                    item.save(validate=False)
+                written["items"].append(item)
+            for item in removed_items:
+                if not ProcurementItem.objects(id=item.pk, updated_date=loaded_item_dates[item.pk]).delete():
+                    raise ConcurrentEditConflict()
+                written["deleted"].append(item)
+        except (me.errors.SaveConditionError, ConcurrentEditConflict) as error:
+            logger.info("save_with_items conflict for procurement %s, restoring", self.pk)
+            self._restore(snapshot, written, is_new, now)
+            raise ConcurrentEditConflict() from error
+        except Exception:
+            logger.exception("save_with_items failed for procurement %s, restoring", self.pk)
+            self._restore(snapshot, written, is_new, now)
+            raise
+
+        self.__dict__["_items_cache"] = items
+        return self
+
+    def renew_into(self, new_procurement: "Procurement", items: Iterable[ProcurementItem]) -> "Procurement":
+        """ต่ออายุ MA นี้เป็น ``new_procurement`` (#32)
+
+        1. claim MA นี้แบบ atomic ก่อน (ยังไม่ต่ออายุ → status renewed) กันกดบันทึกซ้ำได้ MA ใหม่ 2 ตัว
+           ถ้า claim ไม่ได้ raise RenewalConflict
+        2. สร้าง MA ใหม่ผ่าน save_with_items (renewed_from ชี้ MA นี้)
+        3. ผูก renewed_to ของ MA นี้ไปที่ MA ใหม่
+        ถ้าข้อ 2–3 ล้ม ลบ MA ใหม่ที่เขียนไปแล้ว คืน claim แล้ว raise ต่อ (ValidationError ของข้อ 2 ใช้แสดงในฟอร์มได้)
+        """
+        previous_status = self.status
+        if previous_status == "renewed":
+            raise RenewalConflict()
+        # เงื่อนไข status เดิม: ถ้ามีคนเปลี่ยนสถานะ (รวมถึง claim ไปก่อน) หลังเราโหลด MA จะ claim ไม่ได้
+        claimed = Procurement.objects(
+            id=self.pk,
+            organization=self.organization,
+            status=previous_status,
+            renewed_to=None,
+        ).update_one(
+            set__status="renewed",
+            set__status_before_renewal=previous_status,
+            set__updated_date=datetime.datetime.now(),
+        )
+        if not claimed:
+            raise RenewalConflict()
+
+        new_procurement.organization = self.organization
+        new_procurement.renewed_from = self
+        try:
+            new_procurement.save_with_items(items)
+            linked = Procurement.objects(id=self.pk, organization=self.organization, renewed_to=None).update_one(
+                set__renewed_to=new_procurement
+            )
+            if not linked:
+                raise RenewalConflict()
+        except Exception:
+            logger.exception("renewing procurement %s failed, releasing the claim", self.pk)
+            self._discard_renewal(new_procurement, previous_status)
+            raise
+
+        self.status = "renewed"
+        self.status_before_renewal = previous_status
+        self.renewed_to = new_procurement
+        return new_procurement
+
+    def _discard_renewal(self, new_procurement, previous_status):
+        try:
+            if new_procurement.pk and Procurement.objects(id=new_procurement.pk).count():
+                ProcurementItem.objects(procurement=new_procurement.pk).delete()
+                Procurement.objects(id=new_procurement.pk).delete()
+            Procurement.objects(id=self.pk, organization=self.organization, status="renewed", renewed_to=None).update_one(
+                set__status=previous_status,
+                unset__status_before_renewal=True,
+            )
+        except Exception:
+            logger.exception("releasing the renewal claim of procurement %s failed", self.pk)
+
+    def get_renewal_chain(self) -> list["Procurement"]:
+        """สายการต่ออายุทั้งหมดที่ MA นี้อยู่ เรียงจาก MA แรกสุดไปล่าสุด (เดินตาม renewed_from / renewed_to ในหน่วยงานเดียวกัน)"""
+        chain = [self]
+        seen = {self.pk}
+
+        current = self
+        while True:
+            previous_id = _reference_id(current, "renewed_from")
+            if not previous_id or previous_id in seen:
+                break
+            current = Procurement.objects(id=previous_id, organization=self.organization).first()
+            if not current:
+                break
+            seen.add(current.pk)
+            chain.insert(0, current)
+
+        current = self
+        while True:
+            next_id = _reference_id(current, "renewed_to")
+            if not next_id or next_id in seen:
+                break
+            current = Procurement.objects(id=next_id, organization=self.organization).first()
+            if not current:
+                break
+            seen.add(current.pk)
+            chain.append(current)
+        return chain
+
+    def _snapshot(self, items, removed_items, is_new) -> dict:
+        if is_new:
+            return {}
+        item_ids = [item.pk for item in list(items) + list(removed_items) if item.pk]
+        return {
+            "procurement": self._get_collection().find_one({"_id": self.pk}),
+            "items": list(ProcurementItem._get_collection().find({"_id": {"$in": item_ids}})),
+        }
+
+    def _restore(self, snapshot, written, is_new, now):
+        """คืนเฉพาะเอกสารที่ save_with_items เขียน / ลบไปแล้ว
+
+        เอกสารที่เขียนแล้วคืนเมื่อ ``updated_date`` ยังเป็นของรอบนี้ (``now``) เท่านั้น ไม่ทับการแก้ของคนอื่นที่ตามมา
+        """
+        items_collection = ProcurementItem._get_collection()
+        try:
+            if is_new:
+                for item in written["items"]:
+                    items_collection.delete_one({"_id": item.pk})
+                self._get_collection().delete_one({"_id": self.pk})
+                return
+
+            snapshot_items = {raw["_id"]: raw for raw in snapshot["items"]}
+            for item in written["items"]:
+                raw = snapshot_items.get(item.pk)
+                if raw is None:
+                    items_collection.delete_one({"_id": item.pk})
+                else:
+                    items_collection.replace_one({"_id": item.pk, "updated_date": now}, raw)
+            for item in written["deleted"]:
+                raw = snapshot_items.get(item.pk)
+                if raw is not None:
+                    items_collection.replace_one({"_id": item.pk}, raw, upsert=True)
+            if written["header"] and snapshot["procurement"]:
+                self._get_collection().replace_one({"_id": self.pk, "updated_date": now}, snapshot["procurement"])
+        except Exception:
+            logger.exception("restore after failed save_with_items failed for procurement %s", self.pk)
+
+
+def attach_items(
+    procurements: Iterable[Procurement], organization, with_responsibles: bool = False
+) -> list[Procurement]:
+    """โหลดรายการย่อยของหลาย MA ด้วย query เดียว แล้ว cache ไว้ใน MA แต่ละตัว (กัน N+1 ในหน้ารายการ)
+
+    ``with_responsibles``: โหลดผู้รับผิดชอบ (พร้อมผู้ใช้) และฝ่ายของทุก MA ด้วยอย่างละ 1 query
+    ให้ ``get_responsible_members`` / ``get_responsible_divisions`` / ``display_user_fullname`` ไม่ query ต่อแถว
+    """
+    procurements = list(procurements)
+    by_id = {procurement.pk: [] for procurement in procurements}
+    if by_id:
+        items = ProcurementItem.objects(organization=organization, procurement__in=list(by_id)).order_by("id")
+        for item in items:
+            procurement_id = _reference_id(item, "procurement")
+            if procurement_id in by_id:
+                by_id[procurement_id].append(item)
+    for procurement in procurements:
+        procurement.__dict__["_items_cache"] = by_id[procurement.pk]
+    if with_responsibles:
+        _attach_responsibles(procurements, organization)
+    return procurements
+
+
+def _attach_responsibles(procurements: list[Procurement], organization) -> None:
+    items = [item for procurement in procurements for item in procurement.get_items()]
+    member_ids = {member_id for item in items for member_id in _reference_ids(item, "responsible_by")}
+    division_ids = {division_id for item in items for division_id in _reference_ids(item, "responsible_divisions")}
+    paid_by_ids = {
+        _reference_id(installment, "paid_by")
+        for item in items
+        for installment in (item._data.get("installments") or [])
+    } - {None}
+
+    members = (
+        list(OrganizationUserRole.objects(id__in=list(member_ids), organization=organization)) if member_ids else []
+    )
+    user_ids = ({_reference_id(member, "user") for member in members} | paid_by_ids) - {None}
+    users = {user.id: user for user in User.objects(id__in=list(user_ids))} if user_ids else {}
+    for member in members:
+        user = users.get(_reference_id(member, "user"))
+        if user is not None:
+            # ใส่ผู้ใช้ที่โหลดแล้วแทน DBRef ตรง ๆ ไม่ให้ member.user query ซ้ำ (ไม่ผ่าน setter จึงไม่ถูกนับว่าแก้ไข)
+            member._data["user"] = user
+    for item in items:
+        for installment in (item._data.get("installments") or []):
+            user = users.get(_reference_id(installment, "paid_by"))
+            if user is not None:
+                installment._data["paid_by"] = user
+    members_by_id = {member.id: member for member in members}
+    divisions_by_id = (
+        {division.id: division for division in Division.objects(id__in=list(division_ids), organization=organization)}
+        if division_ids
+        else {}
+    )
+    for procurement in procurements:
+        procurement.__dict__["_responsible_members_by_id"] = members_by_id
+        procurement.__dict__["_responsible_divisions_by_id"] = divisions_by_id
+
+
+def procurement_ids_of(item_queryset) -> list:
+    """id ของหัวสัญญาจาก queryset ของ ProcurementItem (ไม่ dereference ทีละตัว)"""
+    ids = []
+    seen = set()
+    for item in item_queryset.only("procurement"):
+        procurement_id = _reference_id(item, "procurement")
+        if procurement_id not in seen:
+            seen.add(procurement_id)
+            ids.append(procurement_id)
+    return ids
+
+
+def payment_statuses(procurement_ids: Iterable, organization, today: datetime.date | None = None) -> dict:
+    """สถานะการจ่ายของหลาย MA ``{procurement_id: status}`` ด้วย query เดียว ไม่ขึ้นกับจำนวน MA
+
+    อ่านเฉพาะวันครบกำหนด / วันจ่ายของงวดแบบดิบ (ไม่สร้างเอกสารและไม่ dereference ผู้บันทึกการจ่าย)
+    MA ที่ไม่มีรายการย่อยเป็น unpaid เหมือน ``Procurement.get_payment_status``
+    """
+    item_statuses = {procurement_id: [] for procurement_id in procurement_ids}
+    if not item_statuses:
+        return {}
+    rows = (
+        ProcurementItem.objects(organization=organization, procurement__in=list(item_statuses))
+        .only("procurement", "installments")
+        .as_pymongo()
+    )
+    for row in rows:
+        procurement_id = getattr(row["procurement"], "id", row["procurement"])
+        installments = row.get("installments") or []
+        item_statuses[procurement_id].append(
+            item_payment_status(
+                ((installment.get("due_date"), installment.get("paid_date")) for installment in installments), today
+            )
+        )
+    return {procurement_id: worst_payment_status(statuses) for procurement_id, statuses in item_statuses.items()}
+
+
+def procurement_ids_by_end_date(procurement_queryset, organization, reverse: bool = False) -> list:
+    """id ของ MA ใน queryset เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน (MA ที่ไม่มีรายการย่อยไว้ท้าย)
+
+    หาวันสิ้นสุดด้วย aggregation บน procurement_items ครั้งเดียว ไม่โหลดรายการย่อยทั้งหมด
+    วันเท่ากันเรียงตามลำดับเดิมของ queryset
+    """
+    procurement_ids = list(procurement_queryset.scalar("id"))
+    if not procurement_ids:
+        return []
+    pipeline = [{"$group": {"_id": "$procurement", "end_date": {"$min": "$end_date"}}}]
+    end_dates = {}
+    for row in ProcurementItem.objects(organization=organization, procurement__in=procurement_ids).aggregate(pipeline):
+        if row["end_date"] is not None:
+            end_dates[getattr(row["_id"], "id", row["_id"])] = row["end_date"]
+    with_end = sorted(
+        (procurement_id for procurement_id in procurement_ids if procurement_id in end_dates),
+        key=end_dates.get,
+        reverse=reverse,
+    )
+    without_end = [procurement_id for procurement_id in procurement_ids if procurement_id not in end_dates]
+    return with_end + without_end
+
+
+def procurements_in_order(procurement_ids: list, organization) -> list[Procurement]:
+    """MA ตาม id ที่ให้ (scope ด้วยหน่วยงาน) เรียงตามลำดับของ ``procurement_ids``"""
+    by_id = {
+        procurement.pk: procurement
+        for procurement in Procurement.objects(id__in=list(procurement_ids), organization=organization)
+    }
+    return [by_id[procurement_id] for procurement_id in procurement_ids if procurement_id in by_id]

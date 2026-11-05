@@ -1,6 +1,7 @@
 from uuid import uuid4
 from flask import (
     Blueprint,
+    g,
     render_template,
     redirect,
     url_for,
@@ -12,10 +13,12 @@ from flask import (
     current_app,
 )
 from io import BytesIO
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from PyPDF2 import PdfMerger
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms, acl
+from kampan.web import acl, feature_flags, forms
 from kampan import models, utils
 from kampan.utils.hash import hash_mongo_metadata
 from ... import redis_rq
@@ -27,6 +30,7 @@ import hashlib
 module = Blueprint(
     "requisition_timeline_items", __name__, url_prefix="/requisition_timeline_items"
 )
+module.before_request(feature_flags.abort_if_requisition_disabled)
 
 
 @module.route("/", methods=["GET"])
@@ -78,9 +82,11 @@ def export_excel_modal():
     organization_id = request.args.get("organization_id")
     form = forms.requisition_timeline_items.ExportExcelForm(request.args)
     modal_id = uuid4()
+    # เฉพาะไฟล์ของหน่วยงานที่กำลังดู · ไฟล์เก่าที่ไม่มี organization มีข้อมูลทุกหน่วยงานปน จึงไม่แสดง
     exported_file = models.export_file.ExportFile.objects(
         created_by=current_user._get_current_object(),
         type_="requisition_items_export",
+        organization=g.organization,
     ).first()
 
     return render_template(
@@ -98,15 +104,16 @@ def export_excel_modal():
 @module.route("/export_excel", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
 def export_excel():
-    organization_id = request.args.get("organization_id") or request.form.get(
-        "organization_id"
-    )
+    organization = g.organization
+    if not organization:
+        abort(404)
+    organization_id = str(organization.id)
     start_date = request.args.get("start_date") or request.form.get("start_date")
     end_date = request.args.get("end_date") or request.form.get("end_date")
 
     job_id = redis_rq.redis_queue.queue.enqueue(
         "kampan.utils.export_file.requisition_timeline_items_export",
-        args=(current_user._get_current_object(), start_date, end_date),
+        args=(current_user._get_current_object(), start_date, end_date, organization_id),
         timeout=3600,
         job_timeout=1200,
     )
@@ -122,9 +129,25 @@ def export_excel():
 @module.route("/download_exported_excel/<export_id>")
 @acl.organization_roles_required("admin")
 def download_exported_file(export_id):
-    organization_id = request.args.get("organization_id")
-    export_mas_excel = models.ExportFile.objects.get(id=export_id)
-    if not export_mas_excel or not export_mas_excel.file:
+    organization = g.organization
+    if not organization:
+        abort(404)
+    organization_id = str(organization.id)
+    try:
+        export_id = ObjectId(export_id)
+    except (InvalidId, TypeError):
+        abort(404)
+
+    # เจ้าของไฟล์เท่านั้น และต้องเป็นไฟล์ของหน่วยงานนี้
+    # (ไฟล์เก่าที่ไม่มี organization มีข้อมูลทุกหน่วยงานปน จึงโหลดไม่ได้ ต้อง export ใหม่)
+    export_mas_excel = models.ExportFile.objects(
+        id=export_id,
+        created_by=current_user._get_current_object(),
+        organization=organization,
+    ).first()
+    if not export_mas_excel:
+        abort(404)
+    if not export_mas_excel.file:
         flash("ไม่พบไฟล์ที่ส่งออก กรุณาทำการส่งออกข้อมูลใหม่", "error")
         return redirect(
             url_for(

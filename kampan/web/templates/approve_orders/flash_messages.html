@@ -1,0 +1,13 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flex flex-col gap-2 my-4">
+  {% for category, message in messages %}
+  <div role="alert"
+    class="alert {{ {'error': 'alert-error', 'warning': 'alert-warning', 'success': 'alert-success'}.get(category, 'alert-info') }}">
+    <i class="ph {{ 'ph-x-circle' if category == 'error' else 'ph-warning-circle' }}"></i>
+    <span>{{ message }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}

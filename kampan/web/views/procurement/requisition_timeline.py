@@ -14,9 +14,10 @@ from io import BytesIO
 from PyPDF2 import PdfMerger
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
-from kampan.web import forms, acl
+from kampan.web import acl, feature_flags, forms
 from kampan import models, utils
 from kampan.utils.hash import hash_mongo_metadata
+from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, money_sum, to_money
 from ... import redis_rq
 import datetime
 import json
@@ -24,6 +25,7 @@ import hashlib
 from bson.objectid import ObjectId
 
 module = Blueprint("requisition_timeline", __name__, url_prefix="/requisition_timeline")
+module.before_request(feature_flags.abort_if_requisition_disabled)
 
 PROGRESS_STATUS_ORDER = [
     "request_created",
@@ -402,7 +404,7 @@ def billing_modal(requisition_timeline_id):
                 normalized_allocations.append(
                     {
                         "reservation_id": _to_object_id(reservation_id),
-                        "amount": float(amount or 0),
+                        "amount": to_money(amount),
                         "item_amount": int(item_amount or 0),
                     }
                 )
@@ -580,16 +582,9 @@ def billing_modal(requisition_timeline_id):
             reservations=reservation_payloads,
             reservation_limits_json=reservation_limits_json,
             item_quantity_limits_json=item_quantity_limits_json,
-            total_reserved=sum(
-                float(reservation.amount or 0) for reservation in reservations
-            ),
-            total_used=sum(
-                float(
-                    (requisition_timeline.fund_usage_amounts or {}).get(
-                        str(reservation.id), 0
-                    )
-                    or 0
-                )
+            total_reserved=money_sum(reservation.amount for reservation in reservations),
+            total_used=money_sum(
+                (requisition_timeline.fund_usage_amounts or {}).get(str(reservation.id))
                 for reservation in reservations
             ),
             item_source_map=item_source_map,
@@ -610,7 +605,7 @@ def billing_modal(requisition_timeline_id):
     quotation_winner = (form.quotation_winner.data or "").strip()
     usage_amounts = {}
     item_allocations = []
-    total_amount = 0.0
+    total_amount = to_money(0)
 
     if not purchase_method:
         errors.append("กรุณาเลือกวิธีการจัดซื้อ")
@@ -631,7 +626,7 @@ def billing_modal(requisition_timeline_id):
         item_reserved_qty = int(item.quantity or 0)
         is_multi_source = item_form.is_multi_source.data
         allocations = []
-        item_total = 0.0
+        item_total = to_money(0)
         item_qty_total = 0
 
         if is_multi_source:
@@ -653,12 +648,16 @@ def billing_modal(requisition_timeline_id):
                         f"กรุณากรอกจำนวนเงินของแหล่งเงินที่เลือกสำหรับ {item.product_name}"
                     )
                     continue
+                if not has_money_places(amount):
+                    errors.append(f"{MONEY_PLACES_ERROR} ({item.product_name})")
+                    continue
+                amount = to_money(amount)
                 if not reservation:
                     errors.append(
                         f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}"
                     )
                     continue
-                reserved_money = float(reservation.amount or 0)
+                reserved_money = to_money(reservation.amount)
                 if amount > reserved_money:
                     errors.append(
                         f"จำนวนเงินของ {item.product_name} ต้องไม่เกินยอดจองของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else source_id})"
@@ -677,14 +676,14 @@ def billing_modal(requisition_timeline_id):
                 allocations.append(
                     models.FundAllocationSource(
                         reservation_id=ObjectId(source_id),
-                        amount=round(float(amount), 2),
+                        amount=amount,
                         item_amount=int(item_amount),
                     )
                 )
-                usage_amounts[source_id] = round(
-                    float(usage_amounts.get(source_id, 0)) + float(amount), 2
+                usage_amounts[source_id] = (
+                    usage_amounts.get(source_id, to_money(0)) + amount
                 )
-                item_total += float(amount)
+                item_total += amount
                 item_qty_total += int(item_amount)
         else:
             source_id = item_form.source_id.data
@@ -699,13 +698,16 @@ def billing_modal(requisition_timeline_id):
                     errors.append(
                         f"กรุณากรอกจำนวนเงินที่ใช้จริงของ {item.product_name}"
                     )
+                elif not has_money_places(amount):
+                    errors.append(f"{MONEY_PLACES_ERROR} ({item.product_name})")
                 else:
+                    amount = to_money(amount)
                     if not reservation:
                         errors.append(
                             f"ไม่พบข้อมูลแหล่งเงินที่เลือกสำหรับ {item.product_name}"
                         )
                         continue
-                    reserved_money = float(reservation.amount or 0)
+                    reserved_money = to_money(reservation.amount)
                     if amount > reserved_money:
                         errors.append(
                             f"จำนวนเงินของ {item.product_name} ต้องไม่เกินยอดจองของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else source_id})"
@@ -722,14 +724,14 @@ def billing_modal(requisition_timeline_id):
                     allocations.append(
                         models.FundAllocationSource(
                             reservation_id=ObjectId(source_id),
-                            amount=round(float(amount), 2),
+                            amount=amount,
                             item_amount=int(item_amount) if item_amount >= 0 else 0,
                         )
                     )
-                    usage_amounts[source_id] = round(
-                        float(usage_amounts.get(source_id, 0)) + float(amount), 2
+                    usage_amounts[source_id] = (
+                        usage_amounts.get(source_id, to_money(0)) + amount
                     )
-                    item_total += float(amount)
+                    item_total += amount
                     item_qty_total += int(item_amount) if item_amount >= 0 else 0
 
         item_allocations.append(
@@ -740,7 +742,7 @@ def billing_modal(requisition_timeline_id):
                 account_code=request.form.get(
                     f"item-{item_id}-account_code", ""
                 ).strip(),
-                item_total=round(item_total, 2),
+                item_total=item_total,
             )
         )
         total_amount += item_total
@@ -754,8 +756,8 @@ def billing_modal(requisition_timeline_id):
         reservation = reservation_map.get(reservation_id)
         if not reservation:
             continue
-        reserved_money = float(reservation.amount or 0)
-        if float(used_amount) > reserved_money:
+        reserved_money = to_money(reservation.amount)
+        if used_amount > reserved_money:
             errors.append(
                 f"ยอดใช้จริงรวมของแหล่งเงิน ({reservation.mas.mas_code if reservation.mas else reservation_id}) ต้องไม่เกินยอดจอง"
             )
@@ -769,21 +771,21 @@ def billing_modal(requisition_timeline_id):
         res = reservation_map.get(reservation_id)
         if not res:
             continue
-        unused = float(res.amount or 0) - float(actual)
-        res.actual_amount = float(actual)
+        unused = to_money(res.amount) - actual
+        res.actual_amount = actual
         res.reservation_status = "finished"
         res.save()
         if res.mas:
-            new_remaining = float(res.mas.remaining_amount or 0) - float(actual)
+            new_remaining = to_money(res.mas.remaining_amount) - actual
             models.MAS.objects(id=res.mas.id).update_one(
-                set__remaining_amount=max(0, new_remaining),
-                set__reservable_amount=float(res.mas.reservable_amount or 0) + unused,
+                set__remaining_amount=max(to_money(0), new_remaining),
+                set__reservable_amount=to_money(res.mas.reservable_amount) + unused,
             )
 
             for fund_item in requisition_timeline.requisition.fund:
                 if fund_item.mas and str(fund_item.mas.id) == str(res.mas.id):
                     fund_item.reservation = res
-                    fund_item.amount = float(actual)
+                    fund_item.amount = actual
 
     requisition_timeline.requisition.save()
     requisition_timeline.purchase_method = purchase_method
@@ -792,7 +794,7 @@ def billing_modal(requisition_timeline_id):
     )
     requisition_timeline.fund_usage_amounts = usage_amounts
     requisition_timeline.fund_allocations = item_allocations
-    requisition_timeline.payment_amount = round(total_amount, 2)
+    requisition_timeline.payment_amount = total_amount
     add_progress_in_order(
         requisition_timeline, "awaiting_delivery", current_user, request
     )
@@ -945,7 +947,7 @@ def completed_submit(requisition_timeline_id):
             form.payment_number.data = requisition_timeline.completed_progress_detail.payment_number
         else:
             form.payment_number.data = ""
-        form.total_amount.data = requisition_timeline.payment_amount or 0.0
+        form.total_amount.data = to_money(requisition_timeline.payment_amount)
 
         payment_processed_p = requisition_timeline.find_progress("payment_processed")
         if payment_processed_p:
@@ -1214,13 +1216,15 @@ def completed_submit(requisition_timeline_id):
     "admin", "manager", "staff", "head", "endorser", "supervisor supplier"
 )
 def details_specified(requisition_timeline_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    requisition_timeline = models.RequisitionTimeline.objects(
+        id=requisition_timeline_id, organization=organization
     ).first()
-    requisition_timeline = models.RequisitionTimeline.objects.get(
-        id=requisition_timeline_id
-    )
+    if not requisition_timeline:
+        abort(404)
 
     is_admin = current_user.has_organization_roles("admin")
     is_manager = current_user.has_organization_roles("manager")
@@ -1249,8 +1253,6 @@ def details_specified(requisition_timeline_id):
                 is_same_division = True
 
     if not (is_admin or is_manager or is_owner or is_same_division):
-        from flask import abort
-
         abort(403)
 
     requisition = requisition_timeline.requisition
@@ -1286,14 +1288,24 @@ def details_specified(requisition_timeline_id):
     if request.method == "POST" and not is_readonly:
         requisition.project_name = form.project_name.data
 
+        # ราคาต่อหน่วยที่ผู้ใช้กรอกต้องมีทศนิยมไม่เกิน 2 ตำแหน่ง (ไม่ปัดให้เอง)
+        if any(not has_money_places(entry.amount.data) for entry in form.items.entries):
+            return render_template(
+                "/procurement/requisitions/details_specified.html",
+                item=requisition_timeline,
+                organization=organization,
+                form=form,
+                readonly=is_readonly,
+                error=MONEY_PLACES_ERROR,
+            )
+
         # Check budget constraint
-        total_fund = sum(float(f.amount or 0) for f in requisition.fund)
-        total_price = 0
+        total_fund = money_sum(f.amount for f in requisition.fund)
+        total_price = to_money(0)
         for entry in form.items.entries:
             try:
                 qty = int(entry.quantity.data or 0)
-                amount = float(entry.amount.data or 0)
-                total_price += qty * amount
+                total_price += qty * to_money(entry.amount.data)
             except Exception:
                 pass
 

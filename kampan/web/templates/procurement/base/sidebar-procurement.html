@@ -1,3 +1,4 @@
+{% from '/base/html-renderer.html' import dropdown_select_control %}
 <div class="drawer-side shadow">
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
   <aside class="items-center min-h-screen px-2 space-y-1 bg-base-100 w-[280px] flex flex-col">
@@ -9,21 +10,12 @@
     <div class="w-full px-2 py-3 border-b">
       <label class="text-xs font-semibold text-gray-600 mb-2 block">เลือกมุมมอง</label>
 
-      <select id="role-selector" class="select select-bordered select-sm w-full">
-        <option value="" disabled selected>เลือกมุมมอง</option>
-        {% if current_user.has_organization_roles("admin") %}
-        <option value="admin">สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ</option>
-        {% endif %}
-        {% if current_user.has_organization_roles("staff") %}
-        <option value="staff">สำหรับบุคคลากร</option>
-        {% endif %}
-        {% if current_user.has_organization_roles("head") %}
-        <option value="head">สำหรับหัวหน้าฝ่าย</option>
-        {% endif %}
-        {% if current_user.has_organization_roles("manager") %}
-        <option value="manager">สำหรับทีมบริหาร</option>
-        {% endif %}
-      </select>
+      {% set role_choices = [] %}
+      {% if current_user.has_organization_roles("admin") %}{% set _ = role_choices.append(("admin", "สำหรับผู้ดูแล/เจ้าหน้าที่พัสดุ")) %}{% endif %}
+      {% if current_user.has_organization_roles("staff") %}{% set _ = role_choices.append(("staff", "สำหรับบุคคลากร")) %}{% endif %}
+      {% if current_user.has_organization_roles("head") %}{% set _ = role_choices.append(("head", "สำหรับหัวหน้าฝ่าย")) %}{% endif %}
+      {% if current_user.has_organization_roles("manager") %}{% set _ = role_choices.append(("manager", "สำหรับทีมบริหาร")) %}{% endif %}
+      {{ dropdown_select_control("role_selector", "role-selector", role_choices, "", size="select-sm", aria_label="เลือกมุมมอง", placeholder="เลือกมุมมอง") }}
     </div>
     {% endif %}
 
@@ -44,6 +36,7 @@
                   <span class="truncate">อัพโหลดไฟล์</span>
                 </a>
               </li>
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -78,6 +71,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -112,6 +106,7 @@
                   </ul>
                 </details>
               </li>
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -130,6 +125,7 @@
                 </details>
 
               </li>
+              {% endif %}
             </ul>
           </details>
           <ul class="ml-1 mt-4 w-full">
@@ -157,6 +153,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับบุคคลากร</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -183,6 +180,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -245,6 +243,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับหัวหน้าฝ่าย</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -281,6 +280,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -342,6 +342,7 @@
               <span class="font-bold text-gray-900 text-lg whitespace-nowrap">สำหรับทีมบริหาร</span>
             </summary>
             <ul class="ml-1 w-full">
+              {% if is_requisition_enabled() %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -378,6 +379,7 @@
                   </ul>
                 </details>
               </li>
+              {% endif %}
               <li class="w-full">
                 <details open>
                   <summary class="w-full whitespace-nowrap overflow-hidden">
@@ -456,7 +458,9 @@
     const roleSections = document.querySelectorAll('.role-section');
 
     // Get first option value as default if no saved role
-    const firstOption = roleSelector ? roleSelector.options[0]?.value : null;
+    const roleContainer = roleSelector ? roleSelector.closest('[data-dropdown-select]') : null;
+    const firstChoice = roleContainer ? roleContainer.querySelector('[data-value]') : null;
+    const firstOption = firstChoice ? firstChoice.dataset.value : null;
     const savedRole = localStorage.getItem('selectedRole') || firstOption;
 
     function showRoleSection(role) {
@@ -470,9 +474,10 @@
 
     // Initialize with saved or first role
     if (savedRole && roleSelector) {
-      roleSelector.value = savedRole;
+      setDropdownSelectValue(roleContainer, savedRole, false);
       showRoleSection(savedRole);
     } else if (roleSelector && firstOption) {
+      setDropdownSelectValue(roleContainer, firstOption, false);
       showRoleSection(firstOption);
     }
 

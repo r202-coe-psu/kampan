@@ -6,6 +6,7 @@ from flask import send_file
 from kampan import models
 from mongoengine import Q
 from kampan.repositories.dashboards import DashboardRepository
+from kampan.utils.money import to_money
 import re
 
 REPORT_HEADER = [
@@ -46,7 +47,7 @@ def get_all_report(
             [organization.name],
             ["ลำดับ", "ชื่อวัสดุ", "คงเหลือ", "หน่วยนับ", "ราคาหน่วย", "เป็นเงิน"],
         ]
-    all_remaining_balance = 0
+    all_remaining_balance = to_money(0)
     item_snapshot_by_category = {}
 
     for item_snapshot in items_snapshot:

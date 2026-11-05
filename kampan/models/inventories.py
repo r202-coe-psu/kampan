@@ -3,6 +3,8 @@
 from email.policy import default
 import mongoengine as me
 import datetime
+import decimal
+from decimal import Decimal
 from kampan import models
 
 
@@ -22,7 +24,14 @@ class Inventory(me.Document):
     set_ = me.IntField(required=True, min_value=0, default=0)
     quantity = me.IntField(required=True, min_value=0, default=0)
     remain = me.IntField(required=True, default=0)
-    price = me.DecimalField(required=True, default=0)
+    price = me.DecimalField(
+        required=True,
+        default=Decimal("0"),
+        min_value=0,
+        max_value=1e12,
+        precision=2,
+        rounding=decimal.ROUND_HALF_EVEN,
+    )
 
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     expiration_date = me.DateTimeField()
@@ -48,7 +57,10 @@ class Inventory(me.Document):
         return self.quantity
 
     def get_price_per_piece(self):
-        return round(self.price / self.item.piece_per_set, 2)
+        # import ในฟังก์ชัน: kampan.utils import models กลับมา (circular import)
+        from kampan.utils.money import to_money
+
+        return to_money(self.price / self.item.piece_per_set)
 
     def get_created_date(self):
         if self.created_date >= self.registration.created_date:

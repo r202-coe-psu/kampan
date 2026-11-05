@@ -4,6 +4,9 @@ from kampan import models
 
 logger = logging.getLogger(__name__)
 
+# MA ที่รายการย่อยใดหมดอายุภายในกี่วัน จะถูกย้ายเป็น "รอดำเนินการ" (pending) ให้ตัดสินใจต่ออายุ
+RENEWAL_WINDOW_DAYS = 90
+
 
 class ProcurementStatusUpdater:
     def __init__(self, settings=None):
@@ -23,20 +26,16 @@ class ProcurementStatusUpdater:
         if not procurement:
             return
 
+        # สถานะการจ่ายคำนวณสดจากงวดของรายการย่อย (Procurement.get_payment_status) ไม่ต้องเก็บ
         today = datetime.date.today()
-        old_status = procurement.payment_status
-        new_status = procurement.get_current_payment_status(today)
-        if old_status != new_status:
-            procurement.payment_status = new_status
-            procurement.save()
+        end_date = procurement.get_end_date()
+        if not end_date or end_date.date() > today + datetime.timedelta(days=RENEWAL_WINDOW_DAYS):
+            return
 
-        if procurement.end_date:
-            end_date = (
-                procurement.end_date.date()
-                if hasattr(procurement.end_date, "date")
-                else procurement.end_date
-            )
-            if end_date <= today + datetime.timedelta(days=90):
-                if procurement.status != "pending":
-                    procurement.status = "pending"
-                    procurement.save()
+        # เปลี่ยนเฉพาะ MA ที่ใช้งานอยู่ (active) ไม่ย้อน MA ที่ไม่ต่ออายุ / ต่ออายุแล้ว กลับมาเป็น pending
+        updated = models.Procurement.objects(id=procurement.id, status="active").update_one(
+            set__status="pending",
+            set__updated_date=datetime.datetime.now(),
+        )
+        if updated:
+            logger.info("Procurement %s moved to pending (item ends %s)", procurement.id, end_date)

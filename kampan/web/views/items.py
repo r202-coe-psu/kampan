@@ -1,3 +1,4 @@
+from bson import ObjectId
 from flask import (
     Blueprint,
     render_template,
@@ -6,6 +7,7 @@ from flask import (
     send_file,
     abort,
     request,
+    g,
 )
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
@@ -17,6 +19,15 @@ import decimal
 import datetime
 
 module = Blueprint("items", __name__, url_prefix="/items")
+
+
+def get_item(organization, item_id):
+    if not organization or not ObjectId.is_valid(item_id):
+        abort(404)
+    item = models.Item.objects(id=item_id, organization=organization).first()
+    if not item:
+        abort(404)
+    return item
 
 
 @module.route("/", methods=["GET", "POST"])
@@ -358,7 +369,9 @@ def add():
         item.piece_per_set = 1
         item.piece_unit = form.set_unit.data
     item.name = str(form.name.data).strip()
-    item.categories = models.Category.objects(id=form.categories.data).first()
+    item.categories = models.Category.objects(
+        id=form.categories.data, organization=g.organization
+    ).first()
     item.created_by = current_user._get_current_object()
     item.last_updated_by = current_user._get_current_object()
     item.organization = organization
@@ -374,7 +387,7 @@ def edit(item_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item = models.Item.objects().get(id=item_id)
+    item = get_item(g.organization, item_id)
 
     form = forms.items.ItemForm(obj=item)
     form.categories.choices = [
@@ -419,9 +432,10 @@ def edit(item_id):
         item.piece_unit = form.piece_unit.data
     item.status = "active"
     item.name = str(form.name.data).strip()
-    item.categories = models.Category.objects(id=form.categories.data).first()
+    item.categories = models.Category.objects(
+        id=form.categories.data, organization=g.organization
+    ).first()
     item.last_updated_by = current_user._get_current_object()
-    item.organization = organization
     item.save()
 
     return redirect(url_for("items.index", **request.args))
@@ -434,7 +448,7 @@ def edit_active_item(item_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item = models.Item.objects().get(id=item_id)
+    item = get_item(g.organization, item_id)
 
     form = forms.items.ItemActiveEditForm(obj=item)
     form.categories.choices = [
@@ -472,9 +486,10 @@ def edit_active_item(item_id):
     form.populate_obj(item)
 
     item.name = str(form.name.data).strip()
-    item.categories = models.Category.objects(id=form.categories.data).first()
+    item.categories = models.Category.objects(
+        id=form.categories.data, organization=g.organization
+    ).first()
     item.last_updated_by = current_user._get_current_object()
-    item.organization = organization
     item.status = "active"
 
     item.save()
@@ -487,7 +502,7 @@ def edit_active_item(item_id):
 def delete(item_id):
     organization_id = request.args.get("organization_id")
 
-    item = models.Item.objects().get(id=item_id)
+    item = get_item(g.organization, item_id)
     item.status = "disactive"
     item.updated_date = datetime.datetime.now()
     item.save()
@@ -524,7 +539,7 @@ def delete(item_id):
 def confirm(item_id):
     organization_id = request.args.get("organization_id")
 
-    item = models.Item.objects().get(id=item_id)
+    item = get_item(g.organization, item_id)
     item.status = "active"
     item.save()
 
@@ -553,7 +568,7 @@ def detail(item_id):
     organization = models.Organization.objects(
         id=organization_id, status="active"
     ).first()
-    item = models.Item.objects().get(id=item_id)
+    item = get_item(g.organization, item_id)
 
     return render_template(
         "/items/detail.html",
@@ -563,12 +578,11 @@ def detail(item_id):
 
 
 @module.route("/<item_id>/picture/<filename>")
+@login_required
 def image(item_id, filename):
-    organization_id = request.args.get("organization_id")
+    item = get_item(g.organization, item_id)
 
-    item = models.Item.objects.get(id=item_id)
-
-    if not item or not item.image or item.image.filename != filename:
+    if not item.image or item.image.filename != filename:
         return abort(403)
 
     response = send_file(

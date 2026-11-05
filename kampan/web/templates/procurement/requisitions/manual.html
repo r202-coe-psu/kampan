@@ -1,7 +1,7 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 
-{% block title %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% endblock %}
-{% block dashboard_title %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% endblock %}
+{% block title %}{% if is_requisition_enabled() %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% else %}คู่มือการใช้งาน ระบบจัดการสัญญา (MA){% endif %}{% endblock %}
+{% block dashboard_title %}{% if is_requisition_enabled() %}คู่มือการใช้งาน ระบบขอซื้อขอจ้าง{% else %}คู่มือการใช้งาน ระบบจัดการสัญญา (MA){% endif %}{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -165,26 +165,47 @@
 {%- endmacro %}
 
 {# ---------------------------------------------------------------- toc data #}
-{% set toc = [
-  ('overview',           'ph-users-three',     'ภาพรวมและบทบาทผู้ใช้งาน'),
-  ('flow-main',          'ph-flow-arrow',      'ขั้นตอนการทำงานภาพรวมทั้งระบบ'),
-  ('upload-files',       'ph-upload-simple',   '1. อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ'),
-  ('products',           'ph-package',         '2. รายการสินค้าและสัญญาบริการ'),
-  ('payment',            'ph-credit-card',     '3. บันทึกการชำระเงินสินค้า'),
-  ('procurement-list',   'ph-clipboard-text',  '4. รายการสัญญาบริการที่ใกล้หมดอายุ'),
-  ('renewal-requested',  'ph-arrow-clockwise', '5. รายการขอซื้อขอจ้าง'),
-  ('non-renewal',        'ph-x-circle',        '6. รายการสัญญาบริการที่ไม่ต่ออายุ'),
-  ('mas',                'ph-bank',            '7. แหล่งเงินงบประมาณระบบ MAS'),
-  ('create-requisition', 'ph-file-plus',       '8. สร้างและแก้ไขคำขอซื้อขอจ้าง'),
-  ('head-approve',       'ph-shield-check',    '9. หัวหน้าฝ่ายอนุมัติขั้นที่ 1'),
-  ('admin-approve',      'ph-stamp',           '10. เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ'),
-  ('manager-approve',    'ph-user-check',      '11. ผู้จัดการอนุมัติขั้นสุดท้าย'),
-  ('timeline',           'ph-list-checks',     '12. ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน'),
-  ('timeline-items',     'ph-shopping-bag',    '13. รายการสินค้าในการดำเนินงานและส่งออกข้อมูล'),
-  ('billing',            'ph-receipt',         '14. บันทึกการเบิกจ่ายงบประมาณ'),
-  ('document',           'ph-file-pdf',        '15. เอกสารคำขอและพิมพ์รายงาน'),
-  ('status',             'ph-path',            'ตารางสรุปสถานะคำขอและขั้นตอนการดำเนินงาน'),
+{# ปิดระบบขอซื้อขอจ้าง (feature flag) แล้ว route ของขอซื้อขอจ้าง/MAS ตอบ 404
+   จึงซ่อนหัวข้อที่ requisition_only และรันเลขโมดูลใหม่ตามหัวข้อที่เหลือ #}
+{% set requisition_on = is_requisition_enabled() %}
+{# (anchor, icon, ชื่อ, ชื่อเมื่อปิดขอซื้อขอจ้าง, มีเลขโมดูล, requisition_only) #}
+{% set toc_sections = [
+  ('overview',           'ph-users-three',     'ภาพรวมและบทบาทผู้ใช้งาน', none, false, false),
+  ('flow-main',          'ph-flow-arrow',      'ขั้นตอนการทำงานภาพรวมทั้งระบบ', none, false, true),
+  ('upload-files',       'ph-upload-simple',   'อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ', 'อัปโหลดไฟล์นำเข้าข้อมูลสัญญาบริการ', true, false),
+  ('products',           'ph-package',         'รายการสินค้าและสัญญาบริการ', none, true, false),
+  ('payment',            'ph-credit-card',     'บันทึกการชำระเงินสินค้า', none, true, false),
+  ('procurement-list',   'ph-clipboard-text',  'รายการสัญญาบริการที่ใกล้หมดอายุ', none, true, false),
+  ('renewal-requested',  'ph-arrow-clockwise', 'รายการขอซื้อขอจ้าง', none, true, true),
+  ('non-renewal',        'ph-x-circle',        'รายการสัญญาบริการที่ไม่ต่ออายุ', none, true, false),
+  ('mas',                'ph-bank',            'แหล่งเงินงบประมาณระบบ MAS', none, true, true),
+  ('create-requisition', 'ph-file-plus',       'สร้างและแก้ไขคำขอซื้อขอจ้าง', none, true, true),
+  ('head-approve',       'ph-shield-check',    'หัวหน้าฝ่ายอนุมัติขั้นที่ 1', none, true, true),
+  ('admin-approve',      'ph-stamp',           'เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ', none, true, true),
+  ('manager-approve',    'ph-user-check',      'ผู้จัดการอนุมัติขั้นสุดท้าย', none, true, true),
+  ('timeline',           'ph-list-checks',     'ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน', none, true, true),
+  ('timeline-items',     'ph-shopping-bag',    'รายการสินค้าในการดำเนินงานและส่งออกข้อมูล', none, true, true),
+  ('billing',            'ph-receipt',         'บันทึกการเบิกจ่ายงบประมาณ', none, true, true),
+  ('document',           'ph-file-pdf',        'เอกสารคำขอและพิมพ์รายงาน', none, true, true),
+  ('status',             'ph-path',            'ตารางสรุปสถานะคำขอและขั้นตอนการดำเนินงาน', none, false, true),
 ] %}
+{% set toc_ns = namespace(no=0, toc=[], numbers={}, titles={}) %}
+{%- for anchor, icon, title, title_off, numbered, requisition_only in toc_sections if requisition_on or not requisition_only %}
+  {%- set shown_title = title_off if title_off and not requisition_on else title %}
+  {%- if numbered %}
+    {%- set toc_ns.no = toc_ns.no + 1 %}
+    {%- set _ = toc_ns.numbers.update({anchor: toc_ns.no}) %}
+    {%- set label = toc_ns.no ~ '. ' ~ shown_title %}
+  {%- else %}
+    {%- set label = shown_title %}
+  {%- endif %}
+  {%- set _ = toc_ns.titles.update({anchor: shown_title}) %}
+  {%- set toc_ns.toc = toc_ns.toc + [(anchor, icon, label)] %}
+{%- endfor %}
+{% set toc = toc_ns.toc %}
+{% set section_no = toc_ns.numbers %}
+{% set section_title = toc_ns.titles %}
+{% set module_count = toc_ns.no %}
 
 <div class="flex flex-col gap-4">
 
@@ -195,11 +216,19 @@
         <i class="ph ph-book-open-text text-3xl"></i>
       </div>
       <div>
+        {% if requisition_on %}
         <h1 class="text-2xl font-bold text-base-content">คู่มือการใช้งานระบบขอซื้อขอจ้างและบริหารสัญญา (MA)</h1>
         <p class="mt-1 text-sm text-base-content/70">
           คู่มือแนะนำการใช้งานฟังก์ชันและฟอร์มทั้งหมดของระบบขอซื้อขอจ้าง ตั้งแต่การอัปโหลดไฟล์นำเข้าข้อมูล, ทะเบียนสินค้าและสัญญาบริการ,
           การบริหารแหล่งเงินงบประมาณ (MAS), การขอต่ออายุ, กระบวนการอนุมัติ 3 ลำดับขั้น, ไปจนถึงติดตามความคืบหน้า 8 ขั้นตอน, การเบิกจ่ายงบประมาณ และพิมพ์เอกสารราชการ &mdash; หน่วยงาน <span class="font-semibold">{{ organization.name }}</span>
         </p>
+        {% else %}
+        <h1 class="text-2xl font-bold text-base-content">คู่มือการใช้งานระบบจัดการสัญญา (MA)</h1>
+        <p class="mt-1 text-sm text-base-content/70">
+          คู่มือแนะนำการใช้งานฟังก์ชันและฟอร์มของระบบจัดการสัญญา (MA) ตั้งแต่การอัปโหลดไฟล์นำเข้าข้อมูล, ทะเบียนสินค้าและสัญญาบริการ,
+          การบันทึกการชำระเงิน, การติดตามสัญญาที่ใกล้หมดอายุ ไปจนถึงรายการสัญญาที่ไม่ต่ออายุ &mdash; หน่วยงาน <span class="font-semibold">{{ organization.name }}</span>
+        </p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -239,14 +268,23 @@
 
       {# ------------------------------------------------ 0. overview #}
       <section id="overview" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+        {% if requisition_on %}
         {{ SectionHeader(none, 'ph-users-three', 'ภาพรวมและบทบาทผู้ใช้งาน',
                          'ระบบขอซื้อขอจ้างแบ่งหน้าที่ตามบทบาทในหน่วยงาน สิทธิ์การเข้าถึงข้อมูลและการอนุมัติจะสอดคล้องกับตำแหน่งของผู้ใช้งาน') }}
+        {% else %}
+        {{ SectionHeader(none, 'ph-users-three', 'ภาพรวมและบทบาทผู้ใช้งาน',
+                         'ระบบจัดการสัญญา (MA) แบ่งหน้าที่ตามบทบาทในหน่วยงาน สิทธิ์การเข้าถึงข้อมูลจะสอดคล้องกับตำแหน่งของผู้ใช้งาน') }}
+        {% endif %}
 
         <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
-          <i class="ph ph-squares-four text-primary text-lg"></i> โครงสร้างและกลุ่มงานหลักในระบบ (15 โมดูล)
+          <i class="ph ph-squares-four text-primary text-lg"></i> โครงสร้างและกลุ่มงานหลักในระบบ ({{ module_count }} โมดูล)
         </h3>
         <p class="mt-1 text-sm text-base-content/70">
+          {% if requisition_on %}
           ระบบขอซื้อขอจ้างและบริหารสัญญา (MA) ครอบคลุมการทำงานครบวงจร โดยแบ่งออกเป็น 5 กลุ่มงานหลักดังนี้:
+          {% else %}
+          ระบบจัดการสัญญา (MA) แบ่งออกเป็น 2 กลุ่มงานหลักดังนี้:
+          {% endif %}
         </p>
 
         <div class="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -254,16 +292,21 @@
             <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
               <i class="ph ph-upload-simple text-base"></i> 1. กลุ่มนำเข้าและเตรียมข้อมูล
             </div>
+            {% if requisition_on %}
             <p class="mt-0.5 text-xs text-base-content/70">การอัปโหลดไฟล์นำเข้าข้อมูล Excel สำหรับ MAS และ MA รวมถึงการดาวน์โหลดแม่แบบเอกสารมาตรฐาน (โมดูล 1)</p>
+            {% else %}
+            <p class="mt-0.5 text-xs text-base-content/70">การอัปโหลดไฟล์นำเข้าข้อมูล Excel สำหรับ MA รวมถึงการดาวน์โหลดแม่แบบเอกสารมาตรฐาน (โมดูล {{ section_no['upload-files'] }})</p>
+            {% endif %}
           </div>
 
           <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
             <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
               <i class="ph ph-package text-base"></i> 2. กลุ่มทะเบียนสินค้าและสัญญาบริการ
             </div>
-            <p class="mt-0.5 text-xs text-base-content/70">ทะเบียนพัสดุ ซอฟต์แวร์ สัญญาบริการ (MA) การบันทึกการชำระเงิน และการติดตามสัญญาที่ใกล้หมดอายุ (โมดูล 2-6)</p>
+            <p class="mt-0.5 text-xs text-base-content/70">ทะเบียนพัสดุ ซอฟต์แวร์ สัญญาบริการ (MA) การบันทึกการชำระเงิน และการติดตามสัญญาที่ใกล้หมดอายุ (โมดูล {{ section_no['products'] }}-{{ section_no['non-renewal'] }})</p>
           </div>
 
+          {% if requisition_on %}
           <div class="rounded-xl border border-base-300 bg-base-200/40 p-4">
             <div class="flex items-center gap-2 font-bold text-sm text-primary mb-1">
               <i class="ph ph-bank text-base"></i> 3. กลุ่มงบประมาณและแหล่งเงิน
@@ -284,6 +327,7 @@
             </div>
             <p class="mt-0.5 text-xs text-base-content/70">การติดตามความคืบหน้า 8 ขั้นตอน รายการสินค้าในการดำเนินงาน การบันทึกการเบิกจ่ายงบประมาณ (Billing) และการออกเอกสารคำขอรวม PDF (โมดูล 12-15)</p>
           </div>
+          {% endif %}
         </div>
 
         <h3 class="mt-5 text-base font-bold text-base-content flex items-center gap-2">
@@ -303,6 +347,7 @@
               </tr>
             </thead>
             <tbody>
+              {% if requisition_on %}
               <tr>
                 <td class="font-semibold">พนักงาน / บุคลากร<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
                 <td>สร้างคำขอซื้อ/จ้าง, แก้ไขคำขอของตน, กดขอต่ออายุสัญญาที่ตนรับผิดชอบ, ติดตามความคืบหน้า, พิมพ์เอกสาร</td>
@@ -328,14 +373,39 @@
                 <td>ตรวจสอบและดูภาพรวมของคำขอจัดซื้อจัดจ้างทั้งหมดในหน่วยงาน</td>
                 <td>รายการขอซื้อขอจ้าง, รายการรอดำเนินการ</td>
               </tr>
+              {% else %}
+              <tr>
+                <td class="font-semibold">พนักงาน / บุคลากร<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
+                <td>ดูและติดตามสัญญา MA ที่ตนรับผิดชอบ, ต่ออายุหรือไม่ต่ออายุสัญญาที่ตนรับผิดชอบ</td>
+                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head</span></td>
+                <td>ดูรายการสัญญา MA ทั้งหน่วยงาน (ติ๊ก &ldquo;เฉพาะฝ่ายของฉัน&rdquo; เพื่อดูเฉพาะของฝ่ายตน)</td>
+                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
+                <td>อัปโหลดไฟล์ Excel, จัดการรายการ MA, บันทึกการจ่ายเงิน, ต่ออายุหรือไม่ต่ออายุสัญญา</td>
+                <td>ทุกเมนูในระบบ</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">ผู้จัดการ / ทีมบริหาร<br><span class="text-xs font-normal text-base-content/50">manager</span></td>
+                <td>ดูรายการสัญญา MA ทั้งหมดของหน่วยงาน</td>
+                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+              </tr>
+              {% endif %}
             </tbody>
           </table>
         </div>
 
+        {% if requisition_on %}
         {{ Note('บัญชีผู้ใช้งานต้องได้รับการกำหนดสังกัดฝ่าย (division) ก่อน จึงจะสามารถสร้างคำขอและเข้าสู่สายการอนุมัติของหัวหน้าฝ่ายได้อย่างถูกต้อง',
                 'warning', 'ph-warning-circle', 'ข้อกำหนดบัญชีผู้ใช้:') }}
+        {% endif %}
       </section>
 
+      {% if requisition_on %}
       {# ------------------------------------------------ 0.1 main flow #}
       <section id="flow-main" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
         {{ SectionHeader(none, 'ph-flow-arrow', 'ขั้นตอนการทำงานภาพรวมทั้งระบบ',
@@ -402,11 +472,17 @@
         {{ Note('ระบบจะส่งอีเมลแจ้งเตือนอัตโนมัติไปยังผู้เกี่ยวข้องทุกครั้งที่มีการเปลี่ยนสถานะ เช่น แจ้งหัวหน้าฝ่ายเมื่อมีคำขอใหม่, แจ้งผู้จัดการเมื่อพัสดุมอบหมาย, และแจ้งผู้ขอเมื่อคำขอได้รับการอนุมัติหรือปฏิเสธ',
                 'success', 'ph-envelope-simple', 'อีเมลแจ้งเตือนอัตโนมัติ:') }}
       </section>
+      {% endif %}
 
       {# ------------------------------------------------ 1. upload-files #}
       <section id="upload-files" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(1, 'ph-upload-simple', 'อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ',
+        {% if requisition_on %}
+        {{ SectionHeader(section_no['upload-files'], 'ph-upload-simple', 'อัปโหลดไฟล์นำเข้าข้อมูลแหล่งเงินและสัญญาบริการ',
                          'การนำเข้าข้อมูลแหล่งเงิน MAS และสัญญาบริการ MA จำนวนมากด้วยไฟล์ Excel พร้อมระบบคิวงานประมวลผลเบื้องหลัง') }}
+        {% else %}
+        {{ SectionHeader(section_no['upload-files'], 'ph-upload-simple', section_title['upload-files'],
+                         'การนำเข้าข้อมูลสัญญาบริการ MA จำนวนมากด้วยไฟล์ Excel พร้อมระบบคิวงานประมวลผลเบื้องหลัง') }}
+        {% endif %}
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary'), 'ph-users-three') }}
@@ -418,11 +494,15 @@
         <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
           <li class="text-sm">
             <span class="font-bold text-base-content">1. ดาวน์โหลดไฟล์แม่แบบ</span>
+            {% if requisition_on %}
             <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ดาวน์โหลดเทมเพลต&rdquo; เพื่อเปิดหน้าต่างเลือกประเภทเทมเพลต จากนั้นกดเลือก &ldquo;Template แหล่งเงิน (MAS)&rdquo; หรือ &ldquo;Template MA (Procurement)&rdquo; เพื่อรับไฟล์ Excel ที่จัดหัวตารางมาตรฐานไว้อย่างถูกต้อง</p>
+            {% else %}
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ดาวน์โหลดเทมเพลต&rdquo; เพื่อเปิดหน้าต่างเลือกประเภทเทมเพลต จากนั้นกดเลือก &ldquo;Template MA (Procurement)&rdquo; เพื่อรับไฟล์ Excel ที่จัดหัวตารางมาตรฐานไว้อย่างถูกต้อง</p>
+            {% endif %}
           </li>
           <li class="text-sm">
             <span class="font-bold text-base-content">2. ฟอร์มอัปโหลดไฟล์นำเข้าข้อมูล</span>
-            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;อัปโหลดไฟล์&rdquo; เลือกประเภทเอกสาร (MAS หรืองบประมาณ หรือ MA สัญญาบริการ) แนบไฟล์ <code>.xlsx</code> (รองรับการเลือกหลายไฟล์พร้อมกัน) แล้วกดบันทึก เอกสารจะถูกนำเข้าสู่ระบบและแสดงในตาราง</p>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;อัปโหลดไฟล์&rdquo; เลือกประเภทเอกสาร ({% if requisition_on %}MAS หรืองบประมาณ หรือ {% endif %}MA สัญญาบริการ) แนบไฟล์ <code>.xlsx</code> (รองรับการเลือกหลายไฟล์พร้อมกัน) แล้วกดบันทึก เอกสารจะถูกนำเข้าสู่ระบบและแสดงในตาราง</p>
           </li>
           <li class="text-sm">
             <span class="font-bold text-base-content">3. ตรวจสอบความถูกต้องและประมวลผล</span>
@@ -453,6 +533,7 @@
               </tr>
             </thead>
             <tbody>
+              {% if requisition_on %}
               <tr>
                 <td class="font-semibold">MAS_Budget_2568.xlsx</td>
                 <td><span class="badge badge-sm badge-primary badge-outline">MAS</span></td>
@@ -465,6 +546,7 @@
                   </div>
                 </td>
               </tr>
+              {% endif %}
               <tr>
                 <td class="font-semibold">MA_Contracts_Batch1.xlsx</td>
                 <td><span class="badge badge-sm badge-secondary badge-outline">MA</span></td>
@@ -482,18 +564,27 @@
         </div>
         {% endcall %}
 
+        {% if requisition_on %}
         {{ Note('หากพบข้อผิดพลาด ให้คลิกดูข้อความแจ้งเตือน (Error) เพื่อตรวจสอบว่าข้อมูลแถวใดในไฟล์ Excel ขาดหายไปหรือไม่ตรงรูปแบบ เช่น ขาดรหัส MAS หรือรูปแบบวันที่ไม่ถูกต้อง',
                 'info', 'ph-info', 'คำแนะนำการแก้ไขข้อผิดพลาด:') }}
+        {% else %}
+        {{ Note('หากพบข้อผิดพลาด ให้คลิกดูข้อความแจ้งเตือน (Error) เพื่อตรวจสอบว่าข้อมูลแถวใดในไฟล์ Excel ขาดหายไปหรือไม่ตรงรูปแบบ เช่น รูปแบบวันที่ไม่ถูกต้อง',
+                'info', 'ph-info', 'คำแนะนำการแก้ไขข้อผิดพลาด:') }}
+        {% endif %}
       </section>
 
       {# ------------------------------------------------ 2. products #}
       <section id="products" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(2, 'ph-package', 'รายการสินค้าและสัญญาบริการ',
+        {{ SectionHeader(section_no['products'], 'ph-package', 'รายการสินค้าและสัญญาบริการ',
                          'ทะเบียนพัสดุ ซอฟต์แวร์ และบริการที่จัดซื้อแล้วทั้งหมดของหน่วยงาน พร้อมฟอร์มเพิ่มแก้ไข และระบบติดตามสถานะการชำระเงิน') }}
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', RoleBadge('พนักงาน (staff)', 'neutral') ~ ' ' ~ RoleBadge('หัวหน้าฝ่าย (head)', 'neutral') ~ ' ' ~ RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('ผู้จัดการ (manager)', 'neutral'), 'ph-users-three') }}
+          {% if requisition_on %}
           {{ MetaRow('เมนู', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า (หรือ จัดการ MA &rarr; รายการ MA)', 'ph-list') }}
+          {% else %}
+          {{ MetaRow('เมนู', 'จัดการ MA &rarr; รายการ MA', 'ph-list') }}
+          {% endif %}
           {{ MetaRow('การมองเห็น', 'staff เห็นเฉพาะที่ตนรับผิดชอบ, head เห็นของฝ่ายตน, admin/manager เห็นทั้งหมด', 'ph-eye') }}
         </div>
 
@@ -565,7 +656,7 @@
         </div>
         {% endcall %}
 
-        {% call Demo('แบบฟอร์มเพิ่มรายการสินค้าและสัญญาบริการใหม่', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า &rarr; เพิ่มสินค้า') %}
+        {% call Demo('แบบฟอร์มเพิ่มรายการสินค้าและสัญญาบริการใหม่', 'ขอซื้อขอจ้าง &rarr; รายการสินค้า &rarr; เพิ่มสินค้า' if requisition_on else 'จัดการ MA &rarr; รายการ MA &rarr; เพิ่มสินค้า') %}
         <div class="space-y-4">
           <!-- ข้อมูลพื้นฐาน -->
           <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
@@ -666,7 +757,7 @@
 
       {# ------------------------------------------------ 3. payment #}
       <section id="payment" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(3, 'ph-credit-card', 'บันทึกการชำระเงินสินค้า',
+        {{ SectionHeader(section_no['payment'], 'ph-credit-card', 'บันทึกการชำระเงินสินค้า',
                          'การบันทึกงวดการจ่ายเงิน เลขที่ใบสำคัญจ่าย และติดตามสถานะการชำระเงินตามสัญญาของแต่ละรายการสินค้า') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -723,7 +814,7 @@
 
       {# ------------------------------------------------ 4. procurement-list #}
       <section id="procurement-list" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(4, 'ph-clipboard-text', 'รายการสัญญาบริการที่ใกล้หมดอายุ',
+        {{ SectionHeader(section_no['procurement-list'], 'ph-clipboard-text', 'รายการสัญญาบริการที่ใกล้หมดอายุ',
                          'รายการสัญญาบำรุงรักษาและบริการที่หมดอายุหรือใกล้หมดอายุ เพื่อดำเนินการขอต่ออายุสัญญา') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -743,8 +834,8 @@
             <p class="mt-1 text-base-content/70">สามารถเลือกกรองเฉพาะรายการที่หมดอายุแล้ว, ภายใน 1 เดือน, 3 เดือน, 6 เดือน หรือ 1 ปี</p>
           </li>
           <li class="text-sm">
-            <span class="font-bold text-base-content">3. การขอต่ออายุสัญญา</span>
-            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ต่ออายุ&rdquo; ระบบจะเปิดหน้าต่างยืนยัน และนำท่านไปยังแบบฟอร์มขอซื้อขอจ้าง พร้อมกรอกข้อมูลเดิมให้อัตโนมัติ และเปลี่ยนสถานะรายการเป็น <span class="badge badge-xs badge-info">ต่ออายุแล้ว</span></p>
+            <span class="font-bold text-base-content">3. การต่ออายุสัญญา</span>
+            <p class="mt-1 text-base-content/70">กดปุ่ม &ldquo;ต่ออายุ&rdquo; (ในหน้านี้, หน้ารายการ MA หรือหน้ารายละเอียด MA) ระบบจะเปิดฟอร์มสร้าง MA ใหม่ที่คัดลอกหัวสัญญาและรายการย่อยจาก MA เดิมไว้ให้ กรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และงวดใหม่ แล้วกดบันทึก MA เดิมจะเปลี่ยนเป็น <span class="badge badge-xs badge-neutral">ต่ออายุแล้ว</span> และหน้ารายละเอียดของทั้งสองรายการจะลิงก์ถึงกัน</p>
           </li>
           <li class="text-sm">
             <span class="font-bold text-base-content">4. การไม่ต่ออายุสัญญา</span>
@@ -765,7 +856,7 @@
               <div>ผู้รับผิดชอบ: นายสมชาย ใจดี</div>
             </div>
             <div class="flex gap-2 pt-2 border-t mt-2">
-              <button class="btn btn-sm btn-success text-white flex-1"><i class="ph ph-check"></i> ต่ออายุ</button>
+              <button class="btn btn-sm btn-success text-white flex-1"><i class="ph ph-arrows-clockwise"></i> ต่ออายุ</button>
               <button class="btn btn-sm btn-error text-white flex-1"><i class="ph ph-x"></i> ไม่ต่ออายุ</button>
             </div>
           </div>
@@ -780,9 +871,10 @@
         {% endif %}
       </section>
 
+      {% if requisition_on %}
       {# ------------------------------------------------ 5. renewal-requested #}
       <section id="renewal-requested" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(5, 'ph-arrow-clockwise', 'รายการขอซื้อขอจ้าง',
+        {{ SectionHeader(section_no['renewal-requested'], 'ph-arrow-clockwise', 'รายการขอซื้อขอจ้าง',
                          'หน้าหลักของระบบขอซื้อขอจ้าง แสดงตารางคำขอทั้งหมดและส่วนงานที่รอการอนุมัติแยกตามบทบาท') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -856,10 +948,11 @@
         </a>
         {% endif %}
       </section>
+      {% endif %}
 
       {# ------------------------------------------------ 6. non-renewal #}
       <section id="non-renewal" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(6, 'ph-x-circle', 'รายการสัญญาบริการที่ไม่ต่ออายุ',
+        {{ SectionHeader(section_no['non-renewal'], 'ph-x-circle', 'รายการสัญญาบริการที่ไม่ต่ออายุ',
                          'รวบรวมรายการสัญญาและบริการที่หน่วยงานมีมติไม่ต่ออายุ เพื่อเก็บเป็นประวัติอ้างอิง') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -914,9 +1007,10 @@
         {% endif %}
       </section>
 
+      {% if requisition_on %}
       {# ------------------------------------------------ 7. mas #}
       <section id="mas" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(7, 'ph-bank', 'แหล่งเงินงบประมาณระบบ MAS',
+        {{ SectionHeader(section_no['mas'], 'ph-bank', 'แหล่งเงินงบประมาณระบบ MAS',
                          'การบริหารจัดการแหล่งเงินงบประมาณ กำหนดวงเงินจัดสรร ตรวจสอบประวัติการจองงบประมาณ และส่งออกข้อมูล Excel') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1008,7 +1102,7 @@
 
       {# ------------------------------------------------ 8. create-requisition #}
       <section id="create-requisition" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(8, 'ph-file-plus', 'สร้างและแก้ไขคำขอซื้อขอจ้าง',
+        {{ SectionHeader(section_no['create-requisition'], 'ph-file-plus', 'สร้างและแก้ไขคำขอซื้อขอจ้าง',
                          'แบบฟอร์มยื่นความประสงค์จัดซื้อพัสดุ จัดจ้าง หรือต่ออายุสัญญาบริการ พร้อมแนบเอกสาร TOR, QT และคณะกรรมการ 3 ชุด') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1113,7 +1207,7 @@
 
       {# ------------------------------------------------ 9. head-approve #}
       <section id="head-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(9, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขั้นที่ 1',
+        {{ SectionHeader(section_no['head-approve'], 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขั้นที่ 1',
                          'การพิจารณาตรวจสอบความถูกต้องและอนุมัติคำขอของบุคลากรภายในฝ่ายตนเอง') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1144,7 +1238,7 @@
 
       {# ------------------------------------------------ 10. admin-approve #}
       <section id="admin-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(10, 'ph-stamp', 'เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ',
+        {{ SectionHeader(section_no['admin-approve'], 'ph-stamp', 'เจ้าหน้าที่พัสดุอนุมัติและจองเงินงบประมาณ',
                          'ขั้นตอนสำคัญในการตรวจสอบงบประมาณ ผูกจองวงเงิน MAS และมอบหมายผู้จัดการเพื่ออนุมัติขั้นสุดท้าย') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1213,7 +1307,7 @@
 
       {# ------------------------------------------------ 11. manager-approve #}
       <section id="manager-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(11, 'ph-user-check', 'ผู้จัดการอนุมัติขั้นสุดท้าย',
+        {{ SectionHeader(section_no['manager-approve'], 'ph-user-check', 'ผู้จัดการอนุมัติขั้นสุดท้าย',
                          'การพิจารณาอนุมัติขั้นสุดท้ายโดยทีมบริหาร เพื่อเปิดโครงการจัดซื้อและสร้างขั้นตอนการดำเนินงาน') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1244,7 +1338,7 @@
 
       {# ------------------------------------------------ 12. timeline #}
       <section id="timeline" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(12, 'ph-list-checks', 'ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน',
+        {{ SectionHeader(section_no['timeline'], 'ph-list-checks', 'ติดตามความคืบหน้าการดำเนินงาน 8 ขั้นตอน',
                          'กระบวนการขับเคลื่อนการจัดซื้อจัดจ้าง 8 ขั้นตอน ตั้งแต่เริ่มติดต่อผู้ขาย ระบุคุณลักษณะ จนถึงตรวจรับพัสดุและชำระเงิน') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1346,7 +1440,7 @@
 
       {# ------------------------------------------------ 13. timeline-items #}
       <section id="timeline-items" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(13, 'ph-shopping-bag', 'รายการสินค้าในการดำเนินงานและส่งออกข้อมูล',
+        {{ SectionHeader(section_no['timeline-items'], 'ph-shopping-bag', 'รายการสินค้าในการดำเนินงานและส่งออกข้อมูล',
                          'การติดตามรายการพัสดุและสิ่งของทั้งหมดที่อยู่ระหว่างจัดซื้อตามขั้นตอน พร้อมการส่งออกเป็นไฟล์ Excel') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1405,7 +1499,7 @@
 
       {# ------------------------------------------------ 14. billing #}
       <section id="billing" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(14, 'ph-receipt', 'บันทึกการเบิกจ่ายงบประมาณ',
+        {{ SectionHeader(section_no['billing'], 'ph-receipt', 'บันทึกการเบิกจ่ายงบประมาณ',
                          'การบันทึกข้อมูลจัดซื้อจริง ผู้ชนะการเสนอราคา และยอดเงินที่เบิกจ่ายจริงจากแต่ละแหล่งเงิน MAS') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1476,7 +1570,7 @@
 
       {# ------------------------------------------------ 15. document #}
       <section id="document" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(15, 'ph-file-pdf', 'เอกสารคำขอและพิมพ์รายงาน',
+        {{ SectionHeader(section_no['document'], 'ph-file-pdf', 'เอกสารคำขอและพิมพ์รายงาน',
                          'การดูเอกสารคำขอจัดซื้อจัดจ้างในรูปแบบพร้อมพิมพ์ และการดาวน์โหลดเอกสารรวม PDF') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1572,6 +1666,7 @@
           </table>
         </div>
       </section>
+      {% endif %}
 
     </div>
   </div>
