@@ -73,6 +73,36 @@ def enforce_enabled_module():
         raise NotFound()
 
 
+# หน้าในโมดูลรถยนต์ที่เปิดได้เฉพาะองค์กรที่ใช้ car_flow นั้น (ค่า "diis" หรือ "snor")
+# คีย์เป็นชื่อ endpoint เต็ม หรือชื่อ blueprint ถ้ามี endpoint ตรงตัวจะใช้ค่าของ endpoint
+# ก่อน หน้าที่ไม่อยู่ในรายการใช้ร่วมกันได้ทั้งสอง flow
+CAR_FLOW_OF_ENDPOINT = {
+    "vehicle_lending.car_permissions": "diis",
+    "vehicle_lending.car_applications.index": "diis",
+    "vehicle_lending.car_applications.create_or_edit": "diis",
+    "vehicle_lending.car_applications.delete": "diis",
+    "vehicle_lending.car_applications.paper": "diis",
+    "vehicle_lending.car_applications.combine_paper": "diis",
+    "vehicle_lending.snor_car_requests": "snor",
+}
+
+
+def required_car_flow(endpoint, blueprint_name):
+    return CAR_FLOW_OF_ENDPOINT.get(endpoint) or CAR_FLOW_OF_ENDPOINT.get(
+        blueprint_name
+    )
+
+
+def enforce_car_flow():
+    organization = getattr(g, "organization", None)
+    if organization is None:
+        return
+
+    flow = required_car_flow(request.endpoint, request.blueprint)
+    if flow and organization.car_flow != flow:
+        raise NotFound()
+
+
 def init_acl(app):
     login_manager.init_app(app)
 
@@ -106,6 +136,7 @@ def init_acl(app):
     @app.before_request
     def gate_disabled_modules():
         enforce_enabled_module()
+        enforce_car_flow()
 
     @app.errorhandler(403)
     def page_not_found(e):

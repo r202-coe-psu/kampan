@@ -19,11 +19,13 @@
         <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
         <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
       </ul>
+      {% if new_request_url %}
       <a class="btn btn-primary" href="{{ new_request_url }}">
         <i class="ph ph-plus"></i> เพิ่มคำขอใช้รถยนต์
       </a>
+      {% endif %}
     </div>
-    {% if current_user.get_current_division() %}
+    {% if new_request_url and current_user.get_current_division() %}
     <p class="text-xs text-base-content/60 -mt-2">กดที่วันในปฏิทินเพื่อยื่นคำขอวันนั้น · กดที่รายการเพื่อดูสถานะการอนุมัติ</p>
     {% endif %}
     <div id="calendar" class="tone-deep-success"></div>
@@ -136,7 +138,7 @@
             console.error('Error loading modal:', error);
         }
       },
-      {% if current_user.get_current_division() %}
+      {% if new_request_url and current_user.get_current_division() %}
       dateClick: function (info) {
     const selectedDate = info.dateStr;
     const url = "{{ new_request_url }}" + "&date=" + selectedDate;
