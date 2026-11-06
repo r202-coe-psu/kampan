@@ -108,7 +108,7 @@ def has_division_head(organization, division, excluding=None):
 
 
 def _is_division_head(app, user):
-    if app.division is None:
+    if app.division is None or user == app.creator:
         return False
     return (
         models.OrganizationUserRole.objects(

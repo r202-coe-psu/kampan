@@ -164,6 +164,34 @@ def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
     assert car_application.current_step == 1
 
 
+def test_a_head_cannot_approve_their_own_request_but_another_head_can(
+    snor, create_user
+):
+    colleague_head = create_user("ColleagueHead", "Six")
+    snor.assign_in_division(colleague_head, ["head"], snor.division)
+
+    response = snor.client_for(snor.supervisor).post(
+        f"{BASE}/new?organization_id={snor.org.id}&type=domestic",
+        data=snor.request_data(),
+    )
+    assert response.status_code == 302
+    car_application = models.vehicle_applications.CarApplication.objects(
+        creator=snor.supervisor
+    ).first()
+
+    snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    car_application.reload()
+    assert car_application.current_step == 0
+
+    snor.client_for(colleague_head).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    car_application.reload()
+    assert car_application.current_step == 1
+
+
 def test_submission_is_refused_when_the_division_has_no_head(snor, create_user):
     headless = models.Division(name="ฝ่ายไม่มีหัวหน้า", organization=snor.org)
     headless.save()
