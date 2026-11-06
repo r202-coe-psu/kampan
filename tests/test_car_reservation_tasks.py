@@ -294,3 +294,33 @@ def test_task_list_offers_close_only_for_tasks_that_can_be_closed_now(world):
     assert f"/{later.id}/close" not in html
     assert f"/{done.id}/close" not in html
     assert "ปิดงานก่อนหน้าให้เสร็จก่อน" in html
+
+
+def test_request_detail_shows_the_trip_report_once_completed(world):
+    reservation = world.reservation()
+    close(world, reservation, mileage_out="9000", mileage_in="10500")
+
+    response = world.client_for(world.requester).get(
+        f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}"
+    )
+
+    report = response.get_data(as_text=True).split('data-role="trip-report"')[1]
+    for expected in (
+        "9000",  # กม. ออก
+        "10500",  # กม. กลับ
+        "1500",  # ระยะทางรวม
+        "20.50",  # น้ำมัน (ลิตร)
+        "เติมฟลีตการ์ดน้ำมัน",  # กรณีค่าใช้จ่าย
+        "1,200.50",  # เป็นเงิน
+    ):
+        assert expected in report
+
+
+def test_request_detail_has_no_trip_report_before_the_task_is_closed(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.requester).get(
+        f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}"
+    )
+
+    assert 'data-role="trip-report"' not in response.get_data(as_text=True)

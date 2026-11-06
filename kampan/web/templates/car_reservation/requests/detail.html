@@ -52,6 +52,8 @@
   </dl>
   {% endif %}
 
+  {% include '/car_reservation/requests/_trip_report.html' %}
+
   <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
   <ul class="mt-2 space-y-1" data-role="audit-log">
     {% for log in reservation.audit_logs %}

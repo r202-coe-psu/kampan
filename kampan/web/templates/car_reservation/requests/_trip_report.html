@@ -1,0 +1,22 @@
+{# รายงานท้ายใบขอใช้รถที่ พขร. กรอกตอนปิดงาน แสดงเมื่อคำขอเสร็จสิ้นแล้ว #}
+{% if reservation.status == 'completed' %}
+<div class="mt-6 card bg-base-200" data-role="trip-report">
+  <div class="card-body gap-2 p-4">
+    <h3 class="font-semibold">รายงานการใช้รถ</h3>
+    <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div><dt class="font-semibold">เลข กม. ออก</dt><dd>{{ reservation.last_mileage_before }}</dd></div>
+      <div><dt class="font-semibold">เลข กม. กลับ</dt><dd>{{ reservation.last_mileage }}</dd></div>
+      <div><dt class="font-semibold">รวมระยะทาง (กม.)</dt><dd>{{ reservation.distance_km }}</dd></div>
+      {% if reservation.fuel_liters is not none %}
+      <div><dt class="font-semibold">น้ำมัน (ลิตร)</dt><dd>{{ reservation.fuel_liters | format_amount }}</dd></div>
+      {% endif %}
+      {% if reservation.expense_case %}
+      <div><dt class="font-semibold">กรณีค่าใช้จ่าย</dt><dd>{{ reservation.get_expense_case_display() }}</dd></div>
+      {% endif %}
+      {% if reservation.cost_baht is not none %}
+      <div><dt class="font-semibold">เป็นเงิน (บาท)</dt><dd>{{ reservation.cost_baht | format_amount }}</dd></div>
+      {% endif %}
+    </dl>
+  </div>
+</div>
+{% endif %}
