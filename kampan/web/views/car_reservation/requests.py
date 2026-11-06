@@ -204,6 +204,7 @@ def detail(request_id):
         steps=stepper(reservation),
         current_step_label=flow.step_label(current_key) if current_key else "",
         can_act=flow.can_act(reservation, current_user._get_current_object()),
+        asks_extra_travelers=reservation.request_type in flow.EXTRA_TRAVELER_TYPES,
         can_cancel=flow.can_cancel(
             reservation, current_user._get_current_object()
         ),
@@ -254,6 +255,7 @@ def approve(request_id):
             "driver": models.User.objects(id=form.driver.data).first()
             if ObjectId.is_valid(form.driver.data)
             else None,
+            "extra_travelers": (form.extra_travelers.data or "").strip(),
         }
     try:
         flow.approve(

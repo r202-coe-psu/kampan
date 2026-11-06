@@ -40,6 +40,9 @@
     {% if reservation.driver %}
     <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ reservation.driver.get_name() }}</dd></div>
     {% endif %}
+    {% if reservation.extra_travelers %}
+    <div><dt class="font-semibold">ขออนุมัติให้เดินทางไปด้วย</dt><dd data-role="extra-travelers">{{ reservation.extra_travelers }}</dd></div>
+    {% endif %}
   </dl>
 
   {% if reservation.details %}
@@ -101,6 +104,7 @@
       {% if form.car is defined %}
       {{ renderer.render_field(form.car) }}
       {{ renderer.render_field(form.driver) }}
+      {% if asks_extra_travelers %}{{ renderer.render_field(form.extra_travelers) }}{% endif %}
       {% endif %}
       {{ renderer.render_field(form.comment) }}
       <button type="submit" class="btn btn-success">อนุมัติ</button>

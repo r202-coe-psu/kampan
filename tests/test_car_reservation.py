@@ -532,6 +532,43 @@ def test_project_file_is_downloadable_only_by_members_of_the_requests_org(
     assert refused.status_code == 404
 
 
+@pytest.mark.parametrize("request_type", ["domestic", "abroad"])
+def test_dispatcher_records_extra_travelers_for_domestic_and_abroad(world, request_type):
+    car_application = world.submit_request(request_type)
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    form_page = world.client_for(world.dispatcher).get(detail_url(world, car_application))
+    assert 'name="extra_travelers"' in form_page.get_data(as_text=True)
+    data = step_data(world, "dispatcher")
+    data["extra_travelers"] = "นายสมหวัง ขับดี และนางสาวใจเย็น"
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=data
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.extra_travelers == "นายสมหวัง ขับดี และนางสาวใจเย็น"
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
+    assert "นายสมหวัง ขับดี และนางสาวใจเย็น" in page.get_data(as_text=True)
+
+
+@pytest.mark.parametrize("request_type", ["airport", "welfare"])
+def test_dispatcher_has_no_extra_travelers_field_for_airport_and_welfare(
+    world, request_type
+):
+    car_application = world.submit_request(request_type)
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    form_page = world.client_for(world.dispatcher).get(detail_url(world, car_application))
+
+    assert 'name="comment"' in form_page.get_data(as_text=True)
+    assert 'name="extra_travelers"' not in form_page.get_data(as_text=True)
+
+
 def upcoming(weekday, at_least_days=10):
     """วันถัดไปที่เป็น weekday (จันทร์=0 ... อาทิตย์=6) และห่างจากวันนี้อย่างน้อย at_least_days"""
     day = datetime.date.today() + datetime.timedelta(days=at_least_days)

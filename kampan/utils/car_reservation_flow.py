@@ -66,6 +66,9 @@ CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพน�
 CAR_OR_DRIVER_NOT_ASSIGNABLE = "รถหรือพนักงานขับรถที่เลือกไม่พร้อมใช้งาน"
 
 
+# ใบที่ผู้จัดรถระบุผู้ร่วมเดินทางเพิ่มได้ตอนจัดรถ ("ขออนุมัติให้ ... เดินทางไปด้วย")
+EXTRA_TRAVELER_TYPES = ("domestic", "abroad")
+
 HOLIDAY_ONLY_VEHICLES = ("เก๋ง", "มินิบัส")
 HOLIDAY_ONLY_VEHICLE_ERROR = (
     "รถเก๋ง/มินิบัสให้บริการเฉพาะวันเสาร์-อาทิตย์และวันหยุดนักขัตฤกษ์"
@@ -214,7 +217,7 @@ def _overlapping_bookings(app, **resource):
     )
 
 
-def approve(app, user, comment="", car=None, driver=None):
+def approve(app, user, comment="", car=None, driver=None, extra_travelers=""):
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
@@ -233,6 +236,8 @@ def approve(app, user, comment="", car=None, driver=None):
             raise FlowError(f"พนักงานขับรถ {driver.get_name()} มีงานช่วงเวลานี้แล้ว")
         app.car = car
         app.driver = driver
+        if app.request_type in EXTRA_TRAVELER_TYPES:
+            app.extra_travelers = extra_travelers
         audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"
         if comment:
             audit_comment += f" ({comment})"

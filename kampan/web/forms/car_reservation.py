@@ -435,6 +435,10 @@ class DispatchDecisionForm(ApprovalDecisionForm):
 
     car = fields.SelectField("รถ", choices=[], validate_choice=False)
     driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
+    extra_travelers = fields.StringField(
+        "ขออนุมัติให้ ... เดินทางไปด้วย",
+        validators=[validators.Optional(), validators.Length(max=516)],
+    )
 
 
 def validate_optional_picture(form, field):
