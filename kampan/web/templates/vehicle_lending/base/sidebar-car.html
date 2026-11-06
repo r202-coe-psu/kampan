@@ -80,6 +80,15 @@
     {% endif %}
     {% endif %}
 
+    {% if organization.car_flow == 'snor' and current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if '/vehicle_lending/snor_car_settings' in request.path else '' }}"
+        href="{{ url_for('vehicle_lending.snor_car_settings.positions', organization_id=organization.id ) }}">
+        <i class="ph ph-user-gear"></i> ตั้งค่าผู้อนุมัติ
+      </a>
+    </li>
+    {% endif %}
+
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_manuals' in request.path else '' }}"
         href="{{ url_for('vehicle_lending.car_manuals.index', organization_id=organization.id ) }}">

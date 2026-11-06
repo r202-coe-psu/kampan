@@ -84,6 +84,7 @@ CAR_FLOW_OF_ENDPOINT = {
     "vehicle_lending.car_applications.paper": "diis",
     "vehicle_lending.car_applications.combine_paper": "diis",
     "vehicle_lending.snor_car_requests": "snor",
+    "vehicle_lending.snor_car_settings": "snor",
 }
 
 
