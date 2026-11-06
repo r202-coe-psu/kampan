@@ -67,6 +67,29 @@ class DispatchDecisionForm(ApprovalDecisionForm):
     driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
 
 
+class CarForm(FlaskForm):
+    """ฟอร์มเพิ่ม/แก้ไขรถของระบบจองรถ (ที่นั่งบังคับกรอกในฟอร์มนี้ แต่เป็น optional ที่โมเดล
+    เพื่อให้รถของระบบยืมรถ DIIS ยังใช้งานได้)"""
+
+    license_plate = fields.StringField(
+        "ป้ายทะเบียนรถ",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    vehicle_type = fields.SelectField(
+        "ประเภทรถ",
+        choices=models.vehicles.VEHICLE_TYPES,
+        validators=[validators.DataRequired()],
+    )
+    seat_count = fields.IntegerField(
+        "จำนวนที่นั่ง",
+        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        widget=widgets.NumberInput(),
+    )
+    description = fields.TextAreaField(
+        "รายละเอียด/ลักษณะ", validators=[validators.Optional()]
+    )
+
+
 class DenyDecisionForm(FlaskForm):
     comment = fields.TextAreaField(
         "เหตุผลที่ไม่อนุมัติ",

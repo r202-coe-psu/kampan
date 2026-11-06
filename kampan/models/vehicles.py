@@ -34,6 +34,7 @@ class BaseVehicle:
 
 class Car(BaseVehicle, me.Document):
     vehicle_type = me.StringField(choices=VEHICLE_TYPES)
+    seat_count = me.IntField(min_value=1)
     last_mileage = me.IntField(min_value=0, required=True, default=0)
     meta = {"collection": "cars"}
 

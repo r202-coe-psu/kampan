@@ -1,0 +1,20 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}{{ 'แก้ไขรถ' if car else 'เพิ่มรถ' }}{% endblock %}
+
+{% block content %}
+<form method="post" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
+      enctype="multipart/form-data">
+  {{ form.csrf_token }}
+  <div class="grid gap-2 md:grid-cols-2">
+    {{ renderer.render_field(form.license_plate) }}
+    {{ renderer.render_select_field(form.vehicle_type) }}
+    {{ renderer.render_number_field(form.seat_count, min=1) }}
+  </div>
+  {{ renderer.render_text_area_field(form.description) }}
+  <div class="flex justify-start w-full gap-2 mt-4">
+    <button type="submit" class="btn btn-primary">บันทึก</button>
+    <a class="btn" href="{{ url_for('car_reservation.cars.index', organization_id=organization.id) }}">ย้อนกลับ</a>
+  </div>
+</form>
+{% endblock %}

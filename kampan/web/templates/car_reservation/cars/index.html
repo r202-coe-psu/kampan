@@ -1,0 +1,78 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+
+{% block title %}จัดการรถ{% endblock %}
+
+{% block content %}
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex justify-end">
+    <a class="btn btn-primary" href="{{ url_for('car_reservation.cars.create_or_edit', organization_id=organization.id) }}">
+      <i class="ph ph-plus"></i> เพิ่มรถ
+    </a>
+  </div>
+  {% if cars %}
+  <div class="overflow-x-auto mt-4 hidden md:block">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>รูป</th>
+          <th>ทะเบียน</th>
+          <th>ประเภท</th>
+          <th>ที่นั่ง</th>
+          <th>สถานะ</th>
+          <th>เลขไมล์สุดท้าย</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for car in cars %}
+        <tr>
+          <td>
+            <div class="size-14 rounded-box bg-base-200 flex items-center justify-center overflow-hidden">
+              <i class="ph ph-car text-2xl"></i>
+            </div>
+          </td>
+          <td class="font-medium">{{ car.license_plate }}</td>
+          <td>{{ car.get_vehicle_type_display() or '-' }}</td>
+          <td>{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</td>
+          <td>
+            <span class="badge {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
+          </td>
+          <td>{{ car.last_mileage | format_number if car.last_mileage else 0 }} กม.</td>
+          <td class="text-right">
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
+              <i class="ph ph-pen"></i> แก้ไข
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-4 grid gap-3 md:hidden">
+    {% for car in cars %}
+    <div class="rounded-box border border-base-300 p-4 flex gap-3">
+      <div class="size-16 shrink-0 rounded-box bg-base-200 flex items-center justify-center overflow-hidden">
+        <i class="ph ph-car text-3xl"></i>
+      </div>
+      <div class="flex-1">
+        <p class="font-semibold">{{ car.license_plate }}</p>
+        <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}{% if car.seat_count %} · {{ car.seat_count }} ที่นั่ง{% endif %}</p>
+        <span class="badge badge-sm {{ 'badge-success' if car.status == 'active' else 'badge-ghost' }}">{{ car.get_status_display() }}</span>
+        <p class="text-sm text-base-content/60">ไมล์สุดท้าย {{ car.last_mileage or 0 }} กม.</p>
+        <a class="btn btn-sm btn-primary mt-2"
+           href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
+          <i class="ph ph-pen"></i> แก้ไข
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  {{ EmptyState('ph-car', 'ยังไม่มีรถ', description='เพิ่มรถคันแรกเพื่อให้ผู้จัดรถเลือกใช้งานได้',
+                action_label='เพิ่มรถ',
+                action_href=url_for('car_reservation.cars.create_or_edit', organization_id=organization.id)) }}
+  {% endif %}
+</div>
+{% endblock %}
