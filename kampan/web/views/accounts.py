@@ -148,6 +148,7 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
         )
     if not organization and "admin" not in current_user.roles:
         return render_template(
@@ -155,6 +156,7 @@ def index():
             user=current_user,
             organization=organization,
             errors=errors,
+            picture_form=forms.accounts.PictureForm(),
         )
 
     if "admin" in current_user.roles and organization_id:
@@ -166,6 +168,7 @@ def index():
         user=current_user,
         organization=organization,
         errors=errors,
+        picture_form=forms.accounts.PictureForm(),
     )
 
 

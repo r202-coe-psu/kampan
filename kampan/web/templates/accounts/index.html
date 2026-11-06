@@ -44,7 +44,21 @@
     <h2 class="text-2xl font-bold">ข้อมูลผู้ใช้งาน</h2>
   </div>
   {% if current_user.get_picture() %}
-  <img class="w-32 h-32 rounded-full mx-auto mb-4" src="{{ current_user.get_picture() }}">
+  <img class="w-32 h-32 rounded-full object-cover mx-auto mb-4" src="{{ current_user.get_picture() }}">
+  {% endif %}
+  {% if picture_form %}
+  <form method="POST" action="{{ url_for('accounts.upload_picture') }}" enctype="multipart/form-data"
+    class="flex flex-col items-center gap-2 mb-6">
+    {{ picture_form.csrf_token }}
+    <label class="text-sm text-base-content/70" for="{{ picture_form.picture.id }}">
+      รูปโปรไฟล์ (JPEG หรือ PNG ขนาดไม่เกิน 2 MB)
+    </label>
+    <input type="file" id="{{ picture_form.picture.id }}" name="{{ picture_form.picture.name }}"
+      accept="image/jpeg,image/png" class="file-input file-input-bordered file-input-sm" required>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="ph ph-upload-simple"></i>อัปโหลดรูปโปรไฟล์
+    </button>
+  </form>
   {% endif %}
   <div class="grid grid-cols-2 gap-4">
     {{ row_detail("ชื่อ :") }}

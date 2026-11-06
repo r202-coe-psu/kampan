@@ -145,3 +145,17 @@ def test_header_avatar_falls_back_to_icon_without_picture(app, create_user, logi
     assert page.status_code == 200
     assert user_avatar_sources(page.data.decode()) == []
     assert "ph-user" in page.data.decode()
+
+
+def test_account_page_offers_picture_upload_form(app, create_user, login_as):
+    user = create_user("Form", "Seen")
+
+    with app.test_client() as client:
+        login_as(client, user)
+        page = client.get("/accounts")
+
+    body = page.data.decode()
+    assert 'action="/accounts/picture"' in body
+    assert 'enctype="multipart/form-data"' in body
+    assert 'type="file"' in body
+    assert 'name="picture"' in body
