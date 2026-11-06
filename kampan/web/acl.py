@@ -23,6 +23,9 @@ def get_requested_organization_id():
 
 
 # blueprint ที่อยู่ภายใต้โมดูลใด ถ้าองค์กรปิดโมดูลนั้น หน้าเหล่านี้ต้องเปิดไม่ได้
+# คีย์เป็นชื่อเต็มของ blueprint หรือชื่อระดับบนสุด (เช่น "procurement" ครอบคลุม
+# "procurement.requisitions" ทุกตัว) ส่วน account, site, organizations, admin
+# ไม่อยู่ในรายการ จึงเปิดได้เสมอ
 MODULE_OF_BLUEPRINT = {
     "vehicle_lending.car_applications": "car",
     "vehicle_lending.car_permissions": "car",
@@ -31,7 +34,33 @@ MODULE_OF_BLUEPRINT = {
     "vehicle_lending.car_feedback": "car",
     "vehicle_lending.car_manuals": "car",
     "vehicle_lending.history_car_lending": "car",
+    "vehicle_lending.motorcycle_applications": "motorcycle",
+    "vehicle_lending.motorcycle_permissions": "motorcycle",
+    "vehicle_lending.motorcycles": "motorcycle",
+    "vehicle_lending.motorcycle_manuals": "motorcycle",
+    "procurement": "procurement",
+    "items": "inventory",
+    "item_orders": "inventory",
+    "item_checkouts": "inventory",
+    "item_positions": "inventory",
+    "item_registers": "inventory",
+    "inventories": "inventory",
+    "warehouses": "inventory",
+    "categories": "inventory",
+    "suppliers": "inventory",
+    "lost_breaks": "inventory",
+    "approve_orders": "inventory",
+    "dashboard": "inventory",
+    "notifications": "inventory",
 }
+
+
+def module_of_blueprint(blueprint_name):
+    if not blueprint_name:
+        return None
+    return MODULE_OF_BLUEPRINT.get(blueprint_name) or MODULE_OF_BLUEPRINT.get(
+        blueprint_name.split(".")[0]
+    )
 
 
 def enforce_enabled_module():
@@ -39,7 +68,7 @@ def enforce_enabled_module():
     if organization is None:
         return
 
-    module_key = MODULE_OF_BLUEPRINT.get(request.blueprint)
+    module_key = module_of_blueprint(request.blueprint)
     if module_key and not organization.has_module(module_key):
         raise NotFound()
 
