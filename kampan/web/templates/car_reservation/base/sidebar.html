@@ -42,6 +42,8 @@
     {% if current_user.has_organization_roles("admin") %}
     {{ MenuItem(['car_reservation.cars.index', 'car_reservation.cars.create_or_edit'], 'ph-car', 'จัดการรถ',
                 url_for('car_reservation.cars.index', organization_id=organization.id)) }}
+    {{ MenuItem(['car_reservation.feedback.index'], 'ph-star', 'ผลประเมินความพึงพอใจ',
+                url_for('car_reservation.feedback.index', organization_id=organization.id)) }}
     {% endif %}
 
     <li class="menu-title">ตั้งค่า</li>

@@ -456,6 +456,19 @@ def test_the_default_period_is_one_month_and_an_unknown_period_falls_back_to_it(
         assert "เกินเดือน" not in html
 
 
+def test_sidebar_shows_the_results_item_to_org_admins_only(world):
+    list_url = f"/car_reservation/requests/?organization_id={world.org.id}"
+    results_href = f"/car_reservation/feedback/?organization_id={world.org.id}"
+
+    admin_html = world.client_for(world.org_admin).get(list_url).get_data(as_text=True)
+    staff_html = world.client_for(world.requester).get(list_url).get_data(as_text=True)
+
+    assert "ผลประเมินความพึงพอใจ" in admin_html
+    assert results_href in admin_html
+    assert "ผลประเมินความพึงพอใจ" not in staff_html
+    assert results_href not in staff_html
+
+
 def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
     world, mock_redis_queue
 ):
