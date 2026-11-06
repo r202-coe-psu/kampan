@@ -965,3 +965,24 @@ def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(s
         .get_data(as_text=True)
     )
     assert "ขอยกเลิก — รอผู้จัดรถรับทราบ" in html
+
+
+def test_cancel_request_appears_in_the_inbox_of_the_dispatcher_and_delegate_only(
+    snor, create_user, assign_user_to_org
+):
+    secretary = create_user("Secretary", "Assistant")
+    assign_user_to_org(secretary, snor.org, roles=["staff"])
+    position = models.CarFlowPosition.objects(
+        organization=snor.org, position_key="dispatcher"
+    ).first()
+    position.delegates = [secretary]
+    position.save()
+    car_application = request_with_car_assigned(snor)
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": ""}
+    )
+
+    assert inbox_shows(snor, snor.dispatcher, car_application)
+    assert inbox_shows(snor, secretary, car_application)
+    for outsider in (snor.requester, snor.supervisor, snor.stranger):
+        assert not inbox_shows(snor, outsider, car_application)

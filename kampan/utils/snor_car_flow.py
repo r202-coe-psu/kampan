@@ -162,12 +162,18 @@ def can_act(app, user):
     return models.CarFlowPosition.can_act(app.organization, key, user)
 
 
+def can_confirm_cancel(app, user):
+    return app.status == "cancel_requested" and models.CarFlowPosition.can_act(
+        app.organization, "dispatcher", user
+    )
+
+
 def inbox_for(organization, user):
-    """คำขอที่รออนุมัติและ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
-    pending = models.SnorCarRequest.objects(
-        organization=organization, status="pending"
+    """คำขอที่รออนุมัติหรือรอรับทราบการยกเลิก และ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
+    waiting = models.SnorCarRequest.objects(
+        organization=organization, status__in=["pending", "cancel_requested"]
     ).order_by("departure_datetime")
-    return [app for app in pending if can_act(app, user)]
+    return [app for app in waiting if can_act(app, user) or can_confirm_cancel(app, user)]
 
 
 def assignable_cars(organization):

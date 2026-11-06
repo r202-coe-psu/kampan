@@ -55,7 +55,9 @@ def inbox():
         "/snor_car/requests/inbox.html",
         organization=g.organization,
         snor_requests=waiting,
-        step_label=lambda app: snor.step_label(snor.current_step_key(app)),
+        step_label=lambda app: snor.step_label(
+            snor.current_step_key(app) or "dispatcher"
+        ),
     )
 
 
