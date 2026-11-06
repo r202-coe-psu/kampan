@@ -1,0 +1,12 @@
+{# ส่วนหนึ่งของฟอร์มคำขอ: หัวข้อ (h2) + เนื้อหา (ผ่าน {% call %})
+   ใช้: {% call FormSection('การเดินทาง', icon='ph-map-pin', description='...') %}...{% endcall %} #}
+{% macro FormSection(title, icon=None, description=None) %}
+<section class="flex flex-col gap-2" data-role="form-section">
+  <h2 class="flex items-center gap-2 border-b border-base-300 pb-2 text-lg font-semibold">
+    {% if icon %}<i class="ph {{ icon }} text-primary"></i>{% endif %}
+    {{ title }}
+  </h2>
+  {% if description %}<p class="text-sm text-base-content/60">{{ description }}</p>{% endif %}
+  {{ caller() }}
+</section>
+{% endmacro %}

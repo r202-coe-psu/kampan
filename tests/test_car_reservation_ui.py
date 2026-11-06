@@ -195,3 +195,48 @@ def test_directory_counts_cars_and_drivers_separately(world, create_user, assign
     ]
     assert len(find(doc, "*", data_role="car-card")) == 1
     assert len(find(doc, "*", data_role="driver-card")) == 1
+
+
+def form_sections(doc):
+    """{หัวข้อส่วน: ชื่อ field (name) ที่อยู่ในส่วนนั้น}"""
+    return {
+        words(find(section, "h2")[0]): {
+            el.get("name") for el in section.xpath(".//*[@name]") if el.get("name") != "csrf_token"
+        }
+        for section in find(doc, "section", data_role="form-section")
+    }
+
+
+@pytest.mark.parametrize(
+    "request_type, extra_sections",
+    [
+        ("domestic", ["ค่าใช้จ่าย"]),
+        ("airport", ["ค่าใช้จ่าย"]),
+        ("welfare", []),
+        ("abroad", ["แนบไฟล์"]),
+    ],
+)
+def test_request_form_groups_fields_under_headed_sections(world, request_type, extra_sections):
+    doc = world.page(world.staff, "/requests/new", type=request_type)
+
+    sections = form_sections(doc)
+    assert list(sections) == ["ข้อมูลผู้ขอ", "การเดินทาง", "ข้อมูลเฉพาะของแบบฟอร์ม", *extra_sections]
+    # ใบสวัสดิการใช้ "สังกัด" ในส่วนเฉพาะแบบฟอร์มแทนหน่วยงานผู้ขอ
+    assert ("requester_unit" in sections["ข้อมูลผู้ขอ"]) == (request_type != "welfare")
+    assert "phone" in sections["ข้อมูลผู้ขอ"]
+    assert {"departure_date", "return_time", "pickup_place"} <= sections["การเดินทาง"]
+    if request_type == "abroad":
+        assert "project_file" in sections["แนบไฟล์"]
+    if extra_sections == ["ค่าใช้จ่าย"]:
+        assert {"in_office_of_president", "cost_responsibilities"} <= sections["ค่าใช้จ่าย"]
+
+
+def test_request_form_has_a_submit_area_with_cancel_and_submit(world):
+    doc = world.page(world.staff, "/requests/new", type="domestic")
+
+    area = find(doc, "div", data_role="form-actions")[0]
+    cancel = find(area, "a", "btn-ghost")[0]
+    submit = find(area, "button", "btn-primary", type="submit")[0]
+    assert words(cancel) == "ยกเลิก"
+    assert cancel.get("href") == f"{BASE}/requests/?organization_id={world.org.id}"
+    assert words(submit) == "ยื่นคำขอ"

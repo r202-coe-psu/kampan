@@ -11,10 +11,3 @@
   {{ renderer.render_field(form.coordinator_phone) }}
 </div>
 {{ renderer.render_field(form.request_reason) }}
-<fieldset class="fieldset">
-  <legend class="fieldset-legend">{{ form.project_file.label.text }} <span class="text-error">*</span></legend>
-  {{ form.project_file(class_="file-input file-input-bordered w-full", accept=".pdf,.doc,.docx,.jpg,.jpeg,.png") }}
-  <p class="text-sm text-base-content/70">ไฟล์ PDF, DOC, DOCX, JPG หรือ PNG ขนาดไม่เกิน 10 MB</p>
-  {% for error in form.project_file.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
-</fieldset>
-<p class="text-sm text-base-content/70">หมายเหตุ ต้องส่งใบขอใช้รถนี้ล่วงหน้า 10 วันทำการ และให้แนบเอกสารโครงการ/หรือเอกสารอื่นที่เกี่ยวข้องด้วยทุกครั้ง</p>

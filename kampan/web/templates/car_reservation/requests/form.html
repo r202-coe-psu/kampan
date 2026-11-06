@@ -1,38 +1,66 @@
 {% extends '/car_reservation/base/default-page.html' %}
+{% from '/car_reservation/components/form_section.html' import FormSection %}
 
 {% block title %}{{ request_type_label }}{% endblock %}
 
 {% block dashboard_title %}{{ request_type_label }}{% endblock %}
 
+{% block page_subtitle %}กรอกข้อมูลให้ครบถ้วน ช่องที่มี <span class="text-error">*</span> จำเป็นต้องกรอก{% endblock %}
+
 {% block content %}
-<form method="post" enctype="multipart/form-data" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  {{ form.csrf_token }}
-  <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-    {% if form.requester_unit %}{{ renderer.render_field(form.requester_unit) }}{% endif %}
-    {{ renderer.render_field(form.phone) }}
-  </div>
-  {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
-  <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-    {{ renderer.render_field(form.departure_date) }}
-    {{ renderer.render_field(form.departure_time) }}
-    {{ renderer.render_field(form.return_date) }}
-    {{ renderer.render_field(form.return_time) }}
-    {{ renderer.render_field(form.pickup_place) }}
-    {{ renderer.render_field(form.pickup_time) }}
-  </div>
-  {% if short_notice_days %}
-  <div class="alert alert-warning mt-4" role="alert">
-    <div>
-      <p>ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ ต้องยืนยันก่อนยื่นคำขอแบบเร่งด่วน</p>
-      <label class="label cursor-pointer justify-start gap-2">
-        <input type="checkbox" name="confirm_urgent" value="y" class="checkbox checkbox-sm">
-        <span>{{ form.confirm_urgent.label.text }}</span>
-      </label>
+<form method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-8">
+    {{ form.csrf_token }}
+
+    {% call FormSection('ข้อมูลผู้ขอ', icon='ph-user') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {% if form.requester_unit %}{{ renderer.render_field(form.requester_unit) }}{% endif %}
+      {{ renderer.render_field(form.phone) }}
     </div>
-  </div>
-  {% endif %}
-  <div class="flex justify-start w-full gap-2 mt-4">
-    <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
+    {% endcall %}
+
+    {% call FormSection('การเดินทาง', icon='ph-map-pin') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.render_field(form.departure_date) }}
+      {{ renderer.render_field(form.departure_time) }}
+      {{ renderer.render_field(form.return_date) }}
+      {{ renderer.render_field(form.return_time) }}
+      {{ renderer.render_field(form.pickup_place) }}
+      {{ renderer.render_field(form.pickup_time) }}
+    </div>
+    {% endcall %}
+
+    {% call FormSection('ข้อมูลเฉพาะของแบบฟอร์ม', icon='ph-clipboard-text') %}
+    {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
+    {% endcall %}
+
+    {% if request_type in ('domestic', 'airport') %}
+    {% call FormSection('ค่าใช้จ่าย', icon='ph-coins') %}
+    {% include '/car_reservation/requests/form_cost_responsibilities.html' %}
+    {% endcall %}
+    {% elif request_type == 'abroad' %}
+    {% call FormSection('แนบไฟล์', icon='ph-paperclip') %}
+    {% include '/car_reservation/requests/form_abroad_attachments.html' %}
+    {% endcall %}
+    {% endif %}
+
+    {% if short_notice_days %}
+    <div class="alert alert-warning" role="alert">
+      <div>
+        <p>ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ ต้องยืนยันก่อนยื่นคำขอแบบเร่งด่วน</p>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input type="checkbox" name="confirm_urgent" value="y" class="checkbox checkbox-sm">
+          <span>{{ form.confirm_urgent.label.text }}</span>
+        </label>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t border-base-300 bg-base-100/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end"
+         data-role="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
+    </div>
   </div>
 </form>
 {% endblock %}
