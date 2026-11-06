@@ -135,6 +135,30 @@ def test_supervisor_approval_moves_request_to_dispatcher(snor):
     assert "รอผู้จัดรถ" in page.get_data(as_text=True)
 
 
+def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
+    snor, create_user
+):
+    colleague_head = create_user("ColleagueHead", "Six")
+    snor.assign_in_division(colleague_head, ["head"], snor.division)
+    colleague_staff = create_user("ColleagueStaff", "Seven")
+    snor.assign_in_division(colleague_staff, ["staff"], snor.division)
+    car_application = snor.submit_domestic_request()
+
+    for outsider in (snor.other_head, colleague_staff):
+        snor.client_for(outsider).post(
+            approve_url(snor, car_application), data={"comment": ""}
+        )
+        car_application.reload()
+        assert car_application.current_step == 0
+
+    response = snor.client_for(colleague_head).post(
+        approve_url(snor, car_application), data={"comment": "เห็นชอบ"}
+    )
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+
+
 def test_member_who_is_not_the_current_approver_cannot_approve(snor):
     car_application = snor.submit_domestic_request()
 

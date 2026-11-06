@@ -92,12 +92,27 @@ def current_step_key(app):
     return app.route_snapshot[app.current_step]
 
 
+def _is_division_head(app, user):
+    if app.division is None:
+        return False
+    return (
+        models.OrganizationUserRole.objects(
+            organization=app.organization,
+            user=user,
+            status="active",
+            roles="head",
+            division=app.division,
+        ).first()
+        is not None
+    )
+
+
 def can_act(app, user):
     key = current_step_key(app)
     if key is None or user is None:
         return False
     if key == "supervisor":
-        return app.supervisor is not None and user == app.supervisor
+        return _is_division_head(app, user)
     return models.CarFlowPosition.can_act(app.organization, key, user)
 
 
