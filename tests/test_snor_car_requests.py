@@ -254,3 +254,20 @@ def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_deleg
     assert car_application.status == "active"
     page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
     assert "Secretary Assistant" in page.get_data(as_text=True)
+
+
+def test_global_admin_cannot_approve_a_step_they_do_not_hold(
+    snor, create_user, assign_user_to_org
+):
+    admin = create_user("Admin", "Global", roles=["admin"])
+    assign_user_to_org(admin, snor.org, roles=["admin"])
+    car_application = snor.submit_request("domestic")
+
+    snor.client_for(admin).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.current_step == 0
+    assert len(car_application.step_approvals) == 0
