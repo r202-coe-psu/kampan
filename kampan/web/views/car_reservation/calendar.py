@@ -1,9 +1,10 @@
 import datetime
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, abort, g, jsonify, render_template, request
 
 from kampan import models
 from kampan.web import acl
+from kampan.web.views.car_reservation.requests import stepper
 
 module = Blueprint("calendar", __name__, url_prefix="/calendar")
 
@@ -60,3 +61,22 @@ def events():
     if range_end:
         reservations = reservations.filter(departure_datetime__lt=range_end)
     return jsonify([event_of(reservation) for reservation in reservations])
+
+
+@module.route("/<reservation_id>/modal")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def event_modal(reservation_id):
+    try:
+        reservation = models.CarReservation.objects(
+            id=reservation_id, organization=g.organization
+        ).first()
+    except Exception:
+        reservation = None
+    if reservation is None:
+        abort(404)
+    return render_template(
+        "/car_reservation/calendar/event_modal.html",
+        organization=g.organization,
+        reservation=reservation,
+        steps=stepper(reservation),
+    )

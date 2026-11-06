@@ -1,6 +1,7 @@
 """ปฏิทินการจองรถ: สมาชิกทุกคนของหน่วยงานเห็นตารางรถของหน่วยงานตัวเอง (เฉพาะคำขอที่ยังมีผลกับรถ)"""
 
 import datetime
+import re
 
 import pytest
 
@@ -144,6 +145,65 @@ def test_events_are_limited_to_the_requested_date_range(world):
     )
 
     assert {event["id"] for event in events} == {str(inside.id), str(spanning_in.id)}
+
+
+def modal_url(world, reservation, organization=None):
+    organization = organization or world.org
+    return f"{BASE}/{reservation.id}/modal?organization_id={organization.id}"
+
+
+def test_modal_shows_trip_car_driver_status_stepper_and_link_to_the_request(world):
+    reservation = world.reservation(
+        departure=datetime.datetime(2031, 1, 10, 8, 30),
+        return_=datetime.datetime(2031, 1, 12, 17, 0),
+        location="เชียงใหม่",
+        car=world.car,
+        driver=world.driver,
+    )
+
+    response = world.client.get(modal_url(world, reservation))
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ" in html
+    assert world.requester.get_name() in html
+    assert "เชียงใหม่" in html
+    assert "10/01/2031" in html and "08:30" in html
+    assert "12/01/2031" in html and "17:00" in html
+    assert "กก 1234" in html
+    assert world.driver.get_name() in html
+    assert 'data-status="active"' in html
+    assert html.count("data-state=") == 3
+    assert (
+        f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}"
+        in html
+    )
+
+
+def test_modal_stepper_marks_where_a_pending_request_is_in_its_route(world):
+    reservation = world.reservation(status="pending")  # อยู่ขั้นที่สอง (ผู้จัดรถ)
+    reservation.step_approvals = [
+        models.car_reservations.StepApproval(
+            step_key="supervisor", decision="approved"
+        )
+    ]
+    reservation.save()
+
+    html = world.client.get(modal_url(world, reservation)).get_data(as_text=True)
+
+    states = re.findall(r'data-state="(\w+)"', html)
+    assert states == ["done", "current", "waiting"]
+
+
+def test_modal_of_another_organizations_reservation_is_404(world, create_org):
+    other_org = create_org("Other Calendar Org")
+    other_org.enabled_modules = ["car_reservation"]
+    other_org.save()
+    foreign = world.reservation(organization=other_org)
+
+    response = world.client.get(modal_url(world, foreign))
+
+    assert response.status_code == 404
 
 
 def test_events_never_include_another_organizations_reservations(world, create_org):
