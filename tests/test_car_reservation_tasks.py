@@ -159,3 +159,31 @@ def test_driver_closes_an_active_task_and_the_trip_report_is_recorded(world):
     assert reservation.expense_case == "fleet_card"
     assert float(reservation.cost_baht) == 1200.50
     assert reservation.completed_at is not None
+
+
+def test_closing_sets_the_cars_mileage_to_the_return_reading(world):
+    close(world, world.reservation())
+
+    world.car.reload()
+    assert world.car.last_mileage == 10250
+
+
+def test_closing_is_audited_as_completed_by_the_driver(world):
+    reservation = world.reservation()
+
+    close(world, reservation)
+
+    reservation.reload()
+    last = reservation.audit_logs[-1]
+    assert (last.action, last.actor) == ("completed", world.driver)
+
+
+def test_closing_shows_a_success_toast_on_the_task_list(world):
+    reservation = world.reservation()
+    client = world.client_for(world.driver)
+
+    response = client.post(
+        close_url(world, reservation), data=close_data(), follow_redirects=True
+    )
+
+    assert "ปิดงานเรียบร้อยแล้ว" in response.get_data(as_text=True)
