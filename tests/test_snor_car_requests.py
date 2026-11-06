@@ -1234,3 +1234,27 @@ def test_supervisor_approval_notifies_the_dispatcher_holder_and_delegate(
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "approved")
     assert sorted(recipients) == sorted([snor.dispatcher.email, delegate.email])
+
+
+def test_final_approval_tells_the_requester_and_the_driver_the_request_is_active(
+    snor, mock_redis_queue
+):
+    car_application = snor.submit_domestic_request()
+    for key in car_application.route_snapshot[:-1]:
+        snor.client_for(snor.holders[key]).post(
+            approve_url(snor, car_application), data=step_data(snor, key)
+        )
+    mock_redis_queue.reset_mock()
+
+    last = car_application.route_snapshot[-1]
+    snor.client_for(snor.holders[last]).post(
+        approve_url(snor, car_application), data=step_data(snor, last)
+    )
+
+    car_application.reload()
+    assert car_application.status == "active"
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, _ = jobs[0]
+    assert (request_id, event) == (str(car_application.id), "active")
+    assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])

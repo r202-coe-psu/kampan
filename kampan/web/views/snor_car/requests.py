@@ -244,7 +244,9 @@ def approve(request_id):
             )
         )
 
-    utils.snor_car_email.notify(snor_request, "approved")
+    utils.snor_car_email.notify(
+        snor_request, "active" if snor_request.status == "active" else "approved"
+    )
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
     return redirect(
         url_for(
