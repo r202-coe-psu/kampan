@@ -30,15 +30,6 @@ MODULES = [
     ("motorcycle", "ระบบขอใช้รถจักรยานยนต์"),
 ]
 
-CAR_FLOWS = [
-    ("diis", "แบบสำนักนวัตกรรมฯ (หัวหน้าฝ่าย → พัสดุ → ผอ.)"),
-    (
-        "snor",
-        "แบบกองกายภาพฯ (ผู้บังคับบัญชา → ผู้จัดรถ → ... ตามประเภทใบ)",
-    ),
-]
-
-
 class OrganizationUserRole(me.Document):
     meta = {"collection": "organization_user_roles"}
 
@@ -113,8 +104,6 @@ class Organization(me.Document):
 
     # None = ยังไม่เคยตั้งค่า ถือว่าเปิดทุกโมดูล (ListField ปกติ default เป็น [])
     enabled_modules = me.ListField(me.StringField(choices=MODULES), default=None)
-    # รูปแบบการอนุมัติใบขอใช้รถ เปลี่ยนไม่ได้ระหว่างที่ยังมีใบค้างอยู่
-    car_flow = me.StringField(choices=CAR_FLOWS, default="diis")
 
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
@@ -129,12 +118,6 @@ class Organization(me.Document):
 
     def has_module(self, key):
         return self.enabled_modules is None or key in self.enabled_modules
-
-    def count_open_car_applications(self):
-        return models.vehicle_applications.CarApplication.objects(
-            organization=self,
-            status__nin=models.vehicle_applications.CAR_APPLICATION_CLOSED_STATUSES,
-        ).count()
 
     def get_distinct_users(self):
         if OrganizationUserRole.objects().count():

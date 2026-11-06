@@ -14,7 +14,6 @@ BaseOrganizationForm = model_form(
         "last_updated_by",
         "status",
         "enabled_modules",
-        "car_flow",
     ],
     field_args={
         "name": {"label": "Name"},
@@ -31,10 +30,6 @@ class OrganizationForm(BaseOrganizationForm):
         widget=widgets.ListWidget(prefix_label=False),
         option_widget=widgets.CheckboxInput(),
         validate_choice=True,
-    )
-    car_flow = fields.RadioField(
-        "รูปแบบการอนุมัติใบขอใช้รถ",
-        choices=models.organizations.CAR_FLOWS,
     )
 
 

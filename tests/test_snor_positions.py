@@ -21,8 +21,6 @@ POSITION_LABELS = [
 def snor_setup(app, create_org, create_user, assign_user_to_org, login_as):
     """องค์กร snor + ผู้ดูแลที่ล็อกอินแล้ว"""
     org = create_org("Snor Org")
-    org.car_flow = "snor"
-    org.save()
     admin = create_user("Admin", "Snor")
     assign_user_to_org(admin, org, roles=["admin"])
     client = login_as(app.test_client(), admin)
@@ -119,15 +117,6 @@ def test_non_admin_staff_cannot_open_positions_page(
     assert response.status_code in (302, 403)
 
 
-def test_diis_organization_gets_404_on_positions_page(app, snor_setup, login_as):
-    snor_setup.org.car_flow = "diis"
-    snor_setup.org.save()
-
-    response = snor_setup.client.get(snor_setup.url)
-
-    assert response.status_code == 404
-
-
 def test_positions_page_lists_the_six_positions(snor_setup):
     response = snor_setup.client.get(snor_setup.url)
 
@@ -145,18 +134,3 @@ def test_positions_page_shows_saved_holder(snor_setup, create_user, assign_user_
     response = snor_setup.client.get(snor_setup.url)
 
     assert f'<option selected value="{holder.id}">Holder Hank</option>' in response.get_data(as_text=True)
-
-
-def test_sidebar_links_to_positions_only_for_org_admin_of_snor_org(
-    app, snor_setup, create_user, assign_user_to_org, login_as
-):
-    staff = create_user("Plain", "Staff")
-    assign_user_to_org(staff, snor_setup.org, roles=["staff"])
-    staff_client = login_as(app.test_client(), staff)
-    calendar = f"/vehicle_lending/car_applications/calendar?organization_id={snor_setup.org.id}"
-
-    admin_html = snor_setup.client.get(calendar).get_data(as_text=True)
-    staff_html = staff_client.get(calendar).get_data(as_text=True)
-
-    assert "ตั้งค่าผู้อนุมัติ" in admin_html
-    assert "ตั้งค่าผู้อนุมัติ" not in staff_html

@@ -10,7 +10,6 @@ BASE = "/vehicle_lending/snor_car_requests"
 @pytest.fixture
 def snor(app, create_org, create_user, assign_user_to_org, login_as):
     org = create_org("Snor Org")
-    org.car_flow = "snor"
     org.enabled_modules = ["car"]
     org.save()
 
@@ -222,20 +221,6 @@ def test_member_who_is_not_the_current_approver_cannot_approve(snor):
 
     page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
     assert "รอผู้บังคับบัญชา" in page.get_data(as_text=True)
-
-
-def test_diis_org_gets_404_on_snor_request_pages(
-    app, create_org, create_user, assign_user_to_org, login_as
-):
-    org = create_org("Diis Org")
-    user = create_user("Diis", "Member")
-    assign_user_to_org(user, org, roles=["staff"])
-
-    response = login_as(app.test_client(), user).get(
-        f"{BASE}/new?organization_id={org.id}&type=domestic"
-    )
-
-    assert response.status_code == 404
 
 
 # เส้นทางตามตารางในสเปก §3 (ชื่อขั้นที่หน้าคำขอแสดงเป็น "รอ<ชื่อขั้น>")

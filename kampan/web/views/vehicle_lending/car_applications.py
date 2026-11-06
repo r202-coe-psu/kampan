@@ -62,13 +62,9 @@ def calendar():
         "/vehicle_lending/car_applications/calendar.html",
         organization=organization,
         paginated_car_applications=paginated_car_applications,
-        new_request_url=(
-            None
-            if organization.car_flow == "snor"
-            else url_for(
-                "vehicle_lending.car_applications.create_or_edit",
-                organization_id=organization.id,
-            )
+        new_request_url=url_for(
+            "vehicle_lending.car_applications.create_or_edit",
+            organization_id=organization.id,
         ),
     )
 

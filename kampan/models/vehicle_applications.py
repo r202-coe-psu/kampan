@@ -19,18 +19,6 @@ CAR_APPLICATION_STATUS = [
     ("cancelled", "ยกเลิก"),
 ]
 
-# สถานะที่ถือว่าใบขอใช้รถปิดแล้ว (ที่เหลือคือใบค้าง)
-CAR_APPLICATION_CLOSED_STATUSES = [
-    "completed",
-    "disactive",
-    "denied",
-    "denied by header",
-    "denied by admin",
-    "denied by director",
-    "cancelled",
-]
-
-
 MOTORCYCLE_APPLICATION_STATUS = [
     ("pending", "รอการอนุมัติ"),
     ("active", "อนุมัติสำเร็จ"),
