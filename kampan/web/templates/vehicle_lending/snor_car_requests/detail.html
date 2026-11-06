@@ -1,0 +1,41 @@
+{% extends '/vehicle_lending/base/default-car-page.html' %}
+{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+
+{% block title %}คำขอใช้รถ{% endblock %}
+
+{% block dashboard_title %}{{ car_application.get_request_type_display() }}{% endblock %}
+
+{% block content %}
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex items-center gap-2">
+    {{ status_badge.render(car_application) }}
+    {% if car_application.status == 'pending' %}
+    <span class="font-medium">รอ{{ current_step_label }}</span>
+    {% endif %}
+  </div>
+
+  <ul class="steps steps-vertical mt-4">
+    {% for step in steps %}
+    <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
+        data-state="{{ step.state }}">{{ step.label }}</li>
+    {% endfor %}
+  </ul>
+
+  <dl class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ car_application.requester_unit }}</dd></div>
+    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ car_application.location }}</dd></div>
+    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ car_application.request_reason }}</dd></div>
+    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ car_application.passenger_number }}</dd></div>
+  </dl>
+
+  {% if can_act %}
+  <form method="post"
+        action="{{ url_for('vehicle_lending.snor_car_requests.approve', car_application_id=car_application.id, organization_id=organization.id) }}"
+        class="mt-4 flex items-end gap-2">
+    {{ form.csrf_token }}
+    {{ renderer.render_field(form.comment) }}
+    <button type="submit" class="btn btn-success">อนุมัติ</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

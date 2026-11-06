@@ -26,3 +26,4 @@ from . import reservations
 from . import requisition_timeline_items
 from . import car_feedback
 from . import car_flow_positions
+from . import snor_car_requests
