@@ -494,3 +494,35 @@ class CancelRequestForm(FlaskForm):
         "เหตุผลที่ยกเลิก (ถ้ามี)",
         validators=[validators.Optional(), validators.Length(max=516)],
     )
+
+
+class TripCloseForm(FlaskForm):
+    """พนักงานขับรถปิดงาน: เลข กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย และเป็นเงิน (ท้ายใบขอใช้รถ)"""
+
+    mileage_out = fields.IntegerField(
+        "เลข กม. ออก",
+        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        widget=widgets.NumberInput(),
+    )
+    mileage_in = fields.IntegerField(
+        "เลข กม. กลับ",
+        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        widget=widgets.NumberInput(),
+    )
+    fuel_liters = fields.DecimalField(
+        "น้ำมัน (ลิตร)",
+        places=2,
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        widget=widgets.NumberInput(step="0.01"),
+    )
+    expense_case = fields.SelectField(
+        "กรณีค่าใช้จ่าย",
+        choices=models.car_reservations.EXPENSE_CASES,
+        validators=[validators.DataRequired()],
+    )
+    cost_baht = fields.DecimalField(
+        "เป็นเงิน (บาท)",
+        places=2,
+        validators=[validators.Optional(), validators.NumberRange(min=0)],
+        widget=widgets.NumberInput(step="0.01"),
+    )

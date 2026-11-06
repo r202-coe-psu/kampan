@@ -121,3 +121,41 @@ def test_active_tasks_are_listed_upcoming_first_then_recent_completed(world):
     html = world.client_for(world.driver).get(world.list_url).get_data(as_text=True)
 
     assert html.index("ใกล้สุด") < html.index("ไกลสุด") < html.index("เสร็จแล้ว")
+
+
+def close_data(**overrides):
+    data = {
+        "mileage_out": "10000",
+        "mileage_in": "10250",
+        "fuel_liters": "20.5",
+        "expense_case": "fleet_card",
+        "cost_baht": "1200.50",
+    }
+    data.update(overrides)
+    return data
+
+
+def close_url(world, reservation):
+    return f"{BASE}/{reservation.id}/close?organization_id={world.org.id}"
+
+
+def close(world, reservation, user=None, **overrides):
+    return world.client_for(user or world.driver).post(
+        close_url(world, reservation), data=close_data(**overrides)
+    )
+
+
+def test_driver_closes_an_active_task_and_the_trip_report_is_recorded(world):
+    reservation = world.reservation()
+
+    response = close(world, reservation)
+
+    reservation.reload()
+    assert response.status_code == 302
+    assert reservation.status == "completed"
+    assert reservation.last_mileage_before == 10000
+    assert reservation.last_mileage == 10250
+    assert float(reservation.fuel_liters) == 20.5
+    assert reservation.expense_case == "fleet_card"
+    assert float(reservation.cost_baht) == 1200.50
+    assert reservation.completed_at is not None

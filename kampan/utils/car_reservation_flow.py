@@ -344,3 +344,34 @@ def confirm_cancel(app, user):
     app.status = "cancelled"
     _log(app, "cancel_confirmed", user, step_key="dispatcher")
     app.save()
+
+
+def can_close(app, user):
+    """พขร. ของงานนี้เท่านั้นที่ปิดงานได้ และต้องเป็นงานที่ active"""
+    return (
+        app.status == "active"
+        and app.driver is not None
+        and app.driver == user
+        and has_role(app.organization, user, "driver")
+    )
+
+
+def close_trip(
+    app, user, mileage_out, mileage_in, expense_case, fuel_liters=None, cost_baht=None
+):
+    """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ"""
+    if not can_close(app, user):
+        raise FlowError("ไม่มีสิทธิ์ปิดงานนี้")
+
+    app.last_mileage_before = mileage_out
+    app.last_mileage = mileage_in
+    app.fuel_liters = fuel_liters
+    app.expense_case = expense_case
+    app.cost_baht = cost_baht
+    app.completed_at = datetime.datetime.now()
+    app.status = "completed"
+    _log(app, "completed", user)
+    app.save()
+    if app.car is not None:
+        app.car.last_mileage = mileage_in
+        app.car.save()

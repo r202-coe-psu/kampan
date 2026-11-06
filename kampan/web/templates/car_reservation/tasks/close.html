@@ -1,0 +1,25 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}ปิดงาน{% endblock %}
+
+{% block content %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
+  <form method="post" class="card-body gap-2"
+        action="{{ url_for('car_reservation.tasks.close', task_id=task.id, organization_id=organization.id) }}">
+    {{ form.csrf_token }}
+    <h3 class="card-title">{{ task.location }}</h3>
+    <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+      {{ renderer.render_number_field(form.mileage_out) }}
+      {{ renderer.render_number_field(form.mileage_in) }}
+      {{ renderer.render_number_field(form.fuel_liters) }}
+      {{ renderer.render_number_field(form.cost_baht) }}
+    </div>
+    {{ renderer.render_select_field(form.expense_case) }}
+    <div class="card-actions justify-end mt-2">
+      <a class="btn btn-ghost"
+         href="{{ url_for('car_reservation.tasks.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">ปิดงาน</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

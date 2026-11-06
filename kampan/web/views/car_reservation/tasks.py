@@ -2,10 +2,11 @@
 
 from functools import wraps
 
-from flask import Blueprint, abort, g, render_template
+from flask import Blueprint, abort, flash, g, redirect, render_template, url_for
 from flask_login import current_user
 
 from kampan import models, utils
+from kampan.web import forms
 
 module = Blueprint("tasks", __name__, url_prefix="/tasks")
 
@@ -52,4 +53,47 @@ def index():
         completed_tasks=my_tasks("completed").order_by("-departure_datetime")[
             :RECENT_COMPLETED_LIMIT
         ],
+    )
+
+
+def get_task_or_404(task_id):
+    try:
+        task = models.CarReservation.objects(
+            id=task_id, organization=g.organization
+        ).first()
+    except Exception:
+        task = None
+    if task is None:
+        abort(404)
+    return task
+
+
+@module.route("/<task_id>/close", methods=["GET", "POST"])
+@driver_required
+def close(task_id):
+    task = get_task_or_404(task_id)
+    user = current_user._get_current_object()
+    if not flow.can_close(task, user):
+        abort(403)
+
+    form = forms.car_reservation.TripCloseForm()
+    if form.validate_on_submit():
+        flow.close_trip(
+            task,
+            user,
+            mileage_out=form.mileage_out.data,
+            mileage_in=form.mileage_in.data,
+            expense_case=form.expense_case.data,
+            fuel_liters=form.fuel_liters.data,
+            cost_baht=form.cost_baht.data,
+        )
+        flash("ปิดงานเรียบร้อยแล้ว", "success")
+        return redirect(
+            url_for("car_reservation.tasks.index", organization_id=g.organization.id)
+        )
+    return render_template(
+        "/car_reservation/tasks/close.html",
+        organization=g.organization,
+        task=task,
+        form=form,
     )

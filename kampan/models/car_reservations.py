@@ -46,6 +46,12 @@ WELFARE_EMPLOYEE_TYPES = ["พนักงานมหาวิทยาลั�
 WELFARE_VEHICLE_KINDS = ["บัส", "ตู้"]
 WELFARE_EVENT_TYPES = ["อุปสมบท", "มงคลสมรส", "ฌาปนกิจศพ"]
 
+# กรณีค่าใช้จ่ายของทริปที่ พขร. เลือกตอนปิดงาน
+EXPENSE_CASES = [
+    ("requester_unit_pays", "หน่วยงานผู้ขอใช้รถรับผิดชอบค่าใช้จ่าย"),
+    ("fleet_card", "เติมฟลีตการ์ดน้ำมัน"),
+]
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -55,6 +61,7 @@ AUDIT_ACTIONS = [
     ("cancel_requested", "ขอยกเลิก"),
     ("cancel_confirmed", "รับทราบการยกเลิก"),
     ("cancelled", "ยกเลิก"),
+    ("completed", "ปิดงาน"),
 ]
 
 
@@ -213,3 +220,16 @@ class CarReservation(me.Document):
     driver = me.ReferenceField("User", dbref=True)
     last_mileage = me.IntField(min_value=0)
     last_mileage_before = me.IntField(min_value=0)
+
+    # รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน (last_mileage_before = เลข กม. ออก, last_mileage = เลข กม. กลับ)
+    fuel_liters = me.DecimalField(min_value=0, precision=2)
+    expense_case = me.StringField(choices=EXPENSE_CASES)
+    cost_baht = me.DecimalField(min_value=0, max_value=1e12, precision=2)
+    completed_at = me.DateTimeField()
+
+    @property
+    def distance_km(self):
+        """ระยะทางรวมของทริป (เลข กม. กลับ - เลข กม. ออก) ยังไม่ปิดงานคือ None"""
+        if self.last_mileage is None or self.last_mileage_before is None:
+            return None
+        return self.last_mileage - self.last_mileage_before
