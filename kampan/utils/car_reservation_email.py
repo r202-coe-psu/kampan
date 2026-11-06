@@ -54,13 +54,8 @@ def _division_heads(reservation):
     ]
 
 
-def _position_people(reservation, position_key):
-    position = models.CarReservationPosition.objects(
-        organization=reservation.organization, position_key=position_key
-    ).first()
-    if position is None:
-        return []
-    return [position.user] + list(position.delegates)
+def _role_members(reservation, role):
+    return car_reservation_flow.members_with_role(reservation.organization, role)
 
 
 def recipients_for(reservation, event):
@@ -69,13 +64,13 @@ def recipients_for(reservation, event):
         people = _division_heads(reservation)
     elif event == "approved":
         key = car_reservation_flow.current_step_key(reservation)
-        people = _position_people(reservation, key) if key else []
+        people = _role_members(reservation, key) if key else []
     elif event == "active":
         people = [reservation.creator, reservation.driver]
     elif event == "denied":
         people = [reservation.creator]
     elif event == "cancel_requested":
-        people = _position_people(reservation, "dispatcher")
+        people = _role_members(reservation, "dispatcher")
     elif event == "cancelled":
         people = [reservation.creator, reservation.driver]
     else:

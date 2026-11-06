@@ -36,7 +36,6 @@ from .car_feedback import (
     QUESTION_TYPE,
 )
 import kampan.models.vehicle_applications as vehicle_applications
-from .car_reservation_positions import CarReservationPosition, RESERVATION_POSITIONS
 from .requisition_timeline import (
     RequisitionTimeline,
     RequisitionTimelineItem,

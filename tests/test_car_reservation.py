@@ -11,6 +11,15 @@ from kampan.web import redis_rq
 
 BASE = "/car_reservation/requests"
 
+APPROVAL_ROLE_KEYS = [
+    "dispatcher",
+    "vehicle_unit_head",
+    "strategy_head",
+    "physical_director",
+    "vice_president_hatyai",
+    "president",
+]
+
 
 @pytest.fixture(autouse=True)
 def mock_redis_queue():
@@ -83,6 +92,7 @@ def project_file(content=b"%PDF-1.4 project", filename="project.pdf"):
 def world(app, create_org, create_user, assign_user_to_org, login_as, create_car):
     org = create_org("Reservation Org")
     org.enabled_modules = ["car_reservation"]
+    org.enabled_roles = [key for key, _ in models.organizations.ORGANIZATION_ROLES]
     org.save()
 
     class Setup:
@@ -111,20 +121,16 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
     assign_in_division(s.requester, ["staff"], s.division)
     assign_in_division(s.supervisor, ["head"], s.division)
     assign_in_division(s.other_head, ["head"], s.other_division)
-    for user in (s.dispatcher, s.stranger):
-        assign_user_to_org(user, org, roles=["staff"])
-    models.CarReservationPosition(
-        organization=org, position_key="dispatcher", user=s.dispatcher
-    ).save()
+    assign_user_to_org(s.stranger, org, roles=["staff"])
+    assign_user_to_org(s.dispatcher, org, roles=["dispatcher"])
 
-    # ผู้ดำรงตำแหน่งที่เหลือ (คนละคน) เพื่อเดินครบทุกเส้นทาง
+    # ผู้ถือ role อนุมัติที่เหลือ (คนละคน) เพื่อเดินครบทุกเส้นทาง
     s.holders = {"supervisor": s.supervisor, "dispatcher": s.dispatcher}
-    for key, _ in models.RESERVATION_POSITIONS:
+    for key in APPROVAL_ROLE_KEYS:
         if key == "dispatcher":
             continue
         holder = create_user(f"Holder{key.title().replace('_', '')}", "Position")
-        assign_user_to_org(holder, org, roles=["staff"])
-        models.CarReservationPosition(organization=org, position_key=key, user=holder).save()
+        assign_user_to_org(holder, org, roles=[key])
         s.holders[key] = holder
 
     def client_for(user):
@@ -809,16 +815,11 @@ def test_each_request_type_walks_its_own_route_to_active(
     assert 'data-status="active"' in page.get_data(as_text=True)
 
 
-def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_delegate(
+def test_second_member_with_the_same_role_can_approve_and_audit_log_names_them(
     world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, world.org, roles=["staff"])
-    position = models.CarReservationPosition.objects(
-        organization=world.org, position_key="president"
-    ).first()
-    position.delegates = [secretary]
-    position.save()
+    assign_user_to_org(secretary, world.org, roles=["president"])
 
     car_application = world.submit_request("abroad")
     for key in [
@@ -859,6 +860,28 @@ def test_global_admin_cannot_approve_a_step_they_do_not_hold(
     assert car_application.status == "pending"
     assert car_application.current_step == 0
     assert len(car_application.step_approvals) == 0
+
+
+def test_removed_member_and_global_admin_without_the_role_cannot_approve_a_role_step(
+    world, create_user, assign_user_to_org
+):
+    admin = create_user("Admin", "Global", roles=["admin"])
+    assign_user_to_org(admin, world.org, roles=["admin"])
+    removed = create_user("Removed", "Dispatcher")
+    assign_user_to_org(removed, world.org, roles=["dispatcher"], status="disactive")
+    car_application = world.submit_request("domestic")
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
+    )
+
+    for outsider in (admin, removed):
+        world.client_for(outsider).post(
+            approve_url(world, car_application), data={"comment": ""}
+        )
+
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert len(car_application.step_approvals) == 1
 
 
 def deny_url(world, car_application):
@@ -1058,16 +1081,11 @@ def test_inbox_shows_request_at_supervisor_step_only_to_the_requesters_division_
     assert not inbox_shows(world, world.dispatcher, car_application)
 
 
-def test_after_supervisor_approves_inbox_moves_to_dispatcher_and_their_delegate(
+def test_after_supervisor_approves_inbox_moves_to_every_member_with_the_dispatcher_role(
     world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, world.org, roles=["staff"])
-    position = models.CarReservationPosition.objects(
-        organization=world.org, position_key="dispatcher"
-    ).first()
-    position.delegates = [secretary]
-    position.save()
+    assign_user_to_org(secretary, world.org, roles=["dispatcher"])
     car_application = world.submit_domestic_request()
     world.client_for(world.supervisor).post(
         approve_url(world, car_application), data={"comment": ""}
@@ -1116,17 +1134,12 @@ def test_sidebar_shows_inbox_link_to_approvers_with_count_badge_only_when_waitin
     assert "รายการรออนุมัติ" not in stranger
 
 
-def test_sidebar_inbox_link_is_visible_to_every_position_holder_and_delegate_even_when_empty(
+def test_sidebar_inbox_link_is_visible_to_every_approval_role_member_even_when_empty(
     world, create_user, assign_user_to_org
 ):
     index_url = f"{BASE}/?organization_id={world.org.id}"
     delegate = create_user("Delegate", "Ten")
-    assign_user_to_org(delegate, world.org, roles=["staff"])
-    president = models.CarReservationPosition.objects(
-        organization=world.org, position_key="president"
-    ).first()
-    president.delegates = [delegate]
-    president.save()
+    assign_user_to_org(delegate, world.org, roles=["president"])
 
     approvers = [delegate, *world.holders.values()]
     for approver in approvers:
@@ -1144,10 +1157,9 @@ def test_inbox_never_lists_requests_of_another_organization(
     other_org = create_org("Other Reservation Org")
     other_org.enabled_modules = ["car_reservation"]
     other_org.save()
-    assign_user_to_org(world.dispatcher, other_org, roles=["staff"])
-    models.CarReservationPosition(
-        organization=other_org, position_key="dispatcher", user=world.dispatcher
-    ).save()
+    other_org.enabled_roles = ["dispatcher"]
+    other_org.save()
+    assign_user_to_org(world.dispatcher, other_org, roles=["dispatcher"])
     foreign = models.CarReservation(
         organization=other_org,
         creator=world.requester,
@@ -1488,16 +1500,11 @@ def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(w
     assert "ขอยกเลิก — รอผู้จัดรถรับทราบ" in html
 
 
-def test_cancel_request_appears_in_the_inbox_of_the_dispatcher_and_delegate_only(
+def test_cancel_request_appears_in_the_inbox_of_dispatcher_role_members_only(
     world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, world.org, roles=["staff"])
-    position = models.CarReservationPosition.objects(
-        organization=world.org, position_key="dispatcher"
-    ).first()
-    position.delegates = [secretary]
-    position.save()
+    assign_user_to_org(secretary, world.org, roles=["dispatcher"])
     car_application = request_with_car_assigned(world)
     world.client_for(world.requester).post(
         cancel_url(world, car_application), data={"reason": ""}
@@ -1524,16 +1531,11 @@ def request_cancel_requested(world):
     return car_application
 
 
-def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
+def test_second_dispatcher_confirms_cancel_and_audit_log_names_them(
     world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, world.org, roles=["staff"])
-    position = models.CarReservationPosition.objects(
-        organization=world.org, position_key="dispatcher"
-    ).first()
-    position.delegates = [secretary]
-    position.save()
+    assign_user_to_org(secretary, world.org, roles=["dispatcher"])
     car_application = request_cancel_requested(world)
 
     response = world.client_for(secretary).post(
@@ -1605,7 +1607,7 @@ def test_car_and_driver_are_blocked_until_the_cancel_is_confirmed_then_released(
     assert waiting.car == world.car
 
 
-def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(world):
+def test_only_a_dispatcher_role_member_can_confirm_a_cancel(world):
     car_application = request_cancel_requested(world)
 
     for outsider in (world.requester, world.stranger, world.supervisor):
@@ -1713,16 +1715,11 @@ def test_submitting_notifies_the_division_head_but_not_the_requester(
     assert host_url.startswith("http")
 
 
-def test_supervisor_approval_notifies_the_dispatcher_holder_and_delegate(
+def test_supervisor_approval_notifies_every_member_with_the_dispatcher_role(
     world, create_user, assign_user_to_org, mock_redis_queue
 ):
     delegate = create_user("Delegate", "Dispatcher")
-    assign_user_to_org(delegate, world.org, roles=["staff"])
-    position = models.CarReservationPosition.objects(
-        organization=world.org, position_key="dispatcher"
-    ).first()
-    position.delegates = [delegate]
-    position.save()
+    assign_user_to_org(delegate, world.org, roles=["dispatcher"])
     car_application = world.submit_domestic_request()
     mock_redis_queue.reset_mock()
 

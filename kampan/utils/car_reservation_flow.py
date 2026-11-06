@@ -10,7 +10,11 @@ from kampan import models, utils
 
 RESERVATION_STEP_LABELS = {
     "supervisor": "ผู้บังคับบัญชา",
-    **dict(models.RESERVATION_POSITIONS),
+    **{
+        key: label
+        for key, label in models.organizations.ORGANIZATION_ROLES
+        if key in models.organizations.RESERVATION_APPROVER_ROLE_KEYS
+    },
 }
 
 RESERVATION_ROUTES = {
@@ -169,33 +173,54 @@ def _is_division_head(app, user):
     )
 
 
+def has_role(organization, user, role):
+    """user เป็นสมาชิก active ของ org และถือ role นี้"""
+    if user is None:
+        return False
+    return (
+        models.OrganizationUserRole.objects(
+            organization=organization, user=user, status="active", roles=role
+        ).first()
+        is not None
+    )
+
+
+def members_with_role(organization, role):
+    """ผู้ใช้ที่เป็นสมาชิก active ของ org และถือ role นี้ (ไม่ซ้ำคน)"""
+    users = []
+    for member in models.OrganizationUserRole.objects(
+        organization=organization, status="active", roles=role
+    ):
+        if member.user is not None and member.user not in users:
+            users.append(member.user)
+    return users
+
+
 def can_act(app, user):
     key = current_step_key(app)
     if key is None or user is None:
         return False
     if key == "supervisor":
         return _is_division_head(app, user)
-    return models.CarReservationPosition.can_act(app.organization, key, user)
+    return has_role(app.organization, user, key)
 
 
 def can_confirm_cancel(app, user):
-    return app.status == "cancel_requested" and models.CarReservationPosition.can_act(
-        app.organization, "dispatcher", user
+    return app.status == "cancel_requested" and has_role(
+        app.organization, user, "dispatcher"
     )
 
 
 def is_approver(organization, user):
-    """ผู้ใช้อนุมัติได้อย่างน้อยหนึ่งขั้นใน org นี้: ผู้ดำรงตำแหน่ง/ผู้รักษาการ หรือหัวหน้าฝ่ายที่ active"""
+    """ผู้ใช้อนุมัติได้อย่างน้อยหนึ่งขั้นใน org นี้: ถือ role ผู้อนุมัติ หรือเป็นหัวหน้าฝ่ายที่ active"""
     if user is None:
         return False
-    if any(
-        user == position.user or user in position.delegates
-        for position in models.CarReservationPosition.objects(organization=organization)
-    ):
-        return True
     return (
         models.OrganizationUserRole.objects(
-            organization=organization, user=user, status="active", roles="head"
+            organization=organization,
+            user=user,
+            status="active",
+            roles__in=["head", *models.organizations.RESERVATION_APPROVER_ROLE_KEYS],
         ).first()
         is not None
     )

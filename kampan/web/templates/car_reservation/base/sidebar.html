@@ -46,12 +46,6 @@
         <i class="ph ph-car"></i> จัดการรถ
       </a>
     </li>
-    <li>
-      <a class="{{ 'menu-active' if '/car_reservation/settings' in request.path else '' }}"
-        href="{{ url_for('car_reservation.settings.positions', organization_id=organization.id ) }}">
-        <i class="ph ph-user-gear"></i> ตั้งค่าผู้อนุมัติ
-      </a>
-    </li>
     {% endif %}
 
     <li>
