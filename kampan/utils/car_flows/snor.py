@@ -92,6 +92,21 @@ def current_step_key(app):
     return app.route_snapshot[app.current_step]
 
 
+def has_division_head(organization, division, excluding=None):
+    """ฝ่ายมีหัวหน้า active อย่างน้อยหนึ่งคน (ไม่นับ excluding)"""
+    if division is None:
+        return False
+    return any(
+        member.user is not None and member.user != excluding
+        for member in models.OrganizationUserRole.objects(
+            organization=organization,
+            status="active",
+            roles="head",
+            division=division,
+        )
+    )
+
+
 def _is_division_head(app, user):
     if app.division is None:
         return False

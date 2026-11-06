@@ -61,7 +61,7 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
 
     s.client_for = client_for
 
-    def submit_request(request_type="domestic", province_scope="in_province"):
+    def request_data(request_type="domestic", province_scope="in_province"):
         data = {
             "requester_unit": "คณะวิศวกรรมศาสตร์",
             "phone": "081-234-5678",
@@ -75,6 +75,12 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
         }
         if request_type == "domestic":
             data["province_scope"] = province_scope
+        return data
+
+    s.request_data = request_data
+
+    def submit_request(request_type="domestic", province_scope="in_province"):
+        data = request_data(request_type, province_scope)
         response = client_for(s.requester).post(
             f"{BASE}/new?organization_id={org.id}&type={request_type}", data=data
         )
@@ -156,6 +162,26 @@ def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
     assert response.status_code == 302
     car_application.reload()
     assert car_application.current_step == 1
+
+
+def test_submission_is_refused_when_the_division_has_no_head(snor, create_user):
+    headless = models.Division(name="ฝ่ายไม่มีหัวหน้า", organization=snor.org)
+    headless.save()
+    lonely = create_user("Lonely", "Eight")
+    snor.assign_in_division(lonely, ["staff"], headless)
+
+    response = snor.client_for(lonely).post(
+        f"{BASE}/new?organization_id={snor.org.id}&type=domestic",
+        data=snor.request_data(),
+    )
+
+    assert response.status_code == 200
+    assert "ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ" in response.get_data(
+        as_text=True
+    )
+    assert (
+        models.vehicle_applications.CarApplication.objects(creator=lonely).count() == 0
+    )
 
 
 def test_member_who_is_not_the_current_approver_cannot_approve(snor):

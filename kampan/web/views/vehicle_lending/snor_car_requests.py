@@ -43,14 +43,19 @@ def create():
 
     form = forms.snor_car_requests.SnorCarRequestForm()
 
-    if form.validate_on_submit():
-        user = current_user._get_current_object()
-        member = models.OrganizationUserRole.objects(
-            user=user, organization=organization, status="active"
-        ).first()
+    user = current_user._get_current_object()
+    member = models.OrganizationUserRole.objects(
+        user=user, organization=organization, status="active"
+    ).first()
+    division = member.division if member else None
+
+    submitted = form.validate_on_submit()
+    if submitted and not snor.has_division_head(organization, division, excluding=user):
+        flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
+    elif submitted:
         car_application = models.vehicle_applications.CarApplication(
             organization=organization,
-            division=member.division if member else None,
+            division=division,
             creator=user,
             updater=user,
             request_type=request_type,
