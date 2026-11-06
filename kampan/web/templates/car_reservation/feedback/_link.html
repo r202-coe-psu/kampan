@@ -1,0 +1,12 @@
+{# ลิงก์ประเมินความพึงพอใจของใบขอ (ตัวแปร reservation) ผู้ขอเห็นเมื่อปิดงานแล้ว: ยังไม่ประเมิน = ปุ่ม, ประเมินแล้ว = ป้าย #}
+{% set state = feedback_state(reservation) if feedback_state is defined else None %}
+{% if state == 'available' %}
+<a class="btn btn-primary btn-soft btn-xs whitespace-nowrap" data-role="feedback-link"
+   href="{{ url_for('car_reservation.feedback.form', reservation_id=reservation.id, organization_id=organization.id) }}">
+  <i class="ph ph-star"></i> ประเมินความพึงพอใจ
+</a>
+{% elif state == 'done' %}
+<span class="badge badge-success badge-soft badge-sm whitespace-nowrap font-medium" data-role="feedback-done">
+  <i class="ph ph-check"></i> ประเมินแล้ว
+</span>
+{% endif %}

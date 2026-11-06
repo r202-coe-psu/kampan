@@ -210,6 +210,75 @@ def test_the_comment_is_optional(world):
     assert models.CarReservationFeedback.objects.first().comment == ""
 
 
+def detail_url(world, reservation):
+    return (
+        f"/car_reservation/requests/{reservation.id}?organization_id={world.org.id}"
+    )
+
+
+def test_detail_page_offers_the_survey_to_the_requester_of_a_completed_trip(world):
+    reservation = world.reservation()
+
+    html = (
+        world.client_for(world.requester)
+        .get(detail_url(world, reservation))
+        .get_data(as_text=True)
+    )
+
+    assert "ประเมินความพึงพอใจ" in html
+    assert f"/car_reservation/feedback/{reservation.id}?organization_id=" in html
+
+
+def test_detail_page_says_already_rated_instead_of_offering_the_survey_twice(world):
+    reservation = world.reservation()
+    client = world.client_for(world.requester)
+    client.post(world.url(reservation), data=all_scores())
+
+    html = client.get(detail_url(world, reservation)).get_data(as_text=True)
+
+    assert "ประเมินแล้ว" in html
+    assert f"/car_reservation/feedback/{reservation.id}" not in html
+
+
+@pytest.mark.parametrize("who", ["colleague", "org_admin"])
+def test_detail_page_hides_the_survey_from_everyone_but_the_requester(world, who):
+    reservation = world.reservation()
+
+    html = (
+        world.client_for(getattr(world, who))
+        .get(detail_url(world, reservation))
+        .get_data(as_text=True)
+    )
+
+    assert f"/car_reservation/feedback/{reservation.id}" not in html
+
+
+def test_detail_page_hides_the_survey_until_the_trip_is_completed(world):
+    reservation = world.reservation(status="active")
+
+    html = (
+        world.client_for(world.requester)
+        .get(detail_url(world, reservation))
+        .get_data(as_text=True)
+    )
+
+    assert f"/car_reservation/feedback/{reservation.id}" not in html
+
+
+def test_my_requests_list_links_to_the_survey_then_shows_it_is_done(world):
+    reservation = world.reservation()
+    client = world.client_for(world.requester)
+    list_url = f"/car_reservation/requests/?organization_id={world.org.id}"
+
+    before = client.get(list_url).get_data(as_text=True)
+    client.post(world.url(reservation), data=all_scores())
+    after = client.get(list_url).get_data(as_text=True)
+
+    assert f"/car_reservation/feedback/{reservation.id}?organization_id=" in before
+    assert f"/car_reservation/feedback/{reservation.id}" not in after
+    assert "ประเมินแล้ว" in after
+
+
 def test_a_reservation_of_another_organization_is_not_found(world, create_org):
     other_org = create_org("Other Org")
     other_org.enabled_modules = ["car_reservation"]

@@ -46,3 +46,10 @@ def can_submit(reservation, user):
 def feedback_of(reservation):
     """ผลประเมินของใบขอ (None ถ้ายังไม่ประเมิน)"""
     return models.CarReservationFeedback.objects(reservation=reservation).first()
+
+
+def state_for(reservation, user):
+    """สถานะแบบประเมินของใบขอสำหรับผู้ดู: "available" (ประเมินได้), "done" (ประเมินแล้ว), None (ไม่เกี่ยว)"""
+    if not can_submit(reservation, user):
+        return None
+    return "done" if feedback_of(reservation) is not None else "available"

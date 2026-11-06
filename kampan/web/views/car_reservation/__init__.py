@@ -35,6 +35,19 @@ def inject_is_driver():
     }
 
 
+@module.context_processor
+def inject_feedback_state():
+    """สถานะแบบประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
+    if not current_user.is_authenticated:
+        return {}
+    user = current_user._get_current_object()
+    return {
+        "feedback_state": lambda reservation: utils.car_reservation_feedback.state_for(
+            reservation, user
+        )
+    }
+
+
 # ไอคอนและคำแนะนำสั้น ๆ ของใบขอแต่ละประเภท ใช้ในหน้าและ modal เลือกประเภท (ชื่อใบขอมาจาก RESERVATION_TYPES)
 REQUEST_TYPE_CARDS = {
     "domestic": ("ph-map-trifold", "ยื่นล่วงหน้า 3–30 วันทำการ"),
