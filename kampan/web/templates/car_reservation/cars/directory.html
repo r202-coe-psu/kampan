@@ -1,51 +1,64 @@
 {% extends "/car_reservation/base/default-page.html" %}
 {% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/car_reservation/components/car_photo.html' import CarPhoto %}
+{% from '/car_reservation/components/list_header.html' import ListHeader %}
 
 {% block title %}ข้อมูลรถและพนักงานขับรถ{% endblock %}
 
-{% block content %}
-<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <h2 class="text-xl font-semibold"><i class="ph ph-car"></i> รถ</h2>
-  {% if cars %}
-  <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-    {% for car in cars %}
-    <div class="rounded-box border border-base-300 p-4 flex gap-3 items-center">
-      {{ CarPhoto(car, organization, "size-20") }}
-      <div>
-        <p class="font-semibold">{{ car.license_plate }}</p>
-        <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}</p>
-        <p class="text-sm text-base-content/60">{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</p>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  {{ EmptyState('ph-car', 'ยังไม่มีรถ', description='ยังไม่มีรถที่พร้อมใช้งานในหน่วยงานนี้') }}
-  {% endif %}
-</div>
+{% block page_subtitle %}รถและพนักงานขับรถที่พร้อมใช้งานในหน่วยงานนี้{% endblock %}
 
-<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <h2 class="text-xl font-semibold"><i class="ph ph-steering-wheel"></i> พนักงานขับรถ</h2>
-  {% if drivers %}
-  <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-    {% for driver in drivers %}
-    <div class="rounded-box border border-base-300 p-4 flex gap-3 items-center">
-      {% if driver.picture %}
-      <img class="size-14 rounded-full object-cover shrink-0"
-           src="{{ url_for('accounts.user_picture', user_id=driver.id) }}"
-           alt="{{ driver.get_name() }}">
-      {% else %}
-      <div class="size-14 shrink-0 rounded-full bg-base-200 flex items-center justify-center">
-        <i class="ph ph-user text-2xl"></i>
+{% block content %}
+<div class="flex flex-col gap-4">
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-4">
+      {{ ListHeader('รถ', cars | length, icon='ph-car') }}
+      {% if cars %}
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {% for car in cars %}
+        <div class="card card-border bg-base-100" data-role="car-card">
+          <div class="card-body flex-row items-center gap-3 p-4">
+            {{ CarPhoto(car, organization, "size-20") }}
+            <div class="min-w-0">
+              <p class="font-semibold">{{ car.license_plate }}</p>
+              <p class="text-sm">{{ car.get_vehicle_type_display() or '-' }}</p>
+              <p class="text-sm text-base-content/60">{% if car.seat_count %}{{ car.seat_count }} ที่นั่ง{% else %}-{% endif %}</p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
       </div>
+      {% else %}
+      {{ EmptyState('ph-car', 'ยังไม่มีรถ', description='ยังไม่มีรถที่พร้อมใช้งานในหน่วยงานนี้') }}
       {% endif %}
-      <p class="font-semibold">{{ driver.get_name() }}</p>
     </div>
-    {% endfor %}
   </div>
-  {% else %}
-  {{ EmptyState('ph-steering-wheel', 'ยังไม่มีพนักงานขับรถ', description='ยังไม่มีสมาชิกที่เป็นพนักงานขับรถในหน่วยงานนี้') }}
-  {% endif %}
+
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-4">
+      {{ ListHeader('พนักงานขับรถ', drivers | length, icon='ph-steering-wheel') }}
+      {% if drivers %}
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {% for driver in drivers %}
+        <div class="card card-border bg-base-100" data-role="driver-card">
+          <div class="card-body flex-row items-center gap-3 p-4">
+            {% if driver.picture %}
+            <img class="size-14 rounded-full object-cover shrink-0"
+                 src="{{ url_for('accounts.user_picture', user_id=driver.id) }}"
+                 alt="{{ driver.get_name() }}">
+            {% else %}
+            <div class="size-14 shrink-0 rounded-full bg-base-200 flex items-center justify-center">
+              <i class="ph ph-user text-2xl"></i>
+            </div>
+            {% endif %}
+            <p class="font-semibold">{{ driver.get_name() }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      {{ EmptyState('ph-steering-wheel', 'ยังไม่มีพนักงานขับรถ', description='ยังไม่มีสมาชิกที่เป็นพนักงานขับรถในหน่วยงานนี้') }}
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

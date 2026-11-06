@@ -158,3 +158,40 @@ def test_inbox_shows_an_empty_state_with_a_zero_count_when_nothing_waits(world):
 
     assert "ทั้งหมด 0 รายการ" in words(find(doc, "*", data_role="list-count")[0])
     assert "ไม่มีรายการรออนุมัติ" in words(find(doc, "div", role="status")[0])
+
+
+def test_car_management_list_has_a_count_and_the_same_cars_as_table_and_cards(world, create_car):
+    create_car(world.org, "ขข 5678", vehicle_type="ตู้")
+
+    doc = world.page(world.admin, "/cars/")
+
+    assert words(find(doc, "h1")[0]) == "จัดการรถ"
+    assert "ทั้งหมด 2 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    rows = find(doc, "tr", within="//table[" + has_class("table") + "]/tbody")
+    cards = find(doc, "*", data_role="car-card")
+    assert sorted(words(r).split()[0] for r in rows) == ["กก", "ขข"]
+    assert len(cards) == 2
+    assert find(doc, "a", "btn-primary", data_role="add-car")
+
+
+def test_car_management_shows_an_empty_state_with_an_add_action_when_there_are_no_cars(world):
+    models.vehicles.Car.objects.delete()
+
+    doc = world.page(world.admin, "/cars/")
+
+    assert "ทั้งหมด 0 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    assert "ยังไม่มีรถ" in words(find(doc, "div", role="status")[0])
+
+
+def test_directory_counts_cars_and_drivers_separately(world, create_user, assign_user_to_org):
+    driver = create_user("Somchai", "Driver")
+    assign_user_to_org(driver, world.org, roles=["driver"])
+
+    doc = world.page(world.staff, "/cars/directory")
+
+    assert [words(c) for c in find(doc, "*", data_role="list-count")] == [
+        "ทั้งหมด 1 รายการ",
+        "ทั้งหมด 1 รายการ",
+    ]
+    assert len(find(doc, "*", data_role="car-card")) == 1
+    assert len(find(doc, "*", data_role="driver-card")) == 1
