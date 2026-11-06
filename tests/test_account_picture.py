@@ -63,3 +63,44 @@ def test_oversized_image_upload_is_refused_with_thai_error_and_nothing_stored(ap
 
     assert "ไฟล์รูปภาพต้องมีขนาดไม่เกิน 2 MB" in followed.data.decode()
     assert served.status_code == 404
+
+
+def test_upload_only_changes_the_logged_in_users_picture(app, create_user, login_as):
+    owner = create_user("Own", "Er")
+    other = create_user("Some", "Oneelse")
+
+    with app.test_client() as client:
+        login_as(client, owner)
+        client.post(
+            f"/accounts/picture?user_id={other.id}",
+            data={
+                "user_id": str(other.id),
+                "picture": (io.BytesIO(make_image_bytes("PNG")), "me.png", "image/png"),
+            },
+            content_type="multipart/form-data",
+        )
+        owner_picture = client.get(f"/accounts/{owner.id}/picture")
+        other_picture = client.get(f"/accounts/{other.id}/picture")
+
+    assert owner_picture.status_code == 200
+    assert other_picture.status_code == 404
+
+
+def test_anonymous_upload_is_redirected_to_login_and_nothing_stored(app, create_user):
+    user = create_user("Anon", "Target")
+
+    with app.test_client() as client:
+        response = upload(client, make_image_bytes("PNG"))
+        served = client.get(f"/accounts/{user.id}/picture")
+
+    assert response.status_code in (302, 401)
+    assert served.status_code == 404
+
+
+def test_user_without_picture_has_no_picture_resource(app, create_user):
+    user = create_user("No", "Picture")
+
+    with app.test_client() as client:
+        served = client.get(f"/accounts/{user.id}/picture")
+
+    assert served.status_code == 404
