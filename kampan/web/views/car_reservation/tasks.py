@@ -111,6 +111,7 @@ def close(task_id):
         except flow.FlowError as error:
             flash(str(error), "danger")
         else:
+            utils.car_reservation_email.notify(task, "completed")
             flash("ปิดงานเรียบร้อยแล้ว", "success")
             return redirect(
                 url_for(

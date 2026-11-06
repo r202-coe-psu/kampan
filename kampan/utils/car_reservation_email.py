@@ -27,6 +27,7 @@ EVENTS = (
     "denied",
     "cancel_requested",
     "cancelled",
+    "completed",
 )
 
 # template ของระบบ (fallback) อยู่ในไฟล์ ส่วน template ที่แอดมินองค์กรแก้ได้
@@ -73,6 +74,8 @@ def recipients_for(reservation, event):
         people = _role_members(reservation, "dispatcher")
     elif event == "cancelled":
         people = [reservation.creator, reservation.driver]
+    elif event == "completed":
+        people = [reservation.creator]
     else:
         people = []
 

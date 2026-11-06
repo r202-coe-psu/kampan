@@ -1,12 +1,54 @@
 """แบบประเมินความพึงพอใจของระบบจองรถ: ผู้ขอประเมินหลังปิดงาน และผู้ดูแลองค์กรดูผลสรุป"""
 
 import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kampan import models
+from kampan import models, utils
+from kampan.web import redis_rq
 
 BASE = "/car_reservation/feedback"
+
+@pytest.fixture(autouse=True)
+def mock_redis_queue():
+    """กันการต่อ Redis จริง และให้ตรวจ job แจ้งเตือนที่ถูกส่งเข้าคิวได้"""
+    mock_q = MagicMock()
+    with patch.object(redis_rq.redis_queue, "queue", mock_q, create=True):
+        yield mock_q
+
+
+def email_jobs(mock_q, event):
+    """[(request_id, event, recipients, host_url)] ของ job อีเมลจองรถที่ส่งเข้าคิวตามเหตุการณ์"""
+    return [
+        call.kwargs["args"]
+        for call in mock_q.enqueue.call_args_list
+        if call.args[0] is utils.car_reservation_email.send_car_reservation_email
+        and call.kwargs["args"][1] == event
+    ]
+
+
+@pytest.fixture
+def sent_emails(monkeypatch):
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, setting):
+            pass
+
+        def login(self):
+            return True
+
+        def quit(self):
+            pass
+
+        def send_email(self, receiver, subject, body, html=False, steps=None, app_name=None):
+            sent.append({"receiver": receiver, "subject": subject, "body": body})
+            return True
+
+    monkeypatch.setattr(utils.email_utils, "PSUSMTP", FakeSMTP)
+    return sent
+
 
 SCORE_QUESTIONS = [
     "ความสะอาด",
@@ -289,3 +331,82 @@ def test_a_reservation_of_another_organization_is_not_found(world, create_org):
     assert client.get(world.url(foreign)).status_code == 404
     assert client.post(world.url(foreign), data=all_scores()).status_code == 404
     assert models.CarReservationFeedback.objects.count() == 0
+
+
+def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
+    world, mock_redis_queue
+):
+    reservation = world.reservation(status="active")
+
+    response = world.client_for(world.driver).post(
+        f"/car_reservation/tasks/{reservation.id}/close?organization_id={world.org.id}",
+        data={"mileage_out": "0", "mileage_in": "120", "expense_case": "fleet_card"},
+    )
+
+    assert response.status_code == 302
+    jobs = email_jobs(mock_redis_queue, "completed")
+    assert len(jobs) == 1
+    request_id, event, recipients, host_url = jobs[0]
+    assert request_id == str(reservation.id)
+    assert recipients == [world.requester.email]
+    assert host_url.startswith("http")
+
+
+def test_a_refused_close_sends_no_completed_email(world, mock_redis_queue):
+    reservation = world.reservation(status="active")
+
+    world.client_for(world.driver).post(
+        f"/car_reservation/tasks/{reservation.id}/close?organization_id={world.org.id}",
+        data={"mileage_out": "500", "mileage_in": "100", "expense_case": "fleet_card"},
+    )
+
+    assert email_jobs(mock_redis_queue, "completed") == []
+
+
+def test_completed_email_gives_the_requester_the_survey_link(app, world, sent_emails):
+    reservation = world.reservation()
+
+    with app.app_context():
+        utils.car_reservation_email.send_car_reservation_email(
+            str(reservation.id),
+            "completed",
+            [world.requester.email],
+            "https://staging.example.test",
+        )
+
+    assert [email["receiver"] for email in sent_emails] == [world.requester.email]
+    email = sent_emails[0]
+    assert "ประเมินความพึงพอใจ" in email["subject"]
+    assert (
+        f"https://staging.example.test/car_reservation/feedback/{reservation.id}"
+        f"?organization_id={world.org.id}"
+    ) in email["body"]
+    assert "กก 1234" in email["body"]
+
+
+def test_org_default_template_of_the_completed_email_can_use_feedback_url(
+    app, world, sent_emails
+):
+    reservation = world.reservation()
+    models.EmailTemplate(
+        name="ประเมินหลังปิดงาน",
+        subject="ประเมิน {{ requester_name }}",
+        body="โปรดประเมินที่ {{ feedback_url }}",
+        type="car_reservation_completed",
+        organization=world.org,
+        is_default=True,
+    ).save()
+
+    with app.app_context():
+        utils.car_reservation_email.send_car_reservation_email(
+            str(reservation.id),
+            "completed",
+            [world.requester.email],
+            "https://staging.example.test",
+        )
+
+    assert sent_emails[0]["subject"] == "ประเมิน Requester Feedback"
+    assert sent_emails[0]["body"] == (
+        f"โปรดประเมินที่ https://staging.example.test/car_reservation/feedback/"
+        f"{reservation.id}?organization_id={world.org.id}"
+    )

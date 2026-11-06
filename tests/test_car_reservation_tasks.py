@@ -1,12 +1,21 @@
 """งานของพนักงานขับรถ (ระบบจองรถ): พขร. เห็นเฉพาะงานของตัวเอง และปิดงานพร้อมเลขไมล์/น้ำมัน/ค่าใช้จ่าย"""
 
 import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from kampan import models
+from kampan.web import redis_rq
 
 BASE = "/car_reservation/tasks"
+
+
+@pytest.fixture(autouse=True)
+def mock_redis_queue():
+    """ปิดงานแล้วระบบส่งอีเมลเข้าคิว: กันการต่อ Redis จริง"""
+    with patch.object(redis_rq.redis_queue, "queue", MagicMock(), create=True):
+        yield
 
 
 @pytest.fixture
