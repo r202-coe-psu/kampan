@@ -1,0 +1,31 @@
+{# Modal เลือกประเภทใบขอใช้รถ รวมอยู่ในทุกหน้าของระบบจองรถ (default-page.html)
+   เปิดด้วย element ใดก็ได้ที่มี data-open-new-request ส่วนตัวลิงก์เองยังพาไปหน้าเลือกประเภท (/requests/new) ถ้าไม่มี JS #}
+{% from '/car_reservation/requests/_type_cards.html' import TypeCards with context %}
+{% if organization %}
+<dialog id="new-request-modal" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box whitespace-normal text-left">
+    <div class="flex items-start gap-3 mb-4">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <i class="ph ph-note-pencil text-xl"></i>
+      </div>
+      <div class="pt-1.5">
+        <h3 class="text-lg font-bold">ยื่นคำขอใช้รถ</h3>
+        <p class="text-sm text-base-content/60">เลือกแบบฟอร์มที่ต้องการยื่น</p>
+      </div>
+    </div>
+    {{ TypeCards(organization, new_request_date) }}
+    <div class="modal-action">
+      <form method="dialog"><button class="btn btn-ghost">ยกเลิก</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>ยกเลิก</button></form>
+</dialog>
+<script>
+  document.addEventListener('click', function (event) {
+    var trigger = event.target.closest('[data-open-new-request]');
+    if (!trigger) return;
+    event.preventDefault();
+    document.getElementById('new-request-modal').showModal();
+  });
+</script>
+{% endif %}

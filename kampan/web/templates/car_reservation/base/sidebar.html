@@ -22,6 +22,7 @@
     {% endif %}
     <li>
       <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.create' else '' }}"
+        data-open-new-request
         href="{{ url_for('car_reservation.requests.create', organization_id=organization.id ) }}">
         <i class="ph ph-hand-arrow-up"></i> ยื่นคำขอ
       </a>

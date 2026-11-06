@@ -44,3 +44,17 @@ def test_new_request_without_a_type_lists_the_four_request_types_as_links(world)
     for key, title in TYPES:
         assert title in html
         assert any(f"type={key}" in href for href in type_links(html))
+
+
+def test_requests_list_has_the_type_modal_and_a_button_that_opens_it(world):
+    page = world.client.get(f"{BASE}/?organization_id={world.org.id}")
+
+    html = page.get_data(as_text=True)
+    dialog = re.search(r'<dialog[^>]*id="new-request-modal".*?</dialog>', html, re.S)
+    assert dialog, "modal is missing"
+    modal_links = type_links(dialog.group(0))
+    assert len(modal_links) == 4
+    for key, title in TYPES:
+        assert title in dialog.group(0)
+        assert any(f"type={key}" in href for href in modal_links)
+    assert len(re.findall(r"<a [^>]*data-open-new-request", html)) == 2
