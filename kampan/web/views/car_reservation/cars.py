@@ -43,6 +43,20 @@ def index():
     )
 
 
+@module.route("/<car_id>/deactivate", methods=["POST"])
+@acl.organization_roles_required("admin")
+def deactivate(car_id):
+    car = get_car_or_404(car_id)
+    car.status = "disactive"
+    car.updater = current_user._get_current_object()
+    car.updated_date = datetime.datetime.now()
+    car.save()
+    flash(f"ปิดใช้งานรถ {car.license_plate} แล้ว", "success")
+    return redirect(
+        url_for("car_reservation.cars.index", organization_id=g.organization.id)
+    )
+
+
 @module.route("/<car_id>/image")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def image(car_id):

@@ -1,6 +1,7 @@
 {% extends "/car_reservation/base/default-page.html" %}
 {% from '/base/components/empty_state.html' import EmptyState %}
 {% from '/car_reservation/components/car_photo.html' import CarPhoto %}
+{% from '/car_reservation/components/car_deactivate.html' import DeactivateButton %}
 
 {% block title %}จัดการรถ{% endblock %}
 
@@ -41,6 +42,7 @@
                href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
               <i class="ph ph-pen"></i> แก้ไข
             </a>
+            {{ DeactivateButton(car, organization) }}
           </td>
         </tr>
         {% endfor %}
@@ -60,6 +62,7 @@
            href="{{ url_for('car_reservation.cars.create_or_edit', car_id=car.id, organization_id=organization.id) }}">
           <i class="ph ph-pen"></i> แก้ไข
         </a>
+        {{ DeactivateButton(car, organization) }}
       </div>
     </div>
     {% endfor %}

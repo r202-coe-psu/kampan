@@ -6,7 +6,7 @@ import io
 import pytest
 from PIL import Image
 
-from kampan import models
+from kampan import models, utils
 
 CARS_PATH = "/car_reservation/cars"
 
@@ -146,6 +146,30 @@ def test_org_admin_edits_a_car_and_a_success_toast_confirms_it(world, create_car
     )
     assert "data-toast" in html
     assert "บันทึกรถ กก 9999 แล้ว" in html
+
+
+def test_deactivating_a_car_removes_it_from_the_dispatchers_assignable_cars(
+    world, create_car
+):
+    keep = create_car(world.org, "กก 1111")
+    drop = create_car(world.org, "กก 2222")
+
+    response = world.admin_client.post(world.deactivate_url(drop))
+    listing = world.admin_client.get(response.headers["Location"])
+
+    drop.reload()
+    assert response.status_code == 302
+    assert drop.status == "disactive"
+    assert list(utils.car_reservation_flow.assignable_cars(world.org)) == [keep]
+    assert "ปิดใช้งานรถ กก 2222 แล้ว" in listing.get_data(as_text=True)
+
+
+def test_deactivate_only_accepts_post(world, create_car):
+    car = create_car(world.org)
+
+    assert world.admin_client.get(world.deactivate_url(car)).status_code == 405
+    car.reload()
+    assert car.status == "active"
 
 
 def test_car_without_photo_has_no_image_route(world):
