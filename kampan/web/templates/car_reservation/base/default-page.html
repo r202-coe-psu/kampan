@@ -6,38 +6,42 @@
 {% block body %}
   <div class="drawer 2xl:drawer-open">
     <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
-    <div class="drawer-content bg-base-200 h-full min-h-screen">
-      <div class="flex flex-col h-full">
-        <div class="w-full navbar p-0 h-auto">
-          <div class="flex w-full flex-col items-start">
-            <div class="flex flex-row w-full justify-between bg-[#0f2747] pt-2">
-              <label for="drawer-menu"
-                     class="btn rounded-none border-0 bg-[#0f2747] drawer-button 2xl:hidden text-white hover:bg-base-100 hover:text-[#0f2747]">
-                <i class="ph ph-size ph-list"></i>
-              </label>
-
-            </div>
-            <div class="flex flex-col px-2 lg:px-10">
-              <div class="flex pt-6 text-5xl font-bold gap-4 items-center">
+    <div class="drawer-content bg-base-200 min-h-screen">
+      <div class="flex min-h-screen flex-col">
+        {# แถบบนสำหรับจอที่ sidebar ซ่อนอยู่ (ต่ำกว่า 2xl) #}
+        <div class="navbar border-b border-base-300 bg-base-100 2xl:hidden">
+          <label for="drawer-menu" class="btn btn-square btn-ghost drawer-button" aria-label="เปิดเมนู">
+            <i class="ph ph-size ph-list"></i>
+          </label>
+          <span class="ml-2 font-bold">ระบบจองรถ</span>
+        </div>
+        <main class="w-full flex-1 px-4 py-6 lg:px-10">
+          <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+              <h1 class="flex items-center gap-4 font-bold">
                 <span class="text-3xl font-bold">
                   {% block dashboard_title %}{{ self.title() }}{% endblock %}
                 </span>
-              </div>
-              <div class="flex py-2">
-                {% block breadcrumbs %}{% endblock %}
-              </div>
+              </h1>
+              {% set subtitle %}{% block page_subtitle %}{% endblock %}{% endset %}
+              {% if subtitle | trim %}
+              <p class="mt-1 text-sm text-base-content/60" data-role="page-subtitle">{{ subtitle }}</p>
+              {% endif %}
             </div>
-          </div>
-        </div>
-        <div class="lg:px-2 mx-2 pb-5 h-full flex flex-col justify-between">
-          <div>
+            {% set actions %}{% block page_actions %}{% endblock %}{% endset %}
+            {% if actions | trim %}
+            <div class="flex shrink-0 flex-wrap items-center gap-2" data-role="page-actions">{{ actions }}</div>
+            {% endif %}
+          </header>
+          {% block breadcrumbs %}{% endblock %}
+          <div class="mt-4">
             {% block content %}
             {% endblock content %}
           </div>
-          <footer class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 mt-4 border-t border-base-300 items-end">
-            {% include "/base/footer.html" %}
-          </footer>
-        </div>
+        </main>
+        <footer class="footer sm:footer-horizontal bg-base-200 text-base-content p-10 border-t border-base-300 items-end">
+          {% include "/base/footer.html" %}
+        </footer>
       </div>
     </div>
     {% include "/car_reservation/base/sidebar.html" %}

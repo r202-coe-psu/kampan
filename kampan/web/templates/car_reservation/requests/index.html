@@ -1,45 +1,74 @@
 {% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+{% from '/car_reservation/components/list_header.html' import ListHeader %}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
 
 {% block title %}คำขอของฉัน{% endblock %}
 
+{% block page_subtitle %}ติดตามสถานะคำขอใช้รถที่คุณยื่นไว้{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" data-open-new-request href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
+  <i class="ph ph-plus"></i> ยื่นคำขอ
+</a>
+{% endblock %}
+
 {% block content %}
-<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex justify-end">
-    <a class="btn btn-primary" data-open-new-request href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
-      <i class="ph ph-plus"></i> ยื่นคำขอ
-    </a>
-  </div>
-  <div class="overflow-x-auto mt-4">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>เรื่อง</th>
-          <th>ประเภท</th>
-          <th>วันออกเดินทาง</th>
-          <th>สถานะ</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for reservation in reservations %}
-        <tr>
-          <td>
-            <a class="link link-hover font-medium"
-               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
-              {{ reservation.request_reason }}
-            </a>
-          </td>
-          <td>{{ reservation.get_request_type_display() }}</td>
-          <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
-          <td>{{ status_badge.render(reservation) }}</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="4" class="text-center text-base-content/60">ยังไม่มีคำขอ</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% set total = reservations | length %}
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    {{ ListHeader('รายการคำขอ', total, icon='ph-list-bullets') }}
+    {% if total %}
+    <div class="hidden overflow-x-auto md:block">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>เรื่อง</th>
+            <th>ประเภท</th>
+            <th>วันออกเดินทาง</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservations %}
+          <tr class="hover:bg-base-200/50">
+            <td>
+              <a class="link link-hover font-medium"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                {{ reservation.request_reason }}
+              </a>
+              {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+            </td>
+            <td>{{ reservation.get_request_type_display() }}</td>
+            <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+            <td>{{ status_badge.render(reservation) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="flex flex-col gap-3 md:hidden">
+      {% for reservation in reservations %}
+      <a class="card card-border bg-base-100 transition hover:border-primary"
+         data-role="request-card"
+         href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+        <div class="card-body gap-1 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-medium break-words">{{ reservation.request_reason }}</span>
+            {{ status_badge.render(reservation) }}
+          </div>
+          <p class="text-sm text-base-content/70">{{ reservation.get_request_type_display() }}</p>
+          <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
+            <span><i class="ph ph-calendar-blank"></i> {{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</span>
+            {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    {{ EmptyState('ph-car-profile', 'ยังไม่มีคำขอ', description='กดปุ่ม "ยื่นคำขอ" เพื่อขอใช้รถ') }}
+    {% endif %}
   </div>
 </div>
 {% endblock %}

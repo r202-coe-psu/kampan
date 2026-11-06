@@ -15,3 +15,8 @@
     {{ reservation.get_status_display() }}
   </span>
 {% endmacro %}
+
+{# ป้ายเร่งด่วน ใช้หน้าตาเดียวกันทุกหน้า (รายการ กล่องรับเรื่อง รายละเอียด ปฏิทิน) #}
+{% macro urgent() %}
+  <span class="badge badge-error badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="urgent-badge">เร่งด่วน</span>
+{% endmacro %}

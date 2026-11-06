@@ -109,3 +109,29 @@ def test_sidebar_marks_only_the_current_page_as_active(world):
         current = find(doc, "a", aria_current="page", within="//*[" + has_class("drawer-side") + "]")
         assert [a.get("href") for a in current] == [expected]
         assert "menu-active" in current[0].get("class")
+
+
+def test_my_requests_has_a_shell_header_a_count_and_the_same_rows_as_table_and_cards(world):
+    world.reservation(request_reason="ประชุมวิชาการ")
+    world.reservation(request_reason="อบรมสัมมนา", is_urgent=True)
+    world.reservation(creator=world.admin, request_reason="งานของคนอื่น")
+
+    doc = world.page(world.staff, "/requests/")
+
+    assert words(find(doc, "h1")[0]) == "คำขอของฉัน"
+    assert find(doc, "p", data_role="page-subtitle")
+    assert "ทั้งหมด 2 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    table_rows = find(doc, "tr", within="//table[" + has_class("table") + "]/tbody")
+    cards = find(doc, "*", data_role="request-card")
+    assert [words(r) for r in table_rows if "อบรมสัมมนา" in words(r)]
+    assert len(table_rows) == 2 and len(cards) == 2
+    assert all("งานของคนอื่น" not in words(c) for c in cards)
+    assert any("ด่วน" in words(c) for c in cards if "อบรมสัมมนา" in words(c))
+
+
+def test_my_requests_shows_an_empty_state_with_a_zero_count_when_there_are_none(world):
+    doc = world.page(world.staff, "/requests/")
+
+    assert "ทั้งหมด 0 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    assert "ยังไม่มีคำขอ" in words(find(doc, "div", role="status")[0])
+    assert not find(doc, "table", "table")
