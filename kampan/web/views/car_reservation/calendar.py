@@ -1,6 +1,6 @@
 import datetime
 
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
 from kampan import models
 from kampan.web import acl
@@ -39,10 +39,24 @@ def event_of(reservation):
     }
 
 
+def parse_day(value):
+    """วันของพารามิเตอร์ start/end ที่ FullCalendar ส่งมา (ISO date หรือ datetime มี offset)"""
+    try:
+        return datetime.datetime.strptime((value or "")[:10], "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
 @module.route("/events")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def events():
     reservations = models.CarReservation.objects(
         organization=g.organization, status__in=CALENDAR_STATUSES
     )
+    range_start = parse_day(request.args.get("start"))
+    range_end = parse_day(request.args.get("end"))
+    if range_start:
+        reservations = reservations.filter(return_datetime__gte=range_start)
+    if range_end:
+        reservations = reservations.filter(departure_datetime__lt=range_end)
     return jsonify([event_of(reservation) for reservation in reservations])

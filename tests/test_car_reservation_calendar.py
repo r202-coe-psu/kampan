@@ -119,3 +119,40 @@ def test_event_color_follows_the_reservation_status(world, status, tone):
     [event] = world.events()
 
     assert event["classNames"] == [tone]
+
+
+def test_events_are_limited_to_the_requested_date_range(world):
+    inside = world.reservation(location="ในเดือน")
+    spanning_in = world.reservation(
+        location="ข้ามจากเดือนก่อน",
+        departure=datetime.datetime(2030, 12, 30, 8, 0),
+        return_=datetime.datetime(2031, 1, 2, 17, 0),
+    )
+    world.reservation(
+        location="เดือนก่อน",
+        departure=datetime.datetime(2030, 12, 10, 8, 0),
+        return_=datetime.datetime(2030, 12, 10, 17, 0),
+    )
+    world.reservation(
+        location="เดือนหน้า",
+        departure=datetime.datetime(2031, 2, 1, 8, 0),
+        return_=datetime.datetime(2031, 2, 1, 17, 0),
+    )
+
+    events = world.events(
+        {"start": "2031-01-01T00:00:00+07:00", "end": "2031-02-01T00:00:00+07:00"}
+    )
+
+    assert {event["id"] for event in events} == {str(inside.id), str(spanning_in.id)}
+
+
+def test_events_never_include_another_organizations_reservations(world, create_org):
+    other_org = create_org("Other Calendar Org")
+    other_org.enabled_modules = ["car_reservation"]
+    other_org.save()
+    world.reservation(organization=other_org, location="ของที่อื่น")
+    mine = world.reservation(location="ของเรา")
+
+    events = world.events()
+
+    assert [event["id"] for event in events] == [str(mine.id)]
