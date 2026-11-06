@@ -3,11 +3,11 @@ from wtforms import fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
 from kampan import models
-from kampan.models.car_flow_positions import SNOR_POSITIONS
+from kampan.models.car_reservation_positions import RESERVATION_POSITIONS
 
 
-class SnorCarRequestForm(FlaskForm):
-    """ฟอร์มยื่นคำขอใช้รถแบบ snor ส่วนที่ใช้ร่วมกันทุกประเภท"""
+class CarReservationForm(FlaskForm):
+    """ฟอร์มยื่นคำขอใช้รถของระบบจองรถ ส่วนที่ใช้ร่วมกันทุกประเภท"""
 
     requester_unit = fields.StringField(
         "คณะ/หน่วยงาน",
@@ -44,7 +44,7 @@ class SnorCarRequestForm(FlaskForm):
     )
     province_scope = fields.SelectField(
         "พื้นที่เดินทาง",
-        choices=models.snor_car_requests.PROVINCE_SCOPES,
+        choices=models.car_reservations.PROVINCE_SCOPES,
         validators=[validators.Optional()],
     )
     confirm_urgent = fields.BooleanField("ยืนยันยื่นคำขอแบบเร่งด่วน")
@@ -99,7 +99,7 @@ def build_position_form(member_choices, driver_ids):
             raise validators.ValidationError(DRIVER_CANNOT_APPROVE)
 
     fields = {}
-    for key, label in SNOR_POSITIONS:
+    for key, label in RESERVATION_POSITIONS:
         fields[f"{key}_user"] = SelectField(
             label,
             choices=[NO_HOLDER_CHOICE] + list(member_choices),
@@ -111,4 +111,4 @@ def build_position_form(member_choices, driver_ids):
             validators=[not_a_driver],
         )
 
-    return type("CarFlowPositionForm", (FlaskForm,), fields)
+    return type("CarReservationPositionForm", (FlaskForm,), fields)

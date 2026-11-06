@@ -1,0 +1,65 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+
+{% block title %}รายการรออนุมัติ{% endblock %}
+
+{% block content %}
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  {% if reservations %}
+  <div class="hidden md:block overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>เลขที่</th>
+          <th>ผู้ขอ</th>
+          <th>ประเภท</th>
+          <th>ปลายทาง</th>
+          <th>วันเดินทาง</th>
+          <th>ขั้นที่รอ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reservation in reservations %}
+        <tr>
+          <td>
+            {{ reservation.id }}
+            {% if reservation.is_urgent %}<span class="badge badge-error badge-soft badge-sm">ด่วน</span>{% endif %}
+          </td>
+          <td>{{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}</td>
+          <td>{{ reservation.get_request_type_display() }}</td>
+          <td>{{ reservation.location }}</td>
+          <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+          <td>{{ step_label(reservation) }}</td>
+          <td>
+            <a class="btn btn-sm btn-primary"
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดู</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="md:hidden flex flex-col gap-3">
+    {% for reservation in reservations %}
+    <div class="card card-border bg-base-100">
+      <div class="card-body p-4 gap-1">
+        <div class="flex justify-between items-center">
+          <span class="font-medium">{{ reservation.creator.get_resources_fullname_th() if reservation.creator else '-' }}</span>
+          {% if reservation.is_urgent %}<span class="badge badge-error badge-soft badge-sm">ด่วน</span>{% endif %}
+        </div>
+        <div class="text-sm">{{ reservation.get_request_type_display() }}</div>
+        <div class="text-sm">ปลายทาง: {{ reservation.location }}</div>
+        <div class="text-sm">{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</div>
+        <div class="text-sm">รอ: {{ step_label(reservation) }}</div>
+        <a class="btn btn-sm btn-primary mt-2"
+           href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดู</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  {{ EmptyState('ph-tray', 'ไม่มีรายการรออนุมัติ') }}
+  {% endif %}
+</div>
+{% endblock %}

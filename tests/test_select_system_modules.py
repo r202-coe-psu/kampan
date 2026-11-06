@@ -11,7 +11,7 @@ MODULE_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "inventory": "item_orders.index",
     "car": "vehicle_lending.car_applications.calendar",
-    "snor_car": "snor_car.requests.index",
+    "car_reservation": "car_reservation.requests.index",
     "motorcycle": "vehicle_lending.motorcycle_applications.calendar",
 }
 
@@ -53,14 +53,14 @@ def test_select_system_shows_cards_only_for_enabled_modules(app, open_select_sys
     assert f'href="{_module_url(app, "motorcycle", org)}"' not in html
 
 
-def test_select_system_shows_the_snor_car_card_when_the_module_is_enabled(
+def test_select_system_shows_the_car_reservation_card_when_the_module_is_enabled(
     app, open_select_system
 ):
-    org, response = open_select_system(enabled_modules=["snor_car", "inventory"])
+    org, response = open_select_system(enabled_modules=["car_reservation", "inventory"])
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert f'href="{_module_url(app, "snor_car", org)}"' in html
+    assert f'href="{_module_url(app, "car_reservation", org)}"' in html
     assert f'href="{_module_url(app, "car", org)}"' not in html
 
 

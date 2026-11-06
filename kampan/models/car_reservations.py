@@ -2,7 +2,7 @@ import datetime
 
 import mongoengine as me
 
-SNOR_REQUEST_TYPES = [
+RESERVATION_TYPES = [
     ("domestic", "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"),
     ("airport", "ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่"),
     ("welfare", "ใบขอใช้รถประเภทสวัสดิการบุคลากร"),
@@ -14,7 +14,7 @@ PROVINCE_SCOPES = [
     ("out_of_province", "ต่างจังหวัด"),
 ]
 
-SNOR_REQUEST_STATUS = [
+RESERVATION_STATUS = [
     ("pending", "รออนุมัติ"),
     ("active", "อนุมัติแล้ว"),
     ("completed", "เสร็จสิ้น"),
@@ -44,7 +44,7 @@ class StepApproval(me.EmbeddedDocument):
     comment = me.StringField(default="")
 
 
-class SnorAuditLog(me.EmbeddedDocument):
+class ReservationAuditLog(me.EmbeddedDocument):
     """ประวัติของคำขอ: ใคร ทำอะไร ขั้นไหน เมื่อไร"""
 
     action = me.StringField(choices=AUDIT_ACTIONS, required=True)
@@ -58,8 +58,8 @@ class SnorAuditLog(me.EmbeddedDocument):
         return dict(AUDIT_ACTIONS).get(self.action, self.action)
 
 
-class SnorCarRequest(me.Document):
-    meta = {"collection": "snor_car_requests"}
+class CarReservation(me.Document):
+    meta = {"collection": "car_reservations"}
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
     division = me.ReferenceField("Division", dbref=True)
@@ -79,16 +79,16 @@ class SnorCarRequest(me.Document):
     return_datetime = me.DateTimeField(default=datetime.datetime.now)
     passenger_number = me.IntField(min_value=0, required=True, default=0)
 
-    request_type = me.StringField(choices=SNOR_REQUEST_TYPES, required=True)
+    request_type = me.StringField(choices=RESERVATION_TYPES, required=True)
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
 
-    status = me.StringField(default="pending", choices=SNOR_REQUEST_STATUS)
+    status = me.StringField(default="pending", choices=RESERVATION_STATUS)
     route_snapshot = me.ListField(me.StringField())  # เส้นทางอนุมัติที่ตรึงไว้ตอนยื่น
     current_step = me.IntField(default=0)
     step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
-    audit_logs = me.ListField(me.EmbeddedDocumentField(SnorAuditLog))
+    audit_logs = me.ListField(me.EmbeddedDocumentField(ReservationAuditLog))
 
     car = me.ReferenceField("Car", dbref=True)
     driver = me.ReferenceField("User", dbref=True)

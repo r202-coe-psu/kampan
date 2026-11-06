@@ -20,5 +20,5 @@ from . import export_file
 from . import date_utils
 from . import car_search
 from . import business_days
-from . import snor_car_flow
-from . import snor_car_email
+from . import car_reservation_flow
+from . import car_reservation_email

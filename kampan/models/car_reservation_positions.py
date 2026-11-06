@@ -2,7 +2,7 @@ import datetime
 
 import mongoengine as me
 
-SNOR_POSITIONS = [
+RESERVATION_POSITIONS = [
     ("dispatcher", "ผู้จัดรถ"),
     ("vehicle_unit_head", "หัวหน้าหน่วยยานพาหนะ"),
     ("strategy_head", "หัวหน้างานยุทธศาสตร์และบริการกลาง"),
@@ -12,14 +12,14 @@ SNOR_POSITIONS = [
 ]
 
 
-class CarFlowPosition(me.Document):
+class CarReservationPosition(me.Document):
     meta = {
-        "collection": "car_flow_positions",
+        "collection": "car_reservation_positions",
         "indexes": [{"fields": ["organization", "position_key"], "unique": True}],
     }
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
-    position_key = me.StringField(choices=SNOR_POSITIONS, required=True)
+    position_key = me.StringField(choices=RESERVATION_POSITIONS, required=True)
     user = me.ReferenceField("User", dbref=True)
     delegates = me.ListField(me.ReferenceField("User", dbref=True))
     updated_by = me.ReferenceField("User", dbref=True)

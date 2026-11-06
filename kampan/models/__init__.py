@@ -36,7 +36,7 @@ from .car_feedback import (
     QUESTION_TYPE,
 )
 import kampan.models.vehicle_applications as vehicle_applications
-from .car_flow_positions import CarFlowPosition, SNOR_POSITIONS
+from .car_reservation_positions import CarReservationPosition, RESERVATION_POSITIONS
 from .requisition_timeline import (
     RequisitionTimeline,
     RequisitionTimelineItem,
@@ -49,7 +49,7 @@ from .requisition_timeline import (
 )
 from .export_file import ExportFile
 from .car_holidays import CarHoliday
-from .snor_car_requests import SnorCarRequest
+from .car_reservations import CarReservation
 
 db = MongoEngine()
 

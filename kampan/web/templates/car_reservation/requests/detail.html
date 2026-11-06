@@ -1,21 +1,21 @@
-{% extends '/snor_car/base/default-page.html' %}
-{% import '/snor_car/components/status_badge.html' as status_badge %}
+{% extends '/car_reservation/base/default-page.html' %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
-{% block dashboard_title %}{{ snor_request.get_request_type_display() }}{% endblock %}
+{% block dashboard_title %}{{ reservation.get_request_type_display() }}{% endblock %}
 
 {% block content %}
 <div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex items-center gap-2">
-    {{ status_badge.render(snor_request) }}
-    {% if snor_request.is_urgent %}
+    {{ status_badge.render(reservation) }}
+    {% if reservation.is_urgent %}
     <span class="badge badge-error badge-sm whitespace-nowrap font-medium">เร่งด่วน</span>
     {% endif %}
-    {% if snor_request.status == 'pending' %}
+    {% if reservation.status == 'pending' %}
     <span class="font-medium">รอ{{ current_step_label }}</span>
     {% endif %}
-    {% if snor_request.status == 'cancel_requested' %}
+    {% if reservation.status == 'cancel_requested' %}
     <span class="font-medium">ขอยกเลิก — รอผู้จัดรถรับทราบ</span>
     {% endif %}
   </div>
@@ -28,21 +28,21 @@
   </ul>
 
   <dl class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ snor_request.requester_unit }}</dd></div>
-    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ snor_request.location }}</dd></div>
-    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ snor_request.request_reason }}</dd></div>
-    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ snor_request.passenger_number }}</dd></div>
-    {% if snor_request.car %}
-    <div><dt class="font-semibold">รถ</dt><dd data-role="assigned-car">{{ snor_request.car.license_plate }}{% if snor_request.car.vehicle_type %} ({{ snor_request.car.vehicle_type }}){% endif %}</dd></div>
+    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ reservation.requester_unit }}</dd></div>
+    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ reservation.location }}</dd></div>
+    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ reservation.request_reason }}</dd></div>
+    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ reservation.passenger_number }}</dd></div>
+    {% if reservation.car %}
+    <div><dt class="font-semibold">รถ</dt><dd data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</dd></div>
     {% endif %}
-    {% if snor_request.driver %}
-    <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ snor_request.driver.get_name() }}</dd></div>
+    {% if reservation.driver %}
+    <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ reservation.driver.get_name() }}</dd></div>
     {% endif %}
   </dl>
 
   <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
   <ul class="mt-2 space-y-1" data-role="audit-log">
-    {% for log in snor_request.audit_logs %}
+    {% for log in reservation.audit_logs %}
     <li>
       <span class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</span>
       <span class="font-medium">{{ log.get_action_display() }}</span>
@@ -61,7 +61,7 @@
 
   <dialog id="cancel-modal" class="modal">
     <form method="post"
-          action="{{ url_for('snor_car.requests.cancel', request_id=snor_request.id, organization_id=organization.id) }}"
+          action="{{ url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id) }}"
           class="modal-box">
       <h3 class="text-lg font-bold">ยกเลิกคำขอ</h3>
       {{ cancel_form.csrf_token }}
@@ -77,7 +77,7 @@
 
   {% if can_confirm_cancel %}
   <form method="post" class="mt-4"
-        action="{{ url_for('snor_car.requests.confirm_cancel', request_id=snor_request.id, organization_id=organization.id) }}">
+        action="{{ url_for('car_reservation.requests.confirm_cancel', request_id=reservation.id, organization_id=organization.id) }}">
     {{ cancel_form.csrf_token }}
     <button type="submit" class="btn btn-warning">รับทราบการยกเลิก</button>
   </form>
@@ -86,7 +86,7 @@
   {% if can_act %}
   <div class="mt-4 flex items-end gap-2">
     <form method="post"
-          action="{{ url_for('snor_car.requests.approve', request_id=snor_request.id, organization_id=organization.id) }}"
+          action="{{ url_for('car_reservation.requests.approve', request_id=reservation.id, organization_id=organization.id) }}"
           class="flex items-end gap-2">
       {{ form.csrf_token }}
       {% if form.car is defined %}
@@ -102,7 +102,7 @@
 
   <dialog id="deny-modal" class="modal">
     <form method="post"
-          action="{{ url_for('snor_car.requests.deny', request_id=snor_request.id, organization_id=organization.id) }}"
+          action="{{ url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id) }}"
           class="modal-box">
       <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
       {{ deny_form.csrf_token }}

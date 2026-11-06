@@ -1,12 +1,12 @@
-{% extends "/snor_car/base/default-page.html" %}
-{% import '/snor_car/components/status_badge.html' as status_badge %}
+{% extends "/car_reservation/base/default-page.html" %}
+{% import '/car_reservation/components/status_badge.html' as status_badge %}
 
 {% block title %}คำขอของฉัน{% endblock %}
 
 {% block content %}
 <div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex justify-end">
-    <a class="btn btn-primary" href="{{ url_for('snor_car.requests.create', organization_id=organization.id) }}">
+    <a class="btn btn-primary" href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
       <i class="ph ph-plus"></i> ยื่นคำขอ
     </a>
   </div>
@@ -21,17 +21,17 @@
         </tr>
       </thead>
       <tbody>
-        {% for snor_request in snor_requests %}
+        {% for reservation in reservations %}
         <tr>
           <td>
             <a class="link link-hover font-medium"
-               href="{{ url_for('snor_car.requests.detail', request_id=snor_request.id, organization_id=organization.id) }}">
-              {{ snor_request.request_reason }}
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+              {{ reservation.request_reason }}
             </a>
           </td>
-          <td>{{ snor_request.get_request_type_display() }}</td>
-          <td>{{ snor_request.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
-          <td>{{ status_badge.render(snor_request) }}</td>
+          <td>{{ reservation.get_request_type_display() }}</td>
+          <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+          <td>{{ status_badge.render(reservation) }}</td>
         </tr>
         {% else %}
         <tr>

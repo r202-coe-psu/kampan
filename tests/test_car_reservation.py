@@ -1,4 +1,4 @@
-"""คำขอใช้รถของ org แบบ snor: ผู้ขอยื่น -> ผู้อนุมัติแต่ละขั้นตามเส้นทางที่ตรึงไว้ตอนยื่น"""
+"""คำขอใช้รถของระบบจองรถ: ผู้ขอยื่น -> ผู้อนุมัติแต่ละขั้นตามเส้นทางที่ตรึงไว้ตอนยื่น"""
 
 import datetime
 from unittest.mock import MagicMock, patch
@@ -8,7 +8,7 @@ import pytest
 from kampan import models, utils
 from kampan.web import redis_rq
 
-BASE = "/snor_car/requests"
+BASE = "/car_reservation/requests"
 
 
 @pytest.fixture(autouse=True)
@@ -19,20 +19,20 @@ def mock_redis_queue():
         yield mock_q
 
 
-def snor_email_jobs(mock_q, event=None):
-    """job แจ้งเตือนอีเมลของ snor_car ที่ถูกส่งเข้าคิว: [(request_id, event, recipients, host_url)]"""
+def email_jobs(mock_q, event=None):
+    """job แจ้งเตือนอีเมลของ car_reservation ที่ถูกส่งเข้าคิว: [(request_id, event, recipients, host_url)]"""
     jobs = [
         call.kwargs["args"]
         for call in mock_q.enqueue.call_args_list
-        if call.args[0] is utils.snor_car_email.send_snor_car_email
+        if call.args[0] is utils.car_reservation_email.send_car_reservation_email
     ]
     return [job for job in jobs if event is None or job[1] == event]
 
 
 @pytest.fixture
-def snor(app, create_org, create_user, assign_user_to_org, login_as, create_car):
-    org = create_org("Snor Org")
-    org.enabled_modules = ["snor_car"]
+def world(app, create_org, create_user, assign_user_to_org, login_as, create_car):
+    org = create_org("Reservation Org")
+    org.enabled_modules = ["car_reservation"]
     org.save()
 
     class Setup:
@@ -63,18 +63,18 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as, create_car)
     assign_in_division(s.other_head, ["head"], s.other_division)
     for user in (s.dispatcher, s.stranger):
         assign_user_to_org(user, org, roles=["staff"])
-    models.CarFlowPosition(
+    models.CarReservationPosition(
         organization=org, position_key="dispatcher", user=s.dispatcher
     ).save()
 
     # ผู้ดำรงตำแหน่งที่เหลือ (คนละคน) เพื่อเดินครบทุกเส้นทาง
     s.holders = {"supervisor": s.supervisor, "dispatcher": s.dispatcher}
-    for key, _ in models.SNOR_POSITIONS:
+    for key, _ in models.RESERVATION_POSITIONS:
         if key == "dispatcher":
             continue
         holder = create_user(f"Holder{key.title().replace('_', '')}", "Position")
         assign_user_to_org(holder, org, roles=["staff"])
-        models.CarFlowPosition(organization=org, position_key=key, user=holder).save()
+        models.CarReservationPosition(organization=org, position_key=key, user=holder).save()
         s.holders[key] = holder
 
     def client_for(user):
@@ -110,7 +110,7 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as, create_car)
         )
         assert response.status_code == 302, response.get_data(as_text=True)
         return (
-            models.SnorCarRequest.objects(creator=s.requester)
+            models.CarReservation.objects(creator=s.requester)
             .order_by("-id")
             .first()
         )
@@ -129,23 +129,23 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as, create_car)
     return s
 
 
-def detail_url(snor, car_application):
-    return f"{BASE}/{car_application.id}?organization_id={snor.org.id}"
+def detail_url(world, car_application):
+    return f"{BASE}/{car_application.id}?organization_id={world.org.id}"
 
 
-def approve_url(snor, car_application):
-    return f"{BASE}/{car_application.id}/approve?organization_id={snor.org.id}"
+def approve_url(world, car_application):
+    return f"{BASE}/{car_application.id}/approve?organization_id={world.org.id}"
 
 
-def step_data(snor, key):
+def step_data(world, key):
     """ฟอร์มอนุมัติของขั้น key (ขั้นผู้จัดรถต้องระบุรถและพนักงานขับรถ)"""
     if key == "dispatcher":
-        return {"comment": "", "car": str(snor.car.id), "driver": str(snor.driver.id)}
+        return {"comment": "", "car": str(world.car.id), "driver": str(world.driver.id)}
     return {"comment": ""}
 
 
-def test_requester_submits_domestic_request_and_it_waits_for_supervisor(snor):
-    car_application = snor.submit_domestic_request()
+def test_requester_submits_domestic_request_and_it_waits_for_supervisor(world):
+    car_application = world.submit_domestic_request()
 
     assert car_application.status == "pending"
     assert car_application.route_snapshot == [
@@ -155,49 +155,49 @@ def test_requester_submits_domestic_request_and_it_waits_for_supervisor(snor):
         "strategy_head",
     ]
 
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert page.status_code == 200
     assert "รอผู้บังคับบัญชา" in page.get_data(as_text=True)
 
 
-def test_submitting_stores_the_requesters_division_on_the_request(snor):
-    car_application = snor.submit_domestic_request()
+def test_submitting_stores_the_requesters_division_on_the_request(world):
+    car_application = world.submit_domestic_request()
 
-    assert car_application.division == snor.division
+    assert car_application.division == world.division
 
 
-def test_supervisor_approval_moves_request_to_dispatcher(snor):
-    car_application = snor.submit_domestic_request()
+def test_supervisor_approval_moves_request_to_dispatcher(world):
+    car_application = world.submit_domestic_request()
 
-    response = snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": "เห็นชอบ"}
+    response = world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": "เห็นชอบ"}
     )
     assert response.status_code == 302
 
     car_application.reload()
     assert car_application.status == "pending"
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "รอผู้จัดรถ" in page.get_data(as_text=True)
 
 
 def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
-    snor, create_user
+    world, create_user
 ):
     colleague_head = create_user("ColleagueHead", "Six")
-    snor.assign_in_division(colleague_head, ["head"], snor.division)
+    world.assign_in_division(colleague_head, ["head"], world.division)
     colleague_staff = create_user("ColleagueStaff", "Seven")
-    snor.assign_in_division(colleague_staff, ["staff"], snor.division)
-    car_application = snor.submit_domestic_request()
+    world.assign_in_division(colleague_staff, ["staff"], world.division)
+    car_application = world.submit_domestic_request()
 
-    for outsider in (snor.other_head, colleague_staff):
-        snor.client_for(outsider).post(
-            approve_url(snor, car_application), data={"comment": ""}
+    for outsider in (world.other_head, colleague_staff):
+        world.client_for(outsider).post(
+            approve_url(world, car_application), data={"comment": ""}
         )
         car_application.reload()
         assert car_application.current_step == 0
 
-    response = snor.client_for(colleague_head).post(
-        approve_url(snor, car_application), data={"comment": "เห็นชอบ"}
+    response = world.client_for(colleague_head).post(
+        approve_url(world, car_application), data={"comment": "เห็นชอบ"}
     )
     assert response.status_code == 302
     car_application.reload()
@@ -205,42 +205,42 @@ def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
 
 
 def test_a_head_cannot_approve_their_own_request_but_another_head_can(
-    snor, create_user
+    world, create_user
 ):
     colleague_head = create_user("ColleagueHead", "Six")
-    snor.assign_in_division(colleague_head, ["head"], snor.division)
+    world.assign_in_division(colleague_head, ["head"], world.division)
 
-    response = snor.client_for(snor.supervisor).post(
-        f"{BASE}/new?organization_id={snor.org.id}&type=domestic",
-        data=snor.request_data(),
+    response = world.client_for(world.supervisor).post(
+        f"{BASE}/new?organization_id={world.org.id}&type=domestic",
+        data=world.request_data(),
     )
     assert response.status_code == 302
-    car_application = models.SnorCarRequest.objects(
-        creator=snor.supervisor
+    car_application = models.CarReservation.objects(
+        creator=world.supervisor
     ).first()
 
-    snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     car_application.reload()
     assert car_application.current_step == 0
 
-    snor.client_for(colleague_head).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    world.client_for(colleague_head).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     car_application.reload()
     assert car_application.current_step == 1
 
 
-def test_submission_is_refused_when_the_division_has_no_head(snor, create_user):
-    headless = models.Division(name="ฝ่ายไม่มีหัวหน้า", organization=snor.org)
+def test_submission_is_refused_when_the_division_has_no_head(world, create_user):
+    headless = models.Division(name="ฝ่ายไม่มีหัวหน้า", organization=world.org)
     headless.save()
     lonely = create_user("Lonely", "Eight")
-    snor.assign_in_division(lonely, ["staff"], headless)
+    world.assign_in_division(lonely, ["staff"], headless)
 
-    response = snor.client_for(lonely).post(
-        f"{BASE}/new?organization_id={snor.org.id}&type=domestic",
-        data=snor.request_data(),
+    response = world.client_for(lonely).post(
+        f"{BASE}/new?organization_id={world.org.id}&type=domestic",
+        data=world.request_data(),
     )
 
     assert response.status_code == 200
@@ -248,19 +248,19 @@ def test_submission_is_refused_when_the_division_has_no_head(snor, create_user):
         as_text=True
     )
     assert (
-        models.SnorCarRequest.objects(creator=lonely).count() == 0
+        models.CarReservation.objects(creator=lonely).count() == 0
     )
 
 
-def test_member_who_is_not_the_current_approver_cannot_approve(snor):
-    car_application = snor.submit_domestic_request()
+def test_member_who_is_not_the_current_approver_cannot_approve(world):
+    car_application = world.submit_domestic_request()
 
-    response = snor.client_for(snor.stranger).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    response = world.client_for(world.stranger).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     assert response.status_code in (302, 403)
 
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "รอผู้บังคับบัญชา" in page.get_data(as_text=True)
 
 
@@ -317,48 +317,48 @@ ROUTE_CASES = [
 
 @pytest.mark.parametrize("request_type, province_scope, expected_route", ROUTE_CASES)
 def test_each_request_type_walks_its_own_route_to_active(
-    snor, request_type, province_scope, expected_route
+    world, request_type, province_scope, expected_route
 ):
-    car_application = snor.submit_request(request_type, province_scope)
+    car_application = world.submit_request(request_type, province_scope)
 
     for index, (key, label) in enumerate(expected_route):
-        page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+        page = world.client_for(world.requester).get(detail_url(world, car_application))
         assert f"รอ{label}" in page.get_data(as_text=True)
 
         # มีแต่เจ้าของขั้นปัจจุบันที่อนุมัติได้ ขั้นถัดไปมาอนุมัติก่อนไม่ได้
         if index + 1 < len(expected_route):
             next_key, _ = expected_route[index + 1]
-            early = snor.client_for(snor.holders[next_key]).post(
-                approve_url(snor, car_application), data={"comment": ""}
+            early = world.client_for(world.holders[next_key]).post(
+                approve_url(world, car_application), data={"comment": ""}
             )
             # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือขั้นไม่ขยับ
             assert early.status_code in (302, 403)
             car_application.reload()
             assert car_application.current_step == index
 
-        response = snor.client_for(snor.holders[key]).post(
-            approve_url(snor, car_application), data=step_data(snor, key)
+        response = world.client_for(world.holders[key]).post(
+            approve_url(world, car_application), data=step_data(world, key)
         )
         assert response.status_code == 302
 
     car_application.reload()
     assert car_application.status == "active"
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert 'data-status="active"' in page.get_data(as_text=True)
 
 
 def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_delegate(
-    snor, create_user, assign_user_to_org
+    world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, snor.org, roles=["staff"])
-    position = models.CarFlowPosition.objects(
-        organization=snor.org, position_key="president"
+    assign_user_to_org(secretary, world.org, roles=["staff"])
+    position = models.CarReservationPosition.objects(
+        organization=world.org, position_key="president"
     ).first()
     position.delegates = [secretary]
     position.save()
 
-    car_application = snor.submit_request("abroad")
+    car_application = world.submit_request("abroad")
     for key in [
         "supervisor",
         "dispatcher",
@@ -367,30 +367,30 @@ def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_deleg
         "physical_director",
         "vice_president_hatyai",
     ]:
-        snor.client_for(snor.holders[key]).post(
-            approve_url(snor, car_application), data=step_data(snor, key)
+        world.client_for(world.holders[key]).post(
+            approve_url(world, car_application), data=step_data(world, key)
         )
 
-    response = snor.client_for(secretary).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    response = world.client_for(secretary).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     assert response.status_code == 302
 
     car_application.reload()
     assert car_application.status == "active"
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "Secretary Assistant" in page.get_data(as_text=True)
 
 
 def test_global_admin_cannot_approve_a_step_they_do_not_hold(
-    snor, create_user, assign_user_to_org
+    world, create_user, assign_user_to_org
 ):
     admin = create_user("Admin", "Global", roles=["admin"])
-    assign_user_to_org(admin, snor.org, roles=["admin"])
-    car_application = snor.submit_request("domestic")
+    assign_user_to_org(admin, world.org, roles=["admin"])
+    car_application = world.submit_request("domestic")
 
-    snor.client_for(admin).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    world.client_for(admin).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
 
     car_application.reload()
@@ -399,24 +399,24 @@ def test_global_admin_cannot_approve_a_step_they_do_not_hold(
     assert len(car_application.step_approvals) == 0
 
 
-def deny_url(snor, car_application):
-    return f"{BASE}/{car_application.id}/deny?organization_id={snor.org.id}"
+def deny_url(world, car_application):
+    return f"{BASE}/{car_application.id}/deny?organization_id={world.org.id}"
 
 
-def test_current_approver_can_deny_with_a_reason_and_the_request_stops(snor):
-    car_application = snor.submit_request("domestic")
-    snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": ""}
+def test_current_approver_can_deny_with_a_reason_and_the_request_stops(world):
+    car_application = world.submit_request("domestic")
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
 
-    response = snor.client_for(snor.dispatcher).post(
-        deny_url(snor, car_application), data={"comment": "ไม่มีรถว่างในช่วงเวลานี้"}
+    response = world.client_for(world.dispatcher).post(
+        deny_url(world, car_application), data={"comment": "ไม่มีรถว่างในช่วงเวลานี้"}
     )
     assert response.status_code == 302
 
     car_application.reload()
     assert car_application.status == "denied"
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     html = page.get_data(as_text=True)
     assert 'data-status="denied"' in html
     assert "ไม่อนุมัติ" in html
@@ -424,25 +424,25 @@ def test_current_approver_can_deny_with_a_reason_and_the_request_stops(snor):
     assert 'data-state="denied"' in html
 
     # ปฏิเสธแล้ว ไม่มีใครอนุมัติต่อได้
-    snor.client_for(snor.holders["vehicle_unit_head"]).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    world.client_for(world.holders["vehicle_unit_head"]).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     car_application.reload()
     assert car_application.status == "denied"
     assert len(car_application.step_approvals) == 2
 
 
-def test_member_who_is_not_the_current_approver_cannot_deny(snor):
-    car_application = snor.submit_request("domestic")
+def test_member_who_is_not_the_current_approver_cannot_deny(world):
+    car_application = world.submit_request("domestic")
 
-    snor.client_for(snor.stranger).post(
-        deny_url(snor, car_application), data={"comment": "ขอปฏิเสธ"}
+    world.client_for(world.stranger).post(
+        deny_url(world, car_application), data={"comment": "ขอปฏิเสธ"}
     )
-    snor.client_for(snor.dispatcher).post(
-        deny_url(snor, car_application), data={"comment": "ยังไม่ถึงคิว"}
+    world.client_for(world.dispatcher).post(
+        deny_url(world, car_application), data={"comment": "ยังไม่ถึงคิว"}
     )
 
     car_application.reload()
@@ -450,11 +450,11 @@ def test_member_who_is_not_the_current_approver_cannot_deny(snor):
     assert car_application.current_step == 0
 
 
-def test_denying_without_a_reason_is_refused(snor):
-    car_application = snor.submit_request("domestic")
+def test_denying_without_a_reason_is_refused(world):
+    car_application = world.submit_request("domestic")
 
-    response = snor.client_for(snor.supervisor).post(
-        deny_url(snor, car_application),
+    response = world.client_for(world.supervisor).post(
+        deny_url(world, car_application),
         data={"comment": ""},
         follow_redirects=True,
     )
@@ -465,7 +465,7 @@ def test_denying_without_a_reason_is_refused(snor):
     assert car_application.current_step == 0
 
 
-def test_organization_without_the_snor_car_module_gets_404(
+def test_organization_without_the_car_reservation_module_gets_404(
     app, create_org, create_user, assign_user_to_org, login_as
 ):
     org = create_org("Car Only Org")
@@ -480,17 +480,17 @@ def test_organization_without_the_snor_car_module_gets_404(
         assert response.status_code == 404
 
 
-def test_requests_home_lists_only_the_requesters_own_requests(snor):
-    other = snor.stranger
-    snor.assign_in_division(other, ["staff"], snor.division)
-    other_data = snor.request_data()
+def test_requests_home_lists_only_the_requesters_own_requests(world):
+    other = world.stranger
+    world.assign_in_division(other, ["staff"], world.division)
+    other_data = world.request_data()
     other_data["request_reason"] = "งานของคนอื่น"
-    snor.client_for(other).post(
-        f"{BASE}/new?organization_id={snor.org.id}&type=domestic", data=other_data
+    world.client_for(other).post(
+        f"{BASE}/new?organization_id={world.org.id}&type=domestic", data=other_data
     )
-    snor.submit_domestic_request()
+    world.submit_domestic_request()
 
-    page = snor.client_for(snor.requester).get(f"{BASE}/?organization_id={snor.org.id}")
+    page = world.client_for(world.requester).get(f"{BASE}/?organization_id={world.org.id}")
 
     html = page.get_data(as_text=True)
     assert page.status_code == 200
@@ -500,172 +500,172 @@ def test_requests_home_lists_only_the_requesters_own_requests(snor):
 
 
 
-def post_new(snor, data, request_type="domestic", user=None):
-    return snor.client_for(user or snor.requester).post(
-        f"{BASE}/new?organization_id={snor.org.id}&type={request_type}", data=data
+def post_new(world, data, request_type="domestic", user=None):
+    return world.client_for(user or world.requester).post(
+        f"{BASE}/new?organization_id={world.org.id}&type={request_type}", data=data
     )
 
 
-def test_request_departing_more_than_30_days_ahead_is_refused(snor):
-    response = post_new(snor, snor.request_data(days_ahead=40))
+def test_request_departing_more_than_30_days_ahead_is_refused(world):
+    response = post_new(world, world.request_data(days_ahead=40))
 
     assert response.status_code == 200
     assert "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน" in response.get_data(as_text=True)
-    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
 
 
 def test_request_departing_in_under_3_business_days_asks_for_urgent_confirmation(
-    snor,
+    world,
 ):
-    response = post_new(snor, snor.request_data(days_ahead=1))
+    response = post_new(world, world.request_data(days_ahead=1))
 
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
     assert 'name="confirm_urgent"' in html
-    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
 
 
-def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(snor):
-    data = snor.request_data(days_ahead=1)
+def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(world):
+    data = world.request_data(days_ahead=1)
     data["confirm_urgent"] = "y"
 
-    response = post_new(snor, data)
+    response = post_new(world, data)
 
     assert response.status_code == 302
-    car_application = models.SnorCarRequest.objects(creator=snor.requester).first()
+    car_application = models.CarReservation.objects(creator=world.requester).first()
     assert car_application.is_urgent is True
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "เร่งด่วน" in page.get_data(as_text=True)
 
 
-def test_request_with_enough_lead_time_is_saved_without_urgent_flag_or_warning(snor):
-    response = post_new(snor, snor.request_data(days_ahead=20))
+def test_request_with_enough_lead_time_is_saved_without_urgent_flag_or_warning(world):
+    response = post_new(world, world.request_data(days_ahead=20))
 
     assert response.status_code == 302
-    car_application = models.SnorCarRequest.objects(creator=snor.requester).first()
+    car_application = models.CarReservation.objects(creator=world.requester).first()
     assert car_application.is_urgent is False
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "เร่งด่วน" not in page.get_data(as_text=True)
 
 
-def test_abroad_request_needs_10_business_days_while_domestic_needs_3(snor):
-    data = snor.request_data("abroad", days_ahead=5)
+def test_abroad_request_needs_10_business_days_while_domestic_needs_3(world):
+    data = world.request_data("abroad", days_ahead=5)
 
-    response = post_new(snor, data, request_type="abroad")
+    response = post_new(world, data, request_type="abroad")
 
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "ขอรถล่วงหน้าน้อยกว่า 10 วันทำการ" in html
-    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
 
-    enough = snor.request_data("abroad", days_ahead=20)
-    assert post_new(snor, enough, request_type="abroad").status_code == 302
+    enough = world.request_data("abroad", days_ahead=20)
+    assert post_new(world, enough, request_type="abroad").status_code == 302
 
 
-def test_request_returning_before_departure_is_refused(snor):
-    data = snor.request_data()
+def test_request_returning_before_departure_is_refused(world):
+    data = world.request_data()
     data["return_date"] = (
         datetime.date.today() + datetime.timedelta(days=19)
     ).isoformat()
 
-    response = post_new(snor, data)
+    response = post_new(world, data)
 
     assert response.status_code == 200
     assert "วันกลับต้องไม่ก่อนวันออกเดินทาง" in response.get_data(as_text=True)
-    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
 
 
-def inbox_url(snor):
-    return f"{BASE}/inbox?organization_id={snor.org.id}"
+def inbox_url(world):
+    return f"{BASE}/inbox?organization_id={world.org.id}"
 
 
-def inbox_shows(snor, user, car_application):
-    page = snor.client_for(user).get(inbox_url(snor))
+def inbox_shows(world, user, car_application):
+    page = world.client_for(user).get(inbox_url(world))
     assert page.status_code == 200
     return f"{BASE}/{car_application.id}?" in page.get_data(as_text=True)
 
 
 def test_inbox_shows_request_at_supervisor_step_only_to_the_requesters_division_head(
-    snor,
+    world,
 ):
-    car_application = snor.submit_domestic_request()
+    car_application = world.submit_domestic_request()
 
-    assert inbox_shows(snor, snor.supervisor, car_application)
-    assert not inbox_shows(snor, snor.other_head, car_application)
-    assert not inbox_shows(snor, snor.dispatcher, car_application)
+    assert inbox_shows(world, world.supervisor, car_application)
+    assert not inbox_shows(world, world.other_head, car_application)
+    assert not inbox_shows(world, world.dispatcher, car_application)
 
 
 def test_after_supervisor_approves_inbox_moves_to_dispatcher_and_their_delegate(
-    snor, create_user, assign_user_to_org
+    world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, snor.org, roles=["staff"])
-    position = models.CarFlowPosition.objects(
-        organization=snor.org, position_key="dispatcher"
+    assign_user_to_org(secretary, world.org, roles=["staff"])
+    position = models.CarReservationPosition.objects(
+        organization=world.org, position_key="dispatcher"
     ).first()
     position.delegates = [secretary]
     position.save()
-    car_application = snor.submit_domestic_request()
-    snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": ""}
+    car_application = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
 
-    assert inbox_shows(snor, snor.dispatcher, car_application)
-    assert inbox_shows(snor, secretary, car_application)
-    assert not inbox_shows(snor, snor.supervisor, car_application)
+    assert inbox_shows(world, world.dispatcher, car_application)
+    assert inbox_shows(world, secretary, car_application)
+    assert not inbox_shows(world, world.supervisor, car_application)
 
 
-def test_denied_and_active_requests_appear_in_nobodys_inbox(snor):
-    denied = snor.submit_domestic_request()
-    snor.client_for(snor.supervisor).post(
-        f"{BASE}/{denied.id}/deny?organization_id={snor.org.id}",
+def test_denied_and_active_requests_appear_in_nobodys_inbox(world):
+    denied = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        f"{BASE}/{denied.id}/deny?organization_id={world.org.id}",
         data={"comment": "ไม่เหมาะสม"},
     )
-    active = snor.submit_domestic_request()
+    active = world.submit_domestic_request()
     for key in ["supervisor", "dispatcher", "vehicle_unit_head", "strategy_head"]:
-        snor.client_for(snor.holders[key]).post(
-            approve_url(snor, active), data=step_data(snor, key)
+        world.client_for(world.holders[key]).post(
+            approve_url(world, active), data=step_data(world, key)
         )
     active.reload()
     assert active.status == "active"
 
-    everyone = [snor.requester, snor.stranger, *snor.holders.values()]
+    everyone = [world.requester, world.stranger, *world.holders.values()]
     for user in everyone:
-        assert not inbox_shows(snor, user, denied)
-        assert not inbox_shows(snor, user, active)
+        assert not inbox_shows(world, user, denied)
+        assert not inbox_shows(world, user, active)
 
 
-def test_sidebar_shows_inbox_link_with_count_only_when_something_is_waiting(snor):
-    index_url = f"{BASE}/?organization_id={snor.org.id}"
+def test_sidebar_shows_inbox_link_with_count_only_when_something_is_waiting(world):
+    index_url = f"{BASE}/?organization_id={world.org.id}"
 
-    quiet = snor.client_for(snor.supervisor).get(index_url).get_data(as_text=True)
+    quiet = world.client_for(world.supervisor).get(index_url).get_data(as_text=True)
     assert "รายการรออนุมัติ" not in quiet
 
-    snor.submit_domestic_request()
-    snor.submit_domestic_request()
+    world.submit_domestic_request()
+    world.submit_domestic_request()
 
-    busy = snor.client_for(snor.supervisor).get(index_url).get_data(as_text=True)
+    busy = world.client_for(world.supervisor).get(index_url).get_data(as_text=True)
     assert "รายการรออนุมัติ" in busy
     assert 'data-testid="inbox-count">2<' in busy
-    assert f"{BASE}/inbox?organization_id={snor.org.id}" in busy
-    stranger = snor.client_for(snor.stranger).get(index_url).get_data(as_text=True)
+    assert f"{BASE}/inbox?organization_id={world.org.id}" in busy
+    stranger = world.client_for(world.stranger).get(index_url).get_data(as_text=True)
     assert "รายการรออนุมัติ" not in stranger
 
 
 def test_inbox_never_lists_requests_of_another_organization(
-    snor, create_org, assign_user_to_org
+    world, create_org, assign_user_to_org
 ):
-    other_org = create_org("Other Snor Org")
-    other_org.enabled_modules = ["snor_car"]
+    other_org = create_org("Other Reservation Org")
+    other_org.enabled_modules = ["car_reservation"]
     other_org.save()
-    assign_user_to_org(snor.dispatcher, other_org, roles=["staff"])
-    models.CarFlowPosition(
-        organization=other_org, position_key="dispatcher", user=snor.dispatcher
+    assign_user_to_org(world.dispatcher, other_org, roles=["staff"])
+    models.CarReservationPosition(
+        organization=other_org, position_key="dispatcher", user=world.dispatcher
     ).save()
-    foreign = models.SnorCarRequest(
+    foreign = models.CarReservation(
         organization=other_org,
-        creator=snor.requester,
+        creator=world.requester,
         request_type="domestic",
         province_scope="in_province",
         location="เชียงใหม่",
@@ -675,12 +675,12 @@ def test_inbox_never_lists_requests_of_another_organization(
         current_step=1,
     )
     foreign.save()
-    own = snor.submit_domestic_request()
-    snor.client_for(snor.supervisor).post(
-        approve_url(snor, own), data={"comment": ""}
+    own = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        approve_url(world, own), data={"comment": ""}
     )
 
-    page = snor.client_for(snor.dispatcher).get(inbox_url(snor))
+    page = world.client_for(world.dispatcher).get(inbox_url(world))
     html = page.get_data(as_text=True)
 
     assert f"{BASE}/{own.id}?" in html
@@ -691,44 +691,44 @@ def dispatch_data(car, driver, comment=""):
     return {"comment": comment, "car": str(car.id), "driver": str(driver.id)}
 
 
-def request_at_dispatcher(snor):
-    car_application = snor.submit_domestic_request()
-    response = snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": ""}
+def request_at_dispatcher(world):
+    car_application = world.submit_domestic_request()
+    response = world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
     )
     assert response.status_code == 302
     return car_application
 
 
-def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail(snor):
-    car_application = request_at_dispatcher(snor)
+def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail(world):
+    car_application = request_at_dispatcher(world)
 
-    response = snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
     assert response.status_code == 302
 
     car_application.reload()
-    assert car_application.car == snor.car
-    assert car_application.driver == snor.driver
+    assert car_application.car == world.car
+    assert car_application.driver == world.driver
     assert car_application.current_step == 2
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     html = page.get_data(as_text=True)
     assert "กก 1234" in html
     assert "Driver One" in html
 
 
 @pytest.mark.parametrize("missing", ["car", "driver", "both"])
-def test_dispatcher_cannot_approve_without_choosing_car_and_driver(snor, missing):
-    car_application = request_at_dispatcher(snor)
-    data = dispatch_data(snor.car, snor.driver)
+def test_dispatcher_cannot_approve_without_choosing_car_and_driver(world, missing):
+    car_application = request_at_dispatcher(world)
+    data = dispatch_data(world.car, world.driver)
     if missing in ("car", "both"):
         data["car"] = ""
     if missing in ("driver", "both"):
         data["driver"] = ""
 
-    client = snor.client_for(snor.dispatcher)
-    response = client.post(approve_url(snor, car_application), data=data)
+    client = world.client_for(world.dispatcher)
+    response = client.post(approve_url(world, car_application), data=data)
 
     assert response.status_code == 302
     car_application.reload()
@@ -736,37 +736,37 @@ def test_dispatcher_cannot_approve_without_choosing_car_and_driver(snor, missing
     assert car_application.car is None
     assert car_application.driver is None
     assert len(car_application.step_approvals) == 1
-    page = client.get(detail_url(snor, car_application))
+    page = client.get(detail_url(world, car_application))
     assert "กรุณาเลือกรถและพนักงานขับรถ" in page.get_data(as_text=True)
 
 
 def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
-    snor, create_org, create_car, create_user, assign_user_to_org
+    world, create_org, create_car, create_user, assign_user_to_org
 ):
     other_org = create_org("Other Fleet Org")
     foreign_car = create_car(other_org, "ขข 9999")
-    inactive_car = create_car(snor.org, "คค 1111", status="disactive")
-    staff_member = snor.add_driver("Staffer", "Only", roles=("staff",))
-    left_driver = snor.add_driver("Former", "Driver")
+    inactive_car = create_car(world.org, "คค 1111", status="disactive")
+    staff_member = world.add_driver("Staffer", "Only", roles=("staff",))
+    left_driver = world.add_driver("Former", "Driver")
     member = models.OrganizationUserRole.objects(
-        organization=snor.org, user=left_driver
+        organization=world.org, user=left_driver
     ).first()
     member.status = "disactive"
     member.save()
     foreign_driver = create_user("Foreign", "Driver")
     assign_user_to_org(foreign_driver, other_org, roles=["driver"])
-    car_application = request_at_dispatcher(snor)
+    car_application = request_at_dispatcher(world)
 
     refused = [
-        (foreign_car, snor.driver),
-        (inactive_car, snor.driver),
-        (snor.car, staff_member),
-        (snor.car, left_driver),
-        (snor.car, foreign_driver),
+        (foreign_car, world.driver),
+        (inactive_car, world.driver),
+        (world.car, staff_member),
+        (world.car, left_driver),
+        (world.car, foreign_driver),
     ]
     for car, driver in refused:
-        response = snor.client_for(snor.dispatcher).post(
-            approve_url(snor, car_application), data=dispatch_data(car, driver)
+        response = world.client_for(world.dispatcher).post(
+            approve_url(world, car_application), data=dispatch_data(car, driver)
         )
         assert response.status_code == 302
         car_application.reload()
@@ -774,25 +774,25 @@ def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
         assert car_application.car is None
         assert car_application.driver is None
 
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
     car_application.reload()
     assert car_application.current_step == 2
 
 
-def at_dispatcher_with_times(snor, departure, return_):
-    car_application = request_at_dispatcher(snor)
+def at_dispatcher_with_times(world, departure, return_):
+    car_application = request_at_dispatcher(world)
     car_application.departure_datetime = departure
     car_application.return_datetime = return_
     car_application.save()
     return car_application
 
 
-def assigned_request(snor, departure, return_, status="active", car=None, driver=None):
-    return models.SnorCarRequest(
-        organization=snor.org,
-        creator=snor.requester,
+def assigned_request(world, departure, return_, status="active", car=None, driver=None):
+    return models.CarReservation(
+        organization=world.org,
+        creator=world.requester,
         request_type="domestic",
         province_scope="in_province",
         location="ที่อื่น",
@@ -815,34 +815,34 @@ DAY = datetime.datetime.combine(
 @pytest.mark.parametrize("blocking_status", ["pending", "active", "cancel_requested"])
 @pytest.mark.parametrize("clash", ["car", "driver"])
 def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
-    snor, clash, blocking_status
+    world, clash, blocking_status
 ):
     other_car = models.vehicles.Car(
-        organization=snor.org, license_plate="งง 2222", status="active"
+        organization=world.org, license_plate="งง 2222", status="active"
     ).save()
-    other_driver = snor.add_driver("Other", "Driver")
+    other_driver = world.add_driver("Other", "Driver")
     assigned_request(
-        snor,
+        world,
         DAY + datetime.timedelta(hours=2),
         DAY + datetime.timedelta(hours=6),
         status=blocking_status,
-        car=snor.car if clash == "car" else other_car,
-        driver=snor.driver if clash == "driver" else other_driver,
+        car=world.car if clash == "car" else other_car,
+        driver=world.driver if clash == "driver" else other_driver,
     )
     car_application = at_dispatcher_with_times(
-        snor, DAY, DAY + datetime.timedelta(hours=9)
+        world, DAY, DAY + datetime.timedelta(hours=9)
     )
 
-    client = snor.client_for(snor.dispatcher)
+    client = world.client_for(world.dispatcher)
     response = client.post(
-        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
 
     assert response.status_code == 302
     car_application.reload()
     assert car_application.current_step == 1
     assert car_application.car is None
-    html = client.get(detail_url(snor, car_application)).get_data(as_text=True)
+    html = client.get(detail_url(world, car_application)).get_data(as_text=True)
     if clash == "car":
         assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
     else:
@@ -860,47 +860,47 @@ def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
     ],
 )
 def test_bookings_that_do_not_overlap_or_are_not_live_do_not_block_assignment(
-    snor, start_hours, end_hours, status
+    world, start_hours, end_hours, status
 ):
     assigned_request(
-        snor,
+        world,
         DAY + datetime.timedelta(hours=start_hours),
         DAY + datetime.timedelta(hours=end_hours),
         status=status,
-        car=snor.car,
-        driver=snor.driver,
+        car=world.car,
+        driver=world.driver,
     )
     car_application = at_dispatcher_with_times(
-        snor, DAY, DAY + datetime.timedelta(hours=9)
+        world, DAY, DAY + datetime.timedelta(hours=9)
     )
 
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
 
     car_application.reload()
     assert car_application.current_step == 2
-    assert car_application.car == snor.car
+    assert car_application.car == world.car
 
 
-def test_assignment_is_recorded_in_the_audit_log_with_plate_and_driver(snor):
-    car_application = request_at_dispatcher(snor)
+def test_assignment_is_recorded_in_the_audit_log_with_plate_and_driver(world):
+    car_application = request_at_dispatcher(world)
 
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application),
-        data=dispatch_data(snor.car, snor.driver, comment="เรียบร้อย"),
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data=dispatch_data(world.car, world.driver, comment="เรียบร้อย"),
     )
 
-    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "จัดรถ กก 1234 พนักงานขับรถ Driver One" in page.get_data(as_text=True)
 
 
-def test_car_and_driver_are_ignored_outside_the_dispatcher_step(snor):
-    car_application = snor.submit_domestic_request()
+def test_car_and_driver_are_ignored_outside_the_dispatcher_step(world):
+    car_application = world.submit_domestic_request()
 
-    response = snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application),
-        data=dispatch_data(snor.car, snor.driver, comment="เห็นชอบ"),
+    response = world.client_for(world.supervisor).post(
+        approve_url(world, car_application),
+        data=dispatch_data(world.car, world.driver, comment="เห็นชอบ"),
     )
 
     assert response.status_code == 302
@@ -908,22 +908,22 @@ def test_car_and_driver_are_ignored_outside_the_dispatcher_step(snor):
     assert car_application.current_step == 1
     assert car_application.car is None
     assert car_application.driver is None
-    page = snor.client_for(snor.supervisor).get(detail_url(snor, car_application))
+    page = world.client_for(world.supervisor).get(detail_url(world, car_application))
     # ฟอร์มของผู้อนุมัติขั้นนี้ไม่มีช่องเลือกรถ/พนักงานขับรถ
     assert 'name="car"' not in page.get_data(as_text=True)
 
 
 def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approve_form(
-    snor, create_org, create_car
+    world, create_org, create_car
 ):
-    create_car(snor.org, "คค 1111", status="disactive")
+    create_car(world.org, "คค 1111", status="disactive")
     create_car(create_org("Other Fleet Org"), "ขข 9999")
-    snor.add_driver("Staffer", "Only", roles=("staff",))
-    car_application = request_at_dispatcher(snor)
+    world.add_driver("Staffer", "Only", roles=("staff",))
+    car_application = request_at_dispatcher(world)
 
     html = (
-        snor.client_for(snor.dispatcher)
-        .get(detail_url(snor, car_application))
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
         .get_data(as_text=True)
     )
 
@@ -935,87 +935,87 @@ def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approv
     assert "Staffer Only" not in html
 
 
-def cancel_url(snor, car_application):
-    return f"{BASE}/{car_application.id}/cancel?organization_id={snor.org.id}"
+def cancel_url(world, car_application):
+    return f"{BASE}/{car_application.id}/cancel?organization_id={world.org.id}"
 
 
 def test_requester_cancels_before_a_car_is_assigned_and_the_request_leaves_inboxes(
-    snor,
+    world,
 ):
-    car_application = snor.submit_domestic_request()
-    assert inbox_shows(snor, snor.supervisor, car_application)
+    car_application = world.submit_domestic_request()
+    assert inbox_shows(world, world.supervisor, car_application)
 
-    response = snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": "เปลี่ยนแผน"}
+    response = world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": "เปลี่ยนแผน"}
     )
 
     assert response.status_code == 302
     car_application.reload()
     assert car_application.status == "cancelled"
     assert car_application.audit_logs[-1].action == "cancelled"
-    assert car_application.audit_logs[-1].actor == snor.requester
+    assert car_application.audit_logs[-1].actor == world.requester
     assert car_application.audit_logs[-1].comment == "เปลี่ยนแผน"
-    assert not inbox_shows(snor, snor.supervisor, car_application)
+    assert not inbox_shows(world, world.supervisor, car_application)
 
 
-def request_with_car_assigned(snor):
-    car_application = request_at_dispatcher(snor)
-    response = snor.client_for(snor.dispatcher).post(
-        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+def request_with_car_assigned(world):
+    car_application = request_at_dispatcher(world)
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
     )
     assert response.status_code == 302
     car_application.reload()
-    assert car_application.car == snor.car
+    assert car_application.car == world.car
     return car_application
 
 
-def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(snor):
-    car_application = request_with_car_assigned(snor)
+def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(world):
+    car_application = request_with_car_assigned(world)
 
-    response = snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": "งานเลื่อน"}
+    response = world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": "งานเลื่อน"}
     )
 
     assert response.status_code == 302
     car_application.reload()
     assert car_application.status == "cancel_requested"
     html = (
-        snor.client_for(snor.requester)
-        .get(detail_url(snor, car_application))
+        world.client_for(world.requester)
+        .get(detail_url(world, car_application))
         .get_data(as_text=True)
     )
     assert "ขอยกเลิก — รอผู้จัดรถรับทราบ" in html
 
 
 def test_cancel_request_appears_in_the_inbox_of_the_dispatcher_and_delegate_only(
-    snor, create_user, assign_user_to_org
+    world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, snor.org, roles=["staff"])
-    position = models.CarFlowPosition.objects(
-        organization=snor.org, position_key="dispatcher"
+    assign_user_to_org(secretary, world.org, roles=["staff"])
+    position = models.CarReservationPosition.objects(
+        organization=world.org, position_key="dispatcher"
     ).first()
     position.delegates = [secretary]
     position.save()
-    car_application = request_with_car_assigned(snor)
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": ""}
+    car_application = request_with_car_assigned(world)
+    world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": ""}
     )
 
-    assert inbox_shows(snor, snor.dispatcher, car_application)
-    assert inbox_shows(snor, secretary, car_application)
-    for outsider in (snor.requester, snor.supervisor, snor.stranger):
-        assert not inbox_shows(snor, outsider, car_application)
+    assert inbox_shows(world, world.dispatcher, car_application)
+    assert inbox_shows(world, secretary, car_application)
+    for outsider in (world.requester, world.supervisor, world.stranger):
+        assert not inbox_shows(world, outsider, car_application)
 
 
-def confirm_cancel_url(snor, car_application):
-    return f"{BASE}/{car_application.id}/cancel/confirm?organization_id={snor.org.id}"
+def confirm_cancel_url(world, car_application):
+    return f"{BASE}/{car_application.id}/cancel/confirm?organization_id={world.org.id}"
 
 
-def request_cancel_requested(snor):
-    car_application = request_with_car_assigned(snor)
-    response = snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": ""}
+def request_cancel_requested(world):
+    car_application = request_with_car_assigned(world)
+    response = world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": ""}
     )
     assert response.status_code == 302
     car_application.reload()
@@ -1024,19 +1024,19 @@ def request_cancel_requested(snor):
 
 
 def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
-    snor, create_user, assign_user_to_org
+    world, create_user, assign_user_to_org
 ):
     secretary = create_user("Secretary", "Assistant")
-    assign_user_to_org(secretary, snor.org, roles=["staff"])
-    position = models.CarFlowPosition.objects(
-        organization=snor.org, position_key="dispatcher"
+    assign_user_to_org(secretary, world.org, roles=["staff"])
+    position = models.CarReservationPosition.objects(
+        organization=world.org, position_key="dispatcher"
     ).first()
     position.delegates = [secretary]
     position.save()
-    car_application = request_cancel_requested(snor)
+    car_application = request_cancel_requested(world)
 
-    response = snor.client_for(secretary).post(
-        confirm_cancel_url(snor, car_application)
+    response = world.client_for(secretary).post(
+        confirm_cancel_url(world, car_application)
     )
 
     assert response.status_code == 302
@@ -1045,23 +1045,23 @@ def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
     assert car_application.audit_logs[-1].action == "cancel_confirmed"
     assert car_application.audit_logs[-1].actor == secretary
     html = (
-        snor.client_for(snor.requester)
-        .get(detail_url(snor, car_application))
+        world.client_for(world.requester)
+        .get(detail_url(world, car_application))
         .get_data(as_text=True)
     )
     assert "Secretary Assistant" in html
-    assert not inbox_shows(snor, snor.dispatcher, car_application)
+    assert not inbox_shows(world, world.dispatcher, car_application)
 
 
 @pytest.mark.parametrize("final_status", ["denied", "completed", "cancelled"])
-def test_a_finished_request_cannot_be_cancelled(snor, final_status):
-    car_application = snor.submit_domestic_request()
+def test_a_finished_request_cannot_be_cancelled(world, final_status):
+    car_application = world.submit_domestic_request()
     car_application.status = final_status
     car_application.save()
     logs_before = len(car_application.audit_logs)
 
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": ""}
+    world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": ""}
     )
 
     car_application.reload()
@@ -1070,13 +1070,13 @@ def test_a_finished_request_cannot_be_cancelled(snor, final_status):
 
 
 def test_a_request_already_awaiting_cancel_acknowledgement_cannot_be_cancelled_again(
-    snor,
+    world,
 ):
-    car_application = request_cancel_requested(snor)
+    car_application = request_cancel_requested(world)
     logs_before = len(car_application.audit_logs)
 
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": "อีกครั้ง"}
+    world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": "อีกครั้ง"}
     )
 
     car_application.reload()
@@ -1084,32 +1084,32 @@ def test_a_request_already_awaiting_cancel_acknowledgement_cannot_be_cancelled_a
     assert len(car_application.audit_logs) == logs_before
 
 
-def test_car_and_driver_are_blocked_until_the_cancel_is_confirmed_then_released(snor):
-    cancelling = request_cancel_requested(snor)
-    waiting = request_at_dispatcher(snor)
+def test_car_and_driver_are_blocked_until_the_cancel_is_confirmed_then_released(world):
+    cancelling = request_cancel_requested(world)
+    waiting = request_at_dispatcher(world)
 
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, waiting), data=dispatch_data(snor.car, snor.driver)
+    world.client_for(world.dispatcher).post(
+        approve_url(world, waiting), data=dispatch_data(world.car, world.driver)
     )
     waiting.reload()
     assert waiting.current_step == 1
 
-    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, cancelling))
-    snor.client_for(snor.dispatcher).post(
-        approve_url(snor, waiting), data=dispatch_data(snor.car, snor.driver)
+    world.client_for(world.dispatcher).post(confirm_cancel_url(world, cancelling))
+    world.client_for(world.dispatcher).post(
+        approve_url(world, waiting), data=dispatch_data(world.car, world.driver)
     )
 
     waiting.reload()
     assert waiting.current_step == 2
-    assert waiting.car == snor.car
+    assert waiting.car == world.car
 
 
-def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(snor):
-    car_application = request_cancel_requested(snor)
+def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(world):
+    car_application = request_cancel_requested(world)
 
-    for outsider in (snor.requester, snor.stranger, snor.supervisor):
-        response = snor.client_for(outsider).post(
-            confirm_cancel_url(snor, car_application)
+    for outsider in (world.requester, world.stranger, world.supervisor):
+        response = world.client_for(outsider).post(
+            confirm_cancel_url(world, car_application)
         )
         # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือสถานะไม่เปลี่ยน
         assert response.status_code in (302, 403)
@@ -1118,80 +1118,80 @@ def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(snor):
 
 
 def test_confirming_is_refused_unless_the_request_is_awaiting_cancel_acknowledgement(
-    snor,
+    world,
 ):
-    car_application = request_with_car_assigned(snor)
+    car_application = request_with_car_assigned(world)
 
-    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, car_application))
+    world.client_for(world.dispatcher).post(confirm_cancel_url(world, car_application))
 
     car_application.reload()
     assert car_application.status == "pending"
     assert car_application.audit_logs[-1].action == "approved"
 
 
-def detail_html(snor, user, car_application):
-    page = snor.client_for(user).get(detail_url(snor, car_application))
+def detail_html(world, user, car_application):
+    page = world.client_for(user).get(detail_url(world, car_application))
     assert page.status_code == 200
     return page.get_data(as_text=True)
 
 
-def test_cancel_button_shows_only_to_the_creator_while_the_request_is_cancellable(snor):
-    car_application = snor.submit_domestic_request()
+def test_cancel_button_shows_only_to_the_creator_while_the_request_is_cancellable(world):
+    car_application = world.submit_domestic_request()
 
-    assert "ยกเลิกคำขอ" in detail_html(snor, snor.requester, car_application)
-    for outsider in (snor.supervisor, snor.dispatcher, snor.stranger):
-        assert "ยกเลิกคำขอ" not in detail_html(snor, outsider, car_application)
+    assert "ยกเลิกคำขอ" in detail_html(world, world.requester, car_application)
+    for outsider in (world.supervisor, world.dispatcher, world.stranger):
+        assert "ยกเลิกคำขอ" not in detail_html(world, outsider, car_application)
 
     for status in ("denied", "completed", "cancelled", "cancel_requested"):
         car_application.status = status
         car_application.save()
-        assert "ยกเลิกคำขอ" not in detail_html(snor, snor.requester, car_application)
+        assert "ยกเลิกคำขอ" not in detail_html(world, world.requester, car_application)
 
 
 def test_acknowledge_button_shows_only_to_the_dispatcher_while_cancel_is_requested(
-    snor,
+    world,
 ):
-    car_application = request_cancel_requested(snor)
+    car_application = request_cancel_requested(world)
 
-    assert "รับทราบการยกเลิก" in detail_html(snor, snor.dispatcher, car_application)
-    for outsider in (snor.requester, snor.supervisor, snor.stranger):
-        assert "รับทราบการยกเลิก" not in detail_html(snor, outsider, car_application)
+    assert "รับทราบการยกเลิก" in detail_html(world, world.dispatcher, car_application)
+    for outsider in (world.requester, world.supervisor, world.stranger):
+        assert "รับทราบการยกเลิก" not in detail_html(world, outsider, car_application)
 
 
 @pytest.mark.parametrize(
     "status, tone", [("cancel_requested", "badge-warning"), ("cancelled", "badge-ghost")]
 )
-def test_status_badge_shows_cancel_states_in_their_own_tone(snor, status, tone):
-    car_application = snor.submit_domestic_request()
+def test_status_badge_shows_cancel_states_in_their_own_tone(world, status, tone):
+    car_application = world.submit_domestic_request()
     car_application.status = status
     car_application.save()
 
-    html = detail_html(snor, snor.requester, car_application)
+    html = detail_html(world, world.requester, car_application)
 
     badge = html[html.index(f'data-status="{status}"') - 200 :]
     assert tone in badge.split("</span>")[0]
 
 
-def test_a_submitted_request_has_no_edit_route(snor):
-    car_application = snor.submit_domestic_request()
+def test_a_submitted_request_has_no_edit_route(world):
+    car_application = world.submit_domestic_request()
 
-    for user in (snor.requester, snor.supervisor):
+    for user in (world.requester, world.supervisor):
         for method in ("get", "post"):
-            response = getattr(snor.client_for(user), method)(
-                f"{BASE}/{car_application.id}/edit?organization_id={snor.org.id}"
+            response = getattr(world.client_for(user), method)(
+                f"{BASE}/{car_application.id}/edit?organization_id={world.org.id}"
             )
             assert response.status_code == 404
 
 
-def test_only_the_creator_can_cancel_a_request(snor):
-    before_car = snor.submit_domestic_request()
-    after_car = request_with_car_assigned(snor)
+def test_only_the_creator_can_cancel_a_request(world):
+    before_car = world.submit_domestic_request()
+    after_car = request_with_car_assigned(world)
 
     for car_application in (before_car, after_car):
         status = car_application.status
-        for outsider in (snor.stranger, snor.supervisor, snor.dispatcher):
-            response = snor.client_for(outsider).post(
-                cancel_url(snor, car_application), data={"reason": ""}
+        for outsider in (world.stranger, world.supervisor, world.dispatcher):
+            response = world.client_for(outsider).post(
+                cancel_url(world, car_application), data={"reason": ""}
             )
             # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือสถานะไม่เปลี่ยน
             assert response.status_code in (302, 403)
@@ -1200,64 +1200,64 @@ def test_only_the_creator_can_cancel_a_request(snor):
 
 
 def test_submitting_notifies_the_division_head_but_not_the_requester(
-    snor, mock_redis_queue
+    world, mock_redis_queue
 ):
-    car_application = snor.submit_domestic_request()
+    car_application = world.submit_domestic_request()
 
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, host_url = jobs[0]
     assert (request_id, event) == (str(car_application.id), "submitted")
-    assert recipients == [snor.supervisor.email]
+    assert recipients == [world.supervisor.email]
     assert host_url.startswith("http")
 
 
 def test_supervisor_approval_notifies_the_dispatcher_holder_and_delegate(
-    snor, create_user, assign_user_to_org, mock_redis_queue
+    world, create_user, assign_user_to_org, mock_redis_queue
 ):
     delegate = create_user("Delegate", "Dispatcher")
-    assign_user_to_org(delegate, snor.org, roles=["staff"])
-    position = models.CarFlowPosition.objects(
-        organization=snor.org, position_key="dispatcher"
+    assign_user_to_org(delegate, world.org, roles=["staff"])
+    position = models.CarReservationPosition.objects(
+        organization=world.org, position_key="dispatcher"
     ).first()
     position.delegates = [delegate]
     position.save()
-    car_application = snor.submit_domestic_request()
+    car_application = world.submit_domestic_request()
     mock_redis_queue.reset_mock()
 
-    snor.client_for(snor.supervisor).post(
-        approve_url(snor, car_application), data={"comment": "เห็นชอบ"}
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": "เห็นชอบ"}
     )
 
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "approved")
-    assert sorted(recipients) == sorted([snor.dispatcher.email, delegate.email])
+    assert sorted(recipients) == sorted([world.dispatcher.email, delegate.email])
 
 
 def test_final_approval_tells_the_requester_and_the_driver_the_request_is_active(
-    snor, mock_redis_queue
+    world, mock_redis_queue
 ):
-    car_application = snor.submit_domestic_request()
+    car_application = world.submit_domestic_request()
     for key in car_application.route_snapshot[:-1]:
-        snor.client_for(snor.holders[key]).post(
-            approve_url(snor, car_application), data=step_data(snor, key)
+        world.client_for(world.holders[key]).post(
+            approve_url(world, car_application), data=step_data(world, key)
         )
     mock_redis_queue.reset_mock()
 
     last = car_application.route_snapshot[-1]
-    snor.client_for(snor.holders[last]).post(
-        approve_url(snor, car_application), data=step_data(snor, last)
+    world.client_for(world.holders[last]).post(
+        approve_url(world, car_application), data=step_data(world, last)
     )
 
     car_application.reload()
     assert car_application.status == "active"
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "active")
-    assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])
+    assert sorted(recipients) == sorted([world.requester.email, world.driver.email])
 
 
 @pytest.fixture
@@ -1285,50 +1285,50 @@ def sent_emails(monkeypatch):
 
 
 def test_email_job_sends_subject_and_body_with_trip_details_and_link(
-    app, snor, sent_emails
+    app, world, sent_emails
 ):
-    car_application = snor.submit_domestic_request()
+    car_application = world.submit_domestic_request()
 
     with app.app_context():
-        utils.snor_car_email.send_snor_car_email(
+        utils.car_reservation_email.send_car_reservation_email(
             str(car_application.id),
             "submitted",
-            [snor.supervisor.email],
+            [world.supervisor.email],
             "https://staging.example.test",
         )
 
     assert len(sent_emails) == 1
     email = sent_emails[0]
-    assert email["receiver"] == snor.supervisor.email
+    assert email["receiver"] == world.supervisor.email
     assert "ระบบจองรถออนไลน์" in email["subject"]
     assert "กรุงเทพฯ" in email["body"]
     assert (
-        f"https://staging.example.test/snor_car/requests/{car_application.id}"
-        f"?organization_id={snor.org.id}"
+        f"https://staging.example.test/car_reservation/requests/{car_application.id}"
+        f"?organization_id={world.org.id}"
     ) in email["body"]
     assert email["html"] is True
 
 
 def test_active_email_names_requester_trip_times_car_and_driver_to_every_recipient(
-    app, snor, sent_emails
+    app, world, sent_emails
 ):
-    car_application = request_with_car_assigned(snor)
+    car_application = request_with_car_assigned(world)
     car_application.departure_datetime = datetime.datetime(2026, 12, 25, 8, 30)
     car_application.return_datetime = datetime.datetime(2026, 12, 26, 17, 0)
     car_application.status = "active"
     car_application.save()
 
     with app.app_context():
-        utils.snor_car_email.send_snor_car_email(
+        utils.car_reservation_email.send_car_reservation_email(
             str(car_application.id),
             "active",
-            [snor.requester.email, snor.driver.email],
+            [world.requester.email, world.driver.email],
             "https://staging.example.test",
         )
 
     assert [email["receiver"] for email in sent_emails] == [
-        snor.requester.email,
-        snor.driver.email,
+        world.requester.email,
+        world.driver.email,
     ]
     body = sent_emails[0]["body"]
     assert "Requester One" in body
@@ -1340,60 +1340,60 @@ def test_active_email_names_requester_trip_times_car_and_driver_to_every_recipie
     assert "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ" in body
 
 
-def test_denying_notifies_only_the_requester(snor, mock_redis_queue):
-    car_application = snor.submit_domestic_request()
+def test_denying_notifies_only_the_requester(world, mock_redis_queue):
+    car_application = world.submit_domestic_request()
     mock_redis_queue.reset_mock()
 
-    snor.client_for(snor.supervisor).post(
-        deny_url(snor, car_application), data={"comment": "ไม่จำเป็นต้องเดินทาง"}
+    world.client_for(world.supervisor).post(
+        deny_url(world, car_application), data={"comment": "ไม่จำเป็นต้องเดินทาง"}
     )
 
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "denied")
-    assert recipients == [snor.requester.email]
+    assert recipients == [world.requester.email]
 
 
 def test_cancelling_after_assignment_notifies_the_dispatcher_to_acknowledge(
-    snor, mock_redis_queue
+    world, mock_redis_queue
 ):
-    car_application = request_with_car_assigned(snor)
+    car_application = request_with_car_assigned(world)
     mock_redis_queue.reset_mock()
 
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, car_application), data={"reason": "งานเลื่อน"}
+    world.client_for(world.requester).post(
+        cancel_url(world, car_application), data={"reason": "งานเลื่อน"}
     )
 
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "cancel_requested")
-    assert recipients == [snor.dispatcher.email]
+    assert recipients == [world.dispatcher.email]
 
 
 def test_direct_cancel_notifies_the_requester_and_confirmed_cancel_adds_the_driver(
-    snor, mock_redis_queue
+    world, mock_redis_queue
 ):
-    before_car = snor.submit_domestic_request()
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, before_car), data={"reason": "เปลี่ยนแผน"}
+    before_car = world.submit_domestic_request()
+    world.client_for(world.requester).post(
+        cancel_url(world, before_car), data={"reason": "เปลี่ยนแผน"}
     )
 
-    jobs = snor_email_jobs(mock_redis_queue, "cancelled")
+    jobs = email_jobs(mock_redis_queue, "cancelled")
     assert [(job[0], job[2]) for job in jobs] == [
-        (str(before_car.id), [snor.requester.email])
+        (str(before_car.id), [world.requester.email])
     ]
 
-    after_car = request_with_car_assigned(snor)
-    snor.client_for(snor.requester).post(
-        cancel_url(snor, after_car), data={"reason": "งานเลื่อน"}
+    after_car = request_with_car_assigned(world)
+    world.client_for(world.requester).post(
+        cancel_url(world, after_car), data={"reason": "งานเลื่อน"}
     )
     mock_redis_queue.reset_mock()
-    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, after_car))
+    world.client_for(world.dispatcher).post(confirm_cancel_url(world, after_car))
 
-    jobs = snor_email_jobs(mock_redis_queue)
+    jobs = email_jobs(mock_redis_queue)
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(after_car.id), "cancelled")
-    assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])
+    assert sorted(recipients) == sorted([world.requester.email, world.driver.email])

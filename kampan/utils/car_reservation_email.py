@@ -1,4 +1,4 @@
-"""แจ้งเตือนอีเมลของระบบจองรถ snor
+"""แจ้งเตือนอีเมลของระบบจองรถออนไลน์
 
 notify() คำนวณผู้รับตามเหตุการณ์แล้วส่ง job เข้าคิว (ส่งเฉพาะ id/string ไม่ส่ง document)
 """
@@ -12,7 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 from kampan import models
 from kampan.web import redis_rq
 
-from . import config, email_utils, snor_car_flow, template_filters
+from . import config, email_utils, car_reservation_flow, template_filters
 
 logger = logging.getLogger(__name__)
 
@@ -35,45 +35,45 @@ _env = Environment(
 _env.filters["thai_datetime"] = template_filters.format_thai_datetime_short_month
 
 
-def _division_heads(snor_request):
-    if snor_request.division is None:
+def _division_heads(reservation):
+    if reservation.division is None:
         return []
     return [
         member.user
         for member in models.OrganizationUserRole.objects(
-            organization=snor_request.organization,
+            organization=reservation.organization,
             status="active",
             roles="head",
-            division=snor_request.division,
+            division=reservation.division,
         )
-        if member.user is not None and member.user != snor_request.creator
+        if member.user is not None and member.user != reservation.creator
     ]
 
 
-def _position_people(snor_request, position_key):
-    position = models.CarFlowPosition.objects(
-        organization=snor_request.organization, position_key=position_key
+def _position_people(reservation, position_key):
+    position = models.CarReservationPosition.objects(
+        organization=reservation.organization, position_key=position_key
     ).first()
     if position is None:
         return []
     return [position.user] + list(position.delegates)
 
 
-def recipients_for(snor_request, event):
+def recipients_for(reservation, event):
     """อีเมลผู้รับของเหตุการณ์ (ไม่ซ้ำ ข้ามคนไม่มีอีเมล) เรียงตามลำดับที่พบ"""
     if event == "submitted":
-        people = _division_heads(snor_request)
+        people = _division_heads(reservation)
     elif event == "approved":
-        key = snor_car_flow.current_step_key(snor_request)
-        people = _position_people(snor_request, key) if key else []
+        key = car_reservation_flow.current_step_key(reservation)
+        people = _position_people(reservation, key) if key else []
     elif event == "active":
-        people = [snor_request.creator, snor_request.driver]
+        people = [reservation.creator, reservation.driver]
     elif event == "denied":
-        people = [snor_request.creator]
+        people = [reservation.creator]
     elif event == "cancel_requested":
-        people = _position_people(snor_request, "dispatcher")
+        people = _position_people(reservation, "dispatcher")
     elif event == "cancelled":
-        people = [snor_request.creator, snor_request.driver]
+        people = [reservation.creator, reservation.driver]
     else:
         people = []
 
@@ -85,14 +85,14 @@ def recipients_for(snor_request, event):
     return emails
 
 
-def notify(snor_request, event):
-    recipients = recipients_for(snor_request, event)
+def notify(reservation, event):
+    recipients = recipients_for(reservation, event)
     if not recipients:
         return None
     return redis_rq.redis_queue.queue.enqueue(
-        send_snor_car_email,
+        send_car_reservation_email,
         args=(
-            str(snor_request.id),
+            str(reservation.id),
             event,
             recipients,
             email_utils.get_host_url(current_app.config),
@@ -102,38 +102,38 @@ def notify(snor_request, event):
     )
 
 
-def _context(snor_request, host_url):
+def _context(reservation, host_url):
     link = (
-        f"{host_url}/snor_car/requests/{snor_request.id}"
-        f"?organization_id={snor_request.organization.id}"
+        f"{host_url}/car_reservation/requests/{reservation.id}"
+        f"?organization_id={reservation.organization.id}"
     )
     return {
-        "requester_name": snor_request.creator.get_name(),
-        "request_type_label": dict(models.snor_car_requests.SNOR_REQUEST_TYPES)[
-            snor_request.request_type
+        "requester_name": reservation.creator.get_name(),
+        "request_type_label": dict(models.car_reservations.RESERVATION_TYPES)[
+            reservation.request_type
         ],
-        "destination": snor_request.location,
-        "departure": snor_request.departure_datetime,
-        "return_at": snor_request.return_datetime,
-        "status_label": dict(models.snor_car_requests.SNOR_REQUEST_STATUS)[
-            snor_request.status
+        "destination": reservation.location,
+        "departure": reservation.departure_datetime,
+        "return_at": reservation.return_datetime,
+        "status_label": dict(models.car_reservations.RESERVATION_STATUS)[
+            reservation.status
         ],
-        "car_plate": snor_request.car.license_plate if snor_request.car else "",
-        "driver_name": snor_request.driver.get_name() if snor_request.driver else "",
+        "car_plate": reservation.car.license_plate if reservation.car else "",
+        "driver_name": reservation.driver.get_name() if reservation.driver else "",
         "link": link,
     }
 
 
-def send_snor_car_email(request_id, event, recipients, host_url):
+def send_car_reservation_email(request_id, event, recipients, host_url):
     if event not in EVENTS:
-        raise ValueError(f"unknown snor car email event: {event}")
-    snor_request = models.SnorCarRequest.objects(id=request_id).first()
-    if snor_request is None:
-        logger.warning("snor car request %s not found for email", request_id)
+        raise ValueError(f"unknown car reservation email event: {event}")
+    reservation = models.CarReservation.objects(id=request_id).first()
+    if reservation is None:
+        logger.warning("car reservation %s not found for email", request_id)
         return False
 
-    module = _env.get_template(f"snor_car/{event}.html").make_module(
-        _context(snor_request, host_url)
+    module = _env.get_template(f"car_reservation/{event}.html").make_module(
+        _context(reservation, host_url)
     )
     subject = module.subject
     body = str(module).strip()
@@ -141,7 +141,7 @@ def send_snor_car_email(request_id, event, recipients, host_url):
     setting = current_app.config if has_app_context() else config.get_settings()
     smtp = email_utils.PSUSMTP(setting)
     if not smtp.login():
-        logger.warning("snor car email cannot login to smtp")
+        logger.warning("car reservation email cannot login to smtp")
         return False
     # PSUSMTP ส่งได้ทีละผู้รับ จึงส่งแยกฉบับต่อคน
     for recipient in recipients:

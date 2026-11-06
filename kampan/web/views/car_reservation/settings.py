@@ -27,7 +27,7 @@ def active_members(organization):
 
 def current_form_data(organization):
     data = {}
-    for position in models.CarFlowPosition.objects(organization=organization):
+    for position in models.CarReservationPosition.objects(organization=organization):
         data[f"{position.position_key}_user"] = (
             str(position.user.id) if position.user else ""
         )
@@ -38,9 +38,9 @@ def current_form_data(organization):
 
 
 def save_positions(organization, form, members):
-    for key, _label in models.SNOR_POSITIONS:
+    for key, _label in models.RESERVATION_POSITIONS:
         user_id = form[f"{key}_user"].data
-        position = models.CarFlowPosition.objects(
+        position = models.CarReservationPosition.objects(
             organization=organization, position_key=key
         ).first()
 
@@ -49,7 +49,7 @@ def save_positions(organization, form, members):
                 position.delete()
             continue
 
-        position = position or models.CarFlowPosition(
+        position = position or models.CarReservationPosition(
             organization=organization, position_key=key
         )
         position.user = members[user_id]
@@ -69,7 +69,7 @@ def positions():
     member_choices = [
         (user_id, user.get_name()) for user_id, user in members.items()
     ]
-    form_class = forms.snor_car.build_position_form(
+    form_class = forms.car_reservation.build_position_form(
         member_choices, driver_ids
     )
     form = form_class(data=current_form_data(organization))
@@ -79,14 +79,14 @@ def positions():
         flash("บันทึกผู้ดำรงตำแหน่งแล้ว", "success")
         return redirect(
             url_for(
-                "snor_car.settings.positions",
+                "car_reservation.settings.positions",
                 organization_id=organization.id,
             )
         )
 
     return render_template(
-        "/snor_car/settings/positions.html",
+        "/car_reservation/settings/positions.html",
         organization=organization,
         form=form,
-        positions=models.SNOR_POSITIONS,
+        positions=models.RESERVATION_POSITIONS,
     )

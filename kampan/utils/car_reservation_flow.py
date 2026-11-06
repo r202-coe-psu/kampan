@@ -1,19 +1,19 @@
-"""ขั้นอนุมัติใบขอใช้รถของ org แบบ snor (กองกายภาพฯ)
+"""ขั้นอนุมัติใบขอใช้รถของระบบจองรถออนไลน์
 
 เส้นทางกำหนดในโค้ดตามประเภทใบขอ ตอนยื่นจะตรึงเส้นทางลงคำขอ (route_snapshot)
-เปลี่ยน SNOR_ROUTES ภายหลังแล้วคำขอเก่ายังเดินตามเส้นทางเดิม
+เปลี่ยน RESERVATION_ROUTES ภายหลังแล้วคำขอเก่ายังเดินตามเส้นทางเดิม
 """
 
 import datetime
 
 from kampan import models, utils
 
-SNOR_STEP_LABELS = {
+RESERVATION_STEP_LABELS = {
     "supervisor": "ผู้บังคับบัญชา",
-    **dict(models.SNOR_POSITIONS),
+    **dict(models.RESERVATION_POSITIONS),
 }
 
-SNOR_ROUTES = {
+RESERVATION_ROUTES = {
     ("domestic", "in_province"): [
         "supervisor",
         "dispatcher",
@@ -89,17 +89,17 @@ def is_short_notice(organization, request_type, departure_date, today=None):
 
 def route_for(request_type, province_scope):
     if request_type == "domestic":
-        return list(SNOR_ROUTES[(request_type, province_scope)])
-    return list(SNOR_ROUTES[(request_type, None)])
+        return list(RESERVATION_ROUTES[(request_type, province_scope)])
+    return list(RESERVATION_ROUTES[(request_type, None)])
 
 
 def step_label(step_key):
-    return SNOR_STEP_LABELS.get(step_key, step_key)
+    return RESERVATION_STEP_LABELS.get(step_key, step_key)
 
 
 def _log(app, action, actor, step_key="", comment=""):
     app.audit_logs.append(
-        models.snor_car_requests.SnorAuditLog(
+        models.car_reservations.ReservationAuditLog(
             action=action,
             actor=actor,
             step_key=step_key,
@@ -159,18 +159,18 @@ def can_act(app, user):
         return False
     if key == "supervisor":
         return _is_division_head(app, user)
-    return models.CarFlowPosition.can_act(app.organization, key, user)
+    return models.CarReservationPosition.can_act(app.organization, key, user)
 
 
 def can_confirm_cancel(app, user):
-    return app.status == "cancel_requested" and models.CarFlowPosition.can_act(
+    return app.status == "cancel_requested" and models.CarReservationPosition.can_act(
         app.organization, "dispatcher", user
     )
 
 
 def inbox_for(organization, user):
     """คำขอที่รออนุมัติหรือรอรับทราบการยกเลิก และ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
-    waiting = models.SnorCarRequest.objects(
+    waiting = models.CarReservation.objects(
         organization=organization, status__in=["pending", "cancel_requested"]
     ).order_by("departure_datetime")
     return [app for app in waiting if can_act(app, user) or can_confirm_cancel(app, user)]
@@ -191,7 +191,7 @@ def assignable_drivers(organization):
 
 def _overlapping_bookings(app, **resource):
     """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
-    return models.SnorCarRequest.objects(
+    return models.CarReservation.objects(
         organization=app.organization,
         status__in=["pending", "active", "cancel_requested"],
         id__ne=app.id,
@@ -224,7 +224,7 @@ def approve(app, user, comment="", car=None, driver=None):
         if comment:
             audit_comment += f" ({comment})"
     app.step_approvals.append(
-        models.snor_car_requests.StepApproval(
+        models.car_reservations.StepApproval(
             step_key=key,
             label=step_label(key),
             decision="approved",
@@ -248,7 +248,7 @@ def deny(app, user, comment):
 
     key = current_step_key(app)
     app.step_approvals.append(
-        models.snor_car_requests.StepApproval(
+        models.car_reservations.StepApproval(
             step_key=key,
             label=step_label(key),
             decision="denied",

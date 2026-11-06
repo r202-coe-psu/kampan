@@ -2,34 +2,34 @@
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
   <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
     <div class="py-2 border-b mb-2">
-      <h1 class="text-tns-black font-bold text-3xl text-center">DIIS INVENTORY</h1>
+      <h1 class="text-tns-black font-bold text-3xl text-center">ระบบจองรถ</h1>
     </div>
     {% if organization %}
     <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'snor_car.requests.index' else '' }}"
-        href="{{ url_for('snor_car.requests.index', organization_id=organization.id ) }}">
+      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.index' else '' }}"
+        href="{{ url_for('car_reservation.requests.index', organization_id=organization.id ) }}">
         <i class="ph ph-list-bullets"></i> คำขอของฉัน
       </a>
     </li>
     {% if inbox_count %}
     <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'snor_car.requests.inbox' else '' }}"
-        href="{{ url_for('snor_car.requests.inbox', organization_id=organization.id ) }}">
+      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.inbox' else '' }}"
+        href="{{ url_for('car_reservation.requests.inbox', organization_id=organization.id ) }}">
         <i class="ph ph-tray"></i> รายการรออนุมัติ
         <span class="badge badge-error badge-sm" data-testid="inbox-count">{{ inbox_count }}</span>
       </a>
     </li>
     {% endif %}
     <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'snor_car.requests.create' else '' }}"
-        href="{{ url_for('snor_car.requests.create', organization_id=organization.id ) }}">
+      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.create' else '' }}"
+        href="{{ url_for('car_reservation.requests.create', organization_id=organization.id ) }}">
         <i class="ph ph-hand-arrow-up"></i> ยื่นคำขอ
       </a>
     </li>
     {% if current_user.has_organization_roles("admin") %}
     <li>
-      <a class="{{ 'menu-active' if '/snor_car/settings' in request.path else '' }}"
-        href="{{ url_for('snor_car.settings.positions', organization_id=organization.id ) }}">
+      <a class="{{ 'menu-active' if '/car_reservation/settings' in request.path else '' }}"
+        href="{{ url_for('car_reservation.settings.positions', organization_id=organization.id ) }}">
         <i class="ph ph-user-gear"></i> ตั้งค่าผู้อนุมัติ
       </a>
     </li>
