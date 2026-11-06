@@ -5,9 +5,14 @@ import pytest
 import mongoengine as me
 import mongomock
 from flask import Flask
+from mongomock import gridfs as mongomock_gridfs
 
 from kampan import models
 from kampan.web import acl, oauth2, redis_rq, views
+
+
+# ImageField เก็บไฟล์ผ่าน GridFS ซึ่งไม่รู้จัก mongomock เอง ต้องเปิด integration ก่อน
+mongomock_gridfs.enable_gridfs_integration()
 
 
 @pytest.fixture(scope="session")

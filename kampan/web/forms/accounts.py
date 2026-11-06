@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import fields, validators
 from .fields import TagListField, TextListField
 
-from flask_wtf.file import FileAllowed
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_mongoengine.wtf import model_form
 from kampan import models
 
@@ -38,6 +38,16 @@ class ProfileForm(BaseProfileForm):
     # thai_first_name = fields.StringField("ชื่อ")
     # thai_last_name = fields.StringField("นามสกุล")
     pass
+
+
+class PictureForm(FlaskForm):
+    picture = FileField(
+        "รูปโปรไฟล์",
+        validators=[
+            FileRequired("กรุณาเลือกไฟล์รูปภาพ"),
+            FileAllowed(["jpg", "jpeg", "png"], "อนุญาตเฉพาะไฟล์ภาพ JPEG หรือ PNG"),
+        ],
+    )
 
 
 BaseUserSettingForm = model_form(

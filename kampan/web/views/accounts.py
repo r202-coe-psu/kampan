@@ -207,6 +207,41 @@ def edit_profile():
     return redirect(url_for("accounts.index"))
 
 
+@module.route("/accounts/picture", methods=["POST"])
+@login_required
+def upload_picture():
+    form = forms.accounts.PictureForm()
+    if not form.validate_on_submit():
+        return redirect(url_for("accounts.index"))
+
+    user = current_user._get_current_object()
+    upload = form.picture.data
+    if user.picture:
+        user.picture.replace(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    else:
+        user.picture.put(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    user.save()
+
+    return redirect(url_for("accounts.index"))
+
+
+@module.route("/accounts/<user_id>/picture")
+def user_picture(user_id):
+    user = models.User.objects(id=user_id).first()
+    if not user or not user.picture:
+        return abort(404)
+
+    return send_file(
+        user.picture,
+        download_name=user.picture.filename,
+        mimetype=user.picture.content_type,
+    )
+
+
 @module.route("/accounts/<user_id>/picture/<filename>", methods=["GET", "POST"])
 def picture(user_id, filename):
     user = models.User.objects.get(id=user_id)
