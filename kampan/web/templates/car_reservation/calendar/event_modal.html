@@ -14,15 +14,13 @@
 <dialog class="modal modal-open" data-role="calendar-event-modal">
   <div class="modal-box w-11/12 max-w-2xl">
     <form method="dialog">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="this.closest('dialog').remove()">✕</button>
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="ปิด" onclick="this.closest('dialog').remove()">✕</button>
     </form>
-    <h3 class="font-bold text-xl text-primary mb-4 border-b pb-2 flex flex-wrap items-center gap-2">
+    <h3 class="font-bold text-xl text-primary mb-4 border-b border-base-300 pb-2 flex flex-wrap items-center gap-2">
       <i class="ph ph-car-profile text-2xl"></i>
       <span>{{ reservation.get_request_type_display() }}</span>
       {{ status_badge.render(reservation) }}
-      {% if reservation.is_urgent %}
-      <span class="badge badge-error badge-sm whitespace-nowrap font-medium">เร่งด่วน</span>
-      {% endif %}
+      {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
     </h3>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -39,7 +37,7 @@
     </div>
 
     <h4 class="mt-4 font-semibold">สถานะการอนุมัติ</h4>
-    <ul class="steps steps-vertical mt-2">
+    <ul class="steps steps-vertical mt-2 w-full">
       {% for step in steps %}
       <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
           data-state="{{ step.state }}">{{ step.label }}</li>
