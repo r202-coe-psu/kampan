@@ -278,11 +278,14 @@ def deny(request_id):
 def cancel(request_id):
     snor_request = get_request_or_404(request_id)
     form = forms.snor_car.CancelRequestForm()
-    snor.cancel(
-        snor_request,
-        current_user._get_current_object(),
-        reason=form.reason.data or "",
-    )
+    try:
+        snor.cancel(
+            snor_request,
+            current_user._get_current_object(),
+            reason=form.reason.data or "",
+        )
+    except snor.FlowError:
+        abort(403)
     flash("ยกเลิกคำขอเรียบร้อยแล้ว", "success")
     return redirect(
         url_for(

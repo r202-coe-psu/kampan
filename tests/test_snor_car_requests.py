@@ -1031,3 +1031,19 @@ def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
     )
     assert "Secretary Assistant" in html
     assert not inbox_shows(snor, snor.dispatcher, car_application)
+
+
+def test_only_the_creator_can_cancel_a_request(snor):
+    before_car = snor.submit_domestic_request()
+    after_car = request_with_car_assigned(snor)
+
+    for car_application in (before_car, after_car):
+        status = car_application.status
+        for outsider in (snor.stranger, snor.supervisor, snor.dispatcher):
+            response = snor.client_for(outsider).post(
+                cancel_url(snor, car_application), data={"reason": ""}
+            )
+            # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือสถานะไม่เปลี่ยน
+            assert response.status_code in (302, 403)
+            car_application.reload()
+            assert car_application.status == status
