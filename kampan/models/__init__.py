@@ -49,6 +49,7 @@ from .requisition_timeline import (
 )
 from .export_file import ExportFile
 from .car_holidays import CarHoliday
+from .snor_car_requests import SnorCarRequest
 
 db = MongoEngine()
 

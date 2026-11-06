@@ -12,12 +12,8 @@ CAR_APPLICATION_STATUS = [
     ("denied by director", "ปฏิเสธ"),
     ("denied by admin", "ปฏิเสธ"),
     ("disactive", "ยกเลิก"),
-    # สถานะของ flow แบบ snor (ดู kampan/utils/car_flows/snor.py)
-    ("pending", "รออนุมัติ"),
-    ("denied", "ไม่อนุมัติ"),
-    ("cancel_requested", "ขอยกเลิก"),
-    ("cancelled", "ยกเลิก"),
 ]
+
 
 MOTORCYCLE_APPLICATION_STATUS = [
     ("pending", "รอการอนุมัติ"),
@@ -65,51 +61,6 @@ class VehicleApplication:
     division = me.ReferenceField("Division", dbref=True)
 
 
-SNOR_REQUEST_TYPES = [
-    ("domestic", "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"),
-    ("airport", "ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่"),
-    ("welfare", "ใบขอใช้รถประเภทสวัสดิการบุคลากร"),
-    ("abroad", "ขอใช้รถยนต์พร้อมพนักงานขับรถไปปฏิบัติงานต่างประเทศ"),
-]
-
-PROVINCE_SCOPES = [
-    ("in_province", "ภายในจังหวัด"),
-    ("out_of_province", "ต่างจังหวัด"),
-]
-
-STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
-
-AUDIT_ACTIONS = [
-    ("submitted", "ยื่นคำขอ"),
-    ("approved", "อนุมัติ"),
-    ("denied", "ไม่อนุมัติ"),
-    ("cancelled", "ยกเลิก"),
-]
-
-
-class StepApproval(me.EmbeddedDocument):
-    step_key = me.StringField(required=True)
-    label = me.StringField()
-    decision = me.StringField(choices=STEP_DECISIONS)
-    decided_by = me.ReferenceField("User", dbref=True)
-    decided_at = me.DateTimeField()
-    comment = me.StringField(default="")
-
-
-class CarApplicationAuditLog(me.EmbeddedDocument):
-    """ประวัติของคำขอ: ใคร ทำอะไร ขั้นไหน เมื่อไร"""
-
-    action = me.StringField(choices=AUDIT_ACTIONS, required=True)
-    actor = me.ReferenceField("User", dbref=True)
-    created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
-    step_key = me.StringField(default="")
-    step_label = me.StringField(default="")
-    comment = me.StringField(default="")
-
-    def get_action_display(self):
-        return dict(AUDIT_ACTIONS).get(self.action, self.action)
-
-
 class CarApplicationApproval(me.EmbeddedDocument):
     approved_by = me.ReferenceField("User", dbref=True)
     approved_at = me.DateTimeField()
@@ -136,16 +87,6 @@ class CarApplication(VehicleApplication, me.Document):
     status = me.StringField(default="pending on header", choices=CAR_APPLICATION_STATUS)
     last_mileage = me.IntField(min_value=0)
     last_mileage_before = me.IntField(min_value=0)
-
-    # flow แบบ snor (ใบ DIIS เว้นว่างไว้)
-    request_type = me.StringField(choices=SNOR_REQUEST_TYPES)  # None = ใบ DIIS
-    province_scope = me.StringField(choices=PROVINCE_SCOPES)
-    supervisor = me.ReferenceField("User", dbref=True)
-    requester_unit = me.StringField(default="", max_length=256)  # คณะ/หน่วยงานของผู้ขอ
-    route_snapshot = me.ListField(me.StringField())  # เส้นทางอนุมัติที่ตรึงไว้ตอนยื่น
-    current_step = me.IntField(default=0)
-    step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
-    audit_logs = me.ListField(me.EmbeddedDocumentField(CarApplicationAuditLog))
 
     # Embedded approvals
     header_approval = me.EmbeddedDocumentField(CarApplicationApproval)

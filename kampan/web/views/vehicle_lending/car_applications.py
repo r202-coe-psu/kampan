@@ -257,7 +257,6 @@ def get_car_applications():
 
     tone_of_event = {
         "active": "success",
-        "pending": "warning",
         "pending on header": "warning",
         "pending on director": "warning",
         "pending on admin": "warning",

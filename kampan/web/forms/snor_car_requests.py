@@ -42,7 +42,7 @@ class SnorCarRequestForm(FlaskForm):
     )
     province_scope = fields.SelectField(
         "พื้นที่เดินทาง",
-        choices=models.vehicle_applications.PROVINCE_SCOPES,
+        choices=models.snor_car_requests.PROVINCE_SCOPES,
         validators=[validators.Optional()],
     )
 

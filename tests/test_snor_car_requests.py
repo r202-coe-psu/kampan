@@ -85,7 +85,7 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
         )
         assert response.status_code == 302, response.get_data(as_text=True)
         return (
-            models.vehicle_applications.CarApplication.objects(creator=s.requester)
+            models.SnorCarRequest.objects(creator=s.requester)
             .order_by("-id")
             .first()
         )
@@ -174,7 +174,7 @@ def test_a_head_cannot_approve_their_own_request_but_another_head_can(
         data=snor.request_data(),
     )
     assert response.status_code == 302
-    car_application = models.vehicle_applications.CarApplication.objects(
+    car_application = models.SnorCarRequest.objects(
         creator=snor.supervisor
     ).first()
 
@@ -207,7 +207,7 @@ def test_submission_is_refused_when_the_division_has_no_head(snor, create_user):
         as_text=True
     )
     assert (
-        models.vehicle_applications.CarApplication.objects(creator=lonely).count() == 0
+        models.SnorCarRequest.objects(creator=lonely).count() == 0
     )
 
 

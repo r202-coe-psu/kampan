@@ -23,12 +23,12 @@ snor = utils.car_flows.snor
 
 def get_car_application_or_404(car_application_id):
     try:
-        car_application = models.vehicle_applications.CarApplication.objects(
+        car_application = models.SnorCarRequest.objects(
             id=car_application_id, organization=g.organization
         ).first()
     except Exception:
         car_application = None
-    if car_application is None or not car_application.request_type:
+    if car_application is None:
         abort(404)
     return car_application
 
@@ -38,7 +38,7 @@ def get_car_application_or_404(car_application_id):
 def create():
     organization = g.organization
     request_type = request.args.get("type", "domestic")
-    if request_type not in dict(models.vehicle_applications.SNOR_REQUEST_TYPES):
+    if request_type not in dict(models.snor_car_requests.SNOR_REQUEST_TYPES):
         abort(404)
 
     form = forms.snor_car_requests.SnorCarRequestForm()
@@ -53,13 +53,12 @@ def create():
     if submitted and not snor.has_division_head(organization, division, excluding=user):
         flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
     elif submitted:
-        car_application = models.vehicle_applications.CarApplication(
+        car_application = models.SnorCarRequest(
             organization=organization,
             division=division,
             creator=user,
             updater=user,
             request_type=request_type,
-            using_type="general",  # ช่องของ flow DIIS ที่ต้องมีค่าตาม choices; snor ใช้ request_type แทน
             province_scope=form.province_scope.data if request_type == "domestic" else None,
             requester_unit=form.requester_unit.data,
             phone=form.phone.data,
@@ -88,7 +87,7 @@ def create():
         organization=organization,
         form=form,
         request_type=request_type,
-        request_type_label=dict(models.vehicle_applications.SNOR_REQUEST_TYPES)[
+        request_type_label=dict(models.snor_car_requests.SNOR_REQUEST_TYPES)[
             request_type
         ],
     )

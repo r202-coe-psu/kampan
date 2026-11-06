@@ -68,7 +68,7 @@ def step_label(step_key):
 
 def _log(app, action, actor, step_key="", comment=""):
     app.audit_logs.append(
-        models.vehicle_applications.CarApplicationAuditLog(
+        models.snor_car_requests.SnorAuditLog(
             action=action,
             actor=actor,
             step_key=step_key,
@@ -137,7 +137,7 @@ def approve(app, user, comment=""):
 
     key = current_step_key(app)
     app.step_approvals.append(
-        models.vehicle_applications.StepApproval(
+        models.snor_car_requests.StepApproval(
             step_key=key,
             label=step_label(key),
             decision="approved",
@@ -161,7 +161,7 @@ def deny(app, user, comment):
 
     key = current_step_key(app)
     app.step_approvals.append(
-        models.vehicle_applications.StepApproval(
+        models.snor_car_requests.StepApproval(
             step_key=key,
             label=step_label(key),
             decision="denied",
