@@ -27,6 +27,14 @@
         <i class="ph ph-hand-arrow-up"></i> ยื่นคำขอ
       </a>
     </li>
+    {% if is_driver %}
+    <li>
+      <a class="{{ 'menu-active' if request.endpoint in ['car_reservation.tasks.index', 'car_reservation.tasks.close'] else '' }}"
+        href="{{ url_for('car_reservation.tasks.index', organization_id=organization.id ) }}">
+        <i class="ph ph-steering-wheel"></i> รายการงาน
+      </a>
+    </li>
+    {% endif %}
     <li>
       <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.calendar.index' else '' }}"
         href="{{ url_for('car_reservation.calendar.index', organization_id=organization.id ) }}">

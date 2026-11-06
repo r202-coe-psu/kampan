@@ -324,3 +324,15 @@ def test_request_detail_has_no_trip_report_before_the_task_is_closed(world):
     )
 
     assert 'data-role="trip-report"' not in response.get_data(as_text=True)
+
+
+def test_task_menu_is_in_the_sidebar_only_for_drivers(world):
+    home = f"/car_reservation/requests/?organization_id={world.org.id}"
+
+    as_driver = world.client_for(world.driver).get(home).get_data(as_text=True)
+    as_staff = world.client_for(world.requester).get(home).get_data(as_text=True)
+    as_admin = world.client_for(world.org_admin).get(home).get_data(as_text=True)
+
+    assert f"{BASE}/?organization_id={world.org.id}" in as_driver
+    assert f"{BASE}/" not in as_staff
+    assert f"{BASE}/" not in as_admin

@@ -22,6 +22,19 @@ def inject_inbox():
     }
 
 
+@module.context_processor
+def inject_is_driver():
+    """เห็นเมนูรายการงานไหม: เฉพาะพนักงานขับรถ (role driver) ของ org ที่ดูอยู่"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"is_driver": False}
+    return {
+        "is_driver": utils.car_reservation_flow.has_role(
+            organization, current_user._get_current_object(), "driver"
+        )
+    }
+
+
 # ไอคอนและคำแนะนำสั้น ๆ ของใบขอแต่ละประเภท ใช้ในหน้าและ modal เลือกประเภท (ชื่อใบขอมาจาก RESERVATION_TYPES)
 REQUEST_TYPE_CARDS = {
     "domestic": ("ph-map-trifold", "ยื่นล่วงหน้า 3–30 วันทำการ"),
