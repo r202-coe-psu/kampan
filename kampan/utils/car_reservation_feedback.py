@@ -1,3 +1,5 @@
+from kampan import models
+
 """แบบประเมินความพึงพอใจของระบบจองรถ (spec ข้อ 5.6): คำถามตายตัวในโค้ด"""
 
 # (key ของกลุ่ม, หัวข้อ, [(key ของคำถาม, ข้อความ), ...])
@@ -39,3 +41,8 @@ SCORE_MIN, SCORE_MAX = 1, 5
 def can_submit(reservation, user):
     """เฉพาะผู้ขอของใบขอนั้น และเมื่อ พขร. ปิดงานแล้วเท่านั้น"""
     return reservation.status == "completed" and reservation.creator == user
+
+
+def feedback_of(reservation):
+    """ผลประเมินของใบขอ (None ถ้ายังไม่ประเมิน)"""
+    return models.CarReservationFeedback.objects(reservation=reservation).first()

@@ -31,6 +31,14 @@ def form(reservation_id):
         reservation, current_user._get_current_object()
     ):
         abort(403)
+    detail_url = url_for(
+        "car_reservation.requests.detail",
+        request_id=reservation.id,
+        organization_id=g.organization.id,
+    )
+    if utils.car_reservation_feedback.feedback_of(reservation) is not None:
+        flash("ประเมินแล้ว", "warning")
+        return redirect(detail_url)
     form = forms.car_reservation_feedback.FeedbackForm()
     if form.validate_on_submit():
         models.CarReservationFeedback(
@@ -48,13 +56,7 @@ def form(reservation_id):
             comment=form.comment.data or "",
         ).save()
         flash("ขอบคุณสำหรับการประเมิน", "success")
-        return redirect(
-            url_for(
-                "car_reservation.requests.detail",
-                request_id=reservation.id,
-                organization_id=g.organization.id,
-            )
-        )
+        return redirect(detail_url)
     return render_template(
         "/car_reservation/feedback/form.html",
         organization=g.organization,

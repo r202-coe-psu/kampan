@@ -149,6 +149,67 @@ def test_survey_is_closed_until_the_trip_is_completed(world, status):
     assert models.CarReservationFeedback.objects.count() == 0
 
 
+def test_a_second_submit_is_refused_and_the_first_response_is_kept(world):
+    reservation = world.reservation()
+    client = world.client_for(world.requester)
+    client.post(world.url(reservation), data=all_scores(5))
+
+    second = client.post(
+        world.url(reservation), data=all_scores(1), follow_redirects=True
+    )
+
+    assert "ประเมินแล้ว" in second.get_data(as_text=True)
+    assert models.CarReservationFeedback.objects(reservation=reservation).count() == 1
+    saved = models.CarReservationFeedback.objects(reservation=reservation).first()
+    assert saved.score_of("overall") == 5
+
+
+def test_opening_the_form_again_after_answering_shows_it_is_already_done(world):
+    reservation = world.reservation()
+    client = world.client_for(world.requester)
+    client.post(world.url(reservation), data=all_scores(5))
+
+    response = client.get(world.url(reservation), follow_redirects=True)
+
+    assert "ประเมินแล้ว" in response.get_data(as_text=True)
+
+
+@pytest.mark.parametrize("missing", ["vehicle_cleanliness", "driver_route_study", "overall"])
+def test_every_score_question_is_required(world, missing):
+    reservation = world.reservation()
+    data = all_scores(4)
+    del data[missing]
+
+    response = world.client_for(world.requester).post(world.url(reservation), data=data)
+
+    assert response.status_code == 200
+    assert "กรุณาให้คะแนน" in response.get_data(as_text=True)
+    assert models.CarReservationFeedback.objects.count() == 0
+
+
+@pytest.mark.parametrize("bad", ["0", "6", "abc"])
+def test_scores_outside_1_to_5_are_refused(world, bad):
+    reservation = world.reservation()
+
+    response = world.client_for(world.requester).post(
+        world.url(reservation), data=all_scores(4, overall=bad)
+    )
+
+    assert response.status_code == 200
+    assert models.CarReservationFeedback.objects.count() == 0
+
+
+def test_the_comment_is_optional(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.requester).post(
+        world.url(reservation), data=all_scores(3)
+    )
+
+    assert response.status_code == 302
+    assert models.CarReservationFeedback.objects.first().comment == ""
+
+
 def test_a_reservation_of_another_organization_is_not_found(world, create_org):
     other_org = create_org("Other Org")
     other_org.enabled_modules = ["car_reservation"]
