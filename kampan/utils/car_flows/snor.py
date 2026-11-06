@@ -121,3 +121,25 @@ def approve(app, user, comment=""):
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
     app.save()
+
+
+def deny(app, user, comment):
+    if not can_act(app, user):
+        raise FlowError("ไม่มีสิทธิ์ดำเนินการขั้นนี้")
+    if not comment or not comment.strip():
+        raise FlowError("ต้องระบุเหตุผลที่ไม่อนุมัติ")
+
+    key = current_step_key(app)
+    app.step_approvals.append(
+        models.vehicle_applications.StepApproval(
+            step_key=key,
+            label=step_label(key),
+            decision="denied",
+            decided_by=user,
+            decided_at=datetime.datetime.now(),
+            comment=comment,
+        )
+    )
+    _log(app, "denied", user, step_key=key, comment=comment)
+    app.status = "denied"
+    app.save()

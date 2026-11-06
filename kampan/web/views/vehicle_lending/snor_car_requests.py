@@ -134,6 +134,7 @@ def detail(car_application_id):
         current_step_label=snor.step_label(current_key) if current_key else "",
         can_act=snor.can_act(car_application, current_user._get_current_object()),
         form=forms.snor_car_requests.ApprovalDecisionForm(),
+        deny_form=forms.snor_car_requests.DenyDecisionForm(),
     )
 
 
@@ -162,3 +163,30 @@ def approve(car_application_id):
             organization_id=g.organization.id,
         )
     )
+
+
+@module.route("/<car_application_id>/deny", methods=["POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def deny(car_application_id):
+    car_application = get_car_application_or_404(car_application_id)
+    form = forms.snor_car_requests.DenyDecisionForm()
+    redirect_to_detail = redirect(
+        url_for(
+            "vehicle_lending.snor_car_requests.detail",
+            car_application_id=car_application.id,
+            organization_id=g.organization.id,
+        )
+    )
+    if not snor.can_act(car_application, current_user._get_current_object()):
+        abort(403)
+    if not form.validate_on_submit():
+        flash("กรุณาระบุเหตุผลที่ไม่อนุมัติ", "danger")
+        return redirect_to_detail
+
+    snor.deny(
+        car_application,
+        current_user._get_current_object(),
+        comment=form.comment.data,
+    )
+    flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
+    return redirect_to_detail

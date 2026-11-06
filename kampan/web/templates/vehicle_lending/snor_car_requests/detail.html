@@ -42,13 +42,32 @@
   </ul>
 
   {% if can_act %}
-  <form method="post"
-        action="{{ url_for('vehicle_lending.snor_car_requests.approve', car_application_id=car_application.id, organization_id=organization.id) }}"
-        class="mt-4 flex items-end gap-2">
-    {{ form.csrf_token }}
-    {{ renderer.render_field(form.comment) }}
-    <button type="submit" class="btn btn-success">อนุมัติ</button>
-  </form>
+  <div class="mt-4 flex items-end gap-2">
+    <form method="post"
+          action="{{ url_for('vehicle_lending.snor_car_requests.approve', car_application_id=car_application.id, organization_id=organization.id) }}"
+          class="flex items-end gap-2">
+      {{ form.csrf_token }}
+      {{ renderer.render_field(form.comment) }}
+      <button type="submit" class="btn btn-success">อนุมัติ</button>
+    </form>
+    <button type="button" class="btn btn-error btn-soft"
+            onclick="document.getElementById('deny-modal').showModal()">ไม่อนุมัติ</button>
+  </div>
+
+  <dialog id="deny-modal" class="modal">
+    <form method="post"
+          action="{{ url_for('vehicle_lending.snor_car_requests.deny', car_application_id=car_application.id, organization_id=organization.id) }}"
+          class="modal-box">
+      <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
+      {{ deny_form.csrf_token }}
+      {{ renderer.render_field(deny_form.comment) }}
+      <div class="modal-action">
+        <button type="button" class="btn"
+                onclick="document.getElementById('deny-modal').close()">ยกเลิก</button>
+        <button type="submit" class="btn btn-error">ยืนยันไม่อนุมัติ</button>
+      </div>
+    </form>
+  </dialog>
   {% endif %}
 </div>
 {% endblock %}

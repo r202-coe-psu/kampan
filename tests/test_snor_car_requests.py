@@ -271,3 +271,69 @@ def test_global_admin_cannot_approve_a_step_they_do_not_hold(
     assert car_application.status == "pending"
     assert car_application.current_step == 0
     assert len(car_application.step_approvals) == 0
+
+
+def deny_url(snor, car_application):
+    return f"{BASE}/{car_application.id}/deny?organization_id={snor.org.id}"
+
+
+def test_current_approver_can_deny_with_a_reason_and_the_request_stops(snor):
+    car_application = snor.submit_request("domestic")
+    snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+
+    response = snor.client_for(snor.dispatcher).post(
+        deny_url(snor, car_application), data={"comment": "ไม่มีรถว่างในช่วงเวลานี้"}
+    )
+    assert response.status_code == 302
+
+    car_application.reload()
+    assert car_application.status == "denied"
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    html = page.get_data(as_text=True)
+    assert 'data-status="denied"' in html
+    assert "ไม่อนุมัติ" in html
+    assert "ไม่มีรถว่างในช่วงเวลานี้" in html
+    assert 'data-state="denied"' in html
+
+    # ปฏิเสธแล้ว ไม่มีใครอนุมัติต่อได้
+    snor.client_for(snor.holders["vehicle_unit_head"]).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    car_application.reload()
+    assert car_application.status == "denied"
+    assert len(car_application.step_approvals) == 2
+
+
+def test_member_who_is_not_the_current_approver_cannot_deny(snor):
+    car_application = snor.submit_request("domestic")
+
+    snor.client_for(snor.stranger).post(
+        deny_url(snor, car_application), data={"comment": "ขอปฏิเสธ"}
+    )
+    snor.client_for(snor.dispatcher).post(
+        deny_url(snor, car_application), data={"comment": "ยังไม่ถึงคิว"}
+    )
+
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.current_step == 0
+
+
+def test_denying_without_a_reason_is_refused(snor):
+    car_application = snor.submit_request("domestic")
+
+    response = snor.client_for(snor.supervisor).post(
+        deny_url(snor, car_application),
+        data={"comment": ""},
+        follow_redirects=True,
+    )
+
+    assert "กรุณาระบุเหตุผลที่ไม่อนุมัติ" in response.get_data(as_text=True)
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.current_step == 0

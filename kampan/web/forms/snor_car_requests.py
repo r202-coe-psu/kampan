@@ -54,3 +54,10 @@ class ApprovalDecisionForm(FlaskForm):
     comment = fields.StringField(
         "ความเห็น", validators=[validators.Optional(), validators.Length(max=516)]
     )
+
+
+class DenyDecisionForm(FlaskForm):
+    comment = fields.TextAreaField(
+        "เหตุผลที่ไม่อนุมัติ",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
