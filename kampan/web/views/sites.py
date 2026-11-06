@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from .. import models
+from . import MODULE_KEY_HOME_ENDPOINTS
 
 module = Blueprint("site", __name__)
 
@@ -62,7 +63,22 @@ def select_system():
                 )
             )
 
-        return render_template("sites/select_system.html", organization=organization)
+        enabled_modules = [
+            key for key in MODULE_KEY_HOME_ENDPOINTS if organization.has_module(key)
+        ]
+        if len(enabled_modules) == 1:
+            return redirect(
+                url_for(
+                    MODULE_KEY_HOME_ENDPOINTS[enabled_modules[0]],
+                    organization_id=organization.id,
+                )
+            )
+
+        return render_template(
+            "sites/select_system.html",
+            organization=organization,
+            enabled_modules=enabled_modules,
+        )
 
     if "admin" in current_user.roles:
         return redirect(url_for("organizations.system_organizations.index"))

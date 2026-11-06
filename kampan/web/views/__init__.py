@@ -23,6 +23,13 @@ MODULE_HOME_ENDPOINTS = {
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
 MOTORCYCLE_HOME_ENDPOINT = "vehicle_lending.motorcycle_applications.calendar"
+# หน้าแรกของแต่ละโมดูลตามคีย์ใน Organization.MODULES เรียงตามลำดับที่แสดงในหน้าเลือกระบบ
+MODULE_KEY_HOME_ENDPOINTS = {
+    "procurement": MODULE_HOME_ENDPOINTS["procurement"],
+    "inventory": INVENTORY_HOME_ENDPOINT,
+    "car": MODULE_HOME_ENDPOINTS["vehicle_lending"],
+    "motorcycle": MOTORCYCLE_HOME_ENDPOINT,
+}
 NON_MODULE_BLUEPRINTS = {"site", "accounts", "notifications", "users"}
 
 

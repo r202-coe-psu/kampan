@@ -11,6 +11,11 @@
     </div>
 
     <div class="mx-auto grid gap-4 w-full max-w-3xl lg:px-4 grid-cols-1 sm:grid-cols-2">
+      {% if not enabled_modules %}
+        <p class="col-span-full rounded-xl bg-base-200 p-6 text-center">หน่วยงานนี้ยังไม่ได้เปิดใช้ระบบใด กรุณาติดต่อผู้ดูแลระบบ</p>
+      {% endif %}
+
+      {% if 'procurement' in enabled_modules %}
       <!-- ระบบขอซื้อขอจ้าง -->
       <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
          class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
@@ -21,7 +26,9 @@
           <h3 class="text-lg sm:text-xl font-bold text-module-procurement-content">ระบบขอซื้อขอจ้าง</h3>
         </div>
       </a>
+      {% endif %}
 
+      {% if 'inventory' in enabled_modules %}
       <a href="{{ url_for('item_orders.index', organization_id=organization.id) }}"
          class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
 
@@ -32,9 +39,11 @@
           <h3 class="text-lg sm:text-xl font-bold text-module-inventory-content">ระบบเบิกวัสดุ</h3>
         </div>
       </a>
+      {% endif %}
 
       {% if current_user.get_current_division() %}
 
+        {% if 'car' in enabled_modules %}
         <!-- ระบบการขอใช้รถยนต์ -->
         <a href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
@@ -45,8 +54,9 @@
             <h3 class="text-lg sm:text-xl font-bold text-module-car-content">ระบบการขอใช้รถยนต์</h3>
           </div>
         </a>
+        {% endif %}
 
-
+        {% if 'motorcycle' in enabled_modules %}
         <!-- ระบบการขอใช้รถจักรยานยนต์ -->
         <a href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
@@ -57,6 +67,7 @@
             <h3 class="text-lg sm:text-xl font-bold text-module-motorcycle-content">ระบบการขอใช้รถจักรยานยนต์</h3>
           </div>
         </a>
+        {% endif %}
 
       {% endif %}
 
