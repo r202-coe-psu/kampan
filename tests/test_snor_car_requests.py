@@ -600,6 +600,23 @@ def test_denied_and_active_requests_appear_in_nobodys_inbox(snor):
         assert not inbox_shows(snor, user, active)
 
 
+def test_sidebar_shows_inbox_link_with_count_only_when_something_is_waiting(snor):
+    index_url = f"{BASE}/?organization_id={snor.org.id}"
+
+    quiet = snor.client_for(snor.supervisor).get(index_url).get_data(as_text=True)
+    assert "รายการรออนุมัติ" not in quiet
+
+    snor.submit_domestic_request()
+    snor.submit_domestic_request()
+
+    busy = snor.client_for(snor.supervisor).get(index_url).get_data(as_text=True)
+    assert "รายการรออนุมัติ" in busy
+    assert 'data-testid="inbox-count">2<' in busy
+    assert f"{BASE}/inbox?organization_id={snor.org.id}" in busy
+    stranger = snor.client_for(snor.stranger).get(index_url).get_data(as_text=True)
+    assert "รายการรออนุมัติ" not in stranger
+
+
 def test_inbox_never_lists_requests_of_another_organization(
     snor, create_org, assign_user_to_org
 ):

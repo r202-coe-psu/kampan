@@ -11,6 +11,15 @@
         <i class="ph ph-list-bullets"></i> คำขอของฉัน
       </a>
     </li>
+    {% if inbox_count %}
+    <li>
+      <a class="{{ 'menu-active' if request.endpoint == 'snor_car.requests.inbox' else '' }}"
+        href="{{ url_for('snor_car.requests.inbox', organization_id=organization.id ) }}">
+        <i class="ph ph-tray"></i> รายการรออนุมัติ
+        <span class="badge badge-error badge-sm" data-testid="inbox-count">{{ inbox_count }}</span>
+      </a>
+    </li>
+    {% endif %}
     <li>
       <a class="{{ 'menu-active' if request.endpoint == 'snor_car.requests.create' else '' }}"
         href="{{ url_for('snor_car.requests.create', organization_id=organization.id ) }}">
