@@ -13,6 +13,8 @@ BaseOrganizationForm = model_form(
         "created_by",
         "last_updated_by",
         "status",
+        "enabled_modules",
+        "car_flow",
     ],
     field_args={
         "name": {"label": "Name"},
@@ -23,7 +25,17 @@ BaseOrganizationForm = model_form(
 
 
 class OrganizationForm(BaseOrganizationForm):
-    pass
+    enabled_modules = fields.SelectMultipleField(
+        "ระบบที่เปิดใช้",
+        choices=models.organizations.MODULES,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput(),
+        validate_choice=True,
+    )
+    car_flow = fields.RadioField(
+        "รูปแบบการอนุมัติใบขอใช้รถ",
+        choices=models.organizations.CAR_FLOWS,
+    )
 
 
 BaseLogoForm = model_form(

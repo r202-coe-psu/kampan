@@ -61,6 +61,13 @@ def create_or_edit(organization_id):
         else models.Organization()
     )
     form = forms.organizations.OrganizationForm(obj=target_organization)
+    if (
+        organization_id
+        and request.method == "GET"
+        and target_organization.enabled_modules is None
+    ):
+        # ยังไม่เคยตั้งค่า = เปิดทุกโมดูล แสดงให้เห็นตามจริง ไม่ให้บันทึกแล้วปิดหมดโดยไม่รู้ตัว
+        form.enabled_modules.data = [key for key, _ in models.organizations.MODULES]
 
     if not form.validate_on_submit():
         return render_system_page(
@@ -68,6 +75,18 @@ def create_or_edit(organization_id):
             form=form,
             target_organization=target_organization if organization_id else None,
         )
+
+    if organization_id and form.car_flow.data != target_organization.car_flow:
+        open_count = target_organization.count_open_car_applications()
+        if open_count:
+            form.car_flow.errors.append(
+                f"เปลี่ยนรูปแบบการอนุมัติไม่ได้ เพราะมีใบขอใช้รถที่ยังไม่เสร็จสิ้น {open_count} ใบ"
+            )
+            return render_system_page(
+                "create_or_edit.html",
+                form=form,
+                target_organization=target_organization,
+            )
 
     form.populate_obj(target_organization)
     if not organization_id:
