@@ -277,6 +277,8 @@ def cancel(app, user, reason=""):
 
 
 def confirm_cancel(app, user):
+    if not can_confirm_cancel(app, user):
+        raise FlowError("ไม่มีสิทธิ์รับทราบการยกเลิก")
     app.status = "cancelled"
     _log(app, "cancel_confirmed", user, step_key="dispatcher")
     app.save()

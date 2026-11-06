@@ -1064,6 +1064,31 @@ def test_a_request_already_awaiting_cancel_acknowledgement_cannot_be_cancelled_a
     assert len(car_application.audit_logs) == logs_before
 
 
+def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(snor):
+    car_application = request_cancel_requested(snor)
+
+    for outsider in (snor.requester, snor.stranger, snor.supervisor):
+        response = snor.client_for(outsider).post(
+            confirm_cancel_url(snor, car_application)
+        )
+        # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือสถานะไม่เปลี่ยน
+        assert response.status_code in (302, 403)
+        car_application.reload()
+        assert car_application.status == "cancel_requested"
+
+
+def test_confirming_is_refused_unless_the_request_is_awaiting_cancel_acknowledgement(
+    snor,
+):
+    car_application = request_with_car_assigned(snor)
+
+    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, car_application))
+
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.audit_logs[-1].action == "approved"
+
+
 def test_only_the_creator_can_cancel_a_request(snor):
     before_car = snor.submit_domestic_request()
     after_car = request_with_car_assigned(snor)

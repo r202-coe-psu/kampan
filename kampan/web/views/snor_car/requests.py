@@ -300,7 +300,10 @@ def cancel(request_id):
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def confirm_cancel(request_id):
     snor_request = get_request_or_404(request_id)
-    snor.confirm_cancel(snor_request, current_user._get_current_object())
+    try:
+        snor.confirm_cancel(snor_request, current_user._get_current_object())
+    except snor.FlowError:
+        abort(403)
     flash("รับทราบการยกเลิกเรียบร้อยแล้ว", "success")
     return redirect(
         url_for(
