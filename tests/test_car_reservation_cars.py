@@ -283,6 +283,20 @@ def test_directory_shows_empty_states_when_there_are_no_cars_or_drivers(world):
     assert "ยังไม่มีพนักงานขับรถ" in html
 
 
+def test_sidebar_links_to_car_management_for_admins_and_directory_for_everyone(world):
+    home = f"/car_reservation/requests/?organization_id={world.org.id}"
+    manage_href = f'href="{CARS_PATH}/?organization_id={world.org.id}"'
+    directory_href = f'href="{CARS_PATH}/directory?organization_id={world.org.id}"'
+
+    admin_html = world.admin_client.get(home).get_data(as_text=True)
+    staff_html = world.staff_client.get(home).get_data(as_text=True)
+
+    assert manage_href in admin_html and "จัดการรถ" in admin_html
+    assert manage_href not in staff_html
+    assert directory_href in admin_html
+    assert directory_href in staff_html
+
+
 def test_car_without_photo_has_no_image_route(world):
     world.admin_client.post(world.create_url, data=car_data())
     car = models.vehicles.Car.objects(organization=world.org).first()

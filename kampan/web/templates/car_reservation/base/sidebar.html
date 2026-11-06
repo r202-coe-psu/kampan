@@ -26,7 +26,19 @@
         <i class="ph ph-hand-arrow-up"></i> ยื่นคำขอ
       </a>
     </li>
+    <li>
+      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.cars.directory' else '' }}"
+        href="{{ url_for('car_reservation.cars.directory', organization_id=organization.id ) }}">
+        <i class="ph ph-identification-card"></i> ข้อมูลรถและพนักงานขับรถ
+      </a>
+    </li>
     {% if current_user.has_organization_roles("admin") %}
+    <li>
+      <a class="{{ 'menu-active' if request.endpoint in ['car_reservation.cars.index', 'car_reservation.cars.create_or_edit'] else '' }}"
+        href="{{ url_for('car_reservation.cars.index', organization_id=organization.id ) }}">
+        <i class="ph ph-car"></i> จัดการรถ
+      </a>
+    </li>
     <li>
       <a class="{{ 'menu-active' if '/car_reservation/settings' in request.path else '' }}"
         href="{{ url_for('car_reservation.settings.positions', organization_id=organization.id ) }}">
