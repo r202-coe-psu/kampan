@@ -1,0 +1,14 @@
+ผู้ขอ: {{ requester_name }}
+ประเภทใบขอ: {{ request_type_label }}
+สถานที่ปลายทาง: {{ destination }}
+ออกเดินทาง: {{ departure | thai_datetime }}
+กลับ: {{ return_at | thai_datetime }}
+สถานะ: {{ status_label }}
+{% if car_plate %}
+รถ: {{ car_plate }}
+{% endif %}
+{% if driver_name %}
+พนักงานขับรถ: {{ driver_name }}
+{% endif %}
+
+ลิงก์: {{ link }}

@@ -1260,6 +1260,55 @@ def test_final_approval_tells_the_requester_and_the_driver_the_request_is_active
     assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])
 
 
+@pytest.fixture
+def sent_emails(monkeypatch):
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, setting):
+            pass
+
+        def login(self):
+            return True
+
+        def quit(self):
+            pass
+
+        def send_email(self, receiver, subject, body, html=False, steps=None):
+            sent.append(
+                {"receiver": receiver, "subject": subject, "body": body, "html": html}
+            )
+            return True
+
+    monkeypatch.setattr(utils.email_utils, "PSUSMTP", FakeSMTP)
+    return sent
+
+
+def test_email_job_sends_subject_and_body_with_trip_details_and_link(
+    app, snor, sent_emails
+):
+    car_application = snor.submit_domestic_request()
+
+    with app.app_context():
+        utils.snor_car_email.send_snor_car_email(
+            str(car_application.id),
+            "submitted",
+            [snor.supervisor.email],
+            "https://staging.example.test",
+        )
+
+    assert len(sent_emails) == 1
+    email = sent_emails[0]
+    assert email["receiver"] == snor.supervisor.email
+    assert "ระบบจองรถออนไลน์" in email["subject"]
+    assert "กรุงเทพฯ" in email["body"]
+    assert (
+        f"https://staging.example.test/snor_car/requests/{car_application.id}"
+        f"?organization_id={snor.org.id}"
+    ) in email["body"]
+    assert email["html"] is True
+
+
 def test_denying_notifies_only_the_requester(snor, mock_redis_queue):
     car_application = snor.submit_domestic_request()
     mock_redis_queue.reset_mock()
