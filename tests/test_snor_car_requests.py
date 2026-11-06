@@ -4,13 +4,13 @@ import pytest
 
 from kampan import models
 
-BASE = "/vehicle_lending/snor_car_requests"
+BASE = "/snor_car/requests"
 
 
 @pytest.fixture
 def snor(app, create_org, create_user, assign_user_to_org, login_as):
     org = create_org("Snor Org")
-    org.enabled_modules = ["car"]
+    org.enabled_modules = ["snor_car"]
     org.save()
 
     class Setup:
@@ -422,3 +422,38 @@ def test_denying_without_a_reason_is_refused(snor):
     car_application.reload()
     assert car_application.status == "pending"
     assert car_application.current_step == 0
+
+
+def test_organization_without_the_snor_car_module_gets_404(
+    app, create_org, create_user, assign_user_to_org, login_as
+):
+    org = create_org("Car Only Org")
+    org.enabled_modules = ["car"]
+    org.save()
+    user = create_user("Car", "Member")
+    assign_user_to_org(user, org, roles=["staff"])
+    client = login_as(app.test_client(), user)
+
+    for path in (f"{BASE}/new?type=domestic", f"{BASE}/"):
+        response = client.get(f"{path}&organization_id={org.id}" if "?" in path else f"{path}?organization_id={org.id}")
+        assert response.status_code == 404
+
+
+def test_requests_home_lists_only_the_requesters_own_requests(snor):
+    other = snor.stranger
+    snor.assign_in_division(other, ["staff"], snor.division)
+    other_data = snor.request_data()
+    other_data["request_reason"] = "งานของคนอื่น"
+    snor.client_for(other).post(
+        f"{BASE}/new?organization_id={snor.org.id}&type=domestic", data=other_data
+    )
+    snor.submit_domestic_request()
+
+    page = snor.client_for(snor.requester).get(f"{BASE}/?organization_id={snor.org.id}")
+
+    html = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert "ประชุมวิชาการ" in html
+    assert "รออนุมัติ" in html
+    assert "งานของคนอื่น" not in html
+

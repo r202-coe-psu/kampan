@@ -6,7 +6,7 @@ from flask_login import current_user
 from kampan import models
 from kampan.web import acl, forms
 
-module = Blueprint("snor_car_settings", __name__, url_prefix="/snor_car_settings")
+module = Blueprint("settings", __name__, url_prefix="/settings")
 
 
 def active_members(organization):
@@ -69,7 +69,7 @@ def positions():
     member_choices = [
         (user_id, user.get_name()) for user_id, user in members.items()
     ]
-    form_class = forms.car_flow_positions.build_position_form(
+    form_class = forms.snor_car.build_position_form(
         member_choices, driver_ids
     )
     form = form_class(data=current_form_data(organization))
@@ -79,13 +79,13 @@ def positions():
         flash("บันทึกผู้ดำรงตำแหน่งแล้ว", "success")
         return redirect(
             url_for(
-                "vehicle_lending.snor_car_settings.positions",
+                "snor_car.settings.positions",
                 organization_id=organization.id,
             )
         )
 
     return render_template(
-        "/vehicle_lending/snor_car_settings/positions.html",
+        "/snor_car/settings/positions.html",
         organization=organization,
         form=form,
         positions=models.SNOR_POSITIONS,

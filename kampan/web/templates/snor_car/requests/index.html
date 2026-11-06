@@ -1,2 +1,45 @@
-{% extends "/vehicle_lending/base/default-car-page.html" %}
-{% block title %}ระบบจองรถออนไลน์{% endblock %}
+{% extends "/snor_car/base/default-page.html" %}
+{% import '/snor_car/components/status_badge.html' as status_badge %}
+
+{% block title %}คำขอของฉัน{% endblock %}
+
+{% block content %}
+<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex justify-end">
+    <a class="btn btn-primary" href="{{ url_for('snor_car.requests.create', organization_id=organization.id) }}">
+      <i class="ph ph-plus"></i> ยื่นคำขอ
+    </a>
+  </div>
+  <div class="overflow-x-auto mt-4">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>เรื่อง</th>
+          <th>ประเภท</th>
+          <th>วันออกเดินทาง</th>
+          <th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for snor_request in snor_requests %}
+        <tr>
+          <td>
+            <a class="link link-hover font-medium"
+               href="{{ url_for('snor_car.requests.detail', request_id=snor_request.id, organization_id=organization.id) }}">
+              {{ snor_request.request_reason }}
+            </a>
+          </td>
+          <td>{{ snor_request.get_request_type_display() }}</td>
+          <td>{{ snor_request.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
+          <td>{{ status_badge.render(snor_request) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-center text-base-content/60">ยังไม่มีคำขอ</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

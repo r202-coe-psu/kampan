@@ -1,0 +1,17 @@
+{# ป้ายสถานะคำขอของระบบจองรถออนไลน์ (snor) แยกจากของระบบ DIIS เพื่อปรับหน้าตาได้อิสระ #}
+{% macro render(snor_request, compact=false) %}
+  {% set styles = {
+    'pending': 'badge-warning',
+    'active': 'badge-success',
+    'completed': 'badge-info',
+    'denied': 'badge-error',
+    'cancel_requested': 'badge-warning',
+    'cancelled': 'badge-neutral',
+  } %}
+  {% set tone = styles.get(snor_request.status, 'badge-neutral') %}
+  <span class="badge {{ tone }} badge-soft {{ 'badge-xs' if compact else 'badge-sm' }} tone-deep-success whitespace-nowrap font-medium align-middle"
+        data-status="{{ snor_request.status }}"
+        title="สถานะ: {{ snor_request.get_status_display() }}">
+    {{ snor_request.get_status_display() }}
+  </span>
+{% endmacro %}

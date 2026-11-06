@@ -1,15 +1,15 @@
-{% extends '/vehicle_lending/base/default-car-page.html' %}
-{% import '/vehicle_lending/components/status_badge.html' as status_badge %}
+{% extends '/snor_car/base/default-page.html' %}
+{% import '/snor_car/components/status_badge.html' as status_badge %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
-{% block dashboard_title %}{{ car_application.get_request_type_display() }}{% endblock %}
+{% block dashboard_title %}{{ snor_request.get_request_type_display() }}{% endblock %}
 
 {% block content %}
 <div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex items-center gap-2">
-    {{ status_badge.render(car_application) }}
-    {% if car_application.status == 'pending' %}
+    {{ status_badge.render(snor_request) }}
+    {% if snor_request.status == 'pending' %}
     <span class="font-medium">รอ{{ current_step_label }}</span>
     {% endif %}
   </div>
@@ -22,15 +22,15 @@
   </ul>
 
   <dl class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ car_application.requester_unit }}</dd></div>
-    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ car_application.location }}</dd></div>
-    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ car_application.request_reason }}</dd></div>
-    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ car_application.passenger_number }}</dd></div>
+    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ snor_request.requester_unit }}</dd></div>
+    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ snor_request.location }}</dd></div>
+    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ snor_request.request_reason }}</dd></div>
+    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ snor_request.passenger_number }}</dd></div>
   </dl>
 
   <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
   <ul class="mt-2 space-y-1" data-role="audit-log">
-    {% for log in car_application.audit_logs %}
+    {% for log in snor_request.audit_logs %}
     <li>
       <span class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</span>
       <span class="font-medium">{{ log.get_action_display() }}</span>
@@ -44,7 +44,7 @@
   {% if can_act %}
   <div class="mt-4 flex items-end gap-2">
     <form method="post"
-          action="{{ url_for('vehicle_lending.snor_car_requests.approve', car_application_id=car_application.id, organization_id=organization.id) }}"
+          action="{{ url_for('snor_car.requests.approve', request_id=snor_request.id, organization_id=organization.id) }}"
           class="flex items-end gap-2">
       {{ form.csrf_token }}
       {{ renderer.render_field(form.comment) }}
@@ -56,7 +56,7 @@
 
   <dialog id="deny-modal" class="modal">
     <form method="post"
-          action="{{ url_for('vehicle_lending.snor_car_requests.deny', car_application_id=car_application.id, organization_id=organization.id) }}"
+          action="{{ url_for('snor_car.requests.deny', request_id=snor_request.id, organization_id=organization.id) }}"
           class="modal-box">
       <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
       {{ deny_form.csrf_token }}
