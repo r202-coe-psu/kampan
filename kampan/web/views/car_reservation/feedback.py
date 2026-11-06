@@ -11,6 +11,18 @@ module = Blueprint("feedback", __name__, url_prefix="/feedback")
 ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_ROLES]
 
 
+@module.route("/")
+@acl.organization_roles_required("admin")
+def index():
+    return render_template(
+        "/car_reservation/feedback/index.html",
+        organization=g.organization,
+        feedbacks=models.CarReservationFeedback.objects(
+            organization=g.organization
+        ).order_by("-created_date"),
+    )
+
+
 def get_reservation_or_404(reservation_id):
     try:
         reservation = models.CarReservation.objects(

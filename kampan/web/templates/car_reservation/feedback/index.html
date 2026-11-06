@@ -1,0 +1,41 @@
+{% extends "/car_reservation/base/default-page.html" %}
+{% from '/base/components/empty_state.html' import EmptyState %}
+
+{% block title %}ผลประเมินความพึงพอใจ{% endblock %}
+
+{% block content %}
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h3 class="card-title">รายการผลประเมิน</h3>
+    {% if feedbacks %}
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>วันที่ประเมิน</th>
+            <th>ทะเบียนรถ</th>
+            <th>พนักงานขับรถ</th>
+            <th>คะแนนภาพรวม</th>
+            <th>ข้อเสนอแนะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for feedback in feedbacks %}
+          {% set overall = feedback.score_of('overall') %}
+          <tr class="hover" data-role="feedback-row">
+            <td class="whitespace-nowrap">{{ feedback.created_date.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="whitespace-nowrap">{{ feedback.car.license_plate if feedback.car else '-' }}</td>
+            <td>{{ feedback.driver.get_name() if feedback.driver else '-' }}</td>
+            <td><span class="badge badge-primary badge-soft" data-overall="{{ overall }}">{{ overall }} / 5</span></td>
+            <td class="whitespace-pre-line">{{ feedback.comment or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    {{ EmptyState('ph-star', 'ยังไม่มีผลประเมิน', description='ผลประเมินจะแสดงเมื่อผู้ขอประเมินหลังปิดงาน') }}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

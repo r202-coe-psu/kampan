@@ -333,6 +333,69 @@ def test_a_reservation_of_another_organization_is_not_found(world, create_org):
     assert models.CarReservationFeedback.objects.count() == 0
 
 
+def save_feedback(world, reservation=None, days_ago=0, comment="", **scores):
+    reservation = reservation or world.reservation()
+    return models.CarReservationFeedback(
+        organization=reservation.organization,
+        reservation=reservation,
+        creator=reservation.creator,
+        car=reservation.car,
+        driver=reservation.driver,
+        scores=[
+            models.car_reservation_feedback.FeedbackScore(
+                key=key, score=int(all_scores(4, **scores)[key])
+            )
+            for key in SCORE_KEYS
+        ],
+        comment=comment,
+        created_date=datetime.datetime.now() - datetime.timedelta(days=days_ago),
+    ).save()
+
+
+def results_url(world, period=None):
+    url = f"{BASE}/?organization_id={world.org.id}"
+    return url + (f"&period={period}" if period else "")
+
+
+def test_org_admin_sees_each_response_with_plate_driver_overall_score_and_comment(world):
+    feedback = save_feedback(world, overall=5, comment="บริการดีมาก")
+
+    response = world.client_for(world.org_admin).get(results_url(world))
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    row = html.split('data-role="feedback-row"')[1]
+    assert feedback.created_date.strftime("%d/%m/%Y") in row
+    for expected in ("กก 1234", "Driver Feedback", "บริการดีมาก"):
+        assert expected in row
+    assert 'data-overall="5"' in row
+
+
+@pytest.mark.parametrize("who", ["requester", "colleague", "driver"])
+def test_only_org_admins_open_the_results(world, who):
+    save_feedback(world, comment="ลับเฉพาะผู้ดูแล")
+
+    response = world.client_for(getattr(world, who)).get(results_url(world))
+
+    assert response.status_code in (302, 403)
+    assert "ลับเฉพาะผู้ดูแล" not in response.get_data(as_text=True)
+
+
+def test_results_never_include_another_organizations_responses(world, create_org):
+    other_org = create_org("Other Org")
+    other_org.enabled_modules = ["car_reservation"]
+    other_org.save()
+    save_feedback(
+        world,
+        reservation=world.reservation(organization=other_org),
+        comment="ขององค์กรอื่น",
+    )
+
+    html = world.client_for(world.org_admin).get(results_url(world)).get_data(as_text=True)
+
+    assert "ขององค์กรอื่น" not in html
+
+
 def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
     world, mock_redis_queue
 ):
