@@ -1,9 +1,11 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
 from kampan import models
 from kampan.models.car_reservation_positions import RESERVATION_POSITIONS
+from kampan.web.forms import accounts
 
 
 class CarReservationForm(FlaskForm):
@@ -67,6 +69,12 @@ class DispatchDecisionForm(ApprovalDecisionForm):
     driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
 
 
+def validate_optional_picture(form, field):
+    """รูปรถไม่บังคับ แต่ถ้าแนบมาต้องผ่านกฎเดียวกับรูปโปรไฟล์ (JPEG/PNG จริง ไม่เกิน 2 MB)"""
+    if field.data:
+        accounts.validate_picture_content(form, field)
+
+
 class CarForm(FlaskForm):
     """ฟอร์มเพิ่ม/แก้ไขรถของระบบจองรถ (ที่นั่งบังคับกรอกในฟอร์มนี้ แต่เป็น optional ที่โมเดล
     เพื่อให้รถของระบบยืมรถ DIIS ยังใช้งานได้)"""
@@ -87,6 +95,13 @@ class CarForm(FlaskForm):
     )
     description = fields.TextAreaField(
         "รายละเอียด/ลักษณะ", validators=[validators.Optional()]
+    )
+    upload_image = FileField(
+        "รูปภาพรถ",
+        validators=[
+            FileAllowed(["jpg", "jpeg", "png"], "อนุญาตเฉพาะไฟล์ภาพ JPEG หรือ PNG"),
+            validate_optional_picture,
+        ],
     )
 
 

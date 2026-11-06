@@ -1,12 +1,23 @@
 import datetime
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    send_file,
+    url_for,
+)
 from flask_login import current_user
 
 from kampan import models
 from kampan.web import acl, forms
 
 module = Blueprint("cars", __name__, url_prefix="/cars")
+
+ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_ROLES]
 
 
 def get_car_or_404(car_id):
@@ -32,6 +43,19 @@ def index():
     )
 
 
+@module.route("/<car_id>/image")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def image(car_id):
+    car = get_car_or_404(car_id)
+    if not car.image:
+        abort(404)
+    return send_file(
+        car.image,
+        download_name=car.image.filename,
+        mimetype=car.image.content_type,
+    )
+
+
 @module.route("/create", methods=["GET", "POST"], defaults={"car_id": None})
 @module.route("/<car_id>/edit", methods=["GET", "POST"])
 @acl.organization_roles_required("admin")
@@ -51,7 +75,14 @@ def create_or_edit(car_id):
         car = models.vehicles.Car(
             organization=g.organization, creator=current_user._get_current_object()
         )
-    form.populate_obj(car)
+    car.license_plate = form.license_plate.data
+    car.vehicle_type = form.vehicle_type.data
+    car.seat_count = form.seat_count.data
+    car.description = form.description.data or ""
+    upload = form.upload_image.data
+    if upload:
+        store = car.image.replace if car.image else car.image.put
+        store(upload, filename=upload.filename, content_type=upload.content_type)
     car.updater = current_user._get_current_object()
     car.updated_date = datetime.datetime.now()
     car.save()

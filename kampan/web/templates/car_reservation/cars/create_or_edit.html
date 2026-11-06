@@ -12,6 +12,10 @@
     {{ renderer.render_number_field(form.seat_count, min=1) }}
   </div>
   {{ renderer.render_text_area_field(form.description) }}
+  {{ renderer.file_input(form.upload_image) }}
+  {% for error in form.upload_image.errors %}
+  <p class="mt-1 text-sm font-medium text-error">{{ error }}</p>
+  {% endfor %}
   <div class="flex justify-start w-full gap-2 mt-4">
     <button type="submit" class="btn btn-primary">บันทึก</button>
     <a class="btn" href="{{ url_for('car_reservation.cars.index', organization_id=organization.id) }}">ย้อนกลับ</a>

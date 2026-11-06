@@ -78,3 +78,52 @@ def test_car_without_plate_or_with_missing_seat_count_is_refused(world, missing)
 
     assert response.status_code == 200
     assert models.vehicles.Car.objects(organization=world.org).count() == 0
+
+
+def upload_car(world, photo, filename="car.png", content_type="image/png", url=None):
+    data = car_data()
+    data["upload_image"] = (io.BytesIO(photo), filename, content_type)
+    return world.admin_client.post(
+        url or world.create_url, data=data, content_type="multipart/form-data"
+    )
+
+
+def test_car_photo_is_served_to_any_org_member_as_an_image(world):
+    upload_car(world, png_bytes())
+    car = models.vehicles.Car.objects(organization=world.org).first()
+
+    served = world.staff_client.get(world.image_url(car))
+
+    assert served.status_code == 200
+    assert served.mimetype == "image/png"
+    assert served.data[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_non_image_or_oversized_car_photo_is_refused_with_thai_error(world):
+    fake = upload_car(world, b"not an image at all")
+    big = upload_car(world, png_bytes() + b"\0" * (2 * 1024 * 1024 + 1))
+
+    assert fake.status_code == 200
+    assert "ไฟล์ที่เลือกไม่ใช่รูปภาพ" in fake.get_data(as_text=True)
+    assert big.status_code == 200
+    assert "ไม่เกิน 2 MB" in big.get_data(as_text=True)
+    assert models.vehicles.Car.objects(organization=world.org).count() == 0
+
+
+def test_list_shows_the_photo_thumbnail_only_for_cars_that_have_one(world):
+    upload_car(world, png_bytes())
+    world.admin_client.post(world.create_url, data=car_data(license_plate="ขค 5678"))
+    with_photo = models.vehicles.Car.objects(license_plate="กข 1234").first()
+    without = models.vehicles.Car.objects(license_plate="ขค 5678").first()
+
+    html = world.admin_client.get(world.list_url).get_data(as_text=True)
+
+    assert f"/car_reservation/cars/{with_photo.id}/image" in html
+    assert f"/car_reservation/cars/{without.id}/image" not in html
+
+
+def test_car_without_photo_has_no_image_route(world):
+    world.admin_client.post(world.create_url, data=car_data())
+    car = models.vehicles.Car.objects(organization=world.org).first()
+
+    assert world.staff_client.get(world.image_url(car)).status_code == 404
