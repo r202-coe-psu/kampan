@@ -1273,3 +1273,20 @@ def test_denying_notifies_only_the_requester(snor, mock_redis_queue):
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "denied")
     assert recipients == [snor.requester.email]
+
+
+def test_cancelling_after_assignment_notifies_the_dispatcher_to_acknowledge(
+    snor, mock_redis_queue
+):
+    car_application = request_with_car_assigned(snor)
+    mock_redis_queue.reset_mock()
+
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": "งานเลื่อน"}
+    )
+
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, _ = jobs[0]
+    assert (request_id, event) == (str(car_application.id), "cancel_requested")
+    assert recipients == [snor.dispatcher.email]

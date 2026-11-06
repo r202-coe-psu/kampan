@@ -298,6 +298,7 @@ def cancel(request_id):
         )
     except snor.FlowError:
         abort(403)
+    utils.snor_car_email.notify(snor_request, snor_request.status)
     flash("ยกเลิกคำขอเรียบร้อยแล้ว", "success")
     return redirect(
         url_for(
