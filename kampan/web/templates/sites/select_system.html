@@ -56,6 +56,19 @@
         </a>
         {% endif %}
 
+        {% if 'snor_car' in enabled_modules %}
+        <!-- ระบบจองรถออนไลน์ -->
+        <a href="{{ url_for('snor_car.requests.index', organization_id=organization.id) }}"
+           class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+          <div class="p-6 text-center h-full flex flex-col justify-center bg-module-car">
+            <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="ph ph-calendar-check text-2xl sm:text-3xl text-module-car-icon"></i>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-module-car-content">ระบบจองรถออนไลน์</h3>
+          </div>
+        </a>
+        {% endif %}
+
         {% if 'motorcycle' in enabled_modules %}
         <!-- ระบบการขอใช้รถจักรยานยนต์ -->
         <a href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id) }}"

@@ -5,6 +5,7 @@ import pytest
 from kampan import models
 
 CAR_CALENDAR = "/vehicle_lending/car_applications/calendar"
+SNOR_CAR_HOME = "/snor_car/requests/"
 
 # หน้าตัวแทนหนึ่งหน้าต่อ blueprint ของแต่ละโมดูล (GET ธรรมดา ส่ง organization_id ทาง query)
 MODULE_PAGES = {
@@ -16,6 +17,9 @@ MODULE_PAGES = {
         "/vehicle_lending/car_feedback",
         "/vehicle_lending/car_manuals",
         "/vehicle_lending/history_car_lending",
+    ],
+    "snor_car": [
+        "/snor_car/requests/",
     ],
     "motorcycle": [
         "/vehicle_lending/motorcycle_applications/calendar",
@@ -81,6 +85,14 @@ def test_organization_without_car_module_gets_404_on_car_pages(open_page):
     response = open_page(CAR_CALENDAR, enabled_modules=["inventory"])
 
     assert response.status_code == 404
+
+
+def test_snor_car_pages_need_the_snor_car_module_not_the_car_module(open_page):
+    without = open_page(SNOR_CAR_HOME, enabled_modules=["car"])
+    with_module = open_page(SNOR_CAR_HOME, enabled_modules=["snor_car"])
+
+    assert without.status_code == 404
+    assert with_module.status_code != 404
 
 
 def test_organization_that_never_set_modules_still_opens_car_pages(open_page):

@@ -38,6 +38,7 @@ MODULE_OF_BLUEPRINT = {
     "vehicle_lending.motorcycle_permissions": "motorcycle",
     "vehicle_lending.motorcycles": "motorcycle",
     "vehicle_lending.motorcycle_manuals": "motorcycle",
+    "snor_car": "snor_car",
     "procurement": "procurement",
     "items": "inventory",
     "item_orders": "inventory",

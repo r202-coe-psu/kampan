@@ -114,7 +114,7 @@ def test_edit_page_of_unconfigured_organization_shows_all_modules_ticked(
         html = client.get(_edit_url(app, setup["org"])).get_data(as_text=True)
 
     module_inputs = re.findall(r"<input[^>]*name=\"enabled_modules\"[^>]*>", html)
-    assert len(module_inputs) == 4
+    assert len(module_inputs) == 5
     assert all("checked" in tag for tag in module_inputs)
 
 
@@ -124,5 +124,5 @@ def test_new_organization_page_starts_with_no_module_ticked(app, login_as, setup
         html = client.get(_new_url(app)).get_data(as_text=True)
 
     module_inputs = re.findall(r"<input[^>]*name=\"enabled_modules\"[^>]*>", html)
-    assert len(module_inputs) == 4
+    assert len(module_inputs) == 5
     assert not any("checked" in tag for tag in module_inputs)
