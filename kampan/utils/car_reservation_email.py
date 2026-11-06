@@ -139,6 +139,10 @@ def template_variables(reservation, host_url):
             f"{host_url}/car_reservation/requests/{reservation.id}"
             f"?organization_id={reservation.organization.id}"
         ),
+        "feedback_url": (
+            f"{host_url}/car_reservation/feedback/{reservation.id}"
+            f"?organization_id={reservation.organization.id}"
+        ),
     }
 
 

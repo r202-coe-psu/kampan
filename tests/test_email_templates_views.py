@@ -238,6 +238,7 @@ CAR_RESERVATION_TYPES = [
     "car_reservation_denied",
     "car_reservation_cancel_requested",
     "car_reservation_cancelled",
+    "car_reservation_completed",
 ]
 
 
@@ -316,3 +317,4 @@ def test_car_reservation_variables_carry_trip_details_as_text():
     assert sent["reason"] == "ประชุม"
     assert sent["comment"] == "รถไม่ว่าง"
     assert sent["request_url"] == "http://x/car_reservation/requests/abc123?organization_id=org1"
+    assert sent["feedback_url"] == "http://x/car_reservation/feedback/abc123?organization_id=org1"

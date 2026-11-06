@@ -22,6 +22,7 @@ EMAIL_TYPE = [
     ("car_reservation_denied", "จองรถ: ไม่อนุมัติใบขอใช้รถ"),
     ("car_reservation_cancel_requested", "จองรถ: ขอยกเลิกใบขอใช้รถ"),
     ("car_reservation_cancelled", "จองรถ: ยกเลิกใบขอใช้รถ"),
+    ("car_reservation_completed", "จองรถ: ปิดงาน ขอให้ประเมินความพึงพอใจ"),
 ]
 
 EMAIL_SYSTEMS = [
@@ -103,6 +104,11 @@ EMAIL_TYPE_INFO = {
         "system": "car_reservation",
         "recipient": "ผู้ขอและพนักงานขับรถ",
         "trigger": "เมื่อยกเลิกใบขอใช้รถ (หรืองานจัดรถรับทราบการยกเลิก)",
+    },
+    "car_reservation_completed": {
+        "system": "car_reservation",
+        "recipient": "ผู้ขอใช้รถ",
+        "trigger": "เมื่อพนักงานขับรถปิดงาน พร้อมลิงก์แบบประเมินความพึงพอใจ",
     },
 }
 
@@ -209,6 +215,7 @@ _CAR_RESERVATION_VARIABLES = [
     ("reason", "เหตุผลการขอใช้รถ"),
     ("comment", "ความเห็นล่าสุดของผู้พิจารณา เช่น เหตุผลที่ไม่อนุมัติ/ยกเลิก (เป็น - ถ้าไม่มี)"),
     ("request_url", "ลิงก์ไปหน้ารายละเอียดใบขอ"),
+    ("feedback_url", "ลิงก์ไปหน้าแบบประเมินความพึงพอใจของใบขอ"),
 ]
 
 EMAIL_TEMPLATE_VARIABLES.update(
