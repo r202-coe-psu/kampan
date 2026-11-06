@@ -1,6 +1,8 @@
 """ตารางในระบบจัดการองค์กรใช้หน้าตาเดียวกับระบบจองรถ: หัวการ์ดมีจำนวนรวม,
 ตารางบนจอกลางขึ้นไป + การ์ดบนมือถือ, EmptyState เมื่อไม่มีข้อมูล, ป้าย role ภาษาไทย"""
 
+import re
+
 import pytest
 from flask import url_for
 
@@ -85,7 +87,9 @@ def test_list_header_shows_total_count(app, login_as, filled, page):
 
     html = _page(app, login_as, filled["admin"], url)
 
-    assert f"ทั้งหมด {total} รายการ" in html
+    # data-member-total ห่อตัวเลขด้วย span จึงเทียบข้อความหลังตัด tag
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", html))
+    assert f"ทั้งหมด {total} รายการ" in text
 
 
 @pytest.mark.parametrize("page", PAGE_NAMES)
