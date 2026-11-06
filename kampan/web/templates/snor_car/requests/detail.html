@@ -9,6 +9,9 @@
 <div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   <div class="flex items-center gap-2">
     {{ status_badge.render(snor_request) }}
+    {% if snor_request.is_urgent %}
+    <span class="badge badge-error badge-sm whitespace-nowrap font-medium">เร่งด่วน</span>
+    {% endif %}
     {% if snor_request.status == 'pending' %}
     <span class="font-medium">รอ{{ current_step_label }}</span>
     {% endif %}

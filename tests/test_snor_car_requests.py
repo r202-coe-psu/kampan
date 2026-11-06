@@ -488,3 +488,16 @@ def test_request_departing_in_under_3_business_days_asks_for_urgent_confirmation
     assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
     assert 'name="confirm_urgent"' in html
     assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+
+
+def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(snor):
+    data = snor.request_data(days_ahead=1)
+    data["confirm_urgent"] = "y"
+
+    response = post_new(snor, data)
+
+    assert response.status_code == 302
+    car_application = models.SnorCarRequest.objects(creator=snor.requester).first()
+    assert car_application.is_urgent is True
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    assert "เร่งด่วน" in page.get_data(as_text=True)

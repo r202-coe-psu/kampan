@@ -80,6 +80,8 @@ class SnorCarRequest(me.Document):
     request_type = me.StringField(choices=SNOR_REQUEST_TYPES, required=True)
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
 
+    is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
+
     status = me.StringField(default="pending", choices=SNOR_REQUEST_STATUS)
     route_snapshot = me.ListField(me.StringField())  # เส้นทางอนุมัติที่ตรึงไว้ตอนยื่น
     current_step = me.IntField(default=0)
