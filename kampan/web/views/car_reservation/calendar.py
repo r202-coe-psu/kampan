@@ -40,6 +40,14 @@ def event_of(reservation):
     }
 
 
+@module.route("/")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def index():
+    return render_template(
+        "/car_reservation/calendar/index.html", organization=g.organization
+    )
+
+
 def parse_day(value):
     """วันของพารามิเตอร์ start/end ที่ FullCalendar ส่งมา (ISO date หรือ datetime มี offset)"""
     try:

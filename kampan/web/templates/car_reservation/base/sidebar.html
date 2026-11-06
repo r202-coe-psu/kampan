@@ -27,6 +27,12 @@
       </a>
     </li>
     <li>
+      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.calendar.index' else '' }}"
+        href="{{ url_for('car_reservation.calendar.index', organization_id=organization.id ) }}">
+        <i class="ph ph-calendar-dots"></i> ปฏิทินการจองรถ
+      </a>
+    </li>
+    <li>
       <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.cars.directory' else '' }}"
         href="{{ url_for('car_reservation.cars.directory', organization_id=organization.id ) }}">
         <i class="ph ph-identification-card"></i> ข้อมูลรถและพนักงานขับรถ

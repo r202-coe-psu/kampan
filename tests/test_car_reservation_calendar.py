@@ -206,6 +206,40 @@ def test_modal_of_another_organizations_reservation_is_404(world, create_org):
     assert response.status_code == 404
 
 
+def test_any_member_opens_the_calendar_page_with_a_new_request_button(world):
+    response = world.client.get(f"{BASE}/?organization_id={world.org.id}")
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert f"{BASE}/events?organization_id={world.org.id}" in html
+    assert f"/car_reservation/requests/new?organization_id={world.org.id}" in html
+    assert "ยื่นคำขอ" in html
+
+
+def test_sidebar_links_every_member_to_the_calendar(world):
+    html = world.client.get(
+        f"/car_reservation/requests/?organization_id={world.org.id}"
+    ).get_data(as_text=True)
+
+    assert "ปฏิทินการจองรถ" in html
+    assert f"{BASE}/?organization_id={world.org.id}" in html
+
+
+def test_calendar_is_404_for_an_organization_without_the_module(
+    app, create_org, create_user, assign_user_to_org, login_as
+):
+    org = create_org("Car Only Calendar Org")
+    org.enabled_modules = ["car"]
+    org.save()
+    user = create_user("Car", "Calendar")
+    assign_user_to_org(user, org, roles=["staff"])
+    client = login_as(app.test_client(), user)
+
+    for path in ("/", "/events", "/000000000000000000000000/modal"):
+        response = client.get(f"{BASE}{path}?organization_id={org.id}")
+        assert response.status_code == 404, path
+
+
 def test_events_never_include_another_organizations_reservations(world, create_org):
     other_org = create_org("Other Calendar Org")
     other_org.enabled_modules = ["car_reservation"]
