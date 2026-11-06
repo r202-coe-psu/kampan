@@ -759,3 +759,71 @@ def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
     )
     car_application.reload()
     assert car_application.current_step == 2
+
+
+def at_dispatcher_with_times(snor, departure, return_):
+    car_application = request_at_dispatcher(snor)
+    car_application.departure_datetime = departure
+    car_application.return_datetime = return_
+    car_application.save()
+    return car_application
+
+
+def assigned_request(snor, departure, return_, status="active", car=None, driver=None):
+    return models.SnorCarRequest(
+        organization=snor.org,
+        creator=snor.requester,
+        request_type="domestic",
+        province_scope="in_province",
+        location="ที่อื่น",
+        request_reason="งานเดิม",
+        departure_datetime=departure,
+        return_datetime=return_,
+        status=status,
+        route_snapshot=["supervisor", "dispatcher", "vehicle_unit_head"],
+        current_step=2,
+        car=car,
+        driver=driver,
+    ).save()
+
+
+DAY = datetime.datetime.combine(
+    datetime.date.today() + datetime.timedelta(days=20), datetime.time(8, 0)
+)
+
+
+@pytest.mark.parametrize("blocking_status", ["pending", "active"])
+@pytest.mark.parametrize("clash", ["car", "driver"])
+def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
+    snor, clash, blocking_status
+):
+    other_car = models.vehicles.Car(
+        organization=snor.org, license_plate="งง 2222", status="active"
+    ).save()
+    other_driver = snor.add_driver("Other", "Driver")
+    assigned_request(
+        snor,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        status=blocking_status,
+        car=snor.car if clash == "car" else other_car,
+        driver=snor.driver if clash == "driver" else other_driver,
+    )
+    car_application = at_dispatcher_with_times(
+        snor, DAY, DAY + datetime.timedelta(hours=9)
+    )
+
+    client = snor.client_for(snor.dispatcher)
+    response = client.post(
+        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.car is None
+    html = client.get(detail_url(snor, car_application)).get_data(as_text=True)
+    if clash == "car":
+        assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
+    else:
+        assert "พนักงานขับรถ Driver One มีงานช่วงเวลานี้แล้ว" in html

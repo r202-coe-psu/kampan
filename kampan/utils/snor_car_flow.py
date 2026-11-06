@@ -183,6 +183,18 @@ def assignable_drivers(organization):
     return [member.user for member in members if member.user is not None]
 
 
+def _overlapping_bookings(app, **resource):
+    """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
+    return models.SnorCarRequest.objects(
+        organization=app.organization,
+        status__in=["pending", "active"],
+        id__ne=app.id,
+        departure_datetime__lt=app.return_datetime,
+        return_datetime__gt=app.departure_datetime,
+        **resource,
+    )
+
+
 def approve(app, user, comment="", car=None, driver=None):
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
@@ -195,6 +207,10 @@ def approve(app, user, comment="", car=None, driver=None):
             assignable_drivers(app.organization)
         ):
             raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
+        if _overlapping_bookings(app, car=car).first():
+            raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+        if _overlapping_bookings(app, driver=driver).first():
+            raise FlowError(f"พนักงานขับรถ {driver.get_name()} มีงานช่วงเวลานี้แล้ว")
         app.car = car
         app.driver = driver
     app.step_approvals.append(
