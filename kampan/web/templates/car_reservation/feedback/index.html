@@ -4,6 +4,44 @@
 {% block title %}ผลประเมินความพึงพอใจ{% endblock %}
 
 {% block content %}
+<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+  <div role="tablist" class="tabs tabs-box">
+    {% for key, label, _ in periods %}
+    <a role="tab" class="tab {{ 'tab-active' if key == period else '' }}"
+       href="{{ url_for('car_reservation.feedback.index', organization_id=organization.id, period=key) }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <p class="text-sm text-base-content/60">
+    จำนวนผู้ประเมิน <span class="font-semibold" data-response-count="{{ feedbacks | length }}">{{ feedbacks | length }}</span> ราย
+  </p>
+</div>
+
+<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h3 class="card-title">คะแนนเฉลี่ยรายคำถาม</h3>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr><th>คำถาม</th><th class="text-right">คะแนนเฉลี่ย (เต็ม 5)</th></tr>
+        </thead>
+        <tbody>
+          {% for group_title, questions in groups %}
+          <tr class="bg-base-200"><th colspan="2">{{ group_title }}</th></tr>
+          {% for key, text, average in questions %}
+          <tr data-average-of="{{ key }}">
+            <td>{{ text }}</td>
+            <td class="text-right font-semibold" data-average="{{ '%.2f' | format(average) if average is not none else '-' }}">
+              {{ '%.2f' | format(average) if average is not none else '-' }}
+            </td>
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4">
     <h3 class="card-title">รายการผลประเมิน</h3>

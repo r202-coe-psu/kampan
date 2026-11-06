@@ -1,3 +1,5 @@
+import datetime
+
 from kampan import models
 
 """แบบประเมินความพึงพอใจของระบบจองรถ (spec ข้อ 5.6): คำถามตายตัวในโค้ด"""
@@ -53,3 +55,38 @@ def state_for(reservation, user):
     if not can_submit(reservation, user):
         return None
     return "done" if feedback_of(reservation) is not None else "available"
+
+
+# ช่วงเวลาของสรุปผล: (key, ป้าย, จำนวนวันย้อนหลังจากตอนนี้)
+PERIODS = [("week", "1 สัปดาห์", 7), ("month", "1 เดือน", 30), ("year", "1 ปี", 365)]
+DEFAULT_PERIOD = "month"
+
+
+def summary(organization, period, now=None):
+    """ผลประเมินของ org ในช่วง period (ใหม่สุดก่อน) พร้อมค่าเฉลี่ยรายคำถาม (None ถ้ายังไม่มีคำตอบ)"""
+    days = {key: days for key, _, days in PERIODS}
+    if period not in days:
+        period = DEFAULT_PERIOD
+    since = (now or datetime.datetime.now()) - datetime.timedelta(days=days[period])
+    feedbacks = list(
+        models.CarReservationFeedback.objects(
+            organization=organization, created_date__gte=since
+        ).order_by("-created_date")
+    )
+
+    def average(key):
+        scores = [
+            score
+            for feedback in feedbacks
+            if (score := feedback.score_of(key)) is not None
+        ]
+        return sum(scores) / len(scores) if scores else None
+
+    return {
+        "period": period,
+        "feedbacks": feedbacks,
+        "groups": [
+            (title, [(key, text, average(key)) for key, text in questions])
+            for _, title, questions in QUESTION_GROUPS
+        ],
+    }

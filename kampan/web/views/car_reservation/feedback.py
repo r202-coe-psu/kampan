@@ -1,6 +1,15 @@
 """แบบประเมินความพึงพอใจของระบบจองรถ: ผู้ขอประเมินหลังปิดงาน (spec ข้อ 5.6)"""
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 
 from kampan import models, utils
@@ -17,9 +26,10 @@ def index():
     return render_template(
         "/car_reservation/feedback/index.html",
         organization=g.organization,
-        feedbacks=models.CarReservationFeedback.objects(
-            organization=g.organization
-        ).order_by("-created_date"),
+        periods=utils.car_reservation_feedback.PERIODS,
+        **utils.car_reservation_feedback.summary(
+            g.organization, request.args.get("period")
+        ),
     )
 
 

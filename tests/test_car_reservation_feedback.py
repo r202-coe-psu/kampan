@@ -396,6 +396,66 @@ def test_results_never_include_another_organizations_responses(world, create_org
     assert "ขององค์กรอื่น" not in html
 
 
+def average_of(html, key):
+    """ค่าเฉลี่ยของคำถามในตารางสรุป (อ่านจาก data-average ของแถว data-question)"""
+    row = html.split(f'data-average-of="{key}"')[1].split("</tr>")[0]
+    return row.split('data-average="')[1].split('"')[0]
+
+
+def test_results_show_the_average_score_of_each_question_with_the_response_count(world):
+    save_feedback(world, vehicle_cleanliness=5, overall=5)
+    save_feedback(world, vehicle_cleanliness=2, overall=4)
+
+    html = world.client_for(world.org_admin).get(results_url(world)).get_data(as_text=True)
+
+    assert average_of(html, "vehicle_cleanliness") == "3.50"
+    assert average_of(html, "overall") == "4.50"
+    assert average_of(html, "driver_punctuality") == "4.00"
+    assert 'data-response-count="2"' in html
+
+
+def test_a_question_without_any_response_shows_a_dash_instead_of_an_average(world):
+    html = world.client_for(world.org_admin).get(results_url(world)).get_data(as_text=True)
+
+    assert average_of(html, "overall") == "-"
+    assert 'data-response-count="0"' in html
+
+
+@pytest.mark.parametrize(
+    "period, shown, hidden",
+    [
+        ("week", {"สัปดาห์นี้"}, {"เดือนนี้", "ปีนี้", "เก่ามาก"}),
+        ("month", {"สัปดาห์นี้", "เดือนนี้"}, {"ปีนี้", "เก่ามาก"}),
+        ("year", {"สัปดาห์นี้", "เดือนนี้", "ปีนี้"}, {"เก่ามาก"}),
+    ],
+)
+def test_period_filter_limits_the_list_and_the_averages(world, period, shown, hidden):
+    save_feedback(world, days_ago=2, comment="สัปดาห์นี้", overall=5)
+    save_feedback(world, days_ago=20, comment="เดือนนี้", overall=5)
+    save_feedback(world, days_ago=200, comment="ปีนี้", overall=5)
+    save_feedback(world, days_ago=400, comment="เก่ามาก", overall=1)
+
+    html = world.client_for(world.org_admin).get(results_url(world, period)).get_data(as_text=True)
+
+    for comment in shown:
+        assert comment in html
+    for comment in hidden:
+        assert comment not in html
+    assert f'data-response-count="{len(shown)}"' in html
+    assert average_of(html, "overall") == "5.00"
+
+
+def test_the_default_period_is_one_month_and_an_unknown_period_falls_back_to_it(world):
+    save_feedback(world, days_ago=20, comment="ในเดือน")
+    save_feedback(world, days_ago=100, comment="เกินเดือน")
+    client = world.client_for(world.org_admin)
+
+    for period in (None, "forever"):
+        html = client.get(results_url(world, period)).get_data(as_text=True)
+        assert "ในเดือน" in html
+        assert "เกินเดือน" not in html
+
+
 def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
     world, mock_redis_queue
 ):
