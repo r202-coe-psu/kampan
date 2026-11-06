@@ -104,3 +104,44 @@ def test_user_without_picture_has_no_picture_resource(app, create_user):
         served = client.get(f"/accounts/{user.id}/picture")
 
     assert served.status_code == 404
+
+
+def user_avatar_sources(html_text):
+    from html.parser import HTMLParser
+
+    sources = []
+
+    class Finder(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            attributes = dict(attrs)
+            if tag == "img" and "user-avatar" in (attributes.get("class") or "").split():
+                sources.append(attributes.get("src"))
+
+    Finder().feed(html_text)
+    return sources
+
+
+def test_header_avatar_uses_uploaded_picture(app, create_user, login_as):
+    user = create_user("Head", "Er")
+
+    with app.test_client() as client:
+        login_as(client, user)
+        upload(client, make_image_bytes("PNG"))
+        page = client.get("/accounts")
+
+    assert page.status_code == 200
+    sources = user_avatar_sources(page.data.decode())
+    assert len(sources) == 1
+    assert sources[0].startswith(f"/accounts/{user.id}/picture")
+
+
+def test_header_avatar_falls_back_to_icon_without_picture(app, create_user, login_as):
+    user = create_user("Plain", "User")
+
+    with app.test_client() as client:
+        login_as(client, user)
+        page = client.get("/accounts")
+
+    assert page.status_code == 200
+    assert user_avatar_sources(page.data.decode()) == []
+    assert "ph-user" in page.data.decode()
