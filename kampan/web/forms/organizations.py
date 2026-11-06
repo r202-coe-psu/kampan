@@ -60,6 +60,17 @@ class LogoForm(BaseLogoForm):
     )
 
 
+DRIVER_CANNOT_APPROVE = "พนักงานขับรถเป็นผู้อนุมัติไม่ได้"
+
+
+def validate_driver_is_not_approver(form, field):
+    roles = field.data or []
+    if "driver" in roles and any(
+        role in models.organizations.RESERVATION_APPROVER_ROLE_KEYS for role in roles
+    ):
+        raise validators.ValidationError(DRIVER_CANNOT_APPROVE)
+
+
 class OrganizationUserForm(FlaskForm):
     users = fields.SelectMultipleField("")
 
@@ -72,7 +83,7 @@ class OrganizationRoleEditForm(FlaskForm):
     roles = fields.SelectMultipleField(
         "ระดับผู้ใช้งาน",
         choices=models.organizations.ORGANIZATION_ROLES,
-        validators=[validators.InputRequired()],
+        validators=[validators.InputRequired(), validate_driver_is_not_approver],
     )
 
 
@@ -83,7 +94,7 @@ class OrganizationAddMemberForm(FlaskForm):
     roles = fields.SelectMultipleField(
         "ระดับผู้ใช้งาน",
         choices=models.organizations.ORGANIZATION_ROLES,
-        validators=[validators.InputRequired()],
+        validators=[validators.InputRequired(), validate_driver_is_not_approver],
     )
     division = fields.SelectField(
         "สังกัดหน่วยงาน",

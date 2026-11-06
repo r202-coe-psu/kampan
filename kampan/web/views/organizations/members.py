@@ -49,6 +49,7 @@ def add_member(organization_id):
     divisions = list(
         models.Division.objects(organization=organization, status="active").order_by("name")
     )
+    form.roles.choices = organization.available_roles()
     form.members.choices = [(str(u.id), u.get_name()) for u in candidates]
     form.division.choices = [("", "ยังไม่ระบุแผนก")] + [(str(d.id), d.name) for d in divisions]
 
@@ -59,7 +60,7 @@ def add_member(organization_id):
             organization=organization,
             candidates=candidates,
             divisions=divisions,
-            role_choices=models.organizations.ORGANIZATION_ROLES,
+            role_choices=form.roles.choices,
         )
 
     user = models.User.objects(id=form.members.data).first()
@@ -202,6 +203,12 @@ def edit_roles(organization_id, org_user_id):
             org_user.email = org_user.user.email
 
     form = forms.organizations.OrganizationRoleEditForm(obj=org_user)
+    # role ที่สมาชิกถืออยู่แล้วยังเลือกค้างไว้ได้ แม้องค์กรปิด role นั้นภายหลัง
+    form.roles.choices = [
+        (key, label)
+        for key, label in models.organizations.ORGANIZATION_ROLES
+        if key in dict(organization.available_roles()) or key in org_user.roles
+    ]
 
     if not form.validate_on_submit():
         return render_template(
