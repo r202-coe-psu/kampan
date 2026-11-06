@@ -52,8 +52,11 @@ def select_system():
     organization = g.organization
     if organization:
         # ผู้ดูแลระบบระดับ global ดูได้ทุกหน่วยงานจึงไม่ต้องมีฝ่ายในหน่วยงานนั้น
-        if "admin" not in current_user.roles and not current_user.get_current_division(
-            organization
+        # และสมาชิกขององค์กร snor ก็ไม่ต้องมีฝ่าย
+        if (
+            "admin" not in current_user.roles
+            and organization.requires_division()
+            and not current_user.get_current_division(organization)
         ):
             return redirect(
                 url_for(

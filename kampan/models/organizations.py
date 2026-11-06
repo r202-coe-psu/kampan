@@ -130,6 +130,10 @@ class Organization(me.Document):
     def has_module(self, key):
         return self.enabled_modules is None or key in self.enabled_modules
 
+    def requires_division(self):
+        # ผู้ขอของ snor มาจากคณะอื่นจึงไม่มีฝ่ายในหน่วยงานนี้
+        return self.car_flow != "snor"
+
     def count_open_car_applications(self):
         return models.vehicle_applications.CarApplication.objects(
             organization=self,

@@ -36,7 +36,7 @@
       </a>
     </li>
     {% endif %}
-    {% if current_user.get_current_division() %}
+    {% if current_user.get_current_division() or not organization.requires_division() %}
     {% if organization.car_flow != 'snor' %}
     <li>
       <a class="{{ 'menu-active' if '/vehicle_lending/car_applications' in request.path and '/vehicle_lending/car_applications/calendar' not in request.path else '' }}"
