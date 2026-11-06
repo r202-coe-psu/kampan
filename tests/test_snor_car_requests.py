@@ -1064,6 +1064,26 @@ def test_a_request_already_awaiting_cancel_acknowledgement_cannot_be_cancelled_a
     assert len(car_application.audit_logs) == logs_before
 
 
+def test_car_and_driver_are_blocked_until_the_cancel_is_confirmed_then_released(snor):
+    cancelling = request_cancel_requested(snor)
+    waiting = request_at_dispatcher(snor)
+
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, waiting), data=dispatch_data(snor.car, snor.driver)
+    )
+    waiting.reload()
+    assert waiting.current_step == 1
+
+    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, cancelling))
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, waiting), data=dispatch_data(snor.car, snor.driver)
+    )
+
+    waiting.reload()
+    assert waiting.current_step == 2
+    assert waiting.car == snor.car
+
+
 def test_only_a_dispatcher_holder_or_delegate_can_confirm_a_cancel(snor):
     car_application = request_cancel_requested(snor)
 
