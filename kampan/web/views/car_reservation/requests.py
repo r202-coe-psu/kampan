@@ -74,7 +74,11 @@ def inbox():
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def create():
     organization = g.organization
-    request_type = request.args.get("type", "domestic")
+    request_type = request.args.get("type")
+    if request_type is None:
+        return render_template(
+            "/car_reservation/requests/choose_type.html", organization=organization
+        )
     if request_type not in dict(models.car_reservations.RESERVATION_TYPES):
         abort(404)
 

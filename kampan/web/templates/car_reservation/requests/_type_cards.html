@@ -1,0 +1,19 @@
+{# การ์ดเลือกประเภทใบขอใช้รถ ใช้ทั้งใน modal และหน้าเลือกประเภท (ข้อมูลการ์ดมาจาก context processor ของระบบจองรถ)
+   date: ส่งต่อไปหน้าฟอร์มถ้ามี (YYYY-MM-DD) #}
+{% macro TypeCards(organization, date=None) %}
+<ul class="flex flex-col gap-2" data-request-type-cards>
+  {% for card in request_type_cards %}
+  <li>
+    <a class="flex items-center gap-3 rounded-box border border-base-300 px-4 py-3 transition hover:border-primary hover:bg-primary/5"
+       href="{{ url_for('car_reservation.requests.create', organization_id=organization.id, type=card.key, date=date) }}">
+      <i class="ph {{ card.icon }} text-2xl text-primary"></i>
+      <span class="min-w-0 flex-1">
+        <span class="block font-medium">{{ card.title }}</span>
+        <span class="block text-sm text-base-content/60">{{ card.hint }}</span>
+      </span>
+      <i class="ph ph-caret-right text-base-content/40"></i>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
