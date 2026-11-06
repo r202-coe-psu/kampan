@@ -94,6 +94,18 @@ def create():
     ) < datetime.datetime.combine(form.departure_date.data, form.departure_time.data):
         form.return_date.errors.append("วันกลับต้องไม่ก่อนวันออกเดินทาง")
         submitted = False
+    if (
+        submitted
+        and request_type == "domestic"
+        and not flow.vehicle_allowed_for_trip(
+            organization,
+            form.vehicle_kind.data,
+            form.departure_date.data,
+            form.return_date.data,
+        )
+    ):
+        form.vehicle_kind.errors.append(flow.HOLIDAY_ONLY_VEHICLE_ERROR)
+        submitted = False
     short_notice_days = None
     is_urgent = False
     if submitted and flow.is_short_notice(

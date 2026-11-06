@@ -205,6 +205,59 @@ def test_domestic_request_is_saved_with_its_form_fields_and_shown_on_detail(worl
         assert shown in html
 
 
+def upcoming(weekday, at_least_days=10):
+    """วันถัดไปที่เป็น weekday (จันทร์=0 ... อาทิตย์=6) และห่างจากวันนี้อย่างน้อย at_least_days"""
+    day = datetime.date.today() + datetime.timedelta(days=at_least_days)
+    while day.weekday() != weekday:
+        day += datetime.timedelta(days=1)
+    return day
+
+
+def trip_on(data, first_day, last_day):
+    data["departure_date"] = first_day.isoformat()
+    data["return_date"] = last_day.isoformat()
+    return data
+
+
+SEDAN_WEEKDAY_ERROR = "รถเก๋ง/มินิบัสให้บริการเฉพาะวันเสาร์-อาทิตย์และวันหยุดนักขัตฤกษ์"
+
+
+@pytest.mark.parametrize("vehicle_kind", ["เก๋ง", "มินิบัส"])
+def test_sedan_or_minibus_is_refused_when_the_trip_includes_a_weekday(
+    world, vehicle_kind
+):
+    saturday = upcoming(5)
+    data = trip_on(
+        world.request_data("domestic"), saturday, saturday + datetime.timedelta(days=2)
+    )
+    data["vehicle_kind"] = vehicle_kind
+
+    response = post_new(world, data)
+
+    assert response.status_code == 200
+    assert SEDAN_WEEKDAY_ERROR in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_sedan_is_accepted_on_a_weekend_trip(world):
+    saturday = upcoming(5)
+    data = trip_on(
+        world.request_data("domestic"), saturday, saturday + datetime.timedelta(days=1)
+    )
+    data["vehicle_kind"] = "เก๋ง"
+
+    assert post_new(world, data).status_code == 302
+
+
+def test_sedan_is_accepted_when_the_weekday_of_the_trip_is_an_org_holiday(world):
+    monday = upcoming(0)
+    models.CarHoliday(organization=world.org, date=monday, name="วันหยุดพิเศษ").save()
+    data = trip_on(world.request_data("domestic"), monday, monday)
+    data["vehicle_kind"] = "มินิบัส"
+
+    assert post_new(world, data).status_code == 302
+
+
 def test_submitting_stores_the_requesters_division_on_the_request(world):
     car_application = world.submit_domestic_request()
 

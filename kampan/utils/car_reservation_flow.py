@@ -66,6 +66,12 @@ CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพน�
 CAR_OR_DRIVER_NOT_ASSIGNABLE = "รถหรือพนักงานขับรถที่เลือกไม่พร้อมใช้งาน"
 
 
+HOLIDAY_ONLY_VEHICLES = ("เก๋ง", "มินิบัส")
+HOLIDAY_ONLY_VEHICLE_ERROR = (
+    "รถเก๋ง/มินิบัสให้บริการเฉพาะวันเสาร์-อาทิตย์และวันหยุดนักขัตฤกษ์"
+)
+
+
 class FlowError(Exception):
     pass
 
@@ -85,6 +91,13 @@ def is_short_notice(organization, request_type, departure_date, today=None):
         organization, today, departure_date
     )
     return lead < min_business_days(request_type)
+
+
+def vehicle_allowed_for_trip(organization, vehicle_kind, first_day, last_day):
+    """รถเก๋ง/มินิบัสใช้ได้เฉพาะเมื่อทุกวันของการเดินทางเป็นวันเสาร์-อาทิตย์หรือวันหยุด"""
+    if vehicle_kind not in HOLIDAY_ONLY_VEHICLES:
+        return True
+    return utils.business_days.all_days_off(organization, first_day, last_day)
 
 
 def route_for(request_type, province_scope):
