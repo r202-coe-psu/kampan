@@ -295,3 +295,63 @@ def test_detail_stepper_marks_the_denied_step_as_an_error(world):
 
     assert [li.get("data-state") for li in steps] == ["done", "denied", "waiting"]
     assert "step-error" in steps[1].get("class").split()
+
+
+def info_sections(doc):
+    """{หัวข้อการ์ดข้อมูล: ข้อความทั้งการ์ด}"""
+    return {
+        words(find(card, "h2")[0]): words(card)
+        for card in find(doc, "*", data_role="info-section")
+    }
+
+
+def test_detail_groups_the_information_into_titled_cards(world):
+    reservation = world.reservation(phone="081-234-5678", requester_unit="คณะวิศวกรรมศาสตร์")
+
+    sections = info_sections(detail(world, world.staff, reservation))
+
+    assert list(sections) == ["ข้อมูลผู้ขอ", "การเดินทาง"]
+    assert "คณะวิศวกรรมศาสตร์" in sections["ข้อมูลผู้ขอ"] and "081-234-5678" in sections["ข้อมูลผู้ขอ"]
+    assert "กรุงเทพฯ" in sections["การเดินทาง"] and "ประชุมวิชาการ" in sections["การเดินทาง"]
+    assert "10/01/2031 08:30" in sections["การเดินทาง"]
+
+
+def test_detail_adds_cards_for_the_assigned_car_and_the_form_details(world):
+    reservation = world.reservation(
+        status="active",
+        car=world.car,
+        driver=world.dispatcher,
+        details=models.car_reservations.DomesticDetails(
+            vehicle_kind="ตู้", vehicle_count=1, district="หาดใหญ่", province="สงขลา"
+        ),
+    )
+
+    doc = detail(world, world.staff, reservation)
+
+    sections = info_sections(doc)
+    assert list(sections) == ["ข้อมูลผู้ขอ", "การเดินทาง", "รถและพนักงานขับรถ", "รายละเอียดตามแบบฟอร์ม"]
+    assert find(doc, "dd", data_role="assigned-car") and "กก 1234" in sections["รถและพนักงานขับรถ"]
+    assert "สงขลา" in sections["รายละเอียดตามแบบฟอร์ม"]
+
+
+def audit(action, **fields):
+    return models.car_reservations.ReservationAuditLog(
+        action=action, created_date=datetime.datetime(2031, 1, 2, 9, 5), **fields
+    )
+
+
+def test_detail_audit_log_is_a_timeline_with_one_entry_per_action(world):
+    reservation = world.reservation(
+        audit_logs=[
+            audit("submitted", actor=world.staff),
+            audit("approved", actor=world.dispatcher, step_label="ผู้บังคับบัญชา", comment="เห็นชอบ"),
+        ]
+    )
+
+    log = find(detail(world, world.staff, reservation), "ul", "timeline", data_role="audit-log")[0]
+
+    entries = find(log, "li")
+    assert len(entries) == 2
+    assert "ยื่นคำขอ" in words(entries[0]) and "Staff" in words(entries[0])
+    assert "อนุมัติ" in words(entries[1]) and "Dispatcher" in words(entries[1])
+    assert "เห็นชอบ" in words(entries[1]) and "02/01/2031 09:05" in words(entries[1])

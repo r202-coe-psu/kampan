@@ -1,0 +1,27 @@
+{# การ์ดข้อมูลของหน้ารายละเอียด: หัวข้อ (h2) + รายการ dt/dd
+   ใช้:
+     {% call InfoCard('การเดินทาง', icon='ph-map-pin') %}
+       {% call Item('สถานที่ปฏิบัติงาน') %}{{ reservation.location }}{% endcall %}
+     {% endcall %}
+   role: data-role ของ <dd> (ใช้เป็นจุดยึดให้ JS/test) wide: กินเต็มสองคอลัมน์
+   details_*.html ใช้ markup dt/dd ชุดเดียวกัน (text-sm text-base-content/60 + font-medium) #}
+{% macro InfoCard(title, icon=None, role=None) %}
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="info-section">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-lg">
+      {% if icon %}<i class="ph {{ icon }} text-primary"></i>{% endif %}
+      {{ title }}
+    </h2>
+    <dl class="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2" {% if role %}data-role="{{ role }}"{% endif %}>
+      {{ caller() }}
+    </dl>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro Item(label, role=None, wide=False) %}
+<div class="{{ 'md:col-span-2' if wide else '' }}">
+  <dt class="text-sm text-base-content/60">{{ label }}</dt>
+  <dd class="font-medium break-words" {% if role %}data-role="{{ role }}"{% endif %}>{{ caller() }}</dd>
+</div>
+{% endmacro %}

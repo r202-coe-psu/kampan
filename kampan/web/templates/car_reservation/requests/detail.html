@@ -1,5 +1,6 @@
 {% extends '/car_reservation/base/default-page.html' %}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
+{% from '/car_reservation/components/info_card.html' import InfoCard, Item %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
@@ -38,48 +39,68 @@
   </div>
 </div>
 
+{% call InfoCard('ข้อมูลผู้ขอ', icon='ph-user') %}
+  {% call Item('ผู้ขอ') %}{{ reservation.creator.get_name() if reservation.creator else '-' }}{% endcall %}
+  {% call Item('คณะ/หน่วยงาน') %}{{ reservation.requester_unit or '-' }}{% endcall %}
+  {% call Item('เบอร์โทร') %}{{ reservation.phone or '-' }}{% endcall %}
+{% endcall %}
+
+{% call InfoCard('การเดินทาง', icon='ph-map-pin') %}
+  {% call Item('สถานที่ปฏิบัติงาน') %}{{ reservation.location }}{% endcall %}
+  {% call Item('เรื่อง') %}{{ reservation.request_reason }}{% endcall %}
+  {% call Item('วัน-เวลา ออกเดินทาง') %}{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.{% endcall %}
+  {% call Item('วัน-เวลา กลับ') %}{{ reservation.return_datetime.strftime('%d/%m/%Y %H:%M') + ' น.' if reservation.return_datetime else '-' }}{% endcall %}
+  {% call Item('จำนวนผู้โดยสาร') %}{{ reservation.passenger_number }}{% endcall %}
+  {% call Item('ให้รถไปจอดรับที่') %}{{ reservation.pickup_place }}{% endcall %}
+  {% call Item('เวลารับ') %}{{ reservation.pickup_time }}{% endcall %}
+{% endcall %}
+
+{% if reservation.car or reservation.driver or reservation.extra_travelers %}
+{% call InfoCard('รถและพนักงานขับรถ', icon='ph-car') %}
+  {% if reservation.car %}
+  {% call Item('รถ', role='assigned-car') %}{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}{% endcall %}
+  {% endif %}
+  {% if reservation.driver %}
+  {% call Item('พนักงานขับรถ', role='assigned-driver') %}{{ reservation.driver.get_name() }}{% endcall %}
+  {% endif %}
+  {% if reservation.extra_travelers %}
+  {% call Item('ขออนุมัติให้เดินทางไปด้วย', role='extra-travelers', wide=True) %}{{ reservation.extra_travelers }}{% endcall %}
+  {% endif %}
+{% endcall %}
+{% endif %}
+
+{% if reservation.details %}
+{% call InfoCard('รายละเอียดตามแบบฟอร์ม', icon='ph-clipboard-text', role='type-details') %}
+  {% include '/car_reservation/requests/details_' ~ reservation.request_type ~ '.html' %}
+{% endcall %}
+{% endif %}
+
 <div class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4">
-  <dl class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-    <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ reservation.requester_unit }}</dd></div>
-    <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ reservation.location }}</dd></div>
-    <div><dt class="font-semibold">เรื่อง</dt><dd>{{ reservation.request_reason }}</dd></div>
-    <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ reservation.passenger_number }}</dd></div>
-    <div><dt class="font-semibold">ให้รถไปจอดรับที่</dt><dd>{{ reservation.pickup_place }}</dd></div>
-    <div><dt class="font-semibold">เวลารับ</dt><dd>{{ reservation.pickup_time }}</dd></div>
-    {% if reservation.car %}
-    <div><dt class="font-semibold">รถ</dt><dd data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</dd></div>
-    {% endif %}
-    {% if reservation.driver %}
-    <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ reservation.driver.get_name() }}</dd></div>
-    {% endif %}
-    {% if reservation.extra_travelers %}
-    <div><dt class="font-semibold">ขออนุมัติให้เดินทางไปด้วย</dt><dd data-role="extra-travelers">{{ reservation.extra_travelers }}</dd></div>
-    {% endif %}
-  </dl>
+    <h2 class="card-title text-lg"><i class="ph ph-clock-counter-clockwise text-primary"></i> ประวัติการดำเนินการ</h2>
+    <ul class="timeline timeline-vertical timeline-snap-icon timeline-compact" data-role="audit-log">
+      {% for log in reservation.audit_logs %}
+      <li>
+        {% if not loop.first %}<hr class="bg-base-300" />{% endif %}
+        <div class="timeline-middle text-primary"><i class="ph ph-check-circle text-xl"></i></div>
+        <div class="timeline-end timeline-box mb-4 border-base-300 bg-base-100">
+          <p class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</p>
+          <p>
+            <span class="font-medium">{{ log.get_action_display() }}</span>
+            {% if log.step_label %}<span>({{ log.step_label }})</span>{% endif %}
+            โดย {{ log.actor.get_name() if log.actor else '-' }}
+          </p>
+          {% if log.comment %}<p class="text-base-content/70">{{ log.comment }}</p>{% endif %}
+        </div>
+        {% if not loop.last %}<hr class="bg-base-300" />{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 
-  {% if reservation.details %}
-  <h3 class="mt-6 font-semibold">รายละเอียดตามแบบฟอร์ม</h3>
-  <dl class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2" data-role="type-details">
-    {% include '/car_reservation/requests/details_' ~ reservation.request_type ~ '.html' %}
-  </dl>
-  {% endif %}
-
-  {% include '/car_reservation/requests/_trip_report.html' %}
-
-  <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
-  <ul class="mt-2 space-y-1" data-role="audit-log">
-    {% for log in reservation.audit_logs %}
-    <li>
-      <span class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</span>
-      <span class="font-medium">{{ log.get_action_display() }}</span>
-      {% if log.step_label %}<span>({{ log.step_label }})</span>{% endif %}
-      โดย {{ log.actor.get_name() if log.actor else '-' }}
-      {% if log.comment %}<span class="text-base-content/70">: {{ log.comment }}</span>{% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
   {% if can_cancel %}
   <div class="mt-4">
     <button type="button" class="btn btn-error btn-soft"
