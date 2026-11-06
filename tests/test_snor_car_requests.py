@@ -65,7 +65,6 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
         data = {
             "requester_unit": "คณะวิศวกรรมศาสตร์",
             "phone": "081-234-5678",
-            "supervisor": str(s.supervisor.id),
             "location": "กรุงเทพฯ",
             "request_reason": "ประชุมวิชาการ",
             "departure_date": "2099-01-05",

@@ -15,9 +15,6 @@ class SnorCarRequestForm(FlaskForm):
         "เบอร์โทรศัพท์ผู้ขอใช้รถ",
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
-    supervisor = fields.SelectField(
-        "ผู้บังคับบัญชา", validators=[validators.DataRequired()], choices=[]
-    )
     location = fields.StringField(
         "สถานที่ปฏิบัติงาน",
         validators=[validators.DataRequired(), validators.Length(max=516)],

@@ -33,20 +33,6 @@ def get_car_application_or_404(car_application_id):
     return car_application
 
 
-def supervisor_choices(organization):
-    """สมาชิก active ขององค์กร ยกเว้นตัวผู้ขอเอง"""
-    me = current_user._get_current_object()
-    choices = {}
-    for member_role in models.OrganizationUserRole.objects(
-        organization=organization, status="active"
-    ):
-        user = member_role.user
-        if user is None or user == me:
-            continue
-        choices[str(user.id)] = user.get_name()
-    return list(choices.items())
-
-
 @module.route("/new", methods=["GET", "POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def create():
@@ -56,7 +42,6 @@ def create():
         abort(404)
 
     form = forms.snor_car_requests.SnorCarRequestForm()
-    form.supervisor.choices = supervisor_choices(organization)
 
     if form.validate_on_submit():
         user = current_user._get_current_object()
@@ -71,7 +56,6 @@ def create():
             request_type=request_type,
             using_type="general",  # ช่องของ flow DIIS ที่ต้องมีค่าตาม choices; snor ใช้ request_type แทน
             province_scope=form.province_scope.data if request_type == "domestic" else None,
-            supervisor=models.User.objects.get(id=form.supervisor.data),
             requester_unit=form.requester_unit.data,
             phone=form.phone.data,
             location=form.location.data,
