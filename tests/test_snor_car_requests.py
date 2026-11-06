@@ -861,3 +861,33 @@ def test_bookings_that_do_not_overlap_or_are_not_live_do_not_block_assignment(
     car_application.reload()
     assert car_application.current_step == 2
     assert car_application.car == snor.car
+
+
+def test_assignment_is_recorded_in_the_audit_log_with_plate_and_driver(snor):
+    car_application = request_at_dispatcher(snor)
+
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application),
+        data=dispatch_data(snor.car, snor.driver, comment="เรียบร้อย"),
+    )
+
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    assert "จัดรถ กก 1234 พนักงานขับรถ Driver One" in page.get_data(as_text=True)
+
+
+def test_car_and_driver_are_ignored_outside_the_dispatcher_step(snor):
+    car_application = snor.submit_domestic_request()
+
+    response = snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application),
+        data=dispatch_data(snor.car, snor.driver, comment="เห็นชอบ"),
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.car is None
+    assert car_application.driver is None
+    page = snor.client_for(snor.supervisor).get(detail_url(snor, car_application))
+    # ฟอร์มของผู้อนุมัติขั้นนี้ไม่มีช่องเลือกรถ/พนักงานขับรถ
+    assert 'name="car"' not in page.get_data(as_text=True)

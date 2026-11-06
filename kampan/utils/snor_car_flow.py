@@ -200,6 +200,7 @@ def approve(app, user, comment="", car=None, driver=None):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
     key = current_step_key(app)
+    audit_comment = comment
     if key == "dispatcher":
         if car is None or driver is None:
             raise FlowError(CAR_AND_DRIVER_REQUIRED)
@@ -213,6 +214,9 @@ def approve(app, user, comment="", car=None, driver=None):
             raise FlowError(f"พนักงานขับรถ {driver.get_name()} มีงานช่วงเวลานี้แล้ว")
         app.car = car
         app.driver = driver
+        audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"
+        if comment:
+            audit_comment += f" ({comment})"
     app.step_approvals.append(
         models.snor_car_requests.StepApproval(
             step_key=key,
@@ -223,7 +227,7 @@ def approve(app, user, comment="", car=None, driver=None):
             comment=comment,
         )
     )
-    _log(app, "approved", user, step_key=key, comment=comment)
+    _log(app, "approved", user, step_key=key, comment=audit_comment)
     app.current_step += 1
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
