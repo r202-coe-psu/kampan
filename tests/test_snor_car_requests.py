@@ -913,3 +913,26 @@ def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approv
     assert "คค 1111" not in html
     assert "ขข 9999" not in html
     assert "Staffer Only" not in html
+
+
+def cancel_url(snor, car_application):
+    return f"{BASE}/{car_application.id}/cancel?organization_id={snor.org.id}"
+
+
+def test_requester_cancels_before_a_car_is_assigned_and_the_request_leaves_inboxes(
+    snor,
+):
+    car_application = snor.submit_domestic_request()
+    assert inbox_shows(snor, snor.supervisor, car_application)
+
+    response = snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": "เปลี่ยนแผน"}
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.status == "cancelled"
+    assert car_application.audit_logs[-1].action == "cancelled"
+    assert car_application.audit_logs[-1].actor == snor.requester
+    assert car_application.audit_logs[-1].comment == "เปลี่ยนแผน"
+    assert not inbox_shows(snor, snor.supervisor, car_application)

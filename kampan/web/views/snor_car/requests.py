@@ -269,3 +269,23 @@ def deny(request_id):
     )
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
     return redirect_to_detail
+
+
+@module.route("/<request_id>/cancel", methods=["POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def cancel(request_id):
+    snor_request = get_request_or_404(request_id)
+    form = forms.snor_car.CancelRequestForm()
+    snor.cancel(
+        snor_request,
+        current_user._get_current_object(),
+        reason=form.reason.data or "",
+    )
+    flash("ยกเลิกคำขอเรียบร้อยแล้ว", "success")
+    return redirect(
+        url_for(
+            "snor_car.requests.detail",
+            request_id=snor_request.id,
+            organization_id=g.organization.id,
+        )
+    )

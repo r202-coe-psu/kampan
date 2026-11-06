@@ -73,6 +73,14 @@ class DenyDecisionForm(FlaskForm):
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
 
+
+class CancelRequestForm(FlaskForm):
+    reason = fields.TextAreaField(
+        "เหตุผลที่ยกเลิก (ถ้ามี)",
+        validators=[validators.Optional(), validators.Length(max=516)],
+    )
+
+
 DRIVER_CANNOT_APPROVE = "พนักงานขับรถเป็นผู้อนุมัติไม่ได้"
 NO_HOLDER_CHOICE = ("", "-- ยังไม่ระบุ --")
 

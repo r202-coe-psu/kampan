@@ -254,3 +254,9 @@ def deny(app, user, comment):
     _log(app, "denied", user, step_key=key, comment=comment)
     app.status = "denied"
     app.save()
+
+
+def cancel(app, user, reason=""):
+    app.status = "cancelled"
+    _log(app, "cancelled", user, comment=reason)
+    app.save()
