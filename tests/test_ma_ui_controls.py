@@ -279,10 +279,12 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     assert "เป็นสัญญาย่อยที่แยกมาจากสัญญาหลัก" in child_html
     assert master.name in child_html
 
-    # Products table shows badges
+    # Products table shows child items separated and excludes master container
     table_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
-    assert "สัญญาหลัก (2 สัญญาย่อย)" in table_html
     assert "สัญญาย่อยของ:" in table_html
+    assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in table_html
+    assert "[TEST] Master Contract - [TEST] Sub-item Beta" in table_html
+    assert "สัญญาหลัก (2 สัญญาย่อย)" not in table_html
 
 
 def test_payment_reminder_visibility_based_on_installment_mode(world, client_for):

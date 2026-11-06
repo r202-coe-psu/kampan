@@ -115,9 +115,8 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
 
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert _input_value(html, "name") == "[TEST] MA เดิม"
     assert _input_value(html, "company") == "[TEST] บริษัทเดิม"
-    assert _input_value(html, "total_amount") == "100000.00"
+    assert _input_value(html, "total_amount") == "60000.00"
     assert _input_value(html, "psu_disbursement_number") == ""
     assert _input_value(html, "items-0-name") == "[TEST] License A"
     assert _input_value(html, "items-0-amount") == "60000.00"
@@ -126,13 +125,13 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     assert _input_value(html, "items-0-sub_items-1-brand") == "ยี่ห้อ B"
     assert _input_value(html, "items-0-winner") == "บริษัท ผู้ชนะ"
     assert _input_value(html, "items-0-unit_price") == "30000.00"
-    assert _input_value(html, "items-1-name") == "[TEST] MA B"
+    # รายการย่อยถูกนำเข้าฟอร์มเพียงรายการเดียว
+    assert 'name="items-1-name"' not in html
     assert "S/N: ABC-001" in html and "S/N: ABC-002" in html and "หมายเหตุ A" in html
     # วันเริ่ม-สิ้นสุดเว้นว่าง งวดเหลือ 1 แถวว่าง และไม่มีข้อมูลการจ่ายของ MA เดิม
-    for index in (0, 1):
-        assert _input_value(html, f"items-{index}-start_date") == ""
-        assert _input_value(html, f"items-{index}-end_date") == ""
-        assert _input_value(html, f"items-{index}-item_id") == ""
+    assert _input_value(html, "items-0-start_date") == ""
+    assert _input_value(html, "items-0-end_date") == ""
+    assert _input_value(html, "items-0-item_id") == ""
     assert _input_value(html, "items-0-installments-0-due_date") == ""
     assert 'name="items-0-installments-1-due_date"' not in html
     assert "PAY-OLD-1" not in html
@@ -150,12 +149,12 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
 
 
 def _renew_form(world, psu="PSU-NEW-1", **overrides):
-    """ฟอร์มที่ผู้ใช้กรอกต่อจากค่าที่เติมไว้: เลขที่ ม.อ.เบิกจ่าย, วันที่ และงวดใหม่"""
+    """ฟอร์มที่ผู้ใช้กรอกต่อจากค่าที่เติมไว้: เลขที่ ม.อ.เบิกจ่าย, วันที่ และงวดใหม่ (1 รายการย่อย)"""
     data = {
         "psu_disbursement_number": psu,
-        "name": "[TEST] MA เดิม",
+        "name": "[TEST] MA เดิม - [TEST] License A",
         "company": "[TEST] บริษัทเดิม",
-        "total_amount": "100000.00",
+        "total_amount": "60000.00",
         "items-0-name": "[TEST] License A",
         "items-0-category": "intangible",
         "items-0-account_code": "1204010101 สินทรัพย์ไม่มีตัวตน",
@@ -171,14 +170,6 @@ def _renew_form(world, psu="PSU-NEW-1", **overrides):
         "items-0-requires_activation": "y",
         "items-0-responsible_by": [str(world.role_responsible.id)],
         "items-0-installments-0-due_date": "2026-12-31",
-        "items-1-name": "[TEST] MA B",
-        "items-1-category": "service",
-        "items-1-start_date": "2026-03-01",
-        "items-1-end_date": "2027-02-28",
-        "items-1-amount": "40000.00",
-        "items-1-reminder_kind": "ma",
-        "items-1-responsible_by": [str(world.role_admin.id)],
-        "items-1-installments-0-due_date": "2027-02-28",
     }
     data.update(overrides)
     return data
@@ -203,7 +194,8 @@ def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     assert new.organization.id == world.org.id
     assert new.created_by.id == world.responsible.id
     new_items = list(models.ProcurementItem.objects(procurement=new).order_by("id"))
-    assert [item.name for item in new_items] == ["[TEST] License A", "[TEST] MA B"]
+    assert [item.name for item in new_items] == ["[TEST] License A"]
+    assert new.total_amount == Decimal("60000.00")
     assert new_items[0].start_date == datetime.datetime(2026, 1, 1)
     assert all(not installment.is_paid() for item in new_items for installment in item.installments)
     assert [(row.brand, row.model_name, row.details) for row in new_items[0].sub_items] == [
@@ -331,7 +323,7 @@ def test_renew_other_org_ma_is_404(world, client_for):
 
 
 def test_renew_with_sum_mismatch_keeps_old_ma_unclaimed(world, client_for):
-    response = client_for(world.admin).post(_renew_url(world), data=_renew_form(world, **{"items-1-amount": "39999.00"}))
+    response = client_for(world.admin).post(_renew_url(world), data=_renew_form(world, **{"items-0-amount": "59999.00"}))
 
     assert response.status_code == 200
     assert "ขาด 1.00 บาท" in response.get_data(as_text=True)
@@ -449,3 +441,18 @@ def test_renewed_ma_shows_banners_chain_and_no_renew_button(world, client_for):
     positions = [chain_html.index(number) for number in ("PSU-OLD-1", "PSU-NEW-1", "PSU-NEW-3")]
     assert positions == sorted(positions)
     assert newest.renewed_from.id == new.id
+
+
+def test_renew_specific_sub_item_by_id(world, client_for):
+    client = client_for(world.admin)
+    items = list(models.ProcurementItem.objects(procurement=world.old).order_by("id"))
+    item_b = items[1]  # [TEST] MA B
+    url = f"{_renew_url(world)}&item_id={item_b.id}"
+    response = client.get(url)
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert _input_value(html, "items-0-name") == "[TEST] MA B"
+    assert _input_value(html, "items-0-amount") == "40000.00"
+    assert _input_value(html, "total_amount") == "40000.00"
+    assert 'name="items-1-name"' not in html
+

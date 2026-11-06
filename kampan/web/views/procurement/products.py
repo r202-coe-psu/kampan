@@ -19,7 +19,7 @@ from flask_login import current_user, login_required
 from mongoengine.queryset.visitor import Q
 
 from kampan import models
-from kampan.models.procurement import payment_statuses, procurement_ids_of
+from kampan.models.procurement import _reference_id, payment_statuses, procurement_ids_of
 from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
 
@@ -89,6 +89,16 @@ def index():
 
     only_my_division = request.args.get("division") == "mine"
     visible_qs = ma_permissions.visible_procurements(organization, only_my_division=only_my_division)
+
+    # หากสัญญาหลักมีการ duplicate แยกรายการย่อยออกไปแล้ว ให้แสดงเฉพาะรายการย่อยที่แยกออกมาในตาราง
+    parent_ids = list({
+        _reference_id(child, "parent_procurement")
+        for child in models.Procurement.objects(
+            organization=organization, parent_procurement__ne=None
+        ).only("parent_procurement")
+    } - {None})
+    if parent_ids:
+        visible_qs = visible_qs.filter(id__nin=parent_ids)
 
     # ตัวนับสถานะนับจาก MA ที่เห็นทั้งหมด ไม่ขึ้นกับคำค้นหรือ filter
     statuses = payment_statuses(visible_qs.scalar("id"), organization, today)
@@ -273,24 +283,36 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
     }
 
 
-def _renew_form_data(organization, old) -> dict:
-    """ข้อมูลตั้งต้นของฟอร์มต่ออายุ: หัวสัญญาและรายการย่อยจาก MA เดิม เว้นว่างเลขที่ ม.อ.เบิกจ่าย"""
+def _renew_form_data(organization, old, target_item=None) -> dict:
+    """ข้อมูลตั้งต้นของฟอร์มต่ออายุ: หัวสัญญาและรายการย่อย 1 รายการจาก MA เดิม เว้นว่างเลขที่ ม.อ.เบิกจ่าย"""
     active_member_ids = set(
         models.OrganizationUserRole.objects(organization=organization, status="active").scalar("id")
     )
+    items = old.get_items()
+    if target_item is None and items:
+        target_item = items[0]
+
+    renew_items = [_renew_item_data(target_item, active_member_ids)] if target_item else []
+    total_amount = target_item.amount if target_item else old.total_amount
+    name = old.name
+    if target_item and len(items) > 1 and target_item.name not in old.name:
+        name = f"{old.name} - {target_item.name}"
+
     return {
-        "name": old.name,
+        "name": name,
         "company": old.company,
-        "total_amount": old.total_amount,
-        "items": [_renew_item_data(item, active_member_ids) for item in old.get_items()],
+        "total_amount": total_amount,
+        "items": renew_items,
     }
 
 
-def _build_form(organization, procurement=None, member=None, renew_from=None) -> forms.procurement.ProcurementHeaderForm:
+def _build_form(organization, procurement=None, member=None, renew_from=None, target_item=None) -> forms.procurement.ProcurementHeaderForm:
     if request.method == "POST":
         form = forms.procurement.ProcurementHeaderForm()
     elif renew_from:
-        form = forms.procurement.ProcurementHeaderForm(formdata=None, data=_renew_form_data(organization, renew_from))
+        form = forms.procurement.ProcurementHeaderForm(
+            formdata=None, data=_renew_form_data(organization, renew_from, target_item=target_item)
+        )
     elif procurement:
         form = forms.procurement.ProcurementHeaderForm(
             formdata=None,
@@ -307,7 +329,7 @@ def _build_form(organization, procurement=None, member=None, renew_from=None) ->
         form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]})
     form.set_member_choices(_member_choices(organization))
     extra_division_ids = []
-    source_items = procurement.get_items() if procurement else (renew_from.get_items() if renew_from else [])
+    source_items = procurement.get_items() if procurement else ([target_item] if target_item else (renew_from.get_items() if renew_from else []))
     for it in source_items:
         for div in it.responsible_divisions or []:
             if div:
@@ -316,10 +338,10 @@ def _build_form(organization, procurement=None, member=None, renew_from=None) ->
     return form
 
 
-def _render_form(form, organization, member, procurement=None, form_errors=(), renew_from=None):
+def _render_form(form, organization, member, procurement=None, form_errors=(), renew_from=None, target_item=None):
     choices = _member_choices(organization)
     extra_division_ids = []
-    source_items = procurement.get_items() if procurement else (renew_from.get_items() if renew_from else [])
+    source_items = procurement.get_items() if procurement else ([target_item] if target_item else (renew_from.get_items() if renew_from else []))
     for it in source_items:
         for div in it.responsible_divisions or []:
             if div:
@@ -340,6 +362,7 @@ def _render_form(form, organization, member, procurement=None, form_errors=(), r
         installment_prototype=installment_prototype,
         form_errors=[error for error in form_errors if error],
         renew_from=renew_from,
+        target_item=target_item,
     )
 
 
@@ -611,22 +634,38 @@ def renew(procurement_id):
         return redirect(detail_url)
 
     member = ma_permissions.get_member(organization)
-    form = _build_form(organization, member=member, renew_from=old)
+    items = old.get_items()
+    item_id = request.args.get("item_id")
+    target_item = None
+    if item_id:
+        for it in items:
+            if str(it.id) == str(item_id):
+                target_item = it
+                break
+    if not target_item and items:
+        target_item = items[0]
+
+    form = _build_form(organization, member=member, renew_from=old, target_item=target_item)
     if not form.validate_on_submit():
-        return _render_form(form, organization, member, renew_from=old)
+        return _render_form(form, organization, member, renew_from=old, target_item=target_item)
 
     user = current_user._get_current_object()
-    items, _ = _build_items(form, organization, [], user)
+    items_to_save, _ = _build_items(form, organization, [], user)
 
     new = models.Procurement(organization=organization, status="active", created_by=user)
     _apply_header(form, new, user)
+    if old.parent_procurement:
+        new.parent_procurement = old.parent_procurement
+    elif len(items) > 1:
+        new.parent_procurement = old
+
     try:
-        old.renew_into(new, items)
+        old.renew_into(new, items_to_save)
     except models.RenewalConflict:
         flash(ALREADY_RENEWED_MESSAGE, "error")
         return redirect(detail_url)
     except me.ValidationError as error:
-        return _render_form(form, organization, member, form_errors=[error.message], renew_from=old)
+        return _render_form(form, organization, member, form_errors=[error.message], renew_from=old, target_item=target_item)
 
     flash("ต่ออายุ MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=new.id, organization_id=organization.id))

@@ -61,9 +61,15 @@
     {% if can_edit %}
       <div class="flex flex-wrap gap-2">
         {% if not procurement.is_renewed() %}
-          <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-success btn-sm">
-            <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
-          </a>
+          {% if items|length > 1 %}
+            <button type="button" onclick="document.getElementById('modal_select_renew_item').showModal()" class="btn btn-success btn-sm">
+              <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
+            </button>
+          {% else %}
+            <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-success btn-sm">
+              <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
+            </a>
+          {% endif %}
         {% endif %}
         <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-primary btn-sm">
           <i class="ph ph-pencil-simple"></i> แก้ไข MA
@@ -226,6 +232,12 @@
                         <i class="ph ph-pencil-simple"></i>
                       </a>
                     {% endif %}
+                    {% if can_edit and not procurement.is_renewed() %}
+                      <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
+                         class="btn btn-ghost btn-xs text-success btn-square" title="ต่ออายุรายการย่อยนี้" aria-label="ต่ออายุรายการย่อย {{ item.name }}">
+                        <i class="ph ph-arrows-clockwise text-sm"></i>
+                      </a>
+                    {% endif %}
                   </div>
                   <div class="text-xs text-base-content/60">{{ item.get_reminder_kind_label() }}{% if item.requires_activation %} · ต้อง activate{% endif %}</div>
                 </td>
@@ -270,6 +282,12 @@
               <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
                  class="btn btn-outline btn-primary btn-xs gap-1">
                 <i class="ph ph-pencil-simple"></i> แก้ไข
+              </a>
+            {% endif %}
+            {% if can_edit and not procurement.is_renewed() %}
+              <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
+                 class="btn btn-outline btn-success btn-xs gap-1">
+                <i class="ph ph-arrows-clockwise"></i> ต่ออายุรายการนี้
               </a>
             {% endif %}
           </div>
@@ -551,6 +569,39 @@
       {% endfor %}
     {% endif %}
   {% endfor %}
+
+  {% if can_edit and not procurement.is_renewed() and items|length > 1 %}
+    <dialog id="modal_select_renew_item" class="modal">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg mb-3 flex items-center gap-2 text-success">
+          <i class="ph ph-arrows-clockwise text-xl"></i> เลือกรายการย่อยที่ต้องการต่ออายุ
+        </h3>
+        <p class="text-sm text-base-content/70 mb-4">
+          สัญญา MA นี้มีหลายรายการย่อย กรุณาเลือกรายการย่อยที่ต้องการนำเข้าฟอร์มเพื่อต่ออายุ (ระบบจะนำเข้าฟอร์มครั้งละ 1 รายการย่อย)
+        </p>
+        <div class="divide-y divide-base-200 border border-base-200 rounded-lg overflow-hidden">
+          {% for it in items %}
+            <div class="p-3 flex items-center justify-between gap-3 hover:bg-base-200/50 transition-colors">
+              <div>
+                <div class="font-semibold text-base-content">{{ it.name }}</div>
+                <div class="text-xs text-base-content/60">ยอดเงิน: {{ it.amount | format_number }} บาท · สิ้นสุด: {{ thai_date(it.end_date) }}</div>
+              </div>
+              <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=it.id) }}"
+                 class="btn btn-success btn-xs text-white gap-1 shrink-0">
+                <i class="ph ph-arrows-clockwise"></i> ต่ออายุรายการนี้
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="modal-action">
+          <button type="button" onclick="document.getElementById('modal_select_renew_item').close()" class="btn btn-ghost">ปิด</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  {% endif %}
 </div>
 {% endblock %}
 
