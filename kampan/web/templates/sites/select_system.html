@@ -41,7 +41,9 @@
       </a>
       {% endif %}
 
-      {% if 'car' in enabled_modules and (current_user.get_current_division() or not organization.requires_division()) %}
+      {% if current_user.get_current_division() %}
+
+        {% if 'car' in enabled_modules %}
         <!-- ระบบการขอใช้รถยนต์ -->
         <a href="{{ url_for('vehicle_lending.car_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
@@ -52,9 +54,9 @@
             <h3 class="text-lg sm:text-xl font-bold text-module-car-content">ระบบการขอใช้รถยนต์</h3>
           </div>
         </a>
-      {% endif %}
+        {% endif %}
 
-      {% if 'motorcycle' in enabled_modules and current_user.get_current_division() %}
+        {% if 'motorcycle' in enabled_modules %}
         <!-- ระบบการขอใช้รถจักรยานยนต์ -->
         <a href="{{ url_for('vehicle_lending.motorcycle_applications.calendar', organization_id=organization.id) }}"
            class="block min-h-[180px] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
@@ -65,6 +67,8 @@
             <h3 class="text-lg sm:text-xl font-bold text-module-motorcycle-content">ระบบการขอใช้รถจักรยานยนต์</h3>
           </div>
         </a>
+        {% endif %}
+
       {% endif %}
 
     </div>
