@@ -182,8 +182,18 @@ class AirportReservationForm(CommonReservationForm):
         widget=widgets.ListWidget(prefix_label=False),
     )
     eligibility_confirmed = fields.BooleanField(
-        "ข้าพเจ้าเป็นผู้บริหารหรือบุคลากรในสำนักงานอธิการบดี"
+        "ข้าพเจ้าเป็นผู้บริหารหรือบุคลากรในสำนักงานอธิการบดี",
+        validators=[validators.DataRequired("กรุณายืนยันสิทธิ์การขอใช้รถ")],
     )
+
+    def validate_passengers(self, field):
+        if not self.filled_passengers():
+            raise validators.ValidationError("ต้องระบุผู้โดยสารอย่างน้อย 1 คน")
+        for row in self.filled_passengers():
+            if not (row.name.data or "").strip() or not (row.phone.data or "").strip():
+                raise validators.ValidationError(
+                    "ผู้โดยสารแต่ละคนต้องระบุทั้งชื่อและเบอร์โทร"
+                )
 
     def filled_passengers(self):
         return [

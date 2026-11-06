@@ -308,6 +308,52 @@ def test_airport_form_shows_its_own_title_and_only_its_own_fields(world):
     assert 'name="province_scope"' not in html
 
 
+def test_airport_request_without_any_passenger_is_refused(world):
+    data = world.request_data("airport")
+    data["passengers-0-name"] = ""
+    data["passengers-0-phone"] = ""
+
+    response = post_new(world, data, request_type="airport")
+
+    assert response.status_code == 200
+    assert "ต้องระบุผู้โดยสารอย่างน้อย 1 คน" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_airport_passenger_row_needs_both_name_and_phone_and_extra_rows_are_ignored(
+    world,
+):
+    data = world.request_data("airport")
+    data["passengers-1-name"] = "มีชื่อไม่มีเบอร์"
+
+    response = post_new(world, data, request_type="airport")
+
+    assert response.status_code == 200
+    assert "ผู้โดยสารแต่ละคนต้องระบุทั้งชื่อและเบอร์โทร" in response.get_data(as_text=True)
+
+    data["passengers-1-phone"] = "080-000-0000"
+    for extra in range(2, 7):
+        data[f"passengers-{extra}-name"] = f"คนที่ {extra}"
+        data[f"passengers-{extra}-phone"] = "080-111-1111"
+    assert post_new(world, data, request_type="airport").status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.passenger_number == 5
+
+
+def test_airport_request_needs_the_eligibility_confirmation(world):
+    data = world.request_data("airport")
+    del data["eligibility_confirmed"]
+
+    response = post_new(world, data, request_type="airport")
+
+    assert response.status_code == 200
+    assert "ข้าพเจ้าเป็นผู้บริหารหรือบุคลากรในสำนักงานอธิการบดี" in response.get_data(
+        as_text=True
+    )
+    assert "กรุณายืนยันสิทธิ์การขอใช้รถ" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
 def upcoming(weekday, at_least_days=10):
     """วันถัดไปที่เป็น weekday (จันทร์=0 ... อาทิตย์=6) และห่างจากวันนี้อย่างน้อย at_least_days"""
     day = datetime.date.today() + datetime.timedelta(days=at_least_days)

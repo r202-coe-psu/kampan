@@ -14,6 +14,8 @@
     {{ renderer.render_field(row.form.phone) }}
   </div>
   {% endfor %}
+  {% for error in form.passengers.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
 </fieldset>
 {% include '/car_reservation/requests/form_cost_responsibilities.html' %}
 {{ renderer.render_checkbox(form.eligibility_confirmed) }}
+{% for error in form.eligibility_confirmed.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
