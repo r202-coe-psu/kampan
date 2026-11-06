@@ -78,19 +78,25 @@ def close(task_id):
 
     form = forms.car_reservation.TripCloseForm()
     if form.validate_on_submit():
-        flow.close_trip(
-            task,
-            user,
-            mileage_out=form.mileage_out.data,
-            mileage_in=form.mileage_in.data,
-            expense_case=form.expense_case.data,
-            fuel_liters=form.fuel_liters.data,
-            cost_baht=form.cost_baht.data,
-        )
-        flash("ปิดงานเรียบร้อยแล้ว", "success")
-        return redirect(
-            url_for("car_reservation.tasks.index", organization_id=g.organization.id)
-        )
+        try:
+            flow.close_trip(
+                task,
+                user,
+                mileage_out=form.mileage_out.data,
+                mileage_in=form.mileage_in.data,
+                expense_case=form.expense_case.data,
+                fuel_liters=form.fuel_liters.data,
+                cost_baht=form.cost_baht.data,
+            )
+        except flow.FlowError as error:
+            form.mileage_in.errors = [*form.mileage_in.errors, str(error)]
+        else:
+            flash("ปิดงานเรียบร้อยแล้ว", "success")
+            return redirect(
+                url_for(
+                    "car_reservation.tasks.index", organization_id=g.organization.id
+                )
+            )
     return render_template(
         "/car_reservation/tasks/close.html",
         organization=g.organization,

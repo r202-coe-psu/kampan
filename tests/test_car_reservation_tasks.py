@@ -187,3 +187,26 @@ def test_closing_shows_a_success_toast_on_the_task_list(world):
     )
 
     assert "ปิดงานเรียบร้อยแล้ว" in response.get_data(as_text=True)
+
+
+def test_return_mileage_below_departure_mileage_is_refused(world):
+    reservation = world.reservation()
+
+    response = close(world, reservation, mileage_out="10000", mileage_in="9999")
+
+    reservation.reload()
+    world.car.reload()
+    assert response.status_code == 200
+    assert "เลข กม. กลับต้องไม่น้อยกว่าเลข กม. ออก" in response.get_data(as_text=True)
+    assert reservation.status == "active"
+    assert world.car.last_mileage == 10000
+
+
+def test_return_mileage_is_required(world):
+    reservation = world.reservation()
+
+    response = close(world, reservation, mileage_in="")
+
+    reservation.reload()
+    assert response.status_code == 200
+    assert reservation.status == "active"

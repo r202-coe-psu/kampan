@@ -83,6 +83,9 @@ class FlowError(Exception):
     pass
 
 
+MILEAGE_IN_BELOW_OUT = "เลข กม. กลับต้องไม่น้อยกว่าเลข กม. ออก"
+
+
 def is_too_far_ahead(departure_date, today=None):
     today = today or datetime.date.today()
     return (departure_date - today).days > MAX_ADVANCE_DAYS
@@ -362,6 +365,8 @@ def close_trip(
     """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ"""
     if not can_close(app, user):
         raise FlowError("ไม่มีสิทธิ์ปิดงานนี้")
+    if mileage_in < mileage_out:
+        raise FlowError(MILEAGE_IN_BELOW_OUT)
 
     app.last_mileage_before = mileage_out
     app.last_mileage = mileage_in
