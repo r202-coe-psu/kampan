@@ -99,72 +99,82 @@
   </div>
 </div>
 
-<div class="card bg-base-100 border border-base-300 shadow-sm">
+{% if can_cancel or can_confirm_cancel or can_act %}
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="action-card">
   <div class="card-body gap-4">
-  {% if can_cancel %}
-  <div class="mt-4">
-    <button type="button" class="btn btn-error btn-soft"
-            onclick="document.getElementById('cancel-modal').showModal()">ยกเลิกคำขอ</button>
-  </div>
+    <h2 class="card-title text-lg"><i class="ph ph-gavel text-primary"></i> การดำเนินการ</h2>
 
-  <dialog id="cancel-modal" class="modal">
-    <form method="post"
-          action="{{ url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id) }}"
-          class="modal-box">
-      <h3 class="text-lg font-bold">ยกเลิกคำขอ</h3>
-      {{ cancel_form.csrf_token }}
-      {{ renderer.render_field(cancel_form.reason) }}
-      <div class="modal-action">
-        <button type="button" class="btn"
-                onclick="document.getElementById('cancel-modal').close()">ปิด</button>
-        <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
-      </div>
-    </form>
-  </dialog>
-  {% endif %}
-
-  {% if can_confirm_cancel %}
-  <form method="post" class="mt-4"
-        action="{{ url_for('car_reservation.requests.confirm_cancel', request_id=reservation.id, organization_id=organization.id) }}">
-    {{ cancel_form.csrf_token }}
-    <button type="submit" class="btn btn-warning">รับทราบการยกเลิก</button>
-  </form>
-  {% endif %}
-
-  {% if can_act %}
-  <div class="mt-4 flex items-end gap-2">
+    {% if can_act %}
     <form method="post"
           action="{{ url_for('car_reservation.requests.approve', request_id=reservation.id, organization_id=organization.id) }}"
-          class="flex items-end gap-2">
+          class="flex flex-col gap-2">
       {{ form.csrf_token }}
       {% if form.car is defined %}
-      {{ renderer.render_field(form.car) }}
-      {{ renderer.render_field(form.driver) }}
-      {% if asks_extra_travelers %}{{ renderer.render_field(form.extra_travelers) }}{% endif %}
+      <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+        {{ renderer.render_field(form.car) }}
+        {{ renderer.render_field(form.driver) }}
+        {% if asks_extra_travelers %}{{ renderer.render_field(form.extra_travelers) }}{% endif %}
+      </div>
       {% endif %}
       {{ renderer.render_field(form.comment) }}
-      <button type="submit" class="btn btn-success">อนุมัติ</button>
-    </form>
-    <button type="button" class="btn btn-error btn-soft"
-            onclick="document.getElementById('deny-modal').showModal()">ไม่อนุมัติ</button>
-  </div>
-
-  <dialog id="deny-modal" class="modal">
-    <form method="post"
-          action="{{ url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id) }}"
-          class="modal-box">
-      <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
-      {{ deny_form.csrf_token }}
-      {{ renderer.render_field(deny_form.comment) }}
-      <div class="modal-action">
-        <button type="button" class="btn"
-                onclick="document.getElementById('deny-modal').close()">ยกเลิก</button>
-        <button type="submit" class="btn btn-error">ยืนยันไม่อนุมัติ</button>
+      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn btn-error btn-soft"
+                onclick="document.getElementById('deny-modal').showModal()">ไม่อนุมัติ</button>
+        <button type="submit" class="btn btn-success">อนุมัติ</button>
       </div>
     </form>
-  </dialog>
-  {% endif %}
+    {% endif %}
+
+    {% if can_confirm_cancel %}
+    <form method="post"
+          action="{{ url_for('car_reservation.requests.confirm_cancel', request_id=reservation.id, organization_id=organization.id) }}">
+      {{ cancel_form.csrf_token }}
+      <button type="submit" class="btn btn-warning">รับทราบการยกเลิก</button>
+    </form>
+    {% endif %}
+
+    {% if can_cancel %}
+    <div>
+      <button type="button" class="btn btn-error btn-soft" data-role="open-cancel"
+              onclick="document.getElementById('cancel-modal').showModal()">ยกเลิกคำขอ</button>
+    </div>
+    {% endif %}
   </div>
 </div>
+{% endif %}
+
+{% if can_cancel %}
+<dialog id="cancel-modal" class="modal">
+  <form method="post"
+        action="{{ url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id) }}"
+        class="modal-box">
+    <h3 class="text-lg font-bold">ยกเลิกคำขอ</h3>
+    {{ cancel_form.csrf_token }}
+    {{ renderer.render_field(cancel_form.reason) }}
+    <div class="modal-action">
+      <button type="button" class="btn"
+              onclick="document.getElementById('cancel-modal').close()">ปิด</button>
+      <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if can_act %}
+<dialog id="deny-modal" class="modal">
+  <form method="post"
+        action="{{ url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id) }}"
+        class="modal-box">
+    <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
+    {{ deny_form.csrf_token }}
+    {{ renderer.render_field(deny_form.comment) }}
+    <div class="modal-action">
+      <button type="button" class="btn"
+              onclick="document.getElementById('deny-modal').close()">ยกเลิก</button>
+      <button type="submit" class="btn btn-error">ยืนยันไม่อนุมัติ</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
 </div>
 {% endblock %}

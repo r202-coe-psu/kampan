@@ -355,3 +355,47 @@ def test_detail_audit_log_is_a_timeline_with_one_entry_per_action(world):
     assert "ยื่นคำขอ" in words(entries[0]) and "Staff" in words(entries[0])
     assert "อนุมัติ" in words(entries[1]) and "Dispatcher" in words(entries[1])
     assert "เห็นชอบ" in words(entries[1]) and "02/01/2031 09:05" in words(entries[1])
+
+
+def action_card(doc):
+    cards = find(doc, "div", "card", data_role="action-card")
+    return cards[0] if cards else None
+
+
+def test_detail_puts_approve_and_deny_together_in_one_action_card_for_the_current_approver(world):
+    reservation = world.reservation()
+    approve_action = f"{BASE}/requests/{reservation.id}/approve?organization_id={world.org.id}"
+
+    card = action_card(detail(world, world.dispatcher, reservation))
+
+    assert card is not None
+    approve_form = find(card, "form", action=approve_action)[0]
+    assert find(approve_form, "button", "btn-success", type="submit")
+    deny = [b for b in find(card, "button") if words(b) == "ไม่อนุมัติ"]
+    assert len(deny) == 1 and "deny-modal" in deny[0].get("onclick")
+    assert not find(card, "button", data_role="open-cancel")
+
+
+def test_detail_action_card_offers_the_requester_only_the_cancel_action(world):
+    reservation = world.reservation()
+
+    card = action_card(detail(world, world.staff, reservation))
+
+    assert card is not None
+    assert [words(b) for b in find(card, "button", data_role="open-cancel")] == ["ยกเลิกคำขอ"]
+    assert not find(card, "button", "btn-success")
+
+
+def test_detail_action_card_offers_the_dispatcher_to_acknowledge_a_cancel_request(world):
+    reservation = world.reservation(status="cancel_requested", car=world.car)
+
+    card = action_card(detail(world, world.dispatcher, reservation))
+
+    assert card is not None
+    assert [words(b) for b in find(card, "button", type="submit") if "รับทราบ" in words(b)] == ["รับทราบการยกเลิก"]
+
+
+def test_detail_has_no_action_card_when_the_viewer_can_do_nothing(world):
+    reservation = world.reservation()
+
+    assert action_card(detail(world, world.admin, reservation)) is None
