@@ -6,7 +6,7 @@
     'completed': 'badge-info',
     'denied': 'badge-error',
     'cancel_requested': 'badge-warning',
-    'cancelled': 'badge-neutral',
+    'cancelled': 'badge-ghost',
   } %}
   {% set tone = styles.get(snor_request.status, 'badge-neutral') %}
   <span class="badge {{ tone }} badge-soft {{ 'badge-xs' if compact else 'badge-sm' }} tone-deep-success whitespace-nowrap font-medium align-middle"

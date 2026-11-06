@@ -1118,6 +1118,20 @@ def test_acknowledge_button_shows_only_to_the_dispatcher_while_cancel_is_request
         assert "รับทราบการยกเลิก" not in detail_html(snor, outsider, car_application)
 
 
+@pytest.mark.parametrize(
+    "status, tone", [("cancel_requested", "badge-warning"), ("cancelled", "badge-ghost")]
+)
+def test_status_badge_shows_cancel_states_in_their_own_tone(snor, status, tone):
+    car_application = snor.submit_domestic_request()
+    car_application.status = status
+    car_application.save()
+
+    html = detail_html(snor, snor.requester, car_application)
+
+    badge = html[html.index(f'data-status="{status}"') - 200 :]
+    assert tone in badge.split("</span>")[0]
+
+
 def test_a_submitted_request_has_no_edit_route(snor):
     car_application = snor.submit_domestic_request()
 
