@@ -23,6 +23,13 @@ ORGANIZATION_USER_ROLE_STATUS = [
     ("pending", "รอการเข้าสู่ระบบ"),
 ]
 
+MODULES = [
+    ("inventory", "ระบบพัสดุ/เบิกของ"),
+    ("procurement", "ระบบจัดซื้อจัดจ้าง"),
+    ("car", "ระบบขอใช้รถยนต์"),
+    ("motorcycle", "ระบบขอใช้รถจักรยานยนต์"),
+]
+
 
 class OrganizationUserRole(me.Document):
     meta = {"collection": "organization_user_roles"}
@@ -96,6 +103,9 @@ class Organization(me.Document):
 
     status = me.StringField(required=True, default="active")
 
+    # None = ยังไม่เคยตั้งค่า ถือว่าเปิดทุกโมดูล (ListField ปกติ default เป็น [])
+    enabled_modules = me.ListField(me.StringField(choices=MODULES), default=None)
+
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
 
@@ -106,6 +116,9 @@ class Organization(me.Document):
 
     def get_description(self):
         return markdown.markdown(self.description)
+
+    def has_module(self, key):
+        return self.enabled_modules is None or key in self.enabled_modules
 
     def get_distinct_users(self):
         if OrganizationUserRole.objects().count():

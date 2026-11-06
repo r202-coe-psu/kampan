@@ -2,7 +2,7 @@ from functools import wraps
 
 from flask import g, redirect, request, url_for
 from flask_login import LoginManager, current_user
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Forbidden, NotFound
 
 from . import models
 
@@ -20,6 +20,28 @@ def get_requested_organization_id():
         return request.form.get("organization_id")
 
     return None
+
+
+# blueprint ที่อยู่ภายใต้โมดูลใด ถ้าองค์กรปิดโมดูลนั้น หน้าเหล่านี้ต้องเปิดไม่ได้
+MODULE_OF_BLUEPRINT = {
+    "vehicle_lending.car_applications": "car",
+    "vehicle_lending.car_permissions": "car",
+    "vehicle_lending.cars": "car",
+    "vehicle_lending.car_tasks": "car",
+    "vehicle_lending.car_feedback": "car",
+    "vehicle_lending.car_manuals": "car",
+    "vehicle_lending.history_car_lending": "car",
+}
+
+
+def enforce_enabled_module():
+    organization = getattr(g, "organization", None)
+    if organization is None:
+        return
+
+    module_key = MODULE_OF_BLUEPRINT.get(request.blueprint)
+    if module_key and not organization.has_module(module_key):
+        raise NotFound()
 
 
 def init_acl(app):
@@ -51,6 +73,10 @@ def init_acl(app):
             g.organization = organization
         else:
             g.organization_denied = True
+
+    @app.before_request
+    def gate_disabled_modules():
+        enforce_enabled_module()
 
     @app.errorhandler(403)
     def page_not_found(e):
