@@ -17,6 +17,9 @@ from . import config, email_utils, car_reservation_flow, template_filters
 
 logger = logging.getLogger(__name__)
 
+# ชื่อระบบที่แสดงที่หัวอีเมล (แทนชื่อ DIIS INVENTORY ของระบบอื่น)
+APP_NAME = "ระบบจองรถ"
+
 EVENTS = (
     "submitted",
     "approved",
@@ -193,6 +196,8 @@ def send_car_reservation_email(request_id, event, recipients, host_url):
         return False
     # PSUSMTP ส่งได้ทีละผู้รับ จึงส่งแยกฉบับต่อคน
     for recipient in recipients:
-        smtp.send_email(recipient, subject, body, html=True)
+        smtp.send_email(
+            recipient, subject, body, html=True, app_name=APP_NAME
+        )
     smtp.quit()
     return True

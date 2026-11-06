@@ -1290,7 +1290,9 @@ def sent_emails(monkeypatch):
         def quit(self):
             pass
 
-        def send_email(self, receiver, subject, body, html=False, steps=None):
+        def send_email(
+            self, receiver, subject, body, html=False, steps=None, app_name=None
+        ):
             sent.append(
                 {"receiver": receiver, "subject": subject, "body": body, "html": html}
             )
@@ -1495,3 +1497,56 @@ def test_email_template_cannot_reach_python_internals_and_the_email_still_goes_o
     email = sent_emails[0]
     assert "class" not in email["subject"] and "class" not in email["body"]
     assert email["subject"] == "ระบบจองรถออนไลน์: มีใบขอใช้รถรอการพิจารณาจากท่าน"
+
+
+@pytest.fixture
+def smtp_html(monkeypatch):
+    """ดักที่ขอบ smtplib จริง เพื่อให้ PSUSMTP และ layout อีเมลทำงานจริง: คืน HTML ของแต่ละฉบับที่ส่ง"""
+    import email as email_lib
+    import smtplib
+
+    pages = []
+
+    class FakeServer:
+        def __init__(self, host, port):
+            pass
+
+        def starttls(self):
+            pass
+
+        def login(self, user, password):
+            pass
+
+        def quit(self):
+            pass
+
+        def sendmail(self, sender, receivers, raw):
+            message = email_lib.message_from_string(raw)
+            for part in message.walk():
+                if part.get_content_type() == "text/html":
+                    pages.append(part.get_payload(decode=True).decode("utf-8"))
+
+    monkeypatch.setattr(smtplib, "SMTP", FakeServer)
+    return pages
+
+
+def test_reservation_emails_carry_the_car_reservation_app_name_not_diis(
+    app, world, smtp_html
+):
+    car_application = world.submit_domestic_request()
+
+    send_job(app, world, car_application, "submitted", [world.supervisor.email])
+
+    assert len(smtp_html) == 1
+    assert ">ระบบจองรถ</div>" in smtp_html[0]
+    assert "DIIS INVENTORY" not in smtp_html[0]
+
+
+def test_other_systems_emails_keep_the_default_app_name(app, smtp_html):
+    with app.app_context():
+        smtp = utils.email_utils.PSUSMTP(app.config)
+        smtp.login()
+        smtp.send_email("someone@test.com", "หัวข้อ", "เนื้อหา", html=True)
+
+    assert len(smtp_html) == 1
+    assert "DIIS INVENTORY" in smtp_html[0]
