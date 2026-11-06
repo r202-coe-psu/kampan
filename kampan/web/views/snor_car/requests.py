@@ -185,6 +185,13 @@ def detail(request_id):
         steps=stepper(snor_request),
         current_step_label=snor.step_label(current_key) if current_key else "",
         can_act=snor.can_act(snor_request, current_user._get_current_object()),
+        can_cancel=snor.can_cancel(
+            snor_request, current_user._get_current_object()
+        ),
+        can_confirm_cancel=snor.can_confirm_cancel(
+            snor_request, current_user._get_current_object()
+        ),
+        cancel_form=forms.snor_car.CancelRequestForm(),
         form=form,
         deny_form=forms.snor_car.DenyDecisionForm(),
     )

@@ -53,6 +53,36 @@
     {% endfor %}
   </ul>
 
+  {% if can_cancel %}
+  <div class="mt-4">
+    <button type="button" class="btn btn-error btn-soft"
+            onclick="document.getElementById('cancel-modal').showModal()">ยกเลิกคำขอ</button>
+  </div>
+
+  <dialog id="cancel-modal" class="modal">
+    <form method="post"
+          action="{{ url_for('snor_car.requests.cancel', request_id=snor_request.id, organization_id=organization.id) }}"
+          class="modal-box">
+      <h3 class="text-lg font-bold">ยกเลิกคำขอ</h3>
+      {{ cancel_form.csrf_token }}
+      {{ renderer.render_field(cancel_form.reason) }}
+      <div class="modal-action">
+        <button type="button" class="btn"
+                onclick="document.getElementById('cancel-modal').close()">ปิด</button>
+        <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
+      </div>
+    </form>
+  </dialog>
+  {% endif %}
+
+  {% if can_confirm_cancel %}
+  <form method="post" class="mt-4"
+        action="{{ url_for('snor_car.requests.confirm_cancel', request_id=snor_request.id, organization_id=organization.id) }}">
+    {{ cancel_form.csrf_token }}
+    <button type="submit" class="btn btn-warning">รับทราบการยกเลิก</button>
+  </form>
+  {% endif %}
+
   {% if can_act %}
   <div class="mt-4 flex items-end gap-2">
     <form method="post"

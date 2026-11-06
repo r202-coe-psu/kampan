@@ -1089,6 +1089,35 @@ def test_confirming_is_refused_unless_the_request_is_awaiting_cancel_acknowledge
     assert car_application.audit_logs[-1].action == "approved"
 
 
+def detail_html(snor, user, car_application):
+    page = snor.client_for(user).get(detail_url(snor, car_application))
+    assert page.status_code == 200
+    return page.get_data(as_text=True)
+
+
+def test_cancel_button_shows_only_to_the_creator_while_the_request_is_cancellable(snor):
+    car_application = snor.submit_domestic_request()
+
+    assert "ยกเลิกคำขอ" in detail_html(snor, snor.requester, car_application)
+    for outsider in (snor.supervisor, snor.dispatcher, snor.stranger):
+        assert "ยกเลิกคำขอ" not in detail_html(snor, outsider, car_application)
+
+    for status in ("denied", "completed", "cancelled", "cancel_requested"):
+        car_application.status = status
+        car_application.save()
+        assert "ยกเลิกคำขอ" not in detail_html(snor, snor.requester, car_application)
+
+
+def test_acknowledge_button_shows_only_to_the_dispatcher_while_cancel_is_requested(
+    snor,
+):
+    car_application = request_cancel_requested(snor)
+
+    assert "รับทราบการยกเลิก" in detail_html(snor, snor.dispatcher, car_application)
+    for outsider in (snor.requester, snor.supervisor, snor.stranger):
+        assert "รับทราบการยกเลิก" not in detail_html(snor, outsider, car_application)
+
+
 def test_a_submitted_request_has_no_edit_route(snor):
     car_application = snor.submit_domestic_request()
 
