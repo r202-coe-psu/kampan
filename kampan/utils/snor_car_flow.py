@@ -193,7 +193,7 @@ def _overlapping_bookings(app, **resource):
     """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
     return models.SnorCarRequest.objects(
         organization=app.organization,
-        status__in=["pending", "active"],
+        status__in=["pending", "active", "cancel_requested"],
         id__ne=app.id,
         departure_datetime__lt=app.return_datetime,
         return_datetime__gt=app.departure_datetime,

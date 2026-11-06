@@ -792,7 +792,7 @@ DAY = datetime.datetime.combine(
 )
 
 
-@pytest.mark.parametrize("blocking_status", ["pending", "active"])
+@pytest.mark.parametrize("blocking_status", ["pending", "active", "cancel_requested"])
 @pytest.mark.parametrize("clash", ["car", "driver"])
 def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
     snor, clash, blocking_status
