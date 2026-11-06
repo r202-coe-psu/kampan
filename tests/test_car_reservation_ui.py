@@ -1,6 +1,7 @@
 """โครงหน้าของระบบจองรถ: sidebar แบ่งกลุ่ม, หัวรายการ, ฟอร์มแบ่งส่วน, stepper และ timeline ของหน้ารายละเอียด"""
 
 import datetime
+import re
 
 import pytest
 from lxml import html as lxml_html
@@ -438,3 +439,37 @@ def test_calendar_and_type_picker_put_their_primary_action_and_subtitle_in_the_p
     assert find(actions, "a", "btn-primary", data_role="new-request")
     assert find(calendar, "p", data_role="page-subtitle")
     assert "เลือกแบบฟอร์มที่ต้องการยื่น" in words(find(picker, "p", data_role="page-subtitle")[0])
+
+
+HARDCODED_COLOR = re.compile(
+    r"#[0-9a-fA-F]{3,8}\b"
+    r"|\b(?:text|bg|border|ring|from|to|via|fill|stroke|divide|outline)-"
+    r"(?:red|blue|green|gray|slate|zinc|stone|amber|yellow|orange|lime|emerald|teal|cyan|sky|indigo|violet|purple|pink|rose|white|black)\b"
+    r"|\[#|style=\"[^\"]*color|tns-black"
+)
+
+
+@pytest.mark.parametrize(
+    "path, query",
+    [
+        ("/requests/", {}),
+        ("/requests/inbox", {}),
+        ("/requests/new", {}),
+        ("/requests/new", {"type": "abroad"}),
+        ("/cars/", {}),
+        ("/cars/directory", {}),
+        ("/cars/create", {}),
+        ("/calendar/", {}),
+    ],
+)
+def test_module_pages_use_theme_colors_only(world, path, query):
+    doc = world.page(world.admin, path, **query)
+    # footer เป็น template กลางของทุกระบบ (base/footer.html) อยู่นอกขอบเขตของระบบจองรถ
+    for footer in doc.xpath("//footer"):
+        footer.getparent().remove(footer)
+
+    body = "".join(
+        lxml_html.tostring(el, encoding="unicode")
+        for el in doc.xpath("//*[contains(concat(' ', normalize-space(@class), ' '), ' drawer ')]")
+    )
+    assert HARDCODED_COLOR.findall(body) == []
