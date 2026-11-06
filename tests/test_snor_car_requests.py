@@ -891,3 +891,25 @@ def test_car_and_driver_are_ignored_outside_the_dispatcher_step(snor):
     page = snor.client_for(snor.supervisor).get(detail_url(snor, car_application))
     # ฟอร์มของผู้อนุมัติขั้นนี้ไม่มีช่องเลือกรถ/พนักงานขับรถ
     assert 'name="car"' not in page.get_data(as_text=True)
+
+
+def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approve_form(
+    snor, create_org, create_car
+):
+    create_car(snor.org, "คค 1111", status="disactive")
+    create_car(create_org("Other Fleet Org"), "ขข 9999")
+    snor.add_driver("Staffer", "Only", roles=("staff",))
+    car_application = request_at_dispatcher(snor)
+
+    html = (
+        snor.client_for(snor.dispatcher)
+        .get(detail_url(snor, car_application))
+        .get_data(as_text=True)
+    )
+
+    assert 'name="car"' in html and 'name="driver"' in html
+    assert "กก 1234 (เก๋ง)" in html
+    assert "Driver One" in html
+    assert "คค 1111" not in html
+    assert "ขข 9999" not in html
+    assert "Staffer Only" not in html
