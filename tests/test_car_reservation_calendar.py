@@ -76,3 +76,46 @@ def test_events_list_live_reservations_and_leave_out_denied_and_cancelled(world)
     events = world.events()
 
     assert {event["id"] for event in events} == {str(r.id) for r in shown.values()}
+
+
+def test_event_shows_departure_time_destination_and_plate_over_the_whole_trip(world):
+    reservation = world.reservation(
+        departure=datetime.datetime(2031, 1, 10, 8, 30),
+        return_=datetime.datetime(2031, 1, 12, 17, 0),
+        location="เชียงใหม่",
+        car=world.car,
+        driver=world.driver,
+    )
+
+    [event] = world.events()
+
+    assert event["id"] == str(reservation.id)
+    assert event["title"] == "08:30 น. เชียงใหม่ (กก 1234)"
+    assert event["start"] == "2031-01-10"
+    # วันสุดท้ายนับรวม: FullCalendar คาดหวังวันสิ้นสุดแบบ exclusive
+    assert event["end"] == "2031-01-13"
+
+
+def test_event_title_has_no_plate_until_a_car_is_assigned(world):
+    world.reservation(status="pending", location="สงขลา")
+
+    [event] = world.events()
+
+    assert event["title"] == "08:30 น. สงขลา"
+
+
+@pytest.mark.parametrize(
+    "status, tone",
+    [
+        ("pending", "event-warning"),
+        ("cancel_requested", "event-warning"),
+        ("active", "event-success"),
+        ("completed", "event-neutral"),
+    ],
+)
+def test_event_color_follows_the_reservation_status(world, status, tone):
+    world.reservation(status=status)
+
+    [event] = world.events()
+
+    assert event["classNames"] == [tone]
