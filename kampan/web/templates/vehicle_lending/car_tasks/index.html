@@ -11,11 +11,8 @@
 {% block content %}
 <div id="edit-modal"></div>
 
-{# ชื่อแบบฟอร์มสำหรับคำขอจาก template, ประเภทการใช้แบบเดิมสำหรับคำขอเก่า #}
 {% macro request_kind(car_application) %}
-  {% if car_application.form_template %}
-    {{ car_application.form_template.name }}
-  {% elif car_application.using_type == 'general' %}
+  {% if car_application.using_type == 'general' %}
     ใช้รถทั่วไป
   {% elif car_application.using_type == 'airport transfer' %}
     รับส่งสนามบิน
@@ -28,20 +25,11 @@
 {% endmacro %}
 
 {% macro has_return(car_application) -%}
-  {{ 'yes' if car_application.return_datetime and (car_application.form_template or car_application.travel_type == 'round trip') else '' }}
+  {{ 'yes' if car_application.return_datetime and car_application.travel_type == 'round trip' else '' }}
 {%- endmacro %}
 
 {% macro row_number(index0) %}
   {{ paginated_car_applications.total - ((paginated_car_applications.page - 1) * paginated_car_applications.per_page) - index0 }}
-{% endmacro %}
-
-{% macro detail_link(car_application, size='btn-sm') %}
-  {% if car_application.form_template and current_user.has_organization_roles('admin') %}
-  <a class="btn btn-ghost {{ size }} whitespace-nowrap"
-     href="{{ url_for('vehicle_lending.car_form_requests.detail', car_application_id=car_application.id, organization_id=organization.id) }}">
-    <i class="ph ph-eye"></i> รายละเอียด
-  </a>
-  {% endif %}
 {% endmacro %}
 
 {% macro close_button(car_application, extra='') %}
@@ -170,7 +158,6 @@
           <td>{{ status_badge.render(car_application) }}</td>
           <td>
             <div class="flex justify-end gap-1">
-              {{ detail_link(car_application) }}
               {{ close_button(car_application) }}
             </div>
           </td>
@@ -215,7 +202,6 @@
             </div>
           </dl>
           <div class="card-actions justify-end border-t border-base-300 pt-3">
-            {{ detail_link(car_application) }}
             {{ close_button(car_application) }}
           </div>
         </div>
