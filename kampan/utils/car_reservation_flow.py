@@ -184,6 +184,23 @@ def can_confirm_cancel(app, user):
     )
 
 
+def is_approver(organization, user):
+    """ผู้ใช้อนุมัติได้อย่างน้อยหนึ่งขั้นใน org นี้: ผู้ดำรงตำแหน่ง/ผู้รักษาการ หรือหัวหน้าฝ่ายที่ active"""
+    if user is None:
+        return False
+    if any(
+        user == position.user or user in position.delegates
+        for position in models.CarReservationPosition.objects(organization=organization)
+    ):
+        return True
+    return (
+        models.OrganizationUserRole.objects(
+            organization=organization, user=user, status="active", roles="head"
+        ).first()
+        is not None
+    )
+
+
 def inbox_for(organization, user):
     """คำขอที่รออนุมัติหรือรอรับทราบการยกเลิก และ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
     waiting = models.CarReservation.objects(

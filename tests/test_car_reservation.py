@@ -1098,11 +1098,12 @@ def test_denied_and_active_requests_appear_in_nobodys_inbox(world):
         assert not inbox_shows(world, user, active)
 
 
-def test_sidebar_shows_inbox_link_with_count_only_when_something_is_waiting(world):
+def test_sidebar_shows_inbox_link_to_approvers_with_count_badge_only_when_waiting(world):
     index_url = f"{BASE}/?organization_id={world.org.id}"
 
     quiet = world.client_for(world.supervisor).get(index_url).get_data(as_text=True)
-    assert "รายการรออนุมัติ" not in quiet
+    assert "รายการรออนุมัติ" in quiet
+    assert 'data-testid="inbox-count"' not in quiet
 
     world.submit_domestic_request()
     world.submit_domestic_request()
@@ -1113,6 +1114,28 @@ def test_sidebar_shows_inbox_link_with_count_only_when_something_is_waiting(worl
     assert f"{BASE}/inbox?organization_id={world.org.id}" in busy
     stranger = world.client_for(world.stranger).get(index_url).get_data(as_text=True)
     assert "รายการรออนุมัติ" not in stranger
+
+
+def test_sidebar_inbox_link_is_visible_to_every_position_holder_and_delegate_even_when_empty(
+    world, create_user, assign_user_to_org
+):
+    index_url = f"{BASE}/?organization_id={world.org.id}"
+    delegate = create_user("Delegate", "Ten")
+    assign_user_to_org(delegate, world.org, roles=["staff"])
+    president = models.CarReservationPosition.objects(
+        organization=world.org, position_key="president"
+    ).first()
+    president.delegates = [delegate]
+    president.save()
+
+    approvers = [delegate, *world.holders.values()]
+    for approver in approvers:
+        html = world.client_for(approver).get(index_url).get_data(as_text=True)
+        assert "รายการรออนุมัติ" in html
+        assert 'data-testid="inbox-count"' not in html
+    for outsider in (world.requester, world.stranger):
+        html = world.client_for(outsider).get(index_url).get_data(as_text=True)
+        assert "รายการรออนุมัติ" not in html
 
 
 def test_inbox_never_lists_requests_of_another_organization(

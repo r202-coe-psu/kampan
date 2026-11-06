@@ -11,12 +11,12 @@
         <i class="ph ph-list-bullets"></i> คำขอของฉัน
       </a>
     </li>
-    {% if inbox_count %}
+    {% if is_approver or inbox_count %}
     <li>
       <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.inbox' else '' }}"
         href="{{ url_for('car_reservation.requests.inbox', organization_id=organization.id ) }}">
         <i class="ph ph-tray"></i> รายการรออนุมัติ
-        <span class="badge badge-error badge-sm" data-testid="inbox-count">{{ inbox_count }}</span>
+        {% if inbox_count %}<span class="badge badge-error badge-sm" data-testid="inbox-count">{{ inbox_count }}</span>{% endif %}
       </a>
     </li>
     {% endif %}
