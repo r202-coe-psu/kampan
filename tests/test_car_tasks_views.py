@@ -93,3 +93,13 @@ def test_task_waiting_on_an_older_task_of_the_same_car_says_which_task_blocks_it
     assert "รอปิดงานก่อนหน้า" in row
     assert "08:00" in row
     assert s["task_b"].driver.get_resources_fullname_th() in row
+
+
+def test_admin_searches_tasks_by_license_plate(app, tasks_setup, login_as):
+    s = tasks_setup
+    html = login_as(app.test_client(), s["admin"]).get(
+        f"{TASKS}?organization_id={s['org'].id}&q=ขข"
+    ).get_data(as_text=True)
+
+    assert "งานของคนขับ-ข" in html
+    assert "งานของคนขับ-ก" not in html

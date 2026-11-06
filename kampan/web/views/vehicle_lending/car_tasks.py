@@ -62,7 +62,7 @@ def index():
 
     q = request.args.get("q", "").strip()
     if q:
-        matched_ids = [c.id for c in utils.car_form_flow.search(car_lendings, q=q)]
+        matched_ids = [c.id for c in utils.car_search.search(car_lendings, q=q)]
         car_lendings = car_lendings.filter(id__in=matched_ids)
 
     page = request.args.get("page", 1, type=int)
