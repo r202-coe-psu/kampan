@@ -501,3 +501,40 @@ def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(snor)
     assert car_application.is_urgent is True
     page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
     assert "เร่งด่วน" in page.get_data(as_text=True)
+
+
+def test_request_with_enough_lead_time_is_saved_without_urgent_flag_or_warning(snor):
+    response = post_new(snor, snor.request_data(days_ahead=20))
+
+    assert response.status_code == 302
+    car_application = models.SnorCarRequest.objects(creator=snor.requester).first()
+    assert car_application.is_urgent is False
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    assert "เร่งด่วน" not in page.get_data(as_text=True)
+
+
+def test_abroad_request_needs_10_business_days_while_domestic_needs_3(snor):
+    data = snor.request_data("abroad", days_ahead=5)
+
+    response = post_new(snor, data, request_type="abroad")
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "ขอรถล่วงหน้าน้อยกว่า 10 วันทำการ" in html
+    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+
+    enough = snor.request_data("abroad", days_ahead=20)
+    assert post_new(snor, enough, request_type="abroad").status_code == 302
+
+
+def test_request_returning_before_departure_is_refused(snor):
+    data = snor.request_data()
+    data["return_date"] = (
+        datetime.date.today() + datetime.timedelta(days=19)
+    ).isoformat()
+
+    response = post_new(snor, data)
+
+    assert response.status_code == 200
+    assert "วันกลับต้องไม่ก่อนวันออกเดินทาง" in response.get_data(as_text=True)
+    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0

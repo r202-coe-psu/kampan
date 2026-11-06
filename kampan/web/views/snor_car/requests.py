@@ -66,6 +66,11 @@ def create():
     if submitted and snor.is_too_far_ahead(form.departure_date.data):
         form.departure_date.errors.append(snor.TOO_FAR_AHEAD)
         submitted = False
+    if submitted and datetime.datetime.combine(
+        form.return_date.data, form.return_time.data
+    ) < datetime.datetime.combine(form.departure_date.data, form.departure_time.data):
+        form.return_date.errors.append("วันกลับต้องไม่ก่อนวันออกเดินทาง")
+        submitted = False
     short_notice_days = None
     is_urgent = False
     if submitted and snor.is_short_notice(
