@@ -1,0 +1,66 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}ประเมินความพึงพอใจ{% endblock %}
+
+{% block content %}
+<form method="post" class="mt-4 flex max-w-3xl flex-col gap-4"
+      action="{{ url_for('car_reservation.feedback.form', reservation_id=reservation.id, organization_id=organization.id) }}">
+  {{ form.csrf_token }}
+
+  <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="feedback-header">
+    <div class="card-body gap-2">
+      <h3 class="card-title">แบบประเมินความพึงพอใจการใช้บริการรถยนต์</h3>
+      <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div><dt class="font-semibold">วันที่ใช้บริการ</dt><dd>{{ reservation.departure_datetime.strftime('%d/%m/%Y') }}</dd></div>
+        <div><dt class="font-semibold">ประเภทรถ</dt><dd>{{ (reservation.car.vehicle_type if reservation.car else None) or '-' }}</dd></div>
+        <div><dt class="font-semibold">ทะเบียน</dt><dd>{{ reservation.car.license_plate if reservation.car else '-' }}</dd></div>
+        <div><dt class="font-semibold">พนักงานขับรถ</dt><dd>{{ reservation.driver.get_name() if reservation.driver else '-' }}</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  {% for group_key, group_title, questions in question_groups %}
+  <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="feedback-group-{{ group_key }}">
+    <div class="card-body gap-4">
+      <h3 class="card-title">{{ group_title }}</h3>
+      <p class="text-sm text-base-content/60">1 = น้อยที่สุด, 5 = มากที่สุด</p>
+      {% for key, text in questions %}
+      {% set field = form[key] %}
+      <fieldset class="fieldset" data-question="{{ key }}">
+        <legend class="fieldset-legend">{{ text }}</legend>
+        <div class="flex flex-wrap items-center gap-4">
+          {% for value, label in score_choices %}
+          <label class="flex items-center gap-1">
+            <input type="radio" class="radio radio-primary" name="{{ key }}" value="{{ value }}"
+                   {{ 'checked' if field.data == value else '' }}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% for error in field.errors %}
+        <p class="label text-error">{{ error }}</p>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="card bg-base-100 border border-base-300 shadow-sm">
+    <div class="card-body gap-2">
+      <label class="fieldset-legend" for="comment">ข้อเสนอแนะเพิ่มเติม</label>
+      <textarea id="comment" name="comment" rows="4" class="textarea textarea-bordered w-full"
+                maxlength="2000">{{ form.comment.data or '' }}</textarea>
+      {% for error in form.comment.errors %}
+      <p class="label text-error">{{ error }}</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="flex justify-end gap-2">
+    <a class="btn btn-ghost"
+       href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ยกเลิก</a>
+    <button type="submit" class="btn btn-primary">ส่งแบบประเมิน</button>
+  </div>
+</form>
+{% endblock %}
