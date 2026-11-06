@@ -1309,6 +1309,37 @@ def test_email_job_sends_subject_and_body_with_trip_details_and_link(
     assert email["html"] is True
 
 
+def test_active_email_names_requester_trip_times_car_and_driver_to_every_recipient(
+    app, snor, sent_emails
+):
+    car_application = request_with_car_assigned(snor)
+    car_application.departure_datetime = datetime.datetime(2026, 12, 25, 8, 30)
+    car_application.return_datetime = datetime.datetime(2026, 12, 26, 17, 0)
+    car_application.status = "active"
+    car_application.save()
+
+    with app.app_context():
+        utils.snor_car_email.send_snor_car_email(
+            str(car_application.id),
+            "active",
+            [snor.requester.email, snor.driver.email],
+            "https://staging.example.test",
+        )
+
+    assert [email["receiver"] for email in sent_emails] == [
+        snor.requester.email,
+        snor.driver.email,
+    ]
+    body = sent_emails[0]["body"]
+    assert "Requester One" in body
+    assert "25 ธ.ค. 2569 08:30 น." in body
+    assert "26 ธ.ค. 2569 17:00 น." in body
+    assert "อนุมัติแล้ว" in body
+    assert "กก 1234" in body
+    assert "Driver One" in body
+    assert "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ" in body
+
+
 def test_denying_notifies_only_the_requester(snor, mock_redis_queue):
     car_application = snor.submit_domestic_request()
     mock_redis_queue.reset_mock()
