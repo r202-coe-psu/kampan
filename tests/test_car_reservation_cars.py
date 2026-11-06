@@ -68,3 +68,13 @@ def test_org_admin_adds_a_car_and_it_appears_in_the_list(world):
     assert "กข 1234" in html
     assert "รถตู้" in html
     assert "12 ที่นั่ง" in html
+
+
+@pytest.mark.parametrize(
+    "missing", [{"license_plate": ""}, {"seat_count": ""}, {"seat_count": "0"}]
+)
+def test_car_without_plate_or_with_missing_seat_count_is_refused(world, missing):
+    response = world.admin_client.post(world.create_url, data=car_data(**missing))
+
+    assert response.status_code == 200
+    assert models.vehicles.Car.objects(organization=world.org).count() == 0
