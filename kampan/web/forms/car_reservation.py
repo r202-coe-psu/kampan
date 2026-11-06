@@ -8,8 +8,11 @@ from kampan.models.car_reservation_positions import RESERVATION_POSITIONS
 from kampan.web.forms import accounts
 
 
-class CarReservationForm(FlaskForm):
-    """ฟอร์มยื่นคำขอใช้รถของระบบจองรถ ส่วนที่ใช้ร่วมกันทุกประเภท"""
+PICKUP_TIME_FORMAT = "%H:%M"
+
+
+class CommonReservationForm(FlaskForm):
+    """ฟิลด์ที่ใช้ร่วมกันทุกประเภทใบขอ: ผู้ขอ วันเวลาไป-กลับ และที่ให้รถไปจอดรับ"""
 
     requester_unit = fields.StringField(
         "คณะ/หน่วยงาน",
@@ -18,14 +21,6 @@ class CarReservationForm(FlaskForm):
     phone = fields.StringField(
         "เบอร์โทรศัพท์ผู้ขอใช้รถ",
         validators=[validators.DataRequired(), validators.Length(max=32)],
-    )
-    location = fields.StringField(
-        "สถานที่ปฏิบัติงาน",
-        validators=[validators.DataRequired(), validators.Length(max=516)],
-    )
-    request_reason = fields.StringField(
-        "เรื่อง/เหตุผลที่ต้องการใช้รถ",
-        validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     departure_date = fields.DateField(
         "วันออกเดินทาง", validators=[validators.InputRequired()]
@@ -39,17 +34,100 @@ class CarReservationForm(FlaskForm):
     return_time = fields.TimeField(
         "เวลากลับถึงมหาวิทยาลัย", validators=[validators.InputRequired()]
     )
+    pickup_place = fields.StringField(
+        "ให้รถไปจอดรับที่",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
+    pickup_time = fields.TimeField(
+        "เวลารับ", validators=[validators.InputRequired()]
+    )
+    confirm_urgent = fields.BooleanField("ยืนยันยื่นคำขอแบบเร่งด่วน")
+
+    def reservation_fields(self):
+        """ฟิลด์ร่วมของ CarReservation ที่ได้จากฟอร์ม (ประเภทย่อยเติมของตัวเองต่อ)"""
+        return {
+            "requester_unit": self.requester_unit.data,
+            "phone": self.phone.data,
+            "pickup_place": self.pickup_place.data,
+            "pickup_time": self.pickup_time.data.strftime(PICKUP_TIME_FORMAT),
+        }
+
+    def build_details(self):
+        """embedded document ของฟิลด์เฉพาะประเภท (None ถ้าประเภทนั้นไม่มี)"""
+        return None
+
+
+class GenericReservationForm(CommonReservationForm):
+    """ฟอร์มชั่วคราวของประเภทที่ยังไม่มีฟอร์มเฉพาะ"""
+
+    location = fields.StringField(
+        "สถานที่ปฏิบัติงาน",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
+    request_reason = fields.StringField(
+        "เรื่อง/เหตุผลที่ต้องการใช้รถ",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
     passenger_number = fields.IntegerField(
         "จำนวนผู้โดยสาร",
         validators=[validators.InputRequired(), validators.NumberRange(min=0)],
         widget=widgets.NumberInput(),
     )
+
+    def reservation_fields(self):
+        return {
+            **super().reservation_fields(),
+            "location": self.location.data,
+            "request_reason": self.request_reason.data,
+            "passenger_number": self.passenger_number.data,
+        }
+
+
+class DomesticReservationForm(GenericReservationForm):
+    """ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"""
+
+    vehicle_kind = fields.SelectField(
+        "ประเภทรถ",
+        choices=models.car_reservations.VEHICLE_KINDS,
+        validators=[validators.DataRequired()],
+    )
+    vehicle_count = fields.IntegerField(
+        "จำนวนรถ (คัน)",
+        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        widget=widgets.NumberInput(),
+    )
+    district = fields.StringField(
+        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    province = fields.StringField(
+        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
     province_scope = fields.SelectField(
         "พื้นที่เดินทาง",
         choices=models.car_reservations.PROVINCE_SCOPES,
-        validators=[validators.Optional()],
+        validators=[validators.DataRequired()],
     )
-    confirm_urgent = fields.BooleanField("ยืนยันยื่นคำขอแบบเร่งด่วน")
+
+    def reservation_fields(self):
+        return {
+            **super().reservation_fields(),
+            "province_scope": self.province_scope.data,
+        }
+
+    def build_details(self):
+        return models.car_reservations.DomesticDetails(
+            vehicle_kind=self.vehicle_kind.data,
+            vehicle_count=self.vehicle_count.data,
+            district=self.district.data,
+            province=self.province.data,
+        )
+
+
+FORM_BY_REQUEST_TYPE = {"domestic": DomesticReservationForm}
+
+
+def reservation_form_for(request_type):
+    return FORM_BY_REQUEST_TYPE.get(request_type, GenericReservationForm)()
 
 
 class ApprovalDecisionForm(FlaskForm):

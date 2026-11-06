@@ -29,6 +29,20 @@ def email_jobs(mock_q, event=None):
     return [job for job in jobs if event is None or job[1] == event]
 
 
+# ข้อมูลเฉพาะประเภทที่ผ่านกฎทุกข้อ (ใช้เป็นฐานของ request_data)
+TYPE_SPECIFIC_DATA = {
+    "domestic": {
+        "vehicle_kind": "ตู้",
+        "vehicle_count": "1",
+        "district": "หาดใหญ่",
+        "province": "สงขลา",
+    },
+    "airport": {},
+    "welfare": {},
+    "abroad": {},
+}
+
+
 @pytest.fixture
 def world(app, create_org, create_user, assign_user_to_org, login_as, create_car):
     org = create_org("Reservation Org")
@@ -96,7 +110,10 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
             "return_date": (departure + datetime.timedelta(days=1)).isoformat(),
             "return_time": "17:00",
             "passenger_number": "3",
+            "pickup_place": "หน้าอาคารสำนักงานอธิการบดี",
+            "pickup_time": "07:30",
         }
+        data.update(TYPE_SPECIFIC_DATA[request_type])
         if request_type == "domestic":
             data["province_scope"] = province_scope
         return data
@@ -158,6 +175,34 @@ def test_requester_submits_domestic_request_and_it_waits_for_supervisor(world):
     page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert page.status_code == 200
     assert "รอผู้บังคับบัญชา" in page.get_data(as_text=True)
+
+
+def test_domestic_request_is_saved_with_its_form_fields_and_shown_on_detail(world):
+    data = world.request_data("domestic")
+    data.update(
+        vehicle_kind="บัส",
+        vehicle_count="2",
+        district="บางกล่ำ",
+        province="สงขลา",
+        pickup_place="หน้าอาคารเรียนรวม",
+        pickup_time="06:45",
+    )
+
+    response = post_new(world, data)
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.vehicle_kind == "บัส"
+    assert saved.details.vehicle_count == 2
+    assert saved.details.district == "บางกล่ำ"
+    assert saved.details.province == "สงขลา"
+    assert saved.pickup_place == "หน้าอาคารเรียนรวม"
+    assert saved.pickup_time == "06:45"
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    for shown in ("บัส", "บางกล่ำ", "หน้าอาคารเรียนรวม", "06:45"):
+        assert shown in html
 
 
 def test_submitting_stores_the_requesters_division_on_the_request(world):

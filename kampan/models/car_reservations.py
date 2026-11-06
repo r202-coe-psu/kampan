@@ -23,6 +23,9 @@ RESERVATION_STATUS = [
     ("cancelled", "ยกเลิก"),
 ]
 
+# ประเภทรถที่ผู้ขอเลือกได้ในใบขอ (ตามแบบฟอร์มจริง)
+VEHICLE_KINDS = ["บัส", "ตู้", "เก๋ง", "มินิบัส"]
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -58,6 +61,19 @@ class ReservationAuditLog(me.EmbeddedDocument):
         return dict(AUDIT_ACTIONS).get(self.action, self.action)
 
 
+class DomesticDetails(me.EmbeddedDocument):
+    """ฟิลด์เฉพาะของใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ (`domestic`)
+
+    เรื่อง (subject) เก็บที่ `CarReservation.request_reason` และสถานที่ปฏิบัติงานเก็บที่
+    `CarReservation.location` ซึ่งเป็นฟิลด์ร่วมของคำขอ
+    """
+
+    vehicle_kind = me.StringField(choices=VEHICLE_KINDS, required=True)
+    vehicle_count = me.IntField(min_value=1, required=True)
+    district = me.StringField(required=True, max_length=256)  # อำเภอ
+    province = me.StringField(required=True, max_length=256)  # จังหวัด
+
+
 class CarReservation(me.Document):
     meta = {"collection": "car_reservations"}
 
@@ -78,9 +94,14 @@ class CarReservation(me.Document):
     departure_datetime = me.DateTimeField(required=True, default=datetime.datetime.now)
     return_datetime = me.DateTimeField(default=datetime.datetime.now)
     passenger_number = me.IntField(min_value=0, required=True, default=0)
+    pickup_place = me.StringField(default="", max_length=516)  # สถานที่ให้รถไปจอดรับ
+    pickup_time = me.StringField(default="")  # เวลารับ รูปแบบ "HH:MM"
 
     request_type = me.StringField(choices=RESERVATION_TYPES, required=True)
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
+
+    # ฟิลด์เฉพาะประเภทใบขอ: embedded document หนึ่งชนิดต่อ request_type
+    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails])
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
 

@@ -77,7 +77,7 @@ def create():
     if request_type not in dict(models.car_reservations.RESERVATION_TYPES):
         abort(404)
 
-    form = forms.car_reservation.CarReservationForm()
+    form = forms.car_reservation.reservation_form_for(request_type)
 
     user = current_user._get_current_object()
     member = models.OrganizationUserRole.objects(
@@ -114,12 +114,8 @@ def create():
             updater=user,
             request_type=request_type,
             is_urgent=is_urgent,
-            province_scope=form.province_scope.data if request_type == "domestic" else None,
-            requester_unit=form.requester_unit.data,
-            phone=form.phone.data,
-            location=form.location.data,
-            request_reason=form.request_reason.data,
-            passenger_number=form.passenger_number.data,
+            details=form.build_details(),
+            **form.reservation_fields(),
             departure_datetime=datetime.datetime.combine(
                 form.departure_date.data, form.departure_time.data
             ),

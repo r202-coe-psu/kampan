@@ -11,18 +11,15 @@
     {{ renderer.render_field(form.requester_unit) }}
     {{ renderer.render_field(form.phone) }}
   </div>
-  {{ renderer.render_field(form.location) }}
-  {{ renderer.render_field(form.request_reason) }}
+  {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
   <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
     {{ renderer.render_field(form.departure_date) }}
     {{ renderer.render_field(form.departure_time) }}
     {{ renderer.render_field(form.return_date) }}
     {{ renderer.render_field(form.return_time) }}
+    {{ renderer.render_field(form.pickup_place) }}
+    {{ renderer.render_field(form.pickup_time) }}
   </div>
-  {{ renderer.render_field(form.passenger_number) }}
-  {% if request_type == 'domestic' %}
-  {{ renderer.render_select_field(form.province_scope) }}
-  {% endif %}
   {% if short_notice_days %}
   <div class="alert alert-warning mt-4" role="alert">
     <div>

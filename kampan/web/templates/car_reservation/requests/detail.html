@@ -32,6 +32,8 @@
     <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ reservation.location }}</dd></div>
     <div><dt class="font-semibold">เรื่อง</dt><dd>{{ reservation.request_reason }}</dd></div>
     <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ reservation.passenger_number }}</dd></div>
+    <div><dt class="font-semibold">ให้รถไปจอดรับที่</dt><dd>{{ reservation.pickup_place }}</dd></div>
+    <div><dt class="font-semibold">เวลารับ</dt><dd>{{ reservation.pickup_time }}</dd></div>
     {% if reservation.car %}
     <div><dt class="font-semibold">รถ</dt><dd data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</dd></div>
     {% endif %}
@@ -39,6 +41,13 @@
     <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ reservation.driver.get_name() }}</dd></div>
     {% endif %}
   </dl>
+
+  {% if reservation.details %}
+  <h3 class="mt-6 font-semibold">รายละเอียดตามแบบฟอร์ม</h3>
+  <dl class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2" data-role="type-details">
+    {% include '/car_reservation/requests/details_' ~ reservation.request_type ~ '.html' %}
+  </dl>
+  {% endif %}
 
   <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
   <ul class="mt-2 space-y-1" data-role="audit-log">

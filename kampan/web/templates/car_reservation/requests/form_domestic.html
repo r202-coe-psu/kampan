@@ -1,0 +1,12 @@
+<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+  {{ renderer.render_select_field(form.vehicle_kind) }}
+  {{ renderer.render_field(form.vehicle_count) }}
+  {{ renderer.render_field(form.passenger_number) }}
+  {{ renderer.render_select_field(form.province_scope) }}
+</div>
+{{ renderer.render_field(form.location) }}
+<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+  {{ renderer.render_field(form.district) }}
+  {{ renderer.render_field(form.province) }}
+</div>
+{{ renderer.render_field(form.request_reason) }}
