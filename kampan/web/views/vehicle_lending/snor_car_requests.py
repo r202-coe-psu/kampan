@@ -60,8 +60,12 @@ def create():
 
     if form.validate_on_submit():
         user = current_user._get_current_object()
+        member = models.OrganizationUserRole.objects(
+            user=user, organization=organization, status="active"
+        ).first()
         car_application = models.vehicle_applications.CarApplication(
             organization=organization,
+            division=member.division if member else None,
             creator=user,
             updater=user,
             request_type=request_type,

@@ -19,11 +19,28 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
 
     s = Setup()
     s.org = org
+    s.division = models.Division(name="ฝ่ายบริการ", organization=org)
+    s.division.save()
+    s.other_division = models.Division(name="ฝ่ายอื่น", organization=org)
+    s.other_division.save()
+
+    def assign_in_division(user, roles, division):
+        member = assign_user_to_org(user, org, roles=roles)
+        member.division = division
+        member.save()
+        return member
+
+    s.assign_in_division = assign_in_division
+
     s.requester = create_user("Requester", "One")
     s.supervisor = create_user("Supervisor", "Two")
+    s.other_head = create_user("OtherHead", "Five")
     s.dispatcher = create_user("Dispatcher", "Three")
     s.stranger = create_user("Stranger", "Four")
-    for user in (s.requester, s.supervisor, s.dispatcher, s.stranger):
+    assign_in_division(s.requester, ["staff"], s.division)
+    assign_in_division(s.supervisor, ["head"], s.division)
+    assign_in_division(s.other_head, ["head"], s.other_division)
+    for user in (s.dispatcher, s.stranger):
         assign_user_to_org(user, org, roles=["staff"])
     models.CarFlowPosition(
         organization=org, position_key="dispatcher", user=s.dispatcher
@@ -96,6 +113,12 @@ def test_requester_submits_domestic_request_and_it_waits_for_supervisor(snor):
     page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
     assert page.status_code == 200
     assert "รอผู้บังคับบัญชา" in page.get_data(as_text=True)
+
+
+def test_submitting_stores_the_requesters_division_on_the_request(snor):
+    car_application = snor.submit_domestic_request()
+
+    assert car_application.division == snor.division
 
 
 def test_supervisor_approval_moves_request_to_dispatcher(snor):
