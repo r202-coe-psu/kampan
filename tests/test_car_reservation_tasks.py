@@ -210,3 +210,37 @@ def test_return_mileage_is_required(world):
     reservation.reload()
     assert response.status_code == 200
     assert reservation.status == "active"
+
+
+def test_another_driver_cannot_close_the_task(world):
+    reservation = world.reservation()
+
+    response = close(world, reservation, user=world.other_driver)
+
+    reservation.reload()
+    assert response.status_code in (302, 403)
+    assert reservation.status == "active"
+    assert reservation.last_mileage is None
+
+
+@pytest.mark.parametrize("status", ["pending", "completed", "cancelled"])
+def test_only_an_active_task_can_be_closed(world, status):
+    reservation = world.reservation(status=status)
+
+    response = close(world, reservation)
+
+    reservation.reload()
+    assert response.status_code in (302, 403)
+    assert reservation.status == status
+    assert reservation.last_mileage is None
+
+
+def test_close_form_is_prefilled_with_the_cars_last_mileage(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.driver).get(close_url(world, reservation))
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'name="mileage_out"' in html
+    assert 'value="10000"' in html

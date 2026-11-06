@@ -2,7 +2,16 @@
 
 from functools import wraps
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 
 from kampan import models, utils
@@ -77,6 +86,8 @@ def close(task_id):
         abort(403)
 
     form = forms.car_reservation.TripCloseForm()
+    if request.method == "GET" and task.car is not None:
+        form.mileage_out.data = task.car.last_mileage
     if form.validate_on_submit():
         try:
             flow.close_trip(
