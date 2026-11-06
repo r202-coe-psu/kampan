@@ -1,3 +1,19 @@
-{{ renderer.render_field(form.location) }}
-{{ renderer.render_field(form.request_reason) }}
-{{ renderer.render_field(form.passenger_number) }}
+{{ renderer.render_radio_field(form.transfer) }}
+<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+  {{ renderer.render_field(form.flight_number) }}
+  {{ renderer.render_field(form.flight_date) }}
+  {{ renderer.render_field(form.flight_arrival_time) }}
+  {{ renderer.render_field(form.flight_departure_time) }}
+  {{ renderer.render_field(form.requester_position) }}
+</div>
+<fieldset class="fieldset">
+  <legend class="fieldset-legend">รายชื่อผู้โดยสาร (สูงสุด 5 คน)</legend>
+  {% for row in form.passengers %}
+  <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    {{ renderer.render_field(row.form.name) }}
+    {{ renderer.render_field(row.form.phone) }}
+  </div>
+  {% endfor %}
+</fieldset>
+{% include '/car_reservation/requests/form_cost_responsibilities.html' %}
+{{ renderer.render_checkbox(form.eligibility_confirmed) }}

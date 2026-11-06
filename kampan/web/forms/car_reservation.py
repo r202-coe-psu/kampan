@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import fields, validators, widgets
+from wtforms import Form, fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
 from kampan import models
@@ -136,7 +136,103 @@ class DomesticReservationForm(GenericReservationForm):
         )
 
 
-FORM_BY_REQUEST_TYPE = {"domestic": DomesticReservationForm}
+class PassengerRowForm(Form):
+    """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
+
+    name = fields.StringField("ชื่อผู้โดยสาร", validators=[validators.Length(max=256)])
+    phone = fields.StringField("โทร", validators=[validators.Length(max=32)])
+
+
+class AirportReservationForm(CommonReservationForm):
+    """ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่"""
+
+    AIRPORT = "สนามบินหาดใหญ่"
+
+    transfer = fields.RadioField(
+        "ต้องการให้รถไป",
+        choices=models.car_reservations.AIRPORT_TRANSFERS,
+        validators=[validators.DataRequired()],
+    )
+    flight_number = fields.StringField(
+        "เที่ยวบินที่",
+        validators=[validators.DataRequired(), validators.Length(max=32)],
+    )
+    flight_date = fields.DateField("วันที่", validators=[validators.InputRequired()])
+    # ชื่อฟอร์มต่างจากโมเดลเพื่อไม่ชนกับ departure_time (เวลาออกเดินทางของรถ) ในฟิลด์ร่วม
+    flight_arrival_time = fields.TimeField(
+        "เครื่องบินถึงสนามบิน เวลา", validators=[validators.Optional()]
+    )
+    flight_departure_time = fields.TimeField(
+        "เครื่องบินออกจากสนามบิน เวลา", validators=[validators.Optional()]
+    )
+    passengers = fields.FieldList(
+        fields.FormField(PassengerRowForm),
+        min_entries=models.car_reservations.AIRPORT_MAX_PASSENGERS,
+        max_entries=models.car_reservations.AIRPORT_MAX_PASSENGERS,
+    )
+    requester_position = fields.StringField(
+        "ตำแหน่งผู้ขอใช้รถ",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    in_office_of_president = fields.BooleanField("หน่วยงานในสำนักงานอธิการบดี")
+    cost_responsibilities = fields.SelectMultipleField(
+        "ยินดีรับผิดชอบ",
+        choices=models.car_reservations.AIRPORT_COST_RESPONSIBILITIES,
+        option_widget=widgets.CheckboxInput(),
+        widget=widgets.ListWidget(prefix_label=False),
+    )
+    eligibility_confirmed = fields.BooleanField(
+        "ข้าพเจ้าเป็นผู้บริหารหรือบุคลากรในสำนักงานอธิการบดี"
+    )
+
+    def filled_passengers(self):
+        return [
+            row.form
+            for row in self.passengers
+            if (row.form.name.data or "").strip() or (row.form.phone.data or "").strip()
+        ]
+
+    def reservation_fields(self):
+        transfer_label = dict(models.car_reservations.AIRPORT_TRANSFERS)[
+            self.transfer.data
+        ]
+        return {
+            **super().reservation_fields(),
+            "location": self.AIRPORT,
+            "request_reason": f"{transfer_label}ที่{self.AIRPORT}",
+            "passenger_number": len(self.filled_passengers()),
+        }
+
+    def build_details(self):
+        def hhmm(field):
+            return field.data.strftime(PICKUP_TIME_FORMAT) if field.data else ""
+
+        return models.car_reservations.AirportDetails(
+            transfer=self.transfer.data,
+            flight_number=self.flight_number.data,
+            flight_date=self.flight_date.data,
+            arrival_time=hhmm(self.flight_arrival_time),
+            departure_time=hhmm(self.flight_departure_time),
+            passengers=[
+                models.car_reservations.AirportPassenger(
+                    name=(row.name.data or "").strip(), phone=(row.phone.data or "").strip()
+                )
+                for row in self.filled_passengers()
+            ],
+            requester_position=self.requester_position.data,
+            in_office_of_president=self.in_office_of_president.data,
+            cost_responsibilities=(
+                self.cost_responsibilities.data
+                if self.in_office_of_president.data
+                else []
+            ),
+        )
+
+
+FORM_BY_REQUEST_TYPE = {
+    "domestic": DomesticReservationForm,
+    "airport": AirportReservationForm,
+}
 
 
 def reservation_form_for(request_type):

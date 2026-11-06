@@ -37,7 +37,17 @@ TYPE_SPECIFIC_DATA = {
         "district": "หาดใหญ่",
         "province": "สงขลา",
     },
-    "airport": {},
+    "airport": {
+        "transfer": "pickup",
+        "flight_number": "TG 123",
+        "flight_date": (datetime.date.today() + datetime.timedelta(days=20)).isoformat(),
+        "flight_arrival_time": "09:10",
+        "flight_departure_time": "",
+        "requester_position": "อาจารย์",
+        "passengers-0-name": "สมชาย ใจดี",
+        "passengers-0-phone": "089-111-2222",
+        "eligibility_confirmed": "y",
+    },
     "welfare": {},
     "abroad": {},
 }
@@ -241,6 +251,61 @@ def test_domestic_cost_responsibilities_are_dropped_unless_the_office_box_is_tic
         as_text=True
     )
     assert "เบี้ยเลี้ยง" not in html
+
+
+def test_airport_request_is_saved_with_its_form_fields_and_shown_on_detail(world):
+    data = world.request_data("airport")
+    data.update(
+        {
+            "transfer": "dropoff",
+            "flight_number": "FD 3201",
+            "flight_arrival_time": "",
+            "flight_departure_time": "14:35",
+            "requester_position": "ผู้ช่วยอธิการบดี",
+            "passengers-0-name": "นภา รักดี",
+            "passengers-0-phone": "081-000-1111",
+            "passengers-1-name": "ปราณี มีสุข",
+            "passengers-1-phone": "082-000-2222",
+            "in_office_of_president": "y",
+            "cost_responsibilities": ["ค่าน้ำมันเชื้อเพลิง", "เบี้ยเลี้ยง"],
+        }
+    )
+
+    response = post_new(world, data, request_type="airport")
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.transfer == "dropoff"
+    assert saved.details.flight_number == "FD 3201"
+    assert saved.details.departure_time == "14:35"
+    assert saved.details.arrival_time == ""
+    assert saved.details.requester_position == "ผู้ช่วยอธิการบดี"
+    assert [(p.name, p.phone) for p in saved.details.passengers] == [
+        ("นภา รักดี", "081-000-1111"),
+        ("ปราณี มีสุข", "082-000-2222"),
+    ]
+    assert saved.passenger_number == 2
+    assert saved.details.in_office_of_president is True
+    assert saved.details.cost_responsibilities == ["ค่าน้ำมันเชื้อเพลิง", "เบี้ยเลี้ยง"]
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    for shown in ("FD 3201", "14:35", "นภา รักดี", "081-000-1111", "ปราณี มีสุข", "ผู้ช่วยอธิการบดี"):
+        assert shown in html
+
+
+def test_airport_form_shows_its_own_title_and_only_its_own_fields(world):
+    page = world.client_for(world.requester).get(
+        f"{BASE}/new?organization_id={world.org.id}&type=airport"
+    )
+
+    html = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert "ใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่" in html
+    assert 'name="flight_number"' in html
+    assert 'name="passengers-4-name"' in html
+    assert 'name="vehicle_kind"' not in html
+    assert 'name="province_scope"' not in html
 
 
 def upcoming(weekday, at_least_days=10):

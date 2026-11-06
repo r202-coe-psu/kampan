@@ -1,0 +1,25 @@
+{% set details = reservation.details %}
+<div><dt class="font-semibold">ต้องการให้รถไป</dt><dd>{{ details.get_transfer_display() }}ที่สนามบิน</dd></div>
+<div><dt class="font-semibold">เที่ยวบินที่</dt><dd>{{ details.flight_number }}</dd></div>
+<div><dt class="font-semibold">วันที่</dt><dd>{{ details.flight_date.strftime('%d/%m/%Y') }}</dd></div>
+{% if details.arrival_time %}
+<div><dt class="font-semibold">เครื่องบินถึงสนามบิน เวลา</dt><dd>{{ details.arrival_time }}</dd></div>
+{% endif %}
+{% if details.departure_time %}
+<div><dt class="font-semibold">เครื่องบินออกจากสนามบิน เวลา</dt><dd>{{ details.departure_time }}</dd></div>
+{% endif %}
+<div><dt class="font-semibold">ตำแหน่งผู้ขอใช้รถ</dt><dd>{{ details.requester_position }}</dd></div>
+<div class="md:col-span-2">
+  <dt class="font-semibold">รายชื่อผู้โดยสาร</dt>
+  <dd>
+    <ol class="list-decimal list-inside" data-role="airport-passengers">
+      {% for passenger in details.passengers %}
+      <li>{{ passenger.name }} โทร {{ passenger.phone }}</li>
+      {% endfor %}
+    </ol>
+  </dd>
+</div>
+{% if details.in_office_of_president %}
+<div><dt class="font-semibold">หน่วยงานในสำนักงานอธิการบดี</dt><dd>ใช่</dd></div>
+<div><dt class="font-semibold">ยินดีรับผิดชอบ</dt><dd>{{ details.cost_responsibilities | join(', ') }}</dd></div>
+{% endif %}

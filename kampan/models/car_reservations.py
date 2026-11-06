@@ -38,6 +38,10 @@ DOMESTIC_COST_RESPONSIBILITIES = [
     COST_NONE,
 ]
 
+AIRPORT_TRANSFERS = [("pickup", "รับ"), ("dropoff", "ส่ง")]
+AIRPORT_COST_RESPONSIBILITIES = [COST_FUEL, COST_ALLOWANCE, COST_NONE]
+AIRPORT_MAX_PASSENGERS = 5
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -91,6 +95,36 @@ class DomesticDetails(me.EmbeddedDocument):
     )
 
 
+class AirportPassenger(me.EmbeddedDocument):
+    name = me.StringField(required=True, max_length=256)
+    phone = me.StringField(required=True, max_length=32)
+
+
+class AirportDetails(me.EmbeddedDocument):
+    """ฟิลด์เฉพาะของใบขอใช้รถ รับ-ส่ง สนามบินหาดใหญ่ (`airport`)
+
+    สถานที่ (`CarReservation.location`) คือสนามบินหาดใหญ่ และ `CarReservation.passenger_number`
+    นับจาก `passengers`
+    """
+
+    transfer = me.StringField(choices=AIRPORT_TRANSFERS, required=True)
+    flight_number = me.StringField(required=True, max_length=32)
+    flight_date = me.DateField(required=True)
+    arrival_time = me.StringField(default="")  # เวลาเครื่องบินถึง "HH:MM"
+    departure_time = me.StringField(default="")  # เวลาเครื่องบินออก "HH:MM"
+    passengers = me.ListField(
+        me.EmbeddedDocumentField(AirportPassenger), max_length=AIRPORT_MAX_PASSENGERS
+    )
+    requester_position = me.StringField(required=True, max_length=256)
+    in_office_of_president = me.BooleanField(default=False)
+    cost_responsibilities = me.ListField(
+        me.StringField(choices=AIRPORT_COST_RESPONSIBILITIES)
+    )
+
+    def get_transfer_display(self):
+        return dict(AIRPORT_TRANSFERS).get(self.transfer, self.transfer)
+
+
 class CarReservation(me.Document):
     meta = {"collection": "car_reservations"}
 
@@ -118,7 +152,7 @@ class CarReservation(me.Document):
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
 
     # ฟิลด์เฉพาะประเภทใบขอ: embedded document หนึ่งชนิดต่อ request_type
-    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails])
+    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails, AirportDetails])
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
 
