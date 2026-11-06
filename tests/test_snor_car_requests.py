@@ -1210,3 +1210,27 @@ def test_submitting_notifies_the_division_head_but_not_the_requester(
     assert (request_id, event) == (str(car_application.id), "submitted")
     assert recipients == [snor.supervisor.email]
     assert host_url.startswith("http")
+
+
+def test_supervisor_approval_notifies_the_dispatcher_holder_and_delegate(
+    snor, create_user, assign_user_to_org, mock_redis_queue
+):
+    delegate = create_user("Delegate", "Dispatcher")
+    assign_user_to_org(delegate, snor.org, roles=["staff"])
+    position = models.CarFlowPosition.objects(
+        organization=snor.org, position_key="dispatcher"
+    ).first()
+    position.delegates = [delegate]
+    position.save()
+    car_application = snor.submit_domestic_request()
+    mock_redis_queue.reset_mock()
+
+    snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application), data={"comment": "เห็นชอบ"}
+    )
+
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, _ = jobs[0]
+    assert (request_id, event) == (str(car_application.id), "approved")
+    assert sorted(recipients) == sorted([snor.dispatcher.email, delegate.email])
