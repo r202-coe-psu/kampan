@@ -270,3 +270,9 @@ def cancel(app, user, reason=""):
         app.status = "cancel_requested"
         _log(app, "cancel_requested", user, comment=reason)
     app.save()
+
+
+def confirm_cancel(app, user):
+    app.status = "cancelled"
+    _log(app, "cancel_confirmed", user, step_key="dispatcher")
+    app.save()

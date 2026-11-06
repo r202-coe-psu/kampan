@@ -291,3 +291,18 @@ def cancel(request_id):
             organization_id=g.organization.id,
         )
     )
+
+
+@module.route("/<request_id>/cancel/confirm", methods=["POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def confirm_cancel(request_id):
+    snor_request = get_request_or_404(request_id)
+    snor.confirm_cancel(snor_request, current_user._get_current_object())
+    flash("รับทราบการยกเลิกเรียบร้อยแล้ว", "success")
+    return redirect(
+        url_for(
+            "snor_car.requests.detail",
+            request_id=snor_request.id,
+            organization_id=g.organization.id,
+        )
+    )

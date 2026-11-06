@@ -986,3 +986,48 @@ def test_cancel_request_appears_in_the_inbox_of_the_dispatcher_and_delegate_only
     assert inbox_shows(snor, secretary, car_application)
     for outsider in (snor.requester, snor.supervisor, snor.stranger):
         assert not inbox_shows(snor, outsider, car_application)
+
+
+def confirm_cancel_url(snor, car_application):
+    return f"{BASE}/{car_application.id}/cancel/confirm?organization_id={snor.org.id}"
+
+
+def request_cancel_requested(snor):
+    car_application = request_with_car_assigned(snor)
+    response = snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": ""}
+    )
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.status == "cancel_requested"
+    return car_application
+
+
+def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
+    snor, create_user, assign_user_to_org
+):
+    secretary = create_user("Secretary", "Assistant")
+    assign_user_to_org(secretary, snor.org, roles=["staff"])
+    position = models.CarFlowPosition.objects(
+        organization=snor.org, position_key="dispatcher"
+    ).first()
+    position.delegates = [secretary]
+    position.save()
+    car_application = request_cancel_requested(snor)
+
+    response = snor.client_for(secretary).post(
+        confirm_cancel_url(snor, car_application)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.status == "cancelled"
+    assert car_application.audit_logs[-1].action == "cancel_confirmed"
+    assert car_application.audit_logs[-1].actor == secretary
+    html = (
+        snor.client_for(snor.requester)
+        .get(detail_url(snor, car_application))
+        .get_data(as_text=True)
+    )
+    assert "Secretary Assistant" in html
+    assert not inbox_shows(snor, snor.dispatcher, car_application)
