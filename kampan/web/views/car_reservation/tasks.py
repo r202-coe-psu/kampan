@@ -99,8 +99,10 @@ def close(task_id):
                 fuel_liters=form.fuel_liters.data,
                 cost_baht=form.cost_baht.data,
             )
-        except flow.FlowError as error:
+        except flow.MileageError as error:
             form.mileage_in.errors = [*form.mileage_in.errors, str(error)]
+        except flow.FlowError as error:
+            flash(str(error), "danger")
         else:
             flash("ปิดงานเรียบร้อยแล้ว", "success")
             return redirect(

@@ -83,6 +83,10 @@ class FlowError(Exception):
     pass
 
 
+class MileageError(FlowError):
+    pass
+
+
 MILEAGE_IN_BELOW_OUT = "เลข กม. กลับต้องไม่น้อยกว่าเลข กม. ออก"
 
 
@@ -359,6 +363,22 @@ def can_close(app, user):
     )
 
 
+def earlier_active_task(app):
+    """งาน active ของรถคันเดียวกันที่ออกเดินทางก่อนงานนี้ (ต้องปิดก่อน) ไม่มีคือ None"""
+    if app.car is None:
+        return None
+    return (
+        models.CarReservation.objects(
+            organization=app.organization,
+            car=app.car,
+            status="active",
+            departure_datetime__lt=app.departure_datetime,
+        )
+        .order_by("departure_datetime")
+        .first()
+    )
+
+
 def close_trip(
     app, user, mileage_out, mileage_in, expense_case, fuel_liters=None, cost_baht=None
 ):
@@ -366,7 +386,13 @@ def close_trip(
     if not can_close(app, user):
         raise FlowError("ไม่มีสิทธิ์ปิดงานนี้")
     if mileage_in < mileage_out:
-        raise FlowError(MILEAGE_IN_BELOW_OUT)
+        raise MileageError(MILEAGE_IN_BELOW_OUT)
+    earlier = earlier_active_task(app)
+    if earlier is not None:
+        raise FlowError(
+            "ต้องปิดงานที่ออกเดินทางก่อนของรถคันเดียวกันก่อน: "
+            f"{earlier.location} ({earlier.departure_datetime.strftime('%d/%m/%Y %H:%M')} น.)"
+        )
 
     app.last_mileage_before = mileage_out
     app.last_mileage = mileage_in

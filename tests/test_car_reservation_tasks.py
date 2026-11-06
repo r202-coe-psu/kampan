@@ -244,3 +244,40 @@ def test_close_form_is_prefilled_with_the_cars_last_mileage(world):
     assert response.status_code == 200
     assert 'name="mileage_out"' in html
     assert 'value="10000"' in html
+
+
+def test_a_task_waits_for_the_earlier_active_task_of_the_same_car(world):
+    world.reservation(location="งานแรก", departure=datetime.datetime(2031, 1, 5, 8, 0))
+    later = world.reservation(
+        location="งานหลัง", departure=datetime.datetime(2031, 1, 9, 8, 0)
+    )
+
+    response = close(world, later)
+
+    later.reload()
+    assert later.status == "active"
+    assert "งานแรก" in response.get_data(as_text=True).split("ต้องปิดงาน")[1]
+
+
+def test_closing_the_earlier_task_first_unblocks_the_later_one(world):
+    earlier = world.reservation(departure=datetime.datetime(2031, 1, 5, 8, 0))
+    later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
+
+    close(world, earlier)
+    close(world, later, mileage_out="10250", mileage_in="10300")
+
+    later.reload()
+    assert later.status == "completed"
+
+
+def test_an_earlier_task_of_another_car_does_not_block(world, create_car):
+    other_car = create_car(world.org, "ขข 5678")
+    world.reservation(
+        departure=datetime.datetime(2031, 1, 5, 8, 0), car=other_car
+    )
+    later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
+
+    close(world, later)
+
+    later.reload()
+    assert later.status == "completed"
