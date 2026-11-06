@@ -14,6 +14,7 @@ BaseOrganizationForm = model_form(
         "last_updated_by",
         "status",
         "enabled_modules",
+        "enabled_roles",
     ],
     field_args={
         "name": {"label": "Name"},
@@ -27,6 +28,13 @@ class OrganizationForm(BaseOrganizationForm):
     enabled_modules = fields.SelectMultipleField(
         "ระบบที่เปิดใช้",
         choices=models.organizations.MODULES,
+        widget=widgets.ListWidget(prefix_label=False),
+        option_widget=widgets.CheckboxInput(),
+        validate_choice=True,
+    )
+    enabled_roles = fields.SelectMultipleField(
+        "Role ที่เปิดใช้",
+        choices=models.organizations.ORGANIZATION_ROLES,
         widget=widgets.ListWidget(prefix_label=False),
         option_widget=widgets.CheckboxInput(),
         validate_choice=True,
