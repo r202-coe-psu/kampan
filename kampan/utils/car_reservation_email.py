@@ -32,7 +32,6 @@ _TEMPLATE_DIR = (
 _env = Environment(
     loader=FileSystemLoader(_TEMPLATE_DIR), trim_blocks=True, lstrip_blocks=True
 )
-_env.filters["thai_datetime"] = template_filters.format_thai_datetime_short_month
 
 
 def _division_heads(reservation):
@@ -102,25 +101,44 @@ def notify(reservation, event):
     )
 
 
-def _context(reservation, host_url):
-    link = (
-        f"{host_url}/car_reservation/requests/{reservation.id}"
-        f"?organization_id={reservation.organization.id}"
-    )
+_COMMENT_ACTIONS = ("denied", "cancel_requested", "cancelled")
+
+
+def _latest_comment(reservation):
+    for log in reversed(reservation.audit_logs):
+        if log.action in _COMMENT_ACTIONS and log.comment:
+            return log.comment
+    return "-"
+
+
+def template_variables(reservation, host_url):
+    """ตัวแปรที่ใช้ใน {{ ... }} ของอีเมลระบบจองรถ (ต้องตรง EMAIL_TEMPLATE_VARIABLES)"""
+    step_key = car_reservation_flow.current_step_key(reservation)
     return {
+        "organization_name": reservation.organization.name,
         "requester_name": reservation.creator.get_name(),
         "request_type_label": dict(models.car_reservations.RESERVATION_TYPES)[
             reservation.request_type
         ],
         "destination": reservation.location,
-        "departure": reservation.departure_datetime,
-        "return_at": reservation.return_datetime,
+        "departure": template_filters.format_thai_datetime_short_month(
+            reservation.departure_datetime
+        ),
+        "return_at": template_filters.format_thai_datetime_short_month(
+            reservation.return_datetime
+        ),
         "status_label": dict(models.car_reservations.RESERVATION_STATUS)[
             reservation.status
         ],
+        "step_label": car_reservation_flow.step_label(step_key) if step_key else "-",
         "car_plate": reservation.car.license_plate if reservation.car else "",
         "driver_name": reservation.driver.get_name() if reservation.driver else "",
-        "link": link,
+        "reason": reservation.request_reason,
+        "comment": _latest_comment(reservation),
+        "request_url": (
+            f"{host_url}/car_reservation/requests/{reservation.id}"
+            f"?organization_id={reservation.organization.id}"
+        ),
     }
 
 
@@ -133,7 +151,7 @@ def send_car_reservation_email(request_id, event, recipients, host_url):
         return False
 
     module = _env.get_template(f"car_reservation/{event}.html").make_module(
-        _context(reservation, host_url)
+        template_variables(reservation, host_url)
     )
     subject = module.subject
     body = str(module).strip()
