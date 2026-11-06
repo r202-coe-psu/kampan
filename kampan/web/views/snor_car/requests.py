@@ -1,5 +1,6 @@
 import datetime
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     abort,
@@ -163,6 +164,18 @@ def stepper(snor_request):
 def detail(request_id):
     snor_request = get_request_or_404(request_id)
     current_key = snor.current_step_key(snor_request)
+    if current_key == "dispatcher":
+        form = forms.snor_car.DispatchDecisionForm()
+        form.car.choices = [
+            (str(car.id), f"{car.license_plate} ({car.vehicle_type or '-'})")
+            for car in snor.assignable_cars(g.organization)
+        ]
+        form.driver.choices = [
+            (str(user.id), user.get_name())
+            for user in snor.assignable_drivers(g.organization)
+        ]
+    else:
+        form = forms.snor_car.ApprovalDecisionForm()
     return render_template(
         "/snor_car/requests/detail.html",
         organization=g.organization,
@@ -170,7 +183,7 @@ def detail(request_id):
         steps=stepper(snor_request),
         current_step_label=snor.step_label(current_key) if current_key else "",
         can_act=snor.can_act(snor_request, current_user._get_current_object()),
-        form=forms.snor_car.ApprovalDecisionForm(),
+        form=form,
         deny_form=forms.snor_car.DenyDecisionForm(),
     )
 
@@ -179,15 +192,33 @@ def detail(request_id):
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def approve(request_id):
     snor_request = get_request_or_404(request_id)
-    form = forms.snor_car.ApprovalDecisionForm()
+    dispatching = snor.current_step_key(snor_request) == "dispatcher"
+    form = (
+        forms.snor_car.DispatchDecisionForm()
+        if dispatching
+        else forms.snor_car.ApprovalDecisionForm()
+    )
     if not form.validate_on_submit():
         abort(400)
 
+    assignment = {}
+    if dispatching:
+        assignment = {
+            "car": models.vehicles.Car.objects(
+                id=form.car.data, organization=g.organization
+            ).first()
+            if ObjectId.is_valid(form.car.data)
+            else None,
+            "driver": models.User.objects(id=form.driver.data).first()
+            if ObjectId.is_valid(form.driver.data)
+            else None,
+        }
     try:
         snor.approve(
             snor_request,
             current_user._get_current_object(),
             comment=form.comment.data or "",
+            **assignment,
         )
     except snor.FlowError:
         abort(403)

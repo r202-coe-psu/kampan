@@ -29,6 +29,12 @@
     <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ snor_request.location }}</dd></div>
     <div><dt class="font-semibold">เรื่อง</dt><dd>{{ snor_request.request_reason }}</dd></div>
     <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ snor_request.passenger_number }}</dd></div>
+    {% if snor_request.car %}
+    <div><dt class="font-semibold">รถ</dt><dd data-role="assigned-car">{{ snor_request.car.license_plate }}{% if snor_request.car.vehicle_type %} ({{ snor_request.car.vehicle_type }}){% endif %}</dd></div>
+    {% endif %}
+    {% if snor_request.driver %}
+    <div><dt class="font-semibold">พนักงานขับรถ</dt><dd data-role="assigned-driver">{{ snor_request.driver.get_name() }}</dd></div>
+    {% endif %}
   </dl>
 
   <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
@@ -50,6 +56,10 @@
           action="{{ url_for('snor_car.requests.approve', request_id=snor_request.id, organization_id=organization.id) }}"
           class="flex items-end gap-2">
       {{ form.csrf_token }}
+      {% if form.car is defined %}
+      {{ renderer.render_field(form.car) }}
+      {{ renderer.render_field(form.driver) }}
+      {% endif %}
       {{ renderer.render_field(form.comment) }}
       <button type="submit" class="btn btn-success">อนุมัติ</button>
     </form>

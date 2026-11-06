@@ -10,7 +10,7 @@ BASE = "/snor_car/requests"
 
 
 @pytest.fixture
-def snor(app, create_org, create_user, assign_user_to_org, login_as):
+def snor(app, create_org, create_user, assign_user_to_org, login_as, create_car):
     org = create_org("Snor Org")
     org.enabled_modules = ["snor_car"]
     org.save()
@@ -97,6 +97,15 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
 
     s.submit_request = submit_request
     s.submit_domestic_request = submit_request
+
+    def add_driver(first_name="Driver", last_name="One", roles=("driver",)):
+        user = create_user(first_name, last_name)
+        assign_user_to_org(user, org, roles=list(roles))
+        return user
+
+    s.add_driver = add_driver
+    s.car = create_car(org, "กก 1234", vehicle_type="เก๋ง")
+    s.driver = add_driver()
     return s
 
 
@@ -649,3 +658,34 @@ def test_inbox_never_lists_requests_of_another_organization(
 
     assert f"{BASE}/{own.id}?" in html
     assert str(foreign.id) not in html
+
+
+def dispatch_data(car, driver, comment=""):
+    return {"comment": comment, "car": str(car.id), "driver": str(driver.id)}
+
+
+def request_at_dispatcher(snor):
+    car_application = snor.submit_domestic_request()
+    response = snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    assert response.status_code == 302
+    return car_application
+
+
+def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail(snor):
+    car_application = request_at_dispatcher(snor)
+
+    response = snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    )
+    assert response.status_code == 302
+
+    car_application.reload()
+    assert car_application.car == snor.car
+    assert car_application.driver == snor.driver
+    assert car_application.current_step == 2
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    html = page.get_data(as_text=True)
+    assert "กก 1234" in html
+    assert "Driver One" in html

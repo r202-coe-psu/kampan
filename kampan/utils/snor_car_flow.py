@@ -164,11 +164,27 @@ def inbox_for(organization, user):
     return [app for app in pending if can_act(app, user)]
 
 
-def approve(app, user, comment=""):
+def assignable_cars(organization):
+    return models.vehicles.Car.objects(
+        organization=organization, status="active"
+    ).order_by("license_plate")
+
+
+def assignable_drivers(organization):
+    members = models.OrganizationUserRole.objects(
+        organization=organization, status="active", roles="driver"
+    )
+    return [member.user for member in members if member.user is not None]
+
+
+def approve(app, user, comment="", car=None, driver=None):
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
     key = current_step_key(app)
+    if key == "dispatcher":
+        app.car = car
+        app.driver = driver
     app.step_approvals.append(
         models.snor_car_requests.StepApproval(
             step_key=key,

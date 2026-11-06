@@ -56,6 +56,17 @@ class ApprovalDecisionForm(FlaskForm):
     )
 
 
+class DispatchDecisionForm(ApprovalDecisionForm):
+    """ขั้นผู้จัดรถ: อนุมัติพร้อมระบุรถและพนักงานขับรถ
+
+    choices ตั้งจากรถ/พนักงานขับรถของ org ตอนสร้างหน้า ส่วนการตรวจสิทธิ์และเวลาชนกัน
+    อยู่ที่ engine จึงปิดการตรวจ choice ของ wtforms
+    """
+
+    car = fields.SelectField("รถ", choices=[], validate_choice=False)
+    driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
+
+
 class DenyDecisionForm(FlaskForm):
     comment = fields.TextAreaField(
         "เหตุผลที่ไม่อนุมัติ",
