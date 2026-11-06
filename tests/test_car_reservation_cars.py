@@ -172,6 +172,63 @@ def test_deactivate_only_accepts_post(world, create_car):
     assert car.status == "active"
 
 
+def test_staff_cannot_open_list_create_edit_or_deactivate(world, create_car):
+    car = create_car(world.org)
+    client = world.staff_client
+
+    responses = [
+        client.get(world.list_url),
+        client.get(world.create_url),
+        client.post(world.create_url, data=car_data()),
+        client.get(world.edit_url(car)),
+        client.post(world.edit_url(car), data=car_data(license_plate="แก้ไข")),
+        client.post(world.deactivate_url(car)),
+    ]
+
+    assert all(response.status_code in (302, 403) for response in responses)
+    car.reload()
+    assert (car.license_plate, car.status) == ("กก 1111", "active")
+    assert models.vehicles.Car.objects(organization=world.org).count() == 1
+
+
+def test_cars_of_another_org_cannot_be_edited_deactivated_or_viewed(
+    world, create_org, create_car
+):
+    other_car = create_car(create_org("Other Org"), "ขข 7777")
+
+    responses = [
+        world.admin_client.get(world.edit_url(other_car)),
+        world.admin_client.post(world.edit_url(other_car), data=car_data()),
+        world.admin_client.post(world.deactivate_url(other_car)),
+        world.staff_client.get(world.image_url(other_car)),
+    ]
+    listing = world.admin_client.get(world.list_url).get_data(as_text=True)
+
+    assert [response.status_code for response in responses] == [404] * 4
+    other_car.reload()
+    assert other_car.status == "active"
+    assert "ขข 7777" not in listing
+
+
+def test_empty_list_shows_an_empty_state_with_an_add_link(world):
+    html = world.admin_client.get(world.list_url).get_data(as_text=True)
+
+    assert "ยังไม่มีรถ" in html
+    assert f"/car_reservation/cars/create?organization_id={world.org.id}" in html
+
+
+def test_active_car_row_offers_a_deactivate_button_and_inactive_does_not(
+    world, create_car
+):
+    active = create_car(world.org, "กก 1111")
+    create_car(world.org, "กก 2222", status="disactive")
+
+    html = world.admin_client.get(world.list_url).get_data(as_text=True)
+
+    assert f"/car_reservation/cars/{active.id}/deactivate" in html
+    assert html.count("/deactivate?") == 2  # ตารางกับการ์ดมือถือของรถที่ active คันเดียว
+
+
 def test_car_without_photo_has_no_image_route(world):
     world.admin_client.post(world.create_url, data=car_data())
     car = models.vehicles.Car.objects(organization=world.org).first()
