@@ -63,6 +63,9 @@ DEFAULT_MIN_BUSINESS_DAYS = 3
 CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพนักงานขับรถ"
 
 
+CAR_OR_DRIVER_NOT_ASSIGNABLE = "รถหรือพนักงานขับรถที่เลือกไม่พร้อมใช้งาน"
+
+
 class FlowError(Exception):
     pass
 
@@ -188,6 +191,10 @@ def approve(app, user, comment="", car=None, driver=None):
     if key == "dispatcher":
         if car is None or driver is None:
             raise FlowError(CAR_AND_DRIVER_REQUIRED)
+        if car not in assignable_cars(app.organization) or driver not in (
+            assignable_drivers(app.organization)
+        ):
+            raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
         app.car = car
         app.driver = driver
     app.step_approvals.append(

@@ -718,3 +718,44 @@ def test_dispatcher_cannot_approve_without_choosing_car_and_driver(snor, missing
     assert len(car_application.step_approvals) == 1
     page = client.get(detail_url(snor, car_application))
     assert "กรุณาเลือกรถและพนักงานขับรถ" in page.get_data(as_text=True)
+
+
+def test_dispatcher_can_only_assign_active_cars_and_drivers_of_the_same_org(
+    snor, create_org, create_car, create_user, assign_user_to_org
+):
+    other_org = create_org("Other Fleet Org")
+    foreign_car = create_car(other_org, "ขข 9999")
+    inactive_car = create_car(snor.org, "คค 1111", status="disactive")
+    staff_member = snor.add_driver("Staffer", "Only", roles=("staff",))
+    left_driver = snor.add_driver("Former", "Driver")
+    member = models.OrganizationUserRole.objects(
+        organization=snor.org, user=left_driver
+    ).first()
+    member.status = "disactive"
+    member.save()
+    foreign_driver = create_user("Foreign", "Driver")
+    assign_user_to_org(foreign_driver, other_org, roles=["driver"])
+    car_application = request_at_dispatcher(snor)
+
+    refused = [
+        (foreign_car, snor.driver),
+        (inactive_car, snor.driver),
+        (snor.car, staff_member),
+        (snor.car, left_driver),
+        (snor.car, foreign_driver),
+    ]
+    for car, driver in refused:
+        response = snor.client_for(snor.dispatcher).post(
+            approve_url(snor, car_application), data=dispatch_data(car, driver)
+        )
+        assert response.status_code == 302
+        car_application.reload()
+        assert car_application.current_step == 1, (car.license_plate, driver.first_name)
+        assert car_application.car is None
+        assert car_application.driver is None
+
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    )
+    car_application.reload()
+    assert car_application.current_step == 2
