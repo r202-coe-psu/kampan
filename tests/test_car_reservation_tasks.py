@@ -87,3 +87,37 @@ def test_only_drivers_may_open_the_task_list(world, who):
 
     assert response.status_code in (302, 403)
     assert "งานที่ต้องไป" not in response.get_data(as_text=True)
+
+
+def test_task_card_shows_what_the_driver_needs_for_the_trip(world):
+    world.reservation(location="เชียงใหม่")
+
+    html = world.client_for(world.driver).get(world.list_url).get_data(as_text=True)
+    # ขอบเขตเฉพาะส่วนงานที่ต้องไป (ทุกหน้ามี modal เลือกประเภทใบขอที่มีชื่อประเภทอยู่แล้ว)
+    html = html.split('data-role="active-tasks"')[1].split('data-role="completed-tasks"')[0]
+
+    for expected in (
+        "ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ",  # ประเภท
+        "เชียงใหม่",  # ปลายทาง
+        "10/01/2031 08:30",  # ออกเดินทาง
+        "10/01/2031 16:30",  # กลับ
+        "หน้าอาคารอธิการบดี",  # จุดรับ
+        "07:30",  # เวลารับ
+        "081-234-5678",  # เบอร์ผู้ขอ
+        "กก 1234",  # ทะเบียน
+    ):
+        assert expected in html
+
+
+def test_active_tasks_are_listed_upcoming_first_then_recent_completed(world):
+    world.reservation(
+        location="ไกลสุด", departure=datetime.datetime(2031, 3, 1, 8, 0)
+    )
+    world.reservation(location="ใกล้สุด", departure=datetime.datetime(2031, 1, 5, 8, 0))
+    world.reservation(
+        location="เสร็จแล้ว", status="completed", departure=datetime.datetime(2030, 12, 1, 8, 0)
+    )
+
+    html = world.client_for(world.driver).get(world.list_url).get_data(as_text=True)
+
+    assert html.index("ใกล้สุด") < html.index("ไกลสุด") < html.index("เสร็จแล้ว")
