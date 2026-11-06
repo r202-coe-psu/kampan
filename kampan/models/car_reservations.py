@@ -26,6 +26,18 @@ RESERVATION_STATUS = [
 # ประเภทรถที่ผู้ขอเลือกได้ในใบขอ (ตามแบบฟอร์มจริง)
 VEHICLE_KINDS = ["บัส", "ตู้", "เก๋ง", "มินิบัส"]
 
+# หน่วยงานใน สนอ. เลือกรับผิดชอบค่าใช้จ่าย (ตารางท้ายใบ ใช้เฉพาะหน่วยงานในสำนักงานอธิการบดี)
+COST_FUEL = "ค่าน้ำมันเชื้อเพลิง"
+COST_ALLOWANCE = "เบี้ยเลี้ยง"
+COST_DRIVER_LODGING = "ค่าที่พักของพนักงานขับรถ"
+COST_NONE = "ไม่รับผิดชอบ"
+DOMESTIC_COST_RESPONSIBILITIES = [
+    COST_FUEL,
+    COST_ALLOWANCE,
+    COST_DRIVER_LODGING,
+    COST_NONE,
+]
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -72,6 +84,11 @@ class DomesticDetails(me.EmbeddedDocument):
     vehicle_count = me.IntField(min_value=1, required=True)
     district = me.StringField(required=True, max_length=256)  # อำเภอ
     province = me.StringField(required=True, max_length=256)  # จังหวัด
+    # ผู้ขอเป็นหน่วยงานใน สนอ. หรือไม่ เก็บ cost_responsibilities เฉพาะเมื่อเป็น True
+    in_office_of_president = me.BooleanField(default=False)
+    cost_responsibilities = me.ListField(
+        me.StringField(choices=DOMESTIC_COST_RESPONSIBILITIES)
+    )
 
 
 class CarReservation(me.Document):

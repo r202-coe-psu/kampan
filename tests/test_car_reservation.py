@@ -205,6 +205,44 @@ def test_domestic_request_is_saved_with_its_form_fields_and_shown_on_detail(worl
         assert shown in html
 
 
+def test_domestic_office_unit_request_saves_and_shows_the_cost_responsibilities(world):
+    data = world.request_data("domestic")
+    data["in_office_of_president"] = "y"
+    data["cost_responsibilities"] = ["ค่าน้ำมันเชื้อเพลิง", "ค่าที่พักของพนักงานขับรถ"]
+
+    assert post_new(world, data).status_code == 302
+
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.in_office_of_president is True
+    assert saved.details.cost_responsibilities == [
+        "ค่าน้ำมันเชื้อเพลิง",
+        "ค่าที่พักของพนักงานขับรถ",
+    ]
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    assert "หน่วยงานในสำนักงานอธิการบดี" in html
+    assert "ค่าที่พักของพนักงานขับรถ" in html
+    assert "เบี้ยเลี้ยง" not in html
+
+
+def test_domestic_cost_responsibilities_are_dropped_unless_the_office_box_is_ticked(
+    world,
+):
+    data = world.request_data("domestic")
+    data["cost_responsibilities"] = ["เบี้ยเลี้ยง"]
+
+    assert post_new(world, data).status_code == 302
+
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.in_office_of_president is False
+    assert saved.details.cost_responsibilities == []
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    assert "เบี้ยเลี้ยง" not in html
+
+
 def upcoming(weekday, at_least_days=10):
     """วันถัดไปที่เป็น weekday (จันทร์=0 ... อาทิตย์=6) และห่างจากวันนี้อย่างน้อย at_least_days"""
     day = datetime.date.today() + datetime.timedelta(days=at_least_days)

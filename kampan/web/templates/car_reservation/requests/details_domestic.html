@@ -3,3 +3,7 @@
 <div><dt class="font-semibold">จำนวนรถ (คัน)</dt><dd>{{ details.vehicle_count }}</dd></div>
 <div><dt class="font-semibold">อำเภอ</dt><dd>{{ details.district }}</dd></div>
 <div><dt class="font-semibold">จังหวัด</dt><dd>{{ details.province }}</dd></div>
+{% if details.in_office_of_president %}
+<div><dt class="font-semibold">หน่วยงานในสำนักงานอธิการบดี</dt><dd>ใช่</dd></div>
+<div><dt class="font-semibold">ยินดีรับผิดชอบ</dt><dd>{{ details.cost_responsibilities | join(', ') }}</dd></div>
+{% endif %}

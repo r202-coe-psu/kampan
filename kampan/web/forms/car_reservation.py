@@ -102,6 +102,13 @@ class DomesticReservationForm(GenericReservationForm):
     province = fields.StringField(
         "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
     )
+    in_office_of_president = fields.BooleanField("หน่วยงานในสำนักงานอธิการบดี")
+    cost_responsibilities = fields.SelectMultipleField(
+        "ยินดีรับผิดชอบ",
+        choices=models.car_reservations.DOMESTIC_COST_RESPONSIBILITIES,
+        option_widget=widgets.CheckboxInput(),
+        widget=widgets.ListWidget(prefix_label=False),
+    )
     province_scope = fields.SelectField(
         "พื้นที่เดินทาง",
         choices=models.car_reservations.PROVINCE_SCOPES,
@@ -120,6 +127,12 @@ class DomesticReservationForm(GenericReservationForm):
             vehicle_count=self.vehicle_count.data,
             district=self.district.data,
             province=self.province.data,
+            in_office_of_president=self.in_office_of_president.data,
+            cost_responsibilities=(
+                self.cost_responsibilities.data
+                if self.in_office_of_president.data
+                else []
+            ),
         )
 
 

@@ -10,3 +10,17 @@
   {{ renderer.render_field(form.province) }}
 </div>
 {{ renderer.render_field(form.request_reason) }}
+{{ renderer.render_checkbox(form.in_office_of_president) }}
+<div id="cost-responsibilities" class="{{ '' if form.in_office_of_president.data else 'hidden' }}">
+  <p class="text-sm text-base-content/70">ข้อความในตารางนี้ใช้เฉพาะการขอใช้รถยนต์ของหน่วยงานในสำนักงานอธิการบดีเท่านั้น</p>
+  {{ renderer.render_checkbox_list_field(form.cost_responsibilities) }}
+</div>
+<script>
+  (function () {
+    var box = document.getElementById("{{ form.in_office_of_president.id }}");
+    var costs = document.getElementById("cost-responsibilities");
+    box.addEventListener("change", function () {
+      costs.classList.toggle("hidden", !box.checked);
+    });
+  })();
+</script>
