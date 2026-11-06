@@ -1413,3 +1413,45 @@ def test_direct_cancel_notifies_the_requester_and_confirmed_cancel_adds_the_driv
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(after_car.id), "cancelled")
     assert sorted(recipients) == sorted([world.requester.email, world.driver.email])
+
+
+def save_default_template(world, event, subject, body):
+    return models.EmailTemplate(
+        name=f"car reservation {event}",
+        subject=subject,
+        body=body,
+        type=f"car_reservation_{event}",
+        organization=world.org,
+        is_default=True,
+    ).save()
+
+
+def send_job(app, world, car_application, event, recipients):
+    with app.app_context():
+        utils.car_reservation_email.send_car_reservation_email(
+            str(car_application.id),
+            event,
+            recipients,
+            "https://staging.example.test",
+        )
+
+
+def test_email_job_renders_the_org_default_template_with_documented_variables(
+    app, world, sent_emails
+):
+    car_application = world.submit_domestic_request()
+    save_default_template(
+        world,
+        "submitted",
+        "ขออนุมัติรถ {{ requester_name }}",
+        "เรียน หัวหน้า\nปลายทาง: {{ destination }} ({{ organization_name }})\n{{ request_url }}",
+    )
+
+    send_job(app, world, car_application, "submitted", [world.supervisor.email])
+
+    assert len(sent_emails) == 1
+    email = sent_emails[0]
+    assert email["subject"] == "ขออนุมัติรถ Requester One"
+    assert "ปลายทาง: กรุงเทพฯ (Reservation Org)" in email["body"]
+    assert f"/car_reservation/requests/{car_application.id}" in email["body"]
+    assert "ระบบจองรถออนไลน์" not in email["subject"]

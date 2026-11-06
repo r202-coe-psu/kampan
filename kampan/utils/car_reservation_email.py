@@ -8,6 +8,7 @@ import pathlib
 
 from flask import current_app, has_app_context
 from jinja2 import Environment, FileSystemLoader
+from jinja2.sandbox import SandboxedEnvironment
 
 from kampan import models
 from kampan.web import redis_rq
@@ -25,7 +26,8 @@ EVENTS = (
     "cancelled",
 )
 
-# ข้อความอีเมลมาจากไฟล์ template ของระบบเท่านั้น (ไม่ render ข้อความที่ผู้ใช้กรอก) กัน SSTI
+# template ของระบบ (fallback) อยู่ในไฟล์ ส่วน template ที่แอดมินองค์กรแก้ได้
+# ต้อง render ด้วย sandbox เท่านั้น กัน SSTI
 _TEMPLATE_DIR = (
     pathlib.Path(__file__).resolve().parent.parent / "web" / "templates" / "email"
 )
@@ -142,6 +144,26 @@ def template_variables(reservation, host_url):
     }
 
 
+_sandbox = SandboxedEnvironment()
+
+
+def _render_custom(reservation, event, variables):
+    email_template = reservation.organization.get_default_email_template(
+        f"car_reservation_{event}"
+    )
+    if email_template is None:
+        return None
+    return (
+        _sandbox.from_string(email_template.subject).render(variables),
+        _sandbox.from_string(email_template.body).render(variables),
+    )
+
+
+def _render_file(event, variables):
+    module = _env.get_template(f"car_reservation/{event}.html").make_module(variables)
+    return module.subject, str(module).strip()
+
+
 def send_car_reservation_email(request_id, event, recipients, host_url):
     if event not in EVENTS:
         raise ValueError(f"unknown car reservation email event: {event}")
@@ -150,11 +172,10 @@ def send_car_reservation_email(request_id, event, recipients, host_url):
         logger.warning("car reservation %s not found for email", request_id)
         return False
 
-    module = _env.get_template(f"car_reservation/{event}.html").make_module(
-        template_variables(reservation, host_url)
+    variables = template_variables(reservation, host_url)
+    subject, body = _render_custom(reservation, event, variables) or _render_file(
+        event, variables
     )
-    subject = module.subject
-    body = str(module).strip()
 
     setting = current_app.config if has_app_context() else config.get_settings()
     smtp = email_utils.PSUSMTP(setting)
