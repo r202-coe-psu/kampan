@@ -15,6 +15,9 @@
     {% if snor_request.status == 'pending' %}
     <span class="font-medium">รอ{{ current_step_label }}</span>
     {% endif %}
+    {% if snor_request.status == 'cancel_requested' %}
+    <span class="font-medium">ขอยกเลิก — รอผู้จัดรถรับทราบ</span>
+    {% endif %}
   </div>
 
   <ul class="steps steps-vertical mt-4">

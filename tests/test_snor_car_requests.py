@@ -936,3 +936,32 @@ def test_requester_cancels_before_a_car_is_assigned_and_the_request_leaves_inbox
     assert car_application.audit_logs[-1].actor == snor.requester
     assert car_application.audit_logs[-1].comment == "เปลี่ยนแผน"
     assert not inbox_shows(snor, snor.supervisor, car_application)
+
+
+def request_with_car_assigned(snor):
+    car_application = request_at_dispatcher(snor)
+    response = snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    )
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.car == snor.car
+    return car_application
+
+
+def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(snor):
+    car_application = request_with_car_assigned(snor)
+
+    response = snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": "งานเลื่อน"}
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.status == "cancel_requested"
+    html = (
+        snor.client_for(snor.requester)
+        .get(detail_url(snor, car_application))
+        .get_data(as_text=True)
+    )
+    assert "ขอยกเลิก — รอผู้จัดรถรับทราบ" in html

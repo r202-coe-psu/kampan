@@ -257,6 +257,10 @@ def deny(app, user, comment):
 
 
 def cancel(app, user, reason=""):
-    app.status = "cancelled"
-    _log(app, "cancelled", user, comment=reason)
+    if app.car is None:
+        app.status = "cancelled"
+        _log(app, "cancelled", user, comment=reason)
+    else:
+        app.status = "cancel_requested"
+        _log(app, "cancel_requested", user, comment=reason)
     app.save()

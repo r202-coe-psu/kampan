@@ -29,6 +29,7 @@ AUDIT_ACTIONS = [
     ("submitted", "ยื่นคำขอ"),
     ("approved", "อนุมัติ"),
     ("denied", "ไม่อนุมัติ"),
+    ("cancel_requested", "ขอยกเลิก"),
     ("cancelled", "ยกเลิก"),
 ]
 
