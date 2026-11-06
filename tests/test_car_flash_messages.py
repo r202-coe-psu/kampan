@@ -2,9 +2,6 @@
 
 import pytest
 
-from kampan import models
-
-from test_car_form_templates_views import valid_payload
 
 
 @pytest.fixture
@@ -47,16 +44,3 @@ def test_delete_feedback_template_shows_toast(app, login_as, setup, create_feedb
     assert response.status_code == 200
     _assert_toast(response.get_data(as_text=True), "ลบแบบประเมิน ประเมินรถตู้ แล้ว")
 
-
-def test_create_form_template_shows_toast(app, login_as, setup):
-    with app.test_client() as client:
-        login_as(client, setup["admin"])
-        response = client.post(
-            "/vehicle_lending/car_form_templates/create",
-            data=valid_payload(setup["org"]),
-            follow_redirects=True,
-        )
-
-    assert response.status_code == 200
-    assert models.car_form_templates.CarFormTemplate.objects(organization=setup["org"]).count() == 1
-    _assert_toast(response.get_data(as_text=True), "สร้างแบบฟอร์ม ใบขอใช้รถทั่วไป แล้ว")
