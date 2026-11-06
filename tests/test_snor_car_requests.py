@@ -538,3 +538,23 @@ def test_request_returning_before_departure_is_refused(snor):
     assert response.status_code == 200
     assert "วันกลับต้องไม่ก่อนวันออกเดินทาง" in response.get_data(as_text=True)
     assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+
+
+def inbox_url(snor):
+    return f"{BASE}/inbox?organization_id={snor.org.id}"
+
+
+def inbox_shows(snor, user, car_application):
+    page = snor.client_for(user).get(inbox_url(snor))
+    assert page.status_code == 200
+    return f"{BASE}/{car_application.id}?" in page.get_data(as_text=True)
+
+
+def test_inbox_shows_request_at_supervisor_step_only_to_the_requesters_division_head(
+    snor,
+):
+    car_application = snor.submit_domestic_request()
+
+    assert inbox_shows(snor, snor.supervisor, car_application)
+    assert not inbox_shows(snor, snor.other_head, car_application)
+    assert not inbox_shows(snor, snor.dispatcher, car_application)

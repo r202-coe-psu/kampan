@@ -46,6 +46,18 @@ def index():
     )
 
 
+@module.route("/inbox")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def inbox():
+    waiting = snor.inbox_for(g.organization, current_user._get_current_object())
+    return render_template(
+        "/snor_car/requests/inbox.html",
+        organization=g.organization,
+        snor_requests=waiting,
+        step_label=lambda app: snor.step_label(snor.current_step_key(app)),
+    )
+
+
 @module.route("/new", methods=["GET", "POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def create():

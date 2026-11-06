@@ -156,6 +156,14 @@ def can_act(app, user):
     return models.CarFlowPosition.can_act(app.organization, key, user)
 
 
+def inbox_for(organization, user):
+    """คำขอที่รออนุมัติและ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
+    pending = models.SnorCarRequest.objects(
+        organization=organization, status="pending"
+    ).order_by("departure_datetime")
+    return [app for app in pending if can_act(app, user)]
+
+
 def approve(app, user, comment=""):
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
