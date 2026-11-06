@@ -201,7 +201,7 @@ def render_steps(steps):
     ).format(Markup("").join(circles), Markup("").join(labels))
 
 
-def render_email_html(subject, body, steps=None):
+def render_email_html(subject, body, steps=None, app_name=None):
     preheader = next((line.strip() for line in (body or "").splitlines() if line.strip()), "")
     return _env.get_template("layout.html").render(
         subject=subject,
@@ -209,5 +209,7 @@ def render_email_html(subject, body, steps=None):
         content=body_to_html(body),
         steps=render_steps(steps),
         primary_color=PRIMARY_COLOR,
-        app_name=default_settings.KAMPAN_EMAIL_SENDER_NAME or default_settings.APP_TITLE,
+        app_name=app_name
+        or default_settings.KAMPAN_EMAIL_SENDER_NAME
+        or default_settings.APP_TITLE,
     )

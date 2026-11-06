@@ -61,7 +61,9 @@ class PSUSMTP:
     def quit(self):
         self.server.quit()
 
-    def send_email(self, receiver, subject, body, html=False, steps=None):
+    def send_email(
+        self, receiver, subject, body, html=False, steps=None, app_name=None
+    ):
         try:
             sender = self.sender
             if self.sender_name:
@@ -77,7 +79,11 @@ class PSUSMTP:
             message.attach(MIMEText(body, "plain", "utf-8"))
             if html:
                 message.attach(
-                    MIMEText(render_email_html(subject, body, steps), "html", "utf-8")
+                    MIMEText(
+                        render_email_html(subject, body, steps, app_name),
+                        "html",
+                        "utf-8",
+                    )
                 )
 
             self.server.sendmail(sender, receivers, message.as_string())
