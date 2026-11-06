@@ -1,0 +1,14 @@
+{% set details = reservation.details %}
+<div><dt class="font-semibold">ส่วนงาน</dt><dd>{{ details.section }}</dd></div>
+<div><dt class="font-semibold">ที่</dt><dd>{{ details.document_number }}</dd></div>
+<div><dt class="font-semibold">ประเภทรถ</dt><dd>{{ details.vehicle_kind }}</dd></div>
+<div><dt class="font-semibold">จำนวนรถ (คัน)</dt><dd>{{ details.vehicle_count }}</dd></div>
+<div><dt class="font-semibold">เมือง/รัฐ</dt><dd>{{ details.city_state }}</dd></div>
+<div><dt class="font-semibold">ประเทศ</dt><dd>{{ details.country }}</dd></div>
+<div><dt class="font-semibold">ผู้ประสานงาน</dt><dd>{{ details.coordinator_name }} โทร {{ details.coordinator_phone }}</dd></div>
+<div><dt class="font-semibold">ตำแหน่งผู้ขอใช้รถ</dt><dd>{{ details.requester_position }}</dd></div>
+{% if reservation.project_file %}
+<div><dt class="font-semibold">เอกสารโครงการ</dt>
+  <dd><a class="link link-primary" data-role="project-file"
+         href="{{ url_for('car_reservation.requests.project_file', request_id=reservation.id, organization_id=organization.id) }}">{{ reservation.project_file.filename }}</a></dd></div>
+{% endif %}

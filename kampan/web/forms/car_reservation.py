@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed, FileField
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import Form, fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
@@ -57,16 +57,19 @@ class CommonReservationForm(FlaskForm):
         """embedded document ของฟิลด์เฉพาะประเภท (None ถ้าประเภทนั้นไม่มี)"""
         return None
 
+    def attach_files(self, reservation):
+        """เก็บไฟล์แนบของฟอร์ม (ถ้ามี) ลงคำขอก่อนบันทึก"""
 
-class GenericReservationForm(CommonReservationForm):
-    """ฟอร์มชั่วคราวของประเภทที่ยังไม่มีฟอร์มเฉพาะ"""
+
+class DomesticReservationForm(CommonReservationForm):
+    """ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"""
 
     location = fields.StringField(
         "สถานที่ปฏิบัติงาน",
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     request_reason = fields.StringField(
-        "เรื่อง/เหตุผลที่ต้องการใช้รถ",
+        "เรื่อง",
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     passenger_number = fields.IntegerField(
@@ -74,18 +77,6 @@ class GenericReservationForm(CommonReservationForm):
         validators=[validators.InputRequired(), validators.NumberRange(min=0)],
         widget=widgets.NumberInput(),
     )
-
-    def reservation_fields(self):
-        return {
-            **super().reservation_fields(),
-            "location": self.location.data,
-            "request_reason": self.request_reason.data,
-            "passenger_number": self.passenger_number.data,
-        }
-
-
-class DomesticReservationForm(GenericReservationForm):
-    """ใบขอใช้รถยนต์ไปปฏิบัติงานภายในประเทศ"""
 
     vehicle_kind = fields.SelectField(
         "ประเภทรถ",
@@ -119,6 +110,9 @@ class DomesticReservationForm(GenericReservationForm):
     def reservation_fields(self):
         return {
             **super().reservation_fields(),
+            "location": self.location.data,
+            "request_reason": self.request_reason.data,
+            "passenger_number": self.passenger_number.data,
             "province_scope": self.province_scope.data,
         }
 
@@ -313,7 +307,109 @@ class WelfareReservationForm(CommonReservationForm):
         )
 
 
+MAX_PROJECT_FILE_BYTES = 10 * 1024 * 1024
+PROJECT_FILE_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
+
+
+def validate_project_file_size(form, field):
+    upload = field.data
+    if not upload:
+        return
+    upload.stream.seek(0, 2)
+    size = upload.stream.tell()
+    upload.stream.seek(0)
+    if size > MAX_PROJECT_FILE_BYTES:
+        raise validators.ValidationError("ไฟล์เอกสารโครงการต้องมีขนาดไม่เกิน 10 MB")
+
+
+class AbroadReservationForm(CommonReservationForm):
+    """บันทึกข้อความขอใช้รถยนต์พร้อมพนักงานขับรถไปปฏิบัติงานต่างประเทศ"""
+
+    section = fields.StringField(
+        "ส่วนงาน", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    document_number = fields.StringField(
+        "ที่", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    vehicle_kind = fields.SelectField(
+        "ประเภทรถ",
+        choices=models.car_reservations.VEHICLE_KINDS,
+        validators=[validators.DataRequired()],
+    )
+    vehicle_count = fields.IntegerField(
+        "จำนวนรถ (คัน)",
+        validators=[validators.InputRequired(), validators.NumberRange(min=1)],
+        widget=widgets.NumberInput(),
+    )
+    passenger_number = fields.IntegerField(
+        "จำนวนผู้โดยสาร",
+        validators=[validators.InputRequired(), validators.NumberRange(min=0)],
+        widget=widgets.NumberInput(),
+    )
+    city_state = fields.StringField(
+        "เมือง/รัฐ", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    country = fields.StringField(
+        "ประเทศ", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    request_reason = fields.StringField(
+        "เรื่อง",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
+    coordinator_name = fields.StringField(
+        "ผู้ประสานงาน",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    coordinator_phone = fields.StringField(
+        "โทรผู้ประสานงาน",
+        validators=[validators.DataRequired(), validators.Length(max=32)],
+    )
+    requester_position = fields.StringField(
+        "ตำแหน่งผู้ขอใช้รถ",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    project_file = FileField(
+        "เอกสารโครงการ",
+        validators=[
+            FileRequired("กรุณาแนบเอกสารโครงการ"),
+            FileAllowed(
+                PROJECT_FILE_EXTENSIONS,
+                "อนุญาตเฉพาะไฟล์ PDF, DOC, DOCX, JPG หรือ PNG",
+            ),
+            validate_project_file_size,
+        ],
+    )
+
+    def reservation_fields(self):
+        return {
+            **super().reservation_fields(),
+            "location": f"{self.city_state.data} {self.country.data}",
+            "request_reason": self.request_reason.data,
+            "passenger_number": self.passenger_number.data,
+        }
+
+    def build_details(self):
+        return models.car_reservations.AbroadDetails(
+            section=self.section.data,
+            document_number=self.document_number.data,
+            vehicle_kind=self.vehicle_kind.data,
+            vehicle_count=self.vehicle_count.data,
+            city_state=self.city_state.data,
+            country=self.country.data,
+            coordinator_name=self.coordinator_name.data,
+            coordinator_phone=self.coordinator_phone.data,
+            requester_position=self.requester_position.data,
+        )
+
+    def attach_files(self, reservation):
+        upload = self.project_file.data
+        reservation.project_file.put(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+
+
 FORM_BY_REQUEST_TYPE = {
+    "abroad": AbroadReservationForm,
     "welfare": WelfareReservationForm,
     "domestic": DomesticReservationForm,
     "airport": AirportReservationForm,
@@ -321,7 +417,7 @@ FORM_BY_REQUEST_TYPE = {
 
 
 def reservation_form_for(request_type):
-    return FORM_BY_REQUEST_TYPE.get(request_type, GenericReservationForm)()
+    return FORM_BY_REQUEST_TYPE[request_type]()
 
 
 class ApprovalDecisionForm(FlaskForm):

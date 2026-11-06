@@ -1,6 +1,7 @@
 """คำขอใช้รถของระบบจองรถ: ผู้ขอยื่น -> ผู้อนุมัติแต่ละขั้นตามเส้นทางที่ตรึงไว้ตอนยื่น"""
 
 import datetime
+import io
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -60,8 +61,22 @@ TYPE_SPECIFIC_DATA = {
         "province": "สงขลา",
         "direct_relative_confirmed": "y",
     },
-    "abroad": {},
+    "abroad": {
+        "section": "คณะวิศวกรรมศาสตร์",
+        "document_number": "ศธ 0521.1/123",
+        "vehicle_kind": "ตู้",
+        "vehicle_count": "1",
+        "city_state": "กัวลาลัมเปอร์",
+        "country": "มาเลเซีย",
+        "coordinator_name": "นายประสาน งานดี",
+        "coordinator_phone": "081-999-8888",
+        "requester_position": "คณบดี",
+    },
 }
+
+
+def project_file(content=b"%PDF-1.4 project", filename="project.pdf"):
+    return (io.BytesIO(content), filename)
 
 
 @pytest.fixture
@@ -135,6 +150,8 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
             "pickup_time": "07:30",
         }
         data.update(TYPE_SPECIFIC_DATA[request_type])
+        if request_type == "abroad":
+            data["project_file"] = project_file()
         if request_type == "domestic":
             data["province_scope"] = province_scope
         return data
@@ -420,6 +437,99 @@ def test_welfare_request_needs_the_self_or_direct_relative_confirmation(world):
     assert "ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น" in html
     assert "กรุณายืนยันว่าขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น" in html
     assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_abroad_request_is_saved_with_its_form_fields_and_shown_on_detail(world):
+    data = world.request_data("abroad")
+    data.update(
+        section="สำนักวิชาการ",
+        document_number="ที่ อว 0521/777",
+        vehicle_kind="บัส",
+        vehicle_count="2",
+        city_state="รัฐเประ",
+        country="มาเลเซีย",
+        request_reason="ศึกษาดูงานเครือข่ายมหาวิทยาลัย",
+        coordinator_name="นางสาวประสาน ดีมาก",
+        coordinator_phone="082-333-4444",
+        requester_position="รองคณบดี",
+    )
+
+    response = post_new(world, data, request_type="abroad")
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.details.section == "สำนักวิชาการ"
+    assert saved.details.document_number == "ที่ อว 0521/777"
+    assert (saved.details.vehicle_kind, saved.details.vehicle_count) == ("บัส", 2)
+    assert (saved.details.city_state, saved.details.country) == ("รัฐเประ", "มาเลเซีย")
+    assert saved.request_reason == "ศึกษาดูงานเครือข่ายมหาวิทยาลัย"
+    assert saved.details.coordinator_name == "นางสาวประสาน ดีมาก"
+    assert saved.details.coordinator_phone == "082-333-4444"
+    assert saved.details.requester_position == "รองคณบดี"
+    assert saved.project_file.filename == "project.pdf"
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    for shown in ("สำนักวิชาการ", "ที่ อว 0521/777", "รัฐเประ", "นางสาวประสาน ดีมาก", "project.pdf"):
+        assert shown in html
+
+
+def test_abroad_request_without_the_project_file_is_refused(world):
+    data = world.request_data("abroad")
+    del data["project_file"]
+
+    response = post_new(world, data, request_type="abroad")
+
+    assert response.status_code == 200
+    assert "กรุณาแนบเอกสารโครงการ" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+@pytest.mark.parametrize(
+    "upload",
+    [
+        project_file(b"MZ", "virus.exe"),
+        project_file(b"x" * (10 * 1024 * 1024 + 1), "big.pdf"),
+    ],
+    ids=["extension", "size"],
+)
+def test_abroad_project_file_must_be_an_allowed_type_within_10mb(world, upload):
+    data = world.request_data("abroad")
+    data["project_file"] = upload
+
+    response = post_new(world, data, request_type="abroad")
+
+    assert response.status_code == 200
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_project_file_is_downloadable_only_by_members_of_the_requests_org(
+    world, create_org, create_user, assign_user_to_org
+):
+    assert post_new(
+        world,
+        world.request_data("abroad"),
+        request_type="abroad",
+    ).status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    download = f"{BASE}/{saved.id}/project_file?organization_id={world.org.id}"
+
+    for member in (world.requester, world.stranger):
+        response = world.client_for(member).get(download)
+        assert response.status_code == 200
+        assert response.get_data() == b"%PDF-1.4 project"
+    page = world.client_for(world.requester).get(detail_url(world, saved))
+    assert f"/requests/{saved.id}/project_file" in page.get_data(as_text=True)
+
+    other_org = create_org("Other Reservation Org")
+    other_org.enabled_modules = ["car_reservation"]
+    other_org.save()
+    outsider = create_user("Outsider", "Nine")
+    assign_user_to_org(outsider, other_org, roles=["staff"])
+    refused = world.client_for(outsider).get(
+        f"{BASE}/{saved.id}/project_file?organization_id={other_org.id}"
+    )
+    assert refused.status_code == 404
 
 
 def upcoming(weekday, at_least_days=10):

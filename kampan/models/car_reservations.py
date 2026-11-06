@@ -147,6 +147,24 @@ class WelfareDetails(me.EmbeddedDocument):
     province = me.StringField(required=True, max_length=256)  # จังหวัด
 
 
+class AbroadDetails(me.EmbeddedDocument):
+    """ฟิลด์เฉพาะของบันทึกข้อความขอใช้รถยนต์ไปปฏิบัติงานต่างประเทศ (`abroad`)
+
+    เรื่อง (subject) เก็บที่ `CarReservation.request_reason`, สถานที่ (`CarReservation.location`)
+    ประกอบจากเมือง/ประเทศ และเอกสารโครงการแนบที่ `CarReservation.project_file`
+    """
+
+    section = me.StringField(required=True, max_length=256)  # ส่วนงาน
+    document_number = me.StringField(required=True, max_length=256)  # ที่ (เลขหนังสือ)
+    vehicle_kind = me.StringField(choices=VEHICLE_KINDS, required=True)
+    vehicle_count = me.IntField(min_value=1, required=True)
+    city_state = me.StringField(required=True, max_length=256)  # เมือง/รัฐ
+    country = me.StringField(required=True, max_length=256)  # ประเทศ
+    coordinator_name = me.StringField(required=True, max_length=256)
+    coordinator_phone = me.StringField(required=True, max_length=32)
+    requester_position = me.StringField(required=True, max_length=256)
+
+
 class CarReservation(me.Document):
     meta = {"collection": "car_reservations"}
 
@@ -174,7 +192,11 @@ class CarReservation(me.Document):
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
 
     # ฟิลด์เฉพาะประเภทใบขอ: embedded document หนึ่งชนิดต่อ request_type
-    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails, AirportDetails, WelfareDetails])
+    details = me.GenericEmbeddedDocumentField(
+        choices=[DomesticDetails, AirportDetails, WelfareDetails, AbroadDetails]
+    )
+    # เอกสารโครงการที่แนบกับใบขอไปต่างประเทศ (ประเภทอื่นไม่มี)
+    project_file = me.FileField(collection_name="car_reservation_project_files")
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
 

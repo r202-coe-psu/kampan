@@ -9,6 +9,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     url_for,
 )
 from flask_login import current_user
@@ -135,6 +136,7 @@ def create():
                 form.return_date.data, form.return_time.data
             ),
         )
+        form.attach_files(reservation)
         flow.submit(reservation, user)
         utils.car_reservation_email.notify(reservation, "submitted")
         flash("ยื่นคำขอใช้รถเรียบร้อยแล้ว", "success")
@@ -211,6 +213,20 @@ def detail(request_id):
         cancel_form=forms.car_reservation.CancelRequestForm(),
         form=form,
         deny_form=forms.car_reservation.DenyDecisionForm(),
+    )
+
+
+@module.route("/<request_id>/project_file")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def project_file(request_id):
+    """ดาวน์โหลดเอกสารโครงการของใบขอไปต่างประเทศ (ผู้ดูคำขอนี้ได้ ดาวน์โหลดได้)"""
+    reservation = get_request_or_404(request_id)
+    if not reservation.project_file:
+        abort(404)
+    return send_file(
+        reservation.project_file,
+        download_name=reservation.project_file.filename,
+        mimetype=reservation.project_file.content_type,
     )
 
 

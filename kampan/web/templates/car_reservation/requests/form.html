@@ -5,7 +5,7 @@
 {% block dashboard_title %}{{ request_type_label }}{% endblock %}
 
 {% block content %}
-<form method="post" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+<form method="post" enctype="multipart/form-data" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{ form.csrf_token }}
   <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
     {% if form.requester_unit %}{{ renderer.render_field(form.requester_unit) }}{% endif %}
