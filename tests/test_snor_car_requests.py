@@ -117,6 +117,13 @@ def approve_url(snor, car_application):
     return f"{BASE}/{car_application.id}/approve?organization_id={snor.org.id}"
 
 
+def step_data(snor, key):
+    """ฟอร์มอนุมัติของขั้น key (ขั้นผู้จัดรถต้องระบุรถและพนักงานขับรถ)"""
+    if key == "dispatcher":
+        return {"comment": "", "car": str(snor.car.id), "driver": str(snor.driver.id)}
+    return {"comment": ""}
+
+
 def test_requester_submits_domestic_request_and_it_waits_for_supervisor(snor):
     car_application = snor.submit_domestic_request()
 
@@ -310,7 +317,7 @@ def test_each_request_type_walks_its_own_route_to_active(
             assert car_application.current_step == index
 
         response = snor.client_for(snor.holders[key]).post(
-            approve_url(snor, car_application), data={"comment": ""}
+            approve_url(snor, car_application), data=step_data(snor, key)
         )
         assert response.status_code == 302
 
@@ -341,7 +348,7 @@ def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_deleg
         "vice_president_hatyai",
     ]:
         snor.client_for(snor.holders[key]).post(
-            approve_url(snor, car_application), data={"comment": ""}
+            approve_url(snor, car_application), data=step_data(snor, key)
         )
 
     response = snor.client_for(secretary).post(
@@ -598,7 +605,7 @@ def test_denied_and_active_requests_appear_in_nobodys_inbox(snor):
     active = snor.submit_domestic_request()
     for key in ["supervisor", "dispatcher", "vehicle_unit_head", "strategy_head"]:
         snor.client_for(snor.holders[key]).post(
-            approve_url(snor, active), data={"comment": ""}
+            approve_url(snor, active), data=step_data(snor, key)
         )
     active.reload()
     assert active.status == "active"
@@ -689,3 +696,25 @@ def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail
     html = page.get_data(as_text=True)
     assert "กก 1234" in html
     assert "Driver One" in html
+
+
+@pytest.mark.parametrize("missing", ["car", "driver", "both"])
+def test_dispatcher_cannot_approve_without_choosing_car_and_driver(snor, missing):
+    car_application = request_at_dispatcher(snor)
+    data = dispatch_data(snor.car, snor.driver)
+    if missing in ("car", "both"):
+        data["car"] = ""
+    if missing in ("driver", "both"):
+        data["driver"] = ""
+
+    client = snor.client_for(snor.dispatcher)
+    response = client.post(approve_url(snor, car_application), data=data)
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.car is None
+    assert car_application.driver is None
+    assert len(car_application.step_approvals) == 1
+    page = client.get(detail_url(snor, car_application))
+    assert "กรุณาเลือกรถและพนักงานขับรถ" in page.get_data(as_text=True)

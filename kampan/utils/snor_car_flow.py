@@ -60,6 +60,9 @@ MIN_BUSINESS_DAYS = {"abroad": 10}
 DEFAULT_MIN_BUSINESS_DAYS = 3
 
 
+CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพนักงานขับรถ"
+
+
 class FlowError(Exception):
     pass
 
@@ -183,6 +186,8 @@ def approve(app, user, comment="", car=None, driver=None):
 
     key = current_step_key(app)
     if key == "dispatcher":
+        if car is None or driver is None:
+            raise FlowError(CAR_AND_DRIVER_REQUIRED)
         app.car = car
         app.driver = driver
     app.step_approvals.append(

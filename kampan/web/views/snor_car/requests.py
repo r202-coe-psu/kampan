@@ -220,8 +220,19 @@ def approve(request_id):
             comment=form.comment.data or "",
             **assignment,
         )
-    except snor.FlowError:
-        abort(403)
+    except snor.FlowError as error:
+        if not dispatching or not snor.can_act(
+            snor_request, current_user._get_current_object()
+        ):
+            abort(403)
+        flash(str(error), "danger")
+        return redirect(
+            url_for(
+                "snor_car.requests.detail",
+                request_id=snor_request.id,
+                organization_id=g.organization.id,
+            )
+        )
 
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
     return redirect(
