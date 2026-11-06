@@ -476,3 +476,15 @@ def test_request_departing_more_than_30_days_ahead_is_refused(snor):
     assert response.status_code == 200
     assert "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน" in response.get_data(as_text=True)
     assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0
+
+
+def test_request_departing_in_under_3_business_days_asks_for_urgent_confirmation(
+    snor,
+):
+    response = post_new(snor, snor.request_data(days_ahead=1))
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
+    assert 'name="confirm_urgent"' in html
+    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0

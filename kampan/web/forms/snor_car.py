@@ -47,6 +47,7 @@ class SnorCarRequestForm(FlaskForm):
         choices=models.snor_car_requests.PROVINCE_SCOPES,
         validators=[validators.Optional()],
     )
+    confirm_urgent = fields.BooleanField("ยืนยันยื่นคำขอแบบเร่งด่วน")
 
 
 class ApprovalDecisionForm(FlaskForm):

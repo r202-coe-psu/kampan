@@ -66,6 +66,14 @@ def create():
     if submitted and snor.is_too_far_ahead(form.departure_date.data):
         form.departure_date.errors.append(snor.TOO_FAR_AHEAD)
         submitted = False
+    short_notice_days = None
+    if (
+        submitted
+        and not form.confirm_urgent.data
+        and snor.is_short_notice(organization, request_type, form.departure_date.data)
+    ):
+        short_notice_days = snor.min_business_days(request_type)
+        submitted = False
     if submitted and not snor.has_division_head(organization, division, excluding=user):
         flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
     elif submitted:
@@ -102,6 +110,7 @@ def create():
         "/snor_car/requests/form.html",
         organization=organization,
         form=form,
+        short_notice_days=short_notice_days,
         request_type=request_type,
         request_type_label=dict(models.snor_car_requests.SNOR_REQUEST_TYPES)[
             request_type

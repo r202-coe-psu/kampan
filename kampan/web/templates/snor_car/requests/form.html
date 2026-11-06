@@ -23,6 +23,17 @@
   {% if request_type == 'domestic' %}
   {{ renderer.render_select_field(form.province_scope) }}
   {% endif %}
+  {% if short_notice_days %}
+  <div class="alert alert-warning mt-4" role="alert">
+    <div>
+      <p>ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ ต้องยืนยันก่อนยื่นคำขอแบบเร่งด่วน</p>
+      <label class="label cursor-pointer justify-start gap-2">
+        <input type="checkbox" name="confirm_urgent" value="y" class="checkbox checkbox-sm">
+        <span>{{ form.confirm_urgent.label.text }}</span>
+      </label>
+    </div>
+  </div>
+  {% endif %}
   <div class="flex justify-start w-full gap-2 mt-4">
     <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
   </div>

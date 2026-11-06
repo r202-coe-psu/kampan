@@ -6,7 +6,7 @@
 
 import datetime
 
-from kampan import models
+from kampan import models, utils
 
 SNOR_STEP_LABELS = {
     "supervisor": "ผู้บังคับบัญชา",
@@ -56,6 +56,10 @@ MAX_ADVANCE_DAYS = 30
 TOO_FAR_AHEAD = "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน"
 
 
+MIN_BUSINESS_DAYS = {"abroad": 10}
+DEFAULT_MIN_BUSINESS_DAYS = 3
+
+
 class FlowError(Exception):
     pass
 
@@ -63,6 +67,18 @@ class FlowError(Exception):
 def is_too_far_ahead(departure_date, today=None):
     today = today or datetime.date.today()
     return (departure_date - today).days > MAX_ADVANCE_DAYS
+
+
+def min_business_days(request_type):
+    return MIN_BUSINESS_DAYS.get(request_type, DEFAULT_MIN_BUSINESS_DAYS)
+
+
+def is_short_notice(organization, request_type, departure_date, today=None):
+    today = today or datetime.date.today()
+    lead = utils.business_days.business_days_between(
+        organization, today, departure_date
+    )
+    return lead < min_business_days(request_type)
 
 
 def route_for(request_type, province_scope):
