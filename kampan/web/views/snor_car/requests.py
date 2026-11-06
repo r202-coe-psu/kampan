@@ -280,6 +280,7 @@ def deny(request_id):
         current_user._get_current_object(),
         comment=form.comment.data,
     )
+    utils.snor_car_email.notify(snor_request, "denied")
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
     return redirect_to_detail
 

@@ -1258,3 +1258,18 @@ def test_final_approval_tells_the_requester_and_the_driver_the_request_is_active
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "active")
     assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])
+
+
+def test_denying_notifies_only_the_requester(snor, mock_redis_queue):
+    car_application = snor.submit_domestic_request()
+    mock_redis_queue.reset_mock()
+
+    snor.client_for(snor.supervisor).post(
+        deny_url(snor, car_application), data={"comment": "ไม่จำเป็นต้องเดินทาง"}
+    )
+
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, _ = jobs[0]
+    assert (request_id, event) == (str(car_application.id), "denied")
+    assert recipients == [snor.requester.email]
