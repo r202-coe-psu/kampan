@@ -127,3 +127,35 @@ def test_requester_submits_scores_and_comment_and_one_response_is_saved(world):
     assert feedback.score_of("overall") == 5
     assert feedback.score_of("vehicle_cleanliness") == 4
     assert feedback.comment == "คนขับสุภาพ"
+
+
+@pytest.mark.parametrize("who", ["colleague", "driver", "org_admin"])
+def test_only_the_requester_of_that_reservation_may_open_or_submit_the_survey(world, who):
+    reservation = world.reservation()
+    client = world.client_for(getattr(world, who))
+
+    assert client.get(world.url(reservation)).status_code in (302, 403)
+    assert client.post(world.url(reservation), data=all_scores()).status_code in (302, 403)
+    assert models.CarReservationFeedback.objects.count() == 0
+
+
+@pytest.mark.parametrize("status", ["pending", "active", "denied", "cancelled"])
+def test_survey_is_closed_until_the_trip_is_completed(world, status):
+    reservation = world.reservation(status=status)
+    client = world.client_for(world.requester)
+
+    assert client.get(world.url(reservation)).status_code in (302, 403)
+    assert client.post(world.url(reservation), data=all_scores()).status_code in (302, 403)
+    assert models.CarReservationFeedback.objects.count() == 0
+
+
+def test_a_reservation_of_another_organization_is_not_found(world, create_org):
+    other_org = create_org("Other Org")
+    other_org.enabled_modules = ["car_reservation"]
+    other_org.save()
+    foreign = world.reservation(organization=other_org)
+    client = world.client_for(world.requester)
+
+    assert client.get(world.url(foreign)).status_code == 404
+    assert client.post(world.url(foreign), data=all_scores()).status_code == 404
+    assert models.CarReservationFeedback.objects.count() == 0

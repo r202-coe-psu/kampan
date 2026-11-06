@@ -27,6 +27,10 @@ def get_reservation_or_404(reservation_id):
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def form(reservation_id):
     reservation = get_reservation_or_404(reservation_id)
+    if not utils.car_reservation_feedback.can_submit(
+        reservation, current_user._get_current_object()
+    ):
+        abort(403)
     form = forms.car_reservation_feedback.FeedbackForm()
     if form.validate_on_submit():
         models.CarReservationFeedback(

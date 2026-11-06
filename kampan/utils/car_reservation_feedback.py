@@ -34,3 +34,8 @@ SCORE_QUESTIONS = [
 ]
 SCORE_KEYS = [key for key, _ in SCORE_QUESTIONS]
 SCORE_MIN, SCORE_MAX = 1, 5
+
+
+def can_submit(reservation, user):
+    """เฉพาะผู้ขอของใบขอนั้น และเมื่อ พขร. ปิดงานแล้วเท่านั้น"""
+    return reservation.status == "completed" and reservation.creator == user
