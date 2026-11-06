@@ -462,3 +462,17 @@ def test_requests_home_lists_only_the_requesters_own_requests(snor):
     assert "รออนุมัติ" in html
     assert "งานของคนอื่น" not in html
 
+
+
+def post_new(snor, data, request_type="domestic", user=None):
+    return snor.client_for(user or snor.requester).post(
+        f"{BASE}/new?organization_id={snor.org.id}&type={request_type}", data=data
+    )
+
+
+def test_request_departing_more_than_30_days_ahead_is_refused(snor):
+    response = post_new(snor, snor.request_data(days_ahead=40))
+
+    assert response.status_code == 200
+    assert "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน" in response.get_data(as_text=True)
+    assert models.SnorCarRequest.objects(creator=snor.requester).count() == 0

@@ -52,8 +52,17 @@ SNOR_ROUTES = {
 }
 
 
+MAX_ADVANCE_DAYS = 30
+TOO_FAR_AHEAD = "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน"
+
+
 class FlowError(Exception):
     pass
+
+
+def is_too_far_ahead(departure_date, today=None):
+    today = today or datetime.date.today()
+    return (departure_date - today).days > MAX_ADVANCE_DAYS
 
 
 def route_for(request_type, province_scope):

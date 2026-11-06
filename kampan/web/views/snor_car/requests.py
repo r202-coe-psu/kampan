@@ -63,6 +63,9 @@ def create():
     division = member.division if member else None
 
     submitted = form.validate_on_submit()
+    if submitted and snor.is_too_far_ahead(form.departure_date.data):
+        form.departure_date.errors.append(snor.TOO_FAR_AHEAD)
+        submitted = False
     if submitted and not snor.has_division_head(organization, division, excluding=user):
         flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
     elif submitted:
