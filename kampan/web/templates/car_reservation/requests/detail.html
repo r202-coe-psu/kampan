@@ -1,6 +1,7 @@
 {% extends '/car_reservation/base/default-page.html' %}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
 {% from '/car_reservation/components/info_card.html' import InfoCard, Item %}
+{% from '/base/components/modals.html' import DeleteModal %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
@@ -144,37 +145,21 @@
 {% endif %}
 
 {% if can_cancel %}
-<dialog id="cancel-modal" class="modal">
-  <form method="post"
-        action="{{ url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id) }}"
-        class="modal-box">
-    <h3 class="text-lg font-bold">ยกเลิกคำขอ</h3>
-    {{ cancel_form.csrf_token }}
-    {{ renderer.render_field(cancel_form.reason) }}
-    <div class="modal-action">
-      <button type="button" class="btn"
-              onclick="document.getElementById('cancel-modal').close()">ปิด</button>
-      <button type="submit" class="btn btn-error">ยืนยันยกเลิก</button>
-    </div>
-  </form>
-</dialog>
+{% call DeleteModal('cancel-modal', 'ยกเลิกคำขอ',
+                    url_for('car_reservation.requests.cancel', request_id=reservation.id, organization_id=organization.id),
+                    confirm_label='ยืนยันยกเลิก', cancel_label='ปิด', icon='ph-x-circle',
+                    hidden=cancel_form.csrf_token) %}
+  {{ renderer.render_field(cancel_form.reason) }}
+{% endcall %}
 {% endif %}
 
 {% if can_act %}
-<dialog id="deny-modal" class="modal">
-  <form method="post"
-        action="{{ url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id) }}"
-        class="modal-box">
-    <h3 class="text-lg font-bold">ไม่อนุมัติคำขอ</h3>
-    {{ deny_form.csrf_token }}
-    {{ renderer.render_field(deny_form.comment) }}
-    <div class="modal-action">
-      <button type="button" class="btn"
-              onclick="document.getElementById('deny-modal').close()">ยกเลิก</button>
-      <button type="submit" class="btn btn-error">ยืนยันไม่อนุมัติ</button>
-    </div>
-  </form>
-</dialog>
+{% call DeleteModal('deny-modal', 'ไม่อนุมัติคำขอ',
+                    url_for('car_reservation.requests.deny', request_id=reservation.id, organization_id=organization.id),
+                    confirm_label='ยืนยันไม่อนุมัติ', cancel_label='ยกเลิก', icon='ph-x-circle',
+                    hidden=deny_form.csrf_token) %}
+  {{ renderer.render_field(deny_form.comment) }}
+{% endcall %}
 {% endif %}
 </div>
 {% endblock %}

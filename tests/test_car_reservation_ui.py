@@ -399,3 +399,20 @@ def test_detail_has_no_action_card_when_the_viewer_can_do_nothing(world):
     reservation = world.reservation()
 
     assert action_card(detail(world, world.admin, reservation)) is None
+
+
+@pytest.mark.parametrize(
+    "viewer, modal_id, route, field",
+    [("dispatcher", "deny-modal", "deny", "comment"), ("staff", "cancel-modal", "cancel", "reason")],
+)
+def test_detail_modals_post_their_form_and_close_from_the_backdrop(world, viewer, modal_id, route, field):
+    reservation = world.reservation()
+    action = f"{BASE}/requests/{reservation.id}/{route}?organization_id={world.org.id}"
+
+    doc = detail(world, getattr(world, viewer), reservation)
+
+    dialog = find(doc, "dialog", "modal", id=modal_id)[0]
+    form = find(dialog, "form", "modal-box", action=action, method="post")[0]
+    assert form.xpath(f".//*[@name='{field}']")
+    assert find(form, "div", "modal-action")
+    assert find(dialog, "form", "modal-backdrop", method="dialog")
