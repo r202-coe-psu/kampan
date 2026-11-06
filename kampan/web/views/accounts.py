@@ -212,7 +212,8 @@ def edit_profile():
 def upload_picture():
     form = forms.accounts.PictureForm()
     if not form.validate_on_submit():
-        return redirect(url_for("accounts.index"))
+        errors = " ".join(message for messages in form.errors.values() for message in messages)
+        return redirect(url_for("accounts.index", errors=errors))
 
     user = current_user._get_current_object()
     upload = form.picture.data
