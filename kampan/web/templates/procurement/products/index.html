@@ -18,9 +18,6 @@
           <i class="ph ph-list-numbers"></i>
           จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
         </span>
-        <a href="/games" target="_blank" class="btn btn-ghost btn-sm text-accent gap-1.5 border border-accent/20 hover:bg-accent/10 shadow-xs" title="เปิดเกมเล่นระหว่างรอ">
-          <i class="ph ph-game-controller text-base"></i> เล่นเกมระหว่างรอ 🎮
-        </a>
       </div>
       <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
          class="btn btn-primary btn-sm shadow-md">
