@@ -1089,6 +1089,17 @@ def test_confirming_is_refused_unless_the_request_is_awaiting_cancel_acknowledge
     assert car_application.audit_logs[-1].action == "approved"
 
 
+def test_a_submitted_request_has_no_edit_route(snor):
+    car_application = snor.submit_domestic_request()
+
+    for user in (snor.requester, snor.supervisor):
+        for method in ("get", "post"):
+            response = getattr(snor.client_for(user), method)(
+                f"{BASE}/{car_application.id}/edit?organization_id={snor.org.id}"
+            )
+            assert response.status_code == 404
+
+
 def test_only_the_creator_can_cancel_a_request(snor):
     before_car = snor.submit_domestic_request()
     after_car = request_with_car_assigned(snor)
