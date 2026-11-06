@@ -240,3 +240,58 @@ def test_request_form_has_a_submit_area_with_cancel_and_submit(world):
     assert words(cancel) == "ยกเลิก"
     assert cancel.get("href") == f"{BASE}/requests/?organization_id={world.org.id}"
     assert words(submit) == "ยื่นคำขอ"
+
+
+def detail(world, user, reservation):
+    response = world.client_for(user).get(
+        f"{BASE}/requests/{reservation.id}?organization_id={world.org.id}"
+    )
+    assert response.status_code == 200
+    return lxml_html.fromstring(response.get_data(as_text=True))
+
+
+def approval(step_key, decision="approved"):
+    return models.car_reservations.StepApproval(
+        step_key=step_key, decision=decision, decided_at=datetime.datetime(2031, 1, 2, 9, 0)
+    )
+
+
+def test_detail_summary_shows_the_status_urgent_badge_and_created_date(world):
+    reservation = world.reservation(
+        is_urgent=True, created_date=datetime.datetime(2030, 12, 25, 10, 30)
+    )
+
+    summary = find(detail(world, world.staff, reservation), "*", data_role="request-summary")[0]
+
+    assert find(summary, "span", data_status="pending")
+    assert find(summary, "span", data_role="urgent-badge")
+    assert "25/12/2030" in words(summary)
+    assert "รอผู้จัดรถ" in words(summary)
+
+
+def test_detail_stepper_has_one_step_per_route_step_with_its_state_and_is_responsive(world):
+    reservation = world.reservation(step_approvals=[approval("supervisor")])
+
+    doc = detail(world, world.staff, reservation)
+
+    stepper = find(doc, "ul", "steps")[0]
+    classes = stepper.get("class").split()
+    assert "steps-vertical" in classes and "md:steps-horizontal" in classes
+    steps = find(stepper, "li", "step")
+    assert [(words(li), li.get("data-state")) for li in steps] == [
+        ("ผู้บังคับบัญชา", "done"),
+        ("ผู้จัดรถ", "current"),
+        ("หัวหน้าหน่วยยานพาหนะ", "waiting"),
+    ]
+    assert ["step-primary" in li.get("class").split() for li in steps] == [True, True, False]
+
+
+def test_detail_stepper_marks_the_denied_step_as_an_error(world):
+    reservation = world.reservation(
+        status="denied", step_approvals=[approval("supervisor"), approval("dispatcher", "denied")]
+    )
+
+    steps = find(detail(world, world.staff, reservation), "li", "step")
+
+    assert [li.get("data-state") for li in steps] == ["done", "denied", "waiting"]
+    assert "step-error" in steps[1].get("class").split()

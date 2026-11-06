@@ -6,27 +6,40 @@
 {% block dashboard_title %}{{ reservation.get_request_type_display() }}{% endblock %}
 
 {% block content %}
-<div class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <div class="flex items-center gap-2">
-    {{ status_badge.render(reservation) }}
-    {% if reservation.is_urgent %}
-    <span class="badge badge-error badge-sm whitespace-nowrap font-medium">เร่งด่วน</span>
-    {% endif %}
-    {% if reservation.status == 'pending' %}
-    <span class="font-medium">รอ{{ current_step_label }}</span>
-    {% endif %}
-    {% if reservation.status == 'cancel_requested' %}
-    <span class="font-medium">ขอยกเลิก — รอผู้จัดรถรับทราบ</span>
-    {% endif %}
+<div class="flex flex-col gap-4">
+<div class="card bg-base-100 border border-base-300 shadow-sm" data-role="request-summary">
+  <div class="card-body gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      {{ status_badge.render(reservation) }}
+      {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+      {% if reservation.status == 'pending' %}
+      <span class="font-medium">รอ{{ current_step_label }}</span>
+      {% endif %}
+      {% if reservation.status == 'cancel_requested' %}
+      <span class="font-medium">ขอยกเลิก — รอผู้จัดรถรับทราบ</span>
+      {% endif %}
+    </div>
+    <p class="text-sm text-base-content/60">
+      <i class="ph ph-calendar-blank"></i>
+      ยื่นเมื่อ {{ reservation.created_date.strftime('%d/%m/%Y %H:%M') }} น.
+    </p>
   </div>
+</div>
 
-  <ul class="steps steps-vertical mt-4">
-    {% for step in steps %}
-    <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
-        data-state="{{ step.state }}">{{ step.label }}</li>
-    {% endfor %}
-  </ul>
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-lg"><i class="ph ph-path text-primary"></i> สถานะการอนุมัติ</h2>
+    <ul class="steps steps-vertical md:steps-horizontal w-full">
+      {% for step in steps %}
+      <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
+          data-state="{{ step.state }}">{{ step.label }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 
+<div class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body gap-4">
   <dl class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
     <div><dt class="font-semibold">คณะ/หน่วยงาน</dt><dd>{{ reservation.requester_unit }}</dd></div>
     <div><dt class="font-semibold">สถานที่ปฏิบัติงาน</dt><dd>{{ reservation.location }}</dd></div>
@@ -130,5 +143,7 @@
     </form>
   </dialog>
   {% endif %}
+  </div>
+</div>
 </div>
 {% endblock %}
