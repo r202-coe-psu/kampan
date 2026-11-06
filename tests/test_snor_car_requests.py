@@ -598,3 +598,37 @@ def test_denied_and_active_requests_appear_in_nobodys_inbox(snor):
     for user in everyone:
         assert not inbox_shows(snor, user, denied)
         assert not inbox_shows(snor, user, active)
+
+
+def test_inbox_never_lists_requests_of_another_organization(
+    snor, create_org, assign_user_to_org
+):
+    other_org = create_org("Other Snor Org")
+    other_org.enabled_modules = ["snor_car"]
+    other_org.save()
+    assign_user_to_org(snor.dispatcher, other_org, roles=["staff"])
+    models.CarFlowPosition(
+        organization=other_org, position_key="dispatcher", user=snor.dispatcher
+    ).save()
+    foreign = models.SnorCarRequest(
+        organization=other_org,
+        creator=snor.requester,
+        request_type="domestic",
+        province_scope="in_province",
+        location="เชียงใหม่",
+        request_reason="งานองค์กรอื่น",
+        status="pending",
+        route_snapshot=["supervisor", "dispatcher"],
+        current_step=1,
+    )
+    foreign.save()
+    own = snor.submit_domestic_request()
+    snor.client_for(snor.supervisor).post(
+        approve_url(snor, own), data={"comment": ""}
+    )
+
+    page = snor.client_for(snor.dispatcher).get(inbox_url(snor))
+    html = page.get_data(as_text=True)
+
+    assert f"{BASE}/{own.id}?" in html
+    assert str(foreign.id) not in html
