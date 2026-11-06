@@ -22,6 +22,14 @@ ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_R
 flow = utils.car_reservation_flow
 
 
+def car_choice_label(car):
+    """ทะเบียน (ประเภท, N ที่นั่ง) ไม่มีจำนวนที่นั่งก็ไม่แสดงส่วนนั้น"""
+    details = [car.vehicle_type or "-"]
+    if car.seat_count:
+        details.append(f"{car.seat_count} ที่นั่ง")
+    return f"{car.license_plate} ({', '.join(details)})"
+
+
 def get_request_or_404(request_id):
     try:
         reservation = models.CarReservation.objects(
@@ -170,7 +178,7 @@ def detail(request_id):
     if current_key == "dispatcher":
         form = forms.car_reservation.DispatchDecisionForm()
         form.car.choices = [
-            (str(car.id), f"{car.license_plate} ({car.vehicle_type or '-'})")
+            (str(car.id), car_choice_label(car))
             for car in flow.assignable_cars(g.organization)
         ]
         form.driver.choices = [

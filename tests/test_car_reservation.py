@@ -935,6 +935,22 @@ def test_dispatcher_detail_offers_only_assignable_cars_and_drivers_in_the_approv
     assert "Staffer Only" not in html
 
 
+def test_dispatcher_car_choice_label_includes_the_seat_count_when_the_car_has_one(
+    world,
+):
+    world.car.seat_count = 4
+    world.car.save()
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    assert "กก 1234 (เก๋ง, 4 ที่นั่ง)" in html
+
+
 def cancel_url(world, car_application):
     return f"{BASE}/{car_application.id}/cancel?organization_id={world.org.id}"
 
