@@ -79,6 +79,7 @@ def create_or_edit(car_id):
     car.vehicle_type = form.vehicle_type.data
     car.seat_count = form.seat_count.data
     car.description = form.description.data or ""
+    car.status = form.status.data
     upload = form.upload_image.data
     if upload:
         store = car.image.replace if car.image else car.image.put

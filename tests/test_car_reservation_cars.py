@@ -122,6 +122,32 @@ def test_list_shows_the_photo_thumbnail_only_for_cars_that_have_one(world):
     assert f"/car_reservation/cars/{without.id}/image" not in html
 
 
+def test_org_admin_edits_a_car_and_a_success_toast_confirms_it(world, create_car):
+    car = create_car(world.org, "กก 1111", vehicle_type="เก๋ง")
+    car.seat_count = 4
+    car.save()
+
+    response = world.admin_client.post(
+        world.edit_url(car),
+        data=car_data(
+            license_plate="กก 9999", vehicle_type="มินิบัส", seat_count="20", status="disactive"
+        ),
+    )
+    listing = world.admin_client.get(response.headers["Location"])
+
+    html = listing.get_data(as_text=True)
+    car.reload()
+    assert response.status_code == 302
+    assert (car.license_plate, car.vehicle_type, car.seat_count, car.status) == (
+        "กก 9999",
+        "มินิบัส",
+        20,
+        "disactive",
+    )
+    assert "data-toast" in html
+    assert "บันทึกรถ กก 9999 แล้ว" in html
+
+
 def test_car_without_photo_has_no_image_route(world):
     world.admin_client.post(world.create_url, data=car_data())
     car = models.vehicles.Car.objects(organization=world.org).first()

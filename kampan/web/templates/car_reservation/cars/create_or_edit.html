@@ -10,6 +10,7 @@
     {{ renderer.render_field(form.license_plate) }}
     {{ renderer.render_select_field(form.vehicle_type) }}
     {{ renderer.render_number_field(form.seat_count, min=1) }}
+    {{ renderer.render_select_field(form.status) }}
   </div>
   {{ renderer.render_text_area_field(form.description) }}
   {{ renderer.file_input(form.upload_image) }}

@@ -96,6 +96,12 @@ class CarForm(FlaskForm):
     description = fields.TextAreaField(
         "รายละเอียด/ลักษณะ", validators=[validators.Optional()]
     )
+    status = fields.SelectField(
+        "สถานะ",
+        choices=models.vehicles.VEHICLE_STATUS,
+        default="active",
+        validators=[validators.DataRequired()],
+    )
     upload_image = FileField(
         "รูปภาพรถ",
         validators=[
