@@ -281,3 +281,16 @@ def test_an_earlier_task_of_another_car_does_not_block(world, create_car):
 
     later.reload()
     assert later.status == "completed"
+
+
+def test_task_list_offers_close_only_for_tasks_that_can_be_closed_now(world):
+    earlier = world.reservation(departure=datetime.datetime(2031, 1, 5, 8, 0))
+    later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
+    done = world.reservation(status="completed")
+
+    html = world.client_for(world.driver).get(world.list_url).get_data(as_text=True)
+
+    assert f"/{earlier.id}/close" in html
+    assert f"/{later.id}/close" not in html
+    assert f"/{done.id}/close" not in html
+    assert "ปิดงานก่อนหน้าให้เสร็จก่อน" in html

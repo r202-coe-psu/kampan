@@ -55,10 +55,17 @@ def my_tasks(status):
 @module.route("/")
 @driver_required
 def index():
+    active_tasks = list(my_tasks("active").order_by("departure_datetime"))
     return render_template(
         "/car_reservation/tasks/index.html",
         organization=g.organization,
-        active_tasks=my_tasks("active").order_by("departure_datetime"),
+        active_tasks=active_tasks,
+        # งานที่ต้องรอปิดงานก่อนหน้าของรถคันเดียวกันก่อน: id ของงาน -> งานที่ต้องปิดก่อน
+        blocked_by={
+            task.id: earlier
+            for task in active_tasks
+            if (earlier := flow.earlier_active_task(task)) is not None
+        },
         completed_tasks=my_tasks("completed").order_by("-departure_datetime")[
             :RECENT_COMPLETED_LIMIT
         ],
