@@ -198,6 +198,31 @@ fieldset {
   .role-manager {
     --role-color: oklch(48% 0.09 45);
   }
+
+  /* ตำแหน่งผู้อนุมัติของระบบจองรถ */
+  .role-dispatcher {
+    --role-color: var(--color-info);
+  }
+
+  .role-vehicle_unit_head {
+    --role-color: oklch(58% 0.12 230);
+  }
+
+  .role-strategy_head {
+    --role-color: oklch(55% 0.13 265);
+  }
+
+  .role-physical_director {
+    --role-color: oklch(52% 0.14 320);
+  }
+
+  .role-vice_president_hatyai {
+    --role-color: oklch(52% 0.15 20);
+  }
+
+  .role-president {
+    --role-color: var(--color-error);
+  }
 }
 
 /* Module badge: บอกว่ารายการนี้เป็นของระบบไหน สีเดียวกับการ์ดหน้าเลือกระบบ

@@ -15,6 +15,35 @@ ORGANIZATION_ROLES = [
     ("driver", "พนักงานขับรถ"),
     ("director", "ผู้อำนวยการ"),
     ("manager", "ผู้บริหาร"),
+    # ตำแหน่งผู้อนุมัติของระบบจองรถ key ตรงกับ step key ของเส้นทางอนุมัติ
+    ("dispatcher", "ผู้จัดรถ"),
+    ("vehicle_unit_head", "หัวหน้าหน่วยยานพาหนะ"),
+    ("strategy_head", "หัวหน้างานยุทธศาสตร์และบริการกลาง"),
+    ("physical_director", "ผู้อำนวยการกองกายภาพและสิ่งแวดล้อม"),
+    ("vice_president_hatyai", "รองอธิการบดีวิทยาเขตหาดใหญ่"),
+    ("president", "อธิการบดี"),
+]
+
+# role ที่ org ใช้ได้เมื่อยังไม่เคยตั้ง enabled_roles (8 role เดิม)
+DEFAULT_ENABLED_ROLE_KEYS = [
+    "staff",
+    "endorser",
+    "head",
+    "supervisor supplier",
+    "admin",
+    "driver",
+    "director",
+    "manager",
+]
+
+# role ผู้อนุมัติของระบบจองรถ (ผู้ถือ driver ร่วมด้วยไม่ได้)
+RESERVATION_APPROVER_ROLE_KEYS = [
+    "dispatcher",
+    "vehicle_unit_head",
+    "strategy_head",
+    "physical_director",
+    "vice_president_hatyai",
+    "president",
 ]
 
 ORGANIZATION_USER_ROLE_STATUS = [
@@ -106,6 +135,9 @@ class Organization(me.Document):
     # None = ยังไม่เคยตั้งค่า ถือว่าเปิดทุกโมดูล (ListField ปกติ default เป็น [])
     enabled_modules = me.ListField(me.StringField(choices=MODULES), default=None)
 
+    # None = ยังไม่เคยตั้งค่า ใช้ 8 role เดิม (role ผู้อนุมัติของระบบจองรถซ่อนจนกว่าจะเปิด)
+    enabled_roles = me.ListField(me.StringField(choices=ORGANIZATION_ROLES), default=None)
+
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
 
@@ -119,6 +151,15 @@ class Organization(me.Document):
 
     def has_module(self, key):
         return self.enabled_modules is None or key in self.enabled_modules
+
+    def available_roles(self):
+        """[(key, label), ...] ของ role ที่ org นี้เลือกใช้ได้ เรียงตาม ORGANIZATION_ROLES"""
+        enabled = (
+            DEFAULT_ENABLED_ROLE_KEYS
+            if self.enabled_roles is None
+            else self.enabled_roles
+        )
+        return [(key, label) for key, label in ORGANIZATION_ROLES if key in enabled]
 
     def get_distinct_users(self):
         if OrganizationUserRole.objects().count():
