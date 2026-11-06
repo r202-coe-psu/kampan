@@ -1,7 +1,7 @@
 """ย้าย org ไปใช้โมดูล car_reservation: ลบ car_flow ที่ค้างจากรอบก่อน เปลี่ยนชื่อโมดูล/collection เดิม และเปิดโมดูลให้ org ที่ระบุ"""
 
 import mongomock
-from bson import ObjectId
+from bson import DBRef, ObjectId
 
 from scripts.migrate_car_reservation_module import migrate
 
@@ -103,7 +103,7 @@ def test_old_collections_are_renamed_with_their_documents():
     migrate(db)
 
     assert sorted(d["_id"] for d in db.car_reservations.find()) == [1, 2]
-    assert [d["_id"] for d in db.car_reservation_positions.find()] == [3]
+    assert "car_reservation_positions" not in db.list_collection_names()
     assert LEGACY_REQUESTS not in db.list_collection_names()
     assert LEGACY_POSITIONS not in db.list_collection_names()
 
@@ -130,3 +130,114 @@ def test_running_twice_does_not_lose_renamed_documents():
     migrate(db)
 
     assert [d["_id"] for d in db.car_reservations.find()] == [1]
+
+
+# --- ตำแหน่งผู้อนุมัติเดิม (car_reservation_positions) -> organization role ---
+
+ROLE_ORG = ObjectId()
+HOLDER = ObjectId()
+DELEGATE = ObjectId()
+DRIVER = ObjectId()
+
+
+def _ref(collection, oid):
+    return DBRef(collection, oid)
+
+
+def _positions_db():
+    """org หนึ่งที่ตั้ง enabled_roles ไว้ มีผู้ดำรงตำแหน่ง/ผู้รักษาการ/คนขับรถ และตำแหน่งเดิมสองรายการ"""
+    db = mongomock.MongoClient().kampandb
+    db.organizations.insert_one(
+        {"_id": ROLE_ORG, "name": "RoleOrg", "enabled_roles": ["staff", "admin"]}
+    )
+    for oid, roles in ((HOLDER, ["staff"]), (DELEGATE, ["staff", "admin"]), (DRIVER, ["driver"])):
+        db.organization_user_roles.insert_one(
+            {
+                "organization": _ref("organizations", ROLE_ORG),
+                "user": _ref("users", oid),
+                "roles": roles,
+                "status": "active",
+            }
+        )
+    db.car_reservation_positions.insert_many(
+        [
+            {
+                "organization": _ref("organizations", ROLE_ORG),
+                "position_key": "dispatcher",
+                "user": _ref("users", HOLDER),
+                "delegates": [_ref("users", DELEGATE)],
+            },
+            {
+                "organization": _ref("organizations", ROLE_ORG),
+                "position_key": "president",
+                "user": _ref("users", DRIVER),
+                "delegates": [],
+            },
+        ]
+    )
+    return db
+
+
+def _roles_of(db, oid):
+    return db.organization_user_roles.find_one({"user": _ref("users", oid)})["roles"]
+
+
+def test_position_holder_and_delegates_get_the_role_and_the_collection_is_dropped():
+    db = _positions_db()
+
+    migrate(db)
+
+    assert _roles_of(db, HOLDER) == ["staff", "dispatcher"]
+    assert _roles_of(db, DELEGATE) == ["staff", "admin", "dispatcher"]
+    assert "car_reservation_positions" not in db.list_collection_names()
+
+
+def test_a_driver_is_never_given_an_approval_role():
+    db = _positions_db()
+
+    migrate(db)
+
+    assert _roles_of(db, DRIVER) == ["driver"]
+
+
+def test_converted_role_is_added_to_the_organizations_enabled_roles():
+    db = _positions_db()
+
+    migrate(db)
+
+    assert db.organizations.find_one({"_id": ROLE_ORG})["enabled_roles"] == [
+        "staff",
+        "admin",
+        "dispatcher",
+        "president",
+    ]
+
+
+def test_organization_without_enabled_roles_is_left_without_them():
+    db = _positions_db()
+    db.organizations.update_one({"_id": ROLE_ORG}, {"$unset": {"enabled_roles": ""}})
+
+    migrate(db)
+
+    assert "enabled_roles" not in db.organizations.find_one({"_id": ROLE_ORG})
+    assert _roles_of(db, HOLDER) == ["staff", "dispatcher"]
+
+
+def test_dry_run_converts_nothing_and_keeps_the_positions():
+    db = _positions_db()
+
+    migrate(db, dry_run=True)
+
+    assert _roles_of(db, HOLDER) == ["staff"]
+    assert db.organizations.find_one({"_id": ROLE_ORG})["enabled_roles"] == ["staff", "admin"]
+    assert db.car_reservation_positions.count_documents({}) == 2
+
+
+def test_running_the_position_conversion_twice_adds_each_role_once():
+    db = _positions_db()
+
+    migrate(db)
+    migrate(db)
+
+    assert _roles_of(db, HOLDER) == ["staff", "dispatcher"]
+    assert db.organizations.find_one({"_id": ROLE_ORG})["enabled_roles"].count("dispatcher") == 1
