@@ -42,6 +42,10 @@ AIRPORT_TRANSFERS = [("pickup", "รับ"), ("dropoff", "ส่ง")]
 AIRPORT_COST_RESPONSIBILITIES = [COST_FUEL, COST_ALLOWANCE, COST_NONE]
 AIRPORT_MAX_PASSENGERS = 5
 
+WELFARE_EMPLOYEE_TYPES = ["พนักงานมหาวิทยาลัย", "ลูกจ้างประจำ", "พนักงานเงินรายได้"]
+WELFARE_VEHICLE_KINDS = ["บัส", "ตู้"]
+WELFARE_EVENT_TYPES = ["อุปสมบท", "มงคลสมรส", "ฌาปนกิจศพ"]
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -125,6 +129,24 @@ class AirportDetails(me.EmbeddedDocument):
         return dict(AIRPORT_TRANSFERS).get(self.transfer, self.transfer)
 
 
+class WelfareDetails(me.EmbeddedDocument):
+    """ฟิลด์เฉพาะของใบขอใช้รถประเภทสวัสดิการบุคลากร (`welfare`)
+
+    `CarReservation.requester_unit` คือสังกัด (`affiliation`) และ `CarReservation.location`
+    ประกอบจากที่อยู่บ้านเจ้าภาพ แบบฟอร์มจริงไม่มีช่องจำนวนผู้โดยสารและจำนวนคัน
+    """
+
+    employee_type = me.StringField(choices=WELFARE_EMPLOYEE_TYPES, required=True)
+    affiliation = me.StringField(required=True, max_length=256)  # สังกัด
+    vehicle_kind = me.StringField(choices=WELFARE_VEHICLE_KINDS, required=True)
+    event_type = me.StringField(choices=WELFARE_EVENT_TYPES, required=True)
+    host_name = me.StringField(required=True, max_length=256)  # งานของ (เจ้าภาพ)
+    house = me.StringField(required=True, max_length=256)  # สถานที่ไปบ้าน
+    subdistrict = me.StringField(required=True, max_length=256)  # ตำบล
+    district = me.StringField(required=True, max_length=256)  # อำเภอ
+    province = me.StringField(required=True, max_length=256)  # จังหวัด
+
+
 class CarReservation(me.Document):
     meta = {"collection": "car_reservations"}
 
@@ -152,7 +174,7 @@ class CarReservation(me.Document):
     province_scope = me.StringField(choices=PROVINCE_SCOPES)
 
     # ฟิลด์เฉพาะประเภทใบขอ: embedded document หนึ่งชนิดต่อ request_type
-    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails, AirportDetails])
+    details = me.GenericEmbeddedDocumentField(choices=[DomesticDetails, AirportDetails, WelfareDetails])
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
 

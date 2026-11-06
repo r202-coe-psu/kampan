@@ -1,0 +1,10 @@
+{% set details = reservation.details %}
+<div><dt class="font-semibold">สถานะผู้ขอ</dt><dd>{{ details.employee_type }}</dd></div>
+<div><dt class="font-semibold">สังกัด</dt><dd>{{ details.affiliation }}</dd></div>
+<div><dt class="font-semibold">ประเภทรถ</dt><dd>{{ details.vehicle_kind }}</dd></div>
+<div><dt class="font-semibold">เนื่องในงาน</dt><dd>{{ details.event_type }} ของ {{ details.host_name }}</dd></div>
+<div><dt class="font-semibold">สถานที่ไปบ้าน</dt><dd>{{ details.house }}</dd></div>
+<div><dt class="font-semibold">ตำบล</dt><dd>{{ details.subdistrict }}</dd></div>
+<div><dt class="font-semibold">อำเภอ</dt><dd>{{ details.district }}</dd></div>
+<div><dt class="font-semibold">จังหวัด</dt><dd>{{ details.province }}</dd></div>
+<div class="md:col-span-2"><dt class="font-semibold">การรับรอง</dt><dd>ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น</dd></div>

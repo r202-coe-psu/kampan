@@ -46,7 +46,8 @@ class CommonReservationForm(FlaskForm):
     def reservation_fields(self):
         """ฟิลด์ร่วมของ CarReservation ที่ได้จากฟอร์ม (ประเภทย่อยเติมของตัวเองต่อ)"""
         return {
-            "requester_unit": self.requester_unit.data,
+            # ฟอร์มที่ตัด requester_unit ออก (เช่น สวัสดิการใช้สังกัด) ตั้งค่านี้เองต่อจากนี้
+            "requester_unit": self.requester_unit.data if self.requester_unit else "",
             "phone": self.phone.data,
             "pickup_place": self.pickup_place.data,
             "pickup_time": self.pickup_time.data.strftime(PICKUP_TIME_FORMAT),
@@ -239,7 +240,81 @@ class AirportReservationForm(CommonReservationForm):
         )
 
 
+class WelfareReservationForm(CommonReservationForm):
+    """ใบขอใช้รถประเภทสวัสดิการบุคลากร"""
+
+    requester_unit = None  # ใช้สังกัด (affiliation) แทน
+
+    employee_type = fields.RadioField(
+        "ข้าพเจ้าเป็น",
+        choices=models.car_reservations.WELFARE_EMPLOYEE_TYPES,
+        validators=[validators.DataRequired()],
+    )
+    affiliation = fields.StringField(
+        "สังกัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    vehicle_kind = fields.RadioField(
+        "ขอใช้รถ",
+        choices=models.car_reservations.WELFARE_VEHICLE_KINDS,
+        validators=[validators.DataRequired()],
+    )
+    event_type = fields.RadioField(
+        "เนื่องในงาน",
+        choices=models.car_reservations.WELFARE_EVENT_TYPES,
+        validators=[validators.DataRequired()],
+    )
+    host_name = fields.StringField(
+        "ของ", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    house = fields.StringField(
+        "สถานที่ไปบ้าน",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    subdistrict = fields.StringField(
+        "ตำบล", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    district = fields.StringField(
+        "อำเภอ", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    province = fields.StringField(
+        "จังหวัด", validators=[validators.DataRequired(), validators.Length(max=256)]
+    )
+    direct_relative_confirmed = fields.BooleanField(
+        "ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น",
+        validators=[
+            validators.DataRequired(
+                "กรุณายืนยันว่าขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น"
+            )
+        ],
+    )
+
+    def reservation_fields(self):
+        return {
+            **super().reservation_fields(),
+            "requester_unit": self.affiliation.data,
+            "location": (
+                f"บ้านเลขที่ {self.house.data} ต.{self.subdistrict.data} "
+                f"อ.{self.district.data} จ.{self.province.data}"
+            ),
+            "request_reason": f"{self.event_type.data} ของ {self.host_name.data}",
+        }
+
+    def build_details(self):
+        return models.car_reservations.WelfareDetails(
+            employee_type=self.employee_type.data,
+            affiliation=self.affiliation.data,
+            vehicle_kind=self.vehicle_kind.data,
+            event_type=self.event_type.data,
+            host_name=self.host_name.data,
+            house=self.house.data,
+            subdistrict=self.subdistrict.data,
+            district=self.district.data,
+            province=self.province.data,
+        )
+
+
 FORM_BY_REQUEST_TYPE = {
+    "welfare": WelfareReservationForm,
     "domestic": DomesticReservationForm,
     "airport": AirportReservationForm,
 }

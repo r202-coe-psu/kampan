@@ -48,7 +48,18 @@ TYPE_SPECIFIC_DATA = {
         "passengers-0-phone": "089-111-2222",
         "eligibility_confirmed": "y",
     },
-    "welfare": {},
+    "welfare": {
+        "employee_type": "พนักงานมหาวิทยาลัย",
+        "affiliation": "กองกายภาพและสิ่งแวดล้อม",
+        "vehicle_kind": "ตู้",
+        "event_type": "อุปสมบท",
+        "host_name": "นายสมศักดิ์ ใจดี",
+        "house": "12/3",
+        "subdistrict": "คอหงส์",
+        "district": "หาดใหญ่",
+        "province": "สงขลา",
+        "direct_relative_confirmed": "y",
+    },
     "abroad": {},
 }
 
@@ -351,6 +362,63 @@ def test_airport_request_needs_the_eligibility_confirmation(world):
         as_text=True
     )
     assert "กรุณายืนยันสิทธิ์การขอใช้รถ" in response.get_data(as_text=True)
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_welfare_request_is_saved_with_its_form_fields_and_shown_on_detail(world):
+    data = world.request_data("welfare")
+    data.update(
+        employee_type="ลูกจ้างประจำ",
+        affiliation="งานยานพาหนะ",
+        vehicle_kind="บัส",
+        event_type="ฌาปนกิจศพ",
+        host_name="นางบุญมี ศรีสุข",
+        house="99",
+        subdistrict="ทุ่งตำเสา",
+        district="หาดใหญ่",
+        province="สงขลา",
+    )
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert response.status_code == 302
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    assert saved.requester_unit == "งานยานพาหนะ"
+    assert saved.details.employee_type == "ลูกจ้างประจำ"
+    assert saved.details.affiliation == "งานยานพาหนะ"
+    assert saved.details.vehicle_kind == "บัส"
+    assert saved.details.event_type == "ฌาปนกิจศพ"
+    assert saved.details.host_name == "นางบุญมี ศรีสุข"
+    assert (saved.details.house, saved.details.subdistrict) == ("99", "ทุ่งตำเสา")
+    assert (saved.details.district, saved.details.province) == ("หาดใหญ่", "สงขลา")
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    for shown in ("ลูกจ้างประจำ", "ฌาปนกิจศพ", "นางบุญมี ศรีสุข", "ทุ่งตำเสา", "บัส"):
+        assert shown in html
+
+
+@pytest.mark.parametrize("vehicle_kind", ["เก๋ง", "มินิบัส"])
+def test_welfare_request_accepts_only_bus_or_van(world, vehicle_kind):
+    data = world.request_data("welfare")
+    data["vehicle_kind"] = vehicle_kind
+
+    response = post_new(world, data, request_type="welfare")
+
+    assert response.status_code == 200
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_welfare_request_needs_the_self_or_direct_relative_confirmation(world):
+    data = world.request_data("welfare")
+    del data["direct_relative_confirmed"]
+
+    response = post_new(world, data, request_type="welfare")
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "ขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น" in html
+    assert "กรุณายืนยันว่าขอใช้สำหรับตนเองหรือญาติสายตรงเท่านั้น" in html
     assert models.CarReservation.objects(creator=world.requester).count() == 0
 
 

@@ -8,7 +8,7 @@
 <form method="post" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
   {{ form.csrf_token }}
   <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-    {{ renderer.render_field(form.requester_unit) }}
+    {% if form.requester_unit %}{{ renderer.render_field(form.requester_unit) }}{% endif %}
     {{ renderer.render_field(form.phone) }}
   </div>
   {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}

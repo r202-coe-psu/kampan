@@ -1,3 +1,14 @@
-{{ renderer.render_field(form.location) }}
-{{ renderer.render_field(form.request_reason) }}
-{{ renderer.render_field(form.passenger_number) }}
+{{ renderer.render_radio_field(form.employee_type) }}
+{{ renderer.render_field(form.affiliation) }}
+{{ renderer.render_radio_field(form.vehicle_kind) }}
+{{ renderer.render_radio_field(form.event_type) }}
+{{ renderer.render_field(form.host_name) }}
+<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+  {{ renderer.render_field(form.house) }}
+  {{ renderer.render_field(form.subdistrict) }}
+  {{ renderer.render_field(form.district) }}
+  {{ renderer.render_field(form.province) }}
+</div>
+{{ renderer.render_checkbox(form.direct_relative_confirmed) }}
+{% for error in form.direct_relative_confirmed.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
+<p class="text-sm text-base-content/70">หมายเหตุ การขอใช้รถประเภทนี้ ขอได้เฉพาะตนเอง และญาติสายตรงเท่านั้น</p>
