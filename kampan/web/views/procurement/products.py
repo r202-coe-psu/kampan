@@ -442,8 +442,87 @@ def _apply_header(form, procurement, user) -> None:
     procurement.last_updated_by = user
 
 
+def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: models.Procurement) -> models.ProcurementItem:
+    sub_items = [
+        models.ItemDetail(
+            brand=sub.brand,
+            model_name=sub.model_name,
+            serial_number=sub.serial_number,
+            asset_code=sub.asset_code,
+            details=sub.details,
+        )
+        for sub in item.sub_items or []
+    ]
+    installments = [
+        models.Installment(
+            due_date=inst.due_date,
+            paid_date=inst.paid_date,
+            paid_by=inst.paid_by,
+            payment_number=inst.payment_number,
+            paid_amount=inst.paid_amount,
+            pay_log=[
+                models.PayLogEntry(
+                    action=p.action,
+                    pressed_at=p.pressed_at,
+                    paid_date=p.paid_date,
+                    by=p.by,
+                    payment_number=p.payment_number,
+                    paid_amount=p.paid_amount,
+                )
+                for p in inst.pay_log or []
+            ],
+        )
+        for inst in item.installments or []
+    ]
+    return models.ProcurementItem(
+        organization=new_procurement.organization,
+        procurement=new_procurement,
+        name=item.name,
+        category=item.category,
+        account_code=item.account_code,
+        start_date=item.start_date,
+        end_date=item.end_date,
+        amount=item.amount,
+        sub_items=sub_items,
+        has_sub_item_sn=item.has_sub_item_sn,
+        has_sub_item_asset=item.has_sub_item_asset,
+        winner=item.winner,
+        unit_price=item.unit_price,
+        note=item.note,
+        responsible_by=list(item.responsible_by or []),
+        responsible_divisions=list(item.responsible_divisions or []),
+        has_custom_responsible_divisions=item.has_custom_responsible_divisions,
+        reminder_kind=item.reminder_kind,
+        requires_activation=item.requires_activation,
+        expiry_reminder_offsets=list(item.expiry_reminder_offsets or []),
+        payment_reminder_offsets=list(item.payment_reminder_offsets or []),
+        reminder_offsets_days=list(item.reminder_offsets_days or []),
+        installment_mode=item.installment_mode,
+        installments=installments,
+    )
+
+
+def _duplicate_child_procurements(parent_procurement, items, user):
+    for item in items:
+        child_name = f"{parent_procurement.name} - {item.name}" if parent_procurement.name != item.name else item.name
+        child = models.Procurement(
+            organization=parent_procurement.organization,
+            name=child_name,
+            company=parent_procurement.company,
+            psu_disbursement_number=parent_procurement.psu_disbursement_number,
+            total_amount=item.amount,
+            parent_procurement=parent_procurement,
+            created_by=user,
+            last_updated_by=user,
+            status="active",
+        )
+        child_item = _clone_item_for_procurement(item, child)
+        child.save_with_items([child_item])
+
+
 def _save_form(form, organization, procurement, existing_items, member):
     user = current_user._get_current_object()
+    is_new = procurement.pk is None
     try:
         items, removed_items = _build_items(form, organization, existing_items, user)
     except InstallmentChangeError as error:
@@ -456,6 +535,9 @@ def _save_form(form, organization, procurement, existing_items, member):
         return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
     except me.ValidationError as error:
         return _render_form(form, organization, member, procurement, [error.message])
+
+    if is_new and len(items) > 1:
+        _duplicate_child_procurements(procurement, items, user)
 
     flash("บันทึก MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))

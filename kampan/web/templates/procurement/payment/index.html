@@ -90,6 +90,38 @@
     </div>
   {% endif %}
 
+  {% if procurement.parent_procurement %}
+    <div role="alert" class="alert alert-info py-2 px-3 text-sm flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="ph ph-git-fork text-lg"></i>
+        <span>เป็นสัญญาย่อยที่แยกมาจากสัญญาหลัก: <strong>{{ procurement.parent_procurement.name }}</strong> (ม.อ. {{ procurement.parent_procurement.psu_disbursement_number or '-' }})</span>
+      </div>
+      <a href="{{ url_for('procurement.payment.index', procurement_id=procurement.parent_procurement.id, organization_id=organization.id) }}" class="btn btn-xs btn-primary font-semibold">
+        ดูสัญญาหลัก <i class="ph ph-arrow-right"></i>
+      </a>
+    </div>
+  {% endif %}
+
+  {% set child_procurements = procurement.get_child_procurements() %}
+  {% if child_procurements %}
+    <div class="card bg-base-100 border border-base-300 p-4 rounded-box shadow-xs flex flex-col gap-2">
+      <h3 class="font-bold text-sm flex items-center gap-2 text-primary">
+        <i class="ph ph-tree-structure"></i> สัญญาย่อยที่ duplicate แยกออกไป ({{ child_procurements|length }} รายการ):
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {% for child in child_procurements %}
+          <a href="{{ url_for('procurement.payment.index', procurement_id=child.id, organization_id=organization.id) }}" class="flex items-center justify-between p-2.5 rounded-box bg-base-200 hover:bg-base-300 transition-colors">
+            <div>
+              <div class="font-semibold text-sm">{{ child.name }}</div>
+              <div class="text-xs text-base-content/60">ยอด: {{ child.total_amount | format_amount }} บาท</div>
+            </div>
+            <i class="ph ph-arrow-right text-base-content/50"></i>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <!-- หัวสัญญา -->
   <section class="card bg-base-100 border border-base-300 shadow-sm">
     <div class="card-body p-4 md:p-6">

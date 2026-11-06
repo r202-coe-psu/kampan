@@ -1,6 +1,7 @@
 """ตัวควบคุมของหน้า MA: dropdown DaisyUI แทน <select>, ปฏิทิน พ.ศ., ไม่มีช่องรูปภาพ และไม่มี native control"""
 
 import datetime
+from decimal import Decimal
 import re
 
 import pytest
@@ -126,7 +127,7 @@ def test_posting_an_image_to_the_form_is_ignored(world, client_for):
     )
 
     assert response.status_code == 302
-    assert not models.Procurement.objects.get().image
+    assert not models.Procurement.objects.get(parent_procurement=None).image
 
 
 @pytest.mark.parametrize(
@@ -234,6 +235,54 @@ def test_responsible_by_shows_selected_members_in_form(world, client_for):
     assert f'data-member-id="{world.role_admin.id}"' in edit_html
     assert world.role_creator.display_user_fullname() in edit_html
     assert world.role_admin.display_user_fullname() in edit_html
+
+
+def test_create_ma_duplicates_child_procurements_with_parent_reference(world, client_for):
+    client = client_for(world.admin)
+    data = ma_form([
+        _item(
+            amount="40000.00",
+            name="[TEST] Sub-item Alpha",
+            responsible_by=[str(world.role_creator.id)],
+        ),
+        _item(
+            amount="60000.00",
+            name="[TEST] Sub-item Beta",
+            responsible_by=[str(world.role_admin.id)],
+        ),
+    ], total_amount="100000.00", name="[TEST] Master Contract", company="[TEST] Mega Corp", psu="PSU-PARENT-CHILD")
+    res = _create(client, world, data)
+    assert res.status_code == 302
+
+    # Master procurement
+    master = models.Procurement.objects.get(psu_disbursement_number="PSU-PARENT-CHILD", parent_procurement=None)
+    assert master.name == "[TEST] Master Contract"
+    assert master.total_amount == Decimal("100000.00")
+    assert master.has_child_procurements() is True
+
+    # Children
+    children = master.get_child_procurements()
+    assert len(children) == 2
+    assert [c.name for c in children] == ["[TEST] Master Contract - [TEST] Sub-item Alpha", "[TEST] Master Contract - [TEST] Sub-item Beta"]
+    assert [c.total_amount for c in children] == [Decimal("40000.00"), Decimal("60000.00")]
+    assert all(c.company == "[TEST] Mega Corp" for c in children)
+    assert all(c.psu_disbursement_number == "PSU-PARENT-CHILD" for c in children)
+    assert all(c.parent_procurement.id == master.id for c in children)
+
+    # Master detail page shows children
+    master_html = client.get(f"/procurement/payment/{master.id}?{_q(world.org)}").get_data(as_text=True)
+    assert "สัญญาย่อยที่ duplicate แยกออกไป" in master_html
+    assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in master_html
+
+    # Child detail page shows link to master
+    child_html = client.get(f"/procurement/payment/{children[0].id}?{_q(world.org)}").get_data(as_text=True)
+    assert "เป็นสัญญาย่อยที่แยกมาจากสัญญาหลัก" in child_html
+    assert master.name in child_html
+
+    # Products table shows badges
+    table_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+    assert "สัญญาหลัก (2 สัญญาย่อย)" in table_html
+    assert "สัญญาย่อยของ:" in table_html
 
 
 def test_payment_reminder_visibility_based_on_installment_mode(world, client_for):

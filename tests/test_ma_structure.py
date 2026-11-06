@@ -145,12 +145,19 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     response = _create(client_for(world.admin), world, _two_item_form(world))
 
     assert response.status_code == 302
-    procurement = models.Procurement.objects.get()
+    procurement = models.Procurement.objects.get(parent_procurement=None)
     assert f"/procurement/payment/{procurement.id}" in response.headers["Location"]
     assert procurement.psu_disbursement_number == "PSU-25/2569"
     assert procurement.total_amount == Decimal("100000.00")
     assert procurement.organization.id == world.org.id
     assert procurement.created_by.id == world.admin.id
+
+    children = list(models.Procurement.objects(parent_procurement=procurement).order_by("id"))
+    assert len(children) == 2
+    assert [c.name for c in children] == ["[TEST] MA - [TEST] License A", "[TEST] MA - [TEST] MA B"]
+    assert [c.total_amount for c in children] == [Decimal("60000.00"), Decimal("40000.00")]
+    assert all(c.company == procurement.company for c in children)
+    assert all(c.psu_disbursement_number == procurement.psu_disbursement_number for c in children)
 
     items = list(models.ProcurementItem.objects(procurement=procurement).order_by("id"))
     assert [item.name for item in items] == ["[TEST] License A", "[TEST] MA B"]
@@ -183,7 +190,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
 def test_detail_page_shows_every_item_with_details_line_breaks(world, client_for):
     client = client_for(world.admin)
     _create(client, world, _two_item_form(world))
-    procurement = models.Procurement.objects.get()
+    procurement = models.Procurement.objects.get(parent_procurement=None)
 
     html = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}").get_data(as_text=True)
 

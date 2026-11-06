@@ -29,6 +29,20 @@
         <div class="text-xs text-base-content/60">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</div>
         <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
            class="font-semibold text-base text-base-content leading-snug link link-hover">{{ item.name }}</a>
+        {% if item.parent_procurement %}
+          <div class="mt-0.5">
+            <span class="badge badge-xs badge-outline badge-primary gap-1">
+              <i class="ph ph-git-fork text-[10px]"></i> สัญญาย่อยของ:
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}" class="link link-hover font-semibold truncate max-w-[200px] inline-block align-bottom">{{ item.parent_procurement.name }}</a>
+            </span>
+          </div>
+        {% elif item.has_child_procurements() %}
+          <div class="mt-0.5">
+            <span class="badge badge-xs badge-neutral font-semibold gap-1">
+              <i class="ph ph-tree-structure text-[10px]"></i> สัญญาหลัก ({{ item.get_child_procurements()|length }} สัญญาย่อย)
+            </span>
+          </div>
+        {% endif %}
         <div class="flex flex-wrap gap-1 mt-1">
           {% for label in item.get_category_labels() %}
             <span class="badge badge-sm badge-neutral font-medium">{{ label }}</span>

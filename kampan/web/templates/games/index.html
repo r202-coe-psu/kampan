@@ -1,0 +1,669 @@
+{% extends "/base/base.html" %}
+
+{% block title %}Kampan Arcade - มินิเกมคลายเครียด{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200 text-base-content flex flex-col">
+  <!-- Top Bar -->
+  <header class="navbar bg-base-100 border-b border-base-300 px-4 sm:px-8 flex justify-between items-center shadow-xs">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-primary text-primary-content flex items-center justify-center font-bold text-xl shadow-md">
+        <i class="ph ph-game-controller text-2xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold leading-tight flex items-center gap-2">
+          Kampan Arcade 🎮
+          <span class="badge badge-accent badge-sm font-semibold">เล่นเพลินๆ ระหว่างรอ</span>
+        </h1>
+        <p class="text-xs text-base-content/60">รวมมินิเกมคลายเครียด ปรับแต่งเพื่อคุณโดยเฉพาะ</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/procurement/products" class="btn btn-outline btn-sm gap-2">
+        <i class="ph ph-arrow-left"></i> กลับไประบบ MA
+      </a>
+    </div>
+  </header>
+
+  <!-- Game Selector Tabs -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+    <div class="tabs tabs-boxed bg-base-100 p-1.5 shadow-xs border border-base-300 justify-center gap-2">
+      <button type="button" class="tab tab-lg gap-2 font-semibold transition-all game-tab active" data-game="snake">
+        <i class="ph ph-snake text-lg"></i> 🐍 เกมงู (Snake)
+      </button>
+      <button type="button" class="tab tab-lg gap-2 font-semibold transition-all game-tab" data-game="2048">
+        <i class="ph ph-grid-four text-lg"></i> 🔢 2048
+      </button>
+      <button type="button" class="tab tab-lg gap-2 font-semibold transition-all game-tab" data-game="dino">
+        <i class="ph ph-lightning text-lg"></i> 🦖 ไดโนเสาร์ (Dino Jump)
+      </button>
+    </div>
+
+    <!-- ==================== 1. SNAKE GAME ==================== -->
+    <section id="game-snake" class="game-panel card bg-base-100 shadow-md border border-base-300 p-4 sm:p-6 flex flex-col items-center">
+      <div class="w-full flex items-center justify-between mb-4 border-b border-base-300 pb-3">
+        <div>
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <i class="ph ph-snake text-success text-2xl"></i> Classic Snake
+          </h2>
+          <p class="text-xs text-base-content/60">ใช้ปุ่มลูกศรหรือ W A S D ในการบังคับ</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-xs text-base-content/60">คะแนน</div>
+            <div class="text-2xl font-black text-primary" id="snake-score">0</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-base-content/60">คะแนนสูงสุด</div>
+            <div class="text-xl font-bold text-base-content/80" id="snake-high">0</div>
+          </div>
+          <button type="button" class="btn btn-circle btn-sm btn-ghost" id="snake-sound-btn" title="เปิด/ปิดเสียง">
+            <i class="ph ph-speaker-high text-lg" id="snake-sound-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative bg-base-300/50 rounded-2xl overflow-hidden border-2 border-base-300 shadow-inner">
+        <canvas id="snakeCanvas" width="400" height="400" class="block max-w-full"></canvas>
+        <div id="snake-overlay" class="absolute inset-0 bg-base-100/90 flex flex-col items-center justify-center p-6 text-center">
+          <div class="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center mb-3 text-3xl">
+            <i class="ph ph-play"></i>
+          </div>
+          <h3 class="text-2xl font-extrabold mb-1" id="snake-overlay-title">กดปุ่มเพื่อเริ่มเล่น!</h3>
+          <p class="text-sm text-base-content/70 mb-4" id="snake-overlay-desc">ควบคุมงูให้กินแอปเปิ้ล ระวังชนขอบและตัวเองนะ!</p>
+          <button type="button" class="btn btn-primary btn-wide font-bold shadow-md" id="snake-start-btn">
+            เริ่มเล่นเลย 🚀
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile D-pad -->
+      <div class="mt-4 flex flex-col items-center gap-1 sm:hidden">
+        <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-dir="UP">⬆️</button>
+        <div class="flex gap-4">
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-dir="LEFT">⬅️</button>
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-dir="DOWN">⬇️</button>
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-dir="RIGHT">➡️</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. 2048 GAME ==================== -->
+    <section id="game-2048" class="game-panel card bg-base-100 shadow-md border border-base-300 p-4 sm:p-6 flex flex-col items-center hidden">
+      <div class="w-full flex items-center justify-between mb-4 border-b border-base-300 pb-3">
+        <div>
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <i class="ph ph-grid-four text-warning text-2xl"></i> Puzzle 2048
+          </h2>
+          <p class="text-xs text-base-content/60">เลื่อนบล็อกเลขเหมือนกันมารวมกันให้ได้ 2048!</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right bg-base-200 px-3 py-1 rounded-box border border-base-300">
+            <div class="text-[10px] uppercase font-bold text-base-content/60">คะแนน</div>
+            <div class="text-xl font-black text-warning" id="g2048-score">0</div>
+          </div>
+          <div class="text-right bg-base-200 px-3 py-1 rounded-box border border-base-300">
+            <div class="text-[10px] uppercase font-bold text-base-content/60">สูงสุด</div>
+            <div class="text-xl font-bold text-base-content/80" id="g2048-high">0</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" id="g2048-restart-btn">
+            <i class="ph ph-arrows-clockwise"></i> เริ่มใหม่
+          </button>
+        </div>
+      </div>
+
+      <div class="relative bg-base-300/80 p-3 rounded-2xl shadow-inner select-none touch-none" id="g2048-board">
+        <div class="grid grid-cols-4 gap-2.5 w-[320px] h-[320px] sm:w-[380px] sm:h-[380px]" id="g2048-grid">
+          <!-- 16 cells -->
+        </div>
+        <div id="g2048-overlay" class="absolute inset-0 bg-base-100/90 rounded-2xl flex flex-col items-center justify-center p-6 text-center hidden">
+          <h3 class="text-3xl font-black mb-2" id="g2048-overlay-title">เกมจบแล้ว!</h3>
+          <p class="text-sm text-base-content/70 mb-4" id="g2048-overlay-desc">ไม่มีช่องให้เดินต่อแล้ว</p>
+          <button type="button" class="btn btn-warning font-bold btn-wide" id="g2048-retry-btn">
+            ลองอีกครั้ง 🔁
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col items-center gap-1 sm:hidden">
+        <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-g2048="UP">⬆️</button>
+        <div class="flex gap-4">
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-g2048="LEFT">⬅️</button>
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-g2048="DOWN">⬇️</button>
+          <button type="button" class="btn btn-sm btn-outline btn-square text-lg" data-g2048="RIGHT">➡️</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. DINO JUMP ==================== -->
+    <section id="game-dino" class="game-panel card bg-base-100 shadow-md border border-base-300 p-4 sm:p-6 flex flex-col items-center hidden">
+      <div class="w-full flex items-center justify-between mb-4 border-b border-base-300 pb-3">
+        <div>
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <i class="ph ph-lightning text-error text-2xl"></i> Dino Jump 🦖
+          </h2>
+          <p class="text-xs text-base-content/60">กด Spacebar หรือ แตะหน้าจอ เพื่อกระโดดหลบสิ่งกีดขวาง</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-xs text-base-content/60">ระยะทาง</div>
+            <div class="text-2xl font-black text-error" id="dino-score">00000</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-base-content/60">สถิติสูงสุด</div>
+            <div class="text-xl font-bold text-base-content/80" id="dino-high">HI 00000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative bg-base-200 rounded-2xl overflow-hidden border-2 border-base-300 shadow-inner w-full max-w-[600px]">
+        <canvas id="dinoCanvas" width="600" height="200" class="block w-full cursor-pointer"></canvas>
+        <div id="dino-overlay" class="absolute inset-0 bg-base-100/90 flex flex-col items-center justify-center p-6 text-center">
+          <h3 class="text-2xl font-black mb-1" id="dino-overlay-title">กดกระโดดเพื่อเริ่มวิ่ง!</h3>
+          <p class="text-sm text-base-content/70 mb-4">กด Spacebar, ลูกศรขึ้น หรือแตะที่หน้าจอ</p>
+          <button type="button" class="btn btn-error btn-wide font-bold" id="dino-start-btn">
+            เริ่มกระโดด 🦖
+          </button>
+        </div>
+      </div>
+      <p class="text-xs text-base-content/50 mt-3 text-center">เคล็ดลับ: ยิ่งวิ่งนาน สิ่งกีดขวางจะวิ่งเร็วขึ้นเรื่อยๆ!</p>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Simple Web Audio API Synthesizer for Retro Game SFX
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let soundEnabled = true;
+
+  function playTone(freq, type, duration, delay = 0) {
+    if (!soundEnabled) return;
+    try {
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      }, delay);
+    } catch(e) {}
+  }
+
+  function sfxEat() { playTone(600, 'sine', 0.1); playTone(850, 'sine', 0.12, 60); }
+  function sfxDie() { playTone(250, 'sawtooth', 0.2); playTone(140, 'sawtooth', 0.3, 100); }
+  function sfxJump() { playTone(450, 'square', 0.08); playTone(750, 'square', 0.1, 40); }
+  function sfxMerge() { playTone(523.25, 'triangle', 0.1); }
+
+  // Game Tab Switching
+  document.querySelectorAll('.game-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active', 'tab-active', 'bg-primary', 'text-primary-content'));
+      tab.classList.add('active', 'tab-active', 'bg-primary', 'text-primary-content');
+      document.querySelectorAll('.game-panel').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById('game-' + tab.dataset.game);
+      if (target) target.classList.remove('hidden');
+    });
+  });
+
+  // ==================== 1. SNAKE IMPLEMENTATION ====================
+  (function initSnake() {
+    const canvas = document.getElementById('snakeCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('snake-score');
+    const highEl = document.getElementById('snake-high');
+    const overlay = document.getElementById('snake-overlay');
+    const startBtn = document.getElementById('snake-start-btn');
+    const titleEl = document.getElementById('snake-overlay-title');
+    const descEl = document.getElementById('snake-overlay-desc');
+
+    const gridSize = 20;
+    const tileCount = canvas.width / gridSize;
+
+    let snake = [];
+    let food = { x: 5, y: 5 };
+    let dx = 0, dy = 0;
+    let score = 0;
+    let highScore = localStorage.getItem('kampan_snake_hi') || 0;
+    highEl.textContent = highScore;
+    let gameLoop = null;
+    let isRunning = false;
+
+    function reset() {
+      snake = [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 },
+      ];
+      dx = 1; dy = 0;
+      score = 0;
+      scoreEl.textContent = score;
+      spawnFood();
+    }
+
+    function spawnFood() {
+      while (true) {
+        food = {
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount),
+        };
+        if (!snake.some(s => s.x === food.x && s.y === food.y)) break;
+      }
+    }
+
+    function draw() {
+      // Background
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grid subtle lines
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= canvas.width; i += gridSize) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+      }
+
+      // Draw Food (Apple)
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Snake
+      snake.forEach((part, index) => {
+        ctx.fillStyle = index === 0 ? '#10b981' : '#34d399';
+        ctx.beginPath();
+        ctx.roundRect(part.x * gridSize + 1, part.y * gridSize + 1, gridSize - 2, gridSize - 2, 6);
+        ctx.fill();
+
+        // Eyes on head
+        if (index === 0) {
+          ctx.fillStyle = '#064e3b';
+          const eyeOffset = gridSize / 4;
+          ctx.fillRect(part.x * gridSize + eyeOffset, part.y * gridSize + eyeOffset, 3, 3);
+          ctx.fillRect(part.x * gridSize + gridSize - eyeOffset - 3, part.y * gridSize + eyeOffset, 3, 3);
+        }
+      });
+    }
+
+    function update() {
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+      // Wall collision
+      if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+        return gameOver();
+      }
+
+      // Self collision
+      if (snake.some(part => part.x === head.x && part.y === head.y)) {
+        return gameOver();
+      }
+
+      snake.unshift(head);
+
+      // Eat food
+      if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreEl.textContent = score;
+        if (score > highScore) {
+          highScore = score;
+          highEl.textContent = highScore;
+          localStorage.setItem('kampan_snake_hi', highScore);
+        }
+        sfxEat();
+        spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function gameOver() {
+      clearInterval(gameLoop);
+      isRunning = false;
+      sfxDie();
+      titleEl.textContent = '💀 ชนซะแล้ว! ได้ ' + score + ' คะแนน';
+      descEl.textContent = score >= highScore ? '🎉 ยอดเยี่ยม! ทำสถิติสูงสุดใหม่!' : 'สถิติสูงสุดของคุณคือ ' + highScore + ' คะแนน';
+      startBtn.textContent = 'เล่นอีกครั้ง 🔄';
+      overlay.classList.remove('hidden');
+    }
+
+    function start() {
+      reset();
+      overlay.classList.add('hidden');
+      isRunning = true;
+      clearInterval(gameLoop);
+      gameLoop = setInterval(update, 110);
+      draw();
+    }
+
+    startBtn.addEventListener('click', start);
+
+    function changeDir(newDx, newDy) {
+      if (!isRunning) return;
+      if (newDx !== 0 && dx !== -newDx) { dx = newDx; dy = 0; }
+      if (newDy !== 0 && dy !== -newDy) { dy = newDy; dx = 0; }
+    }
+
+    window.addEventListener('keydown', e => {
+      if (!document.getElementById('game-snake').classList.contains('hidden')) {
+        if (['ArrowUp', 'KeyW'].includes(e.code)) { changeDir(0, -1); e.preventDefault(); }
+        if (['ArrowDown', 'KeyS'].includes(e.code)) { changeDir(0, 1); e.preventDefault(); }
+        if (['ArrowLeft', 'KeyA'].includes(e.code)) { changeDir(-1, 0); e.preventDefault(); }
+        if (['ArrowRight', 'KeyD'].includes(e.code)) { changeDir(1, 0); e.preventDefault(); }
+        if (e.code === 'Space' && !isRunning) { start(); e.preventDefault(); }
+      }
+    });
+
+    document.querySelectorAll('[data-dir]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.dir;
+        if (d === 'UP') changeDir(0, -1);
+        if (d === 'DOWN') changeDir(0, 1);
+        if (d === 'LEFT') changeDir(-1, 0);
+        if (d === 'RIGHT') changeDir(1, 0);
+      });
+    });
+
+    reset();
+    draw();
+  })();
+
+  // ==================== 2. 2048 IMPLEMENTATION ====================
+  (function init2048() {
+    const gridEl = document.getElementById('g2048-grid');
+    const scoreEl = document.getElementById('g2048-score');
+    const highEl = document.getElementById('g2048-high');
+    const overlay = document.getElementById('g2048-overlay');
+    const restartBtn = document.getElementById('g2048-restart-btn');
+    const retryBtn = document.getElementById('g2048-retry-btn');
+
+    let board = Array(4).fill(null).map(() => Array(4).fill(0));
+    let score = 0;
+    let highScore = localStorage.getItem('kampan_2048_hi') || 0;
+    highEl.textContent = highScore;
+
+    const tileColors = {
+      2: 'bg-amber-100 text-stone-800',
+      4: 'bg-amber-200 text-stone-800',
+      8: 'bg-orange-400 text-white font-bold',
+      16: 'bg-orange-500 text-white font-bold',
+      32: 'bg-red-500 text-white font-bold',
+      64: 'bg-red-600 text-white font-bold',
+      128: 'bg-yellow-400 text-stone-900 font-extrabold shadow-md',
+      256: 'bg-yellow-500 text-stone-900 font-extrabold shadow-md',
+      512: 'bg-yellow-600 text-white font-black shadow-lg',
+      1024: 'bg-emerald-500 text-white font-black shadow-lg',
+      2048: 'bg-emerald-600 text-white font-black shadow-xl ring-4 ring-yellow-400 animate-bounce',
+    };
+
+    function init() {
+      board = Array(4).fill(null).map(() => Array(4).fill(0));
+      score = 0;
+      scoreEl.textContent = 0;
+      overlay.classList.add('hidden');
+      spawn();
+      spawn();
+      render();
+    }
+
+    function spawn() {
+      const empties = [];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) empties.push({ r, c });
+        }
+      }
+      if (empties.length === 0) return;
+      const spot = empties[Math.floor(Math.random() * empties.length)];
+      board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    function render() {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const val = board[r][c];
+          const tile = document.createElement('div');
+          tile.className = 'w-full h-full rounded-xl flex items-center justify-center font-bold text-2xl transition-all duration-100 ' +
+            (val === 0 ? 'bg-base-200/50' : (tileColors[val] || 'bg-purple-600 text-white font-black'));
+          tile.textContent = val > 0 ? val : '';
+          gridEl.appendChild(tile);
+        }
+      }
+    }
+
+    function slideRow(row) {
+      let filtered = row.filter(v => v !== 0);
+      for (let i = 0; i < filtered.length - 1; i++) {
+        if (filtered[i] === filtered[i + 1]) {
+          filtered[i] *= 2;
+          score += filtered[i];
+          filtered[i + 1] = 0;
+          sfxMerge();
+        }
+      }
+      filtered = filtered.filter(v => v !== 0);
+      while (filtered.length < 4) filtered.push(0);
+      return filtered;
+    }
+
+    function move(dir) {
+      let changed = false;
+      const prev = JSON.stringify(board);
+
+      if (dir === 'LEFT') {
+        for (let r = 0; r < 4; r++) board[r] = slideRow(board[r]);
+      } else if (dir === 'RIGHT') {
+        for (let r = 0; r < 4; r++) board[r] = slideRow(board[r].reverse()).reverse();
+      } else if (dir === 'UP') {
+        for (let c = 0; c < 4; c++) {
+          let col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+          col = slideRow(col);
+          for (let r = 0; r < 4; r++) board[r][c] = col[r];
+        }
+      } else if (dir === 'DOWN') {
+        for (let c = 0; c < 4; c++) {
+          let col = [board[3][c], board[2][c], board[1][c], board[0][c]];
+          col = slideRow(col);
+          for (let r = 0; r < 4; r++) board[3 - r][c] = col[r];
+        }
+      }
+
+      if (JSON.stringify(board) !== prev) {
+        scoreEl.textContent = score;
+        if (score > highScore) {
+          highScore = score;
+          highEl.textContent = highScore;
+          localStorage.setItem('kampan_2048_hi', highScore);
+        }
+        spawn();
+        render();
+        checkGameOver();
+      }
+    }
+
+    function checkGameOver() {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) return;
+          if (r < 3 && board[r][c] === board[r + 1][c]) return;
+          if (c < 3 && board[r][c] === board[r][c + 1]) return;
+        }
+      }
+      overlay.classList.remove('hidden');
+    }
+
+    restartBtn.addEventListener('click', init);
+    retryBtn.addEventListener('click', init);
+
+    window.addEventListener('keydown', e => {
+      if (!document.getElementById('game-2048').classList.contains('hidden')) {
+        if (['ArrowUp', 'KeyW'].includes(e.code)) { move('UP'); e.preventDefault(); }
+        if (['ArrowDown', 'KeyS'].includes(e.code)) { move('DOWN'); e.preventDefault(); }
+        if (['ArrowLeft', 'KeyA'].includes(e.code)) { move('LEFT'); e.preventDefault(); }
+        if (['ArrowRight', 'KeyD'].includes(e.code)) { move('RIGHT'); e.preventDefault(); }
+      }
+    });
+
+    document.querySelectorAll('[data-g2048]').forEach(btn => {
+      btn.addEventListener('click', () => move(btn.dataset.g2048));
+    });
+
+    init();
+  })();
+
+  // ==================== 3. DINO JUMP IMPLEMENTATION ====================
+  (function initDino() {
+    const canvas = document.getElementById('dinoCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('dino-score');
+    const highEl = document.getElementById('dino-high');
+    const overlay = document.getElementById('dino-overlay');
+    const startBtn = document.getElementById('dino-start-btn');
+
+    let dino = { x: 50, y: 140, vy: 0, w: 28, h: 36, jumping: false };
+    let obstacles = [];
+    let score = 0;
+    let highScore = localStorage.getItem('kampan_dino_hi') || 0;
+    highEl.textContent = 'HI ' + String(highScore).padStart(5, '0');
+    let speed = 5;
+    let gameLoop = null;
+    let isRunning = false;
+
+    function reset() {
+      dino = { x: 50, y: 140, vy: 0, w: 28, h: 36, jumping: false };
+      obstacles = [];
+      score = 0;
+      speed = 5;
+    }
+
+    function jump() {
+      if (!isRunning) {
+        start();
+        return;
+      }
+      if (!dino.jumping) {
+        dino.vy = -12;
+        dino.jumping = true;
+        sfxJump();
+      }
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Ground line
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 176);
+      ctx.lineTo(canvas.width, 176);
+      ctx.stroke();
+
+      // Dino physics
+      dino.y += dino.vy;
+      dino.vy += 0.7; // gravity
+      if (dino.y >= 140) {
+        dino.y = 140;
+        dino.vy = 0;
+        dino.jumping = false;
+      }
+
+      // Draw Dino (Pixel Style)
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.roundRect(dino.x, dino.y, dino.w, dino.h, 6);
+      ctx.fill();
+      // Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(dino.x + 18, dino.y + 6, 6, 6);
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(dino.x + 21, dino.y + 8, 3, 3);
+
+      // Spawn obstacles
+      if (Math.random() < 0.02 && (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 180)) {
+        obstacles.push({
+          x: canvas.width,
+          y: 146,
+          w: 16 + Math.random() * 12,
+          h: 30 + Math.random() * 10
+        });
+      }
+
+      // Update & Draw Obstacles (Cactus)
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const ob = obstacles[i];
+        ob.x -= speed;
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.roundRect(ob.x, 176 - ob.h, ob.w, ob.h, 4);
+        ctx.fill();
+
+        // Collision Check
+        if (
+          dino.x + 4 < ob.x + ob.w &&
+          dino.x + dino.w - 4 > ob.x &&
+          dino.y + 4 < 176 &&
+          dino.y + dino.h > 176 - ob.h
+        ) {
+          return gameOver();
+        }
+
+        if (ob.x + ob.w < 0) obstacles.splice(i, 1);
+      }
+
+      score++;
+      if (score % 200 === 0) speed += 0.5; // Gradually faster
+      scoreEl.textContent = String(score).padStart(5, '0');
+
+      if (score > highScore) {
+        highScore = score;
+        highEl.textContent = 'HI ' + String(highScore).padStart(5, '0');
+        localStorage.setItem('kampan_dino_hi', highScore);
+      }
+    }
+
+    function gameOver() {
+      cancelAnimationFrame(gameLoop);
+      isRunning = false;
+      sfxDie();
+      document.getElementById('dino-overlay-title').textContent = '💥 ชนแล้ว! สกอร์: ' + score;
+      startBtn.textContent = 'กระโดดใหม่ 🔄';
+      overlay.classList.remove('hidden');
+    }
+
+    function start() {
+      reset();
+      overlay.classList.add('hidden');
+      isRunning = true;
+      function loop() {
+        if (!isRunning) return;
+        update();
+        gameLoop = requestAnimationFrame(loop);
+      }
+      gameLoop = requestAnimationFrame(loop);
+    }
+
+    startBtn.addEventListener('click', start);
+    canvas.addEventListener('click', jump);
+    window.addEventListener('keydown', e => {
+      if (!document.getElementById('game-dino').classList.contains('hidden')) {
+        if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) {
+          jump();
+          e.preventDefault();
+        }
+      }
+    });
+
+    update();
+  })();
+</script>
+{% endblock %}

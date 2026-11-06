@@ -512,6 +512,7 @@ class Procurement(me.Document):
         "indexes": [
             ("organization", "psu_disbursement_number"),
             ("organization", "status"),
+            ("organization", "parent_procurement"),
         ],
     }
 
@@ -532,6 +533,9 @@ class Procurement(me.Document):
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
 
+    # เชื่อมโยงสัญญาหลัก / สัญญาย่อยที่ duplicate แยกออกมา
+    parent_procurement = me.ReferenceField("Procurement", dbref=True)
+
     # การต่ออายุ (#32): MA ใหม่ชี้ MA เดิม และ MA เดิมชี้ MA ใหม่
     renewed_from = me.ReferenceField("Procurement", dbref=True)
     renewed_to = me.ReferenceField("Procurement", dbref=True)
@@ -547,6 +551,24 @@ class Procurement(me.Document):
 
     def is_renewed(self) -> bool:
         return self.status == "renewed" or _reference_id(self, "renewed_to") is not None
+
+    def get_child_procurements(self) -> list["Procurement"]:
+        cached = self.__dict__.get("_child_procurements_cache")
+        if cached is not None:
+            return cached
+        if not self.pk:
+            return []
+        cached = list(Procurement.objects(parent_procurement=self, organization=self.organization).order_by("id"))
+        self.__dict__["_child_procurements_cache"] = cached
+        return cached
+
+    def has_child_procurements(self) -> bool:
+        cached = self.__dict__.get("_child_procurements_cache")
+        if cached is not None:
+            return len(cached) > 0
+        if not self.pk:
+            return False
+        return len(self.get_child_procurements()) > 0
 
     # ------------------------------------------------------------------
     # รายการย่อย
@@ -852,6 +874,32 @@ def attach_items(
             procurement_id = _reference_id(item, "procurement")
             if procurement_id in by_id:
                 by_id[procurement_id].append(item)
+
+        # Batch-load child procurements for all rows (กัน N+1 ในหน้ารายการ)
+        children_by_parent = {p.pk: [] for p in procurements}
+        children = Procurement.objects(
+            organization=organization, parent_procurement__in=list(by_id)
+        ).only("id", "name", "total_amount", "parent_procurement")
+        for child in children:
+            parent_id = _reference_id(child, "parent_procurement")
+            if parent_id in children_by_parent:
+                children_by_parent[parent_id].append(child)
+        for p in procurements:
+            p.__dict__["_child_procurements_cache"] = children_by_parent[p.pk]
+
+        # Batch-load parent procurements
+        parent_ids = {_reference_id(p, "parent_procurement") for p in procurements} - {None}
+        if parent_ids:
+            parents = {
+                parent.id: parent
+                for parent in Procurement.objects(id__in=list(parent_ids), organization=organization).only(
+                    "id", "name", "psu_disbursement_number"
+                )
+            }
+            for p in procurements:
+                parent_id = _reference_id(p, "parent_procurement")
+                if parent_id in parents:
+                    p._data["parent_procurement"] = parents[parent_id]
     for procurement in procurements:
         procurement.__dict__["_items_cache"] = by_id[procurement.pk]
     if with_responsibles:
