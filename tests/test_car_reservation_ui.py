@@ -416,3 +416,25 @@ def test_detail_modals_post_their_form_and_close_from_the_backdrop(world, viewer
     assert form.xpath(f".//*[@name='{field}']")
     assert find(form, "div", "modal-action")
     assert find(dialog, "form", "modal-backdrop", method="dialog")
+
+
+def test_car_form_has_headed_sections_and_a_cancel_and_submit_area(world):
+    doc = world.page(world.admin, "/cars/create")
+
+    sections = form_sections(doc)
+    assert list(sections) == ["ข้อมูลรถ", "รูปภาพ"]
+    assert {"license_plate", "vehicle_type", "seat_count", "status", "description"} <= sections["ข้อมูลรถ"]
+    assert "upload_image" in sections["รูปภาพ"]
+    area = find(doc, "div", data_role="form-actions")[0]
+    assert [words(a) for a in find(area, "a", "btn-ghost")] == ["ยกเลิก"]
+    assert find(area, "button", "btn-primary", type="submit")
+
+
+def test_calendar_and_type_picker_put_their_primary_action_and_subtitle_in_the_page_header(world):
+    calendar = world.page(world.staff, "/calendar/")
+    picker = world.page(world.staff, "/requests/new")
+
+    actions = find(calendar, "div", data_role="page-actions")[0]
+    assert find(actions, "a", "btn-primary", data_role="new-request")
+    assert find(calendar, "p", data_role="page-subtitle")
+    assert "เลือกแบบฟอร์มที่ต้องการยื่น" in words(find(picker, "p", data_role="page-subtitle")[0])

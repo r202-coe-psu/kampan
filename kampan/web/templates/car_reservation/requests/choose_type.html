@@ -3,9 +3,12 @@
 
 {% block title %}ยื่นคำขอใช้รถ{% endblock %}
 
+{% block page_subtitle %}เลือกแบบฟอร์มที่ต้องการยื่น{% endblock %}
+
 {% block content %}
-<div class="mt-4 max-w-2xl border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-  <p class="mb-4 text-base-content/60">เลือกแบบฟอร์มที่ต้องการยื่น</p>
-  {{ TypeCards(organization, new_request_date) }}
+<div class="card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
+  <div class="card-body">
+    {{ TypeCards(organization, new_request_date) }}
+  </div>
 </div>
 {% endblock %}

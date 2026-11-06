@@ -3,21 +3,23 @@
 {% block title %}ปฏิทินการจองรถ{% endblock %}
 {% block dashboard_title %}ปฏิทินการจองรถ{% endblock %}
 
+{% block page_subtitle %}ตารางรถที่มีการจองของหน่วยงาน กดที่รายการเพื่อดูสถานะการอนุมัติ{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" data-role="new-request"
+   href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
+  <i class="ph ph-plus"></i> ยื่นคำขอ
+</a>
+{% endblock %}
+
 {% block content %}
-<div class="mt-4 card bg-base-100 border border-base-300 shadow-sm">
+<div class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4 p-4 sm:p-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <ul class="flex flex-wrap items-center gap-2 text-sm" aria-label="คำอธิบายสี">
-        <li class="badge badge-soft badge-warning tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-warning"></span> รออนุมัติ</li>
-        <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
-        <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
-      </ul>
-      <a class="btn btn-primary" data-role="new-request"
-         href="{{ url_for('car_reservation.requests.create', organization_id=organization.id) }}">
-        <i class="ph ph-plus"></i> ยื่นคำขอ
-      </a>
-    </div>
-    <p class="text-xs text-base-content/60 -mt-2">กดที่รายการเพื่อดูสถานะการอนุมัติ</p>
+    <ul class="flex flex-wrap items-center gap-2 text-sm" aria-label="คำอธิบายสี">
+      <li class="badge badge-soft badge-warning tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-warning"></span> รออนุมัติ</li>
+      <li class="badge badge-soft badge-success tone-deep-success gap-1.5"><span class="size-2 rounded-full bg-success"></span> อนุมัติแล้ว</li>
+      <li class="badge badge-soft badge-neutral gap-1.5"><span class="size-2 rounded-full bg-neutral"></span> เสร็จสิ้น</li>
+    </ul>
     <div id="calendar" class="tone-deep-success"></div>
   </div>
 </div>

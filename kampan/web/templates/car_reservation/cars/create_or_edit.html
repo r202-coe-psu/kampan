@@ -1,25 +1,46 @@
 {% extends "/car_reservation/base/default-page.html" %}
+{% from '/car_reservation/components/form_section.html' import FormSection %}
+{% from '/car_reservation/components/car_photo.html' import CarPhoto %}
 
 {% block title %}{{ 'แก้ไขรถ' if car else 'เพิ่มรถ' }}{% endblock %}
 
+{% block page_subtitle %}{{ 'แก้ไขข้อมูลรถของหน่วยงาน' if car else 'เพิ่มรถคันใหม่ให้ผู้จัดรถเลือกใช้งาน' }}{% endblock %}
+
 {% block content %}
-<form method="post" class="mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm"
+<form method="post" class="card bg-base-100 border border-base-300 shadow-sm"
       enctype="multipart/form-data">
-  {{ form.csrf_token }}
-  <div class="grid gap-2 md:grid-cols-2">
-    {{ renderer.render_field(form.license_plate) }}
-    {{ renderer.render_select_field(form.vehicle_type) }}
-    {{ renderer.render_number_field(form.seat_count, min=1) }}
-    {{ renderer.render_select_field(form.status) }}
-  </div>
-  {{ renderer.render_text_area_field(form.description) }}
-  {{ renderer.file_input(form.upload_image) }}
-  {% for error in form.upload_image.errors %}
-  <p class="mt-1 text-sm font-medium text-error">{{ error }}</p>
-  {% endfor %}
-  <div class="flex justify-start w-full gap-2 mt-4">
-    <button type="submit" class="btn btn-primary">บันทึก</button>
-    <a class="btn" href="{{ url_for('car_reservation.cars.index', organization_id=organization.id) }}">ย้อนกลับ</a>
+  <div class="card-body gap-8">
+    {{ form.csrf_token }}
+
+    {% call FormSection('ข้อมูลรถ', icon='ph-car') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.render_field(form.license_plate) }}
+      {{ renderer.render_select_field(form.vehicle_type) }}
+      {{ renderer.render_number_field(form.seat_count, min=1) }}
+      {{ renderer.render_select_field(form.status) }}
+    </div>
+    {{ renderer.render_text_area_field(form.description) }}
+    {% endcall %}
+
+    {% call FormSection('รูปภาพ', icon='ph-image') %}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+      {% if car and car.image %}{{ CarPhoto(car, organization, "size-24") }}{% endif %}
+      <fieldset class="fieldset w-full">
+        <legend class="fieldset-legend">{{ form.upload_image.label.text }}</legend>
+        {{ form.upload_image(class_="file-input w-full", accept=".jpg,.jpeg,.png") }}
+        <p class="text-sm text-base-content/70">ไฟล์ JPG หรือ PNG ขนาดสูงสุด 2MB</p>
+        {% for error in form.upload_image.errors %}
+        <p class="mt-1 text-sm font-medium text-error">{{ error }}</p>
+        {% endfor %}
+      </fieldset>
+    </div>
+    {% endcall %}
+
+    <div class="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t border-base-300 bg-base-100/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end"
+         data-role="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('car_reservation.cars.index', organization_id=organization.id) }}">ยกเลิก</a>
+      <button type="submit" class="btn btn-primary">บันทึก</button>
+    </div>
   </div>
 </form>
 {% endblock %}
