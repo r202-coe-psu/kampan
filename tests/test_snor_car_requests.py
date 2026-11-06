@@ -827,3 +827,37 @@ def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
         assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
     else:
         assert "พนักงานขับรถ Driver One มีงานช่วงเวลานี้แล้ว" in html
+
+
+@pytest.mark.parametrize(
+    "start_hours, end_hours, status",
+    [
+        pytest.param(10, 14, "active", id="later-same-day"),
+        pytest.param(-5, 0, "active", id="ends-exactly-at-departure"),
+        pytest.param(2, 6, "cancelled", id="cancelled"),
+        pytest.param(2, 6, "denied", id="denied"),
+        pytest.param(2, 6, "completed", id="completed"),
+    ],
+)
+def test_bookings_that_do_not_overlap_or_are_not_live_do_not_block_assignment(
+    snor, start_hours, end_hours, status
+):
+    assigned_request(
+        snor,
+        DAY + datetime.timedelta(hours=start_hours),
+        DAY + datetime.timedelta(hours=end_hours),
+        status=status,
+        car=snor.car,
+        driver=snor.driver,
+    )
+    car_application = at_dispatcher_with_times(
+        snor, DAY, DAY + datetime.timedelta(hours=9)
+    )
+
+    snor.client_for(snor.dispatcher).post(
+        approve_url(snor, car_application), data=dispatch_data(snor.car, snor.driver)
+    )
+
+    car_application.reload()
+    assert car_application.current_step == 2
+    assert car_application.car == snor.car
