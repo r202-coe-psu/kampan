@@ -1033,6 +1033,37 @@ def test_delegate_dispatcher_confirms_cancel_and_audit_log_names_them(
     assert not inbox_shows(snor, snor.dispatcher, car_application)
 
 
+@pytest.mark.parametrize("final_status", ["denied", "completed", "cancelled"])
+def test_a_finished_request_cannot_be_cancelled(snor, final_status):
+    car_application = snor.submit_domestic_request()
+    car_application.status = final_status
+    car_application.save()
+    logs_before = len(car_application.audit_logs)
+
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": ""}
+    )
+
+    car_application.reload()
+    assert car_application.status == final_status
+    assert len(car_application.audit_logs) == logs_before
+
+
+def test_a_request_already_awaiting_cancel_acknowledgement_cannot_be_cancelled_again(
+    snor,
+):
+    car_application = request_cancel_requested(snor)
+    logs_before = len(car_application.audit_logs)
+
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, car_application), data={"reason": "อีกครั้ง"}
+    )
+
+    car_application.reload()
+    assert car_application.status == "cancel_requested"
+    assert len(car_application.audit_logs) == logs_before
+
+
 def test_only_the_creator_can_cancel_a_request(snor):
     before_car = snor.submit_domestic_request()
     after_car = request_with_car_assigned(snor)

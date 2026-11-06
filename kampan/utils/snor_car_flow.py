@@ -265,6 +265,8 @@ def deny(app, user, comment):
 def cancel(app, user, reason=""):
     if user != app.creator:
         raise FlowError("เฉพาะผู้ยื่นคำขอเท่านั้นที่ยกเลิกได้")
+    if app.status not in ("pending", "active"):
+        raise FlowError("คำขอนี้ยกเลิกไม่ได้")
     if app.car is None:
         app.status = "cancelled"
         _log(app, "cancelled", user, comment=reason)
