@@ -48,6 +48,7 @@ from .requisition_timeline import (
     FundAllocationSource,
 )
 from .export_file import ExportFile
+from .car_holidays import CarHoliday
 
 db = MongoEngine()
 
