@@ -76,7 +76,7 @@ def has_class(name):
 def find(doc, tag, *classes, within="", **attrs):
     """element ใน doc ที่ tag/class/attribute ตรงทั้งหมด (xpath ล้วน เพราะไม่มี cssselect)"""
     predicates = [has_class(c) for c in classes] + [f"@{k.replace('_', '-')}='{v}'" for k, v in attrs.items()]
-    expression = f"{within}//{tag}" + "".join(f"[{p}]" for p in predicates)
+    expression = f"{within or '.'}//{tag}" + "".join(f"[{p}]" for p in predicates)
     return doc.xpath(expression)
 
 
@@ -135,3 +135,26 @@ def test_my_requests_shows_an_empty_state_with_a_zero_count_when_there_are_none(
     assert "ทั้งหมด 0 รายการ" in words(find(doc, "*", data_role="list-count")[0])
     assert "ยังไม่มีคำขอ" in words(find(doc, "div", role="status")[0])
     assert not find(doc, "table", "table")
+
+
+def test_inbox_lists_waiting_requests_as_table_rows_and_cards_with_a_count(world):
+    world.reservation(request_reason="รอผู้จัดรถ")
+    world.reservation(request_reason="เรื่องด่วน", is_urgent=True)
+    world.reservation(request_reason="ยังรอหัวหน้า", current_step=0)
+
+    doc = world.page(world.dispatcher, "/requests/inbox")
+
+    assert words(find(doc, "h1")[0]) == "รายการรออนุมัติ"
+    assert "ทั้งหมด 2 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    rows = find(doc, "tr", within="//table[" + has_class("table") + "]/tbody")
+    cards = find(doc, "*", data_role="request-card")
+    assert len(rows) == 2 and len(cards) == 2
+    urgent = [c for c in cards if find(c, "span", data_role="urgent-badge")]
+    assert [words(c) for c in urgent if "เรื่องด่วน" in words(c)] and len(urgent) == 1
+
+
+def test_inbox_shows_an_empty_state_with_a_zero_count_when_nothing_waits(world):
+    doc = world.page(world.dispatcher, "/requests/inbox")
+
+    assert "ทั้งหมด 0 รายการ" in words(find(doc, "*", data_role="list-count")[0])
+    assert "ไม่มีรายการรออนุมัติ" in words(find(doc, "div", role="status")[0])
