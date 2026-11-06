@@ -1,12 +1,32 @@
 """คำขอใช้รถของ org แบบ snor: ผู้ขอยื่น -> ผู้อนุมัติแต่ละขั้นตามเส้นทางที่ตรึงไว้ตอนยื่น"""
 
 import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kampan import models
+from kampan import models, utils
+from kampan.web import redis_rq
 
 BASE = "/snor_car/requests"
+
+
+@pytest.fixture(autouse=True)
+def mock_redis_queue():
+    """กันการต่อ Redis จริง และให้ตรวจ job แจ้งเตือนที่ถูกส่งเข้าคิวได้"""
+    mock_q = MagicMock()
+    with patch.object(redis_rq.redis_queue, "queue", mock_q, create=True):
+        yield mock_q
+
+
+def snor_email_jobs(mock_q, event=None):
+    """job แจ้งเตือนอีเมลของ snor_car ที่ถูกส่งเข้าคิว: [(request_id, event, recipients, host_url)]"""
+    jobs = [
+        call.kwargs["args"]
+        for call in mock_q.enqueue.call_args_list
+        if call.args[0] is utils.snor_car_email.send_snor_car_email
+    ]
+    return [job for job in jobs if event is None or job[1] == event]
 
 
 @pytest.fixture
@@ -1177,3 +1197,16 @@ def test_only_the_creator_can_cancel_a_request(snor):
             assert response.status_code in (302, 403)
             car_application.reload()
             assert car_application.status == status
+
+
+def test_submitting_notifies_the_division_head_but_not_the_requester(
+    snor, mock_redis_queue
+):
+    car_application = snor.submit_domestic_request()
+
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, host_url = jobs[0]
+    assert (request_id, event) == (str(car_application.id), "submitted")
+    assert recipients == [snor.supervisor.email]
+    assert host_url.startswith("http")

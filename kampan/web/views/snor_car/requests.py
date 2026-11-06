@@ -120,6 +120,7 @@ def create():
             ),
         )
         snor.submit(snor_request, user)
+        utils.snor_car_email.notify(snor_request, "submitted")
         flash("ยื่นคำขอใช้รถเรียบร้อยแล้ว", "success")
         return redirect(
             url_for(
