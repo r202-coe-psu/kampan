@@ -12,7 +12,7 @@ from flask import (
 )
 from flask_login import current_user
 
-from kampan import models
+from kampan import models, utils
 from kampan.web import acl, forms
 
 module = Blueprint("cars", __name__, url_prefix="/cars")
@@ -40,6 +40,18 @@ def index():
     )
     return render_template(
         "/car_reservation/cars/index.html", organization=g.organization, cars=cars
+    )
+
+
+@module.route("/directory")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def directory():
+    """ข้อมูลรถและพนักงานขับรถ (อ่านอย่างเดียว) สำหรับสมาชิกทุกคนขององค์กร"""
+    return render_template(
+        "/car_reservation/cars/directory.html",
+        organization=g.organization,
+        cars=utils.car_reservation_flow.assignable_cars(g.organization),
+        drivers=utils.car_reservation_flow.assignable_drivers(g.organization),
     )
 
 

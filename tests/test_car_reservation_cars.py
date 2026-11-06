@@ -229,6 +229,60 @@ def test_active_car_row_offers_a_deactivate_button_and_inactive_does_not(
     assert html.count("/deactivate?") == 2  # ตารางกับการ์ดมือถือของรถที่ active คันเดียว
 
 
+def test_every_member_sees_active_cars_and_drivers_in_the_read_only_directory(
+    world, create_car, create_user, assign_user_to_org, create_org
+):
+    van = create_car(world.org, "กก 1111", vehicle_type="ตู้")
+    van.seat_count = 12
+    van.save()
+    create_car(world.org, "กก 2222", status="disactive")
+    create_car(create_org("Other Org"), "ขข 7777")
+    driver = create_user("Somchai", "Driver")
+    assign_user_to_org(driver, world.org, roles=["driver"])
+    assign_user_to_org(create_user("Bystander", "Member"), world.org, roles=["staff"])
+    removed = create_user("Gone", "Driver")
+    assign_user_to_org(removed, world.org, roles=["driver"], status="disactive")
+
+    response = world.staff_client.get(world.directory_url)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "ข้อมูลรถและพนักงานขับรถ" in html
+    assert "กก 1111" in html and "รถตู้" in html and "12 ที่นั่ง" in html
+    assert "กก 2222" not in html
+    assert "ขข 7777" not in html
+    assert "Somchai Driver" in html
+    assert "Gone Driver" not in html
+    assert "Bystander Member" not in html
+    assert "/edit" not in html and "/deactivate" not in html
+
+
+def test_directory_shows_a_driver_profile_picture_only_when_they_have_one(
+    app, world, create_user, assign_user_to_org, login_as
+):
+    with_pic = create_user("Pic", "Driver")
+    without = create_user("Nopic", "Driver")
+    for driver in (with_pic, without):
+        assign_user_to_org(driver, world.org, roles=["driver"])
+    login_as(app.test_client(), with_pic).post(
+        "/accounts/picture",
+        data={"picture": (io.BytesIO(png_bytes()), "me.png", "image/png")},
+        content_type="multipart/form-data",
+    )
+
+    html = world.staff_client.get(world.directory_url).get_data(as_text=True)
+
+    assert f"/accounts/{with_pic.id}/picture" in html
+    assert f"/accounts/{without.id}/picture" not in html
+
+
+def test_directory_shows_empty_states_when_there_are_no_cars_or_drivers(world):
+    html = world.staff_client.get(world.directory_url).get_data(as_text=True)
+
+    assert "ยังไม่มีรถ" in html
+    assert "ยังไม่มีพนักงานขับรถ" in html
+
+
 def test_car_without_photo_has_no_image_route(world):
     world.admin_client.post(world.create_url, data=car_data())
     car = models.vehicles.Car.objects(organization=world.org).first()
