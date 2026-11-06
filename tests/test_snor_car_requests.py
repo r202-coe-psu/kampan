@@ -1,5 +1,7 @@
 """คำขอใช้รถของ org แบบ snor: ผู้ขอยื่น -> ผู้อนุมัติแต่ละขั้นตามเส้นทางที่ตรึงไว้ตอนยื่น"""
 
+import datetime
+
 import pytest
 
 from kampan import models
@@ -60,15 +62,18 @@ def snor(app, create_org, create_user, assign_user_to_org, login_as):
 
     s.client_for = client_for
 
-    def request_data(request_type="domestic", province_scope="in_province"):
+    def request_data(
+        request_type="domestic", province_scope="in_province", days_ahead=20
+    ):
+        departure = datetime.date.today() + datetime.timedelta(days=days_ahead)
         data = {
             "requester_unit": "คณะวิศวกรรมศาสตร์",
             "phone": "081-234-5678",
             "location": "กรุงเทพฯ",
             "request_reason": "ประชุมวิชาการ",
-            "departure_date": "2099-01-05",
+            "departure_date": departure.isoformat(),
             "departure_time": "08:00",
-            "return_date": "2099-01-06",
+            "return_date": (departure + datetime.timedelta(days=1)).isoformat(),
             "return_time": "17:00",
             "passenger_number": "3",
         }
