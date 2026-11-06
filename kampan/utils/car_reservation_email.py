@@ -7,7 +7,7 @@ import logging
 import pathlib
 
 from flask import current_app, has_app_context
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, TemplateError
 from jinja2.sandbox import SandboxedEnvironment
 
 from kampan import models
@@ -153,10 +153,19 @@ def _render_custom(reservation, event, variables):
     )
     if email_template is None:
         return None
-    return (
-        _sandbox.from_string(email_template.subject).render(variables),
-        _sandbox.from_string(email_template.body).render(variables),
-    )
+    try:
+        return (
+            _sandbox.from_string(email_template.subject).render(variables),
+            _sandbox.from_string(email_template.body).render(variables),
+        )
+    except TemplateError:
+        # แอดมินแก้ template ผิดไวยากรณ์ หรือเรียกสิ่งที่ sandbox ห้าม: ใช้ข้อความของระบบแทน
+        logger.warning(
+            "car reservation email template %s cannot be rendered",
+            email_template.id,
+            exc_info=True,
+        )
+        return None
 
 
 def _render_file(event, variables):

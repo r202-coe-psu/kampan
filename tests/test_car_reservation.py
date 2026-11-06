@@ -1455,3 +1455,43 @@ def test_email_job_renders_the_org_default_template_with_documented_variables(
     assert "ปลายทาง: กรุงเทพฯ (Reservation Org)" in email["body"]
     assert f"/car_reservation/requests/{car_application.id}" in email["body"]
     assert "ระบบจองรถออนไลน์" not in email["subject"]
+
+
+def test_email_job_falls_back_to_system_text_without_a_default_template_of_that_event(
+    app, world, sent_emails
+):
+    car_application = world.submit_domestic_request()
+    save_default_template(world, "denied", "หัวข้อของเหตุการณ์อื่น", "เนื้อหาอื่น")
+    models.EmailTemplate(
+        name="ร่าง",
+        subject="หัวข้อร่าง",
+        body="เนื้อหาร่าง",
+        type="car_reservation_submitted",
+        organization=world.org,
+        is_default=False,
+    ).save()
+
+    send_job(app, world, car_application, "submitted", [world.supervisor.email])
+
+    assert [email["subject"] for email in sent_emails] == [
+        "ระบบจองรถออนไลน์: มีใบขอใช้รถรอการพิจารณาจากท่าน"
+    ]
+
+
+def test_email_template_cannot_reach_python_internals_and_the_email_still_goes_out(
+    app, world, sent_emails
+):
+    car_application = world.submit_domestic_request()
+    save_default_template(
+        world,
+        "submitted",
+        "{{ ''.__class__.__mro__ }}",
+        "{{ requester_name.__class__.__mro__[1].__subclasses__() }}",
+    )
+
+    send_job(app, world, car_application, "submitted", [world.supervisor.email])
+
+    assert len(sent_emails) == 1
+    email = sent_emails[0]
+    assert "class" not in email["subject"] and "class" not in email["body"]
+    assert email["subject"] == "ระบบจองรถออนไลน์: มีใบขอใช้รถรอการพิจารณาจากท่าน"
