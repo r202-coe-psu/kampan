@@ -1,3 +1,14 @@
+{# รายการเมนู: active เมื่อ endpoint ปัจจุบันอยู่ใน endpoints (ใส่ aria-current ให้ screen reader ด้วย) #}
+{% macro MenuItem(endpoints, icon, label, href, attrs='') %}
+{% set active = request.endpoint in endpoints %}
+<li>
+  <a class="{{ 'menu-active' if active else '' }}" {% if active %}aria-current="page"{% endif %} {{ attrs | safe }}
+     href="{{ href }}">
+    <i class="ph {{ icon }}"></i> {{ label }}
+    {{ caller() if caller else '' }}
+  </a>
+</li>
+{% endmacro %}
 <div class="drawer-side shadow">
   <label for="drawer-menu" aria-label="close sidebar" class="drawer-overlay h-full"></label>
   <ul class="menu w-[280px] min-h-screen bg-base-100 gap-3 ">
@@ -6,67 +17,31 @@
     </div>
     {% if organization %}
     <li class="menu-title">การจอง</li>
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.index' else '' }}"
-        href="{{ url_for('car_reservation.requests.index', organization_id=organization.id ) }}">
-        <i class="ph ph-list-bullets"></i> คำขอของฉัน
-      </a>
-    </li>
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.create' else '' }}"
-        data-open-new-request
-        href="{{ url_for('car_reservation.requests.create', organization_id=organization.id ) }}">
-        <i class="ph ph-hand-arrow-up"></i> ยื่นคำขอ
-      </a>
-    </li>
-    {% if is_driver %}
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint in ['car_reservation.tasks.index', 'car_reservation.tasks.close'] else '' }}"
-        href="{{ url_for('car_reservation.tasks.index', organization_id=organization.id ) }}">
-        <i class="ph ph-steering-wheel"></i> รายการงาน
-      </a>
-    </li>
-    {% endif %}
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.calendar.index' else '' }}"
-        href="{{ url_for('car_reservation.calendar.index', organization_id=organization.id ) }}">
-        <i class="ph ph-calendar-dots"></i> ปฏิทินการจองรถ
-      </a>
-    </li>
+    {{ MenuItem(['car_reservation.requests.index'], 'ph-list-bullets', 'คำขอของฉัน',
+                url_for('car_reservation.requests.index', organization_id=organization.id)) }}
+    {{ MenuItem(['car_reservation.requests.create'], 'ph-hand-arrow-up', 'ยื่นคำขอ',
+                url_for('car_reservation.requests.create', organization_id=organization.id), 'data-open-new-request') }}
+    {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
+                url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
 
     {% if is_approver or inbox_count %}
     <li class="menu-title">การอนุมัติ</li>
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.requests.inbox' else '' }}"
-        href="{{ url_for('car_reservation.requests.inbox', organization_id=organization.id ) }}">
-        <i class="ph ph-tray"></i> รายการรออนุมัติ
-        {% if inbox_count %}<span class="badge badge-error badge-sm" data-testid="inbox-count">{{ inbox_count }}</span>{% endif %}
-      </a>
-    </li>
+    {% call MenuItem(['car_reservation.requests.inbox'], 'ph-tray', 'รายการรออนุมัติ',
+                     url_for('car_reservation.requests.inbox', organization_id=organization.id)) %}
+      {% if inbox_count %}<span class="badge badge-error badge-sm ml-auto" data-testid="inbox-count">{{ inbox_count }}</span>{% endif %}
+    {% endcall %}
     {% endif %}
 
     <li class="menu-title">รถ</li>
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint == 'car_reservation.cars.directory' else '' }}"
-        href="{{ url_for('car_reservation.cars.directory', organization_id=organization.id ) }}">
-        <i class="ph ph-identification-card"></i> ข้อมูลรถและพนักงานขับรถ
-      </a>
-    </li>
+    {{ MenuItem(['car_reservation.cars.directory'], 'ph-identification-card', 'ข้อมูลรถและพนักงานขับรถ',
+                url_for('car_reservation.cars.directory', organization_id=organization.id)) }}
     {% if current_user.has_organization_roles("admin") %}
-    <li>
-      <a class="{{ 'menu-active' if request.endpoint in ['car_reservation.cars.index', 'car_reservation.cars.create_or_edit'] else '' }}"
-        href="{{ url_for('car_reservation.cars.index', organization_id=organization.id ) }}">
-        <i class="ph ph-car"></i> จัดการรถ
-      </a>
-    </li>
+    {{ MenuItem(['car_reservation.cars.index', 'car_reservation.cars.create_or_edit'], 'ph-car', 'จัดการรถ',
+                url_for('car_reservation.cars.index', organization_id=organization.id)) }}
     {% endif %}
 
     <li class="menu-title">ตั้งค่า</li>
-    <li>
-      <a href="{{ url_for('site.select_system', organization_id=organization.id) }}">
-        <i class="ph ph-swap"></i> เปลี่ยนระบบ
-      </a>
-    </li>
+    {{ MenuItem([], 'ph-swap', 'เปลี่ยนระบบ', url_for('site.select_system', organization_id=organization.id)) }}
     {% endif %}
 
     <div class="mt-auto"></div>

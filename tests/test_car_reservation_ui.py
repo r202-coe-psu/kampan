@@ -96,3 +96,16 @@ def test_sidebar_groups_the_menu_under_titles_and_hides_approvals_from_non_appro
         "รถ",
         "ตั้งค่า",
     ]
+
+
+def test_sidebar_marks_only_the_current_page_as_active(world):
+    index_href = f"{BASE}/requests/?organization_id={world.org.id}"
+
+    for path, expected in [
+        ("/requests/", index_href),
+        ("/calendar/", f"{BASE}/calendar/?organization_id={world.org.id}"),
+    ]:
+        doc = world.page(world.staff, path)
+        current = find(doc, "a", aria_current="page", within="//*[" + has_class("drawer-side") + "]")
+        assert [a.get("href") for a in current] == [expected]
+        assert "menu-active" in current[0].get("class")
