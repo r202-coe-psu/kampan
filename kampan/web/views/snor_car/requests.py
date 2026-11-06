@@ -317,6 +317,7 @@ def confirm_cancel(request_id):
         snor.confirm_cancel(snor_request, current_user._get_current_object())
     except snor.FlowError:
         abort(403)
+    utils.snor_car_email.notify(snor_request, "cancelled")
     flash("รับทราบการยกเลิกเรียบร้อยแล้ว", "success")
     return redirect(
         url_for(

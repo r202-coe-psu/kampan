@@ -1290,3 +1290,30 @@ def test_cancelling_after_assignment_notifies_the_dispatcher_to_acknowledge(
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "cancel_requested")
     assert recipients == [snor.dispatcher.email]
+
+
+def test_direct_cancel_notifies_the_requester_and_confirmed_cancel_adds_the_driver(
+    snor, mock_redis_queue
+):
+    before_car = snor.submit_domestic_request()
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, before_car), data={"reason": "เปลี่ยนแผน"}
+    )
+
+    jobs = snor_email_jobs(mock_redis_queue, "cancelled")
+    assert [(job[0], job[2]) for job in jobs] == [
+        (str(before_car.id), [snor.requester.email])
+    ]
+
+    after_car = request_with_car_assigned(snor)
+    snor.client_for(snor.requester).post(
+        cancel_url(snor, after_car), data={"reason": "งานเลื่อน"}
+    )
+    mock_redis_queue.reset_mock()
+    snor.client_for(snor.dispatcher).post(confirm_cancel_url(snor, after_car))
+
+    jobs = snor_email_jobs(mock_redis_queue)
+    assert len(jobs) == 1
+    request_id, event, recipients, _ = jobs[0]
+    assert (request_id, event) == (str(after_car.id), "cancelled")
+    assert sorted(recipients) == sorted([snor.requester.email, snor.driver.email])
