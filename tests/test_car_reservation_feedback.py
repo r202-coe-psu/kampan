@@ -21,6 +21,25 @@ SCORE_QUESTIONS = [
 ]
 
 
+SCORE_KEYS = [
+    "vehicle_cleanliness",
+    "vehicle_suitability",
+    "vehicle_readiness",
+    "vehicle_air_conditioning",
+    "driver_driving",
+    "driver_punctuality",
+    "driver_route_study",
+    "driver_service_mind",
+    "overall",
+]
+
+
+def all_scores(value=5, **overrides):
+    data = {key: str(value) for key in SCORE_KEYS}
+    data.update({key: str(score) for key, score in overrides.items()})
+    return data
+
+
 @pytest.fixture
 def world(app, create_org, create_user, assign_user_to_org, login_as, create_car):
     org = create_org("Feedback Org")
@@ -86,3 +105,25 @@ def test_requester_opens_the_form_of_a_completed_trip_with_header_filled_and_eve
         assert question in html
     assert "สภาพรถยนต์" in html and "พนักงานขับรถยนต์" in html
     assert "ข้อเสนอแนะเพิ่มเติม" in html
+
+
+def test_requester_submits_scores_and_comment_and_one_response_is_saved(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.requester).post(
+        world.url(reservation),
+        data={**all_scores(4, driver_punctuality=2, overall=5), "comment": "คนขับสุภาพ"},
+    )
+
+    assert response.status_code == 302
+    saved = models.CarReservationFeedback.objects(reservation=reservation)
+    assert saved.count() == 1
+    feedback = saved.first()
+    assert feedback.organization == world.org
+    assert feedback.creator == world.requester
+    assert feedback.car == world.car
+    assert feedback.driver == world.driver
+    assert feedback.score_of("driver_punctuality") == 2
+    assert feedback.score_of("overall") == 5
+    assert feedback.score_of("vehicle_cleanliness") == 4
+    assert feedback.comment == "คนขับสุภาพ"

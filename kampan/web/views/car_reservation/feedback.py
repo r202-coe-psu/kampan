@@ -1,6 +1,6 @@
 """แบบประเมินความพึงพอใจของระบบจองรถ: ผู้ขอประเมินหลังปิดงาน (spec ข้อ 5.6)"""
 
-from flask import Blueprint, abort, g, render_template
+from flask import Blueprint, abort, flash, g, redirect, render_template, url_for
 from flask_login import current_user
 
 from kampan import models, utils
@@ -23,15 +23,39 @@ def get_reservation_or_404(reservation_id):
     return reservation
 
 
-@module.route("/<reservation_id>")
+@module.route("/<reservation_id>", methods=["GET", "POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def form(reservation_id):
     reservation = get_reservation_or_404(reservation_id)
+    form = forms.car_reservation_feedback.FeedbackForm()
+    if form.validate_on_submit():
+        models.CarReservationFeedback(
+            organization=g.organization,
+            reservation=reservation,
+            creator=current_user._get_current_object(),
+            car=reservation.car,
+            driver=reservation.driver,
+            scores=[
+                models.car_reservation_feedback.FeedbackScore(
+                    key=key, score=form[key].data
+                )
+                for key in utils.car_reservation_feedback.SCORE_KEYS
+            ],
+            comment=form.comment.data or "",
+        ).save()
+        flash("ขอบคุณสำหรับการประเมิน", "success")
+        return redirect(
+            url_for(
+                "car_reservation.requests.detail",
+                request_id=reservation.id,
+                organization_id=g.organization.id,
+            )
+        )
     return render_template(
         "/car_reservation/feedback/form.html",
         organization=g.organization,
         reservation=reservation,
-        form=forms.car_reservation_feedback.FeedbackForm(),
+        form=form,
         question_groups=utils.car_reservation_feedback.QUESTION_GROUPS,
         score_choices=forms.car_reservation_feedback.SCORE_CHOICES,
     )
