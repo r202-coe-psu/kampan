@@ -558,3 +558,43 @@ def test_inbox_shows_request_at_supervisor_step_only_to_the_requesters_division_
     assert inbox_shows(snor, snor.supervisor, car_application)
     assert not inbox_shows(snor, snor.other_head, car_application)
     assert not inbox_shows(snor, snor.dispatcher, car_application)
+
+
+def test_after_supervisor_approves_inbox_moves_to_dispatcher_and_their_delegate(
+    snor, create_user, assign_user_to_org
+):
+    secretary = create_user("Secretary", "Assistant")
+    assign_user_to_org(secretary, snor.org, roles=["staff"])
+    position = models.CarFlowPosition.objects(
+        organization=snor.org, position_key="dispatcher"
+    ).first()
+    position.delegates = [secretary]
+    position.save()
+    car_application = snor.submit_domestic_request()
+    snor.client_for(snor.supervisor).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+
+    assert inbox_shows(snor, snor.dispatcher, car_application)
+    assert inbox_shows(snor, secretary, car_application)
+    assert not inbox_shows(snor, snor.supervisor, car_application)
+
+
+def test_denied_and_active_requests_appear_in_nobodys_inbox(snor):
+    denied = snor.submit_domestic_request()
+    snor.client_for(snor.supervisor).post(
+        f"{BASE}/{denied.id}/deny?organization_id={snor.org.id}",
+        data={"comment": "ไม่เหมาะสม"},
+    )
+    active = snor.submit_domestic_request()
+    for key in ["supervisor", "dispatcher", "vehicle_unit_head", "strategy_head"]:
+        snor.client_for(snor.holders[key]).post(
+            approve_url(snor, active), data={"comment": ""}
+        )
+    active.reload()
+    assert active.status == "active"
+
+    everyone = [snor.requester, snor.stranger, *snor.holders.values()]
+    for user in everyone:
+        assert not inbox_shows(snor, user, denied)
+        assert not inbox_shows(snor, user, active)
