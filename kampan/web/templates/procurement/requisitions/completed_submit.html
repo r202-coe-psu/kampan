@@ -27,10 +27,7 @@
       <p class="text-sm text-gray-500">เลขที่คำขอ: <span class="font-semibold text-gray-700">{{
           item.requisition.requisition_code }}</span></p>
     </div>
-    <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-      class="btn btn-ghost btn-sm ml-auto gap-1">
-      <i class="ph ph-arrow-left"></i> กลับ
-    </a>
+    {{ renderer.render_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id), extra_classes="ml-auto") }}
   </div>
 
   <form id="completed-page-form" method="post"

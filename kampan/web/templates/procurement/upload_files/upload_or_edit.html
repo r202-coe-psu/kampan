@@ -18,12 +18,7 @@
                 <p class="text-black/80">อัปโหลดและจัดการไฟล์ Excel สำหรับระบบจัดซื้อจัดจ้าง</p>
             </div>
             <div class="flex gap-2">
-                <a class="btn btn-secondary btn-md"
-                    href="{{ url_for('admin.upload_files.index', organization_id=organization.id, page=request.args.get('page')) }}"
-                    data-tooltip="ย้อนกลับ">
-                    <i class="ph ph-arrow-left text-lg"></i>
-                    ย้อนกลับ
-                </a>
+                {{ renderer.render_back_button(url_for('admin.upload_files.index', organization_id=organization.id, page=request.args.get('page'))) }}
             </div>
         </div>
     </div>

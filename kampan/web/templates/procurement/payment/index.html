@@ -1,5 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% from '/base/html-renderer.html' import date_field %}
+{% from '/base/components/buttons.html' import RenderBackButton %}
 
 {% block title %}รายละเอียด MA{% endblock %}
 {% block dashboard_title %}รายละเอียด MA{% endblock %}
@@ -55,9 +56,7 @@
 {% set paid_count, installment_count = procurement.get_installment_progress() %}
 <div class="container mx-auto px-3 md:px-4 lg:px-0 py-4 md:py-6 space-y-6">
   <div class="flex flex-wrap items-center justify-between gap-2">
-    <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}" class="btn btn-ghost gap-2 pl-2">
-      <i class="ph ph-arrow-left text-lg"></i> ย้อนกลับ
-    </a>
+    {{ RenderBackButton(url_for('procurement.products.index', organization_id=organization.id)) }}
     {% if can_edit %}
       <div class="flex flex-wrap gap-2">
         {% if not procurement.is_renewed() %}

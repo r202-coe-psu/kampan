@@ -3,6 +3,9 @@
 {% block title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block dashboard_title %}{{ 'แก้ไข' if form._obj else 'สร้าง' }}รายการขอจัดซื้อ{% endblock %}
 {% block content %}
+<div class="mb-4">
+  {{ renderer.render_back_button(url_for('procurement.requisitions.index', organization_id=organization.id)) }}
+</div>
 <div class="w-full bg-white shadow-lg rounded-xl p-6 md:p-8">
   <div class="flex items-center mb-6">
     <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">

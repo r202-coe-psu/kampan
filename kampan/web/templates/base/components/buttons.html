@@ -1,0 +1,37 @@
+{# Component ปุ่มย้อนกลับมาตรฐาน (Standard Back Button Component)
+
+   import:
+     {% from '/base/components/buttons.html' import RenderBackButton %}
+
+   การใช้งาน:
+     1. ระบุ URL เป้าหมาย:
+        {{ RenderBackButton(url_for('procurement.products.index', organization_id=organization.id)) }}
+
+     2. ไม่ระบุ URL (ย้อนกลับตาม history ของเบราว์เซอร์อัตโนมัติ):
+        {{ RenderBackButton() }}
+
+     3. กำหนด label หรือ class เพิ่มเติม:
+        {{ RenderBackButton(url, label="ย้อนกลับ", extra_classes="mb-4") }}
+#}
+{% macro RenderBackButton(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{% if url %}
+<a href="{{ url }}"
+   class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+   aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</a>
+{% else %}
+<button type="button"
+        onclick="{{ onclick or 'window.history.back()' }}"
+        class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+        aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</button>
+{% endif %}
+{% endmacro %}
+
+{% macro render_back_button(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{{ RenderBackButton(url=url, label=label, extra_classes=extra_classes, onclick=onclick) }}
+{% endmacro %}

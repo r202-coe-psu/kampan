@@ -10,11 +10,7 @@
 {% block content %}
   <!-- Back Button -->
   <div class="mb-6">
-    <a href="{{ url_for('admin.mas.index', organization_id=organization.id) }}"
-      class="inline-flex items-center text-blue-700 hover:text-blue-800">
-      <i class="ph ph-arrow-left mr-2"></i>
-      กลับไปหน้าระบบ MAS
-    </a>
+    {{ renderer.render_back_button(url_for('admin.mas.index', organization_id=organization.id), label="กลับไปหน้าระบบ MAS") }}
   </div>
 
   <!-- MAS Info Card -->

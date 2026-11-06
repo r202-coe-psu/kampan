@@ -1,5 +1,6 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row %}
+{% from '/base/components/buttons.html' import RenderBackButton %}
 
 {% set page_title = "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
 {% block title %}{{ page_title }}{% endblock %}
@@ -7,6 +8,10 @@
 
 {% block content %}
 {% set is_edit = procurement and procurement.pk %}
+{% set back_url = url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
+<div class="mb-4">
+  {{ RenderBackButton(back_url) }}
+</div>
 <div class="w-full bg-base-100 shadow-lg rounded-xl p-4 md:p-8">
   <div class="flex items-center mb-6">
     <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">

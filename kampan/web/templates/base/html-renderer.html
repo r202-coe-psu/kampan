@@ -1200,3 +1200,27 @@ file_input -->
             {% endif %}
           </fieldset>
         {% endmacro %}
+
+{% macro render_back_button(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{% if url %}
+<a href="{{ url }}"
+   class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+   aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</a>
+{% else %}
+<button type="button"
+        onclick="{{ onclick or 'window.history.back()' }}"
+        class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+        aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</button>
+{% endif %}
+{% endmacro %}
+
+{% macro RenderBackButton(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{{ render_back_button(url=url, label=label, extra_classes=extra_classes, onclick=onclick) }}
+{% endmacro %}
+
