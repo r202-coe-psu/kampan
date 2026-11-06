@@ -219,3 +219,38 @@ def test_each_request_type_walks_its_own_route_to_active(
     assert car_application.status == "active"
     page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
     assert 'data-status="active"' in page.get_data(as_text=True)
+
+
+def test_delegate_of_a_position_can_approve_for_it_and_audit_log_names_the_delegate(
+    snor, create_user, assign_user_to_org
+):
+    secretary = create_user("Secretary", "Assistant")
+    assign_user_to_org(secretary, snor.org, roles=["staff"])
+    position = models.CarFlowPosition.objects(
+        organization=snor.org, position_key="president"
+    ).first()
+    position.delegates = [secretary]
+    position.save()
+
+    car_application = snor.submit_request("abroad")
+    for key in [
+        "supervisor",
+        "dispatcher",
+        "vehicle_unit_head",
+        "strategy_head",
+        "physical_director",
+        "vice_president_hatyai",
+    ]:
+        snor.client_for(snor.holders[key]).post(
+            approve_url(snor, car_application), data={"comment": ""}
+        )
+
+    response = snor.client_for(secretary).post(
+        approve_url(snor, car_application), data={"comment": ""}
+    )
+    assert response.status_code == 302
+
+    car_application.reload()
+    assert car_application.status == "active"
+    page = snor.client_for(snor.requester).get(detail_url(snor, car_application))
+    assert "Secretary Assistant" in page.get_data(as_text=True)

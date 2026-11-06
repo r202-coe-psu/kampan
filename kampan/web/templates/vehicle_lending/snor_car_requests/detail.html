@@ -28,6 +28,19 @@
     <div><dt class="font-semibold">จำนวนผู้โดยสาร</dt><dd>{{ car_application.passenger_number }}</dd></div>
   </dl>
 
+  <h3 class="mt-6 font-semibold">ประวัติการดำเนินการ</h3>
+  <ul class="mt-2 space-y-1" data-role="audit-log">
+    {% for log in car_application.audit_logs %}
+    <li>
+      <span class="text-sm text-base-content/60">{{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</span>
+      <span class="font-medium">{{ log.get_action_display() }}</span>
+      {% if log.step_label %}<span>({{ log.step_label }})</span>{% endif %}
+      โดย {{ log.actor.get_name() if log.actor else '-' }}
+      {% if log.comment %}<span class="text-base-content/70">: {{ log.comment }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+
   {% if can_act %}
   <form method="post"
         action="{{ url_for('vehicle_lending.snor_car_requests.approve', car_application_id=car_application.id, organization_id=organization.id) }}"
