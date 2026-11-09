@@ -29,8 +29,18 @@ function openDropdownSelect(container) {
   menu.classList.toggle("top-full", !flip);
   menu.classList.toggle("mt-1", !flip);
   const options = dropdownOptions(menu);
-  const selected = options.find(function (option) { return option.getAttribute("aria-selected") === "true"; });
-  (selected || options[0]).focus();
+  const searchInput = menu.querySelector(".dd-search-input");
+  if (searchInput) {
+    searchInput.value = "";
+    dropdownOptions(menu).forEach(function (opt) {
+      const li = opt.closest("li");
+      if (li) li.classList.remove("hidden");
+    });
+    setTimeout(function () { searchInput.focus(); }, 30);
+  } else {
+    const selected = options.find(function (option) { return option.getAttribute("aria-selected") === "true"; });
+    if (selected || options[0]) (selected || options[0]).focus();
+  }
 }
 
 function setDropdownSelectValue(container, value, notify) {
@@ -58,6 +68,30 @@ function initDropdownSelectsIn(root) {
     container.dataset.ddInit = "1";
     const button = container.querySelector("[data-dd-button]");
     const menu = container.querySelector("[data-dd-menu]");
+
+    const searchInput = menu.querySelector(".dd-search-input");
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const query = searchInput.value.trim().toLowerCase();
+        dropdownOptions(menu).forEach(function (option) {
+          const match = !query || option.textContent.toLowerCase().includes(query);
+          const li = option.closest("li");
+          if (li) li.classList.toggle("hidden", !match);
+        });
+      });
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          closeDropdownSelect(container, true);
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const visible = dropdownOptions(menu).filter(function (opt) {
+            const li = opt.closest("li");
+            return !li || !li.classList.contains("hidden");
+          });
+          if (visible.length) visible[0].focus();
+        }
+      });
+    }
 
     button.addEventListener("click", function () {
       if (menu.classList.contains("hidden")) openDropdownSelect(container);

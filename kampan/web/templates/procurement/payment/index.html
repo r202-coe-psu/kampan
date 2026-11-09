@@ -60,15 +60,9 @@
     {% if can_edit %}
       <div class="flex flex-wrap gap-2">
         {% if not procurement.is_renewed() %}
-          {% if items|length > 1 %}
-            <button type="button" onclick="document.getElementById('modal_select_renew_item').showModal()" class="btn btn-success btn-sm">
-              <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
-            </button>
-          {% else %}
-            <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-success btn-sm">
-              <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
-            </a>
-          {% endif %}
+          <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-success btn-sm">
+            <i class="ph ph-arrows-clockwise"></i> ต่ออายุ
+          </a>
         {% endif %}
         <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}" class="btn btn-primary btn-sm">
           <i class="ph ph-pencil-simple"></i> แก้ไข MA
@@ -197,86 +191,20 @@
     </section>
   {% endif %}
 
-  <!-- รายการย่อย -->
-  <section class="card bg-base-100 border border-base-300 shadow-sm">
-    <div class="card-body p-4 md:p-6">
-      <h3 class="font-bold text-lg flex items-center gap-2"><i class="ph ph-stack text-primary"></i>รายการย่อย ({{ items|length }})</h3>
-      {% if my_division_id %}
-        <p class="text-xs text-base-content/60">แถวที่มีพื้นสีคือรายการย่อยที่ฝ่ายของคุณรับผิดชอบ</p>
-      {% endif %}
-      <div class="overflow-x-auto">
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>ชื่อรายการ</th>
-              <th>ประเภท / ผังบัญชี</th>
-              <th>ช่วงวันที่</th>
-              <th class="text-right">ยอดเงิน (บาท)</th>
-              <th>ผู้รับผิดชอบ / ฝ่าย</th>
-              <th>สถานะจ่าย</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in items %}
-              {% set my_division_item = my_division_id and my_division_id in item.responsible_divisions | map(attribute="id") | list %}
-              <tr class="align-top{{ ' bg-primary/5' if my_division_item else '' }}">
-                <td>{{ loop.index }}</td>
-                <td class="min-w-48">
-                  <div class="flex items-center gap-1.5">
-                    <a href="#item-{{ item.id }}" class="link link-hover font-semibold">{{ item.name }}</a>
-                    {% if can_edit %}
-                      <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
-                         class="btn btn-ghost btn-xs text-primary btn-square" title="แก้ไขรายการย่อยนี้" aria-label="แก้ไขรายการย่อย {{ item.name }}">
-                        <i class="ph ph-pencil-simple"></i>
-                      </a>
-                    {% endif %}
-                    {% if can_edit and not procurement.is_renewed() %}
-                      <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
-                         class="btn btn-ghost btn-xs text-success btn-square" title="ต่ออายุรายการย่อยนี้" aria-label="ต่ออายุรายการย่อย {{ item.name }}">
-                        <i class="ph ph-arrows-clockwise text-sm"></i>
-                      </a>
-                    {% endif %}
-                  </div>
-                  <div class="text-xs text-base-content/60">{{ item.get_reminder_kind_label() }}{% if item.requires_activation %} · ต้อง activate{% endif %}</div>
-                </td>
-                <td class="min-w-40">
-                  <div>{{ item.get_category_label() }}</div>
-                  <div class="text-xs text-base-content/60">{{ item.account_code or "-" }}</div>
-                </td>
-                <td class="whitespace-nowrap">{{ thai_date(item.start_date) }} – {{ thai_date(item.end_date) }}</td>
-                <td class="text-right whitespace-nowrap">{{ item.amount | format_number }}</td>
-                <td class="min-w-40">
-                  {% for member in item.responsible_by %}<div>{{ member.display_user_fullname() }}</div>{% else %}-{% endfor %}
-                  <div class="text-xs text-base-content/60">
-                    {% for division in item.responsible_divisions %}{{ division.name }}{% if not loop.last %}, {% endif %}{% endfor %}
-                  </div>
-                </td>
-                <td>{{ payment_badge(item.get_payment_status(today)) }}</td>
-              </tr>
-            {% else %}
-              <tr><td colspan="7" class="text-center text-base-content/50 py-6">ไม่มีรายการย่อย</td></tr>
-            {% endfor %}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th colspan="4" class="text-right">รวม</th>
-              <th class="text-right">{{ items | map(attribute="amount") | sum | format_number }}</th>
-              <th colspan="2"></th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- รายละเอียดและงวดของแต่ละรายการย่อย -->
+  <!-- รายละเอียดและงวดการจ่ายเงิน -->
   {% for item in items %}
     <section id="item-{{ item.id }}" class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body p-4 md:p-6 gap-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="font-bold text-lg">รายการย่อยที่ {{ loop.index }}: {{ item.name }}</h3>
+            <h3 class="font-bold text-lg flex items-center gap-2">
+              <i class="ph ph-file-text text-primary"></i>
+              {% if items|length == 1 %}
+                ข้อมูลรายละเอียดและงวดการจ่ายเงิน
+              {% else %}
+                รายการที่ {{ loop.index }}: {{ item.name }}
+              {% endif %}
+            </h3>
             {% if can_edit %}
               <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
                  class="btn btn-outline btn-primary btn-xs gap-1">
@@ -292,10 +220,23 @@
           </div>
           {{ payment_badge(item.get_payment_status(today)) }}
         </div>
-        <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
-          <div><dt class="text-base-content/60">ผู้ชนะ</dt><dd class="font-medium">{{ item.winner or "-" }}</dd></div>
-          <div><dt class="text-base-content/60">ราคาต่อหน่วย</dt><dd class="font-medium">{{ (item.unit_price | format_number) ~ " บาท" if item.unit_price is not none else "-" }}</dd></div>
-          <div class="sm:col-span-2"><dt class="text-base-content/60">หมายเหตุ</dt><dd class="font-medium whitespace-pre-line break-words">{{ item.note or "-" }}</dd></div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 text-sm bg-base-200/40 p-4 rounded-box">
+          <div><dt class="text-base-content/60 text-xs">ประเภท</dt><dd class="font-semibold text-base-content">{{ item.get_category_label() }}</dd></div>
+          <div><dt class="text-base-content/60 text-xs">ผังบัญชี</dt><dd class="font-semibold text-base-content">{{ item.account_code or "-" }}</dd></div>
+          <div><dt class="text-base-content/60 text-xs">ช่วงสัญญา</dt><dd class="font-medium text-base-content">{{ thai_date(item.start_date) }} – {{ thai_date(item.end_date) }}</dd></div>
+          <div><dt class="text-base-content/60 text-xs">ยอดเงินรวมของรายการ</dt><dd class="font-bold text-primary">{{ item.amount | format_number }} บาท</dd></div>
+          <div><dt class="text-base-content/60 text-xs">จำนวน</dt><dd class="font-medium text-base-content">{{ item.quantity or 1 }} {{ item.unit or "" }}</dd></div>
+          <div><dt class="text-base-content/60 text-xs">ราคาต่อหน่วย</dt><dd class="font-medium text-base-content">{{ (item.unit_price | format_number) ~ " บาท" if item.unit_price is not none else "-" }}</dd></div>
+          <div><dt class="text-base-content/60 text-xs">ผู้ชนะ</dt><dd class="font-medium text-base-content">{{ item.winner or "-" }}</dd></div>
+          <div>
+            <dt class="text-base-content/60 text-xs">ผู้รับผิดชอบ</dt>
+            <dd class="font-medium text-base-content">
+              {% for member in item.responsible_by %}{{ member.display_user_fullname() }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}
+            </dd>
+          </div>
+          {% if item.note %}
+            <div class="sm:col-span-2 lg:col-span-4 border-t border-base-200 pt-2"><dt class="text-base-content/60 text-xs">หมายเหตุ</dt><dd class="font-medium whitespace-pre-line break-words text-base-content">{{ item.note }}</dd></div>
+          {% endif %}
         </dl>
 
         {% if item.sub_items %}
@@ -568,39 +509,6 @@
       {% endfor %}
     {% endif %}
   {% endfor %}
-
-  {% if can_edit and not procurement.is_renewed() and items|length > 1 %}
-    <dialog id="modal_select_renew_item" class="modal">
-      <div class="modal-box max-w-lg">
-        <h3 class="font-bold text-lg mb-3 flex items-center gap-2 text-success">
-          <i class="ph ph-arrows-clockwise text-xl"></i> เลือกรายการย่อยที่ต้องการต่ออายุ
-        </h3>
-        <p class="text-sm text-base-content/70 mb-4">
-          สัญญา MA นี้มีหลายรายการย่อย กรุณาเลือกรายการย่อยที่ต้องการนำเข้าฟอร์มเพื่อต่ออายุ (ระบบจะนำเข้าฟอร์มครั้งละ 1 รายการย่อย)
-        </p>
-        <div class="divide-y divide-base-200 border border-base-200 rounded-lg overflow-hidden">
-          {% for it in items %}
-            <div class="p-3 flex items-center justify-between gap-3 hover:bg-base-200/50 transition-colors">
-              <div>
-                <div class="font-semibold text-base-content">{{ it.name }}</div>
-                <div class="text-xs text-base-content/60">ยอดเงิน: {{ it.amount | format_number }} บาท · สิ้นสุด: {{ thai_date(it.end_date) }}</div>
-              </div>
-              <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=it.id) }}"
-                 class="btn btn-success btn-xs text-white gap-1 shrink-0">
-                <i class="ph ph-arrows-clockwise"></i> ต่ออายุรายการนี้
-              </a>
-            </div>
-          {% endfor %}
-        </div>
-        <div class="modal-action">
-          <button type="button" onclick="document.getElementById('modal_select_renew_item').close()" class="btn btn-ghost">ปิด</button>
-        </div>
-      </div>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
-  {% endif %}
 </div>
 {% endblock %}
 

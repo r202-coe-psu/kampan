@@ -258,16 +258,23 @@ file_input -->
             class="select {{ size }} w-full justify-between text-left{{ ' select-error' if invalid else '' }}"{% if disabled %} disabled{% endif %}>
       <span data-dd-label class="truncate{{ '' if ns.label else ' text-base-content/50' }}">{{ ns.label or placeholder }}</span>
     </button>
-    <ul id="dd-menu-{{ id }}" data-dd-menu role="listbox" tabindex="-1"
-        class="menu hidden absolute left-0 right-0 top-full mt-1 z-50 flex-nowrap max-h-64 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-lg p-1">
-      {% for option_value, option_label in choices %}
-        {% set is_selected = option_value | string == value %}
-        <li>
-          <button type="button" role="option" data-value="{{ option_value }}" aria-selected="{{ 'true' if is_selected else 'false' }}"
-                  class="{{ 'menu-active' if is_selected else '' }}">{{ option_label }}</button>
-        </li>
-      {% endfor %}
-    </ul>
+    <div id="dd-menu-{{ id }}" data-dd-menu role="listbox" tabindex="-1"
+        class="hidden absolute left-0 right-0 top-full mt-1 z-50 flex-col max-h-72 bg-base-100 rounded-box border border-base-300 shadow-lg p-1">
+      {% if choices|length > 6 %}
+        <div class="p-1 border-b border-base-200 mb-1">
+          <input type="text" class="input input-xs w-full dd-search-input" placeholder="ค้นหาตัวเลือก..." />
+        </div>
+      {% endif %}
+      <ul class="menu flex-nowrap max-h-56 overflow-y-auto p-0">
+        {% for option_value, option_label in choices %}
+          {% set is_selected = option_value | string == value %}
+          <li>
+            <button type="button" role="option" data-value="{{ option_value }}" aria-selected="{{ 'true' if is_selected else 'false' }}"
+                    class="{{ 'menu-active' if is_selected else '' }}">{{ option_label }}</button>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 {% endmacro %}
 
