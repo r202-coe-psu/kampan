@@ -1,5 +1,5 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row %}
+{% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row, date_picker %}
 {% from '/base/components/buttons.html' import RenderBackButton %}
 
 {% set page_title = "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
@@ -19,9 +19,9 @@
     </div>
     <div>
       <h1 class="text-xl md:text-2xl font-bold text-base-content">
-        {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่ม MA ใหม่") }}
+        {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่มรายการ MA") }}
       </h1>
-      <p class="text-base-content/60 text-sm">กรอกหัวสัญญา แล้วเพิ่มรายการย่อย และเลือกว่าแต่ละรายการจ่ายครั้งเดียวหรือแบ่งจ่ายเป็นงวด</p>
+      <p class="text-base-content/60 text-sm">กรอกข้อมูลโครงการและรายการย่อย พร้อมระบุรายละเอียดและการจ่ายเงิน</p>
     </div>
   </div>
 
@@ -32,9 +32,9 @@
         <p>
           ต่ออายุจากรายการ
           <a class="link font-semibold" href="{{ url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) }}">{{ renew_from.name }}</a>
-          (เลขที่ ม.อ.เบิกจ่าย {{ renew_from.psu_disbursement_number or "-" }})
+          (เลขที่ มอ เบิกจ่าย {{ renew_from.psu_disbursement_number or "-" }})
         </p>
-        <p>ข้อมูลหัวสัญญาและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ ม.อ.เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และเลือกการจ่ายเงินใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น "ต่ออายุแล้ว"</p>
+        <p>ข้อมูลโครงการและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ มอ เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และเลือกการจ่ายเงินใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น "ต่ออายุแล้ว"</p>
       </div>
     </div>
   {% endif %}
@@ -52,11 +52,14 @@
     {% endif %}
 
     <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
-      <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
-        <i class="ph ph-file-text text-primary"></i> หัวสัญญา
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
         {{ input_field(form.psu_disbursement_number, required=True) }}
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.disbursement_date.label.text }}</legend>
+          {{ date_picker(form.disbursement_date) }}
+        </fieldset>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
         {{ input_field(form.name, required=True) }}
         {{ input_field(form.company, required=True) }}
         <fieldset class="fieldset w-full">
@@ -180,9 +183,93 @@
       itemsContainer.querySelectorAll('.ma-item').forEach(function (card, index) {
         card.querySelector('.item-number').textContent = index + 1;
         card.querySelectorAll('.installment-row').forEach(function (row, rowIndex) {
-          row.querySelector('.installment-number').textContent = rowIndex + 1;
+          row.querySelector('.installment-number').textContent = 'งวดที่ ' + (rowIndex + 1);
         });
+        renumberSubItems(card);
+        updateItemSummary(card);
       });
+    }
+
+    function renumberSubItems(card) {
+      card.querySelectorAll('.sub-item-row').forEach(function (row, rowIndex) {
+        const num = row.querySelector('.sub-item-number');
+        if (num) num.textContent = rowIndex + 1;
+      });
+    }
+
+    const CAT_LABELS = {
+      'ma': 'การบำรุงรักษา (MA)',
+      'product': 'ครุภัณฑ์',
+      'service': 'จ้างเหมาบริการ',
+      'rental': 'เช่า',
+      'software': 'ซอฟต์แวร์',
+      'material': 'วัสดุ',
+      'intangible': 'สินทรัพย์ไม่มีตัวตน'
+    };
+
+    function updateItemSummary(card) {
+      const nameInput = card.querySelector('input[name$="-name"]');
+      const catInput = card.querySelector('input[name$="-category"]');
+      const amountInput = card.querySelector('.item-amount');
+      const badge = card.querySelector('.item-summary-badge');
+      if (!badge) return;
+
+      const name = (nameInput ? nameInput.value : '').trim();
+      const catVal = catInput ? catInput.value : '';
+      const catText = CAT_LABELS[catVal] || '';
+      const amountSatang = amountInput ? parseSatang(amountInput.value) : null;
+      const amountText = amountSatang !== null ? formatSatang(amountSatang) + ' บาท' : '';
+
+      const parts = [];
+      if (name) parts.push(name);
+      if (catText) parts.push(catText);
+      if (amountText) parts.push(amountText);
+
+      badge.textContent = parts.length > 0 ? '• ' + parts.join(' • ') : '';
+    }
+
+    function toggleItemCollapse(card) {
+      const body = card.querySelector('.item-body');
+      if (!body) return;
+      const isCollapsed = body.classList.contains('hidden');
+      setItemCollapsed(card, !isCollapsed);
+    }
+
+    function setItemCollapsed(card, collapse) {
+      const body = card.querySelector('.item-body');
+      const icon = card.querySelector('.collapse-icon');
+      const label = card.querySelector('.collapse-label');
+      if (!body) return;
+
+      if (collapse) {
+        body.classList.add('hidden');
+        if (icon) { icon.classList.remove('ph-caret-up'); icon.classList.add('ph-caret-down'); }
+        if (label) label.textContent = 'ขยายรายการ';
+      } else {
+        body.classList.remove('hidden');
+        if (icon) { icon.classList.remove('ph-caret-down'); icon.classList.add('ph-caret-up'); }
+        if (label) label.textContent = 'ย่อรายการ';
+      }
+      updateItemSummary(card);
+    }
+
+    function calculateItemAmount(card) {
+      const qtyInput = card.querySelector('.item-quantity');
+      const unitPriceInput = card.querySelector('.item-unit-price');
+      const amountInput = card.querySelector('.item-amount');
+      if (!qtyInput || !unitPriceInput || !amountInput) return;
+
+      const qty = parseInt(qtyInput.value, 10);
+      const unitPriceSatang = parseSatang(unitPriceInput.value);
+
+      if (!isNaN(qty) && qty >= 1 && unitPriceSatang !== null && unitPriceSatang >= 0) {
+        const totalSatang = qty * unitPriceSatang;
+        const baht = Math.floor(totalSatang / 100).toString();
+        const cents = String(totalSatang % 100).padStart(2, '0');
+        amountInput.value = baht + '.' + cents;
+        updateSum();
+        updateItemSummary(card);
+      }
     }
 
     function showError(element, message) {
@@ -197,11 +284,13 @@
       initDatePickersIn(card);
       initDropdownSelectsIn(card);
       syncInstallmentMode(card);
-      syncSubItemToggles(card);
+      syncAssetCodeSection(card);
       card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
       showError(document.getElementById('items_error'), '');
       renumber();
       updateSum();
+      setItemCollapsed(card, false);
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function addInstallment(card) {
@@ -224,7 +313,7 @@
       }
       const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
       rows.insertAdjacentHTML('beforeend', html);
-      syncSubItemToggles(card);
+      renumberSubItems(card);
       showError(error, '');
       rows.lastElementChild.querySelector('input').focus();
     }
@@ -247,25 +336,16 @@
       renumber();
     }
 
-    // เปิด/ปิด การระบุ S/N และ รหัสครุภัณฑ์ ในแถวย่อย
-    function syncSubItemToggles(card) {
-      const snToggle = card.querySelector('.sub-item-toggle-sn');
-      const assetToggle = card.querySelector('.sub-item-toggle-asset');
-      const showSn = snToggle ? snToggle.checked : false;
-      const showAsset = assetToggle ? assetToggle.checked : false;
-
-      card.querySelectorAll('[data-sub-item-col="sn"]').forEach(function (col) {
-        col.classList.toggle('hidden', !showSn);
-        col.querySelectorAll('input').forEach(function (input) {
-          input.disabled = !showSn;
-        });
-      });
-
-      card.querySelectorAll('[data-sub-item-col="asset"]').forEach(function (col) {
-        col.classList.toggle('hidden', !showAsset);
-        col.querySelectorAll('input').forEach(function (input) {
-          input.disabled = !showAsset;
-        });
+    // แสดงหัวข้อ "รหัสครุภัณฑ์" เมื่อเลือกประเภท ครุภัณฑ์ (product) หรือ เช่า (rental)
+    function syncAssetCodeSection(card) {
+      const catInput = card.querySelector('input[name$="-category"]');
+      const cat = catInput ? catInput.value : '';
+      const section = card.querySelector('.asset-code-section');
+      if (!section) return;
+      const isAssetType = (cat === 'product' || cat === 'rental');
+      section.classList.toggle('hidden', !isAssetType);
+      section.querySelectorAll('input').forEach(function (input) {
+        input.disabled = !isAssetType;
       });
     }
 
@@ -335,10 +415,25 @@
     }
 
     form.addEventListener('click', function (event) {
+      // ตรวจสอบการกดแถบหัวการ์ดเพื่อย่อ/ขยายรายการ
+      const header = event.target.closest('[data-action="toggle-collapse-item"]');
+      if (header && !event.target.closest('button')) {
+        toggleItemCollapse(header.closest('.ma-item'));
+        return;
+      }
+
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const card = button.closest('.ma-item');
       switch (button.dataset.action) {
+        case 'toggle-collapse-item':
+        case 'toggle-collapse-btn':
+          toggleItemCollapse(card);
+          break;
+        case 'collapse-item-btn':
+          setItemCollapsed(card, true);
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          break;
         case 'add-item':
           addItem();
           break;
@@ -374,6 +469,7 @@
           } else {
             row.remove();
           }
+          renumberSubItems(card);
           showError(card.querySelector('.sub-item-error'), '');
           break;
         }
@@ -419,9 +515,13 @@
     });
 
     form.addEventListener('change', function (event) {
-      if (event.target.classList.contains('installment-toggle')) syncInstallmentMode(event.target.closest('.ma-item'));
-      if (event.target.classList.contains('sub-item-toggle-sn') || event.target.classList.contains('sub-item-toggle-asset')) {
-        syncSubItemToggles(event.target.closest('.ma-item'));
+      const card = event.target.closest('.ma-item');
+      if (event.target.classList.contains('installment-toggle') && card) {
+        syncInstallmentMode(card);
+      }
+      if (event.target.name && event.target.name.endsWith('-category') && card) {
+        syncAssetCodeSection(card);
+        updateItemSummary(card);
       }
       const picker = event.target.closest('[data-member-picker]');
       if (picker && event.target.matches('.member-list input[type="checkbox"]')) {
@@ -430,8 +530,16 @@
     });
 
     form.addEventListener('input', function (event) {
+      const card = event.target.closest('.ma-item');
+      if (event.target.classList.contains('item-quantity') || event.target.classList.contains('item-unit-price')) {
+        if (card) calculateItemAmount(card);
+      }
       if (event.target.id === 'total_amount' || event.target.classList.contains('item-amount')) {
         updateSum();
+        if (card) updateItemSummary(card);
+      }
+      if (event.target.name && event.target.name.endsWith('-name') && card) {
+        updateItemSummary(card);
       }
       if (event.target.classList.contains('member-filter')) {
         const keyword = event.target.value.toLowerCase();
@@ -445,7 +553,9 @@
     initDropdownSelectsIn(form);
     itemsContainer.querySelectorAll('.ma-item').forEach(function (card) {
       syncInstallmentMode(card);
-      syncSubItemToggles(card);
+      syncAssetCodeSection(card);
+      renumberSubItems(card);
+      updateItemSummary(card);
       card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
     });
     renumber();

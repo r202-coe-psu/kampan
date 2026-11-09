@@ -90,13 +90,14 @@ def _filled(field_list) -> list[str]:
 
 
 class InstallmentForm(Form):
-    """งวด: กรอกแค่วันครบกำหนด (การจ่ายบันทึกด้วยปุ่ม "จ่ายแล้ว" ที่หน้ารายละเอียด)"""
+    """งวด: วันครบกำหนด และจำนวนเงินของงวด"""
 
     installment_id = fields.HiddenField()
     due_date = DateInputField(
-        "วันครบกำหนด",
+        "วันที่",
         validators=[validators.InputRequired(message="กรุณาระบุวันครบกำหนด")],
     )
+    amount = money_field("จำนวนเงิน (บาท)", required=False)
 
 
 class ItemDetailForm(Form):
@@ -119,10 +120,18 @@ class ItemDetailForm(Form):
 class ProcurementItemForm(Form):
     item_id = fields.HiddenField()
     name = fields.StringField(
-        "ชื่อรายการย่อย",
+        "ชื่อรายการ",
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
-    category = fields.SelectField("ประเภท", choices=models.ITEM_CATEGORY_CHOICES)
+    category = fields.SelectField("ประเภท", choices=models.ITEM_CATEGORY_CHOICES, default="ma")
+    quantity = fields.IntegerField(
+        "จำนวน",
+        default=1,
+        validators=[validators.Optional(), validators.NumberRange(min=1, message="จำนวนต้องไม่น้อยกว่า 1")],
+    )
+    unit = fields.StringField("หน่วยนับ", validators=[validators.Optional(), validators.Length(max=50)])
+    unit_price = money_field("จำนวนเงินต่อหน่วย (บาท)", required=False)
+    amount = money_field("จำนวนเงินรวม (บาท)")
     account_code = fields.SelectField(
         "ผังบัญชี",
         choices=[("", "- ไม่ระบุ -")] + models.ACCOUNT_CODE_CHOICES,
@@ -136,13 +145,11 @@ class ProcurementItemForm(Form):
         "วันที่สิ้นสุด",
         validators=[validators.InputRequired(message="กรุณาระบุวันที่สิ้นสุด")],
     )
-    amount = money_field("ยอดเงินของรายการย่อย (บาท)")
     has_sub_item_sn = fields.BooleanField("ระบุ S/N")
     has_sub_item_asset = fields.BooleanField("ระบุรหัสครุภัณฑ์")
     # อ่านไม่เกิน MAX + 1 แถว แล้วให้ validate_sub_items ปฏิเสธ ไม่ตัดทิ้งเงียบ ๆ
     sub_items = fields.FieldList(fields.FormField(ItemDetailForm), min_entries=0, max_entries=MAX_SUB_ITEMS_PER_ITEM + 1)
     winner = fields.StringField("ผู้ชนะ", validators=[validators.Optional(), validators.Length(max=200)])
-    unit_price = money_field("ราคาต่อหน่วย (บาท)", required=False)
     note = fields.TextAreaField("หมายเหตุ", validators=[validators.Optional()])
     responsible_divisions = DivisionMultipleField("ฝ่ายที่มองเห็น", choices=[], coerce=str)
     responsible_by = MemberMultipleField("ผู้รับผิดชอบ", choices=[], coerce=str)
@@ -216,18 +223,22 @@ class ProcurementItemForm(Form):
 
 class ProcurementHeaderForm(FlaskForm):
     psu_disbursement_number = fields.StringField(
-        "เลขที่ ม.อ.เบิกจ่าย",
+        "เลขที่ มอ เบิกจ่าย",
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=128)],
     )
+    disbursement_date = DateInputField(
+        "ลงวันที่",
+        validators=[validators.Optional()],
+    )
     name = fields.StringField(
-        "ชื่อ MA",
+        "ชื่อโครงการ",
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
     company = fields.StringField(
-        "บริษัท",
+        "ซื้อจาก (บริษัท)",
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
-    total_amount = money_field("ยอดเงินรวมของ MA (บาท)")
+    total_amount = money_field("ยอดเงินรวม (บาท)")
     items = fields.FieldList(fields.FormField(ProcurementItemForm), min_entries=1)
     # เวลาแก้ไขล่าสุดตอนเปิดฟอร์มแก้ไข (กันบันทึกทับการแก้ / การจ่ายงวดของคนอื่นที่เกิดระหว่างนั้น)
     version = fields.HiddenField()

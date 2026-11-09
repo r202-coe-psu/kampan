@@ -84,55 +84,70 @@
   </fieldset>
 {% endmacro %}
 
-{# แถวย่อย ยี่ห้อ / รุ่น / S/N / รหัสครุภัณฑ์ / รายละเอียด ใช้ name_prefix เช่น items-0-sub_items-0- (หรือ ...-__K__- ในแม่แบบ) #}
-{% macro sub_item_row(name_prefix, f=None, show_sn=False, show_asset=False) %}
+{# แถวย่อย รหัสครุภัณฑ์ / S/N / ยี่ห้อ / รุ่น / รายละเอียด ใช้ name_prefix เช่น items-0-sub_items-0- (หรือ ...-__K__- ในแม่แบบ) #}
+{% macro sub_item_row(name_prefix, f=None) %}
   {% set brand = f.brand if f else None %}
   {% set model_name = f.model_name if f else None %}
   {% set serial_number = f.serial_number if f else None %}
   {% set asset_code = f.asset_code if f else None %}
   {% set details = f.details if f else None %}
-  <div class="sub-item-row flex flex-col md:flex-row items-start gap-2">
-    <div class="flex-1 w-full min-w-0">
-      <input type="text" name="{{ name_prefix }}brand" id="{{ name_prefix }}brand" value="{{ (brand.data if brand else '') or '' }}" maxlength="100"
-             placeholder="ยี่ห้อ" aria-label="ยี่ห้อ" class="input input-sm w-full{{ ' input-error' if brand and brand.errors else '' }}" />
-      {% if brand %}{{ field_errors(brand) }}{% endif %}
+  <div class="sub-item-row flex flex-col gap-2 p-3 bg-base-200/50 rounded-lg border border-base-300">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-base-content/70 flex items-center gap-1.5">
+        <i class="ph ph-tag text-primary"></i> แถวที่ <span class="sub-item-number font-bold">1</span>
+      </span>
+      <button type="button" class="btn btn-ghost btn-xs text-error" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
+        <i class="ph ph-trash text-sm"></i> ลบแถว
+      </button>
     </div>
-    <div class="flex-1 w-full min-w-0">
-      <input type="text" name="{{ name_prefix }}model_name" id="{{ name_prefix }}model_name" value="{{ (model_name.data if model_name else '') or '' }}" maxlength="100"
-             placeholder="รุ่น" aria-label="รุ่น" class="input input-sm w-full{{ ' input-error' if model_name and model_name.errors else '' }}" />
-      {% if model_name %}{{ field_errors(model_name) }}{% endif %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รหัสครุภัณฑ์</label>
+        <input type="text" name="{{ name_prefix }}asset_code" id="{{ name_prefix }}asset_code" value="{{ (asset_code.data if asset_code else '') or '' }}" maxlength="100"
+               placeholder="รหัสครุภัณฑ์" class="input input-sm w-full{{ ' input-error' if asset_code and asset_code.errors else '' }}" />
+        {% if asset_code %}{{ field_errors(asset_code) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">S/N</label>
+        <input type="text" name="{{ name_prefix }}serial_number" id="{{ name_prefix }}serial_number" value="{{ (serial_number.data if serial_number else '') or '' }}" maxlength="100"
+               placeholder="S/N" class="input input-sm w-full{{ ' input-error' if serial_number and serial_number.errors else '' }}" />
+        {% if serial_number %}{{ field_errors(serial_number) }}{% endif %}
+      </div>
     </div>
-    <div data-sub-item-col="sn" class="flex-1 w-full min-w-0{{ '' if show_sn else ' hidden' }}">
-      <input type="text" name="{{ name_prefix }}serial_number" id="{{ name_prefix }}serial_number" value="{{ (serial_number.data if serial_number else '') or '' }}" maxlength="100"
-             placeholder="S/N" aria-label="S/N" class="input input-sm w-full{{ ' input-error' if serial_number and serial_number.errors else '' }}"
-             {% if not show_sn %}disabled{% endif %} />
-      {% if serial_number %}{{ field_errors(serial_number) }}{% endif %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">ยี่ห้อ</label>
+        <input type="text" name="{{ name_prefix }}brand" id="{{ name_prefix }}brand" value="{{ (brand.data if brand else '') or '' }}" maxlength="100"
+               placeholder="ยี่ห้อ" class="input input-sm w-full{{ ' input-error' if brand and brand.errors else '' }}" />
+        {% if brand %}{{ field_errors(brand) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รุ่น</label>
+        <input type="text" name="{{ name_prefix }}model_name" id="{{ name_prefix }}model_name" value="{{ (model_name.data if model_name else '') or '' }}" maxlength="100"
+               placeholder="รุ่น" class="input input-sm w-full{{ ' input-error' if model_name and model_name.errors else '' }}" />
+        {% if model_name %}{{ field_errors(model_name) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รายละเอียด</label>
+        <input type="text" name="{{ name_prefix }}details" id="{{ name_prefix }}details" value="{{ (details.data if details else '') or '' }}" maxlength="255"
+               placeholder="รายละเอียด" class="input input-sm w-full{{ ' input-error' if details and details.errors else '' }}" />
+        {% if details %}{{ field_errors(details) }}{% endif %}
+      </div>
     </div>
-    <div data-sub-item-col="asset" class="flex-1 w-full min-w-0{{ '' if show_asset else ' hidden' }}">
-      <input type="text" name="{{ name_prefix }}asset_code" id="{{ name_prefix }}asset_code" value="{{ (asset_code.data if asset_code else '') or '' }}" maxlength="100"
-             placeholder="รหัสครุภัณฑ์" aria-label="รหัสครุภัณฑ์" class="input input-sm w-full{{ ' input-error' if asset_code and asset_code.errors else '' }}"
-             {% if not show_asset %}disabled{% endif %} />
-      {% if asset_code %}{{ field_errors(asset_code) }}{% endif %}
-    </div>
-    <div data-sub-item-col="details" class="flex-1 w-full min-w-0">
-      <input type="text" name="{{ name_prefix }}details" id="{{ name_prefix }}details" value="{{ (details.data if details else '') or '' }}" maxlength="255"
-             placeholder="รายละเอียด" aria-label="รายละเอียด"
-             class="input input-sm w-full{{ ' input-error' if details and details.errors else '' }}" />
-      {% if details %}{{ field_errors(details) }}{% endif %}
-    </div>
-    <button type="button" class="btn btn-ghost btn-sm md:btn-square text-error shrink-0 self-start md:self-auto" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
-      <i class="ph ph-trash text-lg"></i><span class="md:hidden">ลบแถว</span>
-    </button>
   </div>
 {% endmacro %}
 
 {% macro installment_row(f) %}
-  <div class="installment-row flex items-start gap-2">
-    <span class="installment-number font-semibold text-base-content/70 w-8 shrink-0 pt-2 text-right"></span>
-    <div class="flex-1 min-w-0 max-w-64">
+  <div class="installment-row flex items-center gap-2">
+    <span class="installment-number font-semibold text-base-content/70 w-16 shrink-0 text-right text-sm"></span>
+    <div class="flex-1 min-w-0 max-w-56">
       {{ f.installment_id() }}
-      {{ date_field(f.due_date, compact=True, hide_label=True, aria_label="วันครบกำหนด", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-due", buddhist=True) }}
+      {{ date_field(f.due_date, compact=True, hide_label=True, aria_label="วันที่", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-due", buddhist=True) }}
       {{ field_errors(f.due_date) }}
+    </div>
+    <div class="flex-1 min-w-0 max-w-48">
+      {{ f.amount(class_="input input-sm w-full installment-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal", placeholder="จำนวนเงิน (บาท)") }}
+      {{ field_errors(f.amount) }}
     </div>
     <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-installment" title="ลบงวด" aria-label="ลบงวดนี้">
       <i class="ph ph-trash text-lg"></i>
@@ -173,32 +188,63 @@
   {% set custom_days = f.reminder_offsets_days.data | select | list %}
   {% set custom_dates = f.custom_reminder_dates.data | select | list %}
   {% set reminder_has_error = (f.expiry_reminder_offsets.errors or f.payment_reminder_offsets.errors or f.reminder_offsets_days.errors or f.custom_reminder_dates.errors) | length > 0 %}
-  <div class="ma-item card bg-base-100 border border-base-300" data-prefix="{{ prefix }}"{% if f.item_id.data %} id="item-{{ f.item_id.data }}"{% endif %}>
-    <div class="card-body p-4 md:p-8 gap-8">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="text-lg font-bold text-base-content">
+  <div class="ma-item card bg-base-100 border border-base-300 transition-all shadow-xs" data-prefix="{{ prefix }}"{% if f.item_id.data %} id="item-{{ f.item_id.data }}"{% endif %}>
+    {# Card Header: Always visible, clickable to toggle collapse/expand #}
+    <div class="card-header p-4 md:px-8 flex items-center justify-between gap-3 border-b border-base-300 bg-base-200/30 rounded-t-xl cursor-pointer select-none" data-action="toggle-collapse-item">
+      <div class="flex items-center gap-3 min-w-0">
+        <h3 class="text-base md:text-lg font-bold text-base-content shrink-0">
           รายการย่อยที่ <span class="item-number"></span>
         </h3>
-        <button type="button" class="btn btn-ghost btn-sm text-error" data-action="remove-item">
-          <i class="ph ph-trash"></i> ลบรายการย่อย
+        <span class="item-summary-badge text-xs md:text-sm text-base-content/70 truncate ml-2 font-normal"></span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" class="btn btn-ghost btn-sm gap-1.5 text-primary collapse-toggle-btn" data-action="toggle-collapse-btn">
+          <i class="ph ph-caret-up collapse-icon text-base"></i>
+          <span class="collapse-label text-xs md:text-sm">ย่อรายการ</span>
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm text-error" data-action="remove-item" title="ลบรายการย่อย">
+          <i class="ph ph-trash"></i>
         </button>
       </div>
+    </div>
+
+    {# Card Body: Collapsible content #}
+    <div class="card-body p-4 md:p-8 gap-8 item-body">
       {{ f.item_id() }}
 
-      {# 1. ข้อมูลหลัก: ช่องที่ต้องกรอก #}
+      {# 1. รายละเอียด: ช่องที่ต้องกรอก #}
       <section class="flex flex-col gap-4">
-        {{ section_heading("ph-list-bullets", "ข้อมูลหลัก") }}
+        {{ section_heading("ph-list-bullets", "รายละเอียด") }}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
           {{ input_field(f.name, required=True, wrapper_class="md:col-span-2") }}
           {{ select_field(f.category, required=True) }}
-          {{ select_field(f.account_code) }}
-          {{ date_picker(f.start_date, required=True) }}
-          {{ date_picker(f.end_date, required=True) }}
+          <div class="grid grid-cols-2 gap-2">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend">{{ f.quantity.label.text }} <span class="text-error">*</span></legend>
+              {{ f.quantity(class_="input w-full item-quantity" ~ (" input-error" if f.quantity.errors else ""), type="number", min="1", step="1") }}
+              {{ field_errors(f.quantity) }}
+            </fieldset>
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend">{{ f.unit.label.text }}</legend>
+              {{ f.unit(class_="input w-full item-unit" ~ (" input-error" if f.unit.errors else ""), placeholder="เช่น เครื่อง, ชุด, งาน") }}
+              {{ field_errors(f.unit) }}
+            </fieldset>
+          </div>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.unit_price.label.text }}</legend>
+            {{ f.unit_price(class_="input w-full item-unit-price" ~ (" input-error" if f.unit_price.errors else ""), step="0.01", min="0", inputmode="decimal", placeholder="0.00") }}
+            {{ field_errors(f.unit_price) }}
+          </fieldset>
           <fieldset class="fieldset w-full">
             <legend class="fieldset-legend">{{ f.amount.label.text }} <span class="text-error">*</span></legend>
             {{ f.amount(class_="input w-full item-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal") }}
             {{ field_errors(f.amount) }}
           </fieldset>
+          <div class="md:col-span-2">
+            {{ select_field(f.account_code) }}
+          </div>
+          {{ date_picker(f.start_date, required=True) }}
+          {{ date_picker(f.end_date, required=True) }}
         </div>
       </section>
 
@@ -261,7 +307,7 @@
 
       {# 3. การจ่ายเงิน: ปิด = จ่ายครั้งเดียวก่อนหมดอายุ (ระบบสร้างงวดเดียว ครบกำหนดวันสิ้นสุด) · เปิด = กรอกวันครบกำหนดแต่ละงวด #}
       <section class="installment-section flex flex-col gap-4 border-t border-base-300 pt-6" data-installment-section>
-        {{ section_heading("ph-calendar-dots", "การจ่ายเงิน", "งวดไม่แบ่งเงิน ใช้จำและเตือนว่าต้องจ่ายวันไหน · วันที่จ่ายจริงกดบันทึกที่หน้ารายละเอียดหลังสร้างแล้ว") }}
+        {{ section_heading("ph-calendar-dots", "การจ่ายเงิน", "งวดใช้จำและเตือนว่าต้องจ่ายวันไหน · วันที่จ่ายจริงกดบันทึกที่หน้ารายละเอียดหลังสร้างแล้ว") }}
         <label class="flex items-center gap-3 cursor-pointer w-fit">
           {{ f.installment_mode(class_="toggle toggle-primary installment-toggle") }}
           <span class="text-sm font-medium text-base-content">{{ f.installment_mode.label.text }}</span>
@@ -284,50 +330,27 @@
         </div>
       </section>
 
-      {# 4. ยี่ห้อ / รุ่น / รายละเอียด: เพิ่มแถวได้ไม่จำกัด (สูงสุด 100) แสดงเสมอ ไม่พับ #}
-      {% set show_sn = true if f.has_sub_item_sn.data else false %}
-      {% set show_asset = true if f.has_sub_item_asset.data else false %}
-      <section class="flex flex-col gap-4 border-t border-base-300 pt-6" data-sub-items-section>
-        {{ section_heading("ph-note-pencil", "ยี่ห้อ / รุ่น / รายละเอียด", "ใส่ยี่ห้อ รุ่น และรายละเอียดได้หลายแถว กด \"เพิ่มแถว\" เมื่อมีหลายเครื่อง · ไม่บังคับ แถวที่ว่างไม่บันทึก") }}
-        <div class="flex flex-wrap items-center gap-6">
-          <label class="flex items-center gap-2 cursor-pointer w-fit">
-            {{ f.has_sub_item_sn(class_="toggle toggle-primary toggle-sm sub-item-toggle-sn") }}
-            <span class="text-sm font-medium text-base-content">{{ f.has_sub_item_sn.label.text }}</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer w-fit">
-            {{ f.has_sub_item_asset(class_="toggle toggle-primary toggle-sm sub-item-toggle-asset") }}
-            <span class="text-sm font-medium text-base-content">{{ f.has_sub_item_asset.label.text }}</span>
-          </label>
-        </div>
+      {# 4. รหัสครุภัณฑ์ (หัวข้อนี้จะแสดงก็ต่อเมื่อ ได้กดเลือกประเภท ครุภัณฑ์/เช่า ถ้าเลือกประเภทอื่นไม่ต้องแสดงให้กรอก) #}
+      <section class="asset-code-section flex flex-col gap-4 border-t border-base-300 pt-6" data-sub-items-section>
+        {{ section_heading("ph-tag", "รหัสครุภัณฑ์", "ยี่ห้อ / รุ่น / รายละเอียด (หัวข้อนี้จะแสดงเมื่อเลือกประเภท ครุภัณฑ์ หรือ เช่า)") }}
         <div class="sub-item-rows flex flex-col gap-3">
           {% for entry in f.sub_items %}
-            {{ sub_item_row(entry.name ~ "-", entry.form, show_sn=show_sn, show_asset=show_asset) }}
+            {{ sub_item_row(entry.name ~ "-", entry.form) }}
           {% else %}
-            {{ sub_item_row(prefix ~ "sub_items-0-", show_sn=show_sn, show_asset=show_asset) }}
+            {{ sub_item_row(prefix ~ "sub_items-0-") }}
           {% endfor %}
         </div>
-        <template class="sub-item-template">{{ sub_item_row(prefix ~ "sub_items-__K__-", show_sn=show_sn, show_asset=show_asset) }}</template>
+        <template class="sub-item-template">{{ sub_item_row(prefix ~ "sub_items-__K__-") }}</template>
         {{ field_errors(f.sub_items) }}
         <p class="sub-item-error text-error text-sm hidden"></p>
         <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-sub-item">
           <i class="ph ph-plus-circle"></i> เพิ่มแถว
         </button>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4 border-t border-base-300 pt-4">
-          {{ input_field(f.winner, placeholder="ไม่บังคับ") }}
-          {{ input_field(f.unit_price, step="0.01", min="0", placeholder="ไม่บังคับ") }}
-          {{ select_field(f.reminder_kind) }}
-          {{ textarea_field(f.note, wrapper_class="md:col-span-2 lg:col-span-4") }}
-          <label class="flex items-center gap-2 cursor-pointer md:col-span-2 lg:col-span-4">
-            {{ f.requires_activation(class_="checkbox checkbox-primary checkbox-sm") }}
-            <span class="text-sm text-base-content">{{ f.requires_activation.label.text }}</span>
-          </label>
-        </div>
       </section>
 
-      {# 5. การเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
+      {# 5. ตั้งค่าการแจ้งเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
       {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7 วัน)" %}
-      {% call collapsible("ph-bell-ringing", "ตั้งค่าการเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
+      {% call collapsible("ph-bell-ringing", "ตั้งค่าการแจ้งเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
         <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันครบกำหนด</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
           {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
@@ -338,6 +361,32 @@
           {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
         </div>
       {% endcall %}
+
+      {# 6. หมายเหตุ & บันทึกย่อรายการลง #}
+      <section class="flex flex-col gap-4 border-t border-base-300 pt-6">
+        {{ section_heading("ph-chat-circle-text", "หมายเหตุ") }}
+        {{ textarea_field(f.note, placeholder="หมายเหตุเพิ่มเติมสำหรับรายการย่อยนี้") }}
+        <div class="flex justify-end pt-2">
+          <button type="button" class="btn btn-outline btn-sm btn-primary gap-1.5" data-action="collapse-item-btn">
+            <i class="ph ph-caret-up text-base"></i> บันทึกและย่อรายการลง
+          </button>
+        </div>
+      </section>
+
+      {# ฟิลด์ที่นำออกจากหน้าจอตามแบบร่าง แต่ยังคงอยู่ในโมเดล/backward compatibility #}
+      <div class="hidden" aria-hidden="true">
+        {{ input_field(f.winner) }}
+        {{ select_field(f.reminder_kind) }}
+        {{ f.requires_activation(class_="checkbox") }}
+        <label>
+          {{ f.has_sub_item_sn(class_="checkbox", data_sub_item_toggle="sn") }}
+          <span>S/N</span>
+        </label>
+        <label>
+          {{ f.has_sub_item_asset(class_="checkbox", data_sub_item_toggle="asset") }}
+          <span>รหัสครุภัณฑ์</span>
+        </label>
+      </div>
     </div>
   </div>
 {% endmacro %}

@@ -24,6 +24,7 @@ from .procurement import (
     PayLogEntry,
     ItemDetail,
     CATEGORY_CHOICES,
+    MA_CATEGORY_CHOICES,
     ITEM_CATEGORY_CHOICES,
     ACCOUNT_CODE_CHOICES,
     REMINDER_KIND_CHOICES,

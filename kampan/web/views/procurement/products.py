@@ -175,6 +175,9 @@ def _as_datetime(value):
 def _blank_item_data(member) -> dict:
     my_division_id = str(member.division.id) if member and getattr(member, "division", None) else None
     return {
+        "quantity": 1,
+        "unit": "",
+        "unit_price": None,
         "responsible_divisions": [my_division_id] if my_division_id else [],
         "responsible_by": [str(member.id)] if member else [],
         "reminder_kind": "ma",
@@ -232,6 +235,8 @@ def _item_form_data(item) -> dict:
         "item_id": str(item.id),
         "name": item.name,
         "category": item.category,
+        "quantity": getattr(item, "quantity", 1) or 1,
+        "unit": getattr(item, "unit", "") or "",
         "account_code": item.account_code or "",
         "start_date": _as_date(item.start_date),
         "end_date": _as_date(item.end_date),
@@ -249,7 +254,11 @@ def _item_form_data(item) -> dict:
         **_reminder_settings_data(item),
         "installment_mode": item.pays_in_installments(),
         "installments": [
-            {"installment_id": str(installment._id), "due_date": _as_date(installment.due_date)}
+            {
+                "installment_id": str(installment._id),
+                "due_date": _as_date(installment.due_date),
+                "amount": installment.amount,
+            }
             for installment in item.get_sorted_installments()
         ],
     }
@@ -264,6 +273,8 @@ def _renew_item_data(item, active_member_ids: set) -> dict:
     return {
         "name": item.name,
         "category": item.category,
+        "quantity": getattr(item, "quantity", 1) or 1,
+        "unit": getattr(item, "unit", "") or "",
         "account_code": item.account_code or "",
         "amount": item.amount,
         "has_sub_item_sn": item.has_sn(),
@@ -318,6 +329,7 @@ def _build_form(organization, procurement=None, member=None, renew_from=None, ta
             formdata=None,
             data={
                 "psu_disbursement_number": procurement.psu_disbursement_number,
+                "disbursement_date": _as_date(procurement.disbursement_date),
                 "name": procurement.name,
                 "company": procurement.company,
                 "total_amount": procurement.total_amount,
@@ -379,7 +391,7 @@ def _due_label(installment) -> str:
     return f"{due.day:02d}/{due.month:02d}/{due.year + 543}" if due else "-"
 
 
-def _single_installment(item_name, existing_installments, due_date) -> list:
+def _single_installment(item_name, existing_installments, due_date, amount=None) -> list:
     """จ่ายครั้งเดียว: เหลืองวดเดียว ครบกำหนดวันสิ้นสุด งวดเดิมที่จ่ายแล้วเก็บสถานะการจ่ายและประวัติไว้ (แก้แค่วันครบกำหนด)"""
     paid = [installment for installment in existing_installments if installment.is_paid()]
     if len(paid) > 1:
@@ -391,6 +403,8 @@ def _single_installment(item_name, existing_installments, due_date) -> list:
     else:
         keep = models.Installment()
     keep.due_date = due_date
+    if amount is not None:
+        keep.amount = amount
     return [keep]
 
 
@@ -402,6 +416,7 @@ def _build_installments(item_name, installment_entries, existing_installments) -
     for entry in installment_entries:
         installment = existing.pop(entry.form.installment_id.data or "", None) or models.Installment()
         installment.due_date = _as_datetime(entry.form.due_date.data)
+        installment.amount = entry.form.amount.data
         installments.append(installment)
     for removed in existing.values():
         if removed.is_paid():
@@ -428,6 +443,8 @@ def _build_items(form, organization, existing_items, user):
         item = existing.pop(data.item_id.data or "", None) or models.ProcurementItem(created_by=user)
         item.name = data.name.data.strip()
         item.category = data.category.data
+        item.quantity = data.quantity.data or 1
+        item.unit = (data.unit.data or "").strip()
         item.account_code = data.account_code.data or None
         item.start_date = _as_datetime(data.start_date.data)
         item.end_date = _as_datetime(data.end_date.data)
@@ -451,7 +468,7 @@ def _build_items(form, organization, existing_items, user):
         if item.installment_mode:
             item.installments = _build_installments(item.name, data.installments, item.installments)
         else:
-            item.installments = _single_installment(item.name, list(item.installments), item.end_date)
+            item.installments = _single_installment(item.name, list(item.installments), item.end_date, amount=item.amount)
         item.last_updated_by = user
         items.append(item)
     return items, list(existing.values())
@@ -459,6 +476,7 @@ def _build_items(form, organization, existing_items, user):
 
 def _apply_header(form, procurement, user) -> None:
     procurement.psu_disbursement_number = form.psu_disbursement_number.data.strip()
+    procurement.disbursement_date = _as_datetime(form.disbursement_date.data) if form.disbursement_date.data else None
     procurement.name = form.name.data.strip()
     procurement.company = form.company.data.strip()
     procurement.total_amount = form.total_amount.data
@@ -479,6 +497,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
     installments = [
         models.Installment(
             due_date=inst.due_date,
+            amount=inst.amount,
             paid_date=inst.paid_date,
             paid_by=inst.paid_by,
             payment_number=inst.payment_number,
@@ -502,6 +521,8 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
         procurement=new_procurement,
         name=item.name,
         category=item.category,
+        quantity=getattr(item, "quantity", 1) or 1,
+        unit=getattr(item, "unit", "") or "",
         account_code=item.account_code,
         start_date=item.start_date,
         end_date=item.end_date,
@@ -533,6 +554,7 @@ def _duplicate_child_procurements(parent_procurement, items, user):
             name=child_name,
             company=parent_procurement.company,
             psu_disbursement_number=parent_procurement.psu_disbursement_number,
+            disbursement_date=parent_procurement.disbursement_date,
             total_amount=item.amount,
             parent_procurement=parent_procurement,
             created_by=user,
