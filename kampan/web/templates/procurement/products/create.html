@@ -54,10 +54,7 @@
     <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
         {{ input_field(form.psu_disbursement_number, required=True) }}
-        <fieldset class="fieldset w-full">
-          <legend class="fieldset-legend">{{ form.disbursement_date.label.text }}</legend>
-          {{ date_picker(form.disbursement_date) }}
-        </fieldset>
+        {{ date_picker(form.disbursement_date) }}
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
         {{ input_field(form.name, required=True) }}
