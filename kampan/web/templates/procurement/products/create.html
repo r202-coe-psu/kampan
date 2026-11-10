@@ -280,6 +280,7 @@
       const card = itemsContainer.lastElementChild;
       initDatePickersIn(card);
       initDropdownSelectsIn(card);
+      initSearchSelectsIn(card);
       syncInstallmentMode(card);
       syncAssetCodeSection(card);
       card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
@@ -546,8 +547,160 @@
       }
     });
 
+    function initSearchSelectsIn(root) {
+      (root || document).querySelectorAll('[data-search-select]').forEach(function (container) {
+        if (container.dataset.ssInit) return;
+        container.dataset.ssInit = '1';
+
+        const hiddenInput = container.querySelector('input[type="hidden"]');
+        const textInput = container.querySelector('.search-select-input');
+        const clearBtn = container.querySelector('.search-select-clear');
+        const menu = container.querySelector('.search-select-menu');
+        const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
+        const emptyMsg = container.querySelector('.search-select-empty');
+
+        function filterOptions(query) {
+          let matchCount = 0;
+          const q = (query || '').toLowerCase().trim();
+          options.forEach(function (opt) {
+            const text = opt.textContent.toLowerCase();
+            const match = !q || text.includes(q);
+            const li = opt.closest('li');
+            if (li) li.classList.toggle('hidden', !match);
+            if (match) matchCount++;
+          });
+          if (emptyMsg) emptyMsg.classList.toggle('hidden', matchCount > 0);
+        }
+
+        function openMenu() {
+          document.querySelectorAll('.search-select-menu').forEach(function (m) {
+            if (m !== menu) m.classList.add('hidden');
+          });
+          if (menu) {
+            menu.classList.remove('hidden');
+            filterOptions(textInput ? textInput.value : '');
+          }
+        }
+
+        function closeMenu() {
+          if (menu) menu.classList.add('hidden');
+          const currentVal = hiddenInput ? hiddenInput.value : '';
+          const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
+          if (textInput) textInput.value = matched ? matched.textContent.trim() : '';
+          if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
+        }
+
+        function selectOption(val, label) {
+          if (hiddenInput) hiddenInput.value = val;
+          if (textInput) textInput.value = (val ? label : '');
+          options.forEach(function (opt) {
+            opt.classList.toggle('menu-active', opt.dataset.value === val);
+          });
+          if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+          if (menu) menu.classList.add('hidden');
+          if (hiddenInput) hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (textInput) {
+          textInput.addEventListener('focus', function () {
+            openMenu();
+          });
+
+          textInput.addEventListener('input', function () {
+            openMenu();
+            filterOptions(textInput.value);
+            if (clearBtn) clearBtn.classList.toggle('hidden', !textInput.value);
+          });
+
+          textInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+              closeMenu();
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              openMenu();
+              const visible = options.filter(function (opt) {
+                const li = opt.closest('li');
+                return !li || !li.classList.contains('hidden');
+              });
+              if (visible.length) visible[0].focus();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              const visible = options.filter(function (opt) {
+                const li = opt.closest('li');
+                return !li || !li.classList.contains('hidden');
+              });
+              if (visible.length) {
+                selectOption(visible[0].dataset.value, visible[0].textContent.trim());
+              }
+            }
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            selectOption('', '');
+            if (textInput) textInput.focus();
+          });
+        }
+
+        if (menu) {
+          menu.addEventListener('click', function (e) {
+            const btn = e.target.closest('.search-select-option');
+            if (!btn) return;
+            selectOption(btn.dataset.value, btn.textContent.trim());
+          });
+
+          menu.addEventListener('keydown', function (e) {
+            const visible = options.filter(function (opt) {
+              const li = opt.closest('li');
+              return !li || !li.classList.contains('hidden');
+            });
+            const index = visible.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              if (index < visible.length - 1) visible[index + 1].focus();
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (index > 0) visible[index - 1].focus();
+              else if (textInput) textInput.focus();
+            } else if (e.key === 'Escape') {
+              closeMenu();
+              if (textInput) textInput.focus();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (index >= 0 && index < visible.length) {
+                selectOption(visible[index].dataset.value, visible[index].textContent.trim());
+                if (textInput) textInput.focus();
+              }
+            }
+          });
+        }
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-search-select]')) {
+        document.querySelectorAll('[data-search-select]').forEach(function (container) {
+          const menu = container.querySelector('.search-select-menu');
+          const hiddenInput = container.querySelector('input[type="hidden"]');
+          const textInput = container.querySelector('.search-select-input');
+          const clearBtn = container.querySelector('.search-select-clear');
+          const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
+          if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+            const currentVal = hiddenInput ? hiddenInput.value : '';
+            const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
+            if (textInput) textInput.value = matched ? matched.textContent.trim() : '';
+            if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
+          }
+        });
+      }
+    });
+
     initDatePickersIn(form);
     initDropdownSelectsIn(form);
+    initSearchSelectsIn(form);
     itemsContainer.querySelectorAll('.ma-item').forEach(function (card) {
       syncInstallmentMode(card);
       syncAssetCodeSection(card);
