@@ -556,15 +556,21 @@
         const textInput = container.querySelector('.search-select-input');
         const clearBtn = container.querySelector('.search-select-clear');
         const menu = container.querySelector('.search-select-menu');
-        const label = container.querySelector('label.input');
+        const box = container.querySelector('.search-select-box');
         const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
         const emptyMsg = container.querySelector('.search-select-empty');
+
+        function getOptionLabel(opt) {
+          if (!opt) return '';
+          const labelSpan = opt.querySelector('.search-select-label');
+          return (labelSpan ? labelSpan.textContent : opt.textContent).trim();
+        }
 
         function filterOptions(query) {
           let matchCount = 0;
           const q = (query || '').toLowerCase().trim();
           options.forEach(function (opt) {
-            const text = opt.textContent.toLowerCase();
+            const text = getOptionLabel(opt).toLowerCase();
             const match = !q || text.includes(q);
             const li = opt.closest('li');
             if (li) li.classList.toggle('hidden', !match);
@@ -579,7 +585,14 @@
           });
           if (menu) {
             menu.classList.remove('hidden');
-            filterOptions(textInput ? textInput.value : '');
+            // แสดงตัวเลือกทั้งหมดเสมอ เพื่อให้ผู้ใช้สามารถเลือกเปลี่ยนอันได้
+            filterOptions('');
+            // ไฮไลท์และเลื่อนไปยังตัวเลือกที่เลือกอยู่ปัจจุบัน
+            const currentVal = hiddenInput ? hiddenInput.value : '';
+            const activeOpt = options.find(function (opt) { return opt.dataset.value === currentVal; });
+            if (activeOpt) {
+              activeOpt.scrollIntoView({ block: 'nearest' });
+            }
           }
         }
 
@@ -587,36 +600,50 @@
           if (menu) menu.classList.add('hidden');
           const currentVal = hiddenInput ? hiddenInput.value : '';
           const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
-          if (textInput) textInput.value = matched ? matched.textContent.trim() : '';
+          if (textInput) textInput.value = matched ? getOptionLabel(matched) : '';
           if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
         }
 
         function selectOption(val, labelText) {
           if (hiddenInput) hiddenInput.value = val;
-          if (textInput) textInput.value = (val ? labelText : '');
+          if (textInput) textInput.value = labelText;
           options.forEach(function (opt) {
-            opt.classList.toggle('menu-active', opt.dataset.value === val);
+            const isMatch = opt.dataset.value === val;
+            opt.classList.toggle('menu-active', isMatch);
+            const check = opt.querySelector('.ph-check');
+            if (check) check.classList.toggle('hidden', !isMatch);
           });
           if (clearBtn) clearBtn.classList.toggle('hidden', !val);
           if (menu) menu.classList.add('hidden');
           if (hiddenInput) hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        if (label) {
-          label.addEventListener('click', function (e) {
+        if (box) {
+          box.addEventListener('click', function (e) {
             if (e.target.closest('.search-select-clear')) return;
-            if (textInput) textInput.focus();
             openMenu();
+            if (textInput) {
+              textInput.focus();
+              textInput.select();
+            }
           });
         }
 
         if (textInput) {
           textInput.addEventListener('focus', function () {
             openMenu();
+            textInput.select();
+          });
+
+          textInput.addEventListener('click', function () {
+            openMenu();
+            textInput.select();
           });
 
           textInput.addEventListener('input', function () {
-            openMenu();
+            if (menu && menu.classList.contains('hidden')) {
+              menu.classList.remove('hidden');
+            }
             filterOptions(textInput.value);
             if (clearBtn) clearBtn.classList.toggle('hidden', !textInput.value);
           });
@@ -639,7 +666,7 @@
                 return !li || !li.classList.contains('hidden');
               });
               if (visible.length) {
-                selectOption(visible[0].dataset.value, visible[0].textContent.trim());
+                selectOption(visible[0].dataset.value, getOptionLabel(visible[0]));
               }
             }
           });
@@ -648,8 +675,14 @@
         if (clearBtn) {
           clearBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            selectOption('', '');
-            if (textInput) textInput.focus();
+            const defaultOpt = options.find(function (opt) { return opt.dataset.value === ''; });
+            const defaultText = defaultOpt ? getOptionLabel(defaultOpt) : '';
+            selectOption('', defaultText);
+            if (textInput) {
+              textInput.value = '';
+              textInput.focus();
+            }
+            openMenu();
           });
         }
 
@@ -657,7 +690,7 @@
           menu.addEventListener('click', function (e) {
             const btn = e.target.closest('.search-select-option');
             if (!btn) return;
-            selectOption(btn.dataset.value, btn.textContent.trim());
+            selectOption(btn.dataset.value, getOptionLabel(btn));
           });
 
           menu.addEventListener('keydown', function (e) {
@@ -679,7 +712,7 @@
             } else if (e.key === 'Enter') {
               e.preventDefault();
               if (index >= 0 && index < visible.length) {
-                selectOption(visible[index].dataset.value, visible[index].textContent.trim());
+                selectOption(visible[index].dataset.value, getOptionLabel(visible[index]));
                 if (textInput) textInput.focus();
               }
             }
@@ -700,7 +733,8 @@
             menu.classList.add('hidden');
             const currentVal = hiddenInput ? hiddenInput.value : '';
             const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
-            if (textInput) textInput.value = matched ? matched.textContent.trim() : '';
+            const labelSpan = matched ? matched.querySelector('.search-select-label') : null;
+            if (textInput) textInput.value = matched ? (labelSpan ? labelSpan.textContent.trim() : matched.textContent.trim()) : '';
             if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
           }
         });

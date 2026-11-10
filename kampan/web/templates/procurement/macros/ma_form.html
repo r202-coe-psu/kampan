@@ -33,30 +33,39 @@
       {% set ns.selected_label = opt_label %}
     {% endif %}
   {% endfor %}
+  {% if not ns.selected_label and field.choices %}
+    {% for opt_val, opt_label in field.choices %}
+      {% if opt_val | string == "" and not ns.selected_label %}
+        {% set ns.selected_label = opt_label %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
   <fieldset class="fieldset w-full {{ wrapper_class }}" id="field-{{ field.id }}">
     <legend class="fieldset-legend">
       {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
     </legend>
-    <div class="search-select relative w-full" data-search-select data-placeholder="{{ placeholder }}" style="width: 100%;">
+    <div class="search-select relative w-full" data-search-select data-placeholder="{{ placeholder }}">
       <input type="hidden" name="{{ field.name }}" id="{{ field.id }}" value="{{ val }}" />
-      <label class="input input-bordered w-full flex items-center gap-2 cursor-text{{ ' input-error' if field.errors else '' }}" style="width: 100%; max-width: 100%;">
+      <div class="search-select-box flex items-center gap-2 w-full h-10 px-3 rounded-lg border border-base-300 bg-base-100 cursor-text focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all{{ ' border-error ring-1 ring-error' if field.errors else '' }}">
         <i class="ph ph-magnifying-glass text-base-content/50 text-base shrink-0 pointer-events-none"></i>
         <input type="text"
-               class="grow search-select-input text-sm bg-transparent border-0 outline-none p-0 w-full focus:outline-none"
+               class="search-select-input flex-1 min-w-0 bg-transparent border-0 outline-none p-0 text-sm text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-0"
                placeholder="{{ placeholder }}"
                autocomplete="off"
                value="{{ ns.selected_label }}" />
         <button type="button" class="btn btn-ghost btn-circle btn-xs text-base-content/40 hover:text-error search-select-clear shrink-0 {{ 'hidden' if not val else '' }}" title="ล้างค่า" aria-label="ล้างค่า">
           <i class="ph ph-x"></i>
         </button>
-      </label>
-      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1" style="width: 100%;">
-        <ul class="menu p-0 gap-0.5">
+        <i class="ph ph-caret-down text-base-content/40 text-xs shrink-0 pointer-events-none"></i>
+      </div>
+      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 w-full max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1">
+        <ul class="menu w-full p-0 gap-0.5">
           {% for opt_val, opt_label in field.choices %}
             {% set is_selected = opt_val | string == val %}
-            <li>
-              <button type="button" class="search-select-option text-xs py-2 px-3 justify-start text-left w-full {{ 'menu-active' if is_selected else '' }}" data-value="{{ opt_val }}">
-                {{ opt_label }}
+            <li class="w-full">
+              <button type="button" class="search-select-option text-xs py-2 px-3 flex items-center justify-between text-left w-full {{ 'menu-active' if is_selected else '' }}" data-value="{{ opt_val }}">
+                <span class="search-select-label truncate">{{ opt_label }}</span>
+                <i class="ph ph-check text-xs shrink-0 {{ '' if is_selected else 'hidden' }}"></i>
               </button>
             </li>
           {% endfor %}
@@ -286,9 +295,7 @@
             {{ f.amount(class_="input w-full item-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal") }}
             {{ field_errors(f.amount) }}
           </fieldset>
-          <div class="md:col-span-2">
-            {{ search_select_field(f.account_code) }}
-          </div>
+          {{ search_select_field(f.account_code, wrapper_class="md:col-span-2") }}
           {{ date_picker(f.start_date, required=True) }}
           {{ date_picker(f.end_date, required=True) }}
         </div>

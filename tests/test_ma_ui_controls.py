@@ -482,3 +482,29 @@ def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existi
     assert "ยกเลิกการบันทึกจ่ายงวดแล้ว" in final_html
 
 
+def test_search_select_field_rendering(app):
+    from flask import render_template_string
+    from wtforms import Form, SelectField
+
+    class Demo(Form):
+        account_code = SelectField("ผังบัญชี", choices=[("", "- ไม่ระบุ -"), ("12030201", "12030201 อาคาร")])
+
+    with app.test_request_context():
+        form = Demo()
+        html = render_template_string(
+            "{% from 'procurement/macros/ma_form.html' import search_select_field %}{{ search_select_field(form.account_code, wrapper_class='md:col-span-2') }}",
+            form=form,
+        )
+
+    assert "search-select-box" in html
+    assert "search-select-input" in html
+    assert "search-select-menu" in html
+    assert "ph-magnifying-glass" in html
+    assert "ph-caret-down" in html
+    assert "search-select-clear" in html
+    assert "md:col-span-2" in html
+    assert "menu w-full" in html
+    assert "search-select-option" in html
+
+
+
