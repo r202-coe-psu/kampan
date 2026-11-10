@@ -556,6 +556,7 @@
         const textInput = container.querySelector('.search-select-input');
         const clearBtn = container.querySelector('.search-select-clear');
         const menu = container.querySelector('.search-select-menu');
+        const label = container.querySelector('label.input');
         const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
         const emptyMsg = container.querySelector('.search-select-empty');
 
@@ -590,15 +591,23 @@
           if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
         }
 
-        function selectOption(val, label) {
+        function selectOption(val, labelText) {
           if (hiddenInput) hiddenInput.value = val;
-          if (textInput) textInput.value = (val ? label : '');
+          if (textInput) textInput.value = (val ? labelText : '');
           options.forEach(function (opt) {
             opt.classList.toggle('menu-active', opt.dataset.value === val);
           });
           if (clearBtn) clearBtn.classList.toggle('hidden', !val);
           if (menu) menu.classList.add('hidden');
           if (hiddenInput) hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (label) {
+          label.addEventListener('click', function (e) {
+            if (e.target.closest('.search-select-clear')) return;
+            if (textInput) textInput.focus();
+            openMenu();
+          });
         }
 
         if (textInput) {

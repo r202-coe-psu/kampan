@@ -37,20 +37,20 @@
     <legend class="fieldset-legend">
       {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
     </legend>
-    <div class="search-select relative w-full" data-search-select data-placeholder="{{ placeholder }}">
+    <div class="search-select relative w-full" data-search-select data-placeholder="{{ placeholder }}" style="width: 100%;">
       <input type="hidden" name="{{ field.name }}" id="{{ field.id }}" value="{{ val }}" />
-      <div class="relative w-full">
+      <label class="input input-bordered w-full flex items-center gap-2 cursor-text{{ ' input-error' if field.errors else '' }}" style="width: 100%; max-width: 100%;">
+        <i class="ph ph-magnifying-glass text-base-content/50 text-base shrink-0 pointer-events-none"></i>
         <input type="text"
-               class="input w-full pl-9 pr-8 search-select-input text-sm{{ ' input-error' if field.errors else '' }}"
+               class="grow search-select-input text-sm bg-transparent border-0 outline-none p-0 w-full focus:outline-none"
                placeholder="{{ placeholder }}"
                autocomplete="off"
                value="{{ ns.selected_label }}" />
-        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 text-base pointer-events-none"></i>
-        <button type="button" class="btn btn-ghost btn-circle btn-xs absolute right-2 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-error search-select-clear {{ 'hidden' if not val else '' }}" title="ล้างค่า" aria-label="ล้างค่า">
+        <button type="button" class="btn btn-ghost btn-circle btn-xs text-base-content/40 hover:text-error search-select-clear shrink-0 {{ 'hidden' if not val else '' }}" title="ล้างค่า" aria-label="ล้างค่า">
           <i class="ph ph-x"></i>
         </button>
-      </div>
-      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1">
+      </label>
+      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1" style="width: 100%;">
         <ul class="menu p-0 gap-0.5">
           {% for opt_val, opt_label in field.choices %}
             {% set is_selected = opt_val | string == val %}
