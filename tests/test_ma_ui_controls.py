@@ -432,6 +432,8 @@ def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existi
     html = client.get(products_url).get_data(as_text=True)
     assert f'id="btn_toggle_{existing_ma.id}"' in html
     assert f'id="sub_items_{existing_ma.id}"' in html
+    assert "งวดการจ่ายเงิน" in html
+    assert "รายการย่อย (1)" not in html
     item = existing_ma.get_items()[0]
     assert item.name in html
 

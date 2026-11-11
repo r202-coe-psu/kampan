@@ -74,10 +74,12 @@
             <i class="ph ph-tag text-blue-500 text-sm"></i>
             <span class="font-semibold text-gray-800 text-sm">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or '-' }}</span>
           </div>
+          {% if item.get_items()|length > 1 %}
           <div class="flex items-center gap-2 text-xs text-gray-600">
             <i class="ph ph-stack"></i>
             <span>{{ item.get_items()|length }} รายการย่อย</span>
           </div>
+          {% endif %}
         </div>
         <!-- Title -->
         <div class="min-h-[48px]">

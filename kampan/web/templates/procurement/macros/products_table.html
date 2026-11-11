@@ -56,7 +56,13 @@
                   aria-expanded="false"
                   aria-controls="sub_items_{{ item.id }}">
             <i class="ph ph-caret-right text-[10px] transition-transform duration-200" id="caret_{{ item.id }}"></i>
-            <span>รายการย่อย ({{ sub_items_list|length }})</span>
+            <span>
+              {% if sub_items_list|length > 1 %}
+                รายการย่อย ({{ sub_items_list|length }})
+              {% else %}
+                งวดการจ่ายเงิน{% if installment_count > 0 %} ({{ installment_count }} งวด){% endif %}
+              {% endif %}
+            </span>
           </button>
         </div>
       </td>
@@ -178,8 +184,15 @@
           <div class="flex items-center justify-between border-b border-base-200 pb-2">
             <div class="flex items-center gap-2">
               <i class="ph ph-list-checks text-primary text-xl"></i>
-              <span class="font-semibold text-base">รายการย่อยและการจ่ายเงิน</span>
-              <span class="badge badge-neutral badge-sm">{{ sub_items_list|length }} รายการ</span>
+              {% if sub_items_list|length > 1 %}
+                <span class="font-semibold text-base">รายการย่อยและการจ่ายเงิน</span>
+                <span class="badge badge-neutral badge-sm">{{ sub_items_list|length }} รายการ</span>
+              {% else %}
+                <span class="font-semibold text-base">งวดการจ่ายเงิน</span>
+                {% if installment_count > 0 %}
+                  <span class="badge badge-neutral badge-sm">{{ installment_count }} งวด</span>
+                {% endif %}
+              {% endif %}
             </div>
             <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
                class="btn btn-ghost btn-xs text-primary gap-1">
@@ -189,6 +202,7 @@
 
           {% for p_item in sub_items_list %}
           <div class="border border-base-200 rounded-lg p-3 bg-base-100 space-y-2">
+            {% if sub_items_list|length > 1 %}
             <!-- Sub-item header -->
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
@@ -200,6 +214,7 @@
                 ยอดเงิน: <span class="font-semibold text-primary">{{ p_item.amount | format_amount }} บาท</span>
               </div>
             </div>
+            {% endif %}
 
             <!-- Item Details: S/N, Asset Code, Brand, Model -->
             {% if p_item.sub_items %}

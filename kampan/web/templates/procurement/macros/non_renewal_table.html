@@ -53,9 +53,11 @@
                     <div class="text-sm font-semibold text-gray-900">
                       {{ item.psu_disbursement_number or "-" }}
                     </div>
+                    {% if item.get_items()|length > 1 %}
                     <div class="text-xs text-gray-500 flex items-center gap-1">
                       <i class="ph ph-stack"></i>{{ item.get_items()|length }} รายการย่อย
                     </div>
+                    {% endif %}
                   </td>
                   <td class="px-6 py-4">
                     <div class="text-sm font-medium text-gray-900 max-w-xs truncate" title="{{ item.name }}">

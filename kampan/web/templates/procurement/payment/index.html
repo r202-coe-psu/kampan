@@ -144,7 +144,7 @@
           <div class="stat py-3">
             <div class="stat-title">งวดที่จ่ายแล้ว</div>
             <div class="stat-value text-xl md:text-2xl">{{ paid_count }}/{{ installment_count }}</div>
-            <div class="stat-desc">ทุกรายการย่อย</div>
+            <div class="stat-desc">{% if items|length > 1 %}ทุกรายการย่อย{% else %}งวดทั้งหมด{% endif %}</div>
           </div>
         </div>
       </div>
