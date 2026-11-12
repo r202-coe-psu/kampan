@@ -43,6 +43,11 @@ def _detail_url(procurement, organization):
 @login_required
 def index(procurement_id):
     organization, procurement = _get_procurement_or_404(procurement_id)
+    if procurement.status == "draft":
+        flash("รายการนี้เป็นแบบร่าง กรุณาแก้ไขต่อหรือบันทึกเพื่อเปิดใช้งาน", "info")
+        return redirect(
+            url_for("procurement.products.edit", procurement_id=procurement.id, organization_id=organization.id)
+        )
 
     # สายการต่ออายุ (#32): MA ในสายที่ผู้ใช้มองไม่เห็นแสดงแค่ว่ามีอยู่ ไม่แสดงชื่อและไม่มีลิงก์
     chain = procurement.get_renewal_chain()
@@ -95,6 +100,8 @@ def _reminder_logs_by_item(procurement, organization) -> dict:
 def _get_installment_for_change(procurement_id, item_id, installment_id):
     """โหลด MA / รายการย่อย / งวด (scope ด้วยหน่วยงาน ไม่พบ = 404) แล้วตรวจสิทธิ์ผู้แก้ไข MA ได้"""
     organization, procurement = _get_procurement_or_404(procurement_id)
+    if procurement.status == "draft":
+        abort(400)
     if not ObjectId.is_valid(item_id) or not ObjectId.is_valid(installment_id):
         abort(404)
     item = models.ProcurementItem.objects(id=item_id, procurement=procurement, organization=organization).first()

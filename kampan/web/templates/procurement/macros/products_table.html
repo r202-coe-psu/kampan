@@ -19,16 +19,35 @@
   </thead>
   <tbody>
     {% for item in procurements %}
+    {% set is_draft = item.status == "draft" %}
     {% set status = item.get_payment_status(today) %}
     {% set badge = status_badges.get(status, ("bg-base-300 text-base-content", "border-l-base-300")) %}
     {% set paid_count, installment_count = item.get_installment_progress() %}
     {% set next_item, next_installment = item.get_next_unpaid() %}
     {% set sub_items_list = item.get_items() %}
-    <tr class="border-l-4 {{ badge[1] }} hover:bg-base-200/40 transition-colors">
+    <tr class="border-l-4 {% if is_draft %}border-l-warning bg-warning/10 hover:bg-warning/15{% else %}{{ badge[1] }} hover:bg-base-200/40{% endif %} transition-colors">
       <td>
-        <div class="text-xs text-base-content/60">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</div>
-        <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
-           class="font-semibold text-base text-base-content leading-snug link link-hover">{{ item.name }}</a>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-base-content/60">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</span>
+          {% if is_draft %}
+            <span class="badge badge-warning badge-xs font-bold gap-1 px-1.5 py-0.5 shadow-2xs">
+              <i class="ph ph-file-dashed text-[10px]"></i> แบบร่าง
+            </span>
+          {% endif %}
+        </div>
+        {% if is_draft %}
+          {% if can_edit(item) %}
+            <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+               class="font-semibold text-base text-base-content hover:text-warning leading-snug link link-hover block mt-0.5">
+              {{ item.name }}
+            </a>
+          {% else %}
+            <span class="font-semibold text-base text-base-content leading-snug block mt-0.5">{{ item.name }}</span>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+             class="font-semibold text-base text-base-content leading-snug link link-hover block mt-0.5">{{ item.name }}</a>
+        {% endif %}
         {% if item.parent_procurement %}
           <div class="mt-0.5">
             <span class="badge badge-xs badge-outline badge-primary gap-1">
@@ -103,32 +122,41 @@
         </span>
       </td>
       <td class="text-center">
-        <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
-          {% if installment_count == 0 %}
-            <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
-          {% elif paid_count == installment_count %}
-            <span class="badge badge-outline badge-success badge-lg font-semibold whitespace-nowrap px-3 gap-1 shadow-xs">
-              <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
-            </span>
-            <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
-          {% else %}
-            <div class="badge {{ badge[0] }} badge-lg font-semibold whitespace-nowrap px-3">
-              งวด {{ paid_count }}/{{ installment_count }}
-            </div>
-            {% if next_installment %}
-              <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+        {% if is_draft %}
+          <div class="flex flex-col items-center gap-1 select-none">
+            <span class="badge badge-outline badge-warning badge-sm whitespace-nowrap font-medium">ยังไม่เปิดใช้งาน</span>
+            <span class="text-[11px] text-base-content/50">รายการแบบร่าง</span>
+          </div>
+        {% else %}
+          <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
+            {% if installment_count == 0 %}
+              <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
+            {% elif paid_count == installment_count %}
+              <span class="badge badge-outline badge-success badge-lg font-semibold whitespace-nowrap px-3 gap-1 shadow-xs">
+                <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
+              </span>
+              <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
+            {% else %}
+              <div class="badge {{ badge[0] }} badge-lg font-semibold whitespace-nowrap px-3">
+                งวด {{ paid_count }}/{{ installment_count }}
+              </div>
+              {% if next_installment %}
+                <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+              {% endif %}
             {% endif %}
-          {% endif %}
-          <span class="text-[11px] text-primary hover:underline flex items-center gap-0.5 mt-0.5">
-            <i class="ph ph-list-bullets"></i> ดูสถานะการจ่าย
-          </span>
-        </div>
+            <span class="text-[11px] text-primary hover:underline flex items-center gap-0.5 mt-0.5">
+              <i class="ph ph-list-bullets"></i> ดูสถานะการจ่าย
+            </span>
+          </div>
+        {% endif %}
       </td>
       <td class="text-center">
         {% if item.status == "pending" %}
         <span class="badge badge-warning badge-lg whitespace-nowrap px-3">รอตรวจสอบ</span>
         {% elif item.status == "draft" %}
-        <span class="badge badge-ghost badge-lg whitespace-nowrap px-3 border border-base-300">แบบร่าง</span>
+        <span class="badge badge-warning badge-lg font-bold whitespace-nowrap px-3.5 py-1.5 shadow-xs gap-1.5 border border-warning/90">
+          <i class="ph ph-file-dashed text-base"></i> แบบร่าง
+        </span>
         {% elif item.status == "disactive" %}
         <span class="badge badge-error badge-lg whitespace-nowrap px-3">ไม่ต่ออายุ</span>
         {% elif item.status == "active" %}
@@ -142,45 +170,64 @@
         {% endif %}
       </td>
       <td class="text-center">
-        <div class="flex gap-1 justify-center">
-          <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดและงวด">
-            <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
-               class="btn btn-outline btn-primary btn-sm btn-circle" aria-label="ดูรายละเอียด MA">
-              <i class="ph ph-magnifying-glass text-lg"></i>
-            </a>
-          </div>
-          {% if can_edit(item) and not item.is_renewed() %}
-            {% if item.status == "renewal-requested" %}
-            <div class="tooltip tooltip-left" data-tip="ยื่นขอต่ออายุแล้ว (คลิกเพื่อดูรายการขอต่ออายุ)">
-              <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
-                 class="btn btn-info btn-sm btn-circle text-white shadow-sm" aria-label="ยื่นขอต่ออายุแล้ว">
-                <i class="ph ph-clock-countdown text-lg"></i>
+        <div class="flex gap-1.5 justify-center items-center">
+          {% if is_draft %}
+            {% if can_edit(item) %}
+            <div class="tooltip tooltip-left" data-tip="แก้ไขต่อ (แบบร่าง)">
+              <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="btn btn-warning btn-sm btn-circle shadow-xs" aria-label="แก้ไขต่อแบบร่าง">
+                <i class="ph ph-pencil-simple text-lg font-bold"></i>
               </a>
             </div>
-            {% else %}
-            <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
+            <div class="tooltip tooltip-left" data-tip="ลบแบบร่าง">
               <button type="button"
-                      onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
-                      class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ขอต่ออายุ MA">
-                <i class="ph ph-arrows-clockwise text-lg"></i>
+                      onclick="document.getElementById('modal_delete_draft_{{ item.id }}').showModal()"
+                      class="btn btn-outline btn-error btn-sm btn-circle hover:bg-error hover:text-white shadow-xs"
+                      aria-label="ลบแบบร่าง">
+                <i class="ph ph-trash text-lg"></i>
               </button>
             </div>
             {% endif %}
-          {% endif %}
-          {% if can_edit(item) %}
-          <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
-            <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
-               class="btn btn-outline btn-secondary btn-sm btn-circle" aria-label="แก้ไข MA">
-              <i class="ph ph-pencil-simple text-lg"></i>
-            </a>
-          </div>
+          {% else %}
+            <div class="tooltip tooltip-left" data-tip="ดูรายละเอียดและงวด">
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="btn btn-outline btn-primary btn-sm btn-circle" aria-label="ดูรายละเอียด MA">
+                <i class="ph ph-magnifying-glass text-lg"></i>
+              </a>
+            </div>
+            {% if can_edit(item) and not item.is_renewed() %}
+              {% if item.status == "renewal-requested" %}
+              <div class="tooltip tooltip-left" data-tip="ยื่นขอต่ออายุแล้ว (คลิกเพื่อดูรายการขอต่ออายุ)">
+                <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
+                   class="btn btn-info btn-sm btn-circle text-white shadow-sm" aria-label="ยื่นขอต่ออายุแล้ว">
+                  <i class="ph ph-clock-countdown text-lg"></i>
+                </a>
+              </div>
+              {% else %}
+              <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
+                <button type="button"
+                        onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
+                        class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ขอต่ออายุ MA">
+                  <i class="ph ph-arrows-clockwise text-lg"></i>
+                </button>
+              </div>
+              {% endif %}
+            {% endif %}
+            {% if can_edit(item) %}
+            <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
+              <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="btn btn-outline btn-secondary btn-sm btn-circle" aria-label="แก้ไข MA">
+                <i class="ph ph-pencil-simple text-lg"></i>
+              </a>
+            </div>
+            {% endif %}
           {% endif %}
         </div>
       </td>
     </tr>
 
     <!-- Expandable Sub-items and Payment Status Row -->
-    <tr id="sub_items_{{ item.id }}" class="hidden bg-base-200/50 border-l-4 {{ badge[1] }}">
+    <tr id="sub_items_{{ item.id }}" class="hidden {% if is_draft %}bg-warning/5 border-l-4 border-l-warning{% else %}bg-base-200/50 border-l-4 {{ badge[1] }}{% endif %}">
       <td colspan="8" class="p-3 md:p-5">
         <div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-base-200 pb-2">
@@ -196,10 +243,19 @@
                 {% endif %}
               {% endif %}
             </div>
-            <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
-               class="btn btn-ghost btn-xs text-primary gap-1">
-              <i class="ph ph-arrow-square-out"></i> หน้ารายละเอียดเต็ม
-            </a>
+            {% if is_draft %}
+              {% if can_edit(item) %}
+              <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="btn btn-warning btn-xs gap-1 shadow-2xs">
+                <i class="ph ph-pencil-simple"></i> แก้ไขต่อ
+              </a>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="btn btn-ghost btn-xs text-primary gap-1">
+                <i class="ph ph-arrow-square-out"></i> หน้ารายละเอียดเต็ม
+              </a>
+            {% endif %}
           </div>
 
           {% for p_item in sub_items_list %}
@@ -251,7 +307,7 @@
                     <th class="w-32">วันที่จ่าย</th>
                     <th class="w-36">เลขที่เอกสาร</th>
                     <th class="w-32 text-right">ยอดที่จ่าย (บาท)</th>
-                    {% if can_edit(item) %}<th class="w-24 text-center">จัดการ</th>{% endif %}
+                    {% if can_edit(item) and not is_draft %}<th class="w-24 text-center">จัดการ</th>{% endif %}
                   </tr>
                 </thead>
                 <tbody>
@@ -294,7 +350,7 @@
                         <span class="text-base-content/30">-</span>
                       {% endif %}
                     </td>
-                    {% if can_edit(item) %}
+                    {% if can_edit(item) and not is_draft %}
                     <td class="text-center">
                       {% if installment.is_paid() %}
                         <button type="button"
@@ -314,7 +370,7 @@
                   </tr>
                   {% else %}
                   <tr>
-                    <td colspan="{{ 7 if can_edit(item) else 6 }}" class="text-center text-base-content/40 py-2">ไม่มีงวดการจ่าย</td>
+                    <td colspan="{{ 7 if (can_edit(item) and not is_draft) else 6 }}" class="text-center text-base-content/40 py-2">ไม่มีงวดการจ่าย</td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -333,9 +389,44 @@
   </tbody>
 </table>
 
-<!-- Modals for Request Renewal and Quick Payment -->
+<!-- Modals for Request Renewal, Delete Draft, and Quick Payment -->
 {% for item in procurements %}
-  {% if can_edit(item) and not item.is_renewed() and item.status != "renewal-requested" %}
+  {% if item.status == "draft" and can_edit(item) %}
+  <dialog id="modal_delete_draft_{{ item.id }}" class="modal text-left">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+        <i class="ph ph-trash text-xl"></i> ยืนยันการลบแบบร่าง MA
+      </h3>
+      <p class="py-2 text-base text-base-content">
+        คุณต้องการลบรายการแบบร่างนี้ใช่หรือไม่?
+      </p>
+      <div class="bg-base-200 p-4 rounded-lg mb-3 space-y-1">
+        <div class="font-semibold text-base text-base-content">{{ item.name }}</div>
+        {% if item.psu_disbursement_number %}
+        <div class="text-sm text-base-content/70">ม.อ.เบิกจ่าย: {{ item.psu_disbursement_number }}</div>
+        {% endif %}
+        {% if item.company and item.company != "-" %}
+        <div class="text-sm text-base-content/70">ผู้ให้บริการ: {{ item.company }}</div>
+        {% endif %}
+      </div>
+      <p class="text-xs text-error mb-4 font-medium">
+        * ข้อมูลแบบร่างนี้จะถูกลบถาวรและไม่สามารถกู้คืนได้
+      </p>
+      <form method="POST" action="{{ url_for('procurement.products.delete', procurement_id=item.id, organization_id=organization.id) }}" class="modal-action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" onclick="document.getElementById('modal_delete_draft_{{ item.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
+        <button type="submit" class="btn btn-error text-white gap-1 shadow-sm">
+          <i class="ph ph-trash"></i> ยืนยันลบทิ้ง
+        </button>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>ปิด</button>
+    </form>
+  </dialog>
+  {% endif %}
+
+  {% if can_edit(item) and not item.is_renewed() and item.status != "renewal-requested" and item.status != "draft" %}
   <dialog id="modal_request_renewal_{{ item.id }}" class="modal text-left">
     <div class="modal-box">
       <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
@@ -370,7 +461,7 @@
   </dialog>
   {% endif %}
 
-  {% if can_edit(item) %}
+  {% if can_edit(item) and item.status != "draft" %}
     {% for p_item in item.get_items() %}
       {% for installment in p_item.get_sorted_installments() %}
         {% if installment.is_paid() %}

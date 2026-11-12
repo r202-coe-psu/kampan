@@ -542,12 +542,65 @@ def test_create_ma_save_as_draft(world, client_for):
     assert index_res.status_code == 200
     index_html = index_res.get_data(as_text=True)
     assert "แบบร่าง" in index_html
+    target_id = children[0].id
+    assert f"/procurement/products/{target_id}/edit" in index_html
+    assert f"modal_delete_draft_{target_id}" in index_html
+    assert f"/procurement/payment/{target_id}" not in index_html
+    assert f"modal_request_renewal_{target_id}" not in index_html
 
-    # Check payment detail display
+    # Check that payment detail redirects to edit
     detail_res = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}")
-    assert detail_res.status_code == 200
-    detail_html = detail_res.get_data(as_text=True)
-    assert "แบบร่าง" in detail_html
+    assert detail_res.status_code == 302
+    assert f"/procurement/products/{procurement.id}/edit" in detail_res.headers["Location"]
+
+    # Check that renew redirects to edit
+    renew_res = client.get(f"/procurement/products/{procurement.id}/renew?{_q(world.org)}")
+    assert renew_res.status_code == 302
+    assert f"/procurement/products/{procurement.id}/edit" in renew_res.headers["Location"]
+
+
+def test_delete_draft_procurement(world, client_for):
+    client = client_for(world.admin)
+    form_data = _two_item_form(world)
+    form_data["action"] = "draft"
+    _create(client, world, form_data)
+
+    procurement = models.Procurement.objects.get(parent_procurement=None)
+    assert procurement.status == "draft"
+    proc_id = str(procurement.id)
+
+    # Delete draft via POST
+    del_res = client.post(
+        f"/procurement/products/{proc_id}/delete?{_q(world.org)}",
+        follow_redirects=True,
+    )
+    assert del_res.status_code == 200
+    assert "ลบแบบร่าง" in del_res.get_data(as_text=True)
+
+    # Verify completely deleted from database
+    assert models.Procurement.objects(id=proc_id).count() == 0
+    assert models.Procurement.objects(parent_procurement=procurement).count() == 0
+    assert models.ProcurementItem.objects(procurement=proc_id).count() == 0
+
+
+def test_cannot_delete_active_procurement(world, client_for):
+    client = client_for(world.admin)
+    form_data = _two_item_form(world)
+    form_data["action"] = "save"
+    _create(client, world, form_data)
+
+    procurement = models.Procurement.objects.get(parent_procurement=None)
+    assert procurement.status == "active"
+    proc_id = str(procurement.id)
+
+    # Attempt to delete active MA
+    del_res = client.post(
+        f"/procurement/products/{proc_id}/delete?{_q(world.org)}",
+        follow_redirects=True,
+    )
+    assert del_res.status_code == 200
+    assert "สามารถลบได้เฉพาะรายการที่เป็นแบบร่างเท่านั้น" in del_res.get_data(as_text=True)
+    assert models.Procurement.objects(id=proc_id).count() == 1
 
 
 def test_save_draft_with_incomplete_fields(world, client_for):

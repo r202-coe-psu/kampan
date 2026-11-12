@@ -598,9 +598,10 @@ def _save_form(form, organization, procurement, existing_items, member, is_draft
 
     if is_draft:
         flash("บันทึกแบบร่างเรียบร้อยแล้ว", "success")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
     else:
         flash("บันทึก MA เรียบร้อยแล้ว", "success")
-    return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
+        return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
 
 @module.route("/create", methods=["GET", "POST"])
@@ -666,6 +667,46 @@ def edit(procurement_id):
     return _save_form(form, organization, procurement, procurement.get_items(), member, is_draft=is_draft)
 
 
+@module.route("/<procurement_id>/delete", methods=["POST"])
+@login_required
+def delete(procurement_id):
+    """ลบแบบร่าง MA: อนุญาตเฉพาะรายการที่มีสถานะ draft เท่านั้น"""
+    organization = g.organization
+    if not organization:
+        abort(404)
+    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
+
+    if not ma_permissions.can_edit_procurement(procurement, organization):
+        flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    if procurement.status != "draft":
+        flash("สามารถลบได้เฉพาะรายการที่เป็นแบบร่างเท่านั้น", "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    name = procurement.name
+    # ลบรายการย่อยและสัญญาที่เกี่ยวข้อง
+    models.ProcurementItem.objects(procurement=procurement, organization=organization).delete()
+    for child in models.Procurement.objects(parent_procurement=procurement, organization=organization):
+        models.ProcurementItem.objects(procurement=child, organization=organization).delete()
+        try:
+            if child.image:
+                child.image.delete()
+        except Exception:
+            pass
+    models.Procurement.objects(parent_procurement=procurement, organization=organization).delete()
+
+    try:
+        if procurement.image:
+            procurement.image.delete()
+    except Exception:
+        pass
+    models.Procurement.objects(id=procurement.id).delete()
+
+    flash(f"ลบแบบร่าง '{name}' เรียบร้อยแล้ว", "success")
+    return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+
 @module.route("/<procurement_id>/renew", methods=["GET", "POST"])
 @login_required
 def renew(procurement_id):
@@ -674,6 +715,9 @@ def renew(procurement_id):
     if not organization:
         abort(404)
     old = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
+    if old.status == "draft":
+        flash("ไม่สามารถต่ออายุรายการแบบร่างได้", "warning")
+        return redirect(url_for("procurement.products.edit", procurement_id=old.id, organization_id=organization.id))
     detail_url = url_for("procurement.payment.index", procurement_id=old.id, organization_id=organization.id)
     if not ma_permissions.can_edit_procurement(old, organization):
         flash(NO_RENEW_PERMISSION_MESSAGE, "error")
@@ -730,6 +774,9 @@ def request_renewal(procurement_id):
     procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(NO_RENEW_PERMISSION_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+    if procurement.status == "draft":
+        flash("ไม่สามารถขอต่ออายุรายการแบบร่างได้", "warning")
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
     if procurement.is_renewed():
         flash(ALREADY_RENEWED_MESSAGE, "error")
