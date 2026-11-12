@@ -245,11 +245,27 @@ class ProcurementHeaderForm(FlaskForm):
 
     sum_error = None
 
-    def __init__(self, *args, is_draft=False, **kwargs):
+    def __init__(self, *args, is_draft=False, mode="full", **kwargs):
+        """mode: full = ฟอร์มเต็ม (สร้าง / ต่ออายุ / แก้แบบร่าง) · header = แก้เฉพาะหัว MA ที่ไม่ใช่แบบร่าง
+        · item = แก้รายการย่อยเดียวของ MA ที่ไม่ใช่แบบร่าง (ยอดรวมหัวคำนวณจากผลรวมรายการ ไม่รับจากฟอร์ม)
+
+        ช่องที่ mode นั้นไม่รับถูกตัดออกจากฟอร์ม ค่าที่ส่งมาเกินจึงถูกเมินที่ฝั่ง server
+        """
         super().__init__(*args, **kwargs)
+        self.mode = mode
         self.is_draft = is_draft
+        if mode == "header":
+            del self.items
+            del self.total_amount
+        elif mode == "item":
+            del self.total_amount
+            for name in ("psu_disbursement_number", "disbursement_date", "name", "company"):
+                delattr(self, name)
         if is_draft:
             self.prepare_for_draft()
+
+    def item_entries(self) -> list:
+        return list(self._fields["items"]) if "items" in self._fields else []
 
     def prepare_for_draft(self):
         self.psu_disbursement_number.validators = [
@@ -311,18 +327,18 @@ class ProcurementHeaderForm(FlaskForm):
             entry.form.name.flags.required = False
 
     def set_member_choices(self, choices: list[tuple[str, str]]) -> None:
-        for entry in self.items:
+        for entry in self.item_entries():
             entry.form.responsible_by.choices = choices
 
     def set_division_choices(self, choices: list[tuple[str, str]]) -> None:
-        for entry in self.items:
+        for entry in self.item_entries():
             entry.form.responsible_divisions.choices = choices
 
     def validate(self, extra_validators=None):
         if getattr(self, "is_draft", False):
             self.prepare_for_draft()
         valid = super().validate(extra_validators=extra_validators)
-        if getattr(self, "is_draft", False):
+        if getattr(self, "is_draft", False) or self.mode != "full":
             return valid
 
         # ตรวจผลรวมเมื่อยอดทุกช่องอ่านได้แล้วเท่านั้น (ช่องที่ผิดรูปแบบมี error ของตัวเองอยู่แล้ว)

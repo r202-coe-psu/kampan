@@ -19,6 +19,7 @@ from .procurement import (
     Procurement,
     RenewalConflict,
     ConcurrentEditConflict,
+    ItemDeleteError,
     ProcurementItem,
     Installment,
     PayLogEntry,

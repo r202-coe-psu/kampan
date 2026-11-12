@@ -28,7 +28,9 @@ def _item_doc(procurement):
 
 
 def _edit(client, world, procurement, data):
-    return client.post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}", data=data)
+    """แก้รายการย่อยเดียวของ MA (?item_id=) เพราะ MA ที่ไม่ใช่แบบร่างแก้รายการ / งวดผ่านโหมดแก้รายการเท่านั้น"""
+    item_id = data.get("items-0-item_id") or _item_doc(procurement).id
+    return client.post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}&item_id={item_id}", data=data)
 
 
 def _pay(client, world, procurement, **data):
@@ -252,7 +254,7 @@ def _legacy_item(world, due_count):
 def test_legacy_item_without_mode_derives_toggle_from_installment_count(world, client_for, due_count, checked):
     procurement = _legacy_item(world, due_count)
 
-    html = client_for(world.admin).get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    html = client_for(world.admin).get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}&item_id={_item_doc(procurement).id}").get_data(as_text=True)
 
     tag = re.search(r'<input[^>]*name="items-0-installment_mode"[^>]*>', html).group(0)
     assert ("checked" in tag) is checked
@@ -267,7 +269,7 @@ def test_form_rows_have_only_due_date_and_no_generate_controls(world, client_for
     client = client_for(world.admin)
     pages = [
         client.get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True),
-        client.get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}").get_data(as_text=True),
+        client.get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}&item_id={_item_doc(existing_ma).id}").get_data(as_text=True),
     ]
 
     for html in pages:

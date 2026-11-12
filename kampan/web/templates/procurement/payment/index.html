@@ -289,10 +289,24 @@
         <div class="flex items-center gap-2">
           {{ payment_badge(item.get_payment_status(today)) }}
           {% if can_edit %}
-            <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}#item-{{ item.id }}"
+            <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
                class="btn btn-outline btn-primary btn-xs gap-1">
               <i class="ph ph-pencil-simple"></i> แก้ไข
             </a>
+            {% set delete_block = procurement.get_item_delete_block(item) %}
+            {% if delete_block %}
+              <span class="inline-flex items-center gap-1">
+                <button type="button" class="btn btn-error btn-outline btn-xs gap-1" disabled>
+                  <i class="ph ph-trash"></i> ลบรายการนี้
+                </button>
+                <span class="text-xs text-base-content/60">{{ delete_block }}</span>
+              </span>
+            {% else %}
+              <button type="button" class="btn btn-error btn-outline btn-xs gap-1"
+                      onclick="document.getElementById('delete_item_modal_{{ item.id }}').showModal()">
+                <i class="ph ph-trash"></i> ลบรายการนี้
+              </button>
+            {% endif %}
           {% endif %}
           {% if can_edit and not procurement.is_renewed() %}
             <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
@@ -599,6 +613,29 @@
     </section>
 
     {% if can_edit %}
+      {% if not procurement.get_item_delete_block(item) %}
+        <dialog id="delete_item_modal_{{ item.id }}" class="modal text-left">
+          <div class="modal-box">
+            <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+              <i class="ph ph-warning-circle text-xl"></i> ยืนยันลบรายการย่อย
+            </h3>
+            <p class="py-2 text-base text-base-content">
+              คุณต้องการลบรายการ <strong>{{ item.name }}</strong> ใช่หรือไม่?
+            </p>
+            <p class="text-sm text-base-content/70 mb-4">
+              การลบถาวร กู้คืนไม่ได้ และจะลบประวัติการแจ้งเตือนของรายการนี้ด้วย ยอดรวมของ MA จะคำนวณใหม่จากรายการที่เหลือ
+            </p>
+            <form method="post" action="{{ url_for('procurement.products.delete_item', procurement_id=procurement.id, item_id=item.id, organization_id=organization.id) }}" class="modal-action">
+              {{ form.hidden_tag() }}
+              <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ยกเลิก</button>
+              <button type="submit" class="btn btn-error text-white gap-1">
+                <i class="ph ph-trash"></i> ยืนยันลบ
+              </button>
+            </form>
+          </div>
+          <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+        </dialog>
+      {% endif %}
       <dialog id="log_modal_{{ item.id }}" class="modal">
         <div class="modal-box">
           <h3 class="text-lg font-bold mb-1">เพิ่มบันทึกการแจ้งเตือน</h3>

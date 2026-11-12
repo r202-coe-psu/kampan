@@ -8,6 +8,7 @@
 
 {% block content %}
 {% set is_edit = procurement and procurement.pk %}
+{% set mode = mode or 'full' %}
 {% set back_url = url_for('procurement.products.index', organization_id=organization.id) if (is_edit and procurement.status == 'draft') else url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
 <div class="mb-4">
   {{ RenderBackButton(back_url) }}
@@ -21,7 +22,11 @@
       <h1 class="text-xl md:text-2xl font-bold text-base-content">
         {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่มรายการ MA") }}
       </h1>
-      <p class="text-base-content/60 text-sm">กรอกข้อมูลโครงการและรายการย่อย พร้อมระบุรายละเอียดและการจ่ายเงิน</p>
+      <p class="text-base-content/60 text-sm">
+        {% if mode == 'header' %}แก้ไขข้อมูลหัว MA (ชื่อโครงการ บริษัท เลขที่เบิกจ่าย วันที่) · แก้รายการย่อยได้จากปุ่ม "แก้ไข" ของแต่ละรายการในหน้ารายละเอียด
+        {% elif mode == 'item' %}แก้ไขรายการย่อยนี้รายการเดียว ยอดรวมของ MA จะคำนวณใหม่จากผลรวมรายการย่อย
+        {% else %}กรอกข้อมูลโครงการและรายการย่อย พร้อมระบุรายละเอียดและการจ่ายเงิน{% endif %}
+      </p>
     </div>
   </div>
 
@@ -60,6 +65,17 @@
       </div>
     {% endif %}
 
+    {% if mode == 'item' %}
+    <section class="flex flex-col gap-3 pb-6 border-b border-base-300" id="header_readonly">
+      <p class="text-sm text-base-content/60">ข้อมูลหัว MA (แก้ไขไม่ได้ในหน้านี้ ใช้ปุ่ม "แก้ไข MA" ที่หน้ารายละเอียด)</p>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3 text-sm">
+        <div><dt class="text-base-content/60">ชื่อโครงการ</dt><dd class="font-semibold">{{ procurement.name }}</dd></div>
+        <div><dt class="text-base-content/60">ซื้อจาก (บริษัท)</dt><dd class="font-semibold">{{ procurement.company or '-' }}</dd></div>
+        <div><dt class="text-base-content/60">เลขที่ ม.อ.เบิกจ่าย</dt><dd class="font-semibold">{{ procurement.psu_disbursement_number or '-' }}</dd></div>
+        <div><dt class="text-base-content/60">ยอดเงินรวม (คำนวณจากรายการย่อย)</dt><dd class="font-semibold">{{ procurement.total_amount | format_amount }} บาท</dd></div>
+      </dl>
+    </section>
+    {% else %}
     <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
         {{ input_field(form.psu_disbursement_number, required=True) }}
@@ -68,14 +84,24 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
         {{ input_field(form.name, required=True) }}
         {{ input_field(form.company, required=True) }}
+        {% if mode == 'header' %}
+        <div class="w-full">
+          <div class="fieldset-legend">ยอดเงินรวม (บาท)</div>
+          <p class="font-semibold py-2">{{ procurement.total_amount | format_amount }} บาท</p>
+          <p class="text-xs text-base-content/60">เท่ากับผลรวมรายการย่อย แก้ไขได้ที่การแก้ไขรายการย่อย</p>
+        </div>
+        {% else %}
         <fieldset class="fieldset w-full">
           <legend class="fieldset-legend">{{ form.total_amount.label.text }} <span class="text-error">*</span></legend>
           {{ form.total_amount(class_="input w-full" ~ (" input-error" if form.total_amount.errors else ""), id="total_amount", step="0.01", min="0", inputmode="decimal") }}
           {{ field_errors(form.total_amount) }}
         </fieldset>
+        {% endif %}
       </div>
     </section>
+    {% endif %}
 
+    {% if mode == 'full' %}
     <div id="sum_bar" role="status" aria-live="polite" class="alert sticky top-2 z-10 shadow-sm border bg-amber-100 text-amber-950 border-amber-400">
       <i class="ph ph-scales text-xl"></i>
       <div class="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 text-sm">
@@ -84,24 +110,29 @@
         <span id="sum_diff" class="font-semibold"></span>
       </div>
     </div>
+    {% endif %}
 
+    {% if mode != 'header' %}
     <section class="flex flex-col gap-5">
       <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
-        <i class="ph ph-stack text-primary"></i> รายการย่อย
+        <i class="ph ph-stack text-primary"></i> {{ 'แก้ไขรายการย่อย' if mode == 'item' else 'รายการย่อย' }}
       </h2>
       <div id="items_container" class="flex flex-col gap-6">
         {% for entry in form.items %}
-          {{ item_card(entry.form) }}
+          {{ item_card(entry.form, removable=(mode == 'full')) }}
         {% endfor %}
       </div>
       <p id="items_error" class="text-error text-sm hidden"></p>
+      {% if mode == 'full' %}
       <button type="button" class="btn btn-outline btn-primary w-fit" data-action="add-item">
         <i class="ph ph-plus-circle"></i> เพิ่มรายการย่อย
       </button>
+      {% endif %}
     </section>
 
-    <template id="item_template">{{ item_card(item_prototype) }}</template>
+    {% if mode == 'full' %}<template id="item_template">{{ item_card(item_prototype) }}</template>{% endif %}
     <template id="installment_template">{{ installment_row(installment_prototype) }}</template>
+    {% endif %}
 
     <div class="flex justify-end gap-3 pt-6 border-t border-base-300">
       {% set cancel_target = None if (is_edit and procurement.status == 'draft') else (procurement if is_edit else renew_from) %}
@@ -126,7 +157,8 @@
 <script>
   (function () {
     const form = document.getElementById('ma_form');
-    const itemsContainer = document.getElementById('items_container');
+    // โหมดแก้เฉพาะหัวไม่มีรายการย่อย / แถบผลรวม จึงใช้ container ว่างแทนเพื่อให้ฟังก์ชันร่วมไม่พัง
+    const itemsContainer = document.getElementById('items_container') || document.createElement('div');
     const itemTemplate = document.getElementById('item_template');
     const installmentTemplate = document.getElementById('installment_template');
 
@@ -158,6 +190,7 @@
 
     function updateSum() {
       const bar = document.getElementById('sum_bar');
+      if (!bar) return;  // โหมดแก้หัว / แก้รายการเดียว ยอดรวมคำนวณที่ server
       const total = parseSatang(document.getElementById('total_amount').value);
       let sum = 0;
       let complete = total !== null;

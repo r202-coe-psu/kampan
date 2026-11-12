@@ -248,6 +248,10 @@ class RenewalConflict(Exception):
     """MA เดิมต่ออายุไปแล้ว หรือมีคำขออื่น claim ไปก่อน (เช่นกดบันทึกซ้ำ)"""
 
 
+class ItemDeleteError(Exception):
+    """ลบรายการย่อยไม่ได้ (จ่ายงวดแล้ว / เป็นรายการสุดท้าย) ข้อความใช้แสดงผู้ใช้"""
+
+
 class ConcurrentEditConflict(Exception):
     """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
 
@@ -807,6 +811,66 @@ class Procurement(me.Document):
 
         self.__dict__["_items_cache"] = items
         return self
+
+    def _matching_children(self, item: ProcurementItem) -> list:
+        """สัญญาย่อยที่เป็นสำเนาของรายการนี้ (parent คือ MA นี้ และมีรายการย่อยเดียวชื่อเดียวกัน)"""
+        return [
+            child
+            for child in Procurement.objects(parent_procurement=self, organization=self.organization)
+            if [child_item.name for child_item in child.get_items()] == [item.name]
+        ]
+
+    def get_item_delete_block(self, item: ProcurementItem) -> str | None:
+        """เหตุผลที่ลบรายการย่อยนี้ไม่ได้ (ไม่มี = ลบได้)"""
+        if len(self.get_items()) <= 1:
+            return "MA ต้องมีรายการย่อยอย่างน้อย 1 รายการ"
+        if any(installment.is_paid() for installment in item.installments or []):
+            return "รายการนี้มีงวดที่จ่ายแล้ว ลบไม่ได้"
+        # สัญญาย่อยที่เป็นสำเนาจะถูกลบไปด้วย ถ้าฝั่งสัญญาย่อยบันทึกจ่ายไปแล้วห้ามลบ (กันประวัติการจ่ายหาย)
+        for child in self._matching_children(item):
+            if any(
+                installment.is_paid()
+                for child_item in child.get_items()
+                for installment in child_item.installments or []
+            ):
+                return "สัญญาย่อยของรายการนี้มีงวดที่จ่ายแล้ว ลบไม่ได้"
+        return None
+
+    def delete_item(self, item: ProcurementItem, user=None) -> None:
+        """ลบรายการย่อยของ MA นี้ พร้อมประวัติแจ้งเตือนและสำเนาสัญญาย่อยของรายการนั้น แล้วตั้งยอดรวมหัวเป็นผลรวมที่เหลือ
+
+        สัญญาย่อยที่ตรงกัน = Procurement ที่ parent_procurement คือ MA นี้ และมีรายการย่อยเดียวชื่อเดียวกับรายการที่ลบ
+        raise ItemDeleteError เมื่อลบไม่ได้ และ ConcurrentEditConflict เมื่อมีคนแก้ MA ระหว่างนั้น
+        """
+        from kampan.utils.money import money_sum
+        from .reminder_logs import ReminderLog
+
+        items = self.get_items()
+        if not any(existing.pk == item.pk for existing in items):
+            raise ItemDeleteError("ไม่พบรายการย่อยใน MA นี้")
+        block = self.get_item_delete_block(item)
+        if block:
+            raise ItemDeleteError(block)
+
+        remaining = [existing for existing in items if existing.pk != item.pk]
+        children = self._matching_children(item)
+
+        self.total_amount = money_sum(existing.amount for existing in remaining if existing.amount)
+        if user is not None:
+            self.last_updated_by = user
+        self.save_with_items(remaining, removed_items=[item])
+
+        ReminderLog.objects(item=item.pk).delete()
+        for child in children:
+            child_item_ids = [child_item.pk for child_item in child.get_items()]
+            ReminderLog.objects(item__in=child_item_ids).delete()
+            ProcurementItem.objects(procurement=child, organization=self.organization).delete()
+            try:
+                if child.image:
+                    child.image.delete()
+            except Exception:
+                logger.warning("deleting image of child procurement %s failed", child.pk)
+            Procurement.objects(id=child.pk, organization=self.organization).delete()
 
     def renew_into(self, new_procurement: "Procurement", items: Iterable[ProcurementItem]) -> "Procurement":
         """ต่ออายุ MA นี้เป็น ``new_procurement`` (#32)

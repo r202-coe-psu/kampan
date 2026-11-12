@@ -65,6 +65,12 @@ def _q(organization):
     return f"organization_id={organization.id}"
 
 
+def _item_edit_url(world, procurement, item=None):
+    """URL แก้รายการย่อยเดียว (MA ที่ไม่ใช่แบบร่างแก้รายการได้ทางนี้เท่านั้น) ไม่ระบุ item = รายการแรก"""
+    item = item or procurement.get_items()[0]
+    return f"/procurement/products/{procurement.id}/edit?{_q(world.org)}&item_id={item.id}"
+
+
 def _item(**overrides):
     item = {
         "name": "[TEST] รายการย่อย",
@@ -263,7 +269,7 @@ def test_edit_adds_removes_and_changes_sub_items(world, client_for, create_ma):
         version=procurement.get_version(),
     )
 
-    response = client_for(world.admin).post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}", data=data)
+    response = client_for(world.admin).post(_item_edit_url(world, procurement), data=data)
 
     assert response.status_code == 302
     item.reload()
@@ -278,7 +284,7 @@ def test_edit_form_prefills_sub_items(world, client_for, create_ma):
     item.sub_items = [models.ItemDetail(brand="ยี่ห้อ-EDIT", model_name="รุ่น-EDIT", details="S/N: EDIT-1")]
     procurement = create_ma(world.org, user=world.admin, name="[TEST] MA", total_amount="1000.00", items=[item])
 
-    html = client_for(world.admin).get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    html = client_for(world.admin).get(_item_edit_url(world, procurement)).get_data(as_text=True)
 
     assert 'name="items-0-sub_items-0-brand"' in html and "ยี่ห้อ-EDIT" in html
     assert 'name="items-0-sub_items-0-model_name"' in html and "รุ่น-EDIT" in html
@@ -643,7 +649,7 @@ def test_edit_other_org_ma_is_404(world, client_for, existing_ma, assign_user_to
     assert existing_ma.name == "[TEST] MA เดิม"
 
 
-def test_edit_removing_item_deletes_it_and_keeps_item_ids(world, client_for, create_ma):
+def test_item_edit_keeps_other_items_and_item_ids_and_recomputes_total(world, client_for, create_ma):
     first = _model_item("60.00")
     second = _model_item("40.00")
     procurement = create_ma(world.org, user=world.admin, total_amount="100.00", items=[first, second])
@@ -652,21 +658,24 @@ def test_edit_removing_item_deletes_it_and_keeps_item_ids(world, client_for, cre
         [
             _item(
                 item_id=str(first.id),
-                amount="100.00",
-                installments=[{"installment_id": str(first.installments[0]._id), "due_date": "2026-12-31"}],
+                amount="70.00",
+                installments=[{"installment_id": str(installment_id), "due_date": "2026-12-31"}],
             )
         ],
         total_amount="100.00",
         version=procurement.get_version(),
     )
 
-    response = client_for(world.admin).post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}", data=data)
+    response = client_for(world.admin).post(_item_edit_url(world, procurement, first), data=data)
 
     assert response.status_code == 302
-    assert [item.id for item in models.ProcurementItem.objects(procurement=procurement)] == [first.id]
+    assert {item.id for item in models.ProcurementItem.objects(procurement=procurement)} == {first.id, second.id}
     first.reload()
-    assert first.amount == Decimal("100.00")
-    assert first.installments[0]._id == installment_id
+    second.reload()
+    procurement.reload()
+    assert first.amount == Decimal("70.00") and first.installments[0]._id == installment_id
+    assert second.amount == Decimal("40.00")
+    assert procurement.total_amount == Decimal("110.00")
 
 
 def test_edit_cannot_adopt_item_of_another_ma(world, client_for, create_ma):
@@ -684,15 +693,27 @@ def test_edit_cannot_adopt_item_of_another_ma(world, client_for, create_ma):
     assert models.ProcurementItem.objects(procurement=victim).count() == 1
 
 
-def test_edit_sum_mismatch_keeps_existing_data(world, client_for, existing_ma):
+def test_item_edit_amount_change_recomputes_header_total_instead_of_sum_error(world, client_for, existing_ma):
     data = _edit_form(existing_ma, total="1000.00")
     data["items-0-amount"] = "999.00"
 
+    response = client_for(world.admin).post(_item_edit_url(world, existing_ma), data=data)
+
+    assert response.status_code == 302
+    assert models.ProcurementItem.objects(procurement=existing_ma).get().amount == Decimal("999.00")
+    existing_ma.reload()
+    assert existing_ma.total_amount == Decimal("999.00")
+
+
+def test_header_edit_ignores_total_amount_field(world, client_for, existing_ma):
+    data = _edit_form(existing_ma, total="5.00")
+
     response = client_for(world.admin).post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=data)
 
-    assert response.status_code == 200
-    assert "ขาด 1.00 บาท" in response.get_data(as_text=True)
-    assert models.ProcurementItem.objects(procurement=existing_ma).get().amount == Decimal("1000.00")
+    assert response.status_code == 302
+    existing_ma.reload()
+    assert existing_ma.total_amount == Decimal("1000.00")
+    assert existing_ma.get_items()[0].amount == Decimal("1000.00")
 
 
 def test_edit_with_stale_form_is_rejected_and_keeps_payment(world, client_for, existing_ma):
@@ -724,7 +745,7 @@ def test_edit_keeps_paid_state_and_pay_log_of_paid_installment(world, client_for
     data["items-0-installments-0-paid_date"] = ""
     data["items-0-installments-0-payment_number"] = "HACK"
 
-    response = client_for(world.admin).post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=data)
+    response = client_for(world.admin).post(_item_edit_url(world, existing_ma), data=data)
 
     assert response.status_code == 302
     installment = _first_installment(existing_ma)
@@ -1140,11 +1161,12 @@ def test_ma_form_with_non_finite_amount_is_a_validation_error(world, client_for,
     data["total_amount"] = amount
     data["items-0-amount"] = amount
 
-    response = client_for(world.admin).post(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=data)
+    response = client_for(world.admin).post(_item_edit_url(world, existing_ma), data=data)
 
     assert response.status_code == 200
     existing_ma.reload()
     assert existing_ma.name == "[TEST] MA เดิม"
+    assert existing_ma.get_items()[0].amount == Decimal("1000.00")
 
 
 @pytest.fixture
@@ -1330,7 +1352,7 @@ def test_create_form_uses_daisyui_controls_not_native_date_or_bare_select(world,
 
 
 def test_edit_form_shows_existing_dates_as_iso_value_and_buddhist_era_label(world, client_for, existing_ma):
-    html = client_for(world.admin).get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    html = client_for(world.admin).get(_item_edit_url(world, existing_ma)).get_data(as_text=True)
 
     item = existing_ma.get_items()[0]
     pickers = {name: (value, label) for name, value, label in _picker_inputs(html)}
@@ -1401,7 +1423,7 @@ def test_create_and_edit_ma_with_separate_sn_and_asset_code(world, client_for):
     assert "AC-DEL-03" in table_html
 
     # Edit form prefilling
-    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    edit_html = client.get(_item_edit_url(world, item.procurement)).get_data(as_text=True)
     sn_tag = re.search(r'<input[^>]*name="items-0-has_sub_item_sn"[^>]*>', edit_html).group(0)
     assert "checked" in sn_tag
     asset_tag = re.search(r'<input[^>]*name="items-0-has_sub_item_asset"[^>]*>', edit_html).group(0)

@@ -238,7 +238,7 @@
   </details>
 {% endmacro %}
 
-{% macro item_card(f) %}
+{% macro item_card(f, removable=True) %}
   {% set prefix = f.item_id.name[:-("item_id"|length)] %}
   {% set custom_days = f.reminder_offsets_days.data | select | list %}
   {% set custom_dates = f.custom_reminder_dates.data | select | list %}
@@ -257,9 +257,11 @@
           <i class="ph ph-caret-up collapse-icon text-base"></i>
           <span class="collapse-label text-xs md:text-sm">ย่อรายการ</span>
         </button>
+        {% if removable %}
         <button type="button" class="btn btn-ghost btn-sm text-error" data-action="remove-item" title="ลบรายการย่อย">
           <i class="ph ph-trash"></i>
         </button>
+        {% endif %}
       </div>
     </div>
 

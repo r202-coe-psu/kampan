@@ -161,8 +161,9 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
     )
     procurement = models.Procurement.objects.get()
 
+    item = models.ProcurementItem.objects(procurement=procurement).get()
     html = client.get(
-        f"/procurement/products/{procurement.id}/edit?organization_id={world.org.id}"
+        f"/procurement/products/{procurement.id}/edit?organization_id={world.org.id}&item_id={item.id}"
     ).get_data(as_text=True)
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["2m"]

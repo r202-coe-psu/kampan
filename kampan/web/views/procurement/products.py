@@ -35,6 +35,7 @@ module = Blueprint("products", __name__, url_prefix="/products")
 NO_EDIT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์แก้ไข MA รายการนี้"
 NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุ MA รายการนี้"
 ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
+ITEM_FORM_MISMATCH_MESSAGE = "ข้อมูลรายการย่อยไม่ตรงกับรายการที่เลือกแก้ไข กรุณาเปิดหน้าแก้ไขใหม่"
 STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
 
@@ -331,9 +332,12 @@ def _renew_form_data(organization, old, target_item=None) -> dict:
     }
 
 
-def _build_form(organization, procurement=None, member=None, renew_from=None, target_item=None, is_draft=False) -> forms.procurement.ProcurementHeaderForm:
+def _build_form(
+    organization, procurement=None, member=None, renew_from=None, target_item=None, is_draft=False, mode="full"
+) -> forms.procurement.ProcurementHeaderForm:
+    """mode: full / header / item ดู ProcurementHeaderForm (header และ item ใช้กับการแก้ MA ที่ไม่ใช่แบบร่างเท่านั้น)"""
     if request.method == "POST":
-        form = forms.procurement.ProcurementHeaderForm(is_draft=is_draft)
+        form = forms.procurement.ProcurementHeaderForm(is_draft=is_draft, mode=mode)
     elif renew_from:
         form = forms.procurement.ProcurementHeaderForm(
             formdata=None, data=_renew_form_data(organization, renew_from, target_item=target_item), is_draft=is_draft
@@ -347,16 +351,17 @@ def _build_form(organization, procurement=None, member=None, renew_from=None, ta
                 "name": procurement.name,
                 "company": procurement.company,
                 "total_amount": procurement.total_amount,
-                "items": [_item_form_data(item) for item in procurement.get_items()],
+                "items": [_item_form_data(item) for item in (procurement.get_items() if mode != "item" else [target_item])],
                 "version": procurement.get_version(),
             },
             is_draft=is_draft,
+            mode=mode,
         )
     else:
         form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]}, is_draft=is_draft)
     form.set_member_choices(_member_choices(organization))
     extra_division_ids = []
-    source_items = procurement.get_items() if procurement else ([target_item] if target_item else (renew_from.get_items() if renew_from else []))
+    source_items = _source_items(procurement, renew_from, target_item, mode)
     for it in source_items:
         for div in it.responsible_divisions or []:
             if div:
@@ -365,10 +370,22 @@ def _build_form(organization, procurement=None, member=None, renew_from=None, ta
     return form
 
 
-def _render_form(form, organization, member, procurement=None, form_errors=(), renew_from=None, target_item=None):
+def _source_items(procurement, renew_from, target_item, mode="full") -> list:
+    if mode == "item":
+        return [target_item]
+    if procurement:
+        return procurement.get_items()
+    if target_item:
+        return [target_item]
+    return renew_from.get_items() if renew_from else []
+
+
+def _render_form(
+    form, organization, member, procurement=None, form_errors=(), renew_from=None, target_item=None, mode="full"
+):
     choices = _member_choices(organization)
     extra_division_ids = []
-    source_items = procurement.get_items() if procurement else ([target_item] if target_item else (renew_from.get_items() if renew_from else []))
+    source_items = _source_items(procurement, renew_from, target_item, mode)
     for it in source_items:
         for div in it.responsible_divisions or []:
             if div:
@@ -390,6 +407,7 @@ def _render_form(form, organization, member, procurement=None, form_errors=(), r
         form_errors=[error for error in form_errors if error],
         renew_from=renew_from,
         target_item=target_item,
+        mode=mode,
     )
 
 
@@ -439,13 +457,13 @@ def _build_installments(item_name, installment_entries, existing_installments) -
     return installments
 
 
-def _build_items(form, organization, existing_items, user, is_draft=False):
+def _build_items(form, organization, existing_items, user, is_draft=False, fallback_name=None):
     """แปลงฟอร์มเป็นรายการย่อย คืน (รายการที่จะบันทึก, รายการเดิมที่ถูกลบออกจากฟอร์ม)
 
     item_id ในฟอร์มใช้ได้เฉพาะ id ของรายการย่อยใน MA นี้ id อื่นถือเป็นรายการใหม่
     """
     existing = {str(item.id): item for item in existing_items}
-    member_ids = {member_id for entry in form.items for member_id in entry.form.responsible_by.data or []}
+    member_ids = {member_id for entry in form.item_entries() for member_id in entry.form.responsible_by.data or []}
     members = {
         str(member.id): member
         for member in models.OrganizationUserRole.objects(
@@ -453,11 +471,11 @@ def _build_items(form, organization, existing_items, user, is_draft=False):
         )
     }
     items = []
-    for entry in form.items:
+    for entry in form.item_entries():
         data = entry.form
         item = existing.pop(data.item_id.data or "", None) or models.ProcurementItem(created_by=user)
         raw_name = (data.name.data or "").strip()
-        item.name = raw_name or (form.name.data or "รายการ 1").strip()
+        item.name = raw_name or (fallback_name or form.name.data or "รายการ 1").strip()
         item.category = data.category.data or "ma"
         item.quantity = data.quantity.data or 1
         item.unit = (data.unit.data or "").strip()
@@ -491,11 +509,16 @@ def _build_items(form, organization, existing_items, user, is_draft=False):
 
 
 def _apply_header(form, procurement, user, items=(), is_draft=False) -> None:
+    if form.mode == "item":
+        procurement.last_updated_by = user
+        return
     procurement.psu_disbursement_number = (form.psu_disbursement_number.data or "").strip()
     procurement.disbursement_date = _as_datetime(form.disbursement_date.data) if form.disbursement_date.data else None
     procurement.name = (form.name.data or "").strip() or "แบบร่าง MA"
     procurement.company = (form.company.data or "").strip() or ("-" if is_draft else "")
-    if form.total_amount.data is not None:
+    if form.mode == "header":
+        pass  # ยอดรวมของ MA ที่ไม่ใช่แบบร่างเท่ากับผลรวมรายการย่อยเสมอ ไม่รับจากฟอร์มหัว
+    elif form.total_amount.data is not None:
         procurement.total_amount = form.total_amount.data
     elif is_draft:
         from kampan.utils.money import money_sum
@@ -589,21 +612,41 @@ def _duplicate_child_procurements(parent_procurement, items, user):
         child.save_with_items([child_item])
 
 
-def _save_form(form, organization, procurement, existing_items, member, is_draft=False):
+def _save_form(form, organization, procurement, existing_items, member, is_draft=False, target_item=None):
     user = current_user._get_current_object()
     is_new = procurement.pk is None
-    try:
-        items, removed_items = _build_items(form, organization, existing_items, user, is_draft=is_draft)
-    except InstallmentChangeError as error:
-        return _render_form(form, organization, member, procurement, [str(error)])
+    mode = form.mode
+    render_kwargs = {"mode": mode, "target_item": target_item}
+    removed_items = []
+    if mode == "header":
+        # แก้เฉพาะหัว: รายการย่อยทุกรายการคงเดิม ไม่อ่านช่องรายการจากฟอร์ม
+        items = list(existing_items)
+    elif mode == "item":
+        # แก้รายการเดียว: ฟอร์มต้องมีรายการเดียวและเป็นรายการที่เลือก ส่วนรายการอื่นคงเดิม
+        entries = form.item_entries()
+        if len(entries) != 1 or (entries[0].form.item_id.data or "") != str(target_item.id):
+            return _render_form(form, organization, member, procurement, [ITEM_FORM_MISMATCH_MESSAGE], **render_kwargs)
+        try:
+            built, _ = _build_items(form, organization, [target_item], user, fallback_name=procurement.name)
+        except InstallmentChangeError as error:
+            return _render_form(form, organization, member, procurement, [str(error)], **render_kwargs)
+        items = [built[0] if existing.pk == target_item.pk else existing for existing in existing_items]
+        from kampan.utils.money import money_sum
+
+        procurement.total_amount = money_sum(item.amount for item in items if item.amount)
+    else:
+        try:
+            items, removed_items = _build_items(form, organization, existing_items, user, is_draft=is_draft)
+        except InstallmentChangeError as error:
+            return _render_form(form, organization, member, procurement, [str(error)], **render_kwargs)
 
     _apply_header(form, procurement, user, items=items, is_draft=is_draft)
     try:
         procurement.save_with_items(items, removed_items)
     except models.ConcurrentEditConflict:
-        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
+        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE], **render_kwargs)
     except me.ValidationError as error:
-        return _render_form(form, organization, member, procurement, [error.message])
+        return _render_form(form, organization, member, procurement, [error.message], **render_kwargs)
 
     if is_new and len(items) > 1:
         _duplicate_child_procurements(procurement, items, user)
@@ -664,21 +707,78 @@ def edit(procurement_id):
 
     member = ma_permissions.get_member(organization)
     action = request.form.get("action") if request.method == "POST" else None
-    is_draft = action == "draft"
+    was_draft = procurement.status == "draft"
+    # แบบร่าง = ฟอร์มเต็ม · MA ที่ไม่ใช่แบบร่างแก้ได้แค่หัว หรือรายการเดียว (?item_id=) และเปลี่ยนกลับเป็นแบบร่างไม่ได้
+    is_draft = was_draft and action == "draft"
+    mode = "full"
+    target_item = None
+    if not was_draft:
+        item_id = request.args.get("item_id")
+        if item_id:
+            target_item = _find_item_or_404(procurement, item_id)
+            mode = "item"
+        else:
+            mode = "header"
 
-    form = _build_form(organization, procurement=procurement, member=member, is_draft=is_draft)
+    form = _build_form(
+        organization, procurement=procurement, member=member, is_draft=is_draft, target_item=target_item, mode=mode
+    )
     if not form.validate_on_submit():
-        return _render_form(form, organization, member, procurement)
+        return _render_form(form, organization, member, procurement, target_item=target_item, mode=mode)
 
     if form.version.data != procurement.get_version():
-        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
+        return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE], target_item=target_item, mode=mode)
 
     if is_draft:
         procurement.status = "draft"
-    elif procurement.status == "draft":
+    elif was_draft:
         procurement.status = "active"
 
-    return _save_form(form, organization, procurement, procurement.get_items(), member, is_draft=is_draft)
+    return _save_form(
+        form, organization, procurement, procurement.get_items(), member, is_draft=is_draft, target_item=target_item
+    )
+
+
+def _find_item_or_404(procurement, item_id) -> models.ProcurementItem:
+    """รายการย่อยของ MA นี้ (ในหน่วยงานเดียวกัน) ตาม id ไม่พบ = 404"""
+    for item in procurement.get_items():
+        if str(item.id) == str(item_id):
+            return item
+    abort(404)
+
+
+@module.route("/<procurement_id>/items/<item_id>/delete", methods=["POST"])
+@login_required
+def delete_item(procurement_id, item_id):
+    """ลบรายการย่อยของ MA ที่ไม่ใช่แบบร่าง (ปุ่มที่หน้ารายละเอียด): ห้ามลบรายการสุดท้ายหรือรายการที่มีงวดจ่ายแล้ว"""
+    organization = g.organization
+    if not organization:
+        abort(404)
+    procurement = ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
+    detail_url = url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
+
+    if not ma_permissions.can_edit_procurement(procurement, organization):
+        flash(NO_EDIT_PERMISSION_MESSAGE, "error")
+        return redirect(detail_url)
+
+    item = _find_item_or_404(procurement, item_id)
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash("คำขอไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่อีกครั้ง", "error")
+        return redirect(detail_url)
+
+    item_name = item.name
+    try:
+        procurement.delete_item(item, user=current_user._get_current_object())
+    except models.ItemDeleteError as error:
+        flash(str(error), "error")
+        return redirect(detail_url)
+    except models.ConcurrentEditConflict:
+        flash(STALE_FORM_MESSAGE, "error")
+        return redirect(detail_url)
+
+    flash(f"ลบรายการ '{item_name}' เรียบร้อยแล้ว", "success")
+    return redirect(detail_url)
 
 
 @module.route("/<procurement_id>/delete", methods=["POST"])

@@ -88,8 +88,12 @@ def test_dropdown_posts_the_original_field_value(world, client_for):
     assert first.category == "intangible" and first.reminder_kind == "license"
 
 
+def _item_edit_url(world, procurement):
+    return f"/procurement/products/{procurement.id}/edit?{_q(world.org)}&item_id={procurement.get_items()[0].id}"
+
+
 def test_calendar_shows_buddhist_year_label_and_th_locale_but_posts_iso(world, client_for, existing_ma):
-    html = client_for(world.admin).get(f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    html = client_for(world.admin).get(_item_edit_url(world, existing_ma)).get_data(as_text=True)
 
     page = _strip_templates(html)
     item = existing_ma.get_items()[0]
@@ -199,7 +203,7 @@ def test_create_ma_item_division_selection_removed_and_auto_derived(world, clien
     assert item.has_custom_responsible_divisions is False
 
     # 3. Edit page also does not render division selector
-    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    edit_html = client.get(_item_edit_url(world, item.procurement)).get_data(as_text=True)
     assert 'name="items-0-responsible_divisions"' not in edit_html
 
 
@@ -230,7 +234,7 @@ def test_responsible_by_shows_selected_members_in_form(world, client_for):
     assert len(item.responsible_by) == 2
 
     # 3. On edit form, both members are shown in selected-members box
-    edit_html = client.get(f"/procurement/products/{item.procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    edit_html = client.get(_item_edit_url(world, item.procurement)).get_data(as_text=True)
     assert f'data-member-id="{world.role_creator.id}"' in edit_html
     assert f'data-member-id="{world.role_admin.id}"' in edit_html
     assert world.role_creator.display_user_fullname() in edit_html
@@ -344,29 +348,32 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
     assert "เตือนจ่ายงวดล่วงหน้า" in detail_inst_html
 
     # Edit form for installment mode: container does not have hidden class
-    edit_html = client.get(f"/procurement/products/{ma_inst.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    edit_html = client.get(_item_edit_url(world, ma_inst)).get_data(as_text=True)
     assert 'class="payment-reminder-container" data-payment-reminder>' in edit_html
 
 
 def test_edit_buttons_in_detail_and_requisition_pages(world, client_for, existing_ma):
     item = existing_ma.get_items()[0]
     edit_url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
-    item_edit_url = f"{edit_url}#item-{item.id}"
+    item_edit_url = f"{edit_url}&amp;item_id={item.id}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
     requisition_url = f"/procurement/requisitions?{_q(world.org)}"
 
     # 1. Editor (admin or responsible) sees edit buttons
     editor_client = client_for(world.admin)
     detail_html = editor_client.get(detail_url).get_data(as_text=True)
-    assert item_edit_url in detail_html
-    assert edit_url in detail_html
+    assert item_edit_url in detail_html  # "แก้ไข" ของรายการ -> โหมดแก้รายการเดียว
+    assert edit_url in detail_html  # "แก้ไข MA" -> โหมดแก้เฉพาะหัว
 
     req_html = editor_client.get(requisition_url).get_data(as_text=True)
     assert edit_url in req_html
 
-    # Edit form anchors to item id
-    edit_form_html = editor_client.get(edit_url).get_data(as_text=True)
+    # Item edit form shows only that item; header edit form has no item cards
+    edit_form_html = editor_client.get(f"{edit_url}&item_id={item.id}").get_data(as_text=True)
     assert f'id="item-{item.id}"' in edit_form_html
+    assert 'data-action="remove-item"' not in edit_form_html and 'data-action="add-item"' not in edit_form_html
+    header_html = editor_client.get(edit_url).get_data(as_text=True)
+    assert 'name="items-0-name"' not in header_html
 
     # 2. Viewer (head without edit rights) cannot see edit buttons
     viewer_client = client_for(world.head)
