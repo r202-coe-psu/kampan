@@ -1,3 +1,4 @@
+import logging
 import datetime
 from collections import Counter
 from decimal import Decimal
@@ -26,6 +27,8 @@ from kampan.web import acl, forms
 
 from . import ma_permissions
 from .ma_pagination import paginate_sorted, resolve_sort
+
+logger = logging.getLogger(__name__)
 
 module = Blueprint("products", __name__, url_prefix="/products")
 
@@ -771,6 +774,12 @@ def renew(procurement_id):
     except me.ValidationError as error:
         return _render_form(form, organization, member, form_errors=[error.message], renew_from=old, target_item=target_item)
 
+    try:
+        old.pay_single_installments_on_renewal(user)
+    except Exception:
+        # ต่ออายุสำเร็จแล้ว แต่บันทึกจ่ายงวดเดียวของ MA เดิมไม่สำเร็จ: แจ้งผู้ใช้ให้บันทึกเองและ log สาเหตุ
+        logger.exception("recording single installments of %s on renewal failed", old.pk)
+        flash("ต่ออายุแล้ว แต่บันทึกการจ่ายงวดของ MA เดิมไม่สำเร็จ กรุณาบันทึกจ่ายที่หน้ารายละเอียด MA เดิม", "warning")
     flash("ต่ออายุ MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=new.id, organization_id=organization.id))
 

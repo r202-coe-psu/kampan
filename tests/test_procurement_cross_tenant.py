@@ -839,6 +839,13 @@ def test_products_list_has_no_request_renewal(world, client_for):
 def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     """ต่ออายุแล้ว MA เดิมถูกปิดและหยุดเตือน จึงเตือนก่อนถ้ายังมีงวดที่ไม่ได้บันทึกจ่าย"""
     unpaid = _make_procurement(world.org_a, world.admin_a, name="Unpaid MA", status="pending")
+    single = _make_procurement(world.org_a, world.admin_a, name="Single MA", status="pending")
+    models.ProcurementItem.objects(procurement=unpaid).update(
+        set__installments=[
+            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=10)),
+            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=100)),
+        ]
+    )
     paid = _make_procurement(world.org_a, world.admin_a, name="Paid MA", status="pending")
     models.ProcurementItem.objects(procurement=paid).update(
         set__installments=[models.Installment(due_date=datetime.datetime.now(), paid_date=datetime.datetime.now())]
@@ -856,3 +863,5 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     assert f'id="renew_check_{paid.id}"' not in paid_detail
     assert f'id="renew_check_{unpaid.id}"' in listing
     assert f'id="renew_check_{paid.id}"' not in listing
+    # รายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น จึงไม่ต้องเตือน
+    assert f'id="renew_check_{single.id}"' not in listing

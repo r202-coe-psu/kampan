@@ -10,6 +10,12 @@
       <p class="text-sm text-base-content/70 mb-3">
         เมื่อต่ออายุ MA เดิมจะถูกปิดและระบบจะหยุดเตือนทุกงวดของ MA นี้ ถ้าจ่ายแล้วให้บันทึกจ่ายก่อน หรือเลือกต่ออายุต่อไปได้เลย
       </p>
+      {% set single = procurement.get_unpaid_installments(single=True) %}
+      {% if single %}
+        <p class="text-xs text-base-content/70 mb-2">
+          รายการที่มีงวดเดียว ({{ single|length }} รายการ) ถือว่าจ่ายเมื่อต่ออายุ ระบบจะบันทึกว่าจ่ายแล้ววันนี้ให้
+        </p>
+      {% endif %}
       <div class="space-y-2 max-h-80 overflow-y-auto">
         {% for item, index, installment in unpaid %}
           {% set overdue = installment.due_date.date() < today %}

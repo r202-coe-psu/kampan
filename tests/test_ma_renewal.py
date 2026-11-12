@@ -207,7 +207,14 @@ def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     assert world.old.status == "renewed"
     assert world.old.renewed_to.id == new.id
     assert world.old.psu_disbursement_number == "PSU-OLD-1"
-    assert _old_snapshot(world) == before
+    # รายการที่มีหลายงวดไม่ถูกแตะ ส่วนรายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น (บันทึกจ่ายวันนี้ action renewed)
+    after = _old_snapshot(world)
+    assert after[0] == before[0]
+    single = models.ProcurementItem.objects(procurement=world.old, name="[TEST] MA B").get()
+    (installment,) = single.installments
+    assert installment.is_paid()
+    assert installment.paid_by.id == world.responsible.id
+    assert [entry.action for entry in installment.pay_log] == ["renewed"]
 
 
 def test_double_submit_creates_only_one_new_ma(world, client_for):

@@ -256,6 +256,7 @@ PAY_LOG_ACTIONS = [
     ("paid", "บันทึกจ่าย"),
     ("edited", "แก้ไขการบันทึก"),
     ("unpaid", "ยกเลิกการจ่าย"),
+    ("renewed", "จ่ายตอนต่ออายุ"),
 ]
 
 
@@ -619,14 +620,41 @@ class Procurement(me.Document):
         """สถานะที่แย่ที่สุดของทุกรายการย่อย (overdue > upcoming > unpaid) หรือ paid เมื่อจ่ายครบทุกงวด"""
         return worst_payment_status(item.get_payment_status(today) for item in self.get_items())
 
-    def get_unpaid_installments(self) -> list:
-        """งวดที่ยังไม่ได้บันทึกจ่ายของทุกรายการย่อย ``[(item, ลำดับงวด, installment)]`` เรียงตามวันครบกำหนด"""
+    def get_unpaid_installments(self, single: bool = False) -> list:
+        """งวดที่ยังไม่ได้บันทึกจ่ายของทุกรายการย่อย ``[(item, ลำดับงวด, installment)]`` เรียงตามวันครบกำหนด
+
+        รายการย่อยที่มีงวดเดียวถือว่าจ่ายตอนต่ออายุ (``pay_single_installments_on_renewal``) จึงไม่นับ
+        เว้นแต่ ``single=True`` (คืนเฉพาะรายการที่มีงวดเดียวแทน)
+        """
         rows = []
         for item in self.get_items():
+            if (item.get_installment_count() == 1) != single:
+                continue
             for index, installment in enumerate(item.get_sorted_installments(), start=1):
                 if installment.due_date and not installment.is_paid():
                     rows.append((item, index, installment))
         return sorted(rows, key=lambda row: row[2].due_date)
+
+    def pay_single_installments_on_renewal(self, user) -> int:
+        """ต่ออายุ = จ่ายงวดนั้น: รายการย่อยที่มีงวดเดียวและยังไม่จ่าย บันทึกว่าจ่ายแล้ววันนี้ (action ``renewed``)
+
+        แก้แต่ละงวดแบบ atomic ด้วย positional operator คืนจำนวนงวดที่บันทึก
+        """
+        now = datetime.datetime.now()
+        count = 0
+        for item, _, installment in self.get_unpaid_installments(single=True):
+            entry = PayLogEntry(action="renewed", pressed_at=now, paid_date=now, by=user)
+            updated = ProcurementItem.objects(
+                id=item.id,
+                organization=self.organization,
+                __raw__={"installments": {"$elemMatch": {"_id": installment._id, "paid_date": None}}},
+            ).update_one(
+                set__installments__S__paid_date=now,
+                set__installments__S__paid_by=user,
+                set__installments__S__pay_log=[*installment.pay_log, entry],
+            )
+            count += bool(updated)
+        return count
 
     def get_installment_progress(self) -> tuple[int, int]:
         """(จำนวนงวดที่จ่ายแล้ว, จำนวนงวดทั้งหมด) ของทุกรายการย่อย"""
