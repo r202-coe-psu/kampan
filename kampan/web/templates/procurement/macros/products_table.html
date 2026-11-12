@@ -528,7 +528,7 @@
 
               <div class="form-control">
                 <label class="label py-1"><span class="label-text font-medium">ยอดเงินที่จ่ายจริง (บาท)</span></label>
-                <input type="number" step="0.01" min="0" name="paid_amount" placeholder="{{ modal_due or p_item.amount or '' }}" class="input input-bordered input-sm w-full"/>
+                <input type="number" step="0.01" min="0" name="paid_amount" placeholder="{{ modal_due or p_item.amount or '' }}" value="{{ modal_due if modal_due is not none else (p_item.amount if p_item.amount is not none else '') }}" class="input input-bordered input-sm w-full"/>
               </div>
 
               <div class="modal-action">

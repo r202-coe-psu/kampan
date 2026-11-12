@@ -661,7 +661,7 @@
                 <legend class="fieldset-legend">ยอดที่จ่ายจริง (บาท) <span class="text-base-content/50">ไม่บังคับ</span></legend>
                 <input type="number" name="paid_amount" step="0.01" min="0" class="input w-full"
                        placeholder="{{ modal_due or '' }}"
-                       value="{{ installment.paid_amount if installment.paid_amount is not none else '' }}" />
+                       value="{{ installment.paid_amount if installment.paid_amount is not none else (modal_due if modal_due is not none else '') }}" />
               </fieldset>
               <div class="modal-action">
                 <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">ยกเลิก</button>

@@ -879,3 +879,16 @@ def test_split_item_with_one_installment_is_warned_not_paid_by_renewal(world, cl
     assert [row[1] for row in split.get_unpaid_installments()] == [1]
     assert split.pay_single_installments_on_renewal(world.admin_a) == 0
     assert not any(item.installments[0].is_paid() for item in split.get_items())
+
+
+def test_pay_modals_default_paid_amount_to_due_amount(world, client_for):
+    """ยอดที่จ่ายจริงตั้งต้นเป็นยอดที่ต้องจ่าย (ใช้ได้ทั้งหน้ารายละเอียดและตารางรายการ MA)"""
+    procurement = _make_procurement(world.org_a, world.admin_a, name="Amount MA", status="active")
+    client = client_for(world.admin_a)
+    org = world.org_a.id
+
+    detail = client.get(f"/procurement/payment/{procurement.id}?organization_id={org}").data.decode("utf-8")
+    listing = client.get(f"/procurement/products?organization_id={org}").data.decode("utf-8")
+
+    assert 'name="paid_amount"' in detail and 'value="1000.00"' in detail.split('name="paid_amount"', 1)[1][:300]
+    assert 'value="1000.00"' in listing.split('name="paid_amount"', 1)[1][:300]
