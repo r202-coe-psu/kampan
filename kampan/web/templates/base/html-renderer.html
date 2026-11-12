@@ -244,12 +244,13 @@ file_input -->
    ปุ่ม select แสดงข้อความที่เลือก เมนู (menu) เลือกด้วยคลิกหรือคีย์บอร์ด · เริ่มทำงานด้วย initDropdownSelectsIn(root)
    (js/forms/dropdown_select.js) ใช้ใน <template> ได้ id ทั้งหมดอิงจาก id ที่ส่งมา #}
 {% macro dropdown_select_control(name, id, choices, value="", disabled=False, invalid=False, aria_label="",
-  size="", placeholder="เลือก...", submit_on_change=False, class_="") %}
+  size="", placeholder="เลือก...", submit_on_change=False, class_="", searchable=False) %}
   {% set value = (value if value is not none else "") | string %}
   {% set ns = namespace(label="") %}
   {% for option_value, option_label in choices %}
     {% if option_value | string == value %}{% set ns.label = option_label %}{% endif %}
   {% endfor %}
+  {% set show_search = searchable or choices|length > 15 %}
   <div class="relative w-full {{ class_ }}" data-dropdown-select{% if submit_on_change %} data-submit-on-change{% endif %}
        data-placeholder="{{ placeholder }}">
     <input type="hidden" name="{{ name }}" id="{{ id }}" value="{{ value }}"{% if disabled %} disabled{% endif %} />
@@ -259,13 +260,16 @@ file_input -->
       <span data-dd-label class="truncate{{ '' if ns.label else ' text-base-content/50' }}">{{ ns.label or placeholder }}</span>
     </button>
     <div id="dd-menu-{{ id }}" data-dd-menu role="listbox" tabindex="-1"
-        class="hidden absolute left-0 right-0 top-full mt-1 z-50 flex-col max-h-72 bg-base-100 rounded-box border border-base-300 shadow-lg p-1">
-      {% if choices|length > 6 %}
-        <div class="p-1 border-b border-base-200 mb-1">
-          <input type="text" class="input input-xs w-full dd-search-input" style="width: 100%; max-width: 100%;" placeholder="ค้นหาตัวเลือก..." />
+        class="hidden absolute left-0 right-0 top-full mt-1 z-50 flex-col max-h-80 bg-base-100 rounded-box border border-base-300 shadow-xl p-1 overflow-hidden">
+      {% if show_search %}
+        <div class="p-1.5 border-b border-base-200 mb-1">
+          <label class="input input-xs w-full flex items-center gap-1.5 bg-base-200/50">
+            <i class="ph ph-magnifying-glass text-base-content/50 text-xs shrink-0"></i>
+            <input type="text" class="grow bg-transparent border-0 outline-none p-0 dd-search-input text-xs" placeholder="ค้นหาตัวเลือก..." />
+          </label>
         </div>
       {% endif %}
-      <ul class="menu w-full flex-nowrap max-h-56 overflow-y-auto p-0" style="width: 100%;">
+      <ul class="menu w-full flex-nowrap max-h-72 overflow-y-auto p-0" style="width: 100%;">
         {% for option_value, option_label in choices %}
           {% set is_selected = option_value | string == value %}
           <li class="w-full" style="width: 100%;">
@@ -280,7 +284,7 @@ file_input -->
 
 {# ช่อง WTForms SelectField (choices ของ field) พร้อม legend และข้อความ error #}
 {% macro dropdown_select(field, required=False, wrapper_class="", size="", hide_label=False, aria_label="",
-  submit_on_change=False, disabled=False, show_errors=True, placeholder="เลือก...") %}
+  submit_on_change=False, disabled=False, show_errors=True, placeholder="เลือก...", searchable=False) %}
   {% set invalid = field.errors | count > 0 %}
   {% if hide_label %}<div class="w-full {{ wrapper_class }}">{% else %}
   <fieldset class="fieldset w-full {{ wrapper_class }}">
@@ -289,7 +293,7 @@ file_input -->
     </legend>
   {% endif %}
     {{ dropdown_select_control(field.name, field.id, field.choices, field.data, disabled=disabled, invalid=invalid,
-         aria_label=aria_label or field.label.text, size=size, placeholder=placeholder, submit_on_change=submit_on_change) }}
+         aria_label=aria_label or field.label.text, size=size, placeholder=placeholder, submit_on_change=submit_on_change, searchable=searchable) }}
     {% if show_errors %}
       {% for error in field.errors %}{% if error is string %}<p class="text-error text-xs mt-1">{{ error }}</p>{% endif %}{% endfor %}
     {% endif %}
