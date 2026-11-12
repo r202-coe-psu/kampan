@@ -517,6 +517,7 @@ def test_checkout_page_with_no_items_left_renders(world, client_for):
 
 
 def test_checkout_post_with_no_items_left_does_not_save(world, client_for):
+    world.a.order.update(set__status="pending")
     client = client_for(world.user_a)
     before = models.CheckoutItem.objects.count()
 
@@ -573,3 +574,280 @@ def test_detail_page_posts_state_changes(world, client_for, status, detail, acti
     form_tag = html[: match.start()].rsplit("<form", 1)[1]
     assert 'method="POST"' in form_tag
     assert not re.search(rf'href="{re.escape(action_url)}[?/]', html)
+
+
+# ---------------------------------------------------------------------------
+# 4. issue #50: lost_breaks / inventories / item_checkouts state changes
+# ---------------------------------------------------------------------------
+
+
+def _make_lost_break(world, tenant="a", quantity=3, status="pending"):
+    org = world.org_a if tenant == "a" else world.org_b
+    user = world.user_a if tenant == "a" else world.user_b
+    t = world.a if tenant == "a" else world.b
+    return models.LostBreakItem(
+        organization=org,
+        user=user,
+        item=t.item,
+        lost_from=t.inventory,
+        quantity=quantity,
+        status=status,
+    ).save()
+
+
+def _decide(client, lost_break, org, choice):
+    return client.post(
+        f"/lost_breaks/{lost_break.id}/decide/{choice}?organization_id={org.id}"
+    )
+
+
+def test_lost_break_decide_get_is_not_allowed(world, client_for):
+    lost = _make_lost_break(world)
+
+    response = client_for(world.user_a).get(
+        f"/lost_breaks/{lost.id}/decide/approve?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 405
+    assert _reload(lost).status == "pending"
+    assert _remain(world.a.inventory) == 10
+
+
+def test_lost_break_approve_twice_changes_stock_once(world, client_for):
+    lost = _make_lost_break(world, quantity=3)
+    client = client_for(world.user_a)
+
+    _decide(client, lost, world.org_a, "approve")
+    _decide(client, lost, world.org_a, "approve")
+
+    assert _reload(lost).status == "active"
+    assert _remain(world.a.inventory) == 13
+
+
+def test_lost_break_denied_after_approve_does_not_touch_stock(world, client_for):
+    lost = _make_lost_break(world, quantity=3)
+    client = client_for(world.user_a)
+
+    _decide(client, lost, world.org_a, "approve")
+    _decide(client, lost, world.org_a, "denied")
+
+    assert _reload(lost).status == "active"
+    assert _remain(world.a.inventory) == 13
+
+
+def test_lost_break_decide_invalid_choice_is_404(world, client_for):
+    lost = _make_lost_break(world)
+
+    response = _decide(client_for(world.user_a), lost, world.org_a, "whatever")
+
+    assert response.status_code == 404
+    assert _reload(lost).status == "pending"
+
+
+def test_lost_break_decide_other_org_is_404(world, client_for):
+    lost_b = _make_lost_break(world, tenant="b")
+
+    response = _decide(client_for(world.user_a), lost_b, world.org_a, "approve")
+
+    assert response.status_code == 404
+    assert _reload(lost_b).status == "pending"
+    assert _remain(world.b.inventory) == 10
+
+
+def test_lost_break_delete_get_not_allowed_and_post_scoped(world, client_for):
+    lost = _make_lost_break(world)
+    lost_b = _make_lost_break(world, tenant="b")
+    client = client_for(world.user_a)
+
+    get_response = client.get(
+        f"/lost_breaks/{lost.id}/delete?organization_id={world.org_a.id}"
+    )
+    other_org = client.post(
+        f"/lost_breaks/{lost_b.id}/delete?organization_id={world.org_a.id}"
+    )
+    own = client.post(f"/lost_breaks/{lost.id}/delete?organization_id={world.org_a.id}")
+
+    assert get_response.status_code == 405
+    assert other_org.status_code == 404
+    assert _reload(lost_b).status == "pending"
+    assert own.status_code == 302
+    assert _reload(lost).status == "disactive"
+
+
+def test_lost_break_delete_rejects_approved(world, client_for):
+    lost = _make_lost_break(world, status="active")
+
+    client_for(world.user_a).post(
+        f"/lost_breaks/{lost.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert _reload(lost).status == "active"
+
+
+def test_lost_break_add_without_inventory_flashes_instead_of_500(world, client_for):
+    world.a.inventory.update(set__remain=0)
+
+    response = client_for(world.user_a).post(
+        f"/lost_breaks/add?organization_id={world.org_a.id}",
+        data={
+            "item": str(world.a.item.id),
+            "set_": 0,
+            "piece": 1,
+            "description": "x",
+        },
+    )
+
+    assert response.status_code == 302
+    assert models.LostBreakItem.objects.count() == 0
+
+
+def test_inventory_delete_get_not_allowed(world, client_for):
+    response = client_for(world.user_a).get(
+        f"/inventories/{world.a.inventory.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 405
+
+
+def _inventory_with_bill(world):
+    register = models.RegistrationItem(organization=world.org_a, receipt_id="R1").save()
+    world.a.inventory.update(set__registration=register)
+    return register
+
+
+def test_inventory_delete_other_org_is_404(world, client_for):
+    _inventory_with_bill(world)
+
+    response = client_for(world.user_a).post(
+        f"/inventories/{world.b.inventory.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 404
+    assert _reload(world.b.inventory).status == "active"
+
+
+def test_inventory_delete_refused_when_stock_already_used(world, client_for):
+    _inventory_with_bill(world)
+    world.a.inventory.update(set__remain=7)
+
+    client_for(world.user_a).post(
+        f"/inventories/{world.a.inventory.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert _reload(world.a.inventory).status == "active"
+
+
+def test_inventory_delete_refused_when_checkout_references_it(world, client_for):
+    _inventory_with_bill(world)
+    world.a.checkout.update(push__inventories=world.a.inventory)
+
+    client_for(world.user_a).post(
+        f"/inventories/{world.a.inventory.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert _reload(world.a.inventory).status == "active"
+
+
+def test_inventory_delete_unused_succeeds(world, client_for):
+    _inventory_with_bill(world)
+
+    response = client_for(world.user_a).post(
+        f"/inventories/{world.a.inventory.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 302
+    assert _reload(world.a.inventory).status == "disactive"
+
+
+def _pending_order_checkout(world):
+    order, checkout = _make_order(
+        world.org_a, world.user_a, world.a.item, status="pending"
+    )
+    return order, checkout
+
+
+def test_checkout_delete_get_not_allowed(world, client_for):
+    order, checkout = _pending_order_checkout(world)
+
+    response = client_for(world.user_a).get(
+        f"/item_checkouts/checkout/{checkout.id}/delete?organization_id={world.org_a.id}"
+    )
+
+    assert response.status_code == 405
+    assert _reload(checkout).status != "disactive"
+
+
+def test_checkout_delete_pending_order_and_other_org(world, client_for):
+    order, checkout = _pending_order_checkout(world)
+    client = client_for(world.user_a)
+
+    other = client.post(
+        f"/item_checkouts/checkout/{world.b.checkout.id}/delete"
+        f"?organization_id={world.org_a.id}"
+    )
+    own = client.post(
+        f"/item_checkouts/checkout/{checkout.id}/delete"
+        f"?organization_id={world.org_a.id}"
+    )
+
+    assert other.status_code == 404
+    assert _reload(world.b.checkout).status != "disactive"
+    assert own.status_code == 302
+    assert _reload(checkout).status == "disactive"
+
+
+@pytest.mark.parametrize("status", ["confirmed", "approved", "pending on admin"])
+def test_checkout_delete_rejected_when_order_not_pending(world, client_for, status):
+    order, checkout = _make_order(world.org_a, world.user_a, world.a.item, status=status)
+
+    client_for(world.user_a).post(
+        f"/item_checkouts/checkout/{checkout.id}/delete"
+        f"?organization_id={world.org_a.id}"
+    )
+
+    assert _reload(checkout).status != "disactive"
+
+
+@pytest.mark.parametrize("status", ["confirmed", "approved", "pending on admin"])
+def test_checkout_edit_and_add_rejected_when_order_not_pending(
+    world, client_for, status
+):
+    order, checkout = _make_order(world.org_a, world.user_a, world.a.item, status=status)
+    client = client_for(world.user_a)
+
+    edit = client.post(
+        f"/item_checkouts/checkout/{checkout.id}/edit"
+        f"?organization_id={world.org_a.id}",
+        data={"item": str(world.a.item.id), "piece": 9},
+    )
+    add = client.post(
+        f"/item_checkouts/checkout?organization_id={world.org_a.id}"
+        f"&order_id={order.id}",
+        data={"item": str(world.a.item.id), "piece": 1},
+    )
+
+    assert edit.status_code == 302 and add.status_code == 302
+    assert _reload(checkout).piece == 2
+    assert models.CheckoutItem.objects(order=order).count() == 1
+
+
+def test_checkout_uses_session_organization_not_query(world, client_for):
+    order, _ = _make_order(world.org_a, world.user_a, status="pending")
+
+    client_for(world.user_a).post(
+        f"/item_checkouts/checkout?organization_id={world.org_a.id}"
+        f"&order_id={order.id}",
+        data={"item": str(world.a.item.id), "piece": 1},
+    )
+
+    created = models.CheckoutItem.objects(order=order).get()
+    assert created.organization.id == world.org_a.id
+
+
+def test_ordinal_number_counter_is_atomic_and_unique(world):
+    numbers = [
+        approve_views.get_next_ordinal_number(world.org_a) for _ in range(5)
+    ]
+
+    assert numbers == ["1", "2", "3", "4", "5"]
+    assert approve_views.get_next_ordinal_number(world.org_b) == "1"

@@ -133,7 +133,8 @@
                                             body="ต้องการลบคำสั่งเบิกวัสดุ <b> %s </b>" | format(checkout.item.name) ,
                       cancel="ยกเลิก",
                       submit="ยืนยัน",
-                      redirect=url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id)
+                      redirect=url_for('item_checkouts.delete', checkout_item_id=checkout.id, organization_id=organization.id),
+  post=True
 
                       ) }}
                     </td>

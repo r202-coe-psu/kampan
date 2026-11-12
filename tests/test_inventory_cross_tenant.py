@@ -73,7 +73,7 @@ def _make_tenant_data(organization, user, prefix):
     )
     inventory.save()
     order = models.OrderItem(
-        status="pending on admin",
+        status="pending",
         approval_status="pending",
         head_endorser=user,
         description=f"{prefix} order",
@@ -228,7 +228,7 @@ FOREIGN_ID_REQUESTS = [
         "/item_checkouts/checkout/{b.checkout.id}/edit",
         {"item": "{b.item.id}", "piece": "5", "created_date": "2026-01-01T10:00"},
     ),
-    ("GET", "/item_checkouts/checkout/{b.checkout.id}/delete", None),
+    ("POST", "/item_checkouts/checkout/{b.checkout.id}/delete", None),
     ("GET", "/item_checkouts/order/{b.order.id}/upload_file_items", None),
     # item_orders.py
     ("GET", "/item_orders/{b.order.id}/edit", None),
@@ -253,7 +253,7 @@ FOREIGN_ID_REQUESTS = [
         "/inventories/{b.inventory.id}/edit",
         {"item": "{b.item.id}", "warehouse": "{b.warehouse.id}", "set_": "99", "price": "1"},
     ),
-    ("GET", "/inventories/{b.inventory.id}/delete", None),
+    ("POST", "/inventories/{b.inventory.id}/delete", None),
     ("GET", "/inventories/all-item?item_register_id={b.registration.id}", None),
     ("GET", "/inventories/item_register/{b.registration.id}/upload_file", None),
     # item_registers.py
@@ -292,9 +292,9 @@ FOREIGN_ID_REQUESTS = [
         "/lost_breaks/{b.lost_break.id}/edit",
         {"item": "{b.item.id}", "set_": "0", "piece": "1", "description": "x"},
     ),
-    ("GET", "/lost_breaks/{b.lost_break.id}/delete", None),
-    ("GET", "/lost_breaks/{b.lost_break.id}/decide/approve", None),
-    ("GET", "/lost_breaks/{b.lost_break.id}/decide/denied", None),
+    ("POST", "/lost_breaks/{b.lost_break.id}/delete", None),
+    ("POST", "/lost_breaks/{b.lost_break.id}/decide/approve", None),
+    ("POST", "/lost_breaks/{b.lost_break.id}/decide/denied", None),
     # notifications.py
     ("GET", "/notifications/{b.item.id}/set_status", None),
     # warehouses.py
@@ -421,7 +421,10 @@ def test_item_image_own_org_ok(world, client_for, gridfs_enabled):
 def test_invalid_object_id_returns_404(world, client_for, url):
     client = client_for(world.user_a)
 
-    response = client.get(_with_org(url, world.org_a))
+    if "/decide/" in url:
+        response = client.post(_with_org(url, world.org_a))
+    else:
+        response = client.get(_with_org(url, world.org_a))
 
     assert response.status_code == 404
 
@@ -659,6 +662,7 @@ def test_lost_break_lists_only_own_org(world, client_for, url):
 
 
 def test_admin_approve_own_order_deducts_stock(world, client_for):
+    world.a.order.update(set__status="pending on admin")
     client = client_for(world.user_a)
 
     response = client.post(f"/approve_orders/{world.a.order.id}/admin_approve?organization_id={world.org_a.id}")

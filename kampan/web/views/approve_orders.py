@@ -1,4 +1,5 @@
 from bson import ObjectId
+from pymongo import ReturnDocument
 from flask import (
     Blueprint,
     render_template,
@@ -86,15 +87,29 @@ def return_to_inventories(taken) -> None:
 
 
 def get_next_ordinal_number(organization) -> str:
-    """เลขลำดับใบเบิกที่อนุมัติแล้ว นับแยกตามหน่วยงาน (ต่อจากเลขสูงสุดของหน่วยงาน)"""
-    numbers = [
-        int(order.ordinal_number)
-        for order in models.OrderItem.objects(
-            organization=organization, ordinal_number__nin=[None, ""]
-        ).only("ordinal_number")
-        if str(order.ordinal_number).isdigit()
-    ]
-    return str(max(numbers, default=0) + 1)
+    """เลขลำดับใบเบิกที่อนุมัติแล้ว นับแยกตามหน่วยงาน (ต่อจากเลขสูงสุดของหน่วยงาน)
+
+    ใช้ counter ต่อหน่วยงานแล้ว $inc แบบ atomic เพื่อไม่ให้เลขซ้ำเมื่ออนุมัติพร้อมกัน
+    ครั้งแรกของหน่วยงานจะตั้งต้นจากเลขสูงสุดที่มีอยู่เดิม (ใบเบิกเก่า)
+    """
+    counters = models.OrderItem._get_db()["order_ordinal_counters"]
+    key = organization.id
+    if counters.find_one({"_id": key}) is None:
+        numbers = [
+            int(order.ordinal_number)
+            for order in models.OrderItem.objects(
+                organization=organization, ordinal_number__nin=[None, ""]
+            ).only("ordinal_number")
+            if str(order.ordinal_number).isdigit()
+        ]
+        # $setOnInsert: ถ้ามีคนสร้าง counter ไปก่อนพร้อมกัน จะไม่ถูกเขียนทับ
+        counters.update_one(
+            {"_id": key}, {"$setOnInsert": {"seq": max(numbers, default=0)}}, upsert=True
+        )
+    counter = counters.find_one_and_update(
+        {"_id": key}, {"$inc": {"seq": 1}}, return_document=ReturnDocument.AFTER
+    )
+    return str(counter["seq"])
 
 
 def approve_order_by_admin(order):

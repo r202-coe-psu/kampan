@@ -158,6 +158,7 @@ organization_id=organization.id),
             cancel="ยกเลิก",
             submit="ยืนยัน",
             redirect=url_for('inventories.delete', inventory_id=inventory.id, organization_id=organization.id),
+  post=True,
           ) }}
         </td>
         {% endif %}

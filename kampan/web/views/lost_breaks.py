@@ -8,6 +8,7 @@ from flask import (
     request,
     current_app,
     abort,
+    flash,
     g,
 )
 from flask_login import login_required, current_user
@@ -19,6 +20,11 @@ import datetime
 from .. import redis_rq
 
 module = Blueprint("lost_breaks", __name__, url_prefix="/lost_breaks")
+
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+ALREADY_PROCESSED_MESSAGE = "รายการนี้ดำเนินการไปแล้ว"
+NO_INVENTORY_MESSAGE = "ไม่มีวัสดุคงเหลือให้ทำรายการ"
+INSUFFICIENT_STOCK_MESSAGE = "จำนวนวัสดุคงเหลือไม่พอ"
 
 
 def get_lost_break_item(organization, lost_break_item_id):
@@ -105,9 +111,7 @@ def index():
 def add():
     organization_id = request.args.get("organization_id")
     error_message = request.args.get("error_message")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = g.organization
     form = forms.lost_break.ItemLostBreakForm()
     items = models.Item.objects(status="active", organization=g.organization)
     if items:
@@ -126,9 +130,13 @@ def add():
             error_message=error_message,
         )
     item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
 
     quantity = (form.set_.data * item.piece_per_set) + form.piece.data
-    inventories = models.Inventory.objects(item=item,remain__gt=0, status="active").order_by("-remain")
+    inventories = models.Inventory.objects(
+        item=item, remain__gt=0, status="active", organization=g.organization
+    ).order_by("-remain")
 
     lost_break_item = None
     for inventory in inventories:
@@ -153,6 +161,15 @@ def add():
 
         if quantity <= 0:
             break
+
+    if lost_break_item is None:
+        flash(NO_INVENTORY_MESSAGE, "warning")
+        return redirect(
+            url_for(
+                "lost_breaks.add",
+                organization_id=organization_id,
+            )
+        )
 
     job = redis_rq.redis_queue.queue.enqueue(
         utils.email_utils.send_email_lost_break,
@@ -252,21 +269,27 @@ def edit(lost_break_item_id):
     )
 
 
-@module.route("/<lost_break_item_id>/delete")
+@module.route("/<lost_break_item_id>/delete", methods=["POST"])
 @acl.organization_roles_required("admin", "endorser", "staff")
 def delete(lost_break_item_id):
     organization_id = request.args.get("organization_id")
+    index_url = url_for("lost_breaks.index", organization_id=organization_id)
 
     lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
-    lost_break_item.status = "disactive"
-    lost_break_item.save()
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(index_url)
 
-    return redirect(
-        url_for(
-            "lost_breaks.index",
-            organization_id=organization_id,
-        )
-    )
+    # ลบได้เฉพาะรายการที่ยังไม่อนุมัติ (อนุมัติแล้วบวก stock ไปแล้ว ห้ามซ่อนทิ้ง)
+    claimed = models.LostBreakItem.objects(
+        id=lost_break_item.id,
+        organization=g.organization,
+        status__in=["pending", "denied"],
+    ).update_one(set__status="disactive")
+    if not claimed:
+        flash(ALREADY_PROCESSED_MESSAGE, "warning")
+    return redirect(index_url)
 
 
 @module.route("/approve_page")
@@ -286,45 +309,48 @@ def supervisor_supplier_approve_page():
     )
 
 
-@module.route("/<lost_break_item_id>/decide/<decide_choice>")
+@module.route("/<lost_break_item_id>/decide/<decide_choice>", methods=["POST"])
 @acl.organization_roles_required("admin", "endorser", "supervisor supplier")
 def decide(lost_break_item_id, decide_choice):
     organization_id = request.args.get("organization_id")
-
-    lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
-    if decide_choice == "approve":
-        lost_break_item.status = "active"
-        if lost_break_item.quantity != 0:
-            
-            return_inventory = models.Inventory.objects(
-                id=lost_break_item.lost_from.id, organization=g.organization
-            ).first()
-            if not return_inventory:
-                abort(404)
-            print(return_inventory.remain)
-            print(return_inventory.id)
-            print(return_inventory.item.id)
-            print(lost_break_item.lost_from.id)
-            return_inventory.remain += lost_break_item.quantity
-            return_inventory.save()
-    elif decide_choice == "denied":
-        lost_break_item.status = "denied"
-        if lost_break_item.quantity != 0:
-            return_inventory = models.Inventory.objects(
-                id=lost_break_item.lost_from.id,
-                status="active",
-                remain__gte=0,
-                organization=g.organization,
-            ).first()
-            if not return_inventory:
-                abort(404)
-            return_inventory.remain -= lost_break_item.quantity
-            return_inventory.save()
-    lost_break_item.save()
-
-    return redirect(
-        url_for(
-            "lost_breaks.supervisor_supplier_approve_page",
-            organization_id=organization_id,
-        )
+    approve_url = url_for(
+        "lost_breaks.supervisor_supplier_approve_page",
+        organization_id=organization_id,
     )
+
+    if decide_choice not in ("approve", "denied"):
+        abort(404)
+    lost_break_item = get_lost_break_item(g.organization, lost_break_item_id)
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(approve_url)
+
+    new_status = "active" if decide_choice == "approve" else "denied"
+    # claim แบบ atomic: ตัดสินได้ครั้งเดียวจากสถานะ pending เท่านั้น
+    claimed = models.LostBreakItem.objects(
+        id=lost_break_item.id, organization=g.organization, status="pending"
+    ).update_one(set__status=new_status)
+    if not claimed:
+        flash(ALREADY_PROCESSED_MESSAGE, "warning")
+        return redirect(approve_url)
+
+    quantity = lost_break_item.quantity
+    if quantity != 0 and lost_break_item.lost_from:
+        inventory_query = models.Inventory.objects(
+            id=lost_break_item.lost_from.id, organization=g.organization
+        )
+        if decide_choice == "approve":
+            updated = inventory_query.update_one(inc__remain=quantity)
+        else:
+            updated = inventory_query.filter(
+                status="active", remain__gte=quantity
+            ).update_one(dec__remain=quantity)
+        if not updated:
+            # ปรับ stock ไม่ได้ (ไม่พบคลัง / คงเหลือไม่พอ): คืนสถานะให้ตัดสินใหม่ได้
+            models.LostBreakItem.objects(
+                id=lost_break_item.id, organization=g.organization, status=new_status
+            ).update_one(set__status="pending")
+            flash(INSUFFICIENT_STOCK_MESSAGE, "error")
+
+    return redirect(approve_url)

@@ -3,7 +3,16 @@ from calendar import calendar
 from pyexpat import model
 from typing import OrderedDict
 from bson import ObjectId
-from flask import Blueprint, render_template, redirect, url_for, request, abort, g
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    request,
+    abort,
+    flash,
+    g,
+)
 from flask_login import login_required, current_user
 from flask_mongoengine import Pagination
 from kampan.web import forms, acl
@@ -13,6 +22,25 @@ import datetime
 
 # สร้าง Blueprint สำหรับจัดการการเบิกพัสดุ
 module = Blueprint("item_checkouts", __name__, url_prefix="/item_checkouts")
+
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+ORDER_NOT_EDITABLE_MESSAGE = "ใบเบิกนี้ส่งอนุมัติหรือดำเนินการไปแล้ว ไม่สามารถแก้ไขรายการได้"
+# สถานะใบเบิกที่ยังแก้ไขรายการเบิกได้ (ก่อนส่งอนุมัติ)
+EDITABLE_ORDER_STATUS = "pending"
+
+
+def ensure_order_editable(order):
+    """ใบเบิกที่ส่งอนุมัติ/อนุมัติ/ตัด stock แล้วห้ามแก้รายการเบิก"""
+    if order.status != EDITABLE_ORDER_STATUS:
+        flash(ORDER_NOT_EDITABLE_MESSAGE, "warning")
+        return redirect(
+            url_for(
+                "item_checkouts.bill_checkout",
+                order_id=order.id,
+                organization_id=g.organization.id,
+            )
+        )
+    return None
 
 
 def get_order(organization, order_id):
@@ -214,11 +242,12 @@ def checkout():
     organization_id = request.args.get("organization_id")
     item_id = request.args.get("item_id")
 
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
+    organization = g.organization
     form = forms.item_checkouts.CheckoutItemForm()
     order = get_order(g.organization, request.args.get("order_id"))
+    not_editable = ensure_order_editable(order)
+    if not_editable:
+        return not_editable
 
     # ตรวจสอบว่าสินค้านี้ถูกเบิกในใบเบิกนี้แล้วหรือยัง
     checkout_item = None
@@ -281,6 +310,8 @@ def checkout():
 
     # บันทึกข้อมูลการเบิกใหม่
     item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     checkout_item = models.CheckoutItem()
     checkout_item.user = current_user._get_current_object()
     checkout_item.order = order
@@ -344,6 +375,9 @@ def edit(checkout_item_id):
     ).first()
     checkout_item = get_checkout_item(g.organization, checkout_item_id)
     order = get_order(g.organization, checkout_item.order.id)
+    not_editable = ensure_order_editable(order)
+    if not_editable:
+        return not_editable
 
     form = forms.item_checkouts.CheckoutItemForm(obj=checkout_item)
     
@@ -393,6 +427,8 @@ def edit(checkout_item_id):
         
     # บันทึกข้อมูลที่แก้ไข
     item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     checkout_item.user = current_user._get_current_object()
     checkout_item.item = item
     checkout_item.created_date = form.created_date.data
@@ -409,42 +445,39 @@ def edit(checkout_item_id):
     )
 
 
-@module.route("/checkout/<checkout_item_id>/delete", methods=["GET", "POST"])
+@module.route("/checkout/<checkout_item_id>/delete", methods=["POST"])
 @acl.organization_roles_required(
     "admin", "endorser", "staff", "head", "supervisor supplier"
 )
 def delete(checkout_item_id):
     """
     ลบรายการเบิกสินค้า (CheckoutItem) ออกจากใบเบิก
-    - ทำได้เฉพาะเมื่อใบเบิกยังอยู่ในสถานะ 'pending'
-    - เปลี่ยนสถานะของ CheckoutItem เป็น 'disactive'
+    - POST + CSRF เท่านั้น
+    - ทำได้เฉพาะเมื่อใบเบิกยังอยู่ในสถานะ 'pending' (ก่อนส่งอนุมัติ)
+    - เปลี่ยนสถานะของ CheckoutItem เป็น 'disactive' (soft delete)
     """
     organization_id = request.args.get("organization_id")
 
     checkout_item = get_checkout_item(g.organization, checkout_item_id)
-
-    # ตรวจสอบว่าใบเบิกยังไม่ถูกส่งอนุมัติหรืออนุมัติไปแล้ว
-    if checkout_item.order.approval_status != "pending":
-        # หากใบเบิกถูกดำเนินการไปแล้ว จะไม่สามารถลบได้
-        return redirect(
-            url_for(
-                "item_checkouts.bill_checkout",
-                order_id=checkout_item.order.id,
-                organization_id=organization_id,
-            )
-        )
-        
-    # เปลี่ยนสถานะเป็น 'disactive' (Soft Delete)
-    checkout_item.status = "disactive"
-    checkout_item.save()
-    
-    return redirect(
-        url_for(
-            "item_checkouts.bill_checkout",
-            order_id=checkout_item.order.id,
-            organization_id=organization_id,
-        )
+    bill_url = url_for(
+        "item_checkouts.bill_checkout",
+        order_id=checkout_item.order.id,
+        organization_id=organization_id,
     )
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(bill_url)
+
+    if checkout_item.order.status != EDITABLE_ORDER_STATUS:
+        flash(ORDER_NOT_EDITABLE_MESSAGE, "warning")
+        return redirect(bill_url)
+
+    models.CheckoutItem.objects(
+        id=checkout_item.id, organization=g.organization, status__ne="disactive"
+    ).update_one(set__status="disactive")
+
+    return redirect(bill_url)
 
 
 @module.route("/order/<order_id>/upload_file_items", methods=["GET", "POST"])

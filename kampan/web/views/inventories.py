@@ -11,6 +11,7 @@ from flask import (
     request,
     send_file,
     abort,
+    flash,
     g,
 )
 from flask_mongoengine import Pagination
@@ -20,6 +21,9 @@ from kampan import models, utils
 from kampan.repositories.item_registers import RegisterItemRepository
 
 module = Blueprint("inventories", __name__, url_prefix="/inventories")
+
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+INVENTORY_IN_USE_MESSAGE = "ไม่สามารถลบได้ เพราะวัสดุนี้ถูกเบิกหรือถูกจองไปแล้ว"
 
 
 def get_inventory(organization, inventory_id):
@@ -132,11 +136,12 @@ def register():
             organization=organization,
         )
 
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     inventory = models.Inventory()
     form.populate_obj(inventory)
-    inventory.item = models.Item.objects(
-        id=form.item.data, organization=g.organization
-    ).first()
+    inventory.item = item
     inventory.quantity = form.set_.data * inventory.item.piece_per_set
     inventory.warehouse = models.Warehouse.objects(
         id=form.warehouse.data, organization=g.organization
@@ -201,11 +206,12 @@ def edit(inventory_id):
             organization=organization,
         )
 
+    item = models.Item.objects(id=form.item.data, organization=g.organization).first()
+    if not item:
+        abort(404)
     form.populate_obj(inventory)
 
-    inventory.item = models.Item.objects(
-        id=form.item.data, organization=g.organization
-    ).first()
+    inventory.item = item
     inventory.warehouse = models.Warehouse.objects(
         id=form.warehouse.data, organization=g.organization
     ).first()
@@ -225,22 +231,38 @@ def edit(inventory_id):
     )
 
 
-@module.route("/<inventory_id>/delete")
+@module.route("/<inventory_id>/delete", methods=["POST"])
 @acl.organization_roles_required("admin")
 def delete(inventory_id):
     organization_id = request.args.get("organization_id")
 
     inventory = get_inventory(g.organization, inventory_id)
-    inventory.status = "disactive"
-    inventory.save()
-
-    return redirect(
-        url_for(
-            "inventories.bill_item",
-            item_register_id=inventory.registration.id,
-            organization_id=organization_id,
-        )
+    bill_url = url_for(
+        "inventories.bill_item",
+        item_register_id=inventory.registration.id,
+        organization_id=organization_id,
     )
+    form = forms.post_action.PostActionForm()
+    if not form.validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(bill_url)
+
+    # ห้ามลบถ้ามีการตัด stock ไปแล้ว หรือมีรายการเบิกอ้างถึงก้อนนี้
+    if inventory.remain != inventory.quantity or models.CheckoutItem.objects(
+        inventories=inventory, status__ne="disactive"
+    ).count():
+        flash(INVENTORY_IN_USE_MESSAGE, "warning")
+        return redirect(bill_url)
+
+    # atomic: ลบได้ครั้งเดียว และเฉพาะเมื่อ stock ยังไม่ถูกตัดระหว่างทาง
+    models.Inventory.objects(
+        id=inventory.id,
+        organization=g.organization,
+        status__ne="disactive",
+        remain=inventory.quantity,
+    ).update_one(set__status="disactive")
+
+    return redirect(bill_url)
 
 
 @module.route("/all-item", methods=["GET", "POST"])
