@@ -275,14 +275,14 @@
           {{ select_field(f.category, required=True, wrapper_class="md:col-span-2 lg:col-span-2") }}
 
           <fieldset class="fieldset w-full">
-            <legend class="fieldset-legend">{{ f.unit.label.text }}</legend>
-            {{ f.unit(class_="input w-full item-unit" ~ (" input-error" if f.unit.errors else ""), placeholder="เช่น เครื่อง, ชุด, งาน") }}
-            {{ field_errors(f.unit) }}
-          </fieldset>
-          <fieldset class="fieldset w-full">
             <legend class="fieldset-legend">{{ f.quantity.label.text }} <span class="text-error">*</span></legend>
             {{ f.quantity(class_="input w-full item-quantity" ~ (" input-error" if f.quantity.errors else ""), type="number", min="1", step="1") }}
             {{ field_errors(f.quantity) }}
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.unit.label.text }}</legend>
+            {{ f.unit(class_="input w-full item-unit" ~ (" input-error" if f.unit.errors else ""), placeholder="เช่น เครื่อง, ชุด, งาน") }}
+            {{ field_errors(f.unit) }}
           </fieldset>
           <fieldset class="fieldset w-full">
             <legend class="fieldset-legend">{{ f.unit_price.label.text }}</legend>
