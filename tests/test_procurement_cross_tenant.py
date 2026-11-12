@@ -831,3 +831,15 @@ def test_renewal_lists_show_sub_contracts_not_parent(world, client_for, path, st
 
     assert "Child MA" in html
     assert "Parent MA" not in html
+
+
+def test_products_list_has_no_request_renewal_for_pending(world, client_for):
+    """MA ที่ pending อยู่ในหน้ารายการใกล้หมดอายุอยู่แล้ว ไม่ต้องมีปุ่มขอต่ออายุในตารางรายการ MA"""
+    pending = _make_procurement(world.org_a, world.admin_a, name="Pending MA", status="pending")
+    active = _make_procurement(world.org_a, world.admin_a, name="Active MA", status="active")
+    client = client_for(world.admin_a)
+
+    html = client.get(f"/procurement/products?organization_id={world.org_a.id}").data.decode("utf-8")
+
+    assert f"/procurement/products/{active.id}/request-renewal" in html
+    assert f"/procurement/products/{pending.id}/request-renewal" not in html

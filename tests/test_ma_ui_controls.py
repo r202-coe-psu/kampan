@@ -383,7 +383,13 @@ def test_renewal_request_and_non_renewal_workflow(world, client_for, existing_ma
     requisitions_url = f"/procurement/requisitions?{_q(world.org)}"
     non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
-    # 1. On products page, existing_ma has request-renewal button & modal
+    # 1. pending: อยู่ในหน้ารายการใกล้หมดอายุอยู่แล้ว ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ
+    assert existing_ma.status == "pending"
+    pending_html = client.get(products_url).get_data(as_text=True)
+    assert f"modal_request_renewal_{existing_ma.id}" not in pending_html
+    # active: มีปุ่มและ modal ขอต่ออายุ
+    existing_ma.status = "active"
+    existing_ma.save()
     products_html = client.get(products_url).get_data(as_text=True)
     assert f"modal_request_renewal_{existing_ma.id}" in products_html
     assert f"/procurement/products/{existing_ma.id}/request-renewal" in products_html

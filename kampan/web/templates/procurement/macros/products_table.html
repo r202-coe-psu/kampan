@@ -238,7 +238,8 @@
                   <i class="ph ph-clock-countdown text-lg"></i>
                 </a>
               </div>
-              {% else %}
+              {% elif item.status != "pending" %}
+              {# pending อยู่ในหน้า "รายการ MA ใกล้หมดอายุ" อยู่แล้ว ไม่ต้องมีปุ่มขอต่ออายุ #}
               <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
                 <button type="button"
                         onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
@@ -471,7 +472,7 @@
   </dialog>
   {% endif %}
 
-  {% if can_edit(item) and not item.is_renewed() and item.status != "renewal-requested" and item.status != "draft" %}
+  {% if can_edit(item) and not item.is_renewed() and item.status not in ["renewal-requested", "draft", "pending"] %}
   <dialog id="modal_request_renewal_{{ item.id }}" class="modal text-left">
     <div class="modal-box">
       <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
