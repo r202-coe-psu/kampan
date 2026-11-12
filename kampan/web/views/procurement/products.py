@@ -130,7 +130,7 @@ def index():
 
     sort = resolve_sort("created_desc")
     form.sort.data = sort
-    paginated_procurements, procurements = paginate_sorted(procurement_qs, organization, sort, default_per_page=30)
+    paginated_procurements, procurements = paginate_sorted(procurement_qs, organization, sort, default_per_page=6)
 
     for procurement in procurements:
         end_date = procurement.get_end_date()

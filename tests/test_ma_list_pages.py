@@ -531,3 +531,52 @@ def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
     form_html = html.split('id="ma_filter_form"', 1)[1].split("</form>", 1)[0]
     assert "ล้างตัวกรอง" in form_html and "พบ <span" in form_html
     assert re.search(r'href="[^"]*%s[^"]*"[^>]*>\s*<i class="ph ph-x"></i> ล้างตัวกรอง' % re.escape(path), form_html)
+
+
+# ---------------------------------------------------------------------------
+# จำนวนรายการต่อหน้าตั้งต้น และการแบ่งหน้าที่ Mongo ทำ (skip/limit) ทั้งเรียงตามสร้าง/ชื่อและวันหมดอายุ
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "path,per_page,last_page_size",
+    [(PRODUCTS, 6, 2), (RENEWAL, 8, 4), (NON_RENEWAL, 8, 4)],
+)
+def test_default_page_size_and_last_page(world, path, per_page, last_page_size):
+    status = _status_for_path(path)
+    for index in range(20):
+        _create_ma(world, end_in_days=10 + index, status=status)
+    pages = -(-20 // per_page)
+
+    first = _shown_mas(_get(world, path))
+    last = _shown_mas(_get(world, path, page=pages))
+    beyond = _shown_mas(_get(world, path, page=pages + 5))  # หน้าเกินใช้หน้าสุดท้าย
+
+    assert len(first) == per_page
+    assert len(last) == last_page_size
+    assert beyond == last
+    assert not set(first) & set(last)
+
+
+@pytest.mark.parametrize("sort", ["end_asc", "end_desc"])
+def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
+    """เรียงวันหมดอายุ: แต่ละหน้าได้เฉพาะ id ของหน้านั้นจาก aggregation ($skip/$limit) ครบทุกหน้าไม่ซ้ำไม่ตก"""
+    status = _status_for_path(RENEWAL)
+    created = [_create_ma(world, end_in_days=10 + index, status=status).name for index in range(19)]
+    expected = created if sort == "end_asc" else list(reversed(created))
+
+    pipelines = []
+    original = mongomock.collection.Collection.aggregate
+
+    def recording(self, pipeline, *args, **kwargs):
+        pipelines.append(list(pipeline))
+        return original(self, pipeline, *args, **kwargs)
+
+    monkeypatch.setattr(mongomock.collection.Collection, "aggregate", recording)
+    shown = []
+    for page in (1, 2, 3):
+        shown += _shown_mas(_get(world, RENEWAL, sort=sort, page=page))
+
+    assert shown == expected
+    limits = [stage["$limit"] for pipeline in pipelines for stage in pipeline if "$limit" in stage]
+    assert limits[:3] == [8, 8, 3]  # หน้าสุดท้ายเหลือ 3 จาก 19

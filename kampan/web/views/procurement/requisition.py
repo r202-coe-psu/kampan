@@ -226,7 +226,7 @@ def non_renewal():
     # หน้านี้เน้นรายการที่หมดอายุล่าสุด: ค่าตั้งต้นเรียงวันสิ้นสุดใหม่สุดก่อน
     sort = resolve_sort("end_desc")
     form.sort.data = sort
-    paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=30)
+    paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)
     return render_template(
         "procurement/requisitions/non_renewal.html",
         items=page_procurements,

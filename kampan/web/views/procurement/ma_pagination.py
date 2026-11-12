@@ -60,12 +60,12 @@ def paginate_sorted(procurements, organization, sort: str, default_per_page: int
     """แบ่งหน้า MA ตาม ``sort`` คืน (pagination, MA ของหน้านี้พร้อมรายการย่อยและผู้รับผิดชอบ)
 
     - สร้างก่อน-หลัง / ชื่อ: เรียงด้วย queryset แล้วโหลดเฉพาะหน้านั้น
-    - วันหมดอายุ: เรียงจากวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน ด้วย aggregation ครั้งเดียว (MA ที่ไม่มีรายการย่อยไว้ท้าย)
-      แล้วโหลดเอกสารเฉพาะ MA ในหน้าที่แสดง
+    - วันหมดอายุ: ให้ Mongo เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน แล้ว skip/limit เฉพาะหน้านั้น
+      (``EndDateOrderedIds``) จากนั้นโหลดเอกสารเฉพาะ MA ในหน้าที่แสดง
     """
     from kampan.models.procurement import (
+        EndDateOrderedIds,
         attach_items,
-        procurement_ids_by_end_date,
         procurements_in_order,
     )
 
@@ -73,9 +73,7 @@ def paginate_sorted(procurements, organization, sort: str, default_per_page: int
         pagination = paginate(procurements.order_by(*_QUERYSET_ORDER[sort]), default_per_page)
         page_procurements = pagination.items
     else:
-        ids = procurement_ids_by_end_date(
-            procurements.order_by("-created_date", "-id"), organization, reverse=sort == "end_desc"
-        )
-        pagination = paginate(ids, default_per_page)
+        ordered = EndDateOrderedIds(procurements.order_by("-created_date", "-id"), organization, reverse=sort == "end_desc")
+        pagination = paginate(ordered, default_per_page)
         page_procurements = procurements_in_order(pagination.items, organization)
     return pagination, attach_items(page_procurements, organization, with_responsibles=True)
