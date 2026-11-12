@@ -217,9 +217,26 @@
       }
     }
 
+    // งวดเลือกวันที่ได้เฉพาะในช่วงเริ่มต้น-สิ้นสุดของรายการย่อย (ฝั่งเซิร์ฟเวอร์ตรวจซ้ำเสมอ)
+    function applyInstallmentRange(card) {
+      const start = card.querySelector('input[name$="-start_date"]');
+      const end = card.querySelector('input[name$="-end_date"]');
+      card.querySelectorAll('.installment-row calendar-date').forEach(function (calendar) {
+        [['min', start], ['max', end]].forEach(function (pair) {
+          const value = pair[1] && pair[1].value;
+          if (value) calendar.setAttribute(pair[0], value); else calendar.removeAttribute(pair[0]);
+        });
+      });
+    }
+    itemsContainer.addEventListener('change', function (event) {
+      const name = (event.target && event.target.name) || '';
+      if (/-(start|end)_date$/.test(name)) applyInstallmentRange(event.target.closest('.ma-item'));
+    });
+
     function renumber() {
       itemsContainer.querySelectorAll('.ma-item').forEach(function (card, index) {
         card.querySelector('.item-number').textContent = index + 1;
+        applyInstallmentRange(card);
         card.querySelectorAll('.installment-row').forEach(function (row, rowIndex) {
           row.querySelector('.installment-number').textContent = 'งวดที่ ' + (rowIndex + 1);
         });

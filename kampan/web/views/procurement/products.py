@@ -415,6 +415,7 @@ class InstallmentChangeError(Exception):
     """แก้งวดตามฟอร์มไม่ได้ (เช่นลบงวดที่จ่ายแล้ว) ข้อความใช้แสดงในฟอร์ม"""
 
 
+INSTALLMENT_OUT_OF_RANGE_MESSAGE = "{item}: งวดครบกำหนด {due} อยู่นอกช่วงของรายการย่อย ({start} - {end}) กรุณาเลือกวันที่ในช่วงสัญญา"
 PAID_INSTALLMENT_REMOVED_MESSAGE = "งวดที่จ่ายแล้วลบไม่ได้ ({item}: งวดครบกำหนด {due})"
 MANY_PAID_INSTALLMENTS_MESSAGE = "{item}: มีงวดที่จ่ายแล้วมากกว่า 1 งวด ปิดการแบ่งจ่ายเป็นงวดไม่ได้"
 
@@ -422,6 +423,24 @@ MANY_PAID_INSTALLMENTS_MESSAGE = "{item}: มีงวดที่จ่าย�
 def _due_label(installment) -> str:
     due = _as_date(installment.due_date)
     return f"{due.day:02d}/{due.month:02d}/{due.year + 543}" if due else "-"
+
+
+def _check_installments_within_item_period(item) -> None:
+    """วันครบกำหนดของงวดต้องอยู่ในช่วงเริ่มต้น-สิ้นสุดของรายการย่อย (งวดที่จ่ายแล้วเป็นประวัติ ไม่ตรวจ)"""
+    start, end = _as_date(item.start_date), _as_date(item.end_date)
+    for installment in item.installments:
+        due = _as_date(installment.due_date)
+        if installment.is_paid() or not due:
+            continue
+        if (start and due < start) or (end and due > end):
+            raise InstallmentChangeError(
+                INSTALLMENT_OUT_OF_RANGE_MESSAGE.format(
+                    item=item.name,
+                    due=_due_label(installment),
+                    start=_due_label(models.Installment(due_date=item.start_date)) if start else "-",
+                    end=_due_label(models.Installment(due_date=item.end_date)) if end else "-",
+                )
+            )
 
 
 def _single_installment(item_name, existing_installments, due_date, amount=None) -> list:
@@ -501,6 +520,7 @@ def _build_items(form, organization, existing_items, user, is_draft=False, fallb
         item.installment_mode = bool(data.installment_mode.data)
         if item.installment_mode:
             item.installments = _build_installments(item.name, data.installments, item.installments)
+            _check_installments_within_item_period(item)
         else:
             item.installments = _single_installment(item.name, list(item.installments), item.end_date, amount=item.amount)
         item.last_updated_by = user

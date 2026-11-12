@@ -1517,3 +1517,25 @@ def test_save_with_items_returns_pending_ma_to_active_when_end_date_moves_beyond
     ma.save_with_items(items)
     ma.reload()
     assert ma.status == "pending"  # ใกล้อีกครั้งก็กลับเป็น pending
+
+
+@pytest.mark.parametrize("due", ["2025-12-31", "2031-01-01"])
+def test_create_rejects_installment_outside_the_item_period(world, client_for, due):
+    """งวดต้องอยู่ในช่วงเริ่มต้น-สิ้นสุดของรายการย่อย (2026-01-01 ถึง 2030-12-31)"""
+    data = ma_form([_item(amount="100000.00", installment_mode="y", installments=[{"due_date": due}])])
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 200
+    assert "อยู่นอกช่วงของรายการย่อย" in response.get_data(as_text=True)
+    assert models.Procurement.objects.count() == 0
+
+
+@pytest.mark.parametrize("due", ["2026-01-01", "2030-12-31"])
+def test_create_accepts_installment_on_the_period_boundaries(world, client_for, due):
+    data = ma_form([_item(amount="100000.00", installment_mode="y", installments=[{"due_date": due}])])
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 302
+    assert models.ProcurementItem.objects.get().installments[0].due_date.strftime("%Y-%m-%d") == due
