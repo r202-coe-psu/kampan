@@ -64,12 +64,14 @@
   --noise: 1;
 }
 
-.ph-size {
-  font-size: 20px;
-}
+@layer base {
+  :where(.ph) {
+    font-size: 24px;
+  }
 
-.ph {
-  font-size: 24px;
+  :where(.ph-size) {
+    font-size: 20px;
+  }
 }
 
 .table-style {
@@ -148,6 +150,14 @@ fieldset {
     --role-color: var(--color-neutral);
     --badge-color: var(--role-color);
     white-space: nowrap;
+  }
+
+  /* Icon inside badge: ให้ขนาด icon สอดคล้องกับขนาดตัวอักษรของ badge และไม่ทะลุกรอบ */
+  .badge .ph {
+    font-size: 0.9em;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
   }
 
   /* ตัวอักษรสีดำอ่านง่าย สีของ role อยู่ที่จุดหน้าข้อความ ขอบ และพื้นจาง ๆ */
