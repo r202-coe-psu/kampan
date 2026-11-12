@@ -9,6 +9,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 
 from kampan import models
+from kampan.models.procurement import parent_procurement_ids
 from kampan.models.reminder_logs import SYSTEM_LOG_STATUSES
 
 # ช่วงเตือน key → ระยะก่อนถึงกำหนด ("due" = วันครบกำหนดเอง)
@@ -51,11 +52,6 @@ def _as_date(value) -> datetime.date | None:
     if isinstance(value, datetime.datetime):
         return value.date()
     return value
-
-
-def _reference_id(child):
-    value = child._data.get("parent_procurement")
-    return getattr(value, "id", value)
 
 
 def _offset_triggers(target: datetime.date, offsets, extra_days=()) -> list[tuple[datetime.date, str]]:
@@ -160,9 +156,9 @@ def due_reminders(today: datetime.date) -> list[Reminder]:
     """
     stopped_ids = list(models.Procurement.objects(status__in=STOPPED_STATUSES).scalar("id"))
     # สัญญาหลักที่แยกสัญญาย่อยแล้ว: เตือนจากสัญญาย่อยเท่านั้น (รายการย่อยของสัญญาย่อยเป็นสำเนาของสัญญาหลัก)
-    parent_ids = {_reference_id(child) for child in models.Procurement.objects(parent_procurement__ne=None).only("parent_procurement")}
+    parent_ids = parent_procurement_ids()
     reminders = []
-    for item in models.ProcurementItem.objects(procurement__nin=stopped_ids + list(parent_ids - {None})):
+    for item in models.ProcurementItem.objects(procurement__nin=stopped_ids + parent_ids):
         recipients = None
         for candidate in _item_candidates(item, today):
             trigger_date, offset = candidate["trigger"]

@@ -21,7 +21,7 @@ from PyPDF2 import PdfMerger
 
 from kampan import models, utils
 from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
-from kampan.models.procurement import procurement_ids_of
+from kampan.models.procurement import parent_procurement_ids, procurement_ids_of
 from kampan.web import feature_flags, forms
 
 from . import ma_permissions
@@ -93,6 +93,8 @@ def index():
     procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
         status__in=["renewal-requested", "pending"]
     )
+    # สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้านี้แสดงเฉพาะสัญญาย่อย (รายการย่อยแต่ละรายการ)
+    procurements = procurements.filter(id__nin=parent_procurement_ids(organization))
     if name:
         procurements = procurements.filter(name__icontains=name)
     # ช่อง "เลขที่เบิกจ่าย" ค้นเลขที่ ม.อ.เบิกจ่าย ของหัวสัญญา
@@ -218,6 +220,7 @@ def non_renewal():
     procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
         status="disactive"
     )
+    procurements = procurements.filter(id__nin=parent_procurement_ids(organization))
     procurements = _non_renewal_filters(organization, procurements, form)
     # หน้านี้เน้นรายการที่หมดอายุล่าสุด: ค่าตั้งต้นเรียงวันสิ้นสุดใหม่สุดก่อน
     sort = resolve_sort("end_desc")

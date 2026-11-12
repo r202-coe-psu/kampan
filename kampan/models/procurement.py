@@ -992,6 +992,15 @@ def procurement_ids_of(item_queryset) -> list:
     return ids
 
 
+def parent_procurement_ids(organization=None) -> list:
+    """id ของสัญญาหลักที่มีสัญญาย่อยอ้างถึง (สัญญาหลักเป็นแค่ข้อมูลอ้างอิง งานเตือนและหน้ารายการใช้สัญญาย่อยแทน)"""
+    children = Procurement.objects(parent_procurement__ne=None)
+    if organization is not None:
+        children = children.filter(organization=organization)
+    ids = {_reference_id(child, "parent_procurement") for child in children.only("parent_procurement")}
+    return list(ids - {None})
+
+
 def payment_statuses(procurement_ids: Iterable, organization, today: datetime.date | None = None) -> dict:
     """สถานะการจ่ายของหลาย MA ``{procurement_id: status}`` ด้วย query เดียว ไม่ขึ้นกับจำนวน MA
 

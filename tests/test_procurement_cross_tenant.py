@@ -813,3 +813,21 @@ def test_requisitions_default_filter_includes_expired(world, client_for):
 
     assert "Expired MA" in default_html
     assert "Expired MA" not in three_months_html
+
+
+@pytest.mark.parametrize(
+    "path,status",
+    [("/procurement/requisitions", "pending"), ("/procurement/requisitions/non-renewal", "disactive")],
+)
+def test_renewal_lists_show_sub_contracts_not_parent(world, client_for, path, status):
+    """สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้ารายการแสดงเฉพาะสัญญาย่อย"""
+    parent = _make_procurement(world.org_a, world.admin_a, name="Parent MA", status=status)
+    child = _make_procurement(world.org_a, world.admin_a, name="Child MA", status=status)
+    child.parent_procurement = parent
+    child.save()
+    client = client_for(world.admin_a)
+
+    html = client.get(f"{path}?organization_id={world.org_a.id}").data.decode("utf-8")
+
+    assert "Child MA" in html
+    assert "Parent MA" not in html
