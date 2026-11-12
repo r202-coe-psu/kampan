@@ -101,7 +101,7 @@
         <i class="ph ph-git-fork text-lg"></i>
         <span>เป็นสัญญาย่อยที่แยกมาจากสัญญาหลัก: <strong>{{ procurement.parent_procurement.name }}</strong> (ม.อ. {{ procurement.parent_procurement.psu_disbursement_number or '-' }})</span>
       </div>
-      <a href="{{ url_for('procurement.payment.index', procurement_id=procurement.parent_procurement.id, organization_id=organization.id) }}" class="btn btn-xs btn-outline btn-info font-semibold">
+      <a href="{{ url_for('procurement.payment.index', procurement_id=procurement.parent_procurement.id, organization_id=organization.id) }}" class="btn btn-xs border-0 bg-base-content text-base-100 hover:bg-base-content/80 font-semibold">
         ดูสัญญาหลัก <i class="ph ph-arrow-right"></i>
       </a>
     </div>
