@@ -107,18 +107,37 @@
 
   {% set child_procurements = procurement.get_child_procurements() %}
   {% if child_procurements %}
-    <div class="card bg-base-100 border border-base-200/80 p-4 rounded-2xl shadow-xs flex flex-col gap-2.5">
-      <h3 class="font-bold text-sm flex items-center gap-2 text-primary">
-        <i class="ph ph-tree-structure text-base"></i> สัญญาย่อยที่ duplicate แยกออกไป ({{ child_procurements|length }} รายการ):
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+    <div class="card bg-base-100 border border-base-200/80 p-4 rounded-2xl shadow-xs flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2 text-base-content">
+          <span class="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <i class="ph ph-tree-structure text-sm"></i>
+          </span>
+          <span>{{ procurement.name }} แยกเป็น {{ child_procurements|length }} รายการย่อย:</span>
+        </h3>
+        <span class="badge badge-primary/10 text-primary border-0 font-semibold text-xs py-1 px-2.5">
+          สัญญาย่อย ({{ child_procurements|length }})
+        </span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         {% for child in child_procurements %}
-          <a href="{{ url_for('procurement.payment.index', procurement_id=child.id, organization_id=organization.id) }}" class="flex items-center justify-between p-3 rounded-xl bg-base-200/60 hover:bg-base-200 border border-base-200 transition-colors">
-            <div class="min-w-0 pr-2">
-              <div class="font-semibold text-sm text-base-content truncate">{{ child.name }}</div>
-              <div class="text-xs text-base-content/60 font-medium mt-0.5">ยอด: {{ child.total_amount | format_amount }} บาท</div>
+          <a href="{{ url_for('procurement.payment.index', procurement_id=child.id, organization_id=organization.id) }}"
+             class="group flex items-center justify-between p-3.5 rounded-xl bg-base-200/50 hover:bg-base-200 hover:border-primary/40 border border-base-200 transition-all duration-150 shadow-2xs hover:shadow-xs">
+            <div class="min-w-0 pr-3 space-y-0.5">
+              <div class="font-semibold text-sm text-base-content group-hover:text-primary transition-colors truncate">
+                {{ child.name }}
+              </div>
+              <div class="text-xs text-base-content/60 font-medium flex items-center gap-2">
+                <span>ยอดเงิน: <strong class="text-base-content font-semibold">{{ child.total_amount | format_amount }}</strong> บาท</span>
+                {% if child.psu_disbursement_number %}
+                  <span class="text-base-content/30">•</span>
+                  <span>ม.อ. {{ child.psu_disbursement_number }}</span>
+                {% endif %}
+              </div>
             </div>
-            <i class="ph ph-arrow-right text-base-content/40 text-base"></i>
+            <div class="w-7 h-7 rounded-lg bg-base-100 group-hover:bg-primary group-hover:text-primary-content text-base-content/40 flex items-center justify-center shrink-0 border border-base-200 transition-colors">
+              <i class="ph ph-arrow-right text-sm"></i>
+            </div>
           </a>
         {% endfor %}
       </div>

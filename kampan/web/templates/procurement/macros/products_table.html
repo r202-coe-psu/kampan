@@ -7,7 +7,8 @@
 <table class="table w-full">
   <thead class="bg-base-200 text-base-content/70">
     <tr>
-      <th class="font-semibold text-base">MA</th>
+      <th class="font-semibold text-base w-48">ชื่อโครงการ</th>
+      <th class="font-semibold text-base min-w-[200px]">MA</th>
       <th class="font-semibold text-base text-center">เวลาคงเหลือ</th>
       <th class="font-semibold text-base text-center w-48">ผู้รับผิดชอบ / ฝ่าย</th>
       <th class="font-semibold text-base text-center w-36">ผู้ให้บริการ</th>
@@ -26,9 +27,43 @@
     {% set next_item, next_installment = item.get_next_unpaid() %}
     {% set sub_items_list = item.get_items() %}
     <tr class="border-l-4 {% if is_draft %}border-l-warning bg-warning/10 hover:bg-warning/15{% else %}{{ badge[1] }} hover:bg-base-200/40{% endif %} transition-colors">
-      <td>
+      <td class="align-top font-medium">
+        <div class="space-y-1">
+          {% if item.parent_procurement %}
+            <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}"
+               class="font-semibold text-base text-base-content hover:text-primary link link-hover block leading-snug">
+              {{ item.parent_procurement.name }}
+            </a>
+            <span class="inline-flex items-center gap-1 text-xs text-primary font-medium">
+              <i class="ph ph-git-fork"></i> สัญญาย่อย
+            </span>
+          {% else %}
+            {% if is_draft %}
+              {% if can_edit(item) %}
+                <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+                   class="font-semibold text-base text-base-content hover:text-warning leading-snug link link-hover block">
+                  {{ item.name }}
+                </a>
+              {% else %}
+                <span class="font-semibold text-base text-base-content leading-snug block">{{ item.name }}</span>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="font-semibold text-base text-base-content hover:text-primary leading-snug link link-hover block">
+                {{ item.name }}
+              </a>
+            {% endif %}
+            {% if item.has_child_procurements() %}
+              <span class="inline-flex items-center gap-1 text-xs text-base-content/60 font-medium">
+                <i class="ph ph-tree-structure"></i> {{ item.get_child_procurements()|length }} สัญญาย่อย
+              </span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </td>
+      <td class="align-top">
         <div class="flex items-center gap-2">
-          <span class="text-xs text-base-content/60">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</span>
+          <span class="text-xs text-base-content/60 font-mono">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</span>
           {% if is_draft %}
             <span class="badge badge-warning badge-xs font-bold gap-1 px-1.5 py-0.5 shadow-2xs">
               <i class="ph ph-file-dashed text-xs"></i> แบบร่าง
@@ -47,20 +82,6 @@
         {% else %}
           <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
              class="font-semibold text-base text-base-content leading-snug link link-hover block mt-0.5">{{ item.name }}</a>
-        {% endif %}
-        {% if item.parent_procurement %}
-          <div class="mt-0.5">
-            <span class="badge badge-xs badge-outline badge-primary gap-1">
-              <i class="ph ph-git-fork text-[10px]"></i> สัญญาย่อยของ:
-              <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}" class="link link-hover font-semibold truncate max-w-[200px] inline-block align-bottom">{{ item.parent_procurement.name }}</a>
-            </span>
-          </div>
-        {% elif item.has_child_procurements() %}
-          <div class="mt-0.5">
-            <span class="badge badge-xs badge-neutral font-semibold gap-1">
-              <i class="ph ph-tree-structure text-[10px]"></i> สัญญาหลัก ({{ item.get_child_procurements()|length }} สัญญาย่อย)
-            </span>
-          </div>
         {% endif %}
         <div class="flex flex-wrap gap-1 mt-1">
           {% for label in item.get_category_labels() %}
@@ -228,7 +249,7 @@
 
     <!-- Expandable Sub-items and Payment Status Row -->
     <tr id="sub_items_{{ item.id }}" class="hidden {% if is_draft %}bg-warning/5 border-l-4 border-l-warning{% else %}bg-base-200/50 border-l-4 {{ badge[1] }}{% endif %}">
-      <td colspan="8" class="p-3 md:p-5">
+      <td colspan="9" class="p-3 md:p-5">
         <div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-base-200 pb-2">
             <div class="flex items-center gap-2">
@@ -392,7 +413,7 @@
     </tr>
     {% else %}
     <tr>
-      <td colspan="8" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
+      <td colspan="9" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
     </tr>
     {% endfor %}
   </tbody>

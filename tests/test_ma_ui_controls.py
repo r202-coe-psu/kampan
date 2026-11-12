@@ -271,7 +271,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
 
     # Master detail page shows children
     master_html = client.get(f"/procurement/payment/{master.id}?{_q(world.org)}").get_data(as_text=True)
-    assert "สัญญาย่อยที่ duplicate แยกออกไป" in master_html
+    assert f"{master.name} แยกเป็น {len(children)} รายการย่อย" in master_html
     assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in master_html
 
     # Child detail page shows link to master
@@ -281,7 +281,10 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
 
     # Products table shows child items separated and excludes master container
     table_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
-    assert "สัญญาย่อยของ:" in table_html
+    assert "ชื่อโครงการ" in table_html
+    assert master.name in table_html
+    assert "สัญญาย่อย" in table_html
+    assert "สัญญาย่อยของ:" not in table_html
     assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in table_html
     assert "[TEST] Master Contract - [TEST] Sub-item Beta" in table_html
     assert "สัญญาหลัก (2 สัญญาย่อย)" not in table_html
