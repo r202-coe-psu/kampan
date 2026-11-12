@@ -11,7 +11,7 @@ import datetime
 import mongoengine as me
 
 REMINDER_LOG_KINDS = [
-    ("expiry", "หมดอายุ"),
+    ("expiry", "ใกล้หมดอายุ"),
     ("payment", "จ่ายงวด"),
     ("activation", "activate"),
     ("custom", "วันที่เจาะจง"),
