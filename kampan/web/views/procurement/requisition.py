@@ -87,7 +87,7 @@ def index():
     product_number = request.args.get("product_number", "")
     asset_code = request.args.get("asset_code", "")
     procurement_id = request.args.get("procurement_id", "")
-    expiration_date_range = request.args.get("expiration_date_range", "3_months")
+    expiration_date_range = request.args.get("expiration_date_range", "")
 
     only_my_division = request.args.get("division") == "mine"
     procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(

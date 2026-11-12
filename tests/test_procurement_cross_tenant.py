@@ -798,3 +798,18 @@ def test_request_renewal_rejects_closed_statuses(world, client_for, status):
 
     procurement_a.reload()
     assert procurement_a.status == status
+
+
+def test_requisitions_default_filter_includes_expired(world, client_for):
+    expired = _make_procurement(world.org_a, world.admin_a, name="Expired MA")
+    models.ProcurementItem.objects(procurement=expired).update(
+        set__end_date=datetime.datetime.now() - datetime.timedelta(days=10)
+    )
+    client = client_for(world.admin_a)
+    base = f"/procurement/requisitions?organization_id={world.org_a.id}"
+
+    default_html = client.get(base).data.decode("utf-8")
+    three_months_html = client.get(base + "&expiration_date_range=3_months").data.decode("utf-8")
+
+    assert "Expired MA" in default_html
+    assert "Expired MA" not in three_months_html

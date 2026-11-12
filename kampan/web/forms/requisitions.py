@@ -123,6 +123,7 @@ class RequisitionFilterForm(FlaskForm):
     expiration_date_range = fields.SelectField(
         "ช่วงเวลาหมดอายุ",
         choices=[
+            ("", "ทั้งหมด"),
             ("expired", "หมดอายุแล้ว"),
             ("1_month", "1 เดือน"),
             ("3_months", "3 เดือน"),
@@ -130,7 +131,7 @@ class RequisitionFilterForm(FlaskForm):
             ("1_year", "1 ปี"),
             ("more_than_1_year", "มากกว่า 1 ปี"),
         ],
-        default="3_months",
+        default="",
         validators=[validators.Optional()],
     )
     sort = sort_field()
