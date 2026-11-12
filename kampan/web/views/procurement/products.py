@@ -793,10 +793,16 @@ def request_renewal(procurement_id):
         flash(ALREADY_RENEWED_MESSAGE, "error")
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
-    procurement.status = "renewal-requested"
-    procurement.last_updated_by = current_user._get_current_object()
-    procurement.updated_date = datetime.datetime.now()
-    procurement.save()
+    claimed = models.Procurement.objects(
+        id=procurement.id, organization=organization, status__in=["active", "pending"]
+    ).update_one(
+        set__status="renewal-requested",
+        set__last_updated_by=current_user._get_current_object(),
+        set__updated_date=datetime.datetime.now(),
+    )
+    if not claimed:
+        flash("สถานะของรายการนี้เปลี่ยนไปแล้ว จึงขอต่ออายุไม่ได้", "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     flash(f"ยื่นขอต่ออายุรายการ '{procurement.name}' เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
@@ -808,6 +814,8 @@ def request_renewal(procurement_id):
 @acl.organization_roles_required("admin")
 def download_template(organization_id):
     organization = models.Organization.objects(id=organization_id, status="active").first()
+    if not organization:
+        abort(404)
     template_data = {
         "product_number": ["มอ. 011/2567-0001"],
         "ชื่อรายการ": ["เครื่องคอมพิวเตอร์"],

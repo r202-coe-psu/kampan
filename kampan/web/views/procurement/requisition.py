@@ -142,11 +142,13 @@ PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนิน
 INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง"
 
 
-def claim_pending_procurement(procurement, organization, new_status: str) -> bool:
-    """เปลี่ยนสถานะ MA จาก pending หรือ renewal-requested แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)"""
+def claim_pending_procurement(
+    procurement, organization, new_status: str, from_statuses: tuple[str, ...] = ("pending", "renewal-requested")
+) -> bool:
+    """เปลี่ยนสถานะ MA จาก ``from_statuses`` แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)"""
     return bool(
         models.Procurement.objects(
-            id=procurement.id, organization=organization, status__in=["pending", "renewal-requested"]
+            id=procurement.id, organization=organization, status__in=list(from_statuses)
         ).update_one(
             set__status=new_status,
             set__last_updated_by=current_user._get_current_object(),
@@ -249,7 +251,7 @@ def renewal_requested_action(requisition_procurement_id):
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 
     # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
-    if not claim_pending_procurement(procurement, organization, "renewal-requested"):
+    if not claim_pending_procurement(procurement, organization, "renewal-requested", from_statuses=("pending",)):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
         return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
 

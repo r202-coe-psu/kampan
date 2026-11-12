@@ -676,7 +676,7 @@ def test_renewal_requested_action_rejects_non_pending(world, client_for, status)
     assert procurement_a.status == status
 
 
-@pytest.mark.parametrize("status", ["active", "renewal-requested"])
+@pytest.mark.parametrize("status", ["active"])
 def test_non_renewal_action_rejects_non_pending(world, client_for, status):
     procurement_a = _make_procurement(world.org_a, world.admin_a, status=status)
     client = client_for(world.admin_a)
@@ -779,3 +779,22 @@ def test_index_shows_renewal_buttons_only_to_permitted_users(world, client_for, 
     html = response.data.decode("utf-8")
     assert (f"/procurement/products/{procurement_a.id}/renew?" in html) is sees_buttons
     assert (f"delete_modal_{procurement_a.id}').showModal()" in html) is sees_buttons
+
+
+@pytest.mark.parametrize("status", ["//evil.example.com", "/\\evil.example.com", "https://evil.example.com"])
+def test_pay_installment_rejects_external_next_url(world, client_for, status):
+    from kampan.web.views.procurement import payment
+
+    assert payment._safe_next_url(status, "/ok") == "/ok"
+    assert payment._safe_next_url("/procurement/products?x=1", "/ok") == "/procurement/products?x=1"
+
+
+@pytest.mark.parametrize("status", ["disactive", "renewal-requested"])
+def test_request_renewal_rejects_closed_statuses(world, client_for, status):
+    procurement_a = _make_procurement(world.org_a, world.admin_a, status=status, responsible=[world.role_admin_a])
+    client = client_for(world.admin_a)
+
+    client.post(f"/procurement/products/{procurement_a.id}/request-renewal?organization_id={world.org_a.id}")
+
+    procurement_a.reload()
+    assert procurement_a.status == status

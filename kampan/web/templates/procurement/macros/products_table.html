@@ -132,11 +132,37 @@
               </span>
               <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
             {% else %}
-              <div class="badge {{ badge[0] }} badge-md font-semibold whitespace-nowrap px-2">
-                งวด {{ paid_count }}/{{ installment_count }}
-              </div>
+              {% if status == "overdue" %}
+                <div class="badge badge-error badge-md font-semibold whitespace-nowrap px-2 gap-1">
+                  <i class="ph ph-warning-circle"></i> เลยกำหนด
+                </div>
+              {% elif status == "upcoming" %}
+                <div class="badge badge-warning badge-md font-semibold whitespace-nowrap px-2 gap-1">
+                  <i class="ph ph-clock-countdown"></i> ใกล้ครบกำหนด
+                </div>
+              {% else %}
+                <div class="badge {{ badge[0] }} badge-md font-semibold whitespace-nowrap px-2">
+                  งวด {{ paid_count }}/{{ installment_count }}
+                </div>
+              {% endif %}
               {% if next_installment %}
-                <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+                {% set next_days = (next_installment.due_date.date() - today).days %}
+                {% set ns = namespace(seq=0) %}
+                {% for candidate in next_item.get_sorted_installments() %}
+                  {% if candidate._id == next_installment._id %}{% set ns.seq = loop.index %}{% endif %}
+                {% endfor %}
+                <div class="text-xs leading-snug text-center {% if status == 'overdue' %}text-error font-semibold{% elif status == 'upcoming' %}text-base-content font-semibold{% else %}text-base-content/70{% endif %}">
+                  {% if sub_items_list|length > 1 %}<span class="block break-words">{{ next_item.name }}</span>{% endif %}
+                  <span class="block">งวดที่ {{ ns.seq }} · ครบ {{ next_installment.due_date | format_thai_date }}</span>
+                  {% if next_days < 0 %}
+                    <span class="block">เลยมา {{ -next_days }} วัน</span>
+                  {% elif next_days == 0 %}
+                    <span class="block">ครบกำหนดวันนี้</span>
+                  {% else %}
+                    <span class="block">อีก {{ next_days }} วัน</span>
+                  {% endif %}
+                </div>
+                <div class="text-[11px] text-base-content/50">จ่ายแล้ว {{ paid_count }}/{{ installment_count }} งวด</div>
               {% endif %}
             {% endif %}
           </div>
@@ -324,7 +350,8 @@
                   {% for installment in p_item.get_sorted_installments() %}
                   {% set inst_status = installment.get_status(today) %}
                   {% set due_amount = installment.amount if installment.amount is not none else (p_item.amount if (p_item.get_installment_count() == 1 or not p_item.pays_in_installments()) else none) %}
-                  <tr class="hover:bg-base-200/30">
+                  {% set inst_days = (installment.due_date.date() - today).days if installment.due_date else none %}
+                  <tr class="hover:bg-base-200/30 {% if not installment.is_paid() and inst_status == 'overdue' %}bg-error/10{% elif not installment.is_paid() and inst_status == 'upcoming' %}bg-warning/15{% endif %}">
                     <td class="font-medium">{{ loop.index }}</td>
                     <td class="whitespace-nowrap">{{ installment.due_date | format_thai_date }}</td>
                     <td>
@@ -333,9 +360,9 @@
                           <i class="ph ph-check-circle"></i> จ่ายแล้ว
                         </span>
                       {% elif inst_status == "overdue" %}
-                        <span class="badge badge-outline badge-error badge-sm font-medium whitespace-nowrap">เกินกำหนด</span>
+                        <span class="badge badge-error badge-sm font-medium whitespace-nowrap">เกินกำหนด{% if inst_days is not none %} {{ -inst_days }} วัน{% endif %}</span>
                       {% elif inst_status == "upcoming" %}
-                        <span class="badge badge-outline badge-warning badge-sm font-medium whitespace-nowrap">ใกล้ครบกำหนด</span>
+                        <span class="badge badge-warning badge-sm font-medium whitespace-nowrap">ใกล้ครบกำหนด{% if inst_days is not none %} · อีก {{ inst_days }} วัน{% endif %}</span>
                       {% else %}
                         <span class="badge badge-outline badge-ghost badge-sm text-base-content/60 font-medium whitespace-nowrap">ยังไม่จ่าย</span>
                       {% endif %}

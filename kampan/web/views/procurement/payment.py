@@ -35,6 +35,13 @@ def _get_procurement_or_404(procurement_id):
     return organization, ma_permissions.get_visible_procurement_or_404(procurement_id, organization)
 
 
+def _safe_next_url(next_url, default):
+    """รับเฉพาะ path ภายในเว็บ (กัน open redirect เช่น //evil.com หรือ /\\evil.com)"""
+    if not next_url or not next_url.startswith("/") or next_url.startswith(("//", "/\\")):
+        return default
+    return next_url
+
+
 def _detail_url(procurement, organization):
     return url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
 
@@ -156,7 +163,7 @@ def pay_installment(procurement_id, item_id, installment_id):
     )
     detail_url = _detail_url(procurement, organization)
     next_url = request.form.get("next") or request.args.get("next")
-    redirect_url = next_url if next_url and next_url.startswith("/") else detail_url
+    redirect_url = _safe_next_url(next_url, detail_url)
     if not allowed:
         flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
         return redirect(redirect_url)
@@ -211,7 +218,7 @@ def unpay_installment(procurement_id, item_id, installment_id):
     )
     detail_url = _detail_url(procurement, organization)
     next_url = request.form.get("next") or request.args.get("next")
-    redirect_url = next_url if next_url and next_url.startswith("/") else detail_url
+    redirect_url = _safe_next_url(next_url, detail_url)
     if not allowed:
         flash(NO_PAYMENT_PERMISSION_MESSAGE, "error")
         return redirect(redirect_url)
