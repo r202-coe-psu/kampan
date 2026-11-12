@@ -490,7 +490,7 @@
         {% endif %}
       </div>
       <p class="text-xs text-base-content/60 mb-4">
-        * เมื่อยืนยัน รายการนี้จะเปลี่ยนสถานะเป็น <strong>"ขอต่ออายุ"</strong> และจะไปแสดงที่หน้ารายการ MA ขอต่ออายุ เพื่อให้ฝ่ายที่เกี่ยวข้องดำเนินการต่ออายุสัญญาใหม่หรือบันทึกไม่ต่ออายุต่อไป
+        * เมื่อยืนยัน รายการนี้จะเปลี่ยนสถานะเป็น <strong>"ขอต่ออายุ"</strong> และจะไปแสดงที่หน้ารายการ MA ใกล้หมดอายุ เพื่อให้ฝ่ายที่เกี่ยวข้องดำเนินการต่ออายุสัญญาใหม่หรือบันทึกไม่ต่ออายุต่อไป
       </p>
       <form method="POST" action="{{ url_for('procurement.products.request_renewal', procurement_id=item.id, organization_id=organization.id) }}" class="modal-action">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

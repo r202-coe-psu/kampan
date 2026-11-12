@@ -377,12 +377,12 @@
               <tr>
                 <td class="font-semibold">พนักงาน / บุคลากร<br><span class="text-xs font-normal text-base-content/50">staff</span></td>
                 <td>ดูและติดตามสัญญา MA ที่ตนรับผิดชอบ, ต่ออายุหรือไม่ต่ออายุสัญญาที่ตนรับผิดชอบ</td>
-                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+                <td>รายการ MA, รายการ MA ใกล้หมดอายุ, รายการ MA ไม่ต่ออายุ</td>
               </tr>
               <tr>
                 <td class="font-semibold">หัวหน้าฝ่าย<br><span class="text-xs font-normal text-base-content/50">head</span></td>
                 <td>ดูรายการสัญญา MA ทั้งหน่วยงาน (ติ๊ก &ldquo;เฉพาะฝ่ายของฉัน&rdquo; เพื่อดูเฉพาะของฝ่ายตน)</td>
-                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+                <td>รายการ MA, รายการ MA ใกล้หมดอายุ, รายการ MA ไม่ต่ออายุ</td>
               </tr>
               <tr>
                 <td class="font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
@@ -392,7 +392,7 @@
               <tr>
                 <td class="font-semibold">ผู้จัดการ / ทีมบริหาร<br><span class="text-xs font-normal text-base-content/50">manager</span></td>
                 <td>ดูรายการสัญญา MA ทั้งหมดของหน่วยงาน</td>
-                <td>รายการ MA, รายการ MA ขอต่ออายุ, รายการ MA ไม่ต่ออายุ</td>
+                <td>รายการ MA, รายการ MA ใกล้หมดอายุ, รายการ MA ไม่ต่ออายุ</td>
               </tr>
               {% endif %}
             </tbody>
@@ -819,7 +819,7 @@
 
         <div class="mt-4 flex flex-col gap-2">
           {{ MetaRow('ผู้ใช้งาน', RoleBadge('เจ้าหน้าที่พัสดุ (admin)', 'primary') ~ ' ' ~ RoleBadge('พนักงาน (staff)', 'neutral'), 'ph-users-three') }}
-          {{ MetaRow('เมนู', 'จัดการ MA &rarr; รายการ MA ขอต่ออายุ', 'ph-list') }}
+          {{ MetaRow('เมนู', 'จัดการ MA &rarr; รายการ MA ใกล้หมดอายุ', 'ph-list') }}
           {{ MetaRow('การจัดเรียง', 'เรียงลำดับตามวันหมดอายุที่ใกล้ที่สุดขึ้นก่อนโดยอัตโนมัติ', 'ph-sort-ascending') }}
         </div>
 
