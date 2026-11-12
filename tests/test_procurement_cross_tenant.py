@@ -894,3 +894,33 @@ def test_pay_modals_default_paid_amount_to_due_amount(world, client_for):
 
     assert 'name="paid_amount"' in detail and 'value="1000.00"' in detail.split('name="paid_amount"', 1)[1][:300]
     assert 'value="1000.00"' in listing.split('name="paid_amount"', 1)[1][:300]
+
+
+def test_list_edit_button_opens_the_sub_item_when_ma_has_one_item(world, client_for):
+    """MA ที่มีรายการย่อยเดียว (เช่น สัญญาย่อย) กดแก้ไขจากรายการแล้วไปแก้รายการย่อยนั้นโดยตรง"""
+    single = _make_procurement(world.org_a, world.admin_a, name="Single MA", status="pending")
+    (item,) = single.get_items()
+    client = client_for(world.admin_a)
+    org = world.org_a.id
+
+    for path in ("/procurement/products", "/procurement/requisitions"):
+        html = client.get(f"{path}?organization_id={org}").data.decode("utf-8")
+        assert f"/procurement/products/{single.id}/edit?" in html
+        assert f"item_id={item.id}" in html
+
+
+def test_list_edit_button_stays_header_only_for_multi_item_ma(world, client_for):
+    multi = _make_procurement(world.org_a, world.admin_a, name="Multi MA", status="active")
+    extra = models.ProcurementItem(
+        name="Second", category="product", amount=Decimal("500.00"),
+        start_date=datetime.datetime.now(), end_date=datetime.datetime.now() + datetime.timedelta(days=30),
+        installments=[models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=30))],
+    )
+    multi.total_amount = Decimal("1500.00")
+    multi.save_with_items([*multi.get_items(), extra])
+    client = client_for(world.admin_a)
+
+    html = client.get(f"/procurement/products?organization_id={world.org_a.id}").data.decode("utf-8")
+
+    assert f"/procurement/products/{multi.id}/edit?" in html
+    assert "item_id=" not in html

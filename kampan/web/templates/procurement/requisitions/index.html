@@ -167,7 +167,7 @@
             ไม่ต่ออายุ
           </button>
           {% endif %}
-          <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+          <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id, item_id=(item.get_items()[0].id if item.get_items()|length == 1 else none)) }}"
             class="btn btn-outline btn-primary btn-sm min-w-0 gap-1 whitespace-nowrap col-span-2">
             <i class="ph ph-pencil-simple"></i>
             แก้ไข
@@ -178,7 +178,7 @@
       <div class="bg-base-200 px-4 py-3 border-t text-sm text-base-content/70 flex items-center justify-between">
         <span class="flex items-center gap-2"><i class="ph ph-check-circle"></i> ต่ออายุแล้ว</span>
         {% if can_change_renewal(item) %}
-        <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+        <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id, item_id=(item.get_items()[0].id if item.get_items()|length == 1 else none)) }}"
           class="btn btn-outline btn-primary btn-xs gap-1">
           <i class="ph ph-pencil-simple"></i> แก้ไข
         </a>

@@ -236,9 +236,11 @@
               </a>
             </div>
             {% if can_edit(item) %}
-            <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
-              <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
-                 class="btn btn-outline btn-secondary btn-sm btn-circle" aria-label="แก้ไข MA">
+            {# MA ที่มีรายการย่อยเดียว (เช่น สัญญาย่อย) กดแก้ไขแล้วไปแก้รายการย่อยนั้นโดยตรง · หลายรายการ (สัญญาหลัก) แก้เฉพาะหัว #}
+            {% set sole_item = sub_items_list[0] if sub_items_list|length == 1 else none %}
+            <div class="tooltip tooltip-left" data-tip="{{ 'แก้ไขรายการ' if sole_item else 'แก้ไข MA' }}">
+              <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id, item_id=sole_item.id if sole_item else none) }}"
+                 class="btn btn-outline btn-secondary btn-sm btn-circle" aria-label="{{ 'แก้ไขรายการ' if sole_item else 'แก้ไข MA' }}">
                 <i class="ph ph-pencil-simple text-lg"></i>
               </a>
             </div>
