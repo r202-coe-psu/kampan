@@ -243,24 +243,3 @@ fieldset {
     --module-fg: var(--color-module-motorcycle-content);
   }
 }
-
-/* ระบบ MA: สีปุ่ม/ป้าย/ตัวอักษรที่เข้มขึ้นให้ contrast กับตัวอักษรสีขาว >= 4.5 (WCAG AA)
-   ธีม patsara เดิม: เขียว 2.2, แดง 3.6, น้ำเงิน 3.5, รอง 2.1 ใช้เฉพาะภายใน .ma-contrast จึงไม่กระทบระบบอื่น */
-@layer base {
-  .ma-contrast {
-    --color-success: oklch(50% 0.17 150);
-    --color-success-content: oklch(98% 0.014 180);
-    --color-error: oklch(54% 0.21 25);
-    --color-error-content: oklch(98% 0.01 17);
-    --color-primary: oklch(54% 0.2 260);
-    --color-primary-content: oklch(98% 0.014 254);
-    --color-secondary: oklch(54% 0.15 60);
-    --color-secondary-content: oklch(98% 0.016 73);
-  }
-}
-/* text-warning เดิม (ส้มสว่าง) บนพื้นขาว 2.4 (อยู่ใน utilities เพื่อชนะ .text-warning ของ Tailwind) */
-@layer utilities {
-  .ma-contrast .text-warning {
-    color: oklch(48% 0.12 55);
-  }
-}
