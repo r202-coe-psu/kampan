@@ -154,7 +154,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
 
     children = list(models.Procurement.objects(parent_procurement=procurement).order_by("id"))
     assert len(children) == 2
-    assert [c.name for c in children] == ["[TEST] MA - [TEST] License A", "[TEST] MA - [TEST] MA B"]
+    assert [c.name for c in children] == ["[TEST] License A", "[TEST] MA B"]
     assert [c.total_amount for c in children] == [Decimal("60000.00"), Decimal("40000.00")]
     assert all(c.company == procurement.company for c in children)
     assert all(c.psu_disbursement_number == procurement.psu_disbursement_number for c in children)
@@ -517,7 +517,8 @@ TODAY = datetime.date(2026, 6, 1)
         (datetime.datetime(2026, 5, 31), None, "overdue"),
         (datetime.datetime(2026, 6, 1), None, "upcoming"),
         (datetime.datetime(2026, 6, 8), None, "upcoming"),
-        (datetime.datetime(2026, 6, 9), None, "unpaid"),
+        (datetime.datetime(2026, 7, 1), None, "upcoming"),
+        (datetime.datetime(2026, 7, 2), None, "unpaid"),
         (datetime.datetime(2026, 5, 1), datetime.datetime(2026, 5, 2), "paid"),
     ],
 )

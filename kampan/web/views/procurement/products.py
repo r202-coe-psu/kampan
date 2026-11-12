@@ -91,6 +91,15 @@ def index():
     only_my_division = request.args.get("division") == "mine"
     visible_qs = ma_permissions.visible_procurements(organization, only_my_division=only_my_division)
 
+    # แบบร่างแยกออกจากตาราง แสดงเป็นตัวเลือกตอนกด "เพิ่ม MA" (เฉพาะแบบร่างที่ผู้ใช้แก้ไขได้)
+    can_edit = ma_permissions.edit_checker(organization)
+    drafts = [
+        draft
+        for draft in visible_qs.filter(status="draft", parent_procurement=None).order_by("-updated_date").limit(50)
+        if can_edit(draft)
+    ][:10]
+    visible_qs = visible_qs.filter(status__ne="draft")
+
     # หากสัญญาหลักมีการ duplicate แยกรายการย่อยออกไปแล้ว ให้แสดงเฉพาะรายการย่อยที่แยกออกมาในตาราง
     parent_ids = list({
         _reference_id(child, "parent_procurement")
@@ -135,7 +144,8 @@ def index():
         today=today,
         upload_success=upload_success,
         status_count=status_count,
-        can_edit=ma_permissions.edit_checker(organization),
+        can_edit=can_edit,
+        drafts=drafts,
         my_division=ma_permissions.my_division_filter(organization),
         only_my_division=only_my_division,
     )
@@ -558,7 +568,8 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
 
 def _duplicate_child_procurements(parent_procurement, items, user):
     for item in items:
-        child_name = f"{parent_procurement.name} - {item.name}" if parent_procurement.name != item.name else item.name
+        # ชื่อโครงการอยู่ที่สัญญาหลัก สัญญาย่อยใช้ชื่อรายการย่อยตรง ๆ ไม่ต่อชื่อโครงการ
+        child_name = item.name
         child = models.Procurement(
             organization=parent_procurement.organization,
             name=child_name,

@@ -6,7 +6,64 @@
 
 {% block title %}รายการบำรุงรักษา{% endblock %}
 {% block dashboard_title %}ระบบการจัดการ MA{% endblock %}
-{% block breadcrumbs %}{% endblock %}
+{% block breadcrumbs %}
+{% if drafts %}
+  <dialog id="modal_drafts" class="modal text-left">
+    <div class="modal-box max-w-2xl">
+      <h3 class="text-lg font-bold flex items-center gap-2 mb-1">
+        <i class="ph ph-file-dashed text-xl text-warning"></i> แบบร่างที่ค้างอยู่ ({{ drafts|length }})
+      </h3>
+      <p class="text-sm text-base-content/70 mb-4">เลือกแบบร่างที่ต้องการทำต่อ</p>
+      <ul class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+        {% for draft in drafts %}
+          <li class="flex items-center gap-3 rounded-box border border-base-300 p-3">
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold break-words">{{ draft.name or "(ยังไม่ตั้งชื่อ)" }}</div>
+              <div class="text-xs text-base-content/60">
+                {% if draft.psu_disbursement_number %}ม.อ.เบิกจ่าย {{ draft.psu_disbursement_number }} · {% endif %}แก้ไขล่าสุด {{ draft.updated_date | format_thai_date }}
+              </div>
+            </div>
+            <a href="{{ url_for('procurement.products.edit', procurement_id=draft.id, organization_id=organization.id) }}" class="btn btn-warning btn-sm">
+              <i class="ph ph-pencil-simple"></i> ทำต่อ
+            </a>
+            <button type="button" class="btn btn-ghost btn-sm btn-square text-error" aria-label="ลบแบบร่าง {{ draft.name }}"
+                    onclick="document.getElementById('modal_delete_draft_{{ draft.id }}').showModal()">
+              <i class="ph ph-trash text-lg"></i>
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn btn-ghost">ปิด</button></form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit" aria-label="ปิด">close</button></form>
+  </dialog>
+{% endif %}
+{% for draft in drafts %}
+  <dialog id="modal_delete_draft_{{ draft.id }}" class="modal text-left">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+        <i class="ph ph-trash text-xl"></i> ยืนยันการลบแบบร่าง MA
+      </h3>
+      <p class="py-2 text-base text-base-content">คุณต้องการลบแบบร่างนี้ใช่หรือไม่?</p>
+      <div class="bg-base-200 p-4 rounded-lg mb-3 space-y-1">
+        <div class="font-semibold text-base text-base-content break-words">{{ draft.name or "(ยังไม่ตั้งชื่อ)" }}</div>
+        {% if draft.psu_disbursement_number %}
+          <div class="text-sm text-base-content/70">ม.อ.เบิกจ่าย: {{ draft.psu_disbursement_number }}</div>
+        {% endif %}
+      </div>
+      <p class="text-xs text-error mb-4 font-medium">* ข้อมูลแบบร่างนี้จะถูกลบถาวรและไม่สามารถกู้คืนได้</p>
+      <form method="POST" action="{{ url_for('procurement.products.delete', procurement_id=draft.id, organization_id=organization.id) }}" class="modal-action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" onclick="document.getElementById('modal_delete_draft_{{ draft.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
+        <button type="submit" class="btn btn-error text-white gap-1 shadow-sm"><i class="ph ph-trash"></i> ยืนยันลบทิ้ง</button>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit" aria-label="ปิด">close</button></form>
+  </dialog>
+{% endfor %}
+{% endblock %}
 
 {% block content %}
   <div class="container mx-auto px-4 py-6">
@@ -19,11 +76,20 @@
           จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
         </span>
       </div>
-      <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
-         class="btn btn-primary btn-sm shadow-md">
-        <i class="ph ph-plus"></i>
-        เพิ่ม MA ใหม่
-      </a>
+      <div class="flex flex-wrap items-center gap-2">
+        {% if drafts %}
+          <button type="button" class="btn btn-outline btn-warning btn-sm" onclick="document.getElementById('modal_drafts').showModal()">
+            <i class="ph ph-file-dashed"></i>
+            แบบร่าง
+            <span class="badge badge-warning badge-sm">{{ drafts|length }}</span>
+          </button>
+        {% endif %}
+        <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
+           class="btn btn-primary btn-sm shadow-md">
+          <i class="ph ph-plus"></i>
+          เพิ่ม MA ใหม่
+        </a>
+      </div>
     </div>
 
     {% call filter_bar(organization, form.name, "เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย", form.sort,
@@ -50,7 +116,7 @@
           <i class="ph ph-clock text-3xl text-warning"></i>
           <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
           <div class="font-semibold text-sm text-warning">ใกล้ครบกำหนด</div>
-          <div class="text-xs text-base-content/50">ครบกำหนดใน 7 วัน</div>
+          <div class="text-xs text-base-content/50">ครบกำหนดใน 30 วัน</div>
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"

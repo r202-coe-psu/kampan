@@ -8,7 +8,7 @@
 
 {% block content %}
 {% set is_edit = procurement and procurement.pk %}
-{% set back_url = url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
+{% set back_url = url_for('procurement.products.index', organization_id=organization.id) if (is_edit and procurement.status == 'draft') else url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
 <div class="mb-4">
   {{ RenderBackButton(back_url) }}
 </div>

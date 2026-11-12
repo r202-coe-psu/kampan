@@ -148,7 +148,7 @@ RENEWAL_STATUS_CHOICES = [
 ]
 
 # งวดที่ครบกำหนดภายในกี่วันนับเป็น "ใกล้ครบกำหนด"
-UPCOMING_DAYS = 7
+UPCOMING_DAYS = 30
 
 # ใช้หาสถานะที่แย่ที่สุดของ MA จากทุกรายการย่อย
 PAYMENT_STATUS_SEVERITY = {"paid": 0, "unpaid": 1, "upcoming": 2, "overdue": 3}
@@ -172,7 +172,7 @@ def _reference_ids(document, field_name) -> list:
 
 
 def installment_status(due_date, paid_date, today: datetime.date | None = None) -> str:
-    """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
+    """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–30 วัน) / unpaid"""
     if paid_date is not None:
         return "paid"
     today = today or datetime.date.today()
@@ -310,7 +310,7 @@ class Installment(me.EmbeddedDocument):
         return self.paid_date is not None
 
     def get_status(self, today: datetime.date | None = None) -> str:
-        """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–7 วัน) / unpaid"""
+        """paid / overdue (เลยวันครบกำหนด) / upcoming (เหลือ 0–30 วัน) / unpaid"""
         return installment_status(self.due_date, self.paid_date, today)
 
 

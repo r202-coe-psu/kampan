@@ -4,18 +4,17 @@
   "upcoming": ("badge-outline badge-warning", "border-l-warning"),
   "paid": ("badge-outline badge-success", "border-l-success"),
 } %}
-<table class="table w-full">
+<table class="table w-full table-fixed">
   <thead class="bg-base-200 text-base-content/70">
     <tr>
-      <th class="font-semibold text-base w-48">ชื่อโครงการ</th>
-      <th class="font-semibold text-base min-w-[200px]">MA</th>
-      <th class="font-semibold text-base text-center">เวลาคงเหลือ</th>
-      <th class="font-semibold text-base text-center w-48">ผู้รับผิดชอบ / ฝ่าย</th>
-      <th class="font-semibold text-base text-center w-36">ผู้ให้บริการ</th>
-      <th class="font-semibold text-base text-center w-28">ยอดเงินรวม</th>
-      <th class="font-semibold text-base text-center w-44">การจ่ายเงิน</th>
-      <th class="font-semibold text-base text-center w-32">สถานะ</th>
-      <th class="font-semibold text-base text-center w-16"></th>
+      <th class="font-semibold text-base w-[20%]">MA</th>
+      <th class="font-semibold text-base w-[19%]">ชื่อโครงการ</th>
+      <th class="font-semibold text-base text-center w-[9%]">เวลาคงเหลือ</th>
+      <th class="font-semibold text-base text-center w-[13%]">ผู้รับผิดชอบ / ฝ่าย</th>
+      <th class="font-semibold text-base text-center w-[9%]">ยอดเงินรวม</th>
+      <th class="font-semibold text-base text-center w-[12%]">การจ่ายเงิน</th>
+      <th class="font-semibold text-base text-center w-[9%]">สถานะ</th>
+      <th class="font-semibold text-base text-center w-[9%]"><span class="sr-only">จัดการ</span></th>
     </tr>
   </thead>
   <tbody>
@@ -27,40 +26,6 @@
     {% set next_item, next_installment = item.get_next_unpaid() %}
     {% set sub_items_list = item.get_items() %}
     <tr class="border-l-4 {% if is_draft %}border-l-warning bg-warning/10 hover:bg-warning/15{% else %}{{ badge[1] }} hover:bg-base-200/40{% endif %} transition-colors">
-      <td class="align-top font-medium">
-        <div class="space-y-1">
-          {% if item.parent_procurement %}
-            <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}"
-               class="font-semibold text-base text-base-content hover:text-primary link link-hover block leading-snug">
-              {{ item.parent_procurement.name }}
-            </a>
-            <span class="inline-flex items-center gap-1 text-xs text-primary font-medium">
-              <i class="ph ph-git-fork"></i> สัญญาย่อย
-            </span>
-          {% else %}
-            {% if is_draft %}
-              {% if can_edit(item) %}
-                <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
-                   class="font-semibold text-base text-base-content hover:text-warning leading-snug link link-hover block">
-                  {{ item.name }}
-                </a>
-              {% else %}
-                <span class="font-semibold text-base text-base-content leading-snug block">{{ item.name }}</span>
-              {% endif %}
-            {% else %}
-              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
-                 class="font-semibold text-base text-base-content hover:text-primary leading-snug link link-hover block">
-                {{ item.name }}
-              </a>
-            {% endif %}
-            {% if item.has_child_procurements() %}
-              <span class="inline-flex items-center gap-1 text-xs text-base-content/60 font-medium">
-                <i class="ph ph-tree-structure"></i> {{ item.get_child_procurements()|length }} สัญญาย่อย
-              </span>
-            {% endif %}
-          {% endif %}
-        </div>
-      </td>
       <td class="align-top">
         <div class="flex items-center gap-2">
           <span class="text-xs text-base-content/60 font-mono">ม.อ.เบิกจ่าย {{ item.psu_disbursement_number or "-" }}</span>
@@ -88,7 +53,95 @@
             <span class="badge badge-sm badge-neutral font-medium">{{ label }}</span>
           {% endfor %}
         </div>
-        <div class="mt-2">
+      </td>
+      <td class="align-top font-medium break-words">
+        <div class="space-y-1">
+          {% if item.parent_procurement %}
+            <a href="{{ url_for('procurement.payment.index', procurement_id=item.parent_procurement.id, organization_id=organization.id) }}"
+               class="font-semibold text-base text-base-content hover:text-primary link link-hover block leading-snug">
+              {{ item.parent_procurement.name }}
+            </a>
+          {% else %}
+            {% if is_draft %}
+              {% if can_edit(item) %}
+                <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+                   class="font-semibold text-base text-base-content hover:text-warning leading-snug link link-hover block">
+                  {{ item.name }}
+                </a>
+              {% else %}
+                <span class="font-semibold text-base text-base-content leading-snug block">{{ item.name }}</span>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('procurement.payment.index', procurement_id=item.id, organization_id=organization.id) }}"
+                 class="font-semibold text-base text-base-content hover:text-primary leading-snug link link-hover block">
+                {{ item.name }}
+              </a>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="text-xs text-base-content/60 mt-1 break-words">{{ item.company }}</div>
+      </td>
+      <td class="text-center">
+        <div class="text-base font-semibold text-base-content">
+          {% if item.is_expired %}
+            <span class="text-error">หมดอายุแล้ว</span>
+          {% elif item.duration_months is not none and item.duration_days is not none %}
+            {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
+          {% else %}
+            -
+          {% endif %}
+        </div>
+        {% if item.get_end_date() %}
+          <div class="text-xs text-base-content/60">สิ้นสุด {{ item.get_end_date() | format_thai_date }}</div>
+        {% endif %}
+      </td>
+      <td>
+        <div class="flex flex-wrap gap-1 justify-center">
+          {% set members = item.get_responsible_members() %}
+          {% for member in members[:2] %}
+            <span class="badge badge-outline badge-primary font-medium">{{ member.display_user_fullname() }}</span>
+          {% else %}
+            <span class="text-base-content/30 text-sm">-</span>
+          {% endfor %}
+          {% if members|length > 2 %}
+            <span class="badge badge-ghost font-medium" title="{% for m in members[2:] %}{{ m.display_user_fullname() }}{% if not loop.last %}, {% endif %}{% endfor %}">+{{ members|length - 2 }}</span>
+          {% endif %}
+        </div>
+        <div class="text-xs text-center text-base-content/60 mt-1">
+          {% for division in item.get_responsible_divisions() %}{{ division.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+      </td>
+      <td class="text-center">
+        <span class="text-sm font-semibold text-base-content whitespace-nowrap">
+          {{ item.total_amount | format_amount if item.total_amount is not none else '0' }}
+        </span>
+      </td>
+      <td class="text-center">
+        {% if is_draft %}
+          <div class="flex flex-col items-center gap-1 select-none">
+            <span class="badge badge-outline badge-warning badge-sm whitespace-nowrap font-medium">ยังไม่เปิดใช้งาน</span>
+            <span class="text-[11px] text-base-content/50">รายการแบบร่าง</span>
+          </div>
+        {% else %}
+          <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
+            {% if installment_count == 0 %}
+              <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
+            {% elif paid_count == installment_count %}
+              <span class="badge badge-outline badge-success badge-md font-semibold whitespace-nowrap px-2 gap-1 shadow-xs">
+                <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
+              </span>
+              <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
+            {% else %}
+              <div class="badge {{ badge[0] }} badge-md font-semibold whitespace-nowrap px-2">
+                งวด {{ paid_count }}/{{ installment_count }}
+              </div>
+              {% if next_installment %}
+                <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
+              {% endif %}
+            {% endif %}
+          </div>
+        {% endif %}
+        <div class="mt-2 flex justify-center">
           <button type="button"
                   onclick="toggleMaSubItems('{{ item.id }}', this)"
                   class="btn btn-ghost btn-xs gap-1 text-primary hover:bg-primary/10 border border-primary/20"
@@ -107,91 +160,26 @@
         </div>
       </td>
       <td class="text-center">
-        <div class="text-base font-semibold text-base-content">
-          {% if item.is_expired %}
-            <span class="text-error">หมดอายุแล้ว</span>
-          {% elif item.duration_months is not none and item.duration_days is not none %}
-            {{ item.duration_months }} เดือน {{ item.duration_days }} วัน
-          {% else %}
-            -
-          {% endif %}
-        </div>
-        {% if item.get_end_date() %}
-          <div class="text-xs text-base-content/60">สิ้นสุด {{ item.get_end_date() | format_thai_date }}</div>
-        {% endif %}
-      </td>
-      <td>
-        <div class="flex flex-wrap gap-1 justify-center">
-          {% for member in item.get_responsible_members() %}
-            <span class="badge badge-outline badge-primary font-medium truncate">{{ member.display_user_fullname() }}</span>
-          {% else %}
-            <span class="text-base-content/30 text-sm">-</span>
-          {% endfor %}
-        </div>
-        <div class="text-xs text-center text-base-content/60 mt-1">
-          {% for division in item.get_responsible_divisions() %}{{ division.name }}{% if not loop.last %}, {% endif %}{% endfor %}
-        </div>
-      </td>
-      <td class="text-center">
-        <span class="text-base font-medium text-base-content truncate block max-w-[140px] mx-auto" title="{{ item.company }}">
-          {{ item.company }}
-        </span>
-      </td>
-      <td class="text-center">
-        <span class="text-base font-semibold text-base-content whitespace-nowrap">
-          {{ item.total_amount | format_amount if item.total_amount is not none else '0' }}
-        </span>
-      </td>
-      <td class="text-center">
-        {% if is_draft %}
-          <div class="flex flex-col items-center gap-1 select-none">
-            <span class="badge badge-outline badge-warning badge-sm whitespace-nowrap font-medium">ยังไม่เปิดใช้งาน</span>
-            <span class="text-[11px] text-base-content/50">รายการแบบร่าง</span>
-          </div>
-        {% else %}
-          <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
-            {% if installment_count == 0 %}
-              <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
-            {% elif paid_count == installment_count %}
-              <span class="badge badge-outline badge-success badge-lg font-semibold whitespace-nowrap px-3 gap-1 shadow-xs">
-                <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
-              </span>
-              <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
-            {% else %}
-              <div class="badge {{ badge[0] }} badge-lg font-semibold whitespace-nowrap px-3">
-                งวด {{ paid_count }}/{{ installment_count }}
-              </div>
-              {% if next_installment %}
-                <div class="text-xs text-base-content/70">ก่อน {{ next_installment.due_date | format_thai_date }}</div>
-              {% endif %}
-            {% endif %}
-            <span class="text-[11px] text-primary hover:underline flex items-center gap-0.5 mt-0.5">
-              <i class="ph ph-list-bullets"></i> ดูสถานะการจ่าย
-            </span>
-          </div>
-        {% endif %}
-      </td>
-      <td class="text-center">
         {% if item.status == "pending" %}
-        <span class="badge badge-warning badge-lg whitespace-nowrap px-3">รอตรวจสอบ</span>
+        <span class="badge badge-warning badge-md whitespace-nowrap px-2">รอตรวจสอบ</span>
         {% elif item.status == "draft" %}
-        <span class="badge badge-warning badge-lg font-bold whitespace-nowrap px-3.5 py-1.5 shadow-xs gap-1.5 border border-warning/90">
+        <span class="badge badge-warning badge-md font-bold whitespace-nowrap px-2 shadow-xs gap-1.5 border border-warning/90">
           <i class="ph ph-file-dashed text-base"></i> แบบร่าง
         </span>
         {% elif item.status == "disactive" %}
-        <span class="badge badge-error badge-lg whitespace-nowrap px-3">ไม่ต่ออายุ</span>
+        <span class="badge badge-error badge-md whitespace-nowrap px-2">ไม่ต่ออายุ</span>
         {% elif item.status == "active" %}
-        <span class="badge badge-success badge-lg whitespace-nowrap px-3">กำลังใช้งาน</span>
+        <span class="badge badge-success badge-md whitespace-nowrap px-2">กำลังใช้งาน</span>
         {% elif item.status == "renewed" %}
-        <span class="badge badge-neutral badge-lg whitespace-nowrap px-3">ต่ออายุแล้ว</span>
+        <span class="badge badge-neutral badge-md whitespace-nowrap px-2">ต่ออายุแล้ว</span>
         {% elif item.status == "renewal-requested" %}
-        <span class="badge badge-info badge-lg whitespace-nowrap px-3 text-white">ขอต่ออายุ</span>
+        <span class="badge badge-info badge-md whitespace-nowrap px-2 text-white">ขอต่ออายุ</span>
         {% else %}
-        <span class="badge badge-info badge-lg whitespace-nowrap px-3">{{ item.status }}</span>
+        <span class="badge badge-info badge-md whitespace-nowrap px-2">{{ item.status }}</span>
         {% endif %}
       </td>
       <td class="text-center">
-        <div class="flex gap-1.5 justify-center items-center">
+        <div class="flex flex-wrap gap-1.5 justify-center items-center">
           {% if is_draft %}
             {% if can_edit(item) %}
             <div class="tooltip tooltip-left" data-tip="แก้ไขต่อ (แบบร่าง)">
@@ -249,7 +237,7 @@
 
     <!-- Expandable Sub-items and Payment Status Row -->
     <tr id="sub_items_{{ item.id }}" class="hidden {% if is_draft %}bg-warning/5 border-l-4 border-l-warning{% else %}bg-base-200/50 border-l-4 {{ badge[1] }}{% endif %}">
-      <td colspan="9" class="p-3 md:p-5">
+      <td colspan="8" class="p-3 md:p-5">
         <div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-base-200 pb-2">
             <div class="flex items-center gap-2">
@@ -413,7 +401,7 @@
     </tr>
     {% else %}
     <tr>
-      <td colspan="9" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
+      <td colspan="8" class="text-center py-12 text-base-content/40 text-base">ไม่มีข้อมูล</td>
     </tr>
     {% endfor %}
   </tbody>

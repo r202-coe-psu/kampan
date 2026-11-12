@@ -263,7 +263,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     # Children
     children = master.get_child_procurements()
     assert len(children) == 2
-    assert [c.name for c in children] == ["[TEST] Master Contract - [TEST] Sub-item Alpha", "[TEST] Master Contract - [TEST] Sub-item Beta"]
+    assert [c.name for c in children] == ["[TEST] Sub-item Alpha", "[TEST] Sub-item Beta"]
     assert [c.total_amount for c in children] == [Decimal("40000.00"), Decimal("60000.00")]
     assert all(c.company == "[TEST] Mega Corp" for c in children)
     assert all(c.psu_disbursement_number == "PSU-PARENT-CHILD" for c in children)
@@ -272,7 +272,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     # Master detail page shows children
     master_html = client.get(f"/procurement/payment/{master.id}?{_q(world.org)}").get_data(as_text=True)
     assert f"{master.name} แยกเป็น {len(children)} รายการย่อย" in master_html
-    assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in master_html
+    assert "[TEST] Sub-item Alpha" in master_html
 
     # Child detail page shows link to master
     child_html = client.get(f"/procurement/payment/{children[0].id}?{_q(world.org)}").get_data(as_text=True)
@@ -283,10 +283,12 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     table_html = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
     assert "ชื่อโครงการ" in table_html
     assert master.name in table_html
-    assert "สัญญาย่อย" in table_html
+    # ป้าย "สัญญาย่อย" ไม่แสดงในตารางแล้ว ปุ่มแสดงงวดการจ่ายอยู่ในคอลัมน์ชื่อโครงการแทน
+    assert "สัญญาย่อย" not in table_html.split("<tbody>", 1)[-1].split("</tbody>", 1)[0]
+    assert "งวดการจ่ายเงิน" in table_html
     assert "สัญญาย่อยของ:" not in table_html
-    assert "[TEST] Master Contract - [TEST] Sub-item Alpha" in table_html
-    assert "[TEST] Master Contract - [TEST] Sub-item Beta" in table_html
+    assert "[TEST] Sub-item Alpha" in table_html
+    assert "[TEST] Sub-item Beta" in table_html
     assert "สัญญาหลัก (2 สัญญาย่อย)" not in table_html
 
 
@@ -540,21 +542,28 @@ def test_create_ma_save_as_draft(world, client_for):
     for child in children:
         assert child.status == "draft"
 
-    # Check products table display
+    # Drafts are no longer rows of the table: they are offered from the "เพิ่ม MA" menu
     index_res = client.get(f"/procurement/products?{_q(world.org)}")
     assert index_res.status_code == 200
     index_html = index_res.get_data(as_text=True)
-    assert "แบบร่าง" in index_html
-    target_id = children[0].id
+    assert "แบบร่างที่ค้างอยู่" in index_html
+    target_id = str(procurement.id)
     assert f"/procurement/products/{target_id}/edit" in index_html
+    assert f"/procurement/products/{children[0].id}/edit" not in index_html
     assert f"modal_delete_draft_{target_id}" in index_html
     assert f"/procurement/payment/{target_id}" not in index_html
-    assert f"modal_request_renewal_{target_id}" not in index_html
+    assert 'class="badge badge-warning' not in index_html.split("<tbody>", 1)[-1]
 
     # Check that payment detail redirects to edit
     detail_res = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}")
     assert detail_res.status_code == 302
     assert f"/procurement/products/{procurement.id}/edit" in detail_res.headers["Location"]
+
+    # Back button of a draft goes to the list like cancel (payment detail would redirect straight back to edit)
+    edit_html = client.get(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}").get_data(as_text=True)
+    list_url = f"/procurement/products?organization_id={world.org.id}"
+    assert f'href="{list_url}"' in edit_html
+    assert f'href="/procurement/payment/{procurement.id}?organization_id={world.org.id}"' not in edit_html
 
     # Check that renew redirects to edit
     renew_res = client.get(f"/procurement/products/{procurement.id}/renew?{_q(world.org)}")
