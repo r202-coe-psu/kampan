@@ -304,6 +304,7 @@
                     <th class="w-16">งวดที่</th>
                     <th class="w-32">วันครบกำหนด</th>
                     <th class="w-36">สถานะการจ่าย</th>
+                    <th class="w-32 text-right">ยอดที่ต้องจ่าย (บาท)</th>
                     <th class="w-32">วันที่จ่าย</th>
                     <th class="w-36">เลขที่เอกสาร</th>
                     <th class="w-32 text-right">ยอดที่จ่าย (บาท)</th>
@@ -313,6 +314,7 @@
                 <tbody>
                   {% for installment in p_item.get_sorted_installments() %}
                   {% set inst_status = installment.get_status(today) %}
+                  {% set due_amount = installment.amount if installment.amount is not none else (p_item.amount if (p_item.get_installment_count() == 1 or not p_item.pays_in_installments()) else none) %}
                   <tr class="hover:bg-base-200/30">
                     <td class="font-medium">{{ loop.index }}</td>
                     <td class="whitespace-nowrap">{{ installment.due_date | format_thai_date }}</td>
@@ -329,6 +331,13 @@
                         <span class="badge badge-outline badge-ghost badge-sm text-base-content/60 font-medium whitespace-nowrap">ยังไม่จ่าย</span>
                       {% endif %}
                     </td>
+                    <td class="text-right whitespace-nowrap">
+                      {% if due_amount is not none %}
+                        <span class="font-medium text-base-content">{{ due_amount | format_amount }}</span>
+                      {% else %}
+                        <span class="text-base-content/30">-</span>
+                      {% endif %}
+                    </td>
                     <td class="whitespace-nowrap">
                       {% if installment.paid_date %}
                         <span class="text-success font-semibold">{{ installment.paid_date | format_thai_date }}</span>
@@ -343,7 +352,7 @@
                         <span class="text-base-content/30">-</span>
                       {% endif %}
                     </td>
-                    <td class="text-right">
+                    <td class="text-right whitespace-nowrap">
                       {% if installment.paid_amount is not none %}
                         <span class="font-semibold text-success">{{ installment.paid_amount | format_amount }}</span>
                       {% else %}
@@ -370,7 +379,7 @@
                   </tr>
                   {% else %}
                   <tr>
-                    <td colspan="{{ 7 if (can_edit(item) and not is_draft) else 6 }}" class="text-center text-base-content/40 py-2">ไม่มีงวดการจ่าย</td>
+                    <td colspan="{{ 8 if (can_edit(item) and not is_draft) else 7 }}" class="text-center text-base-content/40 py-2">ไม่มีงวดการจ่าย</td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -505,7 +514,8 @@
             <div class="bg-base-200 p-3 rounded-lg mb-4 text-sm space-y-1">
               <div><strong>รายการ:</strong> {{ p_item.name }}</div>
               <div><strong>กำหนดชำระ:</strong> {{ installment.due_date | format_thai_date }}</div>
-              <div><strong>ยอดเงินของรายการ:</strong> {{ p_item.amount | format_amount }} บาท</div>
+              {% set modal_due = installment.amount if installment.amount is not none else (p_item.amount if (p_item.get_installment_count() == 1 or not p_item.pays_in_installments()) else none) %}
+              <div><strong>ยอดที่ต้องจ่าย:</strong> {{ modal_due | format_amount if modal_due is not none else (p_item.amount | format_amount) }} บาท</div>
             </div>
             <form method="POST" action="{{ url_for('procurement.payment.pay_installment', procurement_id=item.id, item_id=p_item.id, installment_id=installment._id, organization_id=organization.id) }}" class="space-y-4">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -529,7 +539,7 @@
 
               <div class="form-control">
                 <label class="label py-1"><span class="label-text font-medium">ยอดเงินที่จ่ายจริง (บาท)</span></label>
-                <input type="number" step="0.01" min="0" name="paid_amount" placeholder="{{ p_item.amount or '' }}" class="input input-bordered input-sm w-full"/>
+                <input type="number" step="0.01" min="0" name="paid_amount" placeholder="{{ modal_due or p_item.amount or '' }}" class="input input-bordered input-sm w-full"/>
               </div>
 
               <div class="modal-action">

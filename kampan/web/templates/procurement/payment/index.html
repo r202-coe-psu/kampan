@@ -395,6 +395,7 @@
                   <th class="w-16 text-center">งวดที่</th>
                   <th>วันครบกำหนด</th>
                   <th>สถานะ</th>
+                  <th class="text-right">ยอดที่ต้องจ่าย (บาท)</th>
                   <th>วันที่จ่าย</th>
                   <th>เลขที่เอกสาร</th>
                   <th class="text-right">ยอดที่จ่ายจริง (บาท)</th>
@@ -405,6 +406,7 @@
               <tbody>
                 {% for installment in item.get_sorted_installments() %}
                   {% set modal_key = item.id ~ "-" ~ installment._id %}
+                  {% set due_amount = installment.amount if installment.amount is not none else (item.amount if (item.get_installment_count() == 1 or not item.pays_in_installments()) else none) %}
                   <tr class="align-top hover:bg-base-200/40 transition-colors">
                     <td class="text-center font-bold text-base-content/70">{{ loop.index }}</td>
                     <td class="whitespace-nowrap font-medium">
@@ -418,6 +420,13 @@
                       {% endif %}
                     </td>
                     <td>{{ payment_badge(installment.get_status(today)) }}</td>
+                    <td class="text-right whitespace-nowrap font-medium text-base-content">
+                      {% if due_amount is not none %}
+                        <span>{{ due_amount | format_amount }}</span>
+                      {% else %}
+                        <span class="text-base-content/40">-</span>
+                      {% endif %}
+                    </td>
                     <td class="whitespace-nowrap text-base-content/80">
                       {% if installment.paid_date %}
                         <span class="inline-flex items-center gap-1.5 text-success font-medium">
@@ -598,11 +607,18 @@
 
       {% for installment in item.installments %}
         {% set modal_key = item.id ~ "-" ~ installment._id %}
+        {% set modal_due = installment.amount if installment.amount is not none else (item.amount if (item.get_installment_count() == 1 or not item.pays_in_installments()) else none) %}
         {% set action_args = {"procurement_id": procurement.id, "item_id": item.id, "installment_id": installment._id, "organization_id": organization.id} %}
         <dialog id="pay_modal_{{ modal_key }}" class="modal">
           <div class="modal-box">
             <h3 class="text-lg font-bold mb-1">{{ "แก้ไขการจ่าย" if installment.is_paid() else "จ่ายแล้ว" }}</h3>
             <p class="text-sm text-base-content/70 mb-3">{{ item.name }} · ครบกำหนด {{ thai_date(installment.due_date) }}</p>
+            {% if modal_due is not none %}
+              <div class="bg-base-200/60 border border-base-200 px-3 py-2 rounded-lg mb-3 text-sm flex items-center justify-between">
+                <span class="text-base-content/70">ยอดที่ต้องจ่าย:</span>
+                <span class="font-bold text-base-content">{{ modal_due | format_amount }} บาท</span>
+              </div>
+            {% endif %}
             <form method="post" action="{{ url_for('procurement.payment.pay_installment', **action_args) }}" class="space-y-2">
               {{ form.hidden_tag() }}
               <fieldset class="fieldset">
@@ -622,6 +638,7 @@
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">ยอดที่จ่ายจริง (บาท) <span class="text-base-content/50">ไม่บังคับ</span></legend>
                 <input type="number" name="paid_amount" step="0.01" min="0" class="input w-full"
+                       placeholder="{{ modal_due or '' }}"
                        value="{{ installment.paid_amount if installment.paid_amount is not none else '' }}" />
               </fieldset>
               <div class="modal-action">
@@ -645,6 +662,7 @@
               <div class="bg-base-200 p-3 rounded-lg mb-4 text-sm space-y-1">
                 <div><strong>รายการ:</strong> {{ item.name }}</div>
                 <div><strong>กำหนดชำระ:</strong> {{ thai_date(installment.due_date) }}</div>
+                {% if modal_due is not none %}<div><strong>ยอดที่ต้องจ่าย:</strong> {{ modal_due | format_amount }} บาท</div>{% endif %}
                 {% if installment.paid_date %}<div><strong>วันที่จ่ายเดิม:</strong> {{ thai_date(installment.paid_date) }}</div>{% endif %}
                 {% if installment.payment_number %}<div><strong>เลขที่เอกสาร:</strong> {{ installment.payment_number }}</div>{% endif %}
                 {% if installment.paid_amount is not none %}<div><strong>ยอดที่จ่าย:</strong> {{ installment.paid_amount | format_amount }} บาท</div>{% endif %}

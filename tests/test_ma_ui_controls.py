@@ -653,5 +653,25 @@ def test_edit_draft_to_active(world, client_for):
         assert child.status == "active"
 
 
+def test_installment_table_shows_due_amount_column(world, client_for):
+    client = client_for(world.admin)
+    form_data = _two_item_form(world)
+    form_data["action"] = "save"
+    res = _create(client, world, form_data)
+    assert res.status_code == 302
+
+    # Check products table
+    idx = client.get(f"/procurement/products?{_q(world.org)}")
+    assert idx.status_code == 200
+    assert "ยอดที่ต้องจ่าย (บาท)" in idx.text
+
+    # Check payment detail page
+    parent = models.Procurement.objects.get(parent_procurement=None)
+    pay = client.get(f"/procurement/payment/{parent.id}?{_q(world.org)}")
+    assert pay.status_code == 200
+    assert "ยอดที่ต้องจ่าย (บาท)" in pay.text
+
+
+
 
 
