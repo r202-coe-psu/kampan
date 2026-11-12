@@ -100,7 +100,12 @@
          class="btn btn-ghost">
         <i class="ph ph-x"></i> ยกเลิก
       </a>
-      <button type="submit" id="submit_btn" class="btn btn-primary">
+      {% if not is_edit or procurement.status == 'draft' %}
+      <button type="submit" name="action" value="draft" id="draft_btn" class="btn btn-outline btn-primary" formnovalidate>
+        <i class="ph ph-file-dashed"></i> บันทึกแบบร่าง
+      </button>
+      {% endif %}
+      <button type="submit" name="action" value="save" id="submit_btn" class="btn btn-primary">
         <i class="ph ph-check"></i> บันทึก MA
       </button>
     </div>

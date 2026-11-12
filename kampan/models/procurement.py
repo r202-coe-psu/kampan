@@ -139,6 +139,7 @@ PAYEMENT_STATUS_CHOICES = [
 ]
 
 RENEWAL_STATUS_CHOICES = [
+    ("draft", "แบบร่าง"),
     ("pending", "รอดำเนินการ"),
     ("renewal-requested", "ยื่นขอต่ออายุ"),
     ("disactive", "ไม่อนุมัติ"),
@@ -286,7 +287,7 @@ class Installment(me.EmbeddedDocument):
     (ส่วนการจ่ายบันทึกด้วยปุ่ม "จ่ายแล้ว" ที่หน้ารายละเอียด)"""
 
     _id = me.ObjectIdField(required=True, default=ObjectId)
-    due_date = me.DateTimeField(required=True)
+    due_date = me.DateTimeField()
     amount = me.DecimalField(
         min_value=0,
         max_value=1e12,
@@ -381,8 +382,8 @@ class ProcurementItem(me.Document):
     quantity = me.IntField(min_value=1, default=1)
     unit = me.StringField(max_length=50)
     account_code = me.StringField(max_length=200, choices=ALL_ACCOUNT_CODE_CHOICES)
-    start_date = me.DateTimeField(required=True)
-    end_date = me.DateTimeField(required=True)
+    start_date = me.DateTimeField()
+    end_date = me.DateTimeField()
     amount = me.DecimalField(
         required=True,
         min_value=0,
@@ -700,9 +701,17 @@ class Procurement(me.Document):
         if not items:
             raise me.ValidationError("MA ต้องมีรายการย่อยอย่างน้อย 1 รายการ")
 
-        sum_error = check_item_sum(self.total_amount, (item.amount for item in items))
-        if sum_error:
-            raise me.ValidationError(sum_error)
+        if self.status != "draft":
+            sum_error = check_item_sum(self.total_amount, (item.amount for item in items))
+            if sum_error:
+                raise me.ValidationError(sum_error)
+        else:
+            if self.total_amount is None:
+                from kampan.utils.money import money_sum
+
+                self.total_amount = money_sum(item.amount for item in items if item.amount)
+            if not self.company:
+                self.company = "-"
 
         is_new = self.pk is None
         if is_new:

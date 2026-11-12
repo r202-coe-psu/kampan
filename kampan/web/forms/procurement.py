@@ -184,7 +184,7 @@ class ProcurementItemForm(Form):
     def validate_installments(self, field):
         if not self.installment_mode.data:
             return
-        if not field.entries:
+        if not getattr(self, "is_draft", False) and not field.entries:
             raise ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
         if len(field.entries) > MAX_INSTALLMENTS_PER_ITEM:
             raise ValidationError(MAX_INSTALLMENTS_MESSAGE)
@@ -245,6 +245,71 @@ class ProcurementHeaderForm(FlaskForm):
 
     sum_error = None
 
+    def __init__(self, *args, is_draft=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_draft = is_draft
+        if is_draft:
+            self.prepare_for_draft()
+
+    def prepare_for_draft(self):
+        self.psu_disbursement_number.validators = [
+            v
+            for v in self.psu_disbursement_number.validators
+            if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+        ]
+        self.psu_disbursement_number.validators.insert(0, validators.Optional())
+        self.psu_disbursement_number.flags.required = False
+
+        self.company.validators = [
+            v
+            for v in self.company.validators
+            if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+        ]
+        self.company.validators.insert(0, validators.Optional())
+        self.company.flags.required = False
+
+        self.total_amount.validators = [
+            v
+            for v in self.total_amount.validators
+            if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+        ]
+        self.total_amount.validators.insert(0, validators.Optional())
+        self.total_amount.flags.required = False
+
+        for entry in self.items:
+            entry.form.is_draft = True
+            entry.form.start_date.validators = [
+                v
+                for v in entry.form.start_date.validators
+                if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+            ]
+            entry.form.start_date.validators.insert(0, validators.Optional())
+            entry.form.start_date.flags.required = False
+
+            entry.form.end_date.validators = [
+                v
+                for v in entry.form.end_date.validators
+                if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+            ]
+            entry.form.end_date.validators.insert(0, validators.Optional())
+            entry.form.end_date.flags.required = False
+
+            entry.form.amount.validators = [
+                v
+                for v in entry.form.amount.validators
+                if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+            ]
+            entry.form.amount.validators.insert(0, validators.Optional())
+            entry.form.amount.flags.required = False
+
+            entry.form.name.validators = [
+                v
+                for v in entry.form.name.validators
+                if not isinstance(v, (validators.InputRequired, validators.DataRequired, validators.Optional))
+            ]
+            entry.form.name.validators.insert(0, validators.Optional())
+            entry.form.name.flags.required = False
+
     def set_member_choices(self, choices: list[tuple[str, str]]) -> None:
         for entry in self.items:
             entry.form.responsible_by.choices = choices
@@ -254,7 +319,11 @@ class ProcurementHeaderForm(FlaskForm):
             entry.form.responsible_divisions.choices = choices
 
     def validate(self, extra_validators=None):
+        if getattr(self, "is_draft", False):
+            self.prepare_for_draft()
         valid = super().validate(extra_validators=extra_validators)
+        if getattr(self, "is_draft", False):
+            return valid
 
         # ตรวจผลรวมเมื่อยอดทุกช่องอ่านได้แล้วเท่านั้น (ช่องที่ผิดรูปแบบมี error ของตัวเองอยู่แล้ว)
         amount_fields = [self.total_amount] + [entry.form.amount for entry in self.items]

@@ -127,6 +127,8 @@
       <td class="text-center">
         {% if item.status == "pending" %}
         <span class="badge badge-warning badge-lg whitespace-nowrap px-3">รอตรวจสอบ</span>
+        {% elif item.status == "draft" %}
+        <span class="badge badge-ghost badge-lg whitespace-nowrap px-3 border border-base-300">แบบร่าง</span>
         {% elif item.status == "disactive" %}
         <span class="badge badge-error badge-lg whitespace-nowrap px-3">ไม่ต่ออายุ</span>
         {% elif item.status == "active" %}

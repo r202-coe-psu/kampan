@@ -509,4 +509,96 @@ def test_search_select_field_rendering(app):
     assert "search-select-option" in html
 
 
+def test_create_ma_has_draft_button(world, client_for):
+    client = client_for(world.admin)
+    res = client.get(f"/procurement/products/create?{_q(world.org)}")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+    assert 'name="action" value="draft"' in html
+    assert 'id="draft_btn"' in html
+    assert "บันทึกแบบร่าง" in html
+    assert 'name="action" value="save"' in html
+    assert 'id="submit_btn"' in html
+    assert "บันทึก MA" in html
+
+
+def test_create_ma_save_as_draft(world, client_for):
+    client = client_for(world.admin)
+    form_data = _two_item_form(world)
+    form_data["action"] = "draft"
+    res = _create(client, world, form_data)
+    assert res.status_code == 302
+
+    procurement = models.Procurement.objects.get(parent_procurement=None)
+    assert procurement.status == "draft"
+
+    children = list(models.Procurement.objects(parent_procurement=procurement))
+    assert len(children) == 2
+    for child in children:
+        assert child.status == "draft"
+
+    # Check products table display
+    index_res = client.get(f"/procurement/products?{_q(world.org)}")
+    assert index_res.status_code == 200
+    index_html = index_res.get_data(as_text=True)
+    assert "แบบร่าง" in index_html
+
+    # Check payment detail display
+    detail_res = client.get(f"/procurement/payment/{procurement.id}?{_q(world.org)}")
+    assert detail_res.status_code == 200
+    detail_html = detail_res.get_data(as_text=True)
+    assert "แบบร่าง" in detail_html
+
+
+def test_save_draft_with_incomplete_fields(world, client_for):
+    client = client_for(world.admin)
+    form_data = {
+        "name": "[TEST] Draft Incomplete Project",
+        "action": "draft",
+        "items-0-name": "[TEST] Item 1",
+        "items-0-category": "ma",
+        "items-0-amount": "5000.00",
+        "items-0-quantity": "1",
+    }
+    res = _create(client, world, form_data)
+    assert res.status_code == 302
+
+    procurement = models.Procurement.objects.get(name="[TEST] Draft Incomplete Project")
+    assert procurement.status == "draft"
+    assert procurement.psu_disbursement_number == ""
+    assert procurement.company == "-"
+    assert procurement.total_amount == Decimal("5000.00")
+    items = procurement.get_items()
+    assert len(items) == 1
+    assert items[0].start_date is None
+    assert items[0].end_date is None
+
+
+def test_edit_draft_to_active(world, client_for):
+    client = client_for(world.admin)
+    form_data = _two_item_form(world)
+    form_data["action"] = "draft"
+    res = _create(client, world, form_data)
+    assert res.status_code == 302
+
+    procurement = models.Procurement.objects.get(parent_procurement=None)
+    assert procurement.status == "draft"
+
+    # Edit and publish with action="save"
+    edit_data = _two_item_form(world)
+    edit_data["action"] = "save"
+    edit_data["version"] = procurement.get_version()
+    edit_res = client.post(
+        f"/procurement/products/{procurement.id}/edit?{_q(world.org)}",
+        data=edit_data,
+        follow_redirects=True,
+    )
+    assert edit_res.status_code == 200
+    procurement.reload()
+    assert procurement.status == "active"
+    for child in models.Procurement.objects(parent_procurement=procurement):
+        assert child.status == "active"
+
+
+
 

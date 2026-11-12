@@ -1,5 +1,6 @@
 import datetime
 from collections import Counter
+from decimal import Decimal
 from io import BytesIO
 
 import mongoengine as me
@@ -317,12 +318,12 @@ def _renew_form_data(organization, old, target_item=None) -> dict:
     }
 
 
-def _build_form(organization, procurement=None, member=None, renew_from=None, target_item=None) -> forms.procurement.ProcurementHeaderForm:
+def _build_form(organization, procurement=None, member=None, renew_from=None, target_item=None, is_draft=False) -> forms.procurement.ProcurementHeaderForm:
     if request.method == "POST":
-        form = forms.procurement.ProcurementHeaderForm()
+        form = forms.procurement.ProcurementHeaderForm(is_draft=is_draft)
     elif renew_from:
         form = forms.procurement.ProcurementHeaderForm(
-            formdata=None, data=_renew_form_data(organization, renew_from, target_item=target_item)
+            formdata=None, data=_renew_form_data(organization, renew_from, target_item=target_item), is_draft=is_draft
         )
     elif procurement:
         form = forms.procurement.ProcurementHeaderForm(
@@ -336,9 +337,10 @@ def _build_form(organization, procurement=None, member=None, renew_from=None, ta
                 "items": [_item_form_data(item) for item in procurement.get_items()],
                 "version": procurement.get_version(),
             },
+            is_draft=is_draft,
         )
     else:
-        form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]})
+        form = forms.procurement.ProcurementHeaderForm(formdata=None, data={"items": [_blank_item_data(member)]}, is_draft=is_draft)
     form.set_member_choices(_member_choices(organization))
     extra_division_ids = []
     source_items = procurement.get_items() if procurement else ([target_item] if target_item else (renew_from.get_items() if renew_from else []))
@@ -424,7 +426,7 @@ def _build_installments(item_name, installment_entries, existing_installments) -
     return installments
 
 
-def _build_items(form, organization, existing_items, user):
+def _build_items(form, organization, existing_items, user, is_draft=False):
     """แปลงฟอร์มเป็นรายการย่อย คืน (รายการที่จะบันทึก, รายการเดิมที่ถูกลบออกจากฟอร์ม)
 
     item_id ในฟอร์มใช้ได้เฉพาะ id ของรายการย่อยใน MA นี้ id อื่นถือเป็นรายการใหม่
@@ -441,14 +443,15 @@ def _build_items(form, organization, existing_items, user):
     for entry in form.items:
         data = entry.form
         item = existing.pop(data.item_id.data or "", None) or models.ProcurementItem(created_by=user)
-        item.name = data.name.data.strip()
-        item.category = data.category.data
+        raw_name = (data.name.data or "").strip()
+        item.name = raw_name or (form.name.data or "รายการ 1").strip()
+        item.category = data.category.data or "ma"
         item.quantity = data.quantity.data or 1
         item.unit = (data.unit.data or "").strip()
         item.account_code = data.account_code.data or None
-        item.start_date = _as_datetime(data.start_date.data)
-        item.end_date = _as_datetime(data.end_date.data)
-        item.amount = data.amount.data
+        item.start_date = _as_datetime(data.start_date.data) if data.start_date.data else None
+        item.end_date = _as_datetime(data.end_date.data) if data.end_date.data else None
+        item.amount = data.amount.data if data.amount.data is not None else Decimal("0")
         item.has_sub_item_sn = bool(data.has_sub_item_sn.data)
         item.has_sub_item_asset = bool(data.has_sub_item_asset.data)
         item.sub_items = _build_sub_items(data.sub_items)
@@ -458,7 +461,7 @@ def _build_items(form, organization, existing_items, user):
         item.responsible_divisions = []
         item.has_custom_responsible_divisions = False
         item.responsible_by = [members[member_id] for member_id in data.responsible_by.data or [] if member_id in members]
-        item.reminder_kind = data.reminder_kind.data
+        item.reminder_kind = data.reminder_kind.data or "ma"
         item.requires_activation = bool(data.requires_activation.data)
         item.expiry_reminder_offsets = list(data.expiry_reminder_offsets.data or [])
         item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or [])
@@ -474,12 +477,19 @@ def _build_items(form, organization, existing_items, user):
     return items, list(existing.values())
 
 
-def _apply_header(form, procurement, user) -> None:
-    procurement.psu_disbursement_number = form.psu_disbursement_number.data.strip()
+def _apply_header(form, procurement, user, items=(), is_draft=False) -> None:
+    procurement.psu_disbursement_number = (form.psu_disbursement_number.data or "").strip()
     procurement.disbursement_date = _as_datetime(form.disbursement_date.data) if form.disbursement_date.data else None
-    procurement.name = form.name.data.strip()
-    procurement.company = form.company.data.strip()
-    procurement.total_amount = form.total_amount.data
+    procurement.name = (form.name.data or "").strip() or "แบบร่าง MA"
+    procurement.company = (form.company.data or "").strip() or ("-" if is_draft else "")
+    if form.total_amount.data is not None:
+        procurement.total_amount = form.total_amount.data
+    elif is_draft:
+        from kampan.utils.money import money_sum
+
+        procurement.total_amount = money_sum(item.amount for item in items if getattr(item, "amount", None))
+    elif procurement.total_amount is None:
+        procurement.total_amount = Decimal("0")
     procurement.last_updated_by = user
 
 
@@ -559,21 +569,21 @@ def _duplicate_child_procurements(parent_procurement, items, user):
             parent_procurement=parent_procurement,
             created_by=user,
             last_updated_by=user,
-            status="active",
+            status=parent_procurement.status,
         )
         child_item = _clone_item_for_procurement(item, child)
         child.save_with_items([child_item])
 
 
-def _save_form(form, organization, procurement, existing_items, member):
+def _save_form(form, organization, procurement, existing_items, member, is_draft=False):
     user = current_user._get_current_object()
     is_new = procurement.pk is None
     try:
-        items, removed_items = _build_items(form, organization, existing_items, user)
+        items, removed_items = _build_items(form, organization, existing_items, user, is_draft=is_draft)
     except InstallmentChangeError as error:
         return _render_form(form, organization, member, procurement, [str(error)])
 
-    _apply_header(form, procurement, user)
+    _apply_header(form, procurement, user, items=items, is_draft=is_draft)
     try:
         procurement.save_with_items(items, removed_items)
     except models.ConcurrentEditConflict:
@@ -583,8 +593,13 @@ def _save_form(form, organization, procurement, existing_items, member):
 
     if is_new and len(items) > 1:
         _duplicate_child_procurements(procurement, items, user)
+    elif not is_new:
+        models.Procurement.objects(parent_procurement=procurement).update(set__status=procurement.status)
 
-    flash("บันทึก MA เรียบร้อยแล้ว", "success")
+    if is_draft:
+        flash("บันทึกแบบร่างเรียบร้อยแล้ว", "success")
+    else:
+        flash("บันทึก MA เรียบร้อยแล้ว", "success")
     return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
 
@@ -601,17 +616,21 @@ def create():
     member = ma_permissions.get_member(organization)
     if not member and "admin" not in current_user.roles:
         abort(403)
+
+    action = request.form.get("action", "save") if request.method == "POST" else None
+    is_draft = action == "draft"
+
     # MA สร้างจากหน้ารายการ MA เท่านั้น ไม่รับค่าตั้งต้นจาก query string
-    form = _build_form(organization, member=member)
+    form = _build_form(organization, member=member, is_draft=is_draft)
     if not form.validate_on_submit():
         return _render_form(form, organization, member)
 
     procurement = models.Procurement(
         organization=organization,
-        status="active",
+        status="draft" if is_draft else "active",
         created_by=current_user._get_current_object(),
     )
-    return _save_form(form, organization, procurement, [], member)
+    return _save_form(form, organization, procurement, [], member, is_draft=is_draft)
 
 
 @module.route("/<procurement_id>/edit", methods=["GET", "POST"])
@@ -629,14 +648,22 @@ def edit(procurement_id):
         )
 
     member = ma_permissions.get_member(organization)
-    form = _build_form(organization, procurement=procurement, member=member)
+    action = request.form.get("action") if request.method == "POST" else None
+    is_draft = action == "draft"
+
+    form = _build_form(organization, procurement=procurement, member=member, is_draft=is_draft)
     if not form.validate_on_submit():
         return _render_form(form, organization, member, procurement)
 
     if form.version.data != procurement.get_version():
         return _render_form(form, organization, member, procurement, [STALE_FORM_MESSAGE])
 
-    return _save_form(form, organization, procurement, procurement.get_items(), member)
+    if is_draft:
+        procurement.status = "draft"
+    elif procurement.status == "draft":
+        procurement.status = "active"
+
+    return _save_form(form, organization, procurement, procurement.get_items(), member, is_draft=is_draft)
 
 
 @module.route("/<procurement_id>/renew", methods=["GET", "POST"])
