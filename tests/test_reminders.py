@@ -460,6 +460,9 @@ def _queued_log(world, today, **item_fields):
     item_fields.setdefault("responsible_by", [world.role_alice, world.role_bob])
     _ma(world, _item(world, **item_fields))
     (log,) = enqueue_due_reminders(today, SETTINGS, FakeQueue())
+    # วันส่งนับจาก created_date ของ log จึงตรึงให้เป็นวันที่รอบเตือนในเทสต์ ไม่ผูกกับวันที่จริงของเครื่อง
+    log.created_date = datetime.datetime.combine(today, datetime.time(0, 10))
+    log.save()
     return log
 
 
@@ -473,7 +476,7 @@ def test_job_sends_one_email_per_recipient_and_marks_sent(world, smtp):
     (server,) = smtp.instances
     assert [receiver for receiver, _, _ in server.sent] == ["alice@test.com", "bob@test.com"]
     receiver, subject, body = server.sent[0]
-    assert subject == "[แจ้งเตือน] หมดอายุใน 3 เดือน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
+    assert subject == "[แจ้งเตือน] หมดอายุใน 90 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
     assert "License" in body and "31 พฤษภาคม 2570" in body
     assert f"https://kampan.test/procurement/payment/{log.procurement.id}?organization_id={world.org.id}" in body
     assert server.quit_called
@@ -549,7 +552,7 @@ def test_job_ignores_log_that_is_not_queued(world, smtp):
         (
             datetime.date(2027, 3, 30),
             {"expiry_reminder_offsets": [], "installments": [models.Installment(due_date=datetime.datetime(2027, 4, 30))]},
-            "[แจ้งเตือน] จ่ายงวดที่ 1 ใน 1 เดือน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
+            "[แจ้งเตือน] จ่ายงวดที่ 1 ใน 30 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
         ),
         (
             datetime.date(2027, 1, 10),
