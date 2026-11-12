@@ -152,24 +152,24 @@
       <!-- Card Footer -->
       {% if can_change_renewal(item) and not item.is_renewed() %}
       <div class="bg-base-200 px-4 py-3 border-t">
-        <div class="flex flex-wrap gap-2">
+        <div class="grid grid-cols-2 gap-2">
           <a href="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
-            class="btn btn-success btn-sm flex-1 text-white">
+            class="btn btn-success btn-sm min-w-0 gap-1 whitespace-nowrap text-white">
             <i class="ph ph-arrows-clockwise"></i>
             ต่ออายุ
           </a>
-          <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
-            class="btn btn-outline btn-primary btn-sm flex-1">
-            <i class="ph ph-pencil-simple"></i>
-            แก้ไข
-          </a>
           {% if item.status in ['pending', 'renewal-requested'] %}
           <button type="button" onclick="document.getElementById('delete_modal_{{ item.id }}').showModal()"
-            class="btn btn-error btn-sm flex-1 text-white">
+            class="btn btn-error btn-sm min-w-0 gap-1 whitespace-nowrap text-white">
             <i class="ph ph-x"></i>
             ไม่ต่ออายุ
           </button>
           {% endif %}
+          <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
+            class="btn btn-outline btn-primary btn-sm min-w-0 gap-1 whitespace-nowrap col-span-2">
+            <i class="ph ph-pencil-simple"></i>
+            แก้ไข
+          </a>
         </div>
       </div>
       {% elif item.is_renewed() %}
