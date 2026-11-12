@@ -285,7 +285,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     assert master.name in table_html
     # ป้าย "สัญญาย่อย" ไม่แสดงในตารางแล้ว ปุ่มแสดงงวดการจ่ายอยู่ในคอลัมน์ชื่อโครงการแทน
     assert "สัญญาย่อย" not in table_html.split("<tbody>", 1)[-1].split("</tbody>", 1)[0]
-    assert "งวดการจ่ายเงิน" in table_html
+    assert "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" in table_html
     assert "สัญญาย่อยของ:" not in table_html
     assert "[TEST] Sub-item Alpha" in table_html
     assert "[TEST] Sub-item Beta" in table_html
@@ -423,7 +423,10 @@ def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existi
     html = client.get(products_url).get_data(as_text=True)
     assert f'id="btn_toggle_{existing_ma.id}"' in html
     assert f'id="sub_items_{existing_ma.id}"' in html
-    assert "งวดการจ่ายเงิน" in html
+    assert "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" in html
+    # ไม่ได้ติ๊ก "แบ่งจ่ายเป็นงวด": ไม่แสดงเป็นงวด
+    assert "จ่ายแล้ว 0/1 งวด" not in html
+    assert "งวดที่ 1" not in html.split("<tbody>", 1)[-1].split("</tbody>", 1)[0]
     assert "รายการย่อย (1)" not in html
     item = existing_ma.get_items()[0]
     assert item.name in html

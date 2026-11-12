@@ -623,12 +623,12 @@ class Procurement(me.Document):
     def get_unpaid_installments(self, single: bool = False) -> list:
         """งวดที่ยังไม่ได้บันทึกจ่ายของทุกรายการย่อย ``[(item, ลำดับงวด, installment)]`` เรียงตามวันครบกำหนด
 
-        รายการย่อยที่มีงวดเดียวถือว่าจ่ายตอนต่ออายุ (``pay_single_installments_on_renewal``) จึงไม่นับ
-        เว้นแต่ ``single=True`` (คืนเฉพาะรายการที่มีงวดเดียวแทน)
+        รายการย่อยที่ไม่ได้ติ๊ก "แบ่งจ่ายเป็นงวด" (จ่ายครั้งเดียว) ถือว่าจ่ายตอนต่ออายุ
+        (``pay_single_installments_on_renewal``) จึงไม่นับ เว้นแต่ ``single=True`` (คืนเฉพาะรายการจ่ายครั้งเดียวแทน)
         """
         rows = []
         for item in self.get_items():
-            if (item.get_installment_count() == 1) != single:
+            if (not item.pays_in_installments()) != single:
                 continue
             for index, installment in enumerate(item.get_sorted_installments(), start=1):
                 if installment.due_date and not installment.is_paid():
@@ -636,7 +636,7 @@ class Procurement(me.Document):
         return sorted(rows, key=lambda row: row[2].due_date)
 
     def pay_single_installments_on_renewal(self, user) -> int:
-        """ต่ออายุ = จ่ายงวดนั้น: รายการย่อยที่มีงวดเดียวและยังไม่จ่าย บันทึกว่าจ่ายแล้ววันนี้ (action ``renewed``)
+        """ต่ออายุ = จ่าย: รายการย่อยที่ไม่ได้แบ่งจ่ายเป็นงวดและยังไม่จ่าย บันทึกว่าจ่ายแล้ววันนี้ (action ``renewed``)
 
         แก้แต่ละงวดแบบ atomic ด้วย positional operator คืนจำนวนงวดที่บันทึก
         """

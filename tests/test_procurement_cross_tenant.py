@@ -865,3 +865,17 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     assert f'id="renew_check_{paid.id}"' not in listing
     # รายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น จึงไม่ต้องเตือน
     assert f'id="renew_check_{single.id}"' not in listing
+
+
+def test_split_item_with_one_installment_is_warned_not_paid_by_renewal(world, client_for):
+    """ติ๊ก "แบ่งจ่ายเป็นงวด" แม้มีงวดเดียวก็ไม่ใช่จ่ายครั้งเดียว ต้องเตือนและไม่บันทึกจ่ายให้ตอนต่ออายุ"""
+    split = _make_procurement(world.org_a, world.admin_a, name="Split MA", status="pending")
+    models.ProcurementItem.objects(procurement=split).update(set__installment_mode=True)
+    client = client_for(world.admin_a)
+
+    html = client.get(f"/procurement/payment/{split.id}?organization_id={world.org_a.id}").data.decode("utf-8")
+    assert f'id="renew_check_{split.id}"' in html
+    split = models.Procurement.objects(id=split.id).get()  # โหลดใหม่ (get_items เก็บ cache ไว้)
+    assert [row[1] for row in split.get_unpaid_installments()] == [1]
+    assert split.pay_single_installments_on_renewal(world.admin_a) == 0
+    assert not any(item.installments[0].is_paid() for item in split.get_items())

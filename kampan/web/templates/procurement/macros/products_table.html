@@ -25,6 +25,9 @@
     {% set paid_count, installment_count = item.get_installment_progress() %}
     {% set next_item, next_installment = item.get_next_unpaid() %}
     {% set sub_items_list = item.get_items() %}
+    {# any_split: มีรายการย่อยที่ติ๊ก "แบ่งจ่ายเป็นงวด" ไหม ถ้าไม่ จ่ายครั้งเดียวก่อนสิ้นสุด ไม่แสดงเป็น "งวด" #}
+    {% set split = namespace(any=false) %}
+    {% for p_item in sub_items_list %}{% if p_item.pays_in_installments() %}{% set split.any = true %}{% endif %}{% endfor %}
     <tr class="border-l-4 {% if is_draft %}border-l-warning bg-warning/10 hover:bg-warning/15{% else %}{{ badge[1] }} hover:bg-base-200/40{% endif %} transition-colors">
       <td class="align-top">
         <div class="flex items-center gap-2">
@@ -115,7 +118,7 @@
         <span class="text-sm font-semibold text-base-content whitespace-nowrap">
           {{ item.total_amount | format_amount if item.total_amount is not none else '0' }}
         </span>
-        {% if not is_draft and installment_count > 0 %}
+        {% if not is_draft and installment_count > 0 and split.any %}
           <div class="text-xs text-base-content/60 whitespace-nowrap">จ่ายแล้ว {{ paid_count }}/{{ installment_count }} งวด</div>
         {% endif %}
       </td>
@@ -133,7 +136,7 @@
               <span class="badge badge-outline badge-success badge-md font-semibold whitespace-nowrap px-2 gap-1 shadow-xs">
                 <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
               </span>
-              <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
+              {% if split.any %}<span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>{% endif %}
             {% else %}
               {% if status == "overdue" %}
                 <div class="badge badge-error badge-md font-semibold whitespace-nowrap px-2 gap-1">
@@ -145,7 +148,7 @@
                 </div>
               {% else %}
                 <div class="badge {{ badge[0] }} badge-md font-semibold whitespace-nowrap px-2">
-                  งวด {{ paid_count }}/{{ installment_count }}
+                  {% if split.any %}งวด {{ paid_count }}/{{ installment_count }}{% else %}ยังไม่จ่าย{% endif %}
                 </div>
               {% endif %}
               {% if next_installment %}
@@ -156,7 +159,7 @@
                 {% endfor %}
                 <div class="text-xs leading-snug text-center text-base-content/80"
                      title="{% if sub_items_list|length > 1 %}{{ next_item.name }} · {% endif %}ครบกำหนด {{ next_installment.due_date | format_thai_date }}">
-                  <span class="block">งวดที่ {{ ns.seq }}</span>
+                  <span class="block">{% if next_item.pays_in_installments() %}งวดที่ {{ ns.seq }}{% else %}จ่ายครั้งเดียว{% endif %}</span>
                   {% if next_days < 0 %}
                     <span class="block font-bold text-error">เลยมา {{ -next_days }} วัน</span>
                   {% elif next_days == 0 %}
@@ -181,7 +184,7 @@
               {% if sub_items_list|length > 1 %}
                 รายการย่อย ({{ sub_items_list|length }})
               {% else %}
-                งวดการจ่ายเงิน{% if installment_count > 0 %} ({{ installment_count }} งวด){% endif %}
+                {% if split.any %}งวดการจ่ายเงิน{% if installment_count > 0 %} ({{ installment_count }} งวด){% endif %}{% else %}การจ่ายเงิน{% endif %}
               {% endif %}
             </span>
           </button>
@@ -256,8 +259,8 @@
                 <span class="font-semibold text-base">รายการย่อยและการจ่ายเงิน</span>
                 <span class="badge badge-neutral badge-sm">{{ sub_items_list|length }} รายการ</span>
               {% else %}
-                <span class="font-semibold text-base">งวดการจ่ายเงิน</span>
-                {% if installment_count > 0 %}
+                <span class="font-semibold text-base">{{ "งวดการจ่ายเงิน" if split.any else "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" }}</span>
+                {% if installment_count > 0 and split.any %}
                   <span class="badge badge-neutral badge-sm">{{ installment_count }} งวด</span>
                 {% endif %}
               {% endif %}
