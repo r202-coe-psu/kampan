@@ -663,3 +663,24 @@ def test_payment_due_today_says_today(world, smtp):
     subject, body = _sent_subject_and_body(smtp)
     assert subject == "[แจ้งเตือน] ครบกำหนดจ่ายงวดที่ 1 วันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)"
     assert "(วันนี้)" in body
+
+
+def test_parent_with_sub_contracts_is_not_reminded_twice(world):
+    """สัญญาหลักที่แยกสัญญาย่อยแล้วเตือนจากสัญญาย่อยเท่านั้น (รายการย่อยซ้ำกัน ห้ามได้เมลซ้ำ)"""
+    parent = _ma(world, _item(world, name="[TEST] A"), _item(world, name="[TEST] B"))
+    for name in ("[TEST] A", "[TEST] B"):
+        child = models.Procurement(
+            psu_disbursement_number="12345/2569",
+            name=name,
+            company="[TEST] Vendor",
+            organization=world.org,
+            status="active",
+            total_amount=Decimal("100.00"),
+            parent_procurement=parent,
+        )
+        child.save_with_items([_item(world, name=name)])
+
+    reminders = [r for r in due_reminders(datetime.date(2027, 2, 28)) if r.kind == "expiry"]
+
+    assert sorted(r.item.name for r in reminders) == ["[TEST] A", "[TEST] B"]
+    assert all(r.item.procurement.parent_procurement is not None for r in reminders)

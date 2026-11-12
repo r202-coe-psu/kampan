@@ -53,6 +53,11 @@ def _as_date(value) -> datetime.date | None:
     return value
 
 
+def _reference_id(child):
+    value = child._data.get("parent_procurement")
+    return getattr(value, "id", value)
+
+
 def _offset_triggers(target: datetime.date, offsets, extra_days=()) -> list[tuple[datetime.date, str]]:
     """วัน trigger ของทุกช่วงที่ติ๊ก + จำนวนวันที่กรอกเอง + วันครบกำหนดเอง (1 ครั้ง)"""
     triggers = [(target - OFFSET_DELTAS[key], key) for key in offsets or [] if key in OFFSET_DELTAS]
@@ -151,10 +156,13 @@ def due_reminders(today: datetime.date) -> list[Reminder]:
     - collapse: ต่อ (รายการย่อย, kind[, งวด]) คืนเฉพาะ trigger ล่าสุดที่ถึงกำหนด ถ้ามี log ที่ trigger_date >= ตัวนั้นแล้วข้าม
       (controller ล่มหลายวันแล้วไม่ยิงเมลค้างหลายฉบับ และไม่มีการเตือนซ้ำหลังเลยกำหนด)
     - MA ที่ไม่ต่ออายุ / ต่ออายุแล้ว ไม่เตือนเลย
+    - สัญญาหลักที่มีสัญญาย่อย ไม่เตือนเอง (เตือนจากสัญญาย่อยแทน กันได้เมลซ้ำ)
     """
     stopped_ids = list(models.Procurement.objects(status__in=STOPPED_STATUSES).scalar("id"))
+    # สัญญาหลักที่แยกสัญญาย่อยแล้ว: เตือนจากสัญญาย่อยเท่านั้น (รายการย่อยของสัญญาย่อยเป็นสำเนาของสัญญาหลัก)
+    parent_ids = {_reference_id(child) for child in models.Procurement.objects(parent_procurement__ne=None).only("parent_procurement")}
     reminders = []
-    for item in models.ProcurementItem.objects(procurement__nin=stopped_ids):
+    for item in models.ProcurementItem.objects(procurement__nin=stopped_ids + list(parent_ids - {None})):
         recipients = None
         for candidate in _item_candidates(item, today):
             trigger_date, offset = candidate["trigger"]
