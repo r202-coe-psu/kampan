@@ -231,15 +231,8 @@
               </a>
             </div>
             {% if can_edit(item) and not item.is_renewed() %}
-              {% if item.status == "renewal-requested" %}
-              <div class="tooltip tooltip-left" data-tip="ยื่นขอต่ออายุแล้ว (คลิกเพื่อดูรายการขอต่ออายุ)">
-                <a href="{{ url_for('procurement.requisitions.index', organization_id=organization.id) }}"
-                   class="btn btn-info btn-sm btn-circle text-white shadow-sm" aria-label="ยื่นขอต่ออายุแล้ว">
-                  <i class="ph ph-clock-countdown text-lg"></i>
-                </a>
-              </div>
-              {% elif item.status != "pending" %}
-              {# pending อยู่ในหน้า "รายการ MA ใกล้หมดอายุ" อยู่แล้ว ไม่ต้องมีปุ่มขอต่ออายุ #}
+              {# pending / renewal-requested อยู่ในหน้า "รายการ MA ใกล้หมดอายุ" อยู่แล้ว ตารางนี้มีปุ่มขอต่ออายุเฉพาะ MA ที่ยัง active #}
+              {% if item.status == "active" %}
               <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
                 <button type="button"
                         onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
@@ -472,7 +465,7 @@
   </dialog>
   {% endif %}
 
-  {% if can_edit(item) and not item.is_renewed() and item.status not in ["renewal-requested", "draft", "pending"] %}
+  {% if can_edit(item) and not item.is_renewed() and item.status == "active" %}
   <dialog id="modal_request_renewal_{{ item.id }}" class="modal text-left">
     <div class="modal-box">
       <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
