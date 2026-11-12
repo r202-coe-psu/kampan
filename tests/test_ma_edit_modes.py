@@ -23,7 +23,7 @@ from test_ma_structure import (  # noqa: F401
 
 
 def _named(name, amount):
-    item = _model_item(amount)
+    item = _model_item(amount)  # วันสิ้นสุดไกลกว่า 90 วัน MA จึงคง active
     item.name = name
     return item
 
@@ -54,7 +54,7 @@ def _item_fields(item, **overrides):
         "item_id": str(item.id),
         "name": item.name,
         "amount": str(item.amount),
-        "installments": [{"installment_id": str(item.installments[0]._id), "due_date": "2026-12-31"}],
+        "installments": [{"installment_id": str(item.installments[0]._id), "due_date": "2030-12-31"}],
     }
     fields.update(overrides)
     return _item(**fields)

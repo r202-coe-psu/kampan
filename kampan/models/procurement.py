@@ -256,6 +256,10 @@ class ConcurrentEditConflict(Exception):
     """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
 
 
+# MA ที่รายการย่อยใดหมดอายุภายในกี่วัน จะเป็น "รอดำเนินการ" (pending) และเข้าหน้ารายการใกล้หมดอายุ
+# (controller ย้ายทุกวัน และ ``save_with_items`` ย้ายทันทีที่บันทึก)
+RENEWAL_WINDOW_DAYS = 90
+
 PAY_LOG_ACTIONS = [
     ("paid", "บันทึกจ่าย"),
     ("edited", "แก้ไขการบันทึก"),
@@ -756,6 +760,12 @@ class Procurement(me.Document):
                 self.total_amount = money_sum(item.amount for item in items if item.amount)
             if not self.company:
                 self.company = "-"
+
+        # active ที่มีรายการย่อยหมดอายุภายใน 90 วัน (หรือหมดแล้ว) เป็น pending ทันที ไม่ต้องรอ controller รอบ 00:01
+        if self.status == "active":
+            end_dates = [item.end_date for item in items if item.end_date]
+            if end_dates and min(end_dates).date() <= datetime.date.today() + datetime.timedelta(days=RENEWAL_WINDOW_DAYS):
+                self.status = "pending"
 
         is_new = self.pk is None
         if is_new:

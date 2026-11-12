@@ -77,11 +77,11 @@ def _item(**overrides):
         "category": "software",
         "account_code": "",
         "start_date": "2026-01-01",
-        "end_date": "2026-12-31",
+        "end_date": "2030-12-31",
         "amount": "50000.00",
         "reminder_kind": "ma",
         "responsible_by": [],
-        "installments": [{"due_date": "2026-12-31"}],
+        "installments": [{"due_date": "2030-12-31"}],
     }
     item.update(overrides)
     return item
@@ -125,12 +125,12 @@ def _two_item_form(world):
                 requires_activation="y",
                 responsible_by=[str(world.role_admin.id), str(world.role_responsible.id)],
                 installment_mode="y",
-                installments=[{"due_date": "2026-06-30"}, {"due_date": "2026-12-31"}],
+                installments=[{"due_date": "2030-06-30"}, {"due_date": "2030-12-31"}],
             ),
             _item(
                 name="[TEST] MA B",
-                start_date="2026-03-01",
-                end_date="2027-02-28",
+                start_date="2030-03-01",
+                end_date="2031-02-28",
                 amount="40000.00",
                 responsible_by=[str(world.role_creator.id)],
             ),
@@ -183,8 +183,8 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert first.reminder_kind == "license"
     assert first.requires_activation is True
     assert [installment.due_date for installment in first.installments] == [
-        datetime.datetime(2026, 6, 30),
-        datetime.datetime(2026, 12, 31),
+        datetime.datetime(2030, 6, 30),
+        datetime.datetime(2030, 12, 31),
     ]
     assert all(installment.paid_date is None for installment in first.installments)
     assert first.installment_mode is True and second.installment_mode is False
@@ -441,9 +441,9 @@ def _model_item(amount, responsible=(), installments=None):
         category="service",
         amount=Decimal(amount),
         start_date=datetime.datetime(2026, 1, 1),
-        end_date=datetime.datetime(2026, 12, 31),
+        end_date=datetime.datetime(2030, 12, 31),
         responsible_by=list(responsible),
-        installments=installments if installments is not None else [models.Installment(due_date=datetime.datetime(2026, 12, 31))],
+        installments=installments if installments is not None else [models.Installment(due_date=datetime.datetime(2030, 12, 31))],
     )
 
 
@@ -1023,6 +1023,9 @@ def test_upload_responsible_lookup_is_scoped_to_document_org(world, gridfs_enabl
 def test_procurement_status_moves_only_active_ma_near_expiry_to_pending(world, create_ma):
     active = create_ma(world.org, user=world.admin, status="active")
     stopped = create_ma(world.org, user=world.admin, status="disactive")
+    # save_with_items ย้ายเป็น pending ทันทีเมื่อใกล้หมดอายุ จึงจำลอง MA ที่เข้าช่วง 90 วันหลังบันทึก (ที่ controller ต้องย้าย)
+    soon = datetime.datetime.now() + datetime.timedelta(days=30)
+    models.ProcurementItem.objects(procurement=active).update(set__end_date=soon)
     updater = ProcurementStatusUpdater.__new__(ProcurementStatusUpdater)
 
     for procurement in (active, stopped):
@@ -1477,3 +1480,22 @@ def test_search_matches_sub_items_serial_number_and_asset_code(world, client_for
     html = client_for(world.admin).get(f"/procurement/products?q=AC-CISCO-SEARCH-88&{_q(world.org)}").get_data(as_text=True)
     assert procurement.psu_disbursement_number in html
 
+
+
+def test_save_with_items_makes_near_expiry_active_ma_pending_immediately(world, create_ma):
+    """active ที่มีรายการย่อยหมดอายุภายใน 90 วัน เป็น pending ทันทีที่บันทึก ไม่ต้องรอ controller"""
+    near = create_ma(world.org, user=world.admin, name="[TEST] ใกล้หมด", status="draft")
+    near.status = "active"
+    soon = datetime.datetime.now() + datetime.timedelta(days=89)
+    items = near.get_items()
+    items[0].end_date = soon
+    near.save_with_items(items)
+    far = create_ma(world.org, user=world.admin, name="[TEST] ไกล", status="active")
+    drafts = create_ma(world.org, user=world.admin, name="[TEST] ร่าง", status="draft")
+
+    near.reload()
+    far.reload()
+    drafts.reload()
+    assert near.status == "pending"
+    assert far.status == "active"  # ยังไกลกว่า 90 วัน
+    assert drafts.status == "draft"  # แบบร่างไม่ถูกย้าย

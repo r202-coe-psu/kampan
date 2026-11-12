@@ -159,7 +159,7 @@ def _renew_form(world, psu="PSU-NEW-1", **overrides):
         "items-0-category": "intangible",
         "items-0-account_code": "1204010101 สินทรัพย์ไม่มีตัวตน",
         "items-0-start_date": "2026-01-01",
-        "items-0-end_date": "2026-12-31",
+        "items-0-end_date": "2030-12-31",
         "items-0-amount": "60000.00",
         "items-0-sub_items-0-brand": "ยี่ห้อ A",
         "items-0-sub_items-0-model_name": "รุ่น A",

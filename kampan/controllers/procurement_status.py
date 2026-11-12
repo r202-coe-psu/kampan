@@ -1,11 +1,9 @@
 import logging
 import datetime
 from kampan import models
+from kampan.models.procurement import RENEWAL_WINDOW_DAYS  # ช่วง 90 วันก่อนหมดอายุ ใช้ร่วมกับ save_with_items
 
 logger = logging.getLogger(__name__)
-
-# MA ที่รายการย่อยใดหมดอายุภายในกี่วัน จะถูกย้ายเป็น "รอดำเนินการ" (pending) ให้ตัดสินใจต่ออายุ
-RENEWAL_WINDOW_DAYS = 90
 
 
 class ProcurementStatusUpdater:

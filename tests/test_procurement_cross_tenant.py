@@ -43,9 +43,9 @@ def _make_procurement(organization, user, name="MA contract", status="pending", 
                 category="product",
                 amount=Decimal("1000.00"),
                 start_date=now,
-                end_date=now + datetime.timedelta(days=30),
+                end_date=now + datetime.timedelta(days=200 if status == "active" else 30),
                 responsible_by=responsible or [],
-                installments=[models.Installment(due_date=now + datetime.timedelta(days=30))],
+                installments=[models.Installment(due_date=now + datetime.timedelta(days=200 if status == "active" else 30))],
             )
         ]
     )

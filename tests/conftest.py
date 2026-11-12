@@ -229,9 +229,9 @@ def create_ma():
                     category="software",
                     amount=Decimal(total_amount),
                     start_date=now - datetime.timedelta(days=335),
-                    end_date=now + datetime.timedelta(days=30),
+                    end_date=now + datetime.timedelta(days=200 if status == "active" else 30),
                     responsible_by=list(responsible or []),
-                    installments=[models.Installment(due_date=now + datetime.timedelta(days=30))],
+                    installments=[models.Installment(due_date=now + datetime.timedelta(days=200 if status == "active" else 30))],
                     created_by=user,
                     last_updated_by=user,
                 )
