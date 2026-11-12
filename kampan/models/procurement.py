@@ -619,6 +619,15 @@ class Procurement(me.Document):
         """สถานะที่แย่ที่สุดของทุกรายการย่อย (overdue > upcoming > unpaid) หรือ paid เมื่อจ่ายครบทุกงวด"""
         return worst_payment_status(item.get_payment_status(today) for item in self.get_items())
 
+    def get_unpaid_installments(self) -> list:
+        """งวดที่ยังไม่ได้บันทึกจ่ายของทุกรายการย่อย ``[(item, ลำดับงวด, installment)]`` เรียงตามวันครบกำหนด"""
+        rows = []
+        for item in self.get_items():
+            for index, installment in enumerate(item.get_sorted_installments(), start=1):
+                if installment.due_date and not installment.is_paid():
+                    rows.append((item, index, installment))
+        return sorted(rows, key=lambda row: row[2].due_date)
+
     def get_installment_progress(self) -> tuple[int, int]:
         """(จำนวนงวดที่จ่ายแล้ว, จำนวนงวดทั้งหมด) ของทุกรายการย่อย"""
         items = self.get_items()

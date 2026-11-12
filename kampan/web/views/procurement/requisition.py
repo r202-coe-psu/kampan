@@ -126,6 +126,7 @@ def index():
         action_form=forms.procurement.ConfirmActionForm(formdata=None),
         paginated_procurements=paginated_procurements,
         organization=organization,
+        today=datetime.date.today(),
         category_choices=category_choices,
         selected_category=category,
         selected_name=name,

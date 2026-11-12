@@ -1,6 +1,7 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
 {% from '/base/html-renderer.html' import date_field %}
 {% from '/base/components/buttons.html' import RenderBackButton %}
+{% from 'procurement/macros/renew_check.html' import renew_check_dialog, renew_check_script %}
 
 {% block title %}รายละเอียด MA{% endblock %}
 {% block dashboard_title %}รายละเอียด MA{% endblock %}
@@ -63,6 +64,7 @@
       <div class="flex flex-wrap items-center gap-2">
         {% if not procurement.is_renewed() %}
           <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}"
+             data-renew-check="renew_check_{{ procurement.id }}"
              class="btn btn-success btn-sm text-white shadow-xs gap-1.5">
             <i class="ph ph-arrows-clockwise text-base"></i> ต่ออายุ
           </a>
@@ -76,7 +78,7 @@
   </div>
 
   {% if renewed_to_ma %}
-    <div role="alert" class="alert alert-info shadow-xs rounded-xl">
+    <div role="alert" class="alert alert-soft alert-info text-base-content shadow-xs rounded-xl">
       <i class="ph ph-arrow-circle-right text-xl"></i>
       <span>ต่ออายุไปที่รายการ {{ ma_link(renewed_to_ma) }} แล้ว</span>
     </div>
@@ -294,6 +296,7 @@
           {% endif %}
           {% if can_edit and not procurement.is_renewed() %}
             <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
+               data-renew-check="renew_check_{{ procurement.id }}"
                class="btn btn-outline btn-success btn-xs gap-1">
               <i class="ph ph-arrows-clockwise"></i> ต่ออายุรายการนี้
             </a>
@@ -704,6 +707,10 @@
     {% endif %}
   {% endfor %}
 </div>
+{% if can_edit and not procurement.is_renewed() %}
+  {{ renew_check_dialog(procurement, organization, form, today, url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id)) }}
+  {{ renew_check_script() }}
+{% endif %}
 {% endblock %}
 
 {% block additional_js %}

@@ -2,6 +2,7 @@
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/html-renderer.html' as renderer %}
 {% from 'procurement/macros/filter_bar.html' import filter_bar, filter_text %}
+{% from 'procurement/macros/renew_check.html' import renew_check_dialog, renew_check_script %}
 {% block title %}รายการซอฟต์แวร์/บริการ ที่ใกล้หมดอายุหรือหมดอายุแล้ว{% endblock %}
 {% block content %}
 <div class="container mx-auto px-4 py-6">
@@ -154,6 +155,7 @@
       <div class="bg-base-200 px-4 py-3 border-t">
         <div class="grid grid-cols-2 gap-2">
           <a href="{{ url_for('procurement.products.renew', procurement_id=item.id, organization_id=organization.id) }}"
+            data-renew-check="renew_check_{{ item.id }}"
             class="btn btn-success btn-sm min-w-0 gap-1 whitespace-nowrap text-white">
             <i class="ph ph-arrows-clockwise"></i>
             ต่ออายุ
@@ -185,6 +187,9 @@
       {% endif %}
     </div>
 
+    {% if can_change_renewal(item) and not item.is_renewed() %}
+    {{ renew_check_dialog(item, organization, action_form, today, request.full_path) }}
+    {% endif %}
     {% if can_change_renewal(item) and item.status in ['pending', 'renewal-requested'] %}
     <!-- Don't Renew Confirmation Modal -->
     <dialog id="delete_modal_{{ item.id }}" class="modal">
@@ -246,6 +251,7 @@
   <!-- Delete Modal -->
   <!-- ลบ Modal ออกไปทั้งหมด -->
 </div>
+{{ renew_check_script() }}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // Enhanced countdown with better visuals (alternative: loop in JS, not Jinja)
