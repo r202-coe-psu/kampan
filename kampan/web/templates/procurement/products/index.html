@@ -102,7 +102,7 @@
     <!-- Statistics Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-warning-circle text-3xl text-error"></i>
           <div class="font-bold text-error text-3xl leading-none">{{ status_count['overdue'] }}</div>
@@ -111,7 +111,7 @@
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-clock text-3xl text-warning"></i>
           <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
@@ -120,7 +120,7 @@
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-check-circle text-3xl text-success"></i>
           <div class="font-bold text-success text-3xl leading-none">{{ status_count['paid'] }}</div>
@@ -129,7 +129,7 @@
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-x-circle text-3xl text-base-content/40"></i>
           <div class="font-bold text-base-content/60 text-3xl leading-none">
@@ -142,7 +142,7 @@
     </div>
 
     <!-- Data Table -->
-    <div class="card bg-base-100 border border-base-200 shadow-sm">
+    <div class="card bg-white border border-base-300 shadow-sm">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
           {{ render_products_table(procurements, organization, today, can_edit) }}
