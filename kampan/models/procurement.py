@@ -1140,19 +1140,31 @@ def payment_statuses(procurement_ids: Iterable, organization, today: datetime.da
     return {procurement_id: worst_payment_status(statuses) for procurement_id, statuses in item_statuses.items()}
 
 
-class EndDateOrderedIds:
-    """id ของ MA เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน ให้ Mongo เรียง + skip + limit ทีละหน้า
+class ItemDateOrderedIds:
+    """id ของ MA เรียงตามวันที่ของรายการย่อย ให้ Mongo เรียง + skip + limit ทีละหน้า
 
-    ใช้กับ ``ClampedPagination`` (รองรับ ``len()`` และ ``[start:stop]``) จึงไม่โหลดวันสิ้นสุดของทุก MA เข้า Python
+    ใช้กับ ``ClampedPagination`` (รองรับ ``len()`` และ ``[start:stop]``) จึงไม่โหลดวันที่ของทุก MA เข้า Python
     มีแค่ id ของ MA ที่ผ่านตัวกรอง (ObjectId) ที่โหลดมาครั้งเดียวไว้ใช้เป็นเงื่อนไข $match และนับจำนวน
-    MA ที่ไม่มีรายการย่อยต่อท้ายสุด (ปกติไม่มี เพราะ save_with_items บังคับอย่างน้อย 1 รายการ)
+    MA ที่ไม่มีวันที่นั้น (เช่น ไม่มีรายการย่อย หรือจ่ายครบทุกงวดแล้ว) ต่อท้ายสุดตามลำดับเดิมของ queryset
+
+    ``stages``: ขั้น aggregation ที่คำนวณ ``{"_id": "$procurement", "date": ...}`` ต่อหนึ่ง MA
     """
 
-    def __init__(self, procurement_queryset, organization, reverse: bool = False):
+    # วันสิ้นสุดของรายการย่อยที่หมดอายุก่อน
+    END_DATE = [{"$group": {"_id": "$procurement", "date": {"$min": "$end_date"}}}]
+    # วันครบกำหนดของงวดที่ยังไม่จ่ายและใกล้ที่สุด
+    NEXT_DUE_DATE = [
+        {"$unwind": "$installments"},
+        {"$match": {"installments.paid_date": None, "installments.due_date": {"$ne": None}}},
+        {"$group": {"_id": "$procurement", "date": {"$min": "$installments.due_date"}}},
+    ]
+
+    def __init__(self, procurement_queryset, organization, stages, reverse: bool = False):
         self.organization = organization
+        self.stages = stages
         self.reverse = reverse
         self.ids = list(procurement_queryset.scalar("id"))
-        self._with_end = None
+        self._with_date = None
 
     def __len__(self) -> int:
         return len(self.ids)
@@ -1160,33 +1172,33 @@ class EndDateOrderedIds:
     def _items(self):
         return ProcurementItem.objects(organization=self.organization, procurement__in=self.ids)
 
-    def _count_with_end(self) -> int:
-        if self._with_end is None:
-            rows = list(self._items().aggregate([{"$group": {"_id": "$procurement"}}, {"$count": "n"}]))
-            self._with_end = rows[0]["n"] if rows else 0
-        return self._with_end
+    def _count_with_date(self) -> int:
+        if self._with_date is None:
+            rows = list(self._items().aggregate([*self.stages, {"$count": "n"}]))
+            self._with_date = rows[0]["n"] if rows else 0
+        return self._with_date
 
     def __getitem__(self, key):
         if not isinstance(key, slice):
-            raise TypeError("EndDateOrderedIds supports slicing only")
+            raise TypeError("ItemDateOrderedIds supports slicing only")
         start = key.start or 0
         stop = min(key.stop if key.stop is not None else len(self.ids), len(self.ids))
         if not self.ids or stop <= start:
             return []
         direction = -1 if self.reverse else 1
         pipeline = [
-            {"$group": {"_id": "$procurement", "end_date": {"$min": "$end_date"}}},
-            {"$sort": {"end_date": direction, "_id": 1}},
+            *self.stages,
+            {"$sort": {"date": direction, "_id": 1}},
             {"$skip": start},
             {"$limit": stop - start},
         ]
         page = [getattr(row["_id"], "id", row["_id"]) for row in self._items().aggregate(pipeline)]
         missing = stop - start - len(page)
-        if missing > 0 and stop > self._count_with_end():
-            # MA ที่ไม่มีรายการย่อย ต่อท้ายสุดตามลำดับเดิม (เส้นทางที่แทบไม่เกิด)
-            with_items = {getattr(row["_id"], "id", row["_id"]) for row in self._items().aggregate([{"$group": {"_id": "$procurement"}}])}
-            tail = [procurement_id for procurement_id in self.ids if procurement_id not in with_items]
-            offset = max(start - self._count_with_end(), 0)
+        if missing > 0 and stop > self._count_with_date():
+            # MA ที่ไม่มีวันที่นั้น ต่อท้ายสุดตามลำดับเดิม (เช่น จ่ายครบทุกงวดแล้ว)
+            dated = {getattr(row["_id"], "id", row["_id"]) for row in self._items().aggregate(self.stages)}
+            tail = [procurement_id for procurement_id in self.ids if procurement_id not in dated]
+            offset = max(start - self._count_with_date(), 0)
             page += tail[offset : offset + missing]
         return page
 

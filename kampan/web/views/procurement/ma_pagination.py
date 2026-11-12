@@ -61,10 +61,10 @@ def paginate_sorted(procurements, organization, sort: str, default_per_page: int
 
     - สร้างก่อน-หลัง / ชื่อ: เรียงด้วย queryset แล้วโหลดเฉพาะหน้านั้น
     - วันหมดอายุ: ให้ Mongo เรียงตามวันสิ้นสุดของรายการย่อยที่หมดอายุก่อน แล้ว skip/limit เฉพาะหน้านั้น
-      (``EndDateOrderedIds``) จากนั้นโหลดเอกสารเฉพาะ MA ในหน้าที่แสดง
+      (``ItemDateOrderedIds``) เรียงตามวันครบกำหนดของงวดที่ยังไม่จ่ายและใกล้ที่สุดได้ด้วย (``due_asc``) จากนั้นโหลดเอกสารเฉพาะ MA ในหน้าที่แสดง
     """
     from kampan.models.procurement import (
-        EndDateOrderedIds,
+        ItemDateOrderedIds,
         attach_items,
         procurements_in_order,
     )
@@ -73,7 +73,10 @@ def paginate_sorted(procurements, organization, sort: str, default_per_page: int
         pagination = paginate(procurements.order_by(*_QUERYSET_ORDER[sort]), default_per_page)
         page_procurements = pagination.items
     else:
-        ordered = EndDateOrderedIds(procurements.order_by("-created_date", "-id"), organization, reverse=sort == "end_desc")
+        stages = ItemDateOrderedIds.NEXT_DUE_DATE if sort == "due_asc" else ItemDateOrderedIds.END_DATE
+        ordered = ItemDateOrderedIds(
+            procurements.order_by("-created_date", "-id"), organization, stages, reverse=sort == "end_desc"
+        )
         pagination = paginate(ordered, default_per_page)
         page_procurements = procurements_in_order(pagination.items, organization)
     return pagination, attach_items(page_procurements, organization, with_responsibles=True)

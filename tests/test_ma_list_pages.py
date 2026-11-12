@@ -391,11 +391,12 @@ def _sort_set(world, path):
         "created_asc": order("abcd"),
         "end_asc": order("bdca"),
         "end_desc": order("acdb"),
+        "due_asc": order("bdca"),  # งวดที่ยังไม่จ่ายครบกำหนดพร้อมวันสิ้นสุด (ดู test_due_asc_*)
         "name_asc": order("bdac"),
     }
 
 
-@pytest.mark.parametrize("sort", ["created_desc", "created_asc", "end_asc", "end_desc", "name_asc"])
+@pytest.mark.parametrize("sort", ["created_desc", "created_asc", "end_asc", "end_desc", "due_asc", "name_asc"])
 @pytest.mark.parametrize("path", LIST_PAGES)
 def test_list_pages_sort_options(world, path, sort):
     expected = _sort_set(world, path)
@@ -580,3 +581,21 @@ def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
     assert shown == expected
     limits = [stage["$limit"] for pipeline in pipelines for stage in pipeline if "$limit" in stage]
     assert limits[:3] == [8, 8, 3]  # หน้าสุดท้ายเหลือ 3 จาก 19
+
+
+@pytest.mark.parametrize("path", LIST_PAGES)
+def test_due_asc_sorts_by_nearest_unpaid_installment_not_by_end_date(world, path):
+    """ใกล้วันจ่ายงวดที่สุด: ดูเฉพาะงวดที่ยังไม่จ่าย งวดที่จ่ายแล้วไม่นับ MA ที่จ่ายครบแล้วไว้ท้าย"""
+    status = _status_for_path(path)
+    paid = _installment(1, paid=True, paid_by=world.admin)
+    a = _create_ma(world, status=status, items=[(100, [paid, _installment(50)])])
+    b = _create_ma(world, status=status, items=[(20, [_installment(-5, paid=True, paid_by=world.admin), _installment(90)])])
+    c = _create_ma(world, status=status, items=[(60, [_installment(5, paid=True, paid_by=world.admin)])])
+    d = _create_ma(world, status=status, items=[(80, [_installment(10)]), (90, [_installment(70)])])
+
+    shown = _shown_mas(_get(world, path, sort="due_asc"))
+
+    assert shown == [d.name, a.name, b.name, c.name]
+    first_page = _shown_mas(_get(world, path, sort="due_asc", per_page=3))
+    second_page = _shown_mas(_get(world, path, sort="due_asc", per_page=3, page=2))
+    assert first_page + second_page == shown and second_page == [c.name]
