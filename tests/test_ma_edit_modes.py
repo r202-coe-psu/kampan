@@ -136,14 +136,16 @@ def test_header_edit_cannot_turn_active_ma_back_into_draft(world, client_for, tw
 # ---------------------------------------------------------------------------
 
 
-def test_item_edit_page_shows_only_that_item_read_only_header_and_no_add_remove(world, client_for, two_item_ma):
+def test_item_edit_page_shows_only_that_item_without_header_details_and_no_add_remove(world, client_for, two_item_ma):
     first, second = two_item_ma.get_items()
 
     html = client_for(world.admin).get(_edit_url(world, two_item_ma, second)).get_data(as_text=True)
 
     assert 'name="items-0-name"' in html and 'name="items-1-name"' not in html
     assert f'value="{second.id}"' in html and f'value="{first.id}"' not in html
-    assert 'id="header_readonly"' in html and 'name="company"' not in html
+    # แก้ไขรายการย่อยโดยตรง: ไม่แสดงข้อมูลหัวสัญญา (ไม่มีช่องแก้ และไม่มีข้อมูลหัวแบบอ่านอย่างเดียว)
+    assert 'id="header_readonly"' not in html and 'name="company"' not in html
+    assert "ข้อมูลหัว MA" not in html and "แก้ไขรายการย่อย" in html
     assert 'name="total_amount"' not in html
     assert 'data-action="add-item"' not in html and 'data-action="remove-item"' not in html
 

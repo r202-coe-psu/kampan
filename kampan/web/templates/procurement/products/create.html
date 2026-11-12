@@ -2,7 +2,7 @@
 {% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row, date_picker %}
 {% from '/base/components/buttons.html' import RenderBackButton %}
 
-{% set page_title = "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
+{% set page_title = "แก้ไขรายการย่อย" if mode == "item" else "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
 {% block title %}{{ page_title }}{% endblock %}
 {% block dashboard_title %}{{ page_title }}{% endblock %}
 
@@ -20,11 +20,11 @@
     </div>
     <div>
       <h1 class="text-xl md:text-2xl font-bold text-base-content">
-        {{ "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่มรายการ MA") }}
+        {{ "แก้ไขรายการย่อย" if mode == 'item' else "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่มรายการ MA") }}
       </h1>
       <p class="text-base-content/60 text-sm">
         {% if mode == 'header' %}แก้ไขข้อมูลหัว MA (ชื่อโครงการ บริษัท เลขที่เบิกจ่าย วันที่) · แก้รายการย่อยได้จากปุ่ม "แก้ไข" ของแต่ละรายการในหน้ารายละเอียด
-        {% elif mode == 'item' %}แก้ไขรายการย่อยนี้รายการเดียว ยอดรวมของ MA จะคำนวณใหม่จากผลรวมรายการย่อย
+        {% elif mode == 'item' %}แก้ไขรายการย่อยนี้ได้โดยตรง ยอดรวมของ MA จะคำนวณใหม่ให้
         {% else %}กรอกข้อมูลโครงการและรายการย่อย พร้อมระบุรายละเอียดและการจ่ายเงิน{% endif %}
       </p>
     </div>
@@ -66,15 +66,7 @@
     {% endif %}
 
     {% if mode == 'item' %}
-    <section class="flex flex-col gap-3 pb-6 border-b border-base-300" id="header_readonly">
-      <p class="text-sm text-base-content/60">ข้อมูลหัว MA (แก้ไขไม่ได้ในหน้านี้ ใช้ปุ่ม "แก้ไข MA" ที่หน้ารายละเอียด)</p>
-      <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3 text-sm">
-        <div><dt class="text-base-content/60">ชื่อโครงการ</dt><dd class="font-semibold">{{ procurement.name }}</dd></div>
-        <div><dt class="text-base-content/60">ซื้อจาก (บริษัท)</dt><dd class="font-semibold">{{ procurement.company or '-' }}</dd></div>
-        <div><dt class="text-base-content/60">เลขที่ ม.อ.เบิกจ่าย</dt><dd class="font-semibold">{{ procurement.psu_disbursement_number or '-' }}</dd></div>
-        <div><dt class="text-base-content/60">ยอดเงินรวม (คำนวณจากรายการย่อย)</dt><dd class="font-semibold">{{ procurement.total_amount | format_amount }} บาท</dd></div>
-      </dl>
-    </section>
+    {# แก้ไขรายการย่อยโดยตรง ไม่แสดงข้อมูลหัวสัญญา #}
     {% else %}
     <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
@@ -114,12 +106,14 @@
 
     {% if mode != 'header' %}
     <section class="flex flex-col gap-5">
+      {% if mode != 'item' %}
       <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
-        <i class="ph ph-stack text-primary"></i> {{ 'แก้ไขรายการย่อย' if mode == 'item' else 'รายการย่อย' }}
+        <i class="ph ph-stack text-primary"></i> รายการย่อย
       </h2>
+      {% endif %}
       <div id="items_container" class="flex flex-col gap-6">
         {% for entry in form.items %}
-          {{ item_card(entry.form, removable=(mode == 'full')) }}
+          {{ item_card(entry.form, removable=(mode == 'full'), numbered=(mode != 'item')) }}
         {% endfor %}
       </div>
       <p id="items_error" class="text-error text-sm hidden"></p>

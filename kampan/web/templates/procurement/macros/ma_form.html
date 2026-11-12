@@ -238,7 +238,7 @@
   </details>
 {% endmacro %}
 
-{% macro item_card(f, removable=True) %}
+{% macro item_card(f, removable=True, numbered=True) %}
   {% set prefix = f.item_id.name[:-("item_id"|length)] %}
   {% set custom_days = f.reminder_offsets_days.data | select | list %}
   {% set custom_dates = f.custom_reminder_dates.data | select | list %}
@@ -248,7 +248,7 @@
     <div class="card-header p-4 md:px-8 flex items-center justify-between gap-3 border-b border-base-300 bg-base-200/30 rounded-t-xl cursor-pointer select-none" data-action="toggle-collapse-item">
       <div class="flex items-center gap-3 min-w-0">
         <h3 class="text-base md:text-lg font-bold text-base-content shrink-0">
-          รายการย่อยที่ <span class="item-number"></span>
+          {% if numbered %}รายการย่อยที่ <span class="item-number"></span>{% else %}ข้อมูลรายการย่อย<span class="item-number hidden"></span>{% endif %}
         </h3>
         <span class="item-summary-badge text-xs md:text-sm text-base-content/70 truncate ml-2 font-normal"></span>
       </div>
