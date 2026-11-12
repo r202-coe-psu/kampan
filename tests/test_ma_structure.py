@@ -1499,3 +1499,21 @@ def test_save_with_items_makes_near_expiry_active_ma_pending_immediately(world, 
     assert near.status == "pending"
     assert far.status == "active"  # ยังไกลกว่า 90 วัน
     assert drafts.status == "draft"  # แบบร่างไม่ถูกย้าย
+
+
+def test_save_with_items_returns_pending_ma_to_active_when_end_date_moves_beyond_90_days(world, create_ma):
+    """แก้วันสิ้นสุดให้ไกลกว่า 90 วัน MA ที่เป็น pending ต้องกลับเป็น active ไม่ค้างในหน้ารายการใกล้หมดอายุ"""
+    ma = create_ma(world.org, user=world.admin, name="[TEST] ต่อสัญญา", status="pending")
+    assert ma.status == "pending"
+    items = ma.get_items()
+
+    items[0].end_date = datetime.datetime.now() + datetime.timedelta(days=200)
+    ma.save_with_items(items)
+    ma.reload()
+    assert ma.status == "active"
+
+    items = ma.get_items()
+    items[0].end_date = datetime.datetime.now() + datetime.timedelta(days=60)
+    ma.save_with_items(items)
+    ma.reload()
+    assert ma.status == "pending"  # ใกล้อีกครั้งก็กลับเป็น pending

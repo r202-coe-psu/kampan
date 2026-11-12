@@ -762,10 +762,12 @@ class Procurement(me.Document):
                 self.company = "-"
 
         # active ที่มีรายการย่อยหมดอายุภายใน 90 วัน (หรือหมดแล้ว) เป็น pending ทันที ไม่ต้องรอ controller รอบ 00:01
-        if self.status == "active":
+        # และ pending ที่แก้วันสิ้นสุดจนทุกรายการไกลกว่า 90 วันแล้ว กลับเป็น active (ไม่ค้างในหน้ารายการใกล้หมดอายุ)
+        if self.status in ("active", "pending"):
             end_dates = [item.end_date for item in items if item.end_date]
-            if end_dates and min(end_dates).date() <= datetime.date.today() + datetime.timedelta(days=RENEWAL_WINDOW_DAYS):
-                self.status = "pending"
+            if end_dates:
+                near = min(end_dates).date() <= datetime.date.today() + datetime.timedelta(days=RENEWAL_WINDOW_DAYS)
+                self.status = "pending" if near else "active"
 
         is_new = self.pk is None
         if is_new:
