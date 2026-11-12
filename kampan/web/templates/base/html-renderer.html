@@ -265,12 +265,12 @@ file_input -->
           <input type="text" class="input input-xs w-full dd-search-input" style="width: 100%; max-width: 100%;" placeholder="ค้นหาตัวเลือก..." />
         </div>
       {% endif %}
-      <ul class="menu flex-nowrap max-h-56 overflow-y-auto p-0">
+      <ul class="menu w-full flex-nowrap max-h-56 overflow-y-auto p-0" style="width: 100%;">
         {% for option_value, option_label in choices %}
           {% set is_selected = option_value | string == value %}
-          <li>
+          <li class="w-full" style="width: 100%;">
             <button type="button" role="option" data-value="{{ option_value }}" aria-selected="{{ 'true' if is_selected else 'false' }}"
-                    class="{{ 'menu-active' if is_selected else '' }}">{{ option_label }}</button>
+                    class="w-full text-left justify-start {{ 'menu-active' if is_selected else '' }}" style="width: 100%;">{{ option_label }}</button>
           </li>
         {% endfor %}
       </ul>
@@ -662,8 +662,8 @@ file_input -->
                 {% set txt = choice %}
                 {% set extra = None %}
               {% endif %}
-              <li>
-                <p class="break-words"
+              <li class="w-full" style="width: 100%;">
+                <p class="w-full text-left justify-start break-words" style="width: 100%;"
                    data-value="{{ val }}"
                    {% if extra is not none %}data-same="{{ 'true' if extra else 'false' }}"{% endif %}
                    onclick="kampanSelectSearchValue('{{ input_id }}', '{{ val }}', '{{ txt }}')">
@@ -808,8 +808,8 @@ file_input -->
               class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
               readonly or disabled %}hidden{% endif %}>
               {% for value, label in unique_choices.items() %}
-                <li>
-                  <p class="break-words"
+                <li class="w-full" style="width: 100%;">
+                  <p class="w-full text-left justify-start break-words" style="width: 100%;"
                      data-value="{{ value }}"
                      onclick="selectDropdownValue('{{ field_id }}', '{{ value }}', '{{ label }}')">
                     {{ label }}

@@ -42,7 +42,7 @@ def test_dropdown_select_renders_hidden_input_selected_label_and_menu(app):
     assert re.search(r'<input type="hidden" name="kind" id="kind" value="b"', html)
     assert re.search(r'<span data-dd-label[^>]*>ตัวเลือก บี</span>', html)
     assert html.count("data-value=") == 2
-    assert re.search(r'data-value="b" aria-selected="true"\s+class="menu-active"', html)
+    assert re.search(r'data-value="b" aria-selected="true"\s+class="[^"]*menu-active[^"]*"', html)
     assert 'role="listbox"' in html and 'aria-haspopup="listbox"' in html and "select-error" not in html
 
 

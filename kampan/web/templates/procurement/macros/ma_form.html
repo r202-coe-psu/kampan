@@ -58,12 +58,12 @@
         </button>
         <i class="ph ph-caret-down text-base-content/40 text-xs shrink-0 pointer-events-none"></i>
       </div>
-      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 w-full max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1">
-        <ul class="menu w-full p-0 gap-0.5">
+      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 w-full max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1" style="width: 100%;">
+        <ul class="menu w-full p-0 gap-0.5" style="width: 100%;">
           {% for opt_val, opt_label in field.choices %}
             {% set is_selected = opt_val | string == val %}
-            <li class="w-full">
-              <button type="button" class="search-select-option text-xs py-2 px-3 flex items-center justify-between text-left w-full {{ 'menu-active' if is_selected else '' }}" data-value="{{ opt_val }}">
+            <li class="w-full" style="width: 100%;">
+              <button type="button" class="search-select-option text-xs py-2 px-3 flex items-center justify-between text-left w-full {{ 'menu-active' if is_selected else '' }}" data-value="{{ opt_val }}" style="width: 100%;">
                 <span class="search-select-label truncate">{{ opt_label }}</span>
                 <i class="ph ph-check text-xs shrink-0 {{ '' if is_selected else 'hidden' }}"></i>
               </button>
