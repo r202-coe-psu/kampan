@@ -27,6 +27,7 @@
             {{ form.hidden_tag() }}
             <input type="hidden" name="next" value="{{ next_url }}" />
             <input type="hidden" name="paid_date" value="{{ today.strftime('%Y-%m-%d') }}" />
+            {% if due_amount is not none %}<input type="hidden" name="paid_amount" value="{{ due_amount }}" />{% endif %}
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="min-w-0">
                 <div class="font-semibold text-sm break-words">{{ item.name }} · งวดที่ {{ index }}</div>
@@ -46,7 +47,7 @@
             <div class="mt-2 flex flex-wrap items-center gap-2">
               <input type="text" name="payment_number" maxlength="128" class="input input-sm flex-1 min-w-32" placeholder="เลขที่เอกสาร (ไม่บังคับ)" />
               <button type="submit" class="btn btn-success btn-sm text-white gap-1">
-                <i class="ph ph-check"></i> บันทึกจ่าย (วันนี้)
+                <i class="ph ph-check"></i> บันทึกจ่าย (วันนี้ · เต็มจำนวน)
               </button>
             </div>
           </form>

@@ -647,7 +647,9 @@ class Procurement(me.Document):
         now = datetime.datetime.now()
         count = 0
         for item, _, installment in self.get_unpaid_installments(single=True):
-            entry = PayLogEntry(action="renewed", pressed_at=now, paid_date=now, by=user)
+            # ยอดจริงตั้งต้นเป็นยอดที่ต้องจ่าย (ยอดของงวด หรือยอดของรายการเมื่อจ่ายครั้งเดียว) แก้ได้ที่หน้ารายละเอียด
+            due_amount = installment.amount if installment.amount is not None else item.amount
+            entry = PayLogEntry(action="renewed", pressed_at=now, paid_date=now, by=user, paid_amount=due_amount)
             updated = ProcurementItem.objects(
                 id=item.id,
                 organization=self.organization,
@@ -655,6 +657,7 @@ class Procurement(me.Document):
             ).update_one(
                 set__installments__S__paid_date=now,
                 set__installments__S__paid_by=user,
+                set__installments__S__paid_amount=due_amount,
                 set__installments__S__pay_log=[*installment.pay_log, entry],
             )
             count += bool(updated)

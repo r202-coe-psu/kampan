@@ -215,6 +215,8 @@ def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     assert installment.is_paid()
     assert installment.paid_by.id == world.responsible.id
     assert [entry.action for entry in installment.pay_log] == ["renewed"]
+    assert installment.paid_amount == Decimal("40000.00")  # ยอดจริงตั้งต้นเป็นยอดที่ต้องจ่าย
+    assert installment.pay_log[0].paid_amount == Decimal("40000.00")
 
 
 def test_double_submit_creates_only_one_new_ma(world, client_for):

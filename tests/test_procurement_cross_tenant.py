@@ -842,8 +842,8 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     single = _make_procurement(world.org_a, world.admin_a, name="Single MA", status="pending")
     models.ProcurementItem.objects(procurement=unpaid).update(
         set__installments=[
-            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=10)),
-            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=100)),
+            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=10), amount=Decimal("500.00")),
+            models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=100), amount=Decimal("500.00")),
         ]
     )
     paid = _make_procurement(world.org_a, world.admin_a, name="Paid MA", status="pending")
@@ -858,6 +858,8 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     listing = client.get(f"/procurement/requisitions?organization_id={org}").data.decode("utf-8")
 
     assert f'id="renew_check_{unpaid.id}"' in unpaid_detail
+    # modal เตือน: บันทึกจ่ายด้วยยอดเต็มของงวดเป็นค่าตั้งต้น
+    assert 'name="paid_amount" value="500.00"' in unpaid_detail.split(f'id="renew_check_{unpaid.id}"', 1)[1]
     assert f'data-renew-check="renew_check_{unpaid.id}"' in unpaid_detail
     assert f"/installments/" in unpaid_detail and "/pay?" in unpaid_detail
     assert f'id="renew_check_{paid.id}"' not in paid_detail
