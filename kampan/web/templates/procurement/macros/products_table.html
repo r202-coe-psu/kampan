@@ -232,18 +232,6 @@
                 <i class="ph ph-magnifying-glass text-lg"></i>
               </a>
             </div>
-            {% if can_edit(item) and not item.is_renewed() %}
-              {# pending / renewal-requested อยู่ในหน้า "รายการ MA ใกล้หมดอายุ" อยู่แล้ว ตารางนี้มีปุ่มขอต่ออายุเฉพาะ MA ที่ยัง active #}
-              {% if item.status == "active" %}
-              <div class="tooltip tooltip-left" data-tip="ขอต่ออายุสัญญา MA">
-                <button type="button"
-                        onclick="document.getElementById('modal_request_renewal_{{ item.id }}').showModal()"
-                        class="btn btn-outline btn-success btn-sm btn-circle" aria-label="ขอต่ออายุ MA">
-                  <i class="ph ph-arrows-clockwise text-lg"></i>
-                </button>
-              </div>
-              {% endif %}
-            {% endif %}
             {% if can_edit(item) %}
             <div class="tooltip tooltip-left" data-tip="แก้ไข MA">
               <a href="{{ url_for('procurement.products.edit', procurement_id=item.id, organization_id=organization.id) }}"
@@ -467,40 +455,6 @@
   </dialog>
   {% endif %}
 
-  {% if can_edit(item) and not item.is_renewed() and item.status == "active" %}
-  <dialog id="modal_request_renewal_{{ item.id }}" class="modal text-left">
-    <div class="modal-box">
-      <h3 class="text-lg font-bold text-success flex items-center gap-2 mb-3">
-        <i class="ph ph-arrows-clockwise text-xl"></i> ยืนยันการขอต่ออายุสัญญา MA
-      </h3>
-      <p class="py-2 text-base text-base-content">
-        คุณต้องการยื่นขอต่ออายุสัญญา MA รายการนี้ใช่หรือไม่?
-      </p>
-      <div class="bg-base-200 p-4 rounded-lg mb-3 space-y-1">
-        <div class="font-semibold text-base text-base-content">{{ item.name }}</div>
-        <div class="text-sm text-base-content/70">ม.อ.เบิกจ่าย: {{ item.psu_disbursement_number or '-' }}</div>
-        {% if item.get_end_date() %}
-        <div class="text-sm text-base-content/70">
-          วันสิ้นสุดสัญญา: <span class="font-semibold text-error">{{ item.get_end_date() | format_thai_date }}</span>
-        </div>
-        {% endif %}
-      </div>
-      <p class="text-xs text-base-content/60 mb-4">
-        * เมื่อยืนยัน รายการนี้จะเปลี่ยนสถานะเป็น <strong>"ขอต่ออายุ"</strong> และจะไปแสดงที่หน้ารายการ MA ใกล้หมดอายุ เพื่อให้ฝ่ายที่เกี่ยวข้องดำเนินการต่ออายุสัญญาใหม่หรือบันทึกไม่ต่ออายุต่อไป
-      </p>
-      <form method="POST" action="{{ url_for('procurement.products.request_renewal', procurement_id=item.id, organization_id=organization.id) }}" class="modal-action">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <button type="button" onclick="document.getElementById('modal_request_renewal_{{ item.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
-        <button type="submit" class="btn btn-success text-white gap-1">
-          <i class="ph ph-check"></i> ยืนยันขอต่ออายุ
-        </button>
-      </form>
-    </div>
-    <form method="dialog" class="modal-backdrop">
-      <button>ปิด</button>
-    </form>
-  </dialog>
-  {% endif %}
 
   {% if can_edit(item) and item.status != "draft" %}
     {% for p_item in item.get_items() %}

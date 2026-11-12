@@ -383,36 +383,16 @@ def test_renewal_request_and_non_renewal_workflow(world, client_for, existing_ma
     requisitions_url = f"/procurement/requisitions?{_q(world.org)}"
     non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
-    # 1. pending: อยู่ในหน้ารายการใกล้หมดอายุอยู่แล้ว ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ
-    assert existing_ma.status == "pending"
-    pending_html = client.get(products_url).get_data(as_text=True)
-    assert f"modal_request_renewal_{existing_ma.id}" not in pending_html
-    # active: มีปุ่มและ modal ขอต่ออายุ
-    existing_ma.status = "active"
-    existing_ma.save()
+    # 1. ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ (MA ที่ใกล้หมดอายุไปอยู่ในหน้ารายการใกล้หมดอายุเอง)
     products_html = client.get(products_url).get_data(as_text=True)
-    assert f"modal_request_renewal_{existing_ma.id}" in products_html
-    assert f"/procurement/products/{existing_ma.id}/request-renewal" in products_html
+    assert "request-renewal" not in products_html
 
-    # In requisitions page initially, existing_ma (status 'pending') is shown
-    # Let's change existing_ma to 'active'
+    # 2. active: ไม่อยู่ในหน้ารายการใกล้หมดอายุ จนกว่า controller ย้ายเป็น pending
     existing_ma.status = "active"
     existing_ma.save()
-
-    # When active, it is NOT in requisitions page (only renewal-requested or pending are shown)
-    req_html_before = client.get(requisitions_url).get_data(as_text=True)
-    assert existing_ma.name not in req_html_before
-
-    # 2. Request renewal from products page
-    req_post = client.post(
-        f"/procurement/products/{existing_ma.id}/request-renewal?{_q(world.org)}",
-        follow_redirects=True,
-    )
-    assert req_post.status_code == 200
-    existing_ma.reload()
-    assert existing_ma.status == "renewal-requested"
-
-    # Now it appears in requisitions page with "ต่ออายุ" and "ไม่ต่ออายุ" buttons
+    assert existing_ma.name not in client.get(requisitions_url).get_data(as_text=True)
+    existing_ma.status = "pending"
+    existing_ma.save()
     req_html_after = client.get(requisitions_url).get_data(as_text=True)
     assert existing_ma.name in req_html_after
     assert f"delete_modal_{existing_ma.id}" in req_html_after

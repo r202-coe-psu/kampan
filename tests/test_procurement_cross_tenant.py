@@ -789,17 +789,6 @@ def test_pay_installment_rejects_external_next_url(world, client_for, status):
     assert payment._safe_next_url("/procurement/products?x=1", "/ok") == "/procurement/products?x=1"
 
 
-@pytest.mark.parametrize("status", ["disactive", "renewal-requested"])
-def test_request_renewal_rejects_closed_statuses(world, client_for, status):
-    procurement_a = _make_procurement(world.org_a, world.admin_a, status=status, responsible=[world.role_admin_a])
-    client = client_for(world.admin_a)
-
-    client.post(f"/procurement/products/{procurement_a.id}/request-renewal?organization_id={world.org_a.id}")
-
-    procurement_a.reload()
-    assert procurement_a.status == status
-
-
 def test_requisitions_default_filter_includes_expired(world, client_for):
     expired = _make_procurement(world.org_a, world.admin_a, name="Expired MA")
     models.ProcurementItem.objects(procurement=expired).update(
@@ -833,13 +822,37 @@ def test_renewal_lists_show_sub_contracts_not_parent(world, client_for, path, st
     assert "Parent MA" not in html
 
 
-def test_products_list_has_no_request_renewal_for_pending(world, client_for):
-    """MA ที่ pending อยู่ในหน้ารายการใกล้หมดอายุอยู่แล้ว ไม่ต้องมีปุ่มขอต่ออายุในตารางรายการ MA"""
-    pending = _make_procurement(world.org_a, world.admin_a, name="Pending MA", status="pending")
+def test_products_list_has_no_request_renewal(world, client_for):
+    """ไม่มีขั้นตอนขอต่ออายุแล้ว MA ที่ใกล้หมดอายุไปอยู่ในหน้ารายการใกล้หมดอายุเอง"""
     active = _make_procurement(world.org_a, world.admin_a, name="Active MA", status="active")
     client = client_for(world.admin_a)
 
     html = client.get(f"/procurement/products?organization_id={world.org_a.id}").data.decode("utf-8")
+    response = client.post(f"/procurement/products/{active.id}/request-renewal?organization_id={world.org_a.id}")
 
-    assert f"/procurement/products/{active.id}/request-renewal" in html
-    assert f"/procurement/products/{pending.id}/request-renewal" not in html
+    assert "request-renewal" not in html
+    assert response.status_code in (404, 405)
+    active.reload()
+    assert active.status == "active"
+
+
+def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
+    """ต่ออายุแล้ว MA เดิมถูกปิดและหยุดเตือน จึงเตือนก่อนถ้ายังมีงวดที่ไม่ได้บันทึกจ่าย"""
+    unpaid = _make_procurement(world.org_a, world.admin_a, name="Unpaid MA", status="pending")
+    paid = _make_procurement(world.org_a, world.admin_a, name="Paid MA", status="pending")
+    models.ProcurementItem.objects(procurement=paid).update(
+        set__installments=[models.Installment(due_date=datetime.datetime.now(), paid_date=datetime.datetime.now())]
+    )
+    client = client_for(world.admin_a)
+    org = world.org_a.id
+
+    unpaid_detail = client.get(f"/procurement/payment/{unpaid.id}?organization_id={org}").data.decode("utf-8")
+    paid_detail = client.get(f"/procurement/payment/{paid.id}?organization_id={org}").data.decode("utf-8")
+    listing = client.get(f"/procurement/requisitions?organization_id={org}").data.decode("utf-8")
+
+    assert f'id="renew_check_{unpaid.id}"' in unpaid_detail
+    assert f'data-renew-check="renew_check_{unpaid.id}"' in unpaid_detail
+    assert f"/installments/" in unpaid_detail and "/pay?" in unpaid_detail
+    assert f'id="renew_check_{paid.id}"' not in paid_detail
+    assert f'id="renew_check_{unpaid.id}"' in listing
+    assert f'id="renew_check_{paid.id}"' not in listing

@@ -406,9 +406,7 @@ def test_ma_pages_have_no_old_renewal_request_path(world, client_for, app, monke
     assert "/renewal-requested" not in html
     assert "renew_modal_" not in html
     if page == "products":
-        # world.old เป็น pending: อยู่ในหน้ารายการใกล้หมดอายุอยู่แล้ว ตารางรายการ MA จึงไม่มีปุ่มขอต่ออายุ
-        assert world.old.status == "pending"
-        assert f"/procurement/products/{world.old.id}/request-renewal" not in html
+        assert "/request-renewal" not in html
     else:
         assert _renew_url(world) in html
 
