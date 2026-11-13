@@ -193,6 +193,28 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert len(second.installments) == 1
 
 
+def test_draft_with_one_item_gets_sub_contracts_when_a_second_item_is_added(world, client_for):
+    client = client_for(world.admin)
+    one = _two_item_form(world)
+    one["action"] = "draft"
+    for key in [k for k in one if k.startswith("items-1-")]:
+        one.pop(key)
+    one["total_amount"] = "60000.00"
+    assert _create(client, world, one).status_code == 302
+    procurement = models.Procurement.objects.get(parent_procurement=None)
+    assert models.Procurement.objects(parent_procurement=procurement).count() == 0
+
+    form = _two_item_form(world)
+    form["version"] = procurement.get_version()
+    form["items-0-item_id"] = str(procurement.get_items()[0].id)
+    form["action"] = "draft"
+    response = client.post(f"/procurement/products/{procurement.id}/edit?{_q(world.org)}", data=form)
+
+    assert response.status_code == 302
+    children = list(models.Procurement.objects(parent_procurement=procurement).order_by("id"))
+    assert [c.name for c in children] == ["[TEST] License A", "[TEST] MA B"]
+
+
 def test_detail_page_shows_every_item_with_details_line_breaks(world, client_for):
     client = client_for(world.admin)
     _create(client, world, _two_item_form(world))

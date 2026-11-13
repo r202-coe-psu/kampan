@@ -668,9 +668,11 @@ def _save_form(form, organization, procurement, existing_items, member, is_draft
     except me.ValidationError as error:
         return _render_form(form, organization, member, procurement, [error.message], **render_kwargs)
 
-    if is_new and len(items) > 1:
+    has_children = models.Procurement.objects(parent_procurement=procurement).count() > 0
+    if len(items) > 1 and not has_children:
+        # สร้างใหม่ หรือแบบร่างที่เพิ่งเพิ่มรายการที่ 2 ต้องแยกเป็นสัญญาย่อยตามรายการ
         _duplicate_child_procurements(procurement, items, user)
-    elif not is_new:
+    elif has_children:
         models.Procurement.objects(parent_procurement=procurement).update(set__status=procurement.status)
 
     if is_draft:
