@@ -3,7 +3,7 @@ from flask_mongoengine.wtf import model_form
 from wtforms import fields, Form, validators
 
 from kampan import models
-from kampan.models.procurement import CATEGORY_CHOICES, ITEM_CATEGORY_CHOICES
+from kampan.models.procurement import CATEGORY_CHOICES, MA_CATEGORY_CHOICES
 from kampan.models.requisitions import (
     COMMITTEE_TYPE_CHOICES,
     COMMITTEE_POSITION_CHOICES,
@@ -109,7 +109,7 @@ class RequisitionFilterForm(FlaskForm):
     )
     category = fields.SelectField(
         "หมวดหมู่",
-        choices=[("", "ทั้งหมด")] + ITEM_CATEGORY_CHOICES,
+        choices=[("", "ทั้งหมด")] + MA_CATEGORY_CHOICES,
         validators=[validators.Optional()],
     )
     product_number = fields.StringField(

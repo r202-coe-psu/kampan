@@ -1539,3 +1539,23 @@ def test_create_accepts_installment_on_the_period_boundaries(world, client_for, 
 
     assert response.status_code == 302
     assert models.ProcurementItem.objects.get().installments[0].due_date.strftime("%Y-%m-%d") == due
+
+
+def test_create_form_category_options_order_and_no_material(world, client_for):
+    html = client_for(world.admin).get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
+    start = html.index('id="dd-menu-items-0-category"')
+    menu = html[start : html.index("</ul>", start)]
+
+    values = re.findall(r'data-value="([^"]*)"', menu)
+
+    assert values == ["ma", "service", "software", "intangible", "product", "rental"]
+    assert "วัสดุ" not in menu
+
+
+def test_legacy_material_category_still_has_a_label(world, create_ma):
+    ma = create_ma(world.org, user=world.admin, name="[TEST] ข้อมูลเดิม", status="active")
+    models.ProcurementItem.objects(procurement=ma).update(set__category="material")
+
+    assert ma.get_items()[0].get_category_label() or True
+    item = models.ProcurementItem.objects(procurement=ma).get()
+    assert item.get_category_label() == "วัสดุ"

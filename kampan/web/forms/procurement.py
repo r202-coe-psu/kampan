@@ -123,7 +123,7 @@ class ProcurementItemForm(Form):
         "ชื่อรายการ",
         validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=255)],
     )
-    category = fields.SelectField("ประเภท", choices=models.ITEM_CATEGORY_CHOICES, default="ma")
+    category = fields.SelectField("ประเภท", choices=models.MA_CATEGORY_CHOICES, default="ma")
     quantity = fields.IntegerField(
         "จำนวน",
         default=1,
@@ -418,7 +418,7 @@ class ProductFilterForm(FlaskForm):
     )
     category = fields.SelectField(
         "ประเภท",
-        choices=[("", "ทั้งหมด")] + models.ITEM_CATEGORY_CHOICES,
+        choices=[("", "ทั้งหมด")] + models.MA_CATEGORY_CHOICES,
         validators=[validators.Optional()],
     )
     payment_status = fields.SelectField(
@@ -441,7 +441,7 @@ class NonRenewalFilterForm(FlaskForm):
     )
     category = fields.SelectField(
         "ประเภท",
-        choices=[("", "ทั้งหมด")] + models.ITEM_CATEGORY_CHOICES,
+        choices=[("", "ทั้งหมด")] + models.MA_CATEGORY_CHOICES,
         validators=[validators.Optional()],
     )
     company = fields.StringField("บริษัท", validators=[validators.Optional(), validators.Length(max=128)])

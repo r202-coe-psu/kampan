@@ -117,7 +117,7 @@ def index():
     sort = resolve_sort("end_asc")
     form.sort.data = sort
     paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)
-    category_choices = models.ITEM_CATEGORY_CHOICES
+    category_choices = models.MA_CATEGORY_CHOICES
     return render_template(
         "procurement/requisitions/index.html",
         procurements=page_procurements,
