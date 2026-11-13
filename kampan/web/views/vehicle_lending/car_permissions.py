@@ -427,7 +427,7 @@ def admin_page():
     page = request.args.get("page", 1, type=int)
     paginated_car_applications = Pagination(car_applications, page=page, per_page=50)
 
-    cars = models.vehicles.Car.objects(organization=organization)
+    cars = models.vehicles.Car.objects(organization=organization, status="active")
     drivers = organization.get_all_drivers()
 
     return render_template(
