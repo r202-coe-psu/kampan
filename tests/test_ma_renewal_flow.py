@@ -219,36 +219,35 @@ def test_responsible_can_switch_request_until_admin_confirms(world, client_for, 
 
 
 @pytest.mark.parametrize("confirmed", ["renewed", "disactive"])
-def test_responsible_cannot_change_anything_after_admin_confirms(world, client_for, existing_ma, confirmed):
+def test_responsible_cannot_change_the_request_after_admin_confirms(world, client_for, existing_ma, confirmed):
     _set(existing_ma, confirmed, "stop")
     client = client_for(world.responsible)
 
     for value in ("renew", "stop"):
         _request(client, existing_ma, world, value)
-    edit = client.post(
-        f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=_edit_form(existing_ma, name="[TEST] แก้หลังยืนยัน")
-    )
     detail = client.get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
 
     assert _state(existing_ma) == (confirmed, "stop")
-    assert edit.status_code == 302
-    assert models.Procurement.objects.get(id=existing_ma.id).name == "[TEST] MA เดิม"
     for modal in ("request_renew_modal", "request_stop_modal"):
         assert f'id="{modal}"' not in detail
-    assert f"/procurement/products/{existing_ma.id}/edit" not in detail
 
 
 @pytest.mark.parametrize("who", ["responsible", "creator"])
-def test_editors_cannot_edit_or_pay_a_confirmed_ma_but_admin_can(world, client_for, existing_ma, who):
+def test_editors_can_still_edit_and_pay_a_confirmed_ma(world, client_for, existing_ma, who):
     _set(existing_ma, "disactive", "stop")
     item = existing_ma.get_items()[0]
     pay = f"/procurement/payment/{existing_ma.id}/items/{item.id}/installments/{item.installments[0]._id}/pay?{_q(world.org)}"
+    client = client_for(getattr(world, who))
 
-    client_for(getattr(world, who)).post(pay, data={"paid_date": "2026-11-01", "payment_number": "PAY-LOCK"})
-    assert models.ProcurementItem.objects.get(id=item.id).installments[0].paid_date is None
+    edit = client.post(
+        f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}", data=_edit_form(existing_ma, name="[TEST] แก้หลังยืนยัน")
+    )
+    client.post(pay, data={"paid_date": "2026-11-01", "payment_number": "PAY-OK"})
 
-    client_for(world.admin).post(pay, data={"paid_date": "2026-11-01", "payment_number": "PAY-LOCK"})
     assert models.ProcurementItem.objects.get(id=item.id).installments[0].paid_date is not None
+    assert edit.status_code == 302
+    assert models.Procurement.objects.get(id=existing_ma.id).name == "[TEST] แก้หลังยืนยัน"
+    assert _state(existing_ma) == ("disactive", "stop")
 
 
 # ---------------------------------------------------------------------------

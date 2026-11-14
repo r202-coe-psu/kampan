@@ -20,8 +20,6 @@ from kampan import models
 from kampan.models.procurement import procurement_ids_of
 
 # role ที่เห็น MA ทั้งหน่วยงาน (มี role ใดในนี้ก็พอ แม้จะมี staff ด้วย)
-# สถานะที่ admin ยืนยันแล้ว
-CONFIRMED_STATUSES = ("renewed", "disactive")
 WHOLE_ORGANIZATION_ROLES = ("admin", "head", "manager", "supervisor supplier", "director")
 
 
@@ -58,9 +56,6 @@ def edit_checker(organization, user=None) -> Callable[[models.Procurement], bool
 
     def _can_edit(procurement) -> bool:
         if _reference_id(procurement, "organization") != organization.id:
-            return False
-        # admin ยืนยันแล้ว (ต่ออายุแล้ว / ไม่ต่ออายุ) ผู้รับผิดชอบและผู้สร้างแก้อะไรไม่ได้อีก
-        if procurement.status in CONFIRMED_STATUSES:
             return False
         if _reference_id(procurement, "created_by") == user.id:
             return True
