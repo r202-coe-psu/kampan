@@ -23,10 +23,7 @@
         item.requisition.requisition_code }}</span>
       </p>
     </div>
-    <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-       class="btn btn-ghost btn-sm ml-auto gap-1">
-      <i class="ph ph-arrow-left"></i> กลับ
-    </a>
+    {{ renderer.render_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id), extra_classes="ml-auto") }}
   </div>
 
   <form id="details-specified-form"
@@ -197,10 +194,7 @@
       </div>
     {% else %}
       <div class="flex justify-end gap-3 mt-8">
-        <a href="{{ url_for('procurement.requisition_timeline.index', organization_id=organization.id) }}"
-           class="btn btn-ghost px-6">
-          <i class="ph ph-arrow-left"></i> กลับ
-        </a>
+        {{ renderer.render_back_button(url_for('procurement.requisition_timeline.index', organization_id=organization.id)) }}
       </div>
     {% endif %}
   </form>

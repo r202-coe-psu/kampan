@@ -1,0 +1,459 @@
+{# ส่วนประกอบของฟอร์มสร้าง / แก้ไข MA (หัวสัญญา → รายการย่อย → งวด) #}
+{% from '/base/html-renderer.html' import date_field, dropdown_select %}
+
+{% macro field_errors(field) %}
+  {% for error in field.errors %}
+    {% if error is string %}
+      <p class="text-error text-xs mt-1">{{ error }}</p>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro input_field(field, required=False, wrapper_class="", extra_class="") %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">
+      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
+    </legend>
+    {{ field(class_="input w-full " ~ extra_class ~ (" input-error" if field.errors else ""), **kwargs) }}
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{# เลือกจากรายการ: DaisyUI dropdown (ไม่ใช้ <select> ของเบราว์เซอร์) #}
+{% macro select_field(field, required=False, wrapper_class="") %}
+  {{ dropdown_select(field, required=required, wrapper_class=wrapper_class) }}
+{% endmacro %}
+
+{# ค้นหาและเลือก: Search Select สำหรับผังบัญชี พิมพ์ค้นหารหัสหรือชื่อบัญชีได้ทันที #}
+{% macro search_select_field(field, required=False, wrapper_class="", placeholder="ค้นหาผังบัญชี (พิมพ์รหัส หรือชื่อ)...") %}
+  {% set val = (field.data or "") | string %}
+  {% set ns = namespace(selected_label="") %}
+  {% for opt_val, opt_label in field.choices %}
+    {% if opt_val | string == val %}
+      {% set ns.selected_label = opt_label %}
+    {% endif %}
+  {% endfor %}
+  {% if not ns.selected_label and field.choices %}
+    {% for opt_val, opt_label in field.choices %}
+      {% if opt_val | string == "" and not ns.selected_label %}
+        {% set ns.selected_label = opt_label %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}" id="field-{{ field.id }}">
+    <legend class="fieldset-legend">
+      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
+    </legend>
+    <div class="search-select relative w-full" data-search-select data-placeholder="{{ placeholder }}">
+      <input type="hidden" name="{{ field.name }}" id="{{ field.id }}" value="{{ val }}" />
+      <div class="search-select-box flex items-center gap-2 w-full h-10 px-3 rounded-lg border border-base-300 bg-base-100 cursor-text focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all{{ ' border-error ring-1 ring-error' if field.errors else '' }}">
+        <i class="ph ph-magnifying-glass text-base-content/50 text-base shrink-0 pointer-events-none"></i>
+        <input type="text"
+               class="search-select-input flex-1 min-w-0 bg-transparent border-0 outline-none p-0 text-sm text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-0"
+               placeholder="{{ placeholder }}"
+               autocomplete="off"
+               value="{{ ns.selected_label }}" />
+        <button type="button" class="btn btn-ghost btn-circle btn-xs text-base-content/40 hover:text-error search-select-clear shrink-0 {{ 'hidden' if not val else '' }}" title="ล้างค่า" aria-label="ล้างค่า">
+          <i class="ph ph-x"></i>
+        </button>
+        <i class="ph ph-caret-down text-base-content/40 text-xs shrink-0 pointer-events-none"></i>
+      </div>
+      <div class="search-select-menu hidden absolute left-0 right-0 top-full mt-1 z-50 w-full max-h-60 overflow-y-auto bg-base-100 rounded-box border border-base-300 shadow-xl p-1" style="width: 100%;">
+        <ul class="menu w-full p-0 gap-0.5" style="width: 100%;">
+          {% for opt_val, opt_label in field.choices %}
+            {% set is_selected = opt_val | string == val %}
+            <li class="w-full" style="width: 100%;">
+              <button type="button" class="search-select-option text-xs py-2 px-3 flex items-center justify-between text-left w-full {{ 'menu-active' if is_selected else '' }}" data-value="{{ opt_val }}" style="width: 100%;">
+                <span class="search-select-label truncate">{{ opt_label }}</span>
+                <i class="ph ph-check text-xs shrink-0 {{ '' if is_selected else 'hidden' }}"></i>
+              </button>
+            </li>
+          {% endfor %}
+        </ul>
+        <div class="search-select-empty hidden p-3 text-center text-xs text-base-content/50">
+          <i class="ph ph-magnifying-glass text-base block mb-1"></i> ไม่พบผังบัญชีที่ค้นหา
+        </div>
+      </div>
+    </div>
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{# วันที่ในฟอร์ม MA: date_field (Cally) แสดงปี พ.ศ. ค่าที่ส่งกลับเป็น ISO ค.ศ. ไม่ใช้ <input type="date"> #}
+{% macro date_picker(field, required=False, clearable=False) %}
+  {{ date_field(field, required=required, clearable=clearable, auto_init=False, show_errors=False, buddhist=True) }}
+  {{ field_errors(field) }}
+{% endmacro %}
+
+{% macro textarea_field(field, wrapper_class="") %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    {{ field(class_="textarea w-full" ~ (" textarea-error" if field.errors else ""), rows=3, **kwargs) }}
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro offset_checkboxes(field, hint) %}
+  <fieldset class="fieldset w-full">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    <p class="text-sm text-base-content/70">{{ hint }}</p>
+    <div class="flex flex-wrap gap-x-4 gap-y-1">
+      {% for value, label in field.choices %}
+        <label class="flex items-center gap-2 py-1 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ field.name }}" value="{{ value }}"
+                 {% if value in (field.data or []) %}checked{% endif %} />
+          <span class="text-sm">{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{% macro list_row(name, value="", placeholder="", inputmode="text", has_error=False) %}
+  <div class="list-row flex items-center gap-1">
+    <input type="text" name="{{ name }}" value="{{ value or '' }}" placeholder="{{ placeholder }}" inputmode="{{ inputmode }}"
+           class="input input-sm w-36{{ ' input-error' if has_error else '' }}" aria-label="{{ placeholder }}" />
+    <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-list-row" title="ลบ">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+{% endmacro %}
+
+{# รายการช่องข้อความที่เพิ่ม/ลบแถวได้ (FieldList ของ StringField) แถวว่างไม่นับ #}
+{% macro list_rows(field, placeholder, hint, add_label, inputmode="text") %}
+  {% set has_error = field.errors | select("string") | list | length > 0 %}
+  <fieldset class="fieldset w-full list-field">
+    <legend class="fieldset-legend">{{ field.label.text }}</legend>
+    <p class="text-sm text-base-content/70">{{ hint }}</p>
+    <div class="list-rows flex flex-wrap gap-2">
+      {% for entry in field %}
+        {{ list_row(entry.name, entry.data, placeholder, inputmode, has_error) }}
+      {% endfor %}
+    </div>
+    <template class="list-row-template">{{ list_row(field.name ~ "-__ROW__", "", placeholder, inputmode) }}</template>
+    <button type="button" class="btn btn-ghost btn-sm text-primary justify-start w-fit" data-action="add-list-row">
+      <i class="ph ph-plus-circle"></i> {{ add_label }}
+    </button>
+    {{ field_errors(field) }}
+  </fieldset>
+{% endmacro %}
+
+{# แถวย่อย รหัสครุภัณฑ์ / S/N / ยี่ห้อ / รุ่น / รายละเอียด ใช้ name_prefix เช่น items-0-sub_items-0- (หรือ ...-__K__- ในแม่แบบ) #}
+{% macro sub_item_row(name_prefix, f=None) %}
+  {% set brand = f.brand if f else None %}
+  {% set model_name = f.model_name if f else None %}
+  {% set serial_number = f.serial_number if f else None %}
+  {% set asset_code = f.asset_code if f else None %}
+  {% set details = f.details if f else None %}
+  <div class="sub-item-row flex flex-col gap-2 p-3 bg-base-200/50 rounded-lg border border-base-300">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold text-base-content/70 flex items-center gap-1.5">
+        <i class="ph ph-tag text-primary"></i> แถวที่ <span class="sub-item-number font-bold">1</span>
+      </span>
+      <button type="button" class="btn btn-ghost btn-xs text-error" data-action="remove-sub-item" title="ลบแถว" aria-label="ลบแถวนี้">
+        <i class="ph ph-trash text-sm"></i> ลบแถว
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รหัสครุภัณฑ์</label>
+        <input type="text" name="{{ name_prefix }}asset_code" id="{{ name_prefix }}asset_code" value="{{ (asset_code.data if asset_code else '') or '' }}" maxlength="100"
+               placeholder="รหัสครุภัณฑ์" class="input input-sm w-full{{ ' input-error' if asset_code and asset_code.errors else '' }}" />
+        {% if asset_code %}{{ field_errors(asset_code) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">S/N</label>
+        <input type="text" name="{{ name_prefix }}serial_number" id="{{ name_prefix }}serial_number" value="{{ (serial_number.data if serial_number else '') or '' }}" maxlength="100"
+               placeholder="S/N" class="input input-sm w-full{{ ' input-error' if serial_number and serial_number.errors else '' }}" />
+        {% if serial_number %}{{ field_errors(serial_number) }}{% endif %}
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">ยี่ห้อ</label>
+        <input type="text" name="{{ name_prefix }}brand" id="{{ name_prefix }}brand" value="{{ (brand.data if brand else '') or '' }}" maxlength="100"
+               placeholder="ยี่ห้อ" class="input input-sm w-full{{ ' input-error' if brand and brand.errors else '' }}" />
+        {% if brand %}{{ field_errors(brand) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รุ่น</label>
+        <input type="text" name="{{ name_prefix }}model_name" id="{{ name_prefix }}model_name" value="{{ (model_name.data if model_name else '') or '' }}" maxlength="100"
+               placeholder="รุ่น" class="input input-sm w-full{{ ' input-error' if model_name and model_name.errors else '' }}" />
+        {% if model_name %}{{ field_errors(model_name) }}{% endif %}
+      </div>
+      <div>
+        <label class="text-xs font-medium text-base-content/80 mb-1 block">รายละเอียด</label>
+        <input type="text" name="{{ name_prefix }}details" id="{{ name_prefix }}details" value="{{ (details.data if details else '') or '' }}" maxlength="255"
+               placeholder="รายละเอียด" class="input input-sm w-full{{ ' input-error' if details and details.errors else '' }}" />
+        {% if details %}{{ field_errors(details) }}{% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro installment_row(f) %}
+  <div class="installment-row flex items-center gap-2">
+    <span class="installment-number font-semibold text-base-content/70 w-16 shrink-0 text-right text-sm"></span>
+    <div class="flex-1 min-w-0 max-w-56">
+      {{ f.installment_id() }}
+      {{ date_field(f.due_date, compact=True, hide_label=True, aria_label="วันที่", placeholder_text="เลือกวันที่", fixed_popover=True, show_errors=False, auto_init=False, input_class="installment-due", buddhist=True) }}
+      {{ field_errors(f.due_date) }}
+    </div>
+    <div class="flex-1 min-w-0 max-w-48">
+      {{ f.amount(class_="input input-sm w-full installment-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal", placeholder="จำนวนเงิน (บาท)") }}
+      {{ field_errors(f.amount) }}
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm btn-square text-error" data-action="remove-installment" title="ลบงวด" aria-label="ลบงวดนี้">
+      <i class="ph ph-trash text-lg"></i>
+    </button>
+  </div>
+{% endmacro %}
+
+{# หัวข้อของแต่ละส่วนในการ์ดรายการย่อย #}
+{% macro section_heading(icon, title, hint="") %}
+  <div>
+    <h4 class="text-base font-semibold text-base-content flex items-center gap-2">
+      <i class="ph {{ icon }} text-primary"></i> {{ title }}
+    </h4>
+    {% if hint %}<p class="text-sm text-base-content/70 mt-1">{{ hint }}</p>{% endif %}
+  </div>
+{% endmacro %}
+
+{# ส่วนที่พับได้ (details) ใช้กับข้อมูลที่ไม่บังคับ เปิดเองเมื่อมีข้อมูลหรือมี error #}
+{% macro collapsible(icon, title, summary, is_open=False) %}
+  <details class="group border-t border-base-300 pt-4" {% if is_open %}open{% endif %}>
+    <summary class="flex items-center justify-between gap-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-md py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+      <span>
+        <span class="text-base font-semibold text-base-content flex items-center gap-2">
+          <i class="ph {{ icon }} text-primary"></i> {{ title }}
+        </span>
+        <span class="block text-sm text-base-content/70 mt-1">{{ summary }}</span>
+      </span>
+      <i class="ph ph-caret-down text-lg text-base-content/70 shrink-0 transition-transform group-open:rotate-180"></i>
+    </summary>
+    <div class="pt-5 flex flex-col gap-5">
+      {{ caller() }}
+    </div>
+  </details>
+{% endmacro %}
+
+{% macro item_card(f, removable=True, numbered=True) %}
+  {% set prefix = f.item_id.name[:-("item_id"|length)] %}
+  {% set custom_days = f.reminder_offsets_days.data | select | list %}
+  {% set custom_dates = f.custom_reminder_dates.data | select | list %}
+  {% set reminder_has_error = (f.expiry_reminder_offsets.errors or f.payment_reminder_offsets.errors or f.reminder_offsets_days.errors or f.custom_reminder_dates.errors) | length > 0 %}
+  <div class="ma-item card bg-base-100 border border-base-300 transition-all shadow-xs" data-prefix="{{ prefix }}"{% if f.item_id.data %} id="item-{{ f.item_id.data }}"{% endif %}>
+    {# Card Header: Always visible, clickable to toggle collapse/expand #}
+    <div class="card-header p-4 md:px-8 flex items-center justify-between gap-3 border-b border-base-300 bg-base-200/30 rounded-t-xl cursor-pointer select-none" data-action="toggle-collapse-item">
+      <div class="flex items-center gap-3 min-w-0">
+        <h3 class="text-base md:text-lg font-bold text-base-content shrink-0">
+          {% if numbered %}รายการย่อยที่ <span class="item-number"></span>{% else %}ข้อมูลรายการย่อย<span class="item-number hidden"></span>{% endif %}
+        </h3>
+        <span class="item-summary-badge text-xs md:text-sm text-base-content/70 truncate ml-2 font-normal"></span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button type="button" class="btn btn-ghost btn-sm gap-1.5 text-primary collapse-toggle-btn" data-action="toggle-collapse-btn">
+          <i class="ph ph-caret-up collapse-icon text-base"></i>
+          <span class="collapse-label text-xs md:text-sm">ย่อรายการ</span>
+        </button>
+        {% if removable %}
+        <button type="button" class="btn btn-ghost btn-sm text-error" data-action="remove-item" title="ลบรายการย่อย">
+          <i class="ph ph-trash"></i>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Card Body: Collapsible content #}
+    <div class="card-body p-4 md:p-8 gap-8 item-body">
+      {{ f.item_id() }}
+
+      {# 1. รายละเอียด: ช่องที่ต้องกรอก #}
+      <section class="flex flex-col gap-4">
+        {{ section_heading("ph-list-bullets", "รายละเอียด") }}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
+          {{ input_field(f.name, required=True, wrapper_class="md:col-span-2 lg:col-span-2") }}
+          {{ select_field(f.category, required=True, wrapper_class="md:col-span-2 lg:col-span-2") }}
+
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.quantity.label.text }} <span class="text-error">*</span></legend>
+            {{ f.quantity(class_="input w-full item-quantity" ~ (" input-error" if f.quantity.errors else ""), type="number", min="1", step="1") }}
+            {{ field_errors(f.quantity) }}
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.unit.label.text }}</legend>
+            {{ f.unit(class_="input w-full item-unit" ~ (" input-error" if f.unit.errors else ""), placeholder="เช่น เครื่อง, ชุด, งาน") }}
+            {{ field_errors(f.unit) }}
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.unit_price.label.text }}</legend>
+            {{ f.unit_price(class_="input w-full item-unit-price" ~ (" input-error" if f.unit_price.errors else ""), step="0.01", min="0", inputmode="decimal", placeholder="0.00") }}
+            {{ field_errors(f.unit_price) }}
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ f.amount.label.text }} <span class="text-error">*</span></legend>
+            {{ f.amount(class_="input w-full item-amount" ~ (" input-error" if f.amount.errors else ""), step="0.01", min="0", inputmode="decimal") }}
+            {{ field_errors(f.amount) }}
+          </fieldset>
+
+          {{ search_select_field(f.account_code, wrapper_class="md:col-span-2 lg:col-span-2") }}
+          {{ date_picker(f.start_date, required=True) }}
+          {{ date_picker(f.end_date, required=True) }}
+        </div>
+      </section>
+
+      {# 2. ผู้รับผิดชอบ #}
+      <section class="flex flex-col gap-3 border-t border-base-300 pt-6" data-member-picker>
+        {{ section_heading("ph-users", f.responsible_by.label.text, "ได้รับอีเมลแจ้งเตือนของรายการนี้ และแก้ไขรายการนี้ได้") }}
+
+        {# กล่องแสดงผู้รับผิดชอบที่เลือกแล้ว #}
+        <div class="selected-members-box flex flex-col gap-2 p-3 rounded-box bg-base-200/60 border border-base-300">
+          <div class="flex items-center justify-between text-xs font-semibold text-base-content/80">
+            <span class="flex items-center gap-1.5">
+              <i class="ph ph-check-circle text-primary text-base"></i>
+              ผู้รับผิดชอบที่เลือกแล้ว:
+              <span class="badge badge-sm badge-primary font-bold selected-count">
+                {{ (f.responsible_by.data or []) | length }}
+              </span>
+            </span>
+            <button type="button" class="btn btn-ghost btn-xs text-base-content/60 hover:text-error {% if not (f.responsible_by.data or []) %}hidden{% endif %}" data-action="clear-all-members">
+              <i class="ph ph-trash text-xs"></i> ล้างทั้งหมด
+            </button>
+          </div>
+          <div class="selected-members flex flex-wrap gap-1.5 min-h-7 items-center">
+            {% for value, label in f.responsible_by.choices %}
+              {% if value in (f.responsible_by.data or []) %}
+                <span class="selected-badge badge badge-primary badge-outline gap-1.5 py-3 px-2.5 text-xs inline-flex items-center" data-member-id="{{ value }}">
+                  <i class="ph ph-user"></i>
+                  <span class="truncate max-w-xs">{{ label }}</span>
+                  <button type="button" class="btn btn-ghost btn-circle btn-xs -mr-1 h-5 w-5 min-h-0 text-base-content/60 hover:text-error" data-action="deselect-member" data-member-id="{{ value }}" title="นำออก" aria-label="นำ {{ label }} ออก">
+                    <i class="ph ph-x text-xs"></i>
+                  </button>
+                </span>
+              {% endif %}
+            {% endfor %}
+            <span class="text-xs text-base-content/50 italic selected-empty {% if f.responsible_by.data %}hidden{% endif %}">
+              ยังไม่ได้เลือกผู้รับผิดชอบ
+            </span>
+          </div>
+        </div>
+
+        {# ค้นหาและรายชื่อสมาชิก #}
+        <div class="flex flex-col gap-2">
+          <div class="relative w-full md:w-80">
+            <input type="text" class="input input-sm w-full pl-8 member-filter" placeholder="ค้นหาชื่อผู้รับผิดชอบ..." aria-label="ค้นหาผู้รับผิดชอบ" />
+            <i class="ph ph-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 text-sm pointer-events-none"></i>
+          </div>
+
+          <div class="member-list max-h-48 overflow-y-auto border border-base-300 rounded-box p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+            {% for value, label in f.responsible_by.choices %}
+              {% set is_checked = value in (f.responsible_by.data or []) %}
+              <label class="member-option flex items-center gap-2 py-1.5 px-2 rounded hover:bg-base-200 cursor-pointer transition-colors {% if is_checked %}bg-primary/10 font-medium text-primary{% endif %}">
+                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.responsible_by.name }}" value="{{ value }}"
+                       {% if is_checked %}checked{% endif %} />
+                <span class="text-sm member-label">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        {{ field_errors(f.responsible_by) }}
+      </section>
+
+      {# 3. การจ่ายเงิน: ปิด = จ่ายครั้งเดียวก่อนหมดอายุ (ระบบสร้างงวดเดียว ครบกำหนดวันสิ้นสุด) · เปิด = กรอกวันครบกำหนดแต่ละงวด #}
+      <section class="installment-section flex flex-col gap-4 border-t border-base-300 pt-6" data-installment-section>
+        {{ section_heading("ph-calendar-dots", "การจ่ายเงิน", "งวดใช้จำและเตือนว่าต้องจ่ายวันไหน · วันที่จ่ายจริงกดบันทึกที่หน้ารายละเอียดหลังสร้างแล้ว") }}
+        <label class="flex items-center gap-3 cursor-pointer w-fit">
+          {{ f.installment_mode(class_="toggle toggle-primary installment-toggle") }}
+          <span class="text-sm font-medium text-base-content">{{ f.installment_mode.label.text }}</span>
+        </label>
+        {{ field_errors(f.installment_mode) }}
+        <p class="installment-off-hint text-sm text-base-content/70">
+          ไม่แบ่งงวด: จ่ายครั้งเดียวก่อนสิ้นสุดสัญญา ระบบตั้งวันครบกำหนดเป็นวันที่สิ้นสุดของรายการย่อยให้เอง
+        </p>
+        <div class="installment-on flex flex-col gap-3">
+          <div class="installment-rows flex flex-col gap-2">
+            {% for entry in f.installments %}
+              {{ installment_row(entry.form) }}
+            {% endfor %}
+          </div>
+          {{ field_errors(f.installments) }}
+          <p class="installment-error text-error text-sm hidden"></p>
+          <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-installment">
+            <i class="ph ph-plus-circle"></i> เพิ่มงวด
+          </button>
+          {# เตือนก่อนงวดจ่าย: เตือนในวันครบกำหนดเสมอ เลือกเพิ่ม 7 / 5 / 3 วันก่อนได้ (ค่าเริ่มต้นไม่ติ๊ก) แสดงเมื่อแบ่งจ่ายเป็นงวด #}
+          <div class="payment-reminder-container flex flex-col gap-2 border-t border-base-200 pt-3" data-payment-reminder>
+            <span class="text-sm font-medium text-base-content">{{ f.payment_reminder_offsets.label.text }}</span>
+            <div class="flex flex-wrap gap-2" data-payment-offsets>
+              {% for value, label in f.payment_reminder_offsets.choices %}
+                <label class="flex items-center gap-2 py-1 px-3 rounded-full border border-base-300 cursor-pointer">
+                  <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.payment_reminder_offsets.name }}" value="{{ value }}"
+                         {% if value in (f.payment_reminder_offsets.data or []) %}checked{% endif %} />
+                  <span class="text-sm">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <p class="text-xs text-base-content/60">ระบบส่งอีเมลถึงผู้รับผิดชอบในวันครบกำหนดของงวดที่ยังไม่จ่ายเสมอ ติ๊กเพื่อให้เตือนล่วงหน้าเพิ่ม</p>
+            {{ field_errors(f.payment_reminder_offsets) }}
+          </div>
+        </div>
+      </section>
+
+      {# 4. รหัสครุภัณฑ์ (หัวข้อนี้จะแสดงก็ต่อเมื่อ ได้กดเลือกประเภท ครุภัณฑ์/เช่า ถ้าเลือกประเภทอื่นไม่ต้องแสดงให้กรอก) #}
+      <section class="asset-code-section flex flex-col gap-4 border-t border-base-300 pt-6" data-sub-items-section>
+        {{ section_heading("ph-tag", "รหัสครุภัณฑ์", "ยี่ห้อ / รุ่น / รายละเอียด (หัวข้อนี้จะแสดงเมื่อเลือกประเภท ครุภัณฑ์ หรือ เช่า)") }}
+        <div class="sub-item-rows flex flex-col gap-3">
+          {% for entry in f.sub_items %}
+            {{ sub_item_row(entry.name ~ "-", entry.form) }}
+          {% else %}
+            {{ sub_item_row(prefix ~ "sub_items-0-") }}
+          {% endfor %}
+        </div>
+        <template class="sub-item-template">{{ sub_item_row(prefix ~ "sub_items-__K__-") }}</template>
+        {{ field_errors(f.sub_items) }}
+        <p class="sub-item-error text-error text-sm hidden"></p>
+        <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-sub-item">
+          <i class="ph ph-plus-circle"></i> เพิ่มแถว
+        </button>
+      </section>
+
+      {# 5. ตั้งค่าการแจ้งเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
+      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7 วัน · เตือนจ่ายงวดตั้งที่ส่วนการจ่ายเงิน)" %}
+      {% call collapsible("ph-bell-ringing", "ตั้งค่าการแจ้งเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
+        <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันสิ้นสุด</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
+          {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
+          {{ list_rows(f.reminder_offsets_days, "เช่น 45", "จำนวนวันก่อนวันที่สิ้นสุด (1–730 วัน) เพิ่มจากช่วงที่ติ๊ก", "เพิ่มจำนวนวัน", inputmode="numeric") }}
+          {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
+        </div>
+      {% endcall %}
+
+      {# 6. หมายเหตุ & บันทึกย่อรายการลง #}
+      <section class="flex flex-col gap-4 border-t border-base-300 pt-6">
+        {{ section_heading("ph-chat-circle-text", "หมายเหตุ") }}
+        {{ textarea_field(f.note, placeholder="หมายเหตุเพิ่มเติมสำหรับรายการย่อยนี้") }}
+        <div class="flex justify-end pt-2">
+          <button type="button" class="btn btn-outline btn-sm btn-primary gap-1.5" data-action="collapse-item-btn">
+            <i class="ph ph-caret-up text-base"></i> บันทึกและย่อรายการลง
+          </button>
+        </div>
+      </section>
+
+      {# ฟิลด์ที่นำออกจากหน้าจอตามแบบร่าง แต่ยังคงอยู่ในโมเดล/backward compatibility #}
+      <div class="hidden" aria-hidden="true">
+        {{ input_field(f.winner) }}
+        {{ select_field(f.reminder_kind) }}
+        {{ f.requires_activation(class_="checkbox") }}
+        <label>
+          {{ f.has_sub_item_sn(class_="checkbox", data_sub_item_toggle="sn") }}
+          <span>S/N</span>
+        </label>
+        <label>
+          {{ f.has_sub_item_asset(class_="checkbox", data_sub_item_toggle="asset") }}
+          <span>รหัสครุภัณฑ์</span>
+        </label>
+      </div>
+    </div>
+  </div>
+{% endmacro %}

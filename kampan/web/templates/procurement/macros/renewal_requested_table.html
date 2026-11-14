@@ -169,6 +169,7 @@
                   {% endif %}
                   <!--- ดำเนินการ(หัวหน้าฝ่าย) -->
                   {% if current_user.has_organization_roles("head") %}
+                    {% set head_error = item.get_approval_error("head", current_user) %}
                     {% set head_actioned = item.approval_history and item.approval_history |
                                         selectattr('approver_role', 'equalto', 'head') | list | length > 0 %}
                     {% set head_rejected = item.approval_history  and item.approval_history |
@@ -185,7 +186,7 @@
                       {% else %}
                         <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                {% if item.status =='incomplete' or item.status == 'cancelled' %}disabled{% endif %}
+                                {% if head_error %}disabled{% endif %}
                                 onclick="document.getElementById('modal-approve-head-{{ item.id }}').showModal();">
                           <i class="ph ph-check text-lg" title="Approve"></i>
                         </button>
@@ -211,7 +212,7 @@
                         </dialog>
                         <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                {% if item.status =='incomplete' or item.status == 'cancelled' %}disabled{% endif %}
+                                {% if head_error %}disabled{% endif %}
                                 onclick="document.getElementById('modal-reject-head-{{ item.id }}').showModal();">
                           <i class="ph ph-x text-lg" title="Reject"></i>
                         </button>
@@ -250,6 +251,7 @@
                   {% endif %}
                   <!--- ดำเนินการ(เจ้าหน้าที่พัสดุ) -->
                   {% if current_user.has_organization_roles("admin") %}
+                    {% set admin_error = item.get_approval_error("admin", current_user) %}
                     {% set head_approved = item.approval_history and item.approval_history |
                                           selectattr('approver_role', 'equalto', 'head') | selectattr('action', 'equalto', 'approved') |
                                         list | length > 0 %}
@@ -273,7 +275,7 @@
                       {% else %}
                         <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %}
+                                {% if admin_error %}
                                   disabled
                                 {% endif %}
                                 onclick="document.getElementById('modal-mas-{{ item.id }}').showModal();">
@@ -281,7 +283,7 @@
                         </button>
                         <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                {% if not head_approved or item.status=='incomplete' or item.status == 'cancelled' %}
+                                {% if admin_error %}
                                   disabled
                                 {% endif %}
                                 onclick="document.getElementById('modal-reject-admin-{{ item.id }}').showModal();">
@@ -497,6 +499,7 @@
                   {% endif %}
                   <!--- ดำเนินการ(ผู้บริหาร) -->
                   {% if (current_user.has_organization_roles("manager") and manager_action) or current_user.has_roles(["admin"]) %}
+                    {% set manager_error = item.get_approval_error("manager", current_user) %}
                     {% set admin_approved = item.approval_history and item.approval_history |
                                           selectattr('approver_role', 'equalto', 'admin') | selectattr('action', 'equalto', 'approved') |
                                         list | length > 0 %}
@@ -521,7 +524,7 @@
                       {% else %}
                         <button type="button"
                                 class="btn btn-outline btn-success btn-sm text-green-700 border-green-300 hover:bg-green-50"
-                                {% if not admin_approved or item.status=='incomplete' or item.status == 'cancelled' %}
+                                {% if manager_error %}
                                   disabled
                                 {% endif %}
                                 onclick="document.getElementById('modal-approve-manager-{{ item.id }}').showModal();">
@@ -589,7 +592,7 @@
                         </dialog>
                         <button type="button"
                                 class="btn btn-outline btn-error btn-sm text-red-700 border-red-300 hover:bg-red-50"
-                                {% if not admin_approved or item.status=='incomplete' or item.status == 'cancelled' %}
+                                {% if manager_error %}
                                   disabled
                                 {% endif %}
                                 onclick="document.getElementById('modal-reject-manager-{{ item.id }}').showModal();">

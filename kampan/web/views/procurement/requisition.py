@@ -2,10 +2,12 @@ import datetime
 from decimal import Decimal  # เพิ่ม
 from io import BytesIO
 
+from bson import ObjectId
 from flask import (
     Blueprint,
     abort,
     current_app,
+    flash,
     redirect,
     render_template,
     request,
@@ -14,11 +16,18 @@ from flask import (
     g,
 )
 from flask_login import current_user, login_required
+from mongoengine.queryset.visitor import Q
 from flask_mongoengine import Pagination
 from PyPDF2 import PdfMerger
 
 from kampan import models, utils
-from kampan.web import forms
+from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
+from kampan.models.procurement import REVIEW_STATUSES, parent_procurement_ids, procurement_ids_of
+from kampan.web import feature_flags, forms
+
+from . import ma_permissions
+from .products import search_procurements
+from .ma_pagination import paginate_sorted, resolve_sort
 
 from ... import redis_rq
 
@@ -26,6 +35,7 @@ module = Blueprint("requisitions", __name__, url_prefix="/requisitions")
 
 
 def apply_expiration_date_filter(procurements, date_range):
+    """กรองตามช่วงวันหมดอายุ (end_date) ใช้กับ queryset ของรายการย่อย MA"""
     if not date_range:
         return procurements
 
@@ -65,114 +75,230 @@ def generate_next_requisition_code():
     return f"{next_number:04d}/{buddhist_year}"
 
 
-@module.route("", methods=["GET", "POST"])
-@login_required
-def index():
-    organization = g.organization
-    form = forms.requisitions.RequisitionFilterForm(request.args)
-    query = {}
+PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "เฉพาะผู้รับผิดชอบของ MA นี้เท่านั้นที่ขอต่ออายุหรือไม่ต่ออายุได้"
+PROCUREMENT_APPROVE_FORBIDDEN_MESSAGE = "เฉพาะเจ้าหน้าที่พัสดุ (admin) เท่านั้นที่อนุมัติการต่ออายุหรือไม่ต่ออายุได้"
+PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอตรวจสอบ"
+PROCUREMENT_NOT_REQUESTED_MESSAGE = "ผู้รับผิดชอบยังไม่ได้ขอไม่ต่ออายุรายการนี้ หรือสถานะเปลี่ยนไปแล้ว"
+PROCUREMENT_REQUEST_CHANGED_MESSAGE = (
+    "คำขอของผู้รับผิดชอบเปลี่ยนไปหรือสถานะเปลี่ยนแล้ว ไม่ได้อนุมัติ กรุณาโหลดหน้าใหม่แล้วตรวจสอบอีกครั้ง"
+)
+INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง"
+RENEWAL_REQUEST_LABELS = {"renew": "ขอต่ออายุ", "stop": "ขอไม่ต่ออายุ"}
 
-    category = request.args.get("category", "")
-    name = request.args.get("name", "")
-    product_number = request.args.get("product_number", "")
-    asset_code = request.args.get("asset_code", "")
-    procurement_id = request.args.get("procurement_id", "")
-    expiration_date_range = request.args.get("expiration_date_range", "3_months")
 
-    if category:
-        query["category"] = category
-    if name:
-        query["name__icontains"] = name
-    if product_number:
-        query["product_numbers__icontains"] = product_number
-    if asset_code:
-        query["asset_codes__icontains"] = asset_code
-    if procurement_id:
-        query["id__icontains"] = procurement_id
-    query["organization"] = organization
-
-    procurements = models.Procurement.objects(**query)
-    procurements = apply_expiration_date_filter(procurements, expiration_date_range)
-
-    # ถ้ากด redirect button มาจากหน้ารายการ MA ให้ดึงค่าต่างๆ มาแสดงในช่องค้นหา
-    if procurement_id:
-        procurement = procurements.filter(id=procurement_id).first()
-        if procurement:
-            category = procurement.category
-            name = procurement.name
-            asset_code = ", ".join(procurement.asset_codes) if procurement.asset_codes else ""
-            product_number = ", ".join(procurement.product_numbers) if procurement.product_numbers else ""
-
-    # ถ้าไม่ใช่ admin ให้เห็นเฉพาะที่ responsible_by เป็นตัวเอง
-    org_user_role = models.OrganizationUserRole.objects(
-        user=current_user._get_current_object(),
-        organization=organization,
-        status="active",
-    ).first()
-    if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-        procurements = procurements.filter(responsible_by=org_user_role)
-
-    # Order by expiration date (earliest first)
-    procurements = procurements.order_by("end_date")
-
-    page = request.args.get("page", default=1, type=int)
-    per_page = request.args.get("per_page", default=8, type=int)
-    paginated_procurements = Pagination(procurements, page=page, per_page=per_page)
-    category_choices = models.procurement.CATEGORY_CHOICES
-    return render_template(
-        "procurement/requisitions/index.html",
-        procurements=paginated_procurements.items,
-        form=form,
-        paginated_procurements=paginated_procurements,
-        organization=organization,
-        category_choices=category_choices,
-        selected_category=category,
-        selected_name=name,
-        selected_product_number=product_number,
-        selected_asset_code=asset_code,
-        selected_expiration_date_range=expiration_date_range,
+def claim_for_renewal_request(procurement, organization, request_value: str, allow_switch: bool = True) -> bool:
+    """review → renewal-requested พร้อมบันทึกสิ่งที่ขอ แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)
+    ผู้รับผิดชอบเปลี่ยนคำขอ (renew <-> stop) ได้ขณะรอต่ออายุ ถ้าขอค่าเดิมซ้ำถือว่ากดซ้ำ (คืน False)
+    ``allow_switch=False`` = จองจากรอตรวจสอบเท่านั้น (ทางคำขอซื้อเดิม)"""
+    condition = Q(status__in=list(REVIEW_STATUSES))
+    if allow_switch:
+        condition = condition | (Q(status="renewal-requested") & Q(renewal_request__ne=request_value))
+    return bool(
+        models.Procurement.objects(
+            condition,
+            id=procurement.id,
+            organization=organization,
+            renewed_to=None,
+        ).update_one(
+            set__status="renewal-requested",
+            set__renewal_request=request_value,
+            set__last_updated_by=current_user._get_current_object(),
+            set__updated_date=datetime.datetime.now(),
+        )
     )
 
 
-@module.route("/non-renewal", defaults={"requisition_procurement_id": None})
-@module.route("/<requisition_procurement_id>/non-renewal")
+def _detail_url(procurement, organization):
+    return url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
+
+
+@module.route("/<requisition_procurement_id>/renewal-request", methods=["POST"])
 @login_required
-def non_renewal(requisition_procurement_id):
+def request_renewal(requisition_procurement_id):
+    """ผู้รับผิดชอบกด "ขอต่ออายุ" / "ขอไม่ต่ออายุ" (modal ยืนยัน): รอตรวจสอบ → รอต่ออายุ"""
     organization = g.organization
-    if requisition_procurement_id:
-        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-        if not procurement:
-            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-        procurement.status = "disactive"
-        procurement.last_updated_by = current_user._get_current_object()
-        procurement.save()
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-    else:
-        category = request.args.get("category", "")
-        query = {"status": "disactive", "organization": organization}
-        procurements = models.Procurement.objects(**query)
-        org_user_role = models.OrganizationUserRole.objects(
-            user=current_user._get_current_object(),
-            organization=organization,
-            status="active",
-        ).first()
-        if org_user_role and current_user.has_organization_roles("staff") and not current_user.has_organization_roles("admin"):
-            procurements = procurements.filter(responsible_by=org_user_role)
-        procurements = procurements.order_by("-end_date")
-        category_choices = models.procurement.CATEGORY_CHOICES
-        return render_template(
-            "procurement/requisitions/non_renewal.html",
-            items=procurements,
-            organization=organization,
-            category_choices=category_choices,
-            selected_category=category,
-        )
+    if not organization:
+        abort(404)
+
+    procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
+    detail_url = _detail_url(procurement, organization)
+    request_value = request.form.get("request")
+    if not forms.procurement.ConfirmActionForm().validate_on_submit() or request_value not in RENEWAL_REQUEST_LABELS:
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(detail_url)
+    if not ma_permissions.can_request_renewal(procurement, organization):
+        flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
+        return redirect(detail_url)
+
+    if not claim_for_renewal_request(procurement, organization, request_value):
+        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
+        return redirect(detail_url)
+    flash(f"{RENEWAL_REQUEST_LABELS[request_value]}เรียบร้อยแล้ว รอเจ้าหน้าที่พัสดุอนุมัติ (เปลี่ยนคำขอได้จนกว่าจะอนุมัติ)", "success")
+    return redirect(detail_url)
 
 
-@module.route("/renewal_requested", defaults={"requisition_procurement_id": None})
-@module.route("/<requisition_procurement_id>/renewal-requested")
+@module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])
 @login_required
-def renewal_requested(requisition_procurement_id):
+def non_renewal_action(requisition_procurement_id):
+    """เจ้าหน้าที่พัสดุ (admin) อนุมัติ "ไม่ต่ออายุ": รอต่ออายุ (ที่ผู้รับผิดชอบขอไม่ต่ออายุ) → ไม่ต่ออายุ
+    (อนุมัติต่ออายุใช้ขั้นตอนต่ออายุเดิม ``products.renew``)"""
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
+    detail_url = _detail_url(procurement, organization)
+    if not ma_permissions.can_approve_renewal(organization):
+        flash(PROCUREMENT_APPROVE_FORBIDDEN_MESSAGE, "error")
+        return redirect(detail_url)
+    if not forms.procurement.ConfirmActionForm().validate_on_submit():
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(detail_url)
+    # ฟอร์มอนุมัติส่งค่าคำขอที่ admin เห็นตอนกด ถ้าผู้รับผิดชอบเปลี่ยนคำขอไประหว่างนั้น ไม่เปลี่ยนสถานะ
+    if request.form.get("expected_request") != "stop" or not ma_permissions.renewal_requested_as(procurement, "stop"):
+        flash(PROCUREMENT_REQUEST_CHANGED_MESSAGE, "error")
+        return redirect(detail_url)
+
+    # claim จากสถานะรอต่ออายุที่ขอไม่ต่ออายุเท่านั้น กันกดซ้ำ / สถานะเปลี่ยนไประหว่างนั้น
+    claimed = models.Procurement.objects(
+        id=procurement.id, organization=organization, status="renewal-requested", renewal_request="stop"
+    ).update_one(
+        set__status="disactive",
+        set__last_updated_by=current_user._get_current_object(),
+        set__updated_date=datetime.datetime.now(),
+    )
+    if not claimed:
+        flash(PROCUREMENT_NOT_REQUESTED_MESSAGE, "error")
+    else:
+        flash("อนุมัติไม่ต่ออายุเรียบร้อยแล้ว", "success")
+    return redirect(detail_url)
+
+
+def _non_renewal_filters(organization, procurements, form):
+    """ตัวกรองหน้ารายการไม่ต่ออายุ (ทุก query scope ด้วยหน่วยงาน) คืน queryset ของ MA ที่ผ่านตัวกรอง"""
+    procurements = search_procurements(procurements, organization, form.name.data)
+    if form.company.data and form.company.data.strip():
+        procurements = procurements.filter(company__icontains=form.company.data.strip())
+
+    items = models.ProcurementItem.objects(organization=organization)
+    item_filtered = False
+    if form.category.data:
+        items = items.filter(category=form.category.data)
+        item_filtered = True
+    if form.responsible.data and ObjectId.is_valid(form.responsible.data):
+        # สมาชิกต้องอยู่ในหน่วยงานนี้เท่านั้น (choices ของ form มาจากสมาชิกของหน่วยงาน)
+        items = items.filter(responsible_by=form.responsible.data)
+        item_filtered = True
+    if form.end_from.data and not form.end_from.errors:
+        items = items.filter(end_date__gte=datetime.datetime.combine(form.end_from.data, datetime.time.min))
+        item_filtered = True
+    if form.end_to.data and not form.end_to.errors:
+        items = items.filter(end_date__lt=datetime.datetime.combine(form.end_to.data + datetime.timedelta(days=1), datetime.time.min))
+        item_filtered = True
+    if item_filtered:
+        procurements = procurements.filter(id__in=procurement_ids_of(items))
+    return procurements
+
+
+@module.route("/non-renewal")
+@login_required
+def non_renewal():
+    organization = g.organization
+    if not organization:
+        abort(404)
+    only_my_division = request.args.get("division") == "mine"
+    form = forms.procurement.NonRenewalFilterForm(request.args)
+    # select_related: โหลดผู้ใช้ของทุกคนพร้อมกัน (ไม่ query ต่อคนตอนสร้างชื่อใน dropdown)
+    members = models.OrganizationUserRole.objects(organization=organization, status="active").select_related()
+    form.responsible.choices = [("", "ทั้งหมด")] + [(str(member.id), member.display_user_fullname()) for member in members]
+    form.validate()
+    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
+        status="disactive"
+    )
+    procurements = procurements.filter(id__nin=parent_procurement_ids(organization))
+    procurements = _non_renewal_filters(organization, procurements, form)
+    # หน้านี้เน้นรายการที่หมดอายุล่าสุด: ค่าตั้งต้นเรียงวันสิ้นสุดใหม่สุดก่อน
+    sort = resolve_sort("end_desc")
+    form.sort.data = sort
+    paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)
+    return render_template(
+        "procurement/requisitions/non_renewal.html",
+        items=page_procurements,
+        paginated_procurements=paginated_procurements,
+        organization=organization,
+        form=form,
+        my_division=ma_permissions.my_division_filter(organization),
+        only_my_division=only_my_division,
+    )
+
+
+@module.route("/<requisition_procurement_id>/renewal-requested", methods=["POST"])
+@feature_flags.requisition_required
+@login_required
+def renewal_requested_action(requisition_procurement_id):
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    procurement = models.Procurement.objects(id=requisition_procurement_id, organization=organization).first()
+    if not procurement:
+        abort(404)
+
+    if not ma_permissions.can_edit_procurement(procurement, organization):
+        flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
+    if not claim_for_renewal_request(procurement, organization, "renew", allow_switch=False):
+        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+    # สร้างรหัส requisition_code ใหม่
+    requisition_code = generate_next_requisition_code()
+    ma_items = procurement.get_items()
+    first_responsible = ma_items[0].responsible_by if ma_items else []
+    requisition_categories = {value for value, _ in models.CATEGORY_CHOICES}
+    # สร้าง Requisition ใหม่ 1 รายการสินค้าต่อ 1 รายการย่อยของ MA
+    requisition = models.Requisition(
+        requisition_code=requisition_code,
+        purchaser=(first_responsible[0] if first_responsible else None),
+        phone=None,
+        reason=f"Renewal requested for procurement {procurement.name}",
+        start_date=procurement.get_end_date(),
+        items=[
+            models.RequisitionItem(
+                product_name=item.name[:100],
+                category=item.category if item.category in requisition_categories else "service",
+                amount=item.amount,
+                currency=None,
+                quantity=1,
+            )
+            for item in ma_items
+        ],
+        # ensure at least one committee entry exists so model validation passes
+        committees=None,
+        type="MA",
+        fund=None,
+        created_by=current_user._get_current_object(),
+        last_updated_by=current_user._get_current_object(),
+        organization=organization,
+    )
+    try:
+        requisition.save()
+    except Exception:
+        # สร้างคำขอไม่สำเร็จ คืนสถานะ MA ให้กดใหม่ได้
+        models.Procurement.objects(id=procurement.id, status="renewal-requested").update_one(
+            set__status="review", unset__renewal_request=True
+        )
+        raise
+
+    return redirect(url_for("procurement.products.index", organization_id=organization.id))
+
+
+@module.route("/renewal_requested")
+@feature_flags.requisition_required
+@login_required
+def renewal_requested():
     organization = g.organization
     form = forms.requisitions.RenewalRequestedFilterForm(request.args)
     org_user_role = models.OrganizationUserRole.objects(
@@ -198,171 +324,135 @@ def renewal_requested(requisition_procurement_id):
         else:
             query["status"] = status
 
-    if requisition_procurement_id:
-        procurement = models.Procurement.objects(id=requisition_procurement_id).first()
-        if not procurement:
-            return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-        # สร้างรหัส requisition_code ใหม่
-        requisition_code = generate_next_requisition_code()
-        # สร้าง Requisition ใหม่
-        requisition = models.Requisition(
-            requisition_code=requisition_code,
-            purchaser=(procurement.responsible_by[0] if procurement.responsible_by else None),
-            phone=None,
-            reason=f"Renewal requested for procurement {procurement.name}",
-            start_date=procurement.end_date,
-            items=[
-                models.RequisitionItem(
-                    product_name=procurement.name,
-                    category=procurement.category,
-                    amount=procurement.amount,
-                    currency=None,
-                    quantity=1,
-                )
-            ],
-            # ensure at least one committee entry exists so model validation passes
-            committees=None,
-            type="MA",
-            fund=None,
-            created_by=current_user._get_current_object(),
-            last_updated_by=current_user._get_current_object(),
-            organization=organization,
+    category = request.args.get("category", "")
+    query["organization"] = organization
+    requisitions = models.Requisition.objects(**query)
+
+    # Determine user role hierarchy
+    # is_admin_or_head = current_user.has_organization_roles(
+    #     "admin"
+    # ) or current_user.has_organization_roles("head")
+    is_admin = current_user.has_organization_roles("admin")
+    is_head = current_user.has_organization_roles("head")
+    is_manager = current_user.has_organization_roles("manager")
+    is_staff = current_user.has_organization_roles("staff")
+
+    # Apply filters based on role (lowest privilege first)
+    manager_requisitions = None
+    manager_submitted_requisitions = None
+    head_pending_requisitions = None
+
+    if is_staff and not (is_admin or is_manager or is_head):
+        # Filter by purchaser.user matching current_user
+        staff_requisitions = []
+        for req in requisitions:
+            if req.purchaser and req.purchaser.user and req.purchaser.user.id == current_user.id:
+                staff_requisitions.append(req.id)
+        requisitions = requisitions.filter(id__in=staff_requisitions)
+
+    elif is_manager and not (is_admin or is_head):
+        manager_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__not__elemMatch={
+                "approver_role": "manager",
+            },
         )
-        requisition.save()
-        procurement.status = "renewal-requested"
-        procurement.last_updated_by = current_user._get_current_object()
-        procurement.save()
-
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
-    else:
-        category = request.args.get("category", "")
-        query["organization"] = organization
-        requisitions = models.Requisition.objects(**query)
-
-        # Determine user role hierarchy
-        # is_admin_or_head = current_user.has_organization_roles(
-        #     "admin"
-        # ) or current_user.has_organization_roles("head")
-        is_admin = current_user.has_organization_roles("admin")
-        is_head = current_user.has_organization_roles("head")
-        is_manager = current_user.has_organization_roles("manager")
-        is_staff = current_user.has_organization_roles("staff")
-
-        # Apply filters based on role (lowest privilege first)
-        manager_requisitions = None
-        manager_submitted_requisitions = None
-        head_pending_requisitions = None
-
-        if is_staff and not (is_admin or is_manager or is_head):
-            # Filter by purchaser.user matching current_user
-            staff_requisitions = []
-            for req in requisitions:
-                if req.purchaser and req.purchaser.user and req.purchaser.user.id == current_user.id:
-                    staff_requisitions.append(req.id)
-            requisitions = requisitions.filter(id__in=staff_requisitions)
-
-        elif is_manager and not (is_admin or is_head):
-            manager_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__not__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-            manager_submitted_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-
-        elif is_head and not (is_admin or is_manager):
-            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
-
-        elif is_manager and is_staff and is_head and is_admin:
-            manager_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__not__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-            manager_submitted_requisitions = requisitions.filter(
-                selected_manager__manager=org_user_role,
-                approval_history__elemMatch={
-                    "approver_role": "manager",
-                },
-            )
-
-        # Retrieve division-scoped pending requisitions for the head role
-        if is_head and org_user_role and org_user_role.division:
-            purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
-            # Enforce that all shown requisitions belong to the user's own division
-            requisitions = requisitions.filter(purchaser__in=purchaser_ids)
-            head_pending_requisitions = requisitions.filter(
-                approval_history__not__elemMatch={
-                    "approver_role": "head",
-                },
-            )
-
-        # Exclude pending/submitted lists from the bottom list to avoid duplicates
-        excluded_ids = []
-        if manager_requisitions:
-            excluded_ids.extend([req.id for req in manager_requisitions])
-        if head_pending_requisitions:
-            excluded_ids.extend([req.id for req in head_pending_requisitions])
-        
-        if excluded_ids:
-            requisitions = requisitions.filter(id__nin=excluded_ids)
-
-        requisitions = requisitions.order_by("-requisition_code")
-        # print(requisitions[1].purchaser.to_json(indent=2))
-        mas_list = models.MAS.objects()
-
-        # Pagination
-        page = request.args.get("page", default=1, type=int)
-        per_page = request.args.get("per_page", default=10, type=int)
-        paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
-
-        paginated_manager_requisitions = None
-        if manager_requisitions is not None:
-            manager_page = request.args.get("manager_page", default=1, type=int)
-            paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
-
-        paginated_manager_submitted_requisitions = None
-        if manager_submitted_requisitions is not None:
-            manager_submitted_page = request.args.get("manager_submitted_page", default=1, type=int)
-            paginated_manager_submitted_requisitions = Pagination(
-                manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
-            )
-
-        paginated_head_pending_requisitions = None
-        if head_pending_requisitions is not None:
-            head_page = request.args.get("head_page", default=1, type=int)
-            paginated_head_pending_requisitions = Pagination(
-                head_pending_requisitions, page=head_page, per_page=per_page
-            )
-
-        return render_template(
-            "procurement/requisitions/renewal_requested.html",
-            requisitions=paginated_requisitions.items,
-            paginated_requisitions=paginated_requisitions,
-            manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
-            manager_submitted_requisitions=(
-                paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
-            ),
-            head_pending_requisitions=(paginated_head_pending_requisitions.items if paginated_head_pending_requisitions else []),
-            paginated_head_pending_requisitions=paginated_head_pending_requisitions,
-            form=form,
-            paginated_manager_requisitions=paginated_manager_requisitions,
-            paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
-            organization=organization,
-            selected_category=category,
-            status_choices=models.requisitions.STATUS_CHOICES,
-            mas_list=mas_list,
+        manager_submitted_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__elemMatch={
+                "approver_role": "manager",
+            },
         )
+
+    elif is_head and not (is_admin or is_manager):
+        purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
+        requisitions = requisitions.filter(purchaser__in=purchaser_ids)
+
+    elif is_manager and is_staff and is_head and is_admin:
+        manager_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__not__elemMatch={
+                "approver_role": "manager",
+            },
+        )
+        manager_submitted_requisitions = requisitions.filter(
+            selected_manager__manager=org_user_role,
+            approval_history__elemMatch={
+                "approver_role": "manager",
+            },
+        )
+
+    # Retrieve division-scoped pending requisitions for the head role
+    if is_head and org_user_role and org_user_role.division:
+        purchaser_ids = models.OrganizationUserRole.objects(division=org_user_role.division).only("id")
+        # Enforce that all shown requisitions belong to the user's own division
+        requisitions = requisitions.filter(purchaser__in=purchaser_ids)
+        head_pending_requisitions = requisitions.filter(
+            approval_history__not__elemMatch={
+                "approver_role": "head",
+            },
+        )
+
+    # Exclude pending/submitted lists from the bottom list to avoid duplicates
+    excluded_ids = []
+    if manager_requisitions:
+        excluded_ids.extend([req.id for req in manager_requisitions])
+    if head_pending_requisitions:
+        excluded_ids.extend([req.id for req in head_pending_requisitions])
+    
+    if excluded_ids:
+        requisitions = requisitions.filter(id__nin=excluded_ids)
+
+    requisitions = requisitions.order_by("-requisition_code")
+    # print(requisitions[1].purchaser.to_json(indent=2))
+    mas_list = models.MAS.objects(organization=organization)
+
+    # Pagination
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+    paginated_requisitions = Pagination(requisitions, page=page, per_page=per_page)
+
+    paginated_manager_requisitions = None
+    if manager_requisitions is not None:
+        manager_page = request.args.get("manager_page", default=1, type=int)
+        paginated_manager_requisitions = Pagination(manager_requisitions, page=manager_page, per_page=per_page)
+
+    paginated_manager_submitted_requisitions = None
+    if manager_submitted_requisitions is not None:
+        manager_submitted_page = request.args.get("manager_submitted_page", default=1, type=int)
+        paginated_manager_submitted_requisitions = Pagination(
+            manager_submitted_requisitions, page=manager_submitted_page, per_page=per_page
+        )
+
+    paginated_head_pending_requisitions = None
+    if head_pending_requisitions is not None:
+        head_page = request.args.get("head_page", default=1, type=int)
+        paginated_head_pending_requisitions = Pagination(
+            head_pending_requisitions, page=head_page, per_page=per_page
+        )
+
+    return render_template(
+        "procurement/requisitions/renewal_requested.html",
+        requisitions=paginated_requisitions.items,
+        paginated_requisitions=paginated_requisitions,
+        manager_requisitions=(paginated_manager_requisitions.items if paginated_manager_requisitions else []),
+        manager_submitted_requisitions=(
+            paginated_manager_submitted_requisitions.items if paginated_manager_submitted_requisitions else []
+        ),
+        head_pending_requisitions=(paginated_head_pending_requisitions.items if paginated_head_pending_requisitions else []),
+        paginated_head_pending_requisitions=paginated_head_pending_requisitions,
+        form=form,
+        paginated_manager_requisitions=paginated_manager_requisitions,
+        paginated_manager_submitted_requisitions=paginated_manager_submitted_requisitions,
+        organization=organization,
+        selected_category=category,
+        status_choices=models.requisitions.STATUS_CHOICES,
+        mas_list=mas_list,
+    )
 
 
 @module.route("/<requisition_procurement_id>/document")
+@feature_flags.requisition_required
 @login_required
 def document(requisition_procurement_id):
     organization = g.organization
@@ -393,10 +483,13 @@ def document(requisition_procurement_id):
 
 @module.route("/create", methods=["GET", "POST"], defaults=dict(requisition_procurement_id=None))
 @module.route("/<requisition_procurement_id>/edit", methods=["GET", "POST"])
+@feature_flags.requisition_required
 @login_required
 def create_or_edit(requisition_procurement_id):
     organization = g.organization
-    members = organization.get_organization_users()
+    # กรรมการและผู้ขอซื้อต้องเป็นสมาชิก active ของหน่วยงานที่กำลังดูอยู่เท่านั้น
+    members = list(models.OrganizationUserRole.objects(organization=organization, status="active").order_by("-first_name"))
+    members_by_id = {str(member.id): member for member in members}
     requisition = None
 
     if requisition_procurement_id:
@@ -411,7 +504,7 @@ def create_or_edit(requisition_procurement_id):
 
     member_choices = [(str(member.id), member.display_fullname()) for member in members]
     for committee_form in form.committees:
-        committee_form.member.choices.extend(member_choices)
+        committee_form.member.choices = [("-", "เลือกกรรมการ")] + member_choices
 
     current_org_user_role = next(
         (member for member in members if str(getattr(member.user, "id", "")) == str(current_user.id)),
@@ -462,7 +555,9 @@ def create_or_edit(requisition_procurement_id):
     requisition.committees = []
     for committee_form in form.committees:
         if committee_form.member.data != "-":
-            member_obj = models.OrganizationUserRole.objects(id=committee_form.member.data).first()
+            member_obj = members_by_id.get(committee_form.member.data)
+            if not member_obj:
+                abort(400)
             committee = models.requisitions.Committees(
                 member=member_obj,
                 committee_type=committee_form.committee_type.data,
@@ -507,7 +602,7 @@ def create_or_edit(requisition_procurement_id):
     if current_org_user_role:
         requisition.purchaser = current_org_user_role
     elif form.purchaser.data and form.purchaser.data != "-":
-        requisition.purchaser = models.OrganizationUserRole.objects(id=form.purchaser.data).first()
+        requisition.purchaser = members_by_id.get(form.purchaser.data)
 
     requisition.last_updated_by = current_user._get_current_object()
     requisition.save()
@@ -534,6 +629,7 @@ def create_or_edit(requisition_procurement_id):
 
 # รวมไฟล์ ToR และ QT เป็น PDF เดียวแล้วดาวน์โหลดทั้งหมด
 @module.route("/<requisition_procurement_id>/download/all")
+@feature_flags.requisition_required
 @login_required
 def download(requisition_procurement_id):
     organization = g.organization
@@ -585,6 +681,7 @@ def download(requisition_procurement_id):
 
 
 @module.route("/<requisition_id>/action", methods=["POST"])
+@feature_flags.requisition_required
 @login_required
 def requisition_action(requisition_id):
     approver_role = request.form.get("approver_role")
@@ -595,99 +692,50 @@ def requisition_action(requisition_id):
     manager_id = request.form.get("manager")
 
     organization = g.organization
+    if not organization:
+        abort(404)
+
     requisition = models.Requisition.objects(id=requisition_id, organization=organization).first()
-    members = organization.get_organization_users()
-    member_obj = next(
-        (m for m in members if str(getattr(m.user, "id", "")) == str(current_user.id)),
-        None,
-    )
+    member_obj = models.OrganizationUserRole.objects(
+        user=current_user._get_current_object(),
+        organization=organization,
+        status__ne="disactive",
+    ).first()
     if not member_obj or not requisition:
         abort(404)
 
-    if (approver_role == "head" or approver_role == "manager") and action == "approved":
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.approved_emails.send_email_approve_to_user_admin_committee,
-            args=(
-                requisition,
-                current_user.id,
-                current_app.config,
-                organization,
-                approver_role,
-            ),
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> Approved email job submitted", job.get_id())
+    if approver_role not in models.requisitions.APPROVAL_STEPS or action not in models.requisitions.APPROVAL_ACTIONS:
+        abort(400)
 
-    # Admin อนุมัติ: อัปเดตการจัดสรร MAS แบบหลายแหล่ง (ไม่กันการจัดสรรซ้ำ)
+    renewal_requested_url = url_for(
+        "procurement.requisitions.renewal_requested",
+        organization_id=organization.id,
+    )
+    # ตรวจสิทธิ์ ลำดับขั้น และการกดซ้ำ ก่อนเขียนข้อมูลใด ๆ (กติกาเดียวกับที่ template ใช้ซ่อน/ปิดปุ่ม)
+    approval_error = requisition.get_approval_error(approver_role, current_user._get_current_object())
+    if approval_error:
+        flash(approval_error, "error")
+        return redirect(renewal_requested_url)
+
+    manager_obj = None
+    allocations = []
     if approver_role == "admin" and action == "approved":
-        # รวบรวม amounts ต่อ MAS จาก form: key = fund_amounts[<mas_id>]
-        items = list(request.form.items(multi=True))  # แปลงเป็น list เพื่อใช้งาน/ debug ได้
-        # print("raw items (first 10):", raw_items[:10])
-        input_amounts = {}
-        for k, v in items:
-            if k.startswith("fund_amounts[") and k.endswith("]"):
-                mas_id = k[len("fund_amounts[") : -1]
-                try:
-                    amt = Decimal(str(v or "0")).quantize(Decimal("0.01"))
-                except Exception:
-                    amt = Decimal("0.00")
-                input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + amt
-
-        if not fund_ids and fund_id:
-            fund_ids = [fund_id]
-            input_amounts.setdefault(fund_id, input_amounts.get(fund_id, Decimal("0.00")))
-
-        fund_list = []
-        for fid in set(fund_ids or []):
-            amt = input_amounts.get(fid, Decimal("0.00"))
-            if amt <= 0:
-                continue
-            mas = models.MAS.objects(id=fid).first()
-            if not mas:
-                continue
-
-            print("=====> mas", mas)
-
-            res = models.Reservation(
-                requisition=requisition,
-                mas=mas,
-                amount=amt,
-                reserved_by=current_user._get_current_object(),
-                organization=organization,
-            )
-            res.save()
-
-            fund_list.append(models.requisitions.Funds(mas=mas, amount=amt, reservation=res))
-
-            mas.reservable_amount -= amt
-            mas.last_updated_by = current_user._get_current_object()
-            mas.editable = False
-            mas.save()
-
-        requisition.fund = fund_list
-
-        fund_source = request.form.get("fund_source")
-        if fund_source:
-            requisition.fund_source = fund_source
-
-        # 5) บันทึก Manager และส่งอีเมลถึง Manager
         if manager_id:
-            is_acting = request.form.get("Acting") == "True"
-            manager_obj = models.OrganizationUserRole.objects(id=manager_id).first()
-            if manager_obj:
-                requisition.selected_manager = models.requisitions.SelectedManager(
-                    manager=manager_obj,
-                    is_acting=is_acting,
-                )
+            if ObjectId.is_valid(manager_id):
+                manager_obj = models.OrganizationUserRole.objects(
+                    id=manager_id,
+                    organization=organization,
+                    roles="manager",
+                    status__ne="disactive",
+                ).first()
+            if not manager_obj:
+                abort(400)
 
-                job = redis_rq.redis_queue.queue.enqueue(
-                    utils.send_email_to_manager.send_email_to_manager,
-                    args=(requisition, current_app.config, manager_obj, organization),
-                    timeout=600,
-                    job_timeout=600,
-                )
-                print("=====> manager email job submitted", job.get_id())
+        # ตรวจการจัดสรรงบทั้งหมดก่อนจองขั้น เพื่อไม่ให้ขั้นค้างเป็น "อนุมัติแล้ว" ทั้งที่จัดสรรไม่สำเร็จ
+        allocations, allocation_error = get_fund_allocations(organization, fund_id, fund_ids)
+        if allocation_error:
+            flash(allocation_error, "error")
+            return redirect(renewal_requested_url)
 
     approval = models.requisitions.ApprovalHistory(
         approver=member_obj,
@@ -698,76 +746,179 @@ def requisition_action(requisition_id):
         last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
         user_agent=request.headers.get("User-Agent"),
     )
-    if requisition.approval_history is None:
-        requisition.approval_history = []
-    requisition.approval_history.append(approval)
+    # จองขั้นนี้แบบ atomic ก่อนจัดสรรงบหรือส่งอีเมล กันกดซ้ำ/กดพร้อมกันแล้วตัดงบ MAS ซ้ำ
+    claimed = models.Requisition.objects(
+        id=requisition.id,
+        approval_history__not__elemMatch={"approver_role": approver_role},
+    ).update_one(push__approval_history=approval)
+    if not claimed:
+        flash("ขั้นนี้ดำเนินการแล้ว", "error")
+        return redirect(renewal_requested_url)
 
-    required_roles = {"head", "admin", "manager"}
-    approved_roles = set(h.approver_role for h in requisition.approval_history if h.action == "approved")
-    rejected_roles = set(h.approver_role for h in requisition.approval_history if h.action == "rejected")
-
-    if rejected_roles:
-        requisition.status = "incomplete"
-        requisition.last_updated_by = current_user._get_current_object()
-        requisition.save()
-        job = redis_rq.redis_queue.queue.enqueue(
-            utils.rejected_emails.send_email_rejected_to_user_admin_committee,
-            args=(
-                requisition,
-                current_user.id,
-                current_app.config,
-                organization,
-                approver_role,
-            ),
-            timeout=600,
-            job_timeout=600,
-        )
-        print("=====> Reject email job submitted", job.get_id())
-        return redirect(
-            url_for(
-                "procurement.requisitions.renewal_requested",
-                organization_id=g.organization.id,
-            )
-        )
-
-    if required_roles.issubset(approved_roles):
-        requisition.status = "complete"
-        requisition.last_updated_by = current_user._get_current_object()
-        requisition.save()
-        requisition_timeline = models.RequisitionTimeline(
-            requisition=requisition,
-            purchaser=requisition.purchaser,
-            progress=[
-                models.Progress(
-                    progress_status="request_created",
-                    created_by=current_user._get_current_object(),
-                    last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
-                    user_agent=request.headers.get("User-Agent"),
-                    timestamp=datetime.datetime.now(),
+    user = current_user._get_current_object()
+    reservations = []
+    reserved_mas = []
+    try:
+        # Admin อนุมัติ: จองงบ MAS แบบหลายแหล่งตามที่ตรวจไว้แล้ว
+        if allocations:
+            fund_list = []
+            for mas, amount in allocations:
+                reservation = models.Reservation(
+                    requisition=requisition,
+                    mas=mas,
+                    amount=amount,
+                    reserved_by=user,
+                    organization=organization,
                 )
-            ],
-            note=None,
-            status="active",
-            updated_date=datetime.datetime.now(),
-            last_updated_by=current_user._get_current_object(),
-            created_date=datetime.datetime.now(),
-            created_by=current_user._get_current_object(),
-            organization=organization,
-        )
-        requisition_timeline.save()
-        return redirect(
-            url_for(
-                "procurement.requisitions.renewal_requested",
-                organization_id=g.organization.id,
-            )
-        )
+                reservation.save()
+                reservations.append(reservation)
 
-    requisition.status = "progress" if approved_roles else "pending"
-    requisition.last_updated_by = current_user._get_current_object()
-    requisition.save()
-    return redirect(
-        url_for(
-            "procurement.requisitions.renewal_requested",
-            organization_id=g.organization.id,
-        )
+                mas.reservable_amount -= amount
+                mas.last_updated_by = user
+                mas.editable = False
+                mas.save()
+                reserved_mas.append((mas, amount))
+
+                fund_list.append(models.requisitions.Funds(mas=mas, amount=amount, reservation=reservation))
+            requisition.fund = fund_list
+
+        if approver_role == "admin" and action == "approved":
+            fund_source = request.form.get("fund_source")
+            if fund_source:
+                requisition.fund_source = fund_source
+            if manager_obj:
+                requisition.selected_manager = models.requisitions.SelectedManager(
+                    manager=manager_obj,
+                    is_acting=request.form.get("Acting") == "True",
+                )
+
+        # ไม่แก้ requisition.approval_history ใน object เพื่อให้ save() ไม่เขียนทับ entry ที่ request อื่นเพิ่ง push
+        history = list(requisition.approval_history or []) + [approval]
+        approved_roles = {h.approver_role for h in history if h.action == "approved"}
+        rejected_roles = {h.approver_role for h in history if h.action == "rejected"}
+
+        if rejected_roles:
+            requisition.status = "incomplete"
+        elif set(models.requisitions.APPROVAL_STEPS).issubset(approved_roles):
+            requisition.status = "complete"
+        else:
+            requisition.status = "progress"
+        requisition.last_updated_by = user
+        requisition.save()
+
+        if requisition.status == "complete":
+            models.RequisitionTimeline(
+                requisition=requisition,
+                purchaser=requisition.purchaser,
+                progress=[
+                    models.Progress(
+                        progress_status="request_created",
+                        created_by=user,
+                        last_ip_address=request.headers.get("X-Forwarded-For", request.remote_addr),
+                        user_agent=request.headers.get("User-Agent"),
+                        timestamp=datetime.datetime.now(),
+                    )
+                ],
+                note=None,
+                status="active",
+                updated_date=datetime.datetime.now(),
+                last_updated_by=user,
+                created_date=datetime.datetime.now(),
+                created_by=user,
+                organization=organization,
+            ).save()
+    except Exception:
+        rollback_approval(requisition, approval, reservations, reserved_mas)
+        raise
+
+    requisition.reload()
+    enqueue_approval_emails(requisition, approver_role, action, manager_obj, organization)
+    return redirect(renewal_requested_url)
+
+
+def get_fund_allocations(organization, fund_id, fund_ids):
+    """อ่านยอดจัดสรรจาก form (key = fund_amounts[<mas_id>]) คืน ([(mas, amount)], error)"""
+    input_amounts = {}
+    invalid_places = set()
+    for key, value in request.form.items(multi=True):
+        if key.startswith("fund_amounts[") and key.endswith("]"):
+            mas_id = key[len("fund_amounts[") : -1]
+            try:
+                amount = Decimal(str(value or "0").strip() or "0")
+            except Exception:
+                amount = Decimal("0.00")
+            # ปฏิเสธทศนิยมเกิน 2 ตำแหน่ง ไม่ปัดยอดที่ผู้ใช้กรอกให้เอง
+            if not has_money_places(amount):
+                invalid_places.add(mas_id)
+                continue
+            input_amounts[mas_id] = input_amounts.get(mas_id, Decimal("0.00")) + to_money(amount)
+
+    if not fund_ids and fund_id:
+        fund_ids = [fund_id]  # fallback เดิม
+    # กติกาเดียวกับ validateMasForm ในหน้าจอ: ต้องเลือกอย่างน้อย 1 แหล่งเงิน และทุกแหล่งต้องมียอด > 0
+    if not fund_ids:
+        return [], "กรุณาเลือกอย่างน้อย 1 แหล่งเงิน"
+
+    allocations = []
+    for mas_id in dict.fromkeys(fund_ids):
+        mas = None
+        if ObjectId.is_valid(mas_id):
+            mas = models.MAS.objects(id=mas_id, organization=organization).first()
+        if not mas:
+            return [], "แหล่งเงินที่เลือกไม่ถูกต้อง"
+        if mas_id in invalid_places:
+            return [], f"{MONEY_PLACES_ERROR} ({mas.mas_code})"
+        amount = input_amounts.get(mas_id, Decimal("0.00"))
+        if amount <= 0:
+            return [], f"กรุณากรอกจำนวนเงินสำหรับ {mas.mas_code} ให้ถูกต้อง"
+        if amount > (mas.reservable_amount or Decimal("0")):
+            return [], f"ยอดจัดสรรจาก {mas.mas_code} เกินยอดที่จองได้"
+        allocations.append((mas, amount))
+    return allocations, None
+
+
+def rollback_approval(requisition, approval, reservations, reserved_mas):
+    """คืนสภาพเมื่อบันทึกการอนุมัติไม่สำเร็จหลังจองขั้นแล้ว เพื่อให้ผู้ใช้กดใหม่ได้"""
+    models.Requisition.objects(id=requisition.id).update_one(
+        __raw__={"$pull": {"approval_history": {"_id": approval._id}}}
     )
+    for reservation in reservations:
+        reservation.delete()
+    for mas, amount in reserved_mas:
+        mas.reload()
+        mas.reservable_amount += amount
+        mas.save()
+
+
+def enqueue_approval_emails(requisition, approver_role, action, manager_obj, organization):
+    """ส่งอีเมลหลังบันทึกสำเร็จแล้ว ถ้า Redis มีปัญหาให้ log ไว้ ไม่ทำให้การอนุมัติที่บันทึกแล้วล้ม"""
+    jobs = []
+    if action == "rejected":
+        jobs.append(utils.rejected_emails.send_email_rejected_to_user_admin_committee)
+    elif approver_role in ("head", "manager"):
+        jobs.append(utils.approved_emails.send_email_approve_to_user_admin_committee)
+
+    for job_function in jobs:
+        try:
+            job = redis_rq.redis_queue.queue.enqueue(
+                job_function,
+                args=(requisition, current_user.id, current_app.config, organization, approver_role),
+                timeout=600,
+                job_timeout=600,
+            )
+            print("=====> email job submitted", job.get_id())
+        except Exception:
+            current_app.logger.exception("enqueue email failed for requisition %s", requisition.id)
+
+    if manager_obj:
+        try:
+            redis_rq.redis_queue.queue.enqueue(
+                utils.send_email_to_manager.send_email_to_manager,
+                args=(requisition, current_app.config, manager_obj, organization),
+                timeout=600,
+                job_timeout=600,
+            )
+        except Exception:
+            current_app.logger.exception("enqueue manager email failed for requisition %s", requisition.id)
+
+

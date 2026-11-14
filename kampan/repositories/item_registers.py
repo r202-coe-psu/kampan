@@ -12,7 +12,9 @@ class RegisterItemRepository:
         item_register_id: str,
         organization_id: str,
     ):
-        item_register = RegistrationItem.objects.get(id=item_register_id)
+        item_register = RegistrationItem.objects.get(
+            id=item_register_id, organization=organization_id
+        )
         item_in_bill = item_register.get_item_in_bills()
         form = InventoryForm()
         form.item.choices = [

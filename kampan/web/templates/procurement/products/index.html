@@ -2,56 +2,109 @@
 {% from 'procurement/macros/products_table.html' import render_products_table %}
 {% import '/base/components/paginations/pagination.html' as paginated %}
 {% import '/base/html-renderer.html' as renderer %}
+{% from 'procurement/macros/filter_bar.html' import filter_bar %}
 
-{% block title %}รายการซอฟต์แวร์/บริการ{% endblock %}
-{% block dashboard_title %}รายการซอฟต์แวร์/บริการ{% endblock %}
-{% block breadcrumbs %}{% endblock %}
+{% block title %}รายการบำรุงรักษา{% endblock %}
+{% block dashboard_title %}ระบบการจัดการ MA{% endblock %}
+{% block breadcrumbs %}
+{% if drafts %}
+  <dialog id="modal_drafts" class="modal text-left">
+    <div class="modal-box max-w-2xl">
+      <h3 class="text-lg font-bold flex items-center gap-2 mb-1">
+        <i class="ph ph-file-dashed text-xl text-warning"></i> แบบร่างที่ค้างอยู่ ({{ drafts|length }})
+      </h3>
+      <p class="text-sm text-base-content/70 mb-4">เลือกแบบร่างที่ต้องการทำต่อ</p>
+      <ul class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+        {% for draft in drafts %}
+          <li class="flex items-center gap-3 rounded-box border border-base-300 p-3">
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold break-words">{{ draft.name or "(ยังไม่ตั้งชื่อ)" }}</div>
+              <div class="text-xs text-base-content/60">
+                {% if draft.psu_disbursement_number %}ม.อ.เบิกจ่าย {{ draft.psu_disbursement_number }} · {% endif %}แก้ไขล่าสุด {{ draft.updated_date | format_thai_date }}
+              </div>
+            </div>
+            <a href="{{ url_for('procurement.products.edit', procurement_id=draft.id, organization_id=organization.id) }}" class="btn btn-warning btn-sm">
+              <i class="ph ph-pencil-simple"></i> ทำต่อ
+            </a>
+            <button type="button" class="btn btn-ghost btn-sm btn-square text-error" aria-label="ลบแบบร่าง {{ draft.name }}"
+                    onclick="document.getElementById('modal_delete_draft_{{ draft.id }}').showModal()">
+              <i class="ph ph-trash text-lg"></i>
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn btn-ghost">ปิด</button></form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit" aria-label="ปิด">close</button></form>
+  </dialog>
+{% endif %}
+{% for draft in drafts %}
+  <dialog id="modal_delete_draft_{{ draft.id }}" class="modal text-left">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold text-error flex items-center gap-2 mb-3">
+        <i class="ph ph-trash text-xl"></i> ยืนยันการลบแบบร่าง MA
+      </h3>
+      <p class="py-2 text-base text-base-content">คุณต้องการลบแบบร่างนี้ใช่หรือไม่?</p>
+      <div class="bg-base-200 p-4 rounded-lg mb-3 space-y-1">
+        <div class="font-semibold text-base text-base-content break-words">{{ draft.name or "(ยังไม่ตั้งชื่อ)" }}</div>
+        {% if draft.psu_disbursement_number %}
+          <div class="text-sm text-base-content/70">ม.อ.เบิกจ่าย: {{ draft.psu_disbursement_number }}</div>
+        {% endif %}
+      </div>
+      <p class="text-xs text-error mb-4 font-medium">* ข้อมูลแบบร่างนี้จะถูกลบถาวรและไม่สามารถกู้คืนได้</p>
+      <form method="POST" action="{{ url_for('procurement.products.delete', procurement_id=draft.id, organization_id=organization.id) }}" class="modal-action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="button" onclick="document.getElementById('modal_delete_draft_{{ draft.id }}').close()" class="btn btn-ghost">ยกเลิก</button>
+        <button type="submit" class="btn btn-error text-white gap-1 shadow-sm"><i class="ph ph-trash"></i> ยืนยันลบทิ้ง</button>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button type="submit" aria-label="ปิด">close</button></form>
+  </dialog>
+{% endfor %}
+{% endblock %}
 
 {% block content %}
   <div class="container mx-auto px-4 py-6">
 
     <!-- Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-      <span class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-semibold text-sm">
-        <i class="ph ph-list-numbers"></i>
-        จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
-      </span>
-      {% if current_user.has_organization_roles("admin") %}
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-semibold text-sm">
+          <i class="ph ph-list-numbers"></i>
+          จำนวนรายการทั้งหมด: <span class="font-bold">{{ paginated_procurements.total }}</span>
+        </span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {% if drafts %}
+          <button type="button" class="btn btn-outline btn-warning btn-sm" onclick="document.getElementById('modal_drafts').showModal()">
+            <i class="ph ph-file-dashed"></i>
+            แบบร่าง
+            <span class="badge badge-warning badge-sm">{{ drafts|length }}</span>
+          </button>
+        {% endif %}
         <a href="{{ url_for('procurement.products.create', organization_id=organization.id) }}"
            class="btn btn-primary btn-sm shadow-md">
           <i class="ph ph-plus"></i>
-          เพิ่มรายการใหม่
+          เพิ่ม MA ใหม่
         </a>
-      {% endif %}
+      </div>
     </div>
 
-    <!-- Filter Form -->
-    <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-6 mb-6">
-      <form method="get" class="flex flex-col md:flex-row md:items-end gap-4">
-        <input type="hidden" name="organization_id" value="{{ organization_id }}" />
-        {{ renderer.base_render(form.name) }}
-        {{ renderer.render_select_field(form.category) }}
-        {{ renderer.render_select_field(form.payment_status) }}
-        <div>
-          <button type="submit" class="btn bg-blue-700 hover:bg-blue-800 text-white border-none shadow-md ">
-            <i class="ph ph-magnifying-glass mr-2"></i>
-            ค้นหา
-          </button>
-        </div>
-        <div class="min-w-fit">
-          <a href="{{ url_for('procurement.products.index', organization_id=organization.id) }}"
-             class="btn bg-gray-300 hover:bg-gray-400 text-gray-700 border-none shadow-md">
-            <i class="ph ph-x mr-2"></i>
-            ล้างการค้นหา
-          </a>
-        </div>
-      </form>
-    </div>
+    {% call filter_bar(organization, form.name, "เลขที่ ม.อ.เบิกจ่าย / ชื่อ MA / ชื่อหรือรายละเอียดรายการย่อย", form.sort,
+                       paginated_procurements.total, url_for('procurement.products.index', organization_id=organization.id),
+                       my_division, only_my_division) %}
+      {{ renderer.dropdown_select(form.category) }}
+      {{ renderer.dropdown_select(form.payment_status) }}
+      {{ renderer.dropdown_select(form.usage_status) }}
+      {{ renderer.dropdown_select(form.renewal_status) }}
+    {% endcall %}
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 items-center">
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='overdue') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-warning-circle text-3xl text-error"></i>
           <div class="font-bold text-error text-3xl leading-none">{{ status_count['overdue'] }}</div>
@@ -60,16 +113,16 @@
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='upcoming') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-clock text-3xl text-warning"></i>
           <div class="font-bold text-warning text-3xl leading-none">{{ status_count['upcoming'] }}</div>
           <div class="font-semibold text-sm text-warning">ใกล้ครบกำหนด</div>
-          <div class="text-xs text-base-content/50">ครบกำหนดใน 7 วัน</div>
+          <div class="text-xs text-base-content/50">ครบกำหนดใน 30 วัน</div>
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='paid') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-check-circle text-3xl text-success"></i>
           <div class="font-bold text-success text-3xl leading-none">{{ status_count['paid'] }}</div>
@@ -78,7 +131,7 @@
         </div>
       </a>
       <a href="{{ url_for('procurement.products.index', organization_id=organization.id, payment_status='unpaid') }}"
-         class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+         class="card bg-white border border-base-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body p-4 items-center text-center">
           <i class="ph ph-x-circle text-3xl text-base-content/40"></i>
           <div class="font-bold text-base-content/60 text-3xl leading-none">
@@ -91,10 +144,10 @@
     </div>
 
     <!-- Data Table -->
-    <div class="card bg-base-100 border border-base-200 shadow-sm">
+    <div class="card bg-white border border-base-300 shadow-sm">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          {{ render_products_table(procurements, current_user, organization, today) }}
+          {{ render_products_table(procurements, organization, today, can_edit) }}
         </div>
       </div>
     </div>
@@ -102,19 +155,19 @@
     <!-- Legend -->
     <div class="mt-4 flex flex-wrap gap-4 text-sm px-1 justify-center">
       <div class="flex items-center gap-2">
-        <span class="badge badge-error badge-sm"></span>
+        <span class="badge badge-outline badge-error badge-sm"></span>
         <span class="font-medium text-base-content/70">เลยกำหนด</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="badge badge-warning badge-sm"></span>
+        <span class="badge badge-outline badge-warning badge-sm"></span>
         <span class="font-medium text-base-content/70">ใกล้ครบกำหนด</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="badge badge-success badge-sm"></span>
+        <span class="badge badge-outline badge-success badge-sm"></span>
         <span class="font-medium text-base-content/70">ชำระครบ</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="badge badge-ghost badge-sm"></span>
+        <span class="badge badge-outline badge-ghost badge-sm"></span>
         <span class="font-medium text-base-content/70">ยังไม่ชำระ</span>
       </div>
     </div>

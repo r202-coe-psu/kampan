@@ -44,7 +44,7 @@
               <span class="text-sm text-gray-500 block">อัปเดตเมื่อ
                 {{ exported_file.updated_date.strftime("%d %B %Y, %H:%M") }}</span>
             </div>
-            <a href="{{ url_for(url_for_download, export_id=exported_file.id) }}" class="btn btn-sm"
+            <a href="{{ url_for(url_for_download, export_id=exported_file.id, organization_id=organization_id) }}" class="btn btn-sm"
               download>
               <i class="ph ph-download"></i> ดาวน์โหลด
             </a>

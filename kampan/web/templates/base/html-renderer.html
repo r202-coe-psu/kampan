@@ -226,46 +226,140 @@ file_input -->
   {{ render_select_field(field, top_left_label=field.label, type="toggle", **kwargs) }}
 {% endmacro %}
 
+{#
+  date_field: ปุ่ม + ปฏิทิน Cally (hidden input เก็บค่า ISO ใช้ชื่อ field เดิม)
+  พารามิเตอร์เสริม (ค่าเริ่มต้นคงพฤติกรรมเดิม):
+    compact       ปุ่มขนาด input-sm
+    hide_label    ไม่มี fieldset/legend (ใช้ในเซลล์ตาราง) ใช้คู่กับ aria_label
+    aria_label    ข้อความอ่านออกเสียงของปุ่ม
+    required      แสดง * (นอกเหนือจาก flag ของ field)
+    clearable     มีปุ่มล้างค่า
+    placeholder_text  ข้อความตอนยังไม่เลือก
+    fixed_popover ปฏิทินแบบ fixed ไม่ถูกตัดด้วย overflow ของตาราง
+    show_errors   False = ผู้เรียกแสดง error เอง
+    auto_init     False = ไม่ฝัง <script> เริ่มต้น (แถวที่เพิ่มด้วย JS เรียก initDatePickersIn แทน)
+    input_class   class เพิ่มบน hidden input (ให้ JS ของหน้าอ้างอิง)
+#}
+{# DaisyUI dropdown แทน <select> ของเบราว์เซอร์: hidden input เก็บ name / value เดิม (WTForms รับค่าเหมือนเดิม)
+   ปุ่ม select แสดงข้อความที่เลือก เมนู (menu) เลือกด้วยคลิกหรือคีย์บอร์ด · เริ่มทำงานด้วย initDropdownSelectsIn(root)
+   (js/forms/dropdown_select.js) ใช้ใน <template> ได้ id ทั้งหมดอิงจาก id ที่ส่งมา #}
+{% macro dropdown_select_control(name, id, choices, value="", disabled=False, invalid=False, aria_label="",
+  size="", placeholder="เลือก...", submit_on_change=False, class_="", searchable=False) %}
+  {% set value = (value if value is not none else "") | string %}
+  {% set ns = namespace(label="") %}
+  {% for option_value, option_label in choices %}
+    {% if option_value | string == value %}{% set ns.label = option_label %}{% endif %}
+  {% endfor %}
+  {% set show_search = searchable or choices|length > 15 %}
+  <div class="relative w-full {{ class_ }}" data-dropdown-select{% if submit_on_change %} data-submit-on-change{% endif %}
+       data-placeholder="{{ placeholder }}">
+    <input type="hidden" name="{{ name }}" id="{{ id }}" value="{{ value }}"{% if disabled %} disabled{% endif %} />
+    <button type="button" id="dd-button-{{ id }}" data-dd-button aria-haspopup="listbox" aria-expanded="false"
+            aria-controls="dd-menu-{{ id }}"{% if aria_label %} aria-label="{{ aria_label }}"{% endif %}
+            class="select {{ size }} w-full justify-between text-left{{ ' select-error' if invalid else '' }}"{% if disabled %} disabled{% endif %}>
+      <span data-dd-label class="truncate{{ '' if ns.label else ' text-base-content/50' }}">{{ ns.label or placeholder }}</span>
+    </button>
+    <div id="dd-menu-{{ id }}" data-dd-menu role="listbox" tabindex="-1"
+        class="hidden absolute left-0 right-0 top-full mt-1 z-50 flex-col max-h-80 bg-base-100 rounded-box border border-base-300 shadow-xl p-1 overflow-hidden">
+      {% if show_search %}
+        <div class="p-1.5 border-b border-base-200 mb-1">
+          <label class="input input-xs w-full flex items-center gap-1.5 bg-base-200/50">
+            <i class="ph ph-magnifying-glass text-base-content/50 text-xs shrink-0"></i>
+            <input type="text" class="grow bg-transparent border-0 outline-none p-0 dd-search-input text-xs" placeholder="ค้นหาตัวเลือก..." />
+          </label>
+        </div>
+      {% endif %}
+      <ul class="menu w-full flex-nowrap max-h-72 overflow-y-auto p-0" style="width: 100%;">
+        {% for option_value, option_label in choices %}
+          {% set is_selected = option_value | string == value %}
+          <li class="w-full" style="width: 100%;">
+            <button type="button" role="option" data-value="{{ option_value }}" aria-selected="{{ 'true' if is_selected else 'false' }}"
+                    class="w-full text-left justify-start {{ 'menu-active' if is_selected else '' }}" style="width: 100%;">{{ option_label }}</button>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ช่อง WTForms SelectField (choices ของ field) พร้อม legend และข้อความ error #}
+{% macro dropdown_select(field, required=False, wrapper_class="", size="", hide_label=False, aria_label="",
+  submit_on_change=False, disabled=False, show_errors=True, placeholder="เลือก...", searchable=False) %}
+  {% set invalid = field.errors | count > 0 %}
+  {% if hide_label %}<div class="w-full {{ wrapper_class }}">{% else %}
+  <fieldset class="fieldset w-full {{ wrapper_class }}">
+    <legend class="fieldset-legend">
+      {{ field.label.text }}{% if required %} <span class="text-error">*</span>{% endif %}
+    </legend>
+  {% endif %}
+    {{ dropdown_select_control(field.name, field.id, field.choices, field.data, disabled=disabled, invalid=invalid,
+         aria_label=aria_label or field.label.text, size=size, placeholder=placeholder, submit_on_change=submit_on_change, searchable=searchable) }}
+    {% if show_errors %}
+      {% for error in field.errors %}{% if error is string %}<p class="text-error text-xs mt-1">{{ error }}</p>{% endif %}{% endfor %}
+    {% endif %}
+  {% if hide_label %}</div>{% else %}</fieldset>{% endif %}
+{% endmacro %}
+
 {% macro date_field(field, class_="", placeholder="", prefix_icon="", suffix_icon="", disabled=False,
   calendar_id='calendar',
-  readonly=False, field_id='') %}
+  readonly=False, field_id='', compact=False, hide_label=False, aria_label="", required=False,
+  clearable=False, placeholder_text="", fixed_popover=False, show_errors=True, auto_init=True,
+  input_class="", buddhist=False, value=None) %}
+  {# buddhist=True: แสดงปี พ.ศ. (ป้ายใต้ปุ่มและหัวปฏิทิน) ส่วนค่าที่ส่งกลับยังเป็น ISO ค.ศ. · value: ใช้แทน field.data #}
   {% set fid = field_id if field_id else field.id %}
+  {% set current = value if value else field.data %}
   {% set style = "input flex items-center gap-2 w-full" %}
+  {% if compact %}
+    {% set style = style + " input-sm" %}
+  {% endif %}
   {% if field.errors | count > 0 %}
     {% set style = style + " input-error" %}
   {% endif %}
   {% if class_ != "" %}
     {% set style = style + " " + class_ %}
   {% endif %}
+  {% set empty_text = placeholder_text or field.placeholder or 'กรุณาเลือกวันที่' %}
 
+  {% if hide_label %}<div class="w-full" id="field-{{ fid }}">{% else %}
   <fieldset class="fieldset w-full" id="field-{{ fid }}">
     <legend class="fieldset-legend">
       {{ field.label.text }}
-      {% if field.flags.required %}<span class="text-error">*</span>{% endif %}
+      {% if field.flags.required or required %}<span class="text-error">*</span>{% endif %}
     </legend>
+  {% endif %}
 
-    <div class="relative w-full">
-      <input type="hidden" id="{{ fid }}" name="{{ field.name }}" class="w-full cursor-pointer input validator"
-        autocomplete="off" placeholder="{{ field.label.text }}" {% if field.data %}
-        value="{{ field.data|format_date("%Y-%m-%d") if field.data else '' }}" {% endif %} {% if disabled %} disabled {%
+    <div class="relative w-full" data-date-picker data-button-id="cally-{{ fid }}"
+         data-popover-id="cally-popover-{{ fid }}" data-input-id="{{ fid }}"
+         data-label-id="cally-data-{{ fid }}" data-placeholder="{{ empty_text }}"{% if buddhist %} data-buddhist="1"{% endif %}>
+      <input type="hidden" id="{{ fid }}" name="{{ field.name }}" class="w-full cursor-pointer input validator {{ input_class }}"
+        autocomplete="off" placeholder="{{ field.label.text }}" {% if current %}
+        value="{{ current.strftime('%Y-%m-%d') }}" {% endif %} {% if disabled %} disabled {%
         endif %} {% if readonly %}readonly{% endif %}>
 
-        <button type="button" id="cally-{{ fid }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}" {%
+        <button type="button" id="cally-{{ fid }}" class="{{ style }}{% if readonly %} input-readonly {% endif %}"
+          {% if aria_label %}aria-label="{{ aria_label }}"{% endif %} aria-haspopup="dialog" {%
           if disabled %} disabled {% endif %}>
           <div class="flex items-center justify-between w-full">
-            <span id="cally-data-{{ fid }}">
-              {{ field.placeholder if field.placeholder else 'กรุณาเลือกวันที่' }}
+            <span id="cally-data-{{ fid }}" class="{{ 'truncate' if compact else '' }}">
+              {% if not current %}{{ empty_text }}{% elif buddhist %}{{ "%02d/%02d/%d" | format(current.day, current.month, current.year + 543) }}{% else %}{{ current.strftime("%d/%m/%Y") }}{% endif %}
             </span>
             <i class="ph ph-size ph-calendar-blank"></i>
           </div>
         </button>
+        {% if clearable and not (readonly or disabled) %}
+          <button type="button" data-date-clear
+                  class="hidden absolute top-1/2 -translate-y-1/2 right-10 btn btn-ghost btn-xs btn-circle text-base-content/60"
+                  aria-label="ล้างวันที่{{ ' ' ~ aria_label if aria_label else '' }}" title="ล้างวันที่">
+            <i class="ph ph-x"></i>
+          </button>
+        {% endif %}
 
         <div id="cally-popover-{{ fid }}"
-             class="absolute z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
+             class="{{ 'fixed' if fixed_popover else 'absolute' }} z-50 hidden shadow-lg dropdown bg-base-100 rounded-box"
              style="max-height: 400px;
                     overflow-y: auto"
              {% if readonly or disabled %}hidden{% endif %}>
-          <calendar-date class="cally" onchange="{ const callyData = document.getElementById('cally-data-{{ fid }}'); const parts = this.value.split('-'); callyData.innerText = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : this.value; document.getElementById('{{ fid }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ fid }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }" value="{{ field.data.strftime("%Y-%m-%d") if field.data else '' }}">
+          <calendar-date class="cally"{% if buddhist %} locale="th-TH"{% else %} onchange="{ const callyData = document.getElementById('cally-data-{{ fid }}'); const parts = this.value.split('-'); callyData.innerText = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : this.value; document.getElementById('{{ fid }}').value = this.value; const valueChangeEvent = new Event('change', { bubbles: true }); document.getElementById('cally-popover-{{ fid }}').classList.add('hidden'); callyData.dispatchEvent(valueChangeEvent); }"{% endif %} value="{{ current.strftime("%Y-%m-%d") if current else '' }}">
           <i aria-label="Previous" class="ph ph-caret-left" slot="previous"></i>
           <i aria-label="Next" class="ph ph-caret-right" slot="next"></i>
           <calendar-month></calendar-month>
@@ -273,7 +367,7 @@ file_input -->
         </div>
       </div>
 
-      {% if field.errors %}
+      {% if field.errors and show_errors %}
         <p class="fieldset-label text-error text-sm mt-1">
           {% for error in field.errors %}
             {% if 'This field is required' in error %}
@@ -285,11 +379,13 @@ file_input -->
           {% endfor %}
         </p>
       {% endif %}
-    </fieldset>
+    {% if hide_label %}</div>{% else %}</fieldset>{% endif %}
 
+    {% if auto_init %}
     <script>
-        initDatePicker("cally-{{ fid }}", "cally-popover-{{ fid }}", "{{ fid }}", "cally-data-{{ fid }}");
+        {% if buddhist %}initDatePickersIn(document.getElementById("field-{{ fid }}"));{% else %}initDatePicker("cally-{{ fid }}", "cally-popover-{{ fid }}", "{{ fid }}", "cally-data-{{ fid }}");{% endif %}
     </script>
+    {% endif %}
   {% endmacro %}
 
   {% macro date_range_field(start_field, end_field, class_="", placeholder="", prefix_icon="", suffix_icon="",
@@ -570,8 +666,8 @@ file_input -->
                 {% set txt = choice %}
                 {% set extra = None %}
               {% endif %}
-              <li>
-                <p class="break-words"
+              <li class="w-full" style="width: 100%;">
+                <p class="w-full text-left justify-start break-words" style="width: 100%;"
                    data-value="{{ val }}"
                    {% if extra is not none %}data-same="{{ 'true' if extra else 'false' }}"{% endif %}
                    onclick="kampanSelectSearchValue('{{ input_id }}', '{{ val }}', '{{ txt }}')">
@@ -716,8 +812,8 @@ file_input -->
               class="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm hidden overflow-auto max-h-48" {% if
               readonly or disabled %}hidden{% endif %}>
               {% for value, label in unique_choices.items() %}
-                <li>
-                  <p class="break-words"
+                <li class="w-full" style="width: 100%;">
+                  <p class="w-full text-left justify-start break-words" style="width: 100%;"
                      data-value="{{ value }}"
                      onclick="selectDropdownValue('{{ field_id }}', '{{ value }}', '{{ label }}')">
                     {{ label }}
@@ -1115,3 +1211,27 @@ file_input -->
             {% endif %}
           </fieldset>
         {% endmacro %}
+
+{% macro render_back_button(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{% if url %}
+<a href="{{ url }}"
+   class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+   aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</a>
+{% else %}
+<button type="button"
+        onclick="{{ onclick or 'window.history.back()' }}"
+        class="btn btn-ghost btn-sm gap-2 text-base-content/80 hover:text-base-content hover:bg-base-200 border border-base-300 shadow-xs transition-colors {{ extra_classes }}"
+        aria-label="{{ label }}">
+  <i class="ph ph-arrow-left text-base"></i>
+  <span>{{ label }}</span>
+</button>
+{% endif %}
+{% endmacro %}
+
+{% macro RenderBackButton(url=None, label="ย้อนกลับ", extra_classes="", onclick=None) %}
+{{ render_back_button(url=url, label=label, extra_classes=extra_classes, onclick=onclick) }}
+{% endmacro %}
+

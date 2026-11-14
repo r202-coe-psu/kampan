@@ -11,6 +11,7 @@ from kampan import models
 from kampan.models import mas
 from kampan.models.export_file import ExportFile
 from kampan.utils.date_utils import format_date_th
+from kampan.utils.money import to_money
 
 EXPORT_MAS_COLUMN_MAP = {
     "mas_code": "รหัสงบประมาณ",
@@ -164,12 +165,12 @@ def get_purchased_items_in_mas(ws, mas_id, start_row, start_date, end_date):
         if req_id not in grouped:
             grouped[req_id] = {
                 "requisition": req,
-                "actual_amount": float(res.actual_amount or 0),
+                "actual_amount": to_money(res.actual_amount),
                 "order_confirmed_ts": order_confirmed_ts,
                 "quotation_winner": quotation_winner,
             }
         else:
-            grouped[req_id]["actual_amount"] += float(res.actual_amount or 0)
+            grouped[req_id]["actual_amount"] += to_money(res.actual_amount)
 
     # --- write rows ---
     current_row = start_row
@@ -232,7 +233,8 @@ def get_purchased_items_in_mas(ws, mas_id, start_row, start_date, end_date):
         )
 
         # --- Column D: total amount (merged for all items in this requisition) ---
-        ws.cell(row=first_row, column=4).value = data["actual_amount"]
+        # สะสมเป็น Decimal แล้วแปลงเป็น float ตอนเขียนเซลล์เท่านั้น
+        ws.cell(row=first_row, column=4).value = float(data["actual_amount"])
         ws.cell(row=first_row, column=4).number_format = "#,##0.00"
         ws.cell(row=first_row, column=4).alignment = Alignment(
             horizontal="right", vertical="center"
@@ -480,7 +482,14 @@ def _write_timeline_item_row(ws, timeline_item, row_num, timeline=None):
     return row_num + 1
 
 
-def requisition_timeline_items_export(current_user, start_date=None, end_date=None):
+def requisition_timeline_items_export(
+    current_user, start_date=None, end_date=None, organization_id=None
+):
+    # organization_id เป็น str (RQ ส่ง args แบบ serialize ได้เท่านั้น)
+    organization = models.Organization.objects(id=organization_id).first()
+    if not organization:
+        raise ValueError(f"organization not found: {organization_id}")
+
     # Parse dates
     if isinstance(start_date, str):
         try:
@@ -502,7 +511,7 @@ def requisition_timeline_items_export(current_user, start_date=None, end_date=No
 
     # Query completed timelines first (those with progress_status = "completed")
     completed_timelines = models.RequisitionTimeline.objects(
-        progress__progress_status="completed"
+        progress__progress_status="completed", organization=organization
     )
 
     # Get their IDs for filtering timeline items
@@ -510,7 +519,9 @@ def requisition_timeline_items_export(current_user, start_date=None, end_date=No
 
     # Query timeline items from completed timelines
     query = models.RequisitionTimelineItem.objects(
-        status="active", requisition_timeline__in=completed_timeline_ids
+        status="active",
+        requisition_timeline__in=completed_timeline_ids,
+        organization=organization,
     )
 
     # Filter by date range if provided
@@ -589,7 +600,9 @@ def requisition_timeline_items_export(current_user, start_date=None, end_date=No
 
     # Save to database
     export_file = ExportFile.objects(
-        created_by=current_user, type_="requisition_items_export"
+        created_by=current_user,
+        type_="requisition_items_export",
+        organization=organization,
     ).first()
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -600,6 +613,7 @@ def requisition_timeline_items_export(current_user, start_date=None, end_date=No
             created_date=datetime.datetime.now(),
             created_by=current_user,
             type_="requisition_items_export",
+            organization=organization,
         )
 
     export_file.updated_date = datetime.datetime.now()

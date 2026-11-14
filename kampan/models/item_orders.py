@@ -54,25 +54,23 @@ class OrderItem(me.Document):
     approved_date = me.DateTimeField()
 
     def get_all_price(self):
-        return sum(
-            [
-                approved_item.price * approved_item.aprroved_amount
-                for approved_item in models.ApprovedCheckoutItem.objects(
-                    status="active",
-                    order=self,
-                )
-            ]
+        # import ในฟังก์ชัน: kampan.utils import models กลับมา (circular import)
+        from kampan.utils.money import money_sum
+
+        return money_sum(
+            approved_item.price * approved_item.aprroved_amount
+            for approved_item in models.ApprovedCheckoutItem.objects(
+                status="active",
+                order=self,
+            )
         )
 
     def get_checkout_all_price(self):
         checkouts = models.CheckoutItem.objects(order=self, status__ne="disactive")
         if checkouts:
-            summation = 0
-            for check_out in checkouts:
-                if check_out.get_all_price():
-                    summation += check_out.get_all_price()
+            from kampan.utils.money import money_sum
 
-            return summation
+            return money_sum(check_out.get_all_price() for check_out in checkouts)
         return ""
 
     def get_item_in_bill(self):

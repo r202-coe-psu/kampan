@@ -1,325 +1,825 @@
 {% extends '/procurement/base/default-procurement-page.html' %}
-{% import '/base/html-renderer.html' as renderer %}
+{% from 'procurement/macros/ma_form.html' import input_field, field_errors, item_card, installment_row, date_picker %}
+{% from '/base/components/buttons.html' import RenderBackButton %}
 
-{% block title %}ระบบขอซื้อขอจ้าง{% endblock %}
-{% block dashboard_title %}ครุภัณฑ์{% endblock %}
+{% set page_title = "แก้ไขรายการย่อย" if mode == "item" else "แก้ไข MA" if procurement and procurement.pk else ("ต่ออายุ MA" if renew_from else "เพิ่ม MA") %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block dashboard_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-
-<div class="w-full bg-white shadow-lg rounded-xl p-4 md:p-8">
-    <div class="flex items-center mb-8">
-        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-            <i class="ph ph-plus text-2xl text-primary"></i>
-        </div>
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-800">เพิ่มรายการขอซื้อขอจ้างใหม่</h1>
-            <p class="text-gray-500 text-sm">กรอกข้อมูลรายการที่ต้องการขอซื้อขอจ้าง</p>
-        </div>
-    </div>
-
-    <form method="POST" action="" enctype="multipart/form-data" class="space-y-8" id="product_form">
-        {{ form.hidden_tag() }}
-
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-info text-xl text-blue-600 mr-2"></i>
-                ข้อมูลพื้นฐาน
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div>
-                    {{ renderer.base_render(form.name) }}
-                </div>
-                <div>
-                    {{ renderer.render_select_field(form.category) }}
-                </div>
-                <div>
-                    {{ renderer.base_render(form.company) }}
-                </div>
-
-                <div class="lg:col-span-3">
-                    <div class="form-control w-full">
-                        <label class="block text-gray-700 font-medium mb-2 flex justify-between items-center">
-                            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wide">เลขที่สินค้า (S/N) & รหัสครุภัณฑ์ (ระบุได้หลายรายการ)</span>
-                            <span id="paired_count_badge" class="badge badge-primary badge-md font-bold text-white">จำนวน 1 รายการ</span>
-                        </label>
-                        
-                        <div id="paired_container" class="space-y-2">
-                            {% set max_len = [form.asset_codes|length, form.product_numbers|length]|max %}
-                            {% if max_len == 0 %}
-                                {% set max_len = 1 %}
-                            {% endif %}
-                            {% for i in range(max_len) %}
-                            {% set sn_field = form.product_numbers[i] if i < form.product_numbers|length else None %}
-                            {% set ac_field = form.asset_codes[i] if i < form.asset_codes|length else None %}
-                            <div class="flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row" id="paired_row_{{ i }}">
-                                {% if sn_field %}
-                                    {{ sn_field(class="input input-bordered w-full text-sm", placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)") }}
-                                {% else %}
-                                    <input type="text" name="product_numbers-{{ i }}" value="" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)" class="input input-bordered w-full text-sm">
-                                {% endif %}
-                                
-                                {% if ac_field %}
-                                    {{ ac_field(class="input input-bordered w-full text-sm", placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz") }}
-                                {% else %}
-                                    <input type="text" name="asset_codes-{{ i }}" value="" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz" class="input input-bordered w-full text-sm">
-                                {% endif %}
-                                
-                                <button type="button" onclick="removePairedInput({{ i }})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                                    <i class="ph ph-trash text-lg"></i>
-                                </button>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if form.product_numbers.errors or form.asset_codes.errors %}
-                        <p class="text-error text-xs mt-1.5 font-medium">มีข้อผิดพลาดในข้อมูล S/N หรือรหัสครุภัณฑ์</p>
-                        {% endif %}
-
-                        <div class="mt-2 flex justify-start">
-                            <button type="button" onclick="addPairedInput()" class="btn btn-xs btn-outline btn-primary gap-1 rounded-lg">
-                                <i class="ph ph-plus-circle"></i>
-                                เพิ่มรายการ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                    let pairedIndex = {{ [form.asset_codes|length, form.product_numbers|length, 1]|max }};
-
-                    document.addEventListener('DOMContentLoaded', function () {
-                        updatePairedState();
-                    });
-
-                    function addPairedInput(snValue = "", acValue = "") {
-                        const container = document.getElementById('paired_container');
-                        const index = pairedIndex++;
-
-                        const row = document.createElement('div');
-                        row.className = 'flex flex-col md:flex-row items-center gap-2 transition-all duration-300 paired-row';
-                        row.id = `paired_row_${index}`;
-
-                        row.innerHTML = `
-                            <input type="text" name="product_numbers-${index}" value="${snValue}" placeholder="ระบุเลขที่สินค้า/เลขที่เอกสาร (S/N)"
-                                class="input input-bordered w-full text-sm">
-                            <input type="text" name="asset_codes-${index}" value="${acValue}" placeholder="ระบุรหัสครุภัณฑ์ เช่น CC/www-x-yy/zz"
-                                class="input input-bordered w-full text-sm">
-                            <button type="button" onclick="removePairedInput(${index})" class="btn btn-ghost btn-square text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
-                        `;
-
-                        container.appendChild(row);
-                        updatePairedState();
-                    }
-
-                    function removePairedInput(index) {
-                        const container = document.getElementById('paired_container');
-                        if (container.querySelectorAll('.paired-row').length <= 1) {
-                            alert('ต้องมีรายการอย่างน้อย 1 รายการ');
-                            return;
-                        }
-                        const row = document.getElementById(`paired_row_${index}`);
-                        if (row) {
-                            row.remove();
-                        }
-                        updatePairedState();
-                    }
-
-                    function updatePairedState() {
-                        const rows = document.querySelectorAll('.paired-row');
-                        const badge = document.getElementById('paired_count_badge');
-                        if (badge) {
-                            badge.innerText = `จำนวน ${rows.length} รายการ`;
-                        }
-                    }
-                </script>
-            </div>
-        </div>
-
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-calendar-check text-xl text-green-600 mr-2"></i>
-                ข้อมูลระยะเวลาและการเงิน
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                    {{ renderer.date_field(form.start_date) }}
-                </div>
-                <div>
-                    {{ renderer.date_field(form.end_date) }}
-                </div>
-                <div>
-                    {{ renderer.render_number_field(form.amount, min=0, id="amount") }}
-                </div>
-                <div>
-                    {{ renderer.render_number_field(form.period, min=1, id="period") }}
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-users text-xl text-purple-600 mr-2"></i>
-                ผู้รับผิดชอบ
-            </h2>
-            <label class="block text-gray-700 font-medium mb-1" for="responsible_by">{{ form.responsible_by.label }}</label>
-            
-            <div class="dropdown w-full">
-                <div tabindex="0" role="button" class="select select-bordered w-full h-auto min-h-12 flex flex-wrap gap-1.5 p-2 items-center bg-base-100" id="selected_users_trigger">
-                    <span class="text-base-content/50" id="no_users_placeholder">เลือกผู้รับผิดชอบ...</span>
-                </div>
-                <div tabindex="0" class="dropdown-content z-[2] menu p-4 shadow-lg bg-base-100 border border-base-200 rounded-box w-full mt-1">
-                    <input type="text" id="responsible_by_search" placeholder="ค้นหาผู้รับผิดชอบ..."
-                        class="input input-bordered w-full mb-2" onkeyup="filterResponsibleBy()">
-                    <div id="responsible_by_list" class="max-h-48 overflow-y-auto border border-base-200 rounded p-2 bg-base-50 flex flex-col gap-1">
-                        {% for user in form.responsible_by.queryset %}
-                        {% set is_checked = form.responsible_by.data and (user.id|string in form.responsible_by.data or user in form.responsible_by.data) %}
-                        <label class="flex items-center space-x-2 py-1.5 px-2 rounded hover:bg-primary/10 cursor-pointer">
-                            <input type="checkbox" name="responsible_by" value="{{ user.id }}" class="checkbox checkbox-primary checkbox-sm user-checkbox" data-name="{{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}" {% if is_checked %}checked{% endif %} onchange="updateSelectedUsersBadge()">
-                            <span class="text-sm font-medium text-base-content">
-                                {{ form.label_modifier(user) if form.label_modifier else user.display_fullname() }}
-                            </span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% if form.responsible_by.errors %}
-            <p class="text-red-500 text-xs mt-1">{{ form.responsible_by.errors[0] }}</p>
-            {% endif %}
-        </div>
-
-        <!-- Image Upload Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="ph ph-image text-xl text-orange-600 mr-2"></i>
-                รูปภาพประกอบ
-            </h2>
-            <div class="space-y-3">
-                <label class="block text-gray-700 font-medium mb-2" for="image">
-                    อัปโหลดรูปภาพ
-                </label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="image"
-                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="ph ph-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-500">
-                                <span class="font-semibold">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวาง
-                            </p>
-                            <p class="text-xs text-gray-400 mt-1">PNG, JPG หรือ JPEG (ขนาดไม่เกิน 5MB)</p>
-                        </div>
-                        {{ form.image(class_="hidden", id="image") }}
-                    </label>
-                </div>
-                {% if form.image.errors %}
-                <p class="text-red-500 text-xs mt-2 flex items-center">
-                    {{ form.image.errors[0] }}
-                </p>
-                {% endif %}
-                <div id="image_preview" class="hidden mt-4">
-                    <img id="preview_img" src="" alt="ตัวอย่างรูปภาพ" class="max-w-xs rounded-lg shadow-md">
-                </div>
-            </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-            <a href="{{ url_for('procurement.products.index', organization=organization.id) }}"
-                class="btn btn-ghost px-6 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-100 transition-colors">
-                <i class="ph ph-x mr-2"></i>
-                ยกเลิก
-            </a>
-            <button type="submit" id="submit_btn"
-                class="btn btn-primary px-6 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all">
-                <i class="ph ph-check mr-2"></i>
-                บันทึกรายการ
-            </button>
-        </div>
-    </form>
+{% set is_edit = procurement and procurement.pk %}
+{% set mode = mode or 'full' %}
+{% set back_url = url_for('procurement.products.index', organization_id=organization.id) if (is_edit and procurement.status == 'draft') else url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id) if is_edit else (url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) if renew_from else url_for('procurement.products.index', organization_id=organization.id)) %}
+<div class="mb-4">
+  {{ RenderBackButton(back_url) }}
 </div>
+<div class="w-full bg-base-100 shadow-lg rounded-xl p-4 md:p-8">
+  <div class="flex items-center mb-6">
+    <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+      <i class="ph {{ 'ph-pencil-simple' if is_edit else 'ph-plus' }} text-2xl text-primary"></i>
+    </div>
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-base-content">
+        {{ "แก้ไขรายการย่อย" if mode == 'item' else "แก้ไข MA" if is_edit else ("ต่ออายุ MA (สร้าง MA ใหม่)" if renew_from else "เพิ่มรายการ MA") }}
+      </h1>
+      <p class="text-base-content/60 text-sm">
+        {% if mode == 'header' %}แก้ไขข้อมูลหัว MA (ชื่อโครงการ บริษัท เลขที่เบิกจ่าย วันที่) · แก้รายการย่อยได้จากปุ่ม "แก้ไข" ของแต่ละรายการในหน้ารายละเอียด
+        {% elif mode == 'item' %}แก้ไขรายการย่อยนี้ได้โดยตรง ยอดรวมของ MA จะคำนวณใหม่ให้
+        {% else %}กรอกข้อมูลโครงการและรายการย่อย พร้อมระบุรายละเอียดและการจ่ายเงิน{% endif %}
+      </p>
+    </div>
+  </div>
 
+  {% if renew_from %}
+    <div role="alert" class="alert bg-blue-900 text-white border-blue-950 shadow-md rounded-2xl p-4 md:p-5 mb-6">
+      <div class="space-y-2 text-sm flex-1 leading-relaxed">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="badge badge-sm bg-blue-600 text-white font-semibold border-0 px-2.5 shadow-2xs">กำลังต่ออายุสัญญา</span>
+          <span class="font-bold text-white text-base">
+            ต่ออายุจากรายการ
+            <a class="underline decoration-blue-300 font-bold text-blue-200 hover:text-white transition-colors"
+               href="{{ url_for('procurement.payment.index', procurement_id=renew_from.id, organization_id=organization.id) }}">
+              {{ renew_from.name }}
+            </a>
+          </span>
+          <span class="text-blue-200 text-xs font-mono bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-800/80">
+            เลขที่ มอ เบิกจ่าย {{ renew_from.psu_disbursement_number or "-" }}
+          </span>
+        </div>
+        <p class="text-blue-100 text-xs md:text-sm">
+          ข้อมูลโครงการและรายการย่อยคัดลอกมาให้แล้ว กรุณากรอกเลขที่ มอ เบิกจ่าย วันเริ่ม-สิ้นสุดของทุกรายการย่อย และเลือกการจ่ายเงินใหม่ เมื่อบันทึก MA เดิมจะเปลี่ยนเป็น <span class="font-bold text-white bg-blue-800 px-2 py-0.5 rounded border border-blue-700/60">"ต่ออายุแล้ว"</span>
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="POST" action="" class="space-y-8" id="ma_form" novalidate>
+    {% if renew_from %}<input type="hidden" name="expected_request" value="{{ renew_from.renewal_request or '' }}">{% endif %}
+    {{ form.hidden_tag() }}
+
+    {% if form_errors %}
+      <div role="alert" class="alert alert-error">
+        <i class="ph ph-warning-circle text-xl"></i>
+        <div>
+          {% for error in form_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if mode == 'item' %}
+    {# แก้ไขรายการย่อยโดยตรง ไม่แสดงข้อมูลหัวสัญญา #}
+    {% else %}
+    <section class="flex flex-col gap-4 pb-8 border-b border-base-300">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+        <div>
+          {{ input_field(form.psu_disbursement_number) }}
+          <p class="text-xs text-base-content/60 mt-1">จำเป็นเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA) · ถ้าทุกรายการแบ่งจ่ายเป็นงวด กรอกเลขที่เบิกจ่ายตอนบันทึกจ่ายแต่ละงวด</p>
+        </div>
+        {{ date_picker(form.disbursement_date) }}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
+        {{ input_field(form.name, required=True) }}
+        {{ input_field(form.company, required=True) }}
+        {% if mode == 'header' %}
+        <div class="w-full">
+          <div class="fieldset-legend">ยอดเงินรวม (บาท)</div>
+          <p class="font-semibold py-2">{{ procurement.total_amount | format_amount }} บาท</p>
+          <p class="text-xs text-base-content/60">เท่ากับผลรวมรายการย่อย แก้ไขได้ที่การแก้ไขรายการย่อย</p>
+        </div>
+        {% else %}
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.total_amount.label.text }} <span class="text-error">*</span></legend>
+          {{ form.total_amount(class_="input w-full" ~ (" input-error" if form.total_amount.errors else ""), id="total_amount", step="0.01", min="0", inputmode="decimal") }}
+          {{ field_errors(form.total_amount) }}
+        </fieldset>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if mode == 'full' %}
+    <div id="sum_bar" role="status" aria-live="polite" class="alert sticky top-2 z-10 shadow-sm border bg-amber-100 text-amber-950 border-amber-400">
+      <i class="ph ph-scales text-xl"></i>
+      <div class="flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-1 text-sm">
+        <span>ยอด MA: <b id="sum_total">-</b> บาท</span>
+        <span>ผลรวมรายการย่อย: <b id="sum_items">-</b> บาท</span>
+        <span id="sum_diff" class="font-semibold"></span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if mode != 'header' %}
+    <section class="flex flex-col gap-5">
+      {% if mode != 'item' %}
+      <h2 class="text-xl font-bold text-base-content flex items-center gap-2">
+        <i class="ph ph-stack text-primary"></i> รายการย่อย
+      </h2>
+      {% endif %}
+      <div id="items_container" class="flex flex-col gap-6">
+        {% for entry in form.items %}
+          {{ item_card(entry.form, removable=(mode == 'full'), numbered=(mode != 'item')) }}
+        {% endfor %}
+      </div>
+      <p id="items_error" class="text-error text-sm hidden"></p>
+      {% if mode == 'full' %}
+      <button type="button" class="btn btn-outline btn-primary w-fit" data-action="add-item">
+        <i class="ph ph-plus-circle"></i> เพิ่มรายการย่อย
+      </button>
+      {% endif %}
+    </section>
+
+    {% if mode == 'full' %}<template id="item_template">{{ item_card(item_prototype) }}</template>{% endif %}
+    <template id="installment_template">{{ installment_row(installment_prototype) }}</template>
+    {% endif %}
+
+    <div class="flex justify-end gap-3 pt-6 border-t border-base-300">
+      {% set cancel_target = None if (is_edit and procurement.status == 'draft') else (procurement if is_edit else renew_from) %}
+      <a href="{{ url_for('procurement.payment.index', procurement_id=cancel_target.id, organization_id=organization.id) if cancel_target else url_for('procurement.products.index', organization_id=organization.id) }}"
+         class="btn btn-ghost">
+        <i class="ph ph-x"></i> ยกเลิก
+      </a>
+      {% if not is_edit or procurement.status == 'draft' %}
+      <button type="submit" name="action" value="draft" id="draft_btn" class="btn btn-outline btn-primary" formnovalidate>
+        <i class="ph ph-file-dashed"></i> บันทึกแบบร่าง
+      </button>
+      {% endif %}
+      <button type="submit" name="action" value="save" id="submit_btn" class="btn btn-primary">
+        <i class="ph ph-check"></i> บันทึก MA
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block additional_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Image preview functionality
-        const imageInput = document.getElementById('image');
-        const imagePreview = document.getElementById('image_preview');
-        const previewImg = document.getElementById('preview_img');
+  (function () {
+    const form = document.getElementById('ma_form');
+    // โหมดแก้เฉพาะหัวไม่มีรายการย่อย / แถบผลรวม จึงใช้ container ว่างแทนเพื่อให้ฟังก์ชันร่วมไม่พัง
+    const itemsContainer = document.getElementById('items_container') || document.createElement('div');
+    const itemTemplate = document.getElementById('item_template');
+    const installmentTemplate = document.getElementById('installment_template');
 
-        imageInput.addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    previewImg.src = e.target.result;
-                    imagePreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+    function maxIndex(pattern) {
+      let max = -1;
+      form.querySelectorAll('[name]').forEach(function (input) {
+        const match = pattern.exec(input.name);
+        if (match) max = Math.max(max, parseInt(match[1], 10));
+      });
+      return max;
+    }
+    let nextItemIndex = maxIndex(/^items-(\d+)-/) + 1;
+    let nextInstallmentIndex = maxIndex(/-installments-(\d+)-/) + 1;
+    // แถวย่อยที่ได้จากแม่แบบของรายการใหม่ใช้ index 0 จึงเริ่มนับที่ 1 อย่างน้อย
+    let nextSubItemIndex = Math.max(maxIndex(/-sub_items-(\d+)-/) + 1, 1);
+    const MAX_SUB_ITEMS = 100;
+    let nextListRowIndex = maxIndex(/-(?:reminder_offsets_days|custom_reminder_dates)-(\d+)$/) + 1;
 
-                // Hide image error message if exists
-                const imageError = document.getElementById('image_error');
-                if (imageError) {
-                    imageError.style.display = 'none';
-                }
-            } else {
-                imagePreview.classList.add('hidden');
-            }
-        });
-    });
-
-    function filterResponsibleBy() {
-        const input = document.getElementById('responsible_by_search');
-        const filter = input.value.toLowerCase();
-        const list = document.getElementById('responsible_by_list');
-        const labels = list.getElementsByTagName('label');
-        for (let i = 0; i < labels.length; i++) {
-            const text = labels[i].innerText.toLowerCase();
-            labels[i].style.display = text.includes(filter) ? '' : 'none';
-        }
+    // เงินคำนวณเป็นสตางค์ (จำนวนเต็ม) เลี่ยง float · server เป็นตัวตัดสินสุดท้าย
+    function parseSatang(value) {
+      const match = /^\s*(\d+)(?:\.(\d{0,2}))?\s*$/.exec(value || '');
+      if (!match) return null;
+      return parseInt(match[1], 10) * 100 + parseInt((match[2] || '').padEnd(2, '0'), 10);
+    }
+    function formatSatang(satang) {
+      const baht = Math.floor(satang / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return baht + '.' + String(satang % 100).padStart(2, '0');
     }
 
-    function updateSelectedUsersBadge() {
-        const trigger = document.getElementById('selected_users_trigger');
-        const placeholder = document.getElementById('no_users_placeholder');
-        const checkboxes = document.querySelectorAll('.user-checkbox');
-        
-        // Remove existing badges
-        const badges = trigger.querySelectorAll('.badge');
-        badges.forEach(b => b.remove());
-        
-        let selectedCount = 0;
-        
-        checkboxes.forEach(cb => {
-            if (cb.checked) {
-                selectedCount++;
-                const name = cb.getAttribute('data-name');
-                const badge = document.createElement('span');
-                badge.className = 'badge badge-primary gap-1 font-medium py-2.5 px-3 text-white rounded-lg text-xs';
-                badge.innerHTML = `${name} <span class="cursor-pointer font-bold hover:text-red-200 ml-1 text-sm leading-none" onclick="removeUserSelection(event, '${cb.value}')">×</span>`;
-                trigger.appendChild(badge);
-            }
+    function updateSum() {
+      const bar = document.getElementById('sum_bar');
+      if (!bar) return;  // โหมดแก้หัว / แก้รายการเดียว ยอดรวมคำนวณที่ server
+      const total = parseSatang(document.getElementById('total_amount').value);
+      let sum = 0;
+      let complete = total !== null;
+      itemsContainer.querySelectorAll('.item-amount').forEach(function (input) {
+        const value = parseSatang(input.value);
+        if (value === null) complete = false;
+        else sum += value;
+      });
+      document.getElementById('sum_total').textContent = total === null ? '-' : formatSatang(total);
+      document.getElementById('sum_items').textContent = formatSatang(sum);
+      const diffText = document.getElementById('sum_diff');
+      bar.classList.remove(
+        'alert-success', 'alert-error', 'alert-warning',
+        'bg-amber-100', 'text-amber-950', 'border-amber-400',
+        'bg-emerald-100', 'text-emerald-950', 'border-emerald-400',
+        'bg-rose-100', 'text-rose-950', 'border-rose-400'
+      );
+      if (!complete) {
+        bar.classList.add('bg-amber-100', 'text-amber-950', 'border', 'border-amber-400');
+        diffText.textContent = 'กรอกยอดเงินให้ครบ (ทศนิยมไม่เกิน 2 ตำแหน่ง)';
+        return;
+      }
+      const diff = sum - total;
+      if (diff === 0) {
+        bar.classList.add('bg-emerald-100', 'text-emerald-950', 'border', 'border-emerald-400');
+        diffText.textContent = 'ยอดตรงกัน';
+      } else {
+        bar.classList.add('bg-rose-100', 'text-rose-950', 'border', 'border-rose-400');
+        diffText.textContent = (diff < 0 ? 'ขาด ' : 'เกิน ') + formatSatang(Math.abs(diff)) + ' บาท';
+      }
+    }
+
+    // งวดเลือกวันที่ได้เฉพาะในช่วงเริ่มต้น-สิ้นสุดของรายการย่อย (ฝั่งเซิร์ฟเวอร์ตรวจซ้ำเสมอ)
+    function applyInstallmentRange(card) {
+      const start = card.querySelector('input[name$="-start_date"]');
+      const end = card.querySelector('input[name$="-end_date"]');
+      card.querySelectorAll('.installment-row calendar-date').forEach(function (calendar) {
+        [['min', start], ['max', end]].forEach(function (pair) {
+          const value = pair[1] && pair[1].value;
+          if (value) calendar.setAttribute(pair[0], value); else calendar.removeAttribute(pair[0]);
         });
-        
-        if (selectedCount > 0) {
-            placeholder.classList.add('hidden');
+      });
+    }
+    itemsContainer.addEventListener('change', function (event) {
+      const name = (event.target && event.target.name) || '';
+      if (/-(start|end)_date$/.test(name)) applyInstallmentRange(event.target.closest('.ma-item'));
+    });
+
+    function renumber() {
+      itemsContainer.querySelectorAll('.ma-item').forEach(function (card, index) {
+        card.querySelector('.item-number').textContent = index + 1;
+        applyInstallmentRange(card);
+        card.querySelectorAll('.installment-row').forEach(function (row, rowIndex) {
+          row.querySelector('.installment-number').textContent = 'งวดที่ ' + (rowIndex + 1);
+        });
+        renumberSubItems(card);
+        updateItemSummary(card);
+      });
+    }
+
+    function renumberSubItems(card) {
+      card.querySelectorAll('.sub-item-row').forEach(function (row, rowIndex) {
+        const num = row.querySelector('.sub-item-number');
+        if (num) num.textContent = rowIndex + 1;
+      });
+    }
+
+    const CAT_LABELS = {
+      'ma': 'การบำรุงรักษา (MA)',
+      'product': 'ครุภัณฑ์',
+      'service': 'จ้างเหมาบริการ',
+      'rental': 'เช่า',
+      'software': 'ซอฟต์แวร์',
+      'material': 'วัสดุ',
+      'intangible': 'สินทรัพย์ไม่มีตัวตน'
+    };
+
+    function updateItemSummary(card) {
+      const nameInput = card.querySelector('input[name$="-name"]');
+      const catInput = card.querySelector('input[name$="-category"]');
+      const amountInput = card.querySelector('.item-amount');
+      const badge = card.querySelector('.item-summary-badge');
+      if (!badge) return;
+
+      const name = (nameInput ? nameInput.value : '').trim();
+      const catVal = catInput ? catInput.value : '';
+      const catText = CAT_LABELS[catVal] || '';
+      const amountSatang = amountInput ? parseSatang(amountInput.value) : null;
+      const amountText = amountSatang !== null ? formatSatang(amountSatang) + ' บาท' : '';
+
+      const parts = [];
+      if (name) parts.push(name);
+      if (catText) parts.push(catText);
+      if (amountText) parts.push(amountText);
+
+      badge.textContent = parts.length > 0 ? '• ' + parts.join(' • ') : '';
+    }
+
+    function toggleItemCollapse(card) {
+      const body = card.querySelector('.item-body');
+      if (!body) return;
+      const isCollapsed = body.classList.contains('hidden');
+      setItemCollapsed(card, !isCollapsed);
+    }
+
+    function setItemCollapsed(card, collapse) {
+      const body = card.querySelector('.item-body');
+      const icon = card.querySelector('.collapse-icon');
+      const label = card.querySelector('.collapse-label');
+      if (!body) return;
+
+      if (collapse) {
+        body.classList.add('hidden');
+        if (icon) { icon.classList.remove('ph-caret-up'); icon.classList.add('ph-caret-down'); }
+        if (label) label.textContent = 'ขยายรายการ';
+      } else {
+        body.classList.remove('hidden');
+        if (icon) { icon.classList.remove('ph-caret-down'); icon.classList.add('ph-caret-up'); }
+        if (label) label.textContent = 'ย่อรายการ';
+      }
+      updateItemSummary(card);
+    }
+
+    function calculateItemAmount(card) {
+      const qtyInput = card.querySelector('.item-quantity');
+      const unitPriceInput = card.querySelector('.item-unit-price');
+      const amountInput = card.querySelector('.item-amount');
+      if (!qtyInput || !unitPriceInput || !amountInput) return;
+
+      const qty = parseInt(qtyInput.value, 10);
+      const unitPriceSatang = parseSatang(unitPriceInput.value);
+
+      if (!isNaN(qty) && qty >= 1 && unitPriceSatang !== null && unitPriceSatang >= 0) {
+        const totalSatang = qty * unitPriceSatang;
+        const baht = Math.floor(totalSatang / 100).toString();
+        const cents = String(totalSatang % 100).padStart(2, '0');
+        amountInput.value = baht + '.' + cents;
+        updateSum();
+        updateItemSummary(card);
+      }
+    }
+
+    function showError(element, message) {
+      element.textContent = message;
+      element.classList.toggle('hidden', !message);
+    }
+
+    function addItem() {
+      const html = itemTemplate.innerHTML.replaceAll('__I__', String(nextItemIndex++));
+      itemsContainer.insertAdjacentHTML('beforeend', html);
+      const card = itemsContainer.lastElementChild;
+      initDatePickersIn(card);
+      initDropdownSelectsIn(card);
+      initSearchSelectsIn(card);
+      syncInstallmentMode(card);
+      syncAssetCodeSection(card);
+      card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
+      showError(document.getElementById('items_error'), '');
+      renumber();
+      updateSum();
+      setItemCollapsed(card, false);
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function addInstallment(card) {
+      const html = installmentTemplate.innerHTML
+        .replaceAll('items-__I__-', card.dataset.prefix)
+        .replaceAll('__J__', String(nextInstallmentIndex++));
+      const rows = card.querySelector('.installment-rows');
+      rows.insertAdjacentHTML('beforeend', html);
+      initDatePickersIn(rows.lastElementChild);
+      renumber();
+      showError(card.querySelector('.installment-error'), '');
+    }
+
+    function addSubItem(card) {
+      const error = card.querySelector('.sub-item-error');
+      const rows = card.querySelector('.sub-item-rows');
+      if (rows.querySelectorAll('.sub-item-row').length >= MAX_SUB_ITEMS) {
+        showError(error, 'เพิ่มแถวได้ไม่เกิน ' + MAX_SUB_ITEMS + ' แถว');
+        return;
+      }
+      const html = card.querySelector('.sub-item-template').innerHTML.replaceAll('__K__', String(nextSubItemIndex++));
+      rows.insertAdjacentHTML('beforeend', html);
+      renumberSubItems(card);
+      showError(error, '');
+      rows.lastElementChild.querySelector('input').focus();
+    }
+
+    // เปิด/ปิด "แบ่งจ่ายเป็นงวด": ปิดแล้วซ่อนตารางงวดและ disable ช่องงวด (ไม่ส่งไปกับฟอร์ม)
+    // ระบบสร้างงวดเดียวจากวันสิ้นสุดเอง · เปิดแล้วไม่มีแถว ให้เพิ่มแถวแรกให้
+    // และซ่อน/แสดงช่องเตือนจ่ายงวดล่วงหน้า (เพราะไม่มีงวดให้เตือน)
+    // ช่องเตือนจ่ายงวดล่วงหน้า (7 / 5 / 3 วัน) ใช้ได้เมื่อแบ่งจ่ายเป็นงวดเท่านั้น
+    function syncPaymentReminder(card) {
+      const installmentOn = card.querySelector('.installment-toggle').checked;
+      card.querySelectorAll('[data-payment-offsets] input').forEach(function (control) {
+        control.disabled = !installmentOn;
+      });
+    }
+
+    function syncInstallmentMode(card) {
+      const on = card.querySelector('.installment-toggle').checked;
+      const panel = card.querySelector('.installment-on');
+      panel.classList.toggle('hidden', !on);
+      card.querySelector('.installment-off-hint').classList.toggle('hidden', on);
+      panel.querySelectorAll('input, button[data-action]').forEach(function (control) { control.disabled = !on; });
+      syncPaymentReminder(card);
+      if (on && !card.querySelector('.installment-row')) addInstallment(card);
+      renumber();
+    }
+
+    // แสดงหัวข้อ "รหัสครุภัณฑ์" เมื่อเลือกประเภท ครุภัณฑ์ (product) หรือ เช่า (rental)
+    function syncAssetCodeSection(card) {
+      const catInput = card.querySelector('input[name$="-category"]');
+      const cat = catInput ? catInput.value : '';
+      const section = card.querySelector('.asset-code-section');
+      if (!section) return;
+      const isAssetType = (cat === 'product' || cat === 'rental');
+      section.classList.toggle('hidden', !isAssetType);
+      section.querySelectorAll('input').forEach(function (input) {
+        input.disabled = !isAssetType;
+      });
+    }
+
+    function syncSelectedMembers(picker) {
+      if (!picker) return;
+      const list = picker.querySelector('.member-list');
+      const selectedContainer = picker.querySelector('.selected-members');
+      const countBadge = picker.querySelector('.selected-count');
+      const emptyHint = picker.querySelector('.selected-empty');
+      const clearBtn = picker.querySelector('[data-action="clear-all-members"]');
+      if (!list || !selectedContainer) return;
+
+      const checkboxes = list.querySelectorAll('input[type="checkbox"]');
+      let count = 0;
+
+      selectedContainer.querySelectorAll('.selected-badge').forEach(function (badge) {
+        badge.remove();
+      });
+
+      checkboxes.forEach(function (cb) {
+        const option = cb.closest('.member-option');
+        if (cb.checked) {
+          count++;
+          if (option) option.classList.add('bg-primary/10', 'font-medium', 'text-primary');
+          const labelSpan = option ? option.querySelector('.member-label') : null;
+          const labelText = (labelSpan ? labelSpan.textContent : cb.value).trim();
+
+          const badge = document.createElement('span');
+          badge.className = 'selected-badge badge badge-primary badge-outline gap-1.5 py-3 px-2.5 text-xs inline-flex items-center';
+          badge.dataset.memberId = cb.value;
+
+          const userIcon = document.createElement('i');
+          userIcon.className = 'ph ph-user';
+          badge.appendChild(userIcon);
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'truncate max-w-xs';
+          textSpan.textContent = labelText;
+          badge.appendChild(textSpan);
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'btn btn-ghost btn-circle btn-xs -mr-1 h-5 w-5 min-h-0 text-base-content/60 hover:text-error';
+          removeBtn.dataset.action = 'deselect-member';
+          removeBtn.dataset.memberId = cb.value;
+          removeBtn.title = 'นำออก';
+          removeBtn.setAttribute('aria-label', 'นำ ' + labelText + ' ออก');
+
+          const xIcon = document.createElement('i');
+          xIcon.className = 'ph ph-x text-xs';
+          removeBtn.appendChild(xIcon);
+
+          badge.appendChild(removeBtn);
+          if (emptyHint) {
+            selectedContainer.insertBefore(badge, emptyHint);
+          } else {
+            selectedContainer.appendChild(badge);
+          }
         } else {
-            placeholder.classList.remove('hidden');
+          if (option) option.classList.remove('bg-primary/10', 'font-medium', 'text-primary');
         }
+      });
+
+      if (countBadge) countBadge.textContent = count;
+      if (emptyHint) emptyHint.classList.toggle('hidden', count > 0);
+      if (clearBtn) clearBtn.classList.toggle('hidden', count === 0);
     }
-    
-    function removeUserSelection(event, userId) {
-        event.stopPropagation(); // Prevent opening/closing dropdown
-        const checkbox = document.querySelector(`.user-checkbox[value="${userId}"]`);
-        if (checkbox) {
-            checkbox.checked = false;
-            updateSelectedUsersBadge();
+
+    form.addEventListener('click', function (event) {
+      // ตรวจสอบการกดแถบหัวการ์ดเพื่อย่อ/ขยายรายการ
+      const header = event.target.closest('[data-action="toggle-collapse-item"]');
+      if (header && !event.target.closest('button')) {
+        toggleItemCollapse(header.closest('.ma-item'));
+        return;
+      }
+
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const card = button.closest('.ma-item');
+      switch (button.dataset.action) {
+        case 'toggle-collapse-item':
+        case 'toggle-collapse-btn':
+          toggleItemCollapse(card);
+          break;
+        case 'collapse-item-btn':
+          setItemCollapsed(card, true);
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          break;
+        case 'add-item':
+          addItem();
+          break;
+        case 'remove-item':
+          if (itemsContainer.querySelectorAll('.ma-item').length <= 1) {
+            showError(document.getElementById('items_error'), 'MA ต้องมีรายการย่อยอย่างน้อย 1 รายการ');
+            return;
+          }
+          card.remove();
+          renumber();
+          updateSum();
+          break;
+        case 'add-installment':
+          addInstallment(card);
+          renumber();
+          break;
+        case 'remove-installment':
+          if (card.querySelectorAll('.installment-row').length <= 1) {
+            showError(card.querySelector('.installment-error'), 'รายการย่อยต้องมีอย่างน้อย 1 งวด');
+            return;
+          }
+          button.closest('.installment-row').remove();
+          renumber();
+          break;
+        case 'add-sub-item':
+          addSubItem(card);
+          break;
+        case 'remove-sub-item': {
+          const row = button.closest('.sub-item-row');
+          if (card.querySelectorAll('.sub-item-row').length <= 1) {
+            // แถวสุดท้ายไม่ลบ แค่ล้างค่า เพื่อให้ช่องยังเห็นอยู่
+            row.querySelectorAll('input, textarea').forEach(function (field) { field.value = ''; });
+          } else {
+            row.remove();
+          }
+          renumberSubItems(card);
+          showError(card.querySelector('.sub-item-error'), '');
+          break;
         }
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        updateSelectedUsersBadge();
+        case 'add-list-row': {
+          const field = button.closest('.list-field');
+          const html = field.querySelector('.list-row-template').innerHTML.replaceAll('__ROW__', String(nextListRowIndex++));
+          const rows = field.querySelector('.list-rows');
+          rows.insertAdjacentHTML('beforeend', html);
+          rows.lastElementChild.querySelector('input').focus();
+          break;
+        }
+        case 'remove-list-row':
+          button.closest('.list-row').remove();
+          break;
+        case 'deselect-member': {
+          const picker = button.closest('[data-member-picker]');
+          const memberId = button.dataset.memberId;
+          if (picker && memberId) {
+            const cb = picker.querySelector('.member-list input[value="' + memberId + '"]');
+            if (cb) {
+              cb.checked = false;
+              syncSelectedMembers(picker);
+            }
+          }
+          break;
+        }
+        case 'clear-all-members': {
+          const picker = button.closest('[data-member-picker]');
+          if (picker) {
+            picker.querySelectorAll('.member-list input[type="checkbox"]').forEach(function (cb) {
+              cb.checked = false;
+            });
+            syncSelectedMembers(picker);
+          }
+          break;
+        }
+      }
     });
+
+    // กด Enter ในช่องค้นหาผู้รับผิดชอบต้องไม่ส่งฟอร์มทั้งหน้า (เดิมทำให้หน้าโหลดใหม่และเด้งไปส่วนล่าง)
+    form.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && event.target.matches('.member-filter')) event.preventDefault();
+    });
+
+    form.addEventListener('change', function (event) {
+      const card = event.target.closest('.ma-item');
+      if (event.target.classList.contains('installment-toggle') && card) {
+        syncInstallmentMode(card);
+      }
+
+      if (event.target.name && event.target.name.endsWith('-category') && card) {
+        syncAssetCodeSection(card);
+        updateItemSummary(card);
+      }
+      const picker = event.target.closest('[data-member-picker]');
+      if (picker && event.target.matches('.member-list input[type="checkbox"]')) {
+        syncSelectedMembers(picker);
+      }
+    });
+
+    form.addEventListener('input', function (event) {
+      const card = event.target.closest('.ma-item');
+      if (event.target.classList.contains('item-quantity') || event.target.classList.contains('item-unit-price')) {
+        if (card) calculateItemAmount(card);
+      }
+      if (event.target.id === 'total_amount' || event.target.classList.contains('item-amount')) {
+        updateSum();
+        if (card) updateItemSummary(card);
+      }
+      if (event.target.name && event.target.name.endsWith('-name') && card) {
+        updateItemSummary(card);
+      }
+      if (event.target.classList.contains('member-filter')) {
+        const keyword = event.target.value.toLowerCase();
+        event.target.closest('[data-member-picker]').querySelectorAll('.member-option').forEach(function (option) {
+          option.classList.toggle('hidden', !option.textContent.toLowerCase().includes(keyword));
+        });
+      }
+    });
+
+    function initSearchSelectsIn(root) {
+      (root || document).querySelectorAll('[data-search-select]').forEach(function (container) {
+        if (container.dataset.ssInit) return;
+        container.dataset.ssInit = '1';
+
+        const hiddenInput = container.querySelector('input[type="hidden"]');
+        const textInput = container.querySelector('.search-select-input');
+        const clearBtn = container.querySelector('.search-select-clear');
+        const menu = container.querySelector('.search-select-menu');
+        const box = container.querySelector('.search-select-box');
+        const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
+        const emptyMsg = container.querySelector('.search-select-empty');
+
+        function getOptionLabel(opt) {
+          if (!opt) return '';
+          const labelSpan = opt.querySelector('.search-select-label');
+          return (labelSpan ? labelSpan.textContent : opt.textContent).trim();
+        }
+
+        function filterOptions(query) {
+          let matchCount = 0;
+          const q = (query || '').toLowerCase().trim();
+          options.forEach(function (opt) {
+            const text = getOptionLabel(opt).toLowerCase();
+            const match = !q || text.includes(q);
+            const li = opt.closest('li');
+            if (li) li.classList.toggle('hidden', !match);
+            if (match) matchCount++;
+          });
+          if (emptyMsg) emptyMsg.classList.toggle('hidden', matchCount > 0);
+        }
+
+        function openMenu() {
+          document.querySelectorAll('.search-select-menu').forEach(function (m) {
+            if (m !== menu) m.classList.add('hidden');
+          });
+          if (menu) {
+            menu.classList.remove('hidden');
+            // แสดงตัวเลือกทั้งหมดเสมอ เพื่อให้ผู้ใช้สามารถเลือกเปลี่ยนอันได้
+            filterOptions('');
+            // ไฮไลท์และเลื่อนไปยังตัวเลือกที่เลือกอยู่ปัจจุบัน
+            const currentVal = hiddenInput ? hiddenInput.value : '';
+            const activeOpt = options.find(function (opt) { return opt.dataset.value === currentVal; });
+            if (activeOpt) {
+              activeOpt.scrollIntoView({ block: 'nearest' });
+            }
+          }
+        }
+
+        function closeMenu() {
+          if (menu) menu.classList.add('hidden');
+          const currentVal = hiddenInput ? hiddenInput.value : '';
+          const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
+          if (textInput) textInput.value = matched ? getOptionLabel(matched) : '';
+          if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
+        }
+
+        function selectOption(val, labelText) {
+          if (hiddenInput) hiddenInput.value = val;
+          if (textInput) textInput.value = labelText;
+          options.forEach(function (opt) {
+            const isMatch = opt.dataset.value === val;
+            opt.classList.toggle('menu-active', isMatch);
+            const check = opt.querySelector('.ph-check');
+            if (check) check.classList.toggle('hidden', !isMatch);
+          });
+          if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+          if (menu) menu.classList.add('hidden');
+          if (hiddenInput) hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (box) {
+          box.addEventListener('click', function (e) {
+            if (e.target.closest('.search-select-clear')) return;
+            openMenu();
+            if (textInput) {
+              textInput.focus();
+              textInput.select();
+            }
+          });
+        }
+
+        if (textInput) {
+          textInput.addEventListener('focus', function () {
+            openMenu();
+            textInput.select();
+          });
+
+          textInput.addEventListener('click', function () {
+            openMenu();
+            textInput.select();
+          });
+
+          textInput.addEventListener('input', function () {
+            if (menu && menu.classList.contains('hidden')) {
+              menu.classList.remove('hidden');
+            }
+            filterOptions(textInput.value);
+            if (clearBtn) clearBtn.classList.toggle('hidden', !textInput.value);
+          });
+
+          textInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+              closeMenu();
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              openMenu();
+              const visible = options.filter(function (opt) {
+                const li = opt.closest('li');
+                return !li || !li.classList.contains('hidden');
+              });
+              if (visible.length) visible[0].focus();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              const visible = options.filter(function (opt) {
+                const li = opt.closest('li');
+                return !li || !li.classList.contains('hidden');
+              });
+              if (visible.length) {
+                selectOption(visible[0].dataset.value, getOptionLabel(visible[0]));
+              }
+            }
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const defaultOpt = options.find(function (opt) { return opt.dataset.value === ''; });
+            const defaultText = defaultOpt ? getOptionLabel(defaultOpt) : '';
+            selectOption('', defaultText);
+            if (textInput) {
+              textInput.value = '';
+              textInput.focus();
+            }
+            openMenu();
+          });
+        }
+
+        if (menu) {
+          menu.addEventListener('click', function (e) {
+            const btn = e.target.closest('.search-select-option');
+            if (!btn) return;
+            selectOption(btn.dataset.value, getOptionLabel(btn));
+          });
+
+          menu.addEventListener('keydown', function (e) {
+            const visible = options.filter(function (opt) {
+              const li = opt.closest('li');
+              return !li || !li.classList.contains('hidden');
+            });
+            const index = visible.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              if (index < visible.length - 1) visible[index + 1].focus();
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (index > 0) visible[index - 1].focus();
+              else if (textInput) textInput.focus();
+            } else if (e.key === 'Escape') {
+              closeMenu();
+              if (textInput) textInput.focus();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (index >= 0 && index < visible.length) {
+                selectOption(visible[index].dataset.value, getOptionLabel(visible[index]));
+                if (textInput) textInput.focus();
+              }
+            }
+          });
+        }
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-search-select]')) {
+        document.querySelectorAll('[data-search-select]').forEach(function (container) {
+          const menu = container.querySelector('.search-select-menu');
+          const hiddenInput = container.querySelector('input[type="hidden"]');
+          const textInput = container.querySelector('.search-select-input');
+          const clearBtn = container.querySelector('.search-select-clear');
+          const options = Array.from(menu ? menu.querySelectorAll('.search-select-option') : []);
+          if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+            const currentVal = hiddenInput ? hiddenInput.value : '';
+            const matched = options.find(function (opt) { return opt.dataset.value === currentVal; });
+            const labelSpan = matched ? matched.querySelector('.search-select-label') : null;
+            if (textInput) textInput.value = matched ? (labelSpan ? labelSpan.textContent.trim() : matched.textContent.trim()) : '';
+            if (clearBtn) clearBtn.classList.toggle('hidden', !currentVal);
+          }
+        });
+      }
+    });
+
+    initDatePickersIn(form);
+    initDropdownSelectsIn(form);
+    initSearchSelectsIn(form);
+    itemsContainer.querySelectorAll('.ma-item').forEach(function (card) {
+      syncInstallmentMode(card);
+      syncAssetCodeSection(card);
+      renumberSubItems(card);
+      updateItemSummary(card);
+      card.querySelectorAll('[data-member-picker]').forEach(syncSelectedMembers);
+    });
+    renumber();
+    updateSum();
+  })();
 </script>
-
-
 {% endblock %}

@@ -176,10 +176,7 @@
 {% block content %}
   <div class="no-print flex justify-between items-center mb-6 bg-base-100 p-4 rounded-2xl border border-base-300 shadow-sm">
     <div class="flex items-center gap-3">
-      <a href="{{ url_for('procurement.requisitions.renewal_requested', organization_id=organization.id) }}"
-         class="btn btn-sm btn-ghost gap-1">
-        <i class="ph ph-arrow-left"></i> ย้อนกลับ
-      </a>
+      {{ renderer.render_back_button(url_for('procurement.requisitions.renewal_requested', organization_id=organization.id)) }}
     </div>
     <button id="download-btn"
             onclick="downloadPDF()"

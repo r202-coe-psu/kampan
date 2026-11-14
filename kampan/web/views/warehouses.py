@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from bson import ObjectId
+from flask import Blueprint, render_template, redirect, url_for, request, abort, g
 from flask_login import login_required, current_user
 from kampan.web import forms, acl
 from kampan import models
@@ -8,6 +9,17 @@ from flask_mongoengine import Pagination
 import datetime
 
 module = Blueprint("warehouses", __name__, url_prefix="/warehouses")
+
+
+def get_warehouse(organization, warehouse_id):
+    if not organization or not ObjectId.is_valid(warehouse_id):
+        abort(404)
+    warehouse = models.Warehouse.objects(
+        id=warehouse_id, organization=organization
+    ).first()
+    if not warehouse:
+        abort(404)
+    return warehouse
 
 
 @module.route("/")
@@ -41,7 +53,7 @@ def add_or_edit(warehouse_id):
     form = forms.warehouses.WarehouseForm()
 
     if warehouse_id:
-        warehouse = models.Warehouse.objects().get(id=warehouse_id)
+        warehouse = get_warehouse(g.organization, warehouse_id)
         form = forms.warehouses.WarehouseForm(obj=warehouse)
 
     if not form.validate_on_submit():
@@ -57,38 +69,10 @@ def add_or_edit(warehouse_id):
     form.populate_obj(warehouse)
     if not warehouse_id:
         warehouse.created_by = current_user._get_current_object()
+        warehouse.organization = organization
     warehouse.name = str(form.name.data).strip()
-    warehouse.organization = organization
     warehouse.last_updated_by = current_user._get_current_object()
 
-    warehouse.save()
-
-    return redirect(
-        url_for(
-            "warehouses.index",
-            organization_id=organization_id,
-        )
-    )
-
-
-@module.route("/<warehouse_id>/edit", methods=["GET", "POST"])
-@acl.organization_roles_required("admin", "endorser", "staff")
-def edit(warehouse_id):
-    organization_id = request.args.get("organization_id")
-    organization = models.Organization.objects(
-        id=organization_id, status="active"
-    ).first()
-    warehouse = models.Warehouse.objects().get(id=warehouse_id)
-    form = forms.warehouses.WarehouseForm(obj=warehouse)
-
-    if not form.validate_on_submit():
-        return render_template(
-            "/warehouses/add-edit.html",
-            form=form,
-            organization=organization,
-        )
-
-    form.populate_obj(warehouse)
     warehouse.save()
 
     return redirect(
@@ -104,7 +88,7 @@ def edit(warehouse_id):
 def delete(warehouse_id):
     organization_id = request.args.get("organization_id")
 
-    warehouse = models.Warehouse.objects().get(id=warehouse_id)
+    warehouse = get_warehouse(g.organization, warehouse_id)
     warehouse.status = "disactive"
     warehouse.save()
 
