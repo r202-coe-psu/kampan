@@ -250,7 +250,6 @@ def test_old_renewal_action_still_works_when_flag_on(world, client_for, set_flag
 @pytest.mark.parametrize(
     "path",
     (
-        "/procurement/requisitions",
         "/procurement/requisitions/non-renewal",
         "/procurement/products",
         "/procurement/products/create",
@@ -302,7 +301,6 @@ def test_sidebar_hides_requisition_menus_when_flag_off(world, client_for, set_fl
     # เมนูของระบบ MA ยังอยู่ครบ
     for link in (
         "/procurement/products?",
-        "/procurement/requisitions?",
         "/procurement/requisitions/non-renewal?",
         "/admin/upload_files/?",
         "/procurement/manuals",
@@ -363,11 +361,11 @@ def test_switch_organization_lands_on_procurement_home(app, world, create_org, s
 
 
 @pytest.mark.parametrize("enabled", (False, True))
-def test_ma_list_never_shows_old_renew_button(world, client_for, set_flag, enabled):
-    """ปุ่ม "ยื่นขอต่ออายุ" เดิม (สร้างคำขอซื้อ) ถูกถอดออกจากหน้า MA ไม่ว่า flag จะเป็นอะไร (#32 / คำตัดสินรอบ 3)"""
+def test_ma_detail_never_shows_old_renew_button(world, client_for, set_flag, enabled):
+    """ปุ่ม "ยื่นขอต่ออายุ" เดิม (สร้างคำขอซื้อ) ถูกถอดออกจากหน้ารายละเอียด MA ไม่ว่า flag จะเป็นอะไร (#32 / คำตัดสินรอบ 3)"""
     set_flag(enabled)
 
-    html = client_for(world.users["admin"]).get(f"/procurement/requisitions?{_q(world)}").get_data(as_text=True)
+    html = client_for(world.users["admin"]).get(f"/procurement/payment/{world.procurement.id}?{_q(world)}").get_data(as_text=True)
 
     assert f"/procurement/requisitions/{world.procurement.id}/renewal-requested" not in html
     assert f"/procurement/products/{world.procurement.id}/renew?" in html

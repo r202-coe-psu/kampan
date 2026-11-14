@@ -939,15 +939,6 @@ def test_non_renewal_action_uses_can_edit_rule(world, client_for, existing_ma, w
     assert existing_ma.status == ("disactive" if allowed else "pending")
 
 
-def test_ma_renewal_list_renders_items_info(world, client_for, existing_ma):
-    html = client_for(world.admin).get(
-        f"/procurement/requisitions?{_q(world.org)}&expiration_date_range=3_months"
-    ).get_data(as_text=True)
-
-    assert "[TEST] MA เดิม" in html
-    assert "PSU-0001" in html
-
-
 # ---------------------------------------------------------------------------
 # นำเข้า Excel / controller / อีเมล
 # ---------------------------------------------------------------------------
@@ -1110,16 +1101,18 @@ def test_non_renewal_without_csrf_token_is_refused(world, client_for, existing_m
     assert existing_ma.status == "pending"
 
 
-def test_non_renewal_with_csrf_token_from_renewal_list(world, client_for, existing_ma, csrf_enabled):
+def test_non_renewal_with_csrf_token_from_detail_page(world, client_for, existing_ma, csrf_enabled):
     client = client_for(world.admin)
-    html = client.get(f"/procurement/requisitions?{_q(world.org)}").get_data(as_text=True)
+    html = client.get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
     assert f"/procurement/requisitions/{existing_ma.id}/non-renewal" in html
 
-    client.post(
+    response = client.post(
         f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}",
         data={"csrf_token": _csrf_token(html)},
     )
 
+    assert response.status_code == 302
+    assert f"/procurement/payment/{existing_ma.id}" in response.headers["Location"]
     existing_ma.reload()
     assert existing_ma.status == "disactive"
 

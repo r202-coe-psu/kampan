@@ -23,7 +23,6 @@ ALL_MAS = {MA_A, MA_B, MA_MIXED}
 # MA ทุกตัวอยู่ในสถานะ disactive เพื่อให้ขึ้นในหน้ารายการไม่ต่ออายุด้วย (อีก 2 หน้าไม่กรองสถานะ)
 LIST_PAGES = {
     "products": "/procurement/products",
-    "renewal": "/procurement/requisitions?expiration_date_range=",
     "non_renewal": "/procurement/requisitions/non-renewal",
 }
 
@@ -107,9 +106,7 @@ def _url(path, organization, **params):
 
 
 def _visible_names(client, page, organization, **params):
-    if page == "renewal":
-        models.Procurement.objects(organization=organization).update(set__status="renewal-requested")
-    elif page == "non_renewal":
+    if page == "non_renewal":
         models.Procurement.objects(organization=organization).update(set__status="disactive")
     else:
         models.Procurement.objects(organization=organization).update(set__status="active")
@@ -247,9 +244,7 @@ def test_non_renewal_action_on_invisible_ma_is_404(world, client_for):
 
 @pytest.mark.parametrize("page", LIST_PAGES)
 def test_list_pages_show_responsible_division_names(world, client_for, page):
-    if page == "renewal":
-        models.Procurement.objects(organization=world.org).update(set__status="renewal-requested")
-    elif page == "non_renewal":
+    if page == "non_renewal":
         models.Procurement.objects(organization=world.org).update(set__status="disactive")
     else:
         models.Procurement.objects(organization=world.org).update(set__status="active")

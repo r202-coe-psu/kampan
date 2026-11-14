@@ -69,6 +69,12 @@
             <i class="ph ph-arrows-clockwise text-base"></i> ต่ออายุ
           </a>
         {% endif %}
+        {% if procurement.status in ['pending', 'renewal-requested'] %}
+          <button type="button" onclick="document.getElementById('non_renewal_modal').showModal()"
+                  class="btn btn-error btn-sm text-white shadow-xs gap-1.5">
+            <i class="ph ph-x text-base"></i> ไม่ต่ออายุ
+          </button>
+        {% endif %}
         <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}"
            class="btn btn-primary btn-sm shadow-xs gap-1.5">
           <i class="ph ph-pencil-simple text-base"></i> แก้ไข MA
@@ -743,6 +749,31 @@
       {% endfor %}
     {% endif %}
   {% endfor %}
+
+{% if can_edit and procurement.status in ['pending', 'renewal-requested'] %}
+  <dialog id="non_renewal_modal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold text-error mb-4"><i class="ph ph-warning mr-2"></i>ยืนยันการไม่ต่ออายุ</h3>
+      <p class="py-2">คุณต้องการทำให้ MA นี้ไม่ต่ออายุใช่หรือไม่?</p>
+      <div class="bg-base-200 p-3 rounded-lg mb-4">
+        <p class="font-semibold">{{ procurement.name }}</p>
+        <p class="text-sm text-base-content/60">เลขที่ ม.อ.เบิกจ่าย: {{ procurement.psu_disbursement_number or '-' }}</p>
+      </div>
+      <div role="alert" class="alert alert-error alert-soft mb-4">
+        <i class="ph ph-warning-circle"></i>
+        <span class="text-sm">การดำเนินการนี้ไม่สามารถย้อนกลับได้ MA จะถูกย้ายไปรายการ MA ไม่ต่ออายุ</span>
+      </div>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn btn-outline">ยกเลิก</button></form>
+        <form method="post" action="{{ url_for('procurement.requisitions.non_renewal_action', requisition_procurement_id=procurement.id, organization_id=organization.id) }}">
+          {{ form.hidden_tag() }}
+          <button type="submit" class="btn btn-error text-white"><i class="ph ph-x mr-1"></i>ยืนยันไม่ต่ออายุ</button>
+        </form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+  {% endif %}
 </div>
 {% if can_edit and not procurement.is_renewed() %}
   {{ renew_check_dialog(procurement, organization, form, today, url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id)) }}

@@ -19,16 +19,13 @@ import pytest
 from kampan import models
 
 PRODUCTS = "/procurement/products"
-RENEWAL = "/procurement/requisitions"
 NON_RENEWAL = "/procurement/requisitions/non-renewal"
-LIST_PAGES = [PRODUCTS, RENEWAL, NON_RENEWAL]
+LIST_PAGES = [PRODUCTS, NON_RENEWAL]
 
 
 def _status_for_path(path):
     if path == NON_RENEWAL:
         return "disactive"
-    if path == RENEWAL:
-        return "renewal-requested"
     return "active"
 
 TODAY = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -188,8 +185,6 @@ def _five_mas_for(world, path):
     """MA 5 ตัว วันสิ้นสุดห่างกันทีละวัน คืนชื่อตามลำดับที่หน้านั้นแสดง"""
     status = _status_for_path(path)
     mas = _ma_names(_create_ma(world, end_in_days=10 + index, status=status) for index in range(5))
-    if path == RENEWAL:
-        return mas  # วันสิ้นสุดใกล้สุดก่อน
     return list(reversed(mas))  # MA ใหม่สุดก่อน / วันสิ้นสุดไกลสุดก่อน
 
 
@@ -336,17 +331,6 @@ def test_products_status_counts_and_filter_follow_worst_unpaid_installment(world
         assert _status_counts(filtered) == {"overdue": 3, "upcoming": 1, "paid": 1, "unpaid": 1}
 
 
-def test_renewal_page_sorts_by_earliest_item_end_date_across_pages(world):
-    in_40 = _create_ma(world, end_in_days=40, status="renewal-requested")
-    in_10 = _create_ma(world, end_in_days=10, status="renewal-requested")
-    two_items = _create_ma(world, items=[(50, [_installment(50)]), (5, [_installment(5)])], status="renewal-requested")
-    in_25 = _create_ma(world, end_in_days=25, status="renewal-requested")
-    expected = _ma_names([two_items, in_10, in_25, in_40])
-
-    assert _shown_mas(_get(world, RENEWAL, per_page=3)) == expected[:3]
-    assert _shown_mas(_get(world, RENEWAL, per_page=3, page=2)) == expected[3:]
-
-
 def test_non_renewal_page_sorts_by_latest_end_date_first(world):
     in_10 = _create_ma(world, end_in_days=10, status="disactive")
     two_items = _create_ma(world, items=[(50, [_installment(50)]), (5, [_installment(5)])], status="disactive")
@@ -372,7 +356,7 @@ def test_list_pages_show_each_rows_responsible_divisions(world, path):
 # เรียงลำดับ (?sort=) และแถบตัวกรอง
 # ---------------------------------------------------------------------------
 
-DEFAULT_SORT = {PRODUCTS: "created_desc", RENEWAL: "end_asc", NON_RENEWAL: "end_desc"}
+DEFAULT_SORT = {PRODUCTS: "created_desc", NON_RENEWAL: "end_desc"}
 
 
 def _sort_set(world, path):
@@ -541,7 +525,7 @@ def test_filter_bar_has_count_clear_button_and_no_native_select(world, path):
 
 @pytest.mark.parametrize(
     "path,per_page,last_page_size",
-    [(PRODUCTS, 6, 2), (RENEWAL, 8, 4), (NON_RENEWAL, 8, 4)],
+    [(PRODUCTS, 6, 2), (NON_RENEWAL, 8, 4)],
 )
 def test_default_page_size_and_last_page(world, path, per_page, last_page_size):
     status = _status_for_path(path)
@@ -562,7 +546,7 @@ def test_default_page_size_and_last_page(world, path, per_page, last_page_size):
 @pytest.mark.parametrize("sort", ["end_asc", "end_desc"])
 def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
     """เรียงวันหมดอายุ: แต่ละหน้าได้เฉพาะ id ของหน้านั้นจาก aggregation ($skip/$limit) ครบทุกหน้าไม่ซ้ำไม่ตก"""
-    status = _status_for_path(RENEWAL)
+    status = _status_for_path(NON_RENEWAL)
     created = [_create_ma(world, end_in_days=10 + index, status=status).name for index in range(19)]
     expected = created if sort == "end_asc" else list(reversed(created))
 
@@ -576,7 +560,7 @@ def test_end_date_sort_pages_are_cut_by_the_database(world, monkeypatch, sort):
     monkeypatch.setattr(mongomock.collection.Collection, "aggregate", recording)
     shown = []
     for page in (1, 2, 3):
-        shown += _shown_mas(_get(world, RENEWAL, sort=sort, page=page))
+        shown += _shown_mas(_get(world, NON_RENEWAL, sort=sort, page=page))
 
     assert shown == expected
     limits = [stage["$limit"] for pipeline in pipelines for stage in pipeline if "$limit" in stage]

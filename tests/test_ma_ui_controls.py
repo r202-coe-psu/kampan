@@ -142,7 +142,6 @@ def test_posting_an_image_to_the_form_is_ignored(world, client_for):
         "/procurement/products/{id}/renew?{q}",
         "/procurement/payment/{id}?{q}",
         "/procurement/products?{q}",
-        "/procurement/requisitions?{q}",
         "/procurement/requisitions/non-renewal?{q}",
         "/admin/upload_files/create?{q}",
     ],
@@ -352,21 +351,16 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
     assert 'class="payment-reminder-container" data-payment-reminder>' in edit_html
 
 
-def test_edit_buttons_in_detail_and_requisition_pages(world, client_for, existing_ma):
+def test_edit_buttons_in_detail_page(world, client_for, existing_ma):
     item = existing_ma.get_items()[0]
     edit_url = f"/procurement/products/{existing_ma.id}/edit?{_q(world.org)}"
     item_edit_url = f"{edit_url}&amp;item_id={item.id}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
-    requisition_url = f"/procurement/requisitions?{_q(world.org)}"
-
     # 1. Editor (admin or responsible) sees edit buttons
     editor_client = client_for(world.admin)
     detail_html = editor_client.get(detail_url).get_data(as_text=True)
     assert item_edit_url in detail_html  # "แก้ไข" ของรายการ -> โหมดแก้รายการเดียว
     assert edit_url in detail_html  # "แก้ไข MA" -> โหมดแก้เฉพาะหัว
-
-    req_html = editor_client.get(requisition_url).get_data(as_text=True)
-    assert edit_url in req_html
 
     # Item edit form shows only that item; header edit form has no item cards
     edit_form_html = editor_client.get(f"{edit_url}&item_id={item.id}").get_data(as_text=True)
@@ -380,46 +374,51 @@ def test_edit_buttons_in_detail_and_requisition_pages(world, client_for, existin
     viewer_detail = viewer_client.get(detail_url).get_data(as_text=True)
     assert f"/procurement/products/{existing_ma.id}/edit" not in viewer_detail
 
-    viewer_req = viewer_client.get(requisition_url).get_data(as_text=True)
-    assert f"/procurement/products/{existing_ma.id}/edit" not in viewer_req
 
-
-def test_renewal_request_and_non_renewal_workflow(world, client_for, existing_ma):
+def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
     client = client_for(world.admin)
     products_url = f"/procurement/products?{_q(world.org)}"
-    requisitions_url = f"/procurement/requisitions?{_q(world.org)}"
+    detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
     non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
-    # 1. ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ (MA ที่ใกล้หมดอายุไปอยู่ในหน้ารายการใกล้หมดอายุเอง)
-    products_html = client.get(products_url).get_data(as_text=True)
-    assert "request-renewal" not in products_html
+    # 1. ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ
+    assert "request-renewal" not in client.get(products_url).get_data(as_text=True)
 
-    # 2. active: ไม่อยู่ในหน้ารายการใกล้หมดอายุ จนกว่า controller ย้ายเป็น pending
-    existing_ma.status = "active"
-    existing_ma.save()
-    assert existing_ma.name not in client.get(requisitions_url).get_data(as_text=True)
-    existing_ma.status = "pending"
-    existing_ma.save()
-    req_html_after = client.get(requisitions_url).get_data(as_text=True)
-    assert existing_ma.name in req_html_after
-    assert f"delete_modal_{existing_ma.id}" in req_html_after
-    assert "ไม่ต่ออายุ" in req_html_after
+    # 2. หน้ารายละเอียดมีปุ่ม + modal ยืนยัน ไม่ต่ออายุ
+    detail_html = client.get(detail_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' in detail_html
+    assert f"/procurement/requisitions/{existing_ma.id}/non-renewal" in detail_html
 
-    # 3. Mark non-renewal
-    non_renew_res = client.post(
-        f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}",
-        follow_redirects=True,
-    )
-    assert non_renew_res.status_code == 200
+    # 3. กดยืนยัน: redirect กลับหน้ารายละเอียด และสถานะเป็น disactive
+    response = client.post(f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}")
+    assert response.status_code == 302
+    assert f"/procurement/payment/{existing_ma.id}" in response.headers["Location"]
     existing_ma.reload()
     assert existing_ma.status == "disactive"
 
-    # Now it is NOT in requisitions, but IS in non-renewal page
-    req_html_final = client.get(requisitions_url).get_data(as_text=True)
-    assert existing_ma.name not in req_html_final
+    # 4. ขึ้นหน้าไม่ต่ออายุ และปุ่มหายจากหน้ารายละเอียด
+    assert existing_ma.name in client.get(non_renewal_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' not in client.get(detail_url).get_data(as_text=True)
 
-    non_renew_html = client.get(non_renewal_url).get_data(as_text=True)
-    assert existing_ma.name in non_renew_html
+
+def test_detail_page_non_renewal_button_visibility(world, client_for, existing_ma):
+    detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
+
+    # pending + ผู้แก้ไขได้: เห็นปุ่ม
+    existing_ma.status = "pending"
+    existing_ma.save()
+    html = client_for(world.admin).get(detail_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' in html and "ไม่ต่ออายุ" in html
+
+    # ผู้ดูที่แก้ไม่ได้: ไม่เห็น
+    viewer_html = client_for(world.head).get(detail_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' not in viewer_html
+
+    # active: ไม่เห็นแม้เป็นผู้แก้ไข
+    existing_ma.status = "active"
+    existing_ma.save()
+    active_html = client_for(world.admin).get(detail_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' not in active_html
 
 
 def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existing_ma):

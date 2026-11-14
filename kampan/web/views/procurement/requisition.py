@@ -74,70 +74,6 @@ def generate_next_requisition_code():
     return f"{next_number:04d}/{buddhist_year}"
 
 
-@module.route("", methods=["GET", "POST"])
-@login_required
-def index():
-    organization = g.organization
-    if not organization:
-        abort(404)
-    form = forms.requisitions.RequisitionFilterForm(request.args)
-
-    category = request.args.get("category", "")
-    name = request.args.get("name", "")
-    product_number = request.args.get("product_number", "")
-    asset_code = request.args.get("asset_code", "")
-    procurement_id = request.args.get("procurement_id", "")
-    expiration_date_range = request.args.get("expiration_date_range", "")
-
-    only_my_division = request.args.get("division") == "mine"
-    procurements = ma_permissions.visible_procurements(organization, only_my_division=only_my_division).filter(
-        status__in=["renewal-requested", "pending"]
-    )
-    # สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้านี้แสดงเฉพาะสัญญาย่อย (รายการย่อยแต่ละรายการ)
-    procurements = procurements.filter(id__nin=parent_procurement_ids(organization))
-    if name:
-        procurements = procurements.filter(name__icontains=name)
-    # ช่อง "เลขที่เบิกจ่าย" ค้นเลขที่ ม.อ.เบิกจ่าย ของหัวสัญญา
-    if product_number:
-        procurements = procurements.filter(psu_disbursement_number__icontains=product_number)
-    if procurement_id:
-        procurements = procurements.filter(id__in=[procurement_id] if ObjectId.is_valid(procurement_id) else [])
-
-    # ประเภท, รหัสครุภัณฑ์ (ค้นใน details) และช่วงวันหมดอายุ อยู่ที่รายการย่อย
-    items = models.ProcurementItem.objects(organization=organization)
-    if category:
-        items = items.filter(category=category)
-    if asset_code:
-        items = items.filter(details__icontains=asset_code)
-    items = apply_expiration_date_filter(items, expiration_date_range)
-    if category or asset_code or expiration_date_range:
-        procurements = procurements.filter(id__in=procurement_ids_of(items))
-
-    # หน้านี้เน้นวันหมดอายุ: เรียงจากใกล้หมดอายุที่สุดก่อนเป็นค่าตั้งต้น
-    sort = resolve_sort("end_asc")
-    form.sort.data = sort
-    paginated_procurements, page_procurements = paginate_sorted(procurements, organization, sort, default_per_page=8)
-    category_choices = models.MA_CATEGORY_CHOICES
-    return render_template(
-        "procurement/requisitions/index.html",
-        procurements=page_procurements,
-        can_change_renewal=ma_permissions.edit_checker(organization),
-        form=form,
-        action_form=forms.procurement.ConfirmActionForm(formdata=None),
-        paginated_procurements=paginated_procurements,
-        organization=organization,
-        today=datetime.date.today(),
-        category_choices=category_choices,
-        selected_category=category,
-        selected_name=name,
-        selected_product_number=product_number,
-        selected_asset_code=asset_code,
-        selected_expiration_date_range=expiration_date_range,
-        my_division=ma_permissions.my_division_filter(organization),
-        only_my_division=only_my_division,
-    )
-
-
 PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุหรือไม่ต่ออายุ MA รายการนี้"
 
 
@@ -170,14 +106,14 @@ def non_renewal_action(requisition_procurement_id):
     procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+        return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
     if not forms.procurement.ConfirmActionForm().validate_on_submit():
         flash(INVALID_REQUEST_MESSAGE, "error")
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+        return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
     if not claim_pending_procurement(procurement, organization, "disactive"):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
-    return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+    return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
 
 
 def _non_renewal_filters(organization, procurements, form):
@@ -252,12 +188,12 @@ def renewal_requested_action(requisition_procurement_id):
 
     if not ma_permissions.can_edit_procurement(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
     if not claim_pending_procurement(procurement, organization, "renewal-requested", from_statuses=("pending",)):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
-        return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+        return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     # สร้างรหัส requisition_code ใหม่
     requisition_code = generate_next_requisition_code()
@@ -296,7 +232,7 @@ def renewal_requested_action(requisition_procurement_id):
         models.Procurement.objects(id=procurement.id, status="renewal-requested").update_one(set__status="pending")
         raise
 
-    return redirect(url_for("procurement.requisitions.index", organization_id=organization.id))
+    return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
 
 @module.route("/renewal_requested")

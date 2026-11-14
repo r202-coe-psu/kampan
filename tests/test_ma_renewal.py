@@ -396,7 +396,6 @@ def test_failed_link_removes_new_ma_and_releases_claim(world, monkeypatch):
 
 MA_PAGES = {
     "products": "/procurement/products?organization_id={org}",
-    "renewal": "/procurement/requisitions?organization_id={org}&expiration_date_range=",
     "detail": "/procurement/payment/{ma}?organization_id={org}",
 }
 

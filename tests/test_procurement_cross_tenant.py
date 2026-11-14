@@ -273,11 +273,11 @@ def test_list_pages_still_get(world, client_for, path):
     assert response.status_code == 200
 
 
-def test_index_template_renders_post_forms_with_organization(world, client_for):
+def test_detail_template_renders_non_renewal_form_with_organization(world, client_for):
     procurement_a = _make_procurement(world.org_a, world.admin_a)
     client = client_for(world.admin_a)
 
-    response = client.get(f"/procurement/requisitions?organization_id={world.org_a.id}&expiration_date_range=3_months")
+    response = client.get(f"/procurement/payment/{procurement_a.id}?organization_id={world.org_a.id}")
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
@@ -768,17 +768,17 @@ def test_renewal_actions_refuse_users_without_permission(world, client_for, org_
 
 
 @pytest.mark.parametrize("who, sees_buttons", [("admin", True), ("staff", True), ("head", False), ("manager", False)])
-def test_index_shows_renewal_buttons_only_to_permitted_users(world, client_for, org_a_members, who, sees_buttons):
+def test_detail_shows_renewal_buttons_only_to_permitted_users(world, client_for, org_a_members, who, sees_buttons):
     procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
     user = world.admin_a if who == "admin" else getattr(org_a_members, who)
     client = client_for(user)
 
-    response = client.get(f"/procurement/requisitions?organization_id={world.org_a.id}")
+    response = client.get(f"/procurement/payment/{procurement_a.id}?organization_id={world.org_a.id}")
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
     assert (f"/procurement/products/{procurement_a.id}/renew?" in html) is sees_buttons
-    assert (f"delete_modal_{procurement_a.id}').showModal()" in html) is sees_buttons
+    assert ('id="non_renewal_modal"' in html) is sees_buttons
 
 
 @pytest.mark.parametrize("status", ["//evil.example.com", "/\\evil.example.com", "https://evil.example.com"])
@@ -789,27 +789,9 @@ def test_pay_installment_rejects_external_next_url(world, client_for, status):
     assert payment._safe_next_url("/procurement/products?x=1", "/ok") == "/procurement/products?x=1"
 
 
-def test_requisitions_default_filter_includes_expired(world, client_for):
-    expired = _make_procurement(world.org_a, world.admin_a, name="Expired MA")
-    models.ProcurementItem.objects(procurement=expired).update(
-        set__end_date=datetime.datetime.now() - datetime.timedelta(days=10)
-    )
-    client = client_for(world.admin_a)
-    base = f"/procurement/requisitions?organization_id={world.org_a.id}"
-
-    default_html = client.get(base).data.decode("utf-8")
-    three_months_html = client.get(base + "&expiration_date_range=3_months").data.decode("utf-8")
-
-    assert "Expired MA" in default_html
-    assert "Expired MA" not in three_months_html
-
-
-@pytest.mark.parametrize(
-    "path,status",
-    [("/procurement/requisitions", "pending"), ("/procurement/requisitions/non-renewal", "disactive")],
-)
-def test_renewal_lists_show_sub_contracts_not_parent(world, client_for, path, status):
+def test_renewal_lists_show_sub_contracts_not_parent(world, client_for):
     """สัญญาหลักที่แยกสัญญาย่อยแล้วเป็นแค่ข้อมูลอ้างอิง หน้ารายการแสดงเฉพาะสัญญาย่อย"""
+    path, status = "/procurement/requisitions/non-renewal", "disactive"
     parent = _make_procurement(world.org_a, world.admin_a, name="Parent MA", status=status)
     child = _make_procurement(world.org_a, world.admin_a, name="Child MA", status=status)
     child.parent_procurement = parent
@@ -855,7 +837,7 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
 
     unpaid_detail = client.get(f"/procurement/payment/{unpaid.id}?organization_id={org}").data.decode("utf-8")
     paid_detail = client.get(f"/procurement/payment/{paid.id}?organization_id={org}").data.decode("utf-8")
-    listing = client.get(f"/procurement/requisitions?organization_id={org}").data.decode("utf-8")
+    single_detail = client.get(f"/procurement/payment/{single.id}?organization_id={org}").data.decode("utf-8")
 
     assert f'id="renew_check_{unpaid.id}"' in unpaid_detail
     # modal เตือน: บันทึกจ่ายด้วยยอดเต็มของงวดเป็นค่าตั้งต้น
@@ -863,10 +845,8 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     assert f'data-renew-check="renew_check_{unpaid.id}"' in unpaid_detail
     assert f"/installments/" in unpaid_detail and "/pay?" in unpaid_detail
     assert f'id="renew_check_{paid.id}"' not in paid_detail
-    assert f'id="renew_check_{unpaid.id}"' in listing
-    assert f'id="renew_check_{paid.id}"' not in listing
     # รายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น จึงไม่ต้องเตือน
-    assert f'id="renew_check_{single.id}"' not in listing
+    assert f'id="renew_check_{single.id}"' not in single_detail
 
 
 def test_split_item_with_one_installment_is_warned_not_paid_by_renewal(world, client_for):
@@ -903,7 +883,7 @@ def test_list_edit_button_opens_the_sub_item_when_ma_has_one_item(world, client_
     client = client_for(world.admin_a)
     org = world.org_a.id
 
-    for path in ("/procurement/products", "/procurement/requisitions"):
+    for path in ("/procurement/products",):
         html = client.get(f"{path}?organization_id={org}").data.decode("utf-8")
         assert f"/procurement/products/{single.id}/edit?" in html
         assert f"item_id={item.id}" in html
