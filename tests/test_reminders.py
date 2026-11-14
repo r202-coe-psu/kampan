@@ -56,6 +56,8 @@ def world(app, create_org, create_user, assign_user_to_org):
 def _item(world, name="[TEST] Microsoft 365", end=datetime.date(2027, 5, 31), installments=None, **fields):
     end_datetime = datetime.datetime.combine(end, datetime.time.min)
     fields.setdefault("responsible_by", [world.role_alice])
+    # เตือนจ่ายงวดมีเฉพาะรายการที่แบ่งจ่ายเป็นงวด (installment_mode) ที่เหลือไม่มีการจ่าย
+    fields.setdefault("installment_mode", True)
     return models.ProcurementItem(
         name=name,
         category="software",
@@ -247,17 +249,37 @@ def test_payment_reminders_per_unpaid_installment(world):
             world,
             models.Installment(due_date=datetime.datetime(2027, 3, 15)),
             models.Installment(due_date=datetime.datetime(2027, 6, 15)),
+            payment_reminder_offsets=["7d"],
         ),
     )
 
-    assert [(r.trigger_date, r.offset, r.installment_index) for r in due_reminders(datetime.date(2027, 2, 15))] == [
-        (datetime.date(2027, 2, 15), "1m", 1)
+    assert _triggers(datetime.date(2027, 2, 15), kind="payment") == []  # ไม่มีเตือน 1 เดือน / 3 เดือนแล้ว
+    assert [(r.trigger_date, r.offset, r.installment_index) for r in due_reminders(datetime.date(2027, 3, 8))] == [
+        (datetime.date(2027, 3, 8), "7d", 1)
     ]
-    assert _triggers(datetime.date(2027, 3, 8), kind="payment") == [("payment", datetime.date(2027, 3, 8), "7d")]
-    assert _triggers(datetime.date(2027, 3, 15), kind="payment") == [
-        ("payment", datetime.date(2027, 3, 15), "3m"),  # งวด 2 (15/06) เตือน 3 เดือนวันเดียวกัน
-        ("payment", datetime.date(2027, 3, 15), "due"),  # งวด 1 ครบกำหนดวันนี้
-    ]
+    assert _triggers(datetime.date(2027, 3, 15), kind="payment") == [("payment", datetime.date(2027, 3, 15), "due")]
+    assert _triggers(datetime.date(2027, 6, 15), kind="payment") == [("payment", datetime.date(2027, 6, 15), "due")]
+
+
+def test_default_payment_reminder_is_due_date_only(world):
+    _ma(world, _payment_item(world, models.Installment(due_date=datetime.datetime(2027, 3, 15))))
+
+    assert _triggers(datetime.date(2027, 3, 8), kind="payment") == []
+    assert _triggers(datetime.date(2027, 3, 15), kind="payment") == [("payment", datetime.date(2027, 3, 15), "due")]
+
+
+def test_item_without_installment_mode_gets_no_payment_reminders_but_expiry_stays(world):
+    _ma(
+        world,
+        _item(
+            world,
+            installment_mode=False,
+            installments=[models.Installment(due_date=datetime.datetime(2027, 5, 31))],
+        ),
+    )
+
+    assert _triggers(datetime.date(2027, 5, 31), kind="payment") == []
+    assert _triggers(datetime.date(2027, 5, 31), kind="expiry") == [("expiry", datetime.date(2027, 5, 31), "due")]
 
 
 def test_paid_installment_stops_payment_reminders(world):
@@ -275,11 +297,24 @@ def test_paid_installment_stops_payment_reminders(world):
 def test_payment_offsets_are_separate_from_expiry_offsets(world):
     _ma(
         world,
-        _payment_item(world, models.Installment(due_date=datetime.datetime(2027, 3, 15)), payment_reminder_offsets=["15d"]),
+        _payment_item(world, models.Installment(due_date=datetime.datetime(2027, 3, 15)), payment_reminder_offsets=["5d"]),
     )
 
+    assert _triggers(datetime.date(2027, 3, 8), kind="payment") == []
+    assert _triggers(datetime.date(2027, 3, 10), kind="payment") == [("payment", datetime.date(2027, 3, 10), "5d")]
+
+
+def test_legacy_payment_offsets_are_ignored_when_sending(world):
+    _ma(
+        world,
+        _payment_item(
+            world, models.Installment(due_date=datetime.datetime(2027, 3, 15)), payment_reminder_offsets=["15d", "1m"]
+        ),
+    )
+
+    assert _triggers(datetime.date(2027, 2, 28), kind="payment") == []
     assert _triggers(datetime.date(2027, 2, 15), kind="payment") == []
-    assert _triggers(datetime.date(2027, 2, 28), kind="payment") == [("payment", datetime.date(2027, 2, 28), "15d")]
+    assert _triggers(datetime.date(2027, 3, 15), kind="payment") == [("payment", datetime.date(2027, 3, 15), "due")]
 
 
 def test_payment_log_of_one_installment_does_not_block_another(world):
@@ -550,9 +585,13 @@ def test_job_ignores_log_that_is_not_queued(world, smtp):
             "[แจ้งเตือน] ครบกำหนดจ่ายงวดที่ 1 วันนี้ [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
         ),
         (
-            datetime.date(2027, 3, 30),
-            {"expiry_reminder_offsets": [], "installments": [models.Installment(due_date=datetime.datetime(2027, 4, 30))]},
-            "[แจ้งเตือน] จ่ายงวดที่ 1 ใน 30 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
+            datetime.date(2027, 4, 23),
+            {
+                "expiry_reminder_offsets": [],
+                "payment_reminder_offsets": ["7d"],
+                "installments": [models.Installment(due_date=datetime.datetime(2027, 4, 30))],
+            },
+            "[แจ้งเตือน] จ่ายงวดที่ 1 ใน 7 วัน [TEST] Microsoft 365 (ม.อ.เบิกจ่าย 12345/2569)",
         ),
         (
             datetime.date(2027, 1, 10),

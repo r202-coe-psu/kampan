@@ -190,7 +190,7 @@ def test_create_ma_with_two_items_saves_header_items_and_installments(world, cli
     assert first.installment_mode is True and second.installment_mode is False
     assert {member.id for member in first.responsible_by} == {world.role_admin.id, world.role_responsible.id}
     assert second.winner is None and second.unit_price is None
-    assert len(second.installments) == 1
+    assert len(second.installments) == 0  # ไม่แบ่งจ่ายเป็นงวด = จ่ายแล้วตอนสร้าง MA ไม่เก็บงวด
 
 
 def test_draft_with_one_item_gets_sub_contracts_when_a_second_item_is_added(world, client_for):
@@ -371,7 +371,7 @@ def test_create_zero_amount_item_with_one_installment_ok(world, client_for):
     assert response.status_code == 302
     item = models.ProcurementItem.objects.get()
     assert item.amount == Decimal("0")
-    assert len(item.installments) == 1
+    assert len(item.installments) == 0
 
 
 def test_create_item_without_installment_rejected(world, client_for):
@@ -384,11 +384,112 @@ def test_create_item_without_installment_rejected(world, client_for):
     assert models.Procurement.objects.count() == 0
 
 
-def test_create_requires_psu_disbursement_number(world, client_for):
+def test_create_requires_psu_number_when_an_item_is_not_split_into_installments(world, client_for):
+    """รายการที่ไม่แบ่งจ่ายเป็นงวดจ่ายแล้วตอนสร้าง MA จึงต้องมีเลขที่ ม.อ.เบิกจ่ายที่หัว"""
     response = _create(client_for(world.admin), world, ma_form([_item(amount="100000.00")], psu=""))
 
     assert response.status_code == 200
+    assert "เมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด" in response.get_data(as_text=True)
     assert models.Procurement.objects.count() == 0
+
+
+def test_create_requires_psu_number_if_any_one_of_several_items_is_not_split(world, client_for):
+    data = ma_form(
+        [
+            _item(amount="60000.00", installment_mode="y", installments=[{"due_date": "2030-06-30"}]),
+            _item(name="[TEST] จ่ายแล้ว", amount="40000.00"),
+        ],
+        psu="",
+    )
+
+    assert _create(client_for(world.admin), world, data).status_code == 200
+    assert models.Procurement.objects.count() == 0
+
+
+def test_create_psu_number_is_optional_when_every_item_is_split_into_installments(world, client_for):
+    data = ma_form(
+        [_item(amount="100000.00", installment_mode="y", installments=[{"due_date": "2030-06-30"}])], psu=""
+    )
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 302
+    assert (models.Procurement.objects.get().psu_disbursement_number or "") == ""
+
+
+def test_header_edit_cannot_clear_psu_number_while_an_item_is_not_split(world, client_for, create_ma):
+    ma = create_ma(
+        world.org,
+        user=world.admin,
+        items=[
+            models.ProcurementItem(
+                name="[TEST] จ่ายแล้ว",
+                category="service",
+                amount=Decimal("1000.00"),
+                start_date=datetime.datetime(2026, 1, 1),
+                end_date=datetime.datetime(2030, 12, 31),
+                installment_mode=False,
+            )
+        ],
+    )
+    data = {"psu_disbursement_number": "", "name": "[TEST] MA", "company": "บริษัท", "version": ma.get_version()}
+
+    response = client_for(world.admin).post(f"/procurement/products/{ma.id}/edit?{_q(world.org)}", data=data)
+
+    assert response.status_code == 200
+    assert models.Procurement.objects.get(id=ma.id).psu_disbursement_number == "PSU-0001"
+
+
+def test_pay_requires_the_disbursement_document_number(world, client_for, existing_ma):
+    client = client_for(world.admin)
+    url = f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}"
+
+    for number in ("", "   "):
+        client.post(url, data={"paid_date": "2026-11-01", "payment_number": number})
+        assert _first_installment(existing_ma).paid_date is None
+
+    client.post(url, data={"paid_date": "2026-11-01"})  # ไม่ส่งช่องเลย
+    assert _first_installment(existing_ma).paid_date is None
+
+    client.post(url, data={"paid_date": "2026-11-01", "payment_number": "PAY-REQ-1"})
+    assert _first_installment(existing_ma).payment_number == "PAY-REQ-1"
+
+
+def test_pay_without_number_shows_thai_error_and_modals_mark_it_required(world, client_for, existing_ma):
+    client = client_for(world.admin)
+
+    client.post(f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}", data={"paid_date": "2026-11-01"})
+
+    assert _flashes(client) == [("error", "กรุณากรอกเลขที่ ม.อ.เบิกจ่ายของงวดนี้ก่อนบันทึกจ่าย")]
+    for url in (f"/procurement/payment/{existing_ma.id}?{_q(world.org)}", f"/procurement/products?{_q(world.org)}"):
+        html = client.get(url).get_data(as_text=True)
+        assert re.search(r'<input[^>]*name="payment_number"[^>]*\brequired\b', html)
+
+
+def test_item_without_installment_mode_shows_paid_and_has_no_pay_controls(world, client_for, create_ma):
+    ma = create_ma(
+        world.org,
+        user=world.admin,
+        items=[
+            models.ProcurementItem(
+                name="[TEST] จ่ายแล้ว",
+                category="service",
+                amount=Decimal("1000.00"),
+                start_date=datetime.datetime(2026, 1, 1),
+                end_date=datetime.datetime(2030, 12, 31),
+                installment_mode=False,
+            )
+        ],
+    )
+    client = client_for(world.admin)
+
+    detail = client.get(f"/procurement/payment/{ma.id}?{_q(world.org)}").get_data(as_text=True)
+    listing = client.get(f"/procurement/products?{_q(world.org)}").get_data(as_text=True)
+
+    assert ma.get_payment_status() == "paid"
+    assert "/pay?" not in detail and "pay_modal_" not in detail and "จ่ายแล้ว" in detail
+    assert "/pay?" not in listing and 'data-payment-status="paid-upfront"' in listing
+    assert ma.get_unpaid_installments() == []
 
 
 def test_create_rejects_responsible_from_other_org(world, client_for):
@@ -465,6 +566,7 @@ def _model_item(amount, responsible=(), installments=None):
         start_date=datetime.datetime(2026, 1, 1),
         end_date=datetime.datetime(2030, 12, 31),
         responsible_by=list(responsible),
+        installment_mode=True,
         installments=installments if installments is not None else [models.Installment(due_date=datetime.datetime(2030, 12, 31))],
     )
 
@@ -485,11 +587,20 @@ def test_save_with_items_sum_mismatch_raises_before_writing(world):
     assert models.ProcurementItem.objects.count() == 0
 
 
-def test_save_with_items_rejects_item_without_installment(world):
+def test_save_with_items_rejects_installment_item_without_installment(world):
     with pytest.raises(me.ValidationError):
         _header(world.org).save_with_items([_model_item("100.00", installments=[])])
 
     assert models.Procurement.objects.count() == 0
+
+
+def test_save_with_items_accepts_item_without_installment_mode_and_installments(world):
+    item = _model_item("100.00", installments=[])
+    item.installment_mode = False
+
+    _header(world.org).save_with_items([item])
+
+    assert models.ProcurementItem.objects.get().installments == []
 
 
 def test_save_with_items_rejects_responsible_from_other_org(world):
@@ -599,9 +710,10 @@ def existing_ma(world, create_ma):
         world.org,
         user=world.creator,
         name="[TEST] MA เดิม",
-        status="pending",
+        status="review",
         responsible=[world.role_responsible],
         total_amount="1000.00",
+        days_to_end=30,
     )
 
 
@@ -614,6 +726,7 @@ def _edit_form(procurement, total="1000.00", name="[TEST] MA แก้แล้�
                 name=item.name,
                 amount=total,
                 responsible_by=[str(member.id) for member in item.responsible_by],
+                installment_mode="y",
                 installments=[{"installment_id": str(item.installments[0]._id), "due_date": "2026-12-31"}],
             )
         ],
@@ -681,6 +794,7 @@ def test_item_edit_keeps_other_items_and_item_ids_and_recomputes_total(world, cl
             _item(
                 item_id=str(first.id),
                 amount="70.00",
+                installment_mode="y",
                 installments=[{"installment_id": str(installment_id), "due_date": "2026-12-31"}],
             )
         ],
@@ -870,7 +984,8 @@ def test_installment_actions_reject_get(world, client_for, existing_ma, action):
 
 def test_pay_refused_for_user_who_cannot_edit(world, client_for, existing_ma):
     response = client_for(world.head).post(
-        f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}", data={"paid_date": "2026-11-01"}
+        f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}",
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-HEAD"},
     )
 
     assert response.status_code == 302
@@ -880,7 +995,7 @@ def test_pay_refused_for_user_who_cannot_edit(world, client_for, existing_ma):
 def test_pay_rejects_more_than_two_decimals(world, client_for, existing_ma):
     client_for(world.admin).post(
         f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}",
-        data={"paid_date": "2026-11-01", "paid_amount": "1.234"},
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-DEC", "paid_amount": "1.234"},
     )
 
     assert _first_installment(existing_ma).paid_date is None
@@ -924,19 +1039,8 @@ def test_detail_hides_edit_and_pay_buttons_from_viewer(world, client_for, existi
 
 
 # ---------------------------------------------------------------------------
-# ไม่ต่ออายุ: ใช้กติกาผู้แก้ไข MA ได้
+# ขอ / อนุมัติต่ออายุ-ไม่ต่ออายุ: ดู tests/test_ma_renewal_flow.py
 # ---------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("who, allowed", [("creator", True), ("responsible", True), ("admin", True), ("head", False)])
-def test_non_renewal_action_uses_can_edit_rule(world, client_for, existing_ma, who, allowed):
-    response = client_for(getattr(world, who)).post(
-        f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}"
-    )
-
-    assert response.status_code == 302
-    existing_ma.reload()
-    assert existing_ma.status == ("disactive" if allowed else "pending")
 
 
 # ---------------------------------------------------------------------------
@@ -1033,23 +1137,6 @@ def test_upload_responsible_lookup_is_scoped_to_document_org(world, gridfs_enabl
     assert models.ProcurementItem.objects.get().responsible_by == []
 
 
-def test_procurement_status_moves_only_active_ma_near_expiry_to_pending(world, create_ma):
-    active = create_ma(world.org, user=world.admin, status="active")
-    stopped = create_ma(world.org, user=world.admin, status="disactive")
-    # save_with_items ย้ายเป็น pending ทันทีเมื่อใกล้หมดอายุ จึงจำลอง MA ที่เข้าช่วง 90 วันหลังบันทึก (ที่ controller ต้องย้าย)
-    soon = datetime.datetime.now() + datetime.timedelta(days=30)
-    models.ProcurementItem.objects(procurement=active).update(set__end_date=soon)
-    updater = ProcurementStatusUpdater.__new__(ProcurementStatusUpdater)
-
-    for procurement in (active, stopped):
-        asyncio.run(updater.process_data({"procurement_id": procurement.id}))
-
-    active.reload()
-    stopped.reload()
-    assert active.status == "pending"
-    assert stopped.status == "disactive"
-
-
 # ---------------------------------------------------------------------------
 # CSRF: POST ที่เปลี่ยนสถานะต้องมี token (แอปไม่มี CSRFProtect ทั้งระบบ ตรวจผ่าน FlaskForm เท่านั้น)
 # ---------------------------------------------------------------------------
@@ -1068,6 +1155,7 @@ def _csrf_token(html):
 
 def _pay(client, world, procurement, **data):
     data.setdefault("paid_date", "2026-11-01")
+    data.setdefault("payment_number", "PAY-DEFAULT")
     return client.post(f"{_installment_url(procurement, 'pay')}?{_q(world.org)}", data=data)
 
 
@@ -1094,21 +1182,36 @@ def test_unpay_with_csrf_token_from_detail_page(world, client_for, existing_ma, 
     assert _first_installment(existing_ma).paid_date is None
 
 
+def _request_stop(ma):
+    models.Procurement.objects(id=ma.id).update(set__status="renewal-requested", set__renewal_request="stop")
+
+
 def test_non_renewal_without_csrf_token_is_refused(world, client_for, existing_ma, csrf_enabled):
+    _request_stop(existing_ma)
     client_for(world.admin).post(f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}")
 
     existing_ma.reload()
-    assert existing_ma.status == "pending"
+    assert existing_ma.status == "renewal-requested"
+
+
+def test_request_renewal_without_csrf_token_is_refused(world, client_for, existing_ma, csrf_enabled):
+    client_for(world.responsible).post(
+        f"/procurement/requisitions/{existing_ma.id}/renewal-request?{_q(world.org)}", data={"request": "stop"}
+    )
+
+    existing_ma.reload()
+    assert existing_ma.status == "review"
 
 
 def test_non_renewal_with_csrf_token_from_detail_page(world, client_for, existing_ma, csrf_enabled):
+    _request_stop(existing_ma)
     client = client_for(world.admin)
     html = client.get(f"/procurement/payment/{existing_ma.id}?{_q(world.org)}").get_data(as_text=True)
     assert f"/procurement/requisitions/{existing_ma.id}/non-renewal" in html
 
     response = client.post(
         f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}",
-        data={"csrf_token": _csrf_token(html)},
+        data={"csrf_token": _csrf_token(html), "expected_request": "stop"},
     )
 
     assert response.status_code == 302
@@ -1131,7 +1234,7 @@ def test_other_ma_posts_without_csrf_token_change_nothing(world, client_for, exi
     _create(client, world, _two_item_form(world))
 
     existing_ma.reload()
-    assert existing_ma.name == "[TEST] MA เดิม" and existing_ma.status == "pending"
+    assert existing_ma.name == "[TEST] MA เดิม" and existing_ma.status == "review"
     assert _first_installment(existing_ma).paid_date is None
     assert models.ReminderLog.objects.count() == 0
     assert models.Procurement.objects.count() == 1
@@ -1211,7 +1314,10 @@ def test_installment_action_that_writes_nothing_reports_error(
 ):
     client = client_for(world.admin)
 
-    client.post(f"{_installment_url(existing_ma, action)}?{_q(world.org)}", data={"paid_date": "2026-11-01"})
+    client.post(
+        f"{_installment_url(existing_ma, action)}?{_q(world.org)}",
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-X"},
+    )
 
     assert _flashes(client) == [("error", "ไม่พบงวดนี้ หรือข้อมูลถูกแก้ไขแล้ว")]
     assert _first_installment(existing_ma).paid_date is None
@@ -1495,43 +1601,6 @@ def test_search_matches_sub_items_serial_number_and_asset_code(world, client_for
     html = client_for(world.admin).get(f"/procurement/products?q=AC-CISCO-SEARCH-88&{_q(world.org)}").get_data(as_text=True)
     assert procurement.psu_disbursement_number in html
 
-
-
-def test_save_with_items_makes_near_expiry_active_ma_pending_immediately(world, create_ma):
-    """active ที่มีรายการย่อยหมดอายุภายใน 90 วัน เป็น pending ทันทีที่บันทึก ไม่ต้องรอ controller"""
-    near = create_ma(world.org, user=world.admin, name="[TEST] ใกล้หมด", status="draft")
-    near.status = "active"
-    soon = datetime.datetime.now() + datetime.timedelta(days=89)
-    items = near.get_items()
-    items[0].end_date = soon
-    near.save_with_items(items)
-    far = create_ma(world.org, user=world.admin, name="[TEST] ไกล", status="active")
-    drafts = create_ma(world.org, user=world.admin, name="[TEST] ร่าง", status="draft")
-
-    near.reload()
-    far.reload()
-    drafts.reload()
-    assert near.status == "pending"
-    assert far.status == "active"  # ยังไกลกว่า 90 วัน
-    assert drafts.status == "draft"  # แบบร่างไม่ถูกย้าย
-
-
-def test_save_with_items_returns_pending_ma_to_active_when_end_date_moves_beyond_90_days(world, create_ma):
-    """แก้วันสิ้นสุดให้ไกลกว่า 90 วัน MA ที่เป็น pending ต้องกลับเป็น active ไม่ค้างในหน้ารายการใกล้หมดอายุ"""
-    ma = create_ma(world.org, user=world.admin, name="[TEST] ต่อสัญญา", status="pending")
-    assert ma.status == "pending"
-    items = ma.get_items()
-
-    items[0].end_date = datetime.datetime.now() + datetime.timedelta(days=200)
-    ma.save_with_items(items)
-    ma.reload()
-    assert ma.status == "active"
-
-    items = ma.get_items()
-    items[0].end_date = datetime.datetime.now() + datetime.timedelta(days=60)
-    ma.save_with_items(items)
-    ma.reload()
-    assert ma.status == "pending"  # ใกล้อีกครั้งก็กลับเป็น pending
 
 
 @pytest.mark.parametrize("due", ["2025-12-31", "2031-01-01"])

@@ -270,8 +270,11 @@ def test_ma_pages_open_when_flag_off(world, client_for, set_flag, path):
 
 def test_non_renewal_action_works_when_flag_off(world, client_for, set_flag):
     client = client_for(world.users["admin"])
+    models.Procurement.objects(id=world.procurement.id).update(set__status="renewal-requested", set__renewal_request="stop")
 
-    response = client.post(f"/procurement/requisitions/{world.procurement.id}/non-renewal?{_q(world)}")
+    response = client.post(
+        f"/procurement/requisitions/{world.procurement.id}/non-renewal?{_q(world)}", data={"expected_request": "stop"}
+    )
 
     assert response.status_code == 302
     world.procurement.reload()
@@ -364,12 +367,14 @@ def test_switch_organization_lands_on_procurement_home(app, world, create_org, s
 def test_ma_detail_never_shows_old_renew_button(world, client_for, set_flag, enabled):
     """ปุ่ม "ยื่นขอต่ออายุ" เดิม (สร้างคำขอซื้อ) ถูกถอดออกจากหน้ารายละเอียด MA ไม่ว่า flag จะเป็นอะไร (#32 / คำตัดสินรอบ 3)"""
     set_flag(enabled)
+    # ผู้รับผิดชอบขอต่ออายุแล้ว admin จึงเห็นปุ่มอนุมัติต่ออายุ (ขั้นตอนต่ออายุเดิม)
+    models.Procurement.objects(id=world.procurement.id).update(set__status="renewal-requested", set__renewal_request="renew")
 
     html = client_for(world.users["admin"]).get(f"/procurement/payment/{world.procurement.id}?{_q(world)}").get_data(as_text=True)
 
     assert f"/procurement/requisitions/{world.procurement.id}/renewal-requested" not in html
     assert f"/procurement/products/{world.procurement.id}/renew?" in html
-    assert f"/procurement/requisitions/{world.procurement.id}/non-renewal" in html
+    assert f"/procurement/requisitions/{world.procurement.id}/non-renewal" not in html
 
 
 @pytest.mark.parametrize("enabled", (False, True))

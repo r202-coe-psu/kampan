@@ -1,0 +1,30 @@
+{# ป้ายสถานะ MA 2 ชนิด: สถานะการใช้งาน (usage_status) และสถานะการต่ออายุ (status) #}
+{% set usage_badge_classes = {
+  "upcoming": "badge-info",
+  "in_use": "badge-success",
+  "expired": "badge-neutral",
+} %}
+{% set renewal_badge_classes = {
+  "draft": "badge-ghost border border-base-300",
+  "review": "badge-warning",
+  "renewal-requested": "badge-info",
+  "renewed": "badge-neutral",
+  "disactive": "badge-error",
+} %}
+{% set renewal_request_labels = {"renew": "ขอต่ออายุ", "stop": "ขอไม่ต่ออายุ"} %}
+
+{% macro usage_badge(procurement, size="badge-md") %}
+  {% if procurement.usage_status %}
+    <span class="badge {{ size }} {{ usage_badge_classes.get(procurement.usage_status, 'badge-ghost') }} whitespace-nowrap px-2" data-usage-status="{{ procurement.usage_status }}">{{ procurement.get_usage_status_label() }}</span>
+  {% else %}
+    <span class="text-base-content/50">-</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro renewal_badge(procurement, size="badge-md", show_request=true) %}
+  {% set status = procurement.get_renewal_status() %}
+  <span class="badge {{ size }} {{ renewal_badge_classes.get(status, 'badge-ghost') }} whitespace-nowrap px-2" data-renewal-status="{{ status }}">{{ procurement.get_renewal_status_label() }}</span>
+  {% if show_request and status == "renewal-requested" and procurement.renewal_request %}
+    <span class="text-[11px] text-base-content/60 whitespace-nowrap">({{ renewal_request_labels.get(procurement.renewal_request) }})</span>
+  {% endif %}
+{% endmacro %}

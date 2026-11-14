@@ -737,11 +737,10 @@ def save_ma_db(document, ma, user_id):
                 reminder_kind="ma",
                 # จำนวนงวด > 1 = แบ่งจ่ายเป็นงวด (วันครบกำหนดห่างเท่า ๆ กัน) ไม่เช่นนั้นจ่ายครั้งเดียวในวันสิ้นสุด
                 installment_mode=period > 1,
+                # จำนวนงวดไม่เกิน 1 = ไม่แบ่งจ่าย = ไม่มีการจ่าย (ไม่สร้างงวด)
                 installments=[
                     models.Installment(due_date=datetime.datetime.combine(due_date, datetime.time.min))
-                    for due_date in (
-                        models.procurement.even_due_dates(start_date, end_date, period) if period > 1 else [end_date]
-                    )
+                    for due_date in (models.procurement.even_due_dates(start_date, end_date, period) if period > 1 else [])
                 ],
                 created_by=processed_user,
                 last_updated_by=processed_user,

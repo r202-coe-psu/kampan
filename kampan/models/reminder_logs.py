@@ -1,6 +1,6 @@
 """ประวัติการแจ้งเตือน MA (#28, #30)
 
-- log ที่ระบบสร้าง (expiry / payment / activation / custom): controller สร้างเป็น ``queued`` ก่อน enqueue
+- log ที่ระบบสร้าง (expiry / payment / activation / custom / assigned): controller สร้างเป็น ``queued`` ก่อน enqueue
   งานส่งเมลเขียนสถานะสุดท้าย ``sent`` / ``failed`` (failed นับว่าส่งแล้ว ไม่ retry เอง)
 - log ที่เพิ่มเอง (manual): ไม่มี ``dedupe_key`` จึงเพิ่มซ้ำวันเดียวกันได้
 - กันส่งซ้ำด้วย ``dedupe_key`` (unique + sparse) ไม่ใช้ partialFilterExpression เพราะไม่รู้เวอร์ชัน Mongo ของ production
@@ -16,12 +16,14 @@ REMINDER_LOG_KINDS = [
     ("activation", "activate"),
     ("custom", "วันที่เจาะจง"),
     ("manual", "บันทึกเอง"),
+    ("assigned", "มอบหมายผู้รับผิดชอบ"),
 ]
 REMINDER_LOG_STATUSES = [
     ("queued", "รอส่ง"),
     ("sent", "ส่งแล้ว"),
     ("failed", "ส่งไม่สำเร็จ"),
     ("manual", "บันทึกเอง"),
+    ("skipped", "ข้าม (MA หยุดเตือนแล้ว)"),
 ]
 # สถานะที่นับว่าระบบส่ง reminder นั้นไปแล้ว
 SYSTEM_LOG_STATUSES = ["queued", "sent", "failed"]

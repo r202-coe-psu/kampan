@@ -62,6 +62,15 @@ REMINDER_OFFSET_CHOICES = [
     ("7d", "7 วัน"),
 ]
 DEFAULT_REMINDER_OFFSETS = ["3m", "2m", "1m", "15d", "7d"]
+# เตือนจ่ายงวด: เตือนในวันครบกำหนดเสมอ (ไม่เก็บเป็นตัวเลือก) และเพิ่ม 7, 5, 3 วันก่อนวันครบกำหนดได้ (ค่าเริ่มต้นไม่ติ๊ก)
+PAYMENT_REMINDER_OFFSET_CHOICES = [
+    ("7d", "7 วัน"),
+    ("5d", "5 วัน"),
+    ("3d", "3 วัน"),
+]
+DEFAULT_PAYMENT_REMINDER_OFFSETS: list[str] = []
+# ค่าที่เก็บเดิม (เช่น 3m, 15d) ยังอ่านได้ แต่ไม่ถูกใช้ส่งเตือนจ่ายงวด
+ALL_PAYMENT_OFFSET_CHOICES = PAYMENT_REMINDER_OFFSET_CHOICES + REMINDER_OFFSET_CHOICES
 # จำนวนวันเตือนที่กรอกเอง (#29)
 MAX_REMINDER_OFFSET_DAYS = 730
 # จำนวนงวดสูงสุดต่อรายการย่อย (ฟอร์มและนำเข้า Excel)
@@ -73,6 +82,10 @@ MAX_INSTALLMENTS_MESSAGE = f"จำนวนงวดต้องไม่เก
 
 def default_reminder_offsets() -> list[str]:
     return list(DEFAULT_REMINDER_OFFSETS)
+
+
+def default_payment_reminder_offsets() -> list[str]:
+    return list(DEFAULT_PAYMENT_REMINDER_OFFSETS)
 
 
 # ผังบัญชี 15 รายการตามแบบฟอร์มเพิ่มรายการ MA
@@ -138,14 +151,59 @@ PAYEMENT_STATUS_CHOICES = [
     ("upcoming", "ใกล้ครบกำหนด"),
 ]
 
+# สถานะการต่ออายุ (field ``status``): review → renewal-requested → renewed / disactive
+# ``active`` / ``pending`` เป็นค่าเดิมที่ยังอ่านได้ (= review) ไม่ใช้เขียนใหม่ ดู normalize_renewal_status
 RENEWAL_STATUS_CHOICES = [
     ("draft", "แบบร่าง"),
-    ("pending", "รอดำเนินการ"),
-    ("renewal-requested", "ยื่นขอต่ออายุ"),
-    ("disactive", "ไม่อนุมัติ"),
-    ("active", "จัดซื้อเรียบร้อย"),
+    ("review", "รอตรวจสอบ"),
+    ("renewal-requested", "รอต่ออายุ"),
     ("renewed", "ต่ออายุแล้ว"),
+    ("disactive", "ไม่ต่ออายุ"),
+    ("active", "รอตรวจสอบ"),
+    ("pending", "รอตรวจสอบ"),
 ]
+LEGACY_REVIEW_STATUSES = ("active", "pending")
+# ค่า status ทั้งหมดที่นับเป็น "รอตรวจสอบ" (ใช้กรอง queryset)
+REVIEW_STATUSES = ("review",) + LEGACY_REVIEW_STATUSES
+
+# สิ่งที่ผู้รับผิดชอบขอ (field ``renewal_request``)
+RENEWAL_REQUEST_CHOICES = [
+    ("renew", "ขอต่ออายุ"),
+    ("stop", "ขอไม่ต่ออายุ"),
+]
+
+# สถานะการใช้งาน (field ``usage_status``) คำนวณจากวันเริ่ม / สิ้นสุดของรายการย่อย
+USAGE_STATUS_CHOICES = [
+    ("upcoming", "รอดำเนินการ"),
+    ("in_use", "กำลังใช้งาน"),
+    ("expired", "หมดอายุ"),
+]
+
+
+def normalize_renewal_status(status: str | None) -> str | None:
+    """ค่าเดิม active / pending อ่านเป็น review"""
+    return "review" if status in LEGACY_REVIEW_STATUSES else status
+
+
+def renewal_status_statuses(status: str | None) -> list[str]:
+    """ค่า status ที่เก็บได้ทั้งหมดของสถานะการต่ออายุหนึ่ง (review รวมค่าเดิม) ใช้เป็นเงื่อนไข query"""
+    if status == "review":
+        return list(REVIEW_STATUSES)
+    return [status] if status else []
+
+
+def compute_usage_status(start_date, end_date, today: datetime.date | None = None) -> str | None:
+    """upcoming = วันนี้ก่อนวันเริ่มแรกสุด · expired = วันนี้หลังวันสิ้นสุดสุดท้าย · in_use = ช่วงระหว่างนั้น
+    ไม่มีวันที่ใดเลยคืน None"""
+    start, end = _as_date(start_date), _as_date(end_date)
+    if not start and not end:
+        return None
+    today = today or datetime.date.today()
+    if start and today < start:
+        return "upcoming"
+    if end and today > end:
+        return "expired"
+    return "in_use"
 
 # งวดที่ครบกำหนดภายในกี่วันนับเป็น "ใกล้ครบกำหนด"
 UPCOMING_DAYS = 30
@@ -198,7 +256,8 @@ def item_payment_status(installments: Iterable[tuple], today: datetime.date | No
 
 
 def worst_payment_status(statuses: Iterable[str]) -> str:
-    """สถานะที่แย่ที่สุด (overdue > upcoming > unpaid > paid) ไม่มีรายการย่อยถือว่า unpaid"""
+    """สถานะที่แย่ที่สุด (overdue > upcoming > unpaid > paid) ไม่มีรายการย่อยถือว่า unpaid
+    รายการที่ไม่แบ่งจ่ายเป็นงวดจ่ายแล้วตอนสร้าง MA (paid) จึงไม่ทำให้สถานะของ MA แย่ลง"""
     return max(statuses, key=lambda status: PAYMENT_STATUS_SEVERITY.get(status, 0), default="unpaid")
 
 
@@ -255,10 +314,6 @@ class ItemDeleteError(Exception):
 class ConcurrentEditConflict(Exception):
     """หัวหรือรายการย่อยถูกแก้ / บันทึกจ่ายงวดโดยผู้อื่นหลังจากโหลดมา จึงไม่เขียนทับ"""
 
-
-# MA ที่รายการย่อยใดหมดอายุภายในกี่วัน จะเป็น "รอดำเนินการ" (pending) และเข้าหน้ารายการใกล้หมดอายุ
-# (controller ย้ายทุกวัน และ ``save_with_items`` ย้ายทันทีที่บันทึก)
-RENEWAL_WINDOW_DAYS = 90
 
 PAY_LOG_ACTIONS = [
     ("paid", "บันทึกจ่าย"),
@@ -429,7 +484,7 @@ class ProcurementItem(me.Document):
         me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
     )
     payment_reminder_offsets = me.ListField(
-        me.StringField(choices=REMINDER_OFFSET_CHOICES), default=default_reminder_offsets
+        me.StringField(choices=ALL_PAYMENT_OFFSET_CHOICES), default=default_payment_reminder_offsets
     )
     # จำนวนวันก่อน end_date ที่กรอกเอง (เตือนหมดอายุ)
     reminder_offsets_days = me.ListField(
@@ -438,8 +493,9 @@ class ProcurementItem(me.Document):
     # วันที่เตือนเจาะจง (เก็บ ค.ศ. เที่ยงคืน กรอกเป็น พ.ศ. ในฟอร์ม)
     custom_reminder_dates = me.ListField(me.DateTimeField(), default=list)
 
-    # แบ่งจ่ายเป็นงวดไหม: False = จ่ายครั้งเดียวก่อนหมดอายุ (งวดเดียว due_date = end_date ระบบตั้งให้)
+    # แบ่งจ่ายเป็นงวดไหม: False = จ่ายแล้วตอนสร้าง MA (ไม่เก็บงวด ไม่นับความคืบหน้า / การเตือนจ่าย / งวดค้าง)
     # None = เอกสารที่สร้างก่อนมี field นี้ ใช้จำนวนงวด (>1 = แบ่งงวด) ดู pays_in_installments
+    # ข้อมูลเดิมที่ mode เป็น False แต่เก็บงวดเดียวไว้ ถือว่าไม่มีการจ่ายเช่นกัน (งวดนั้นถูกมองข้าม)
     installment_mode = me.BooleanField(default=None)
     installments = me.EmbeddedDocumentListField(Installment)
 
@@ -455,7 +511,8 @@ class ProcurementItem(me.Document):
             self.has_custom_responsible_divisions = True
 
     def clean(self):
-        if not self.installments:
+        # เฉพาะรายการที่แบ่งจ่ายเป็นงวดต้องมีงวด รายการที่ไม่แบ่งงวดไม่มีการจ่าย (ไม่เก็บงวด)
+        if self.installment_mode and not self.installments:
             raise me.ValidationError("รายการย่อยต้องมีอย่างน้อย 1 งวด")
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise me.ValidationError("วันที่สิ้นสุดต้องมากกว่าหรือเท่ากับวันที่เริ่มต้น")
@@ -484,9 +541,10 @@ class ProcurementItem(me.Document):
         return dict(REMINDER_KIND_CHOICES).get(self.reminder_kind, self.reminder_kind or "-")
 
     def pays_in_installments(self) -> bool:
+        """รายการนี้มีการจ่ายไหม (เฉพาะที่แบ่งจ่ายเป็นงวด) ไม่ใช่ = ไม่มีการจ่ายเลย"""
         if self.installment_mode is not None:
             return bool(self.installment_mode)
-        return self.get_installment_count() > 1
+        return len(self._data.get("installments") or []) > 1
 
     def has_sn(self) -> bool:
         if self.has_sub_item_sn is not None:
@@ -502,9 +560,14 @@ class ProcurementItem(me.Document):
         return any(bool(sub.details and sub.details.strip()) for sub in self.sub_items or [])
 
     def get_sorted_installments(self) -> list[Installment]:
+        """งวดเรียงตามวันครบกำหนด รายการที่ไม่มีการจ่ายไม่มีงวด (แม้ข้อมูลเดิมจะเก็บงวดไว้)"""
+        if not self.pays_in_installments():
+            return []
         return sorted(self.installments, key=lambda installment: installment.due_date or datetime.datetime.max)
 
     def get_installment(self, installment_id) -> Installment | None:
+        if not self.pays_in_installments():
+            return None
         for installment in self.installments:
             if str(installment._id) == str(installment_id):
                 return installment
@@ -512,7 +575,9 @@ class ProcurementItem(me.Document):
 
     def _installments_without_dereference(self) -> list[Installment]:
         """งวดจาก ``_data`` ตรง ๆ: อ่าน ``self.installments`` จะ dereference ``paid_by`` ของทุกงวด
-        (1 query ต่อรายการย่อย) ซึ่งการคำนวณสถานะไม่ได้ใช้"""
+        (1 query ต่อรายการย่อย) ซึ่งการคำนวณสถานะไม่ได้ใช้ รายการที่ไม่มีการจ่ายคืนค่าว่าง"""
+        if not self.pays_in_installments():
+            return []
         return list(self._data.get("installments") or [])
 
     def get_next_unpaid_installment(self) -> Installment | None:
@@ -529,7 +594,10 @@ class ProcurementItem(me.Document):
         return len(self._installments_without_dereference())
 
     def get_payment_status(self, today: datetime.date | None = None) -> str:
-        """สถานะของงวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด (แย่สุดของรายการนี้) หรือ paid เมื่อจ่ายครบ"""
+        """สถานะของงวดที่ยังไม่จ่ายซึ่งครบกำหนดเร็วสุด (แย่สุดของรายการนี้) หรือ paid เมื่อจ่ายครบ
+        รายการที่ไม่แบ่งจ่ายเป็นงวด = จ่ายแล้วตอนสร้าง MA (paid) ไม่มีงวดให้จ่ายหรือเตือน"""
+        if not self.pays_in_installments():
+            return "paid"
         return item_payment_status(
             ((installment.due_date, installment.paid_date) for installment in self._installments_without_dereference()),
             today,
@@ -566,8 +634,12 @@ class Procurement(me.Document):
         precision=2,
         rounding=decimal.ROUND_HALF_EVEN,
     )
-    # status: สถานะการต่ออายุ (renewal process)
-    status = me.StringField(choices=RENEWAL_STATUS_CHOICES, default="active")
+    # status: สถานะการต่ออายุ (renewal process) เริ่มที่ review
+    status = me.StringField(choices=RENEWAL_STATUS_CHOICES, default="review")
+    # ผู้รับผิดชอบขออะไรไว้ตอน status = renewal-requested (renew / stop)
+    renewal_request = me.StringField(choices=RENEWAL_REQUEST_CHOICES)
+    # สถานะการใช้งาน: คำนวณตอนบันทึกและ controller อัปเดตรายวัน (ค่าที่เก็บอาจค้างถ้า controller ไม่รัน)
+    usage_status = me.StringField(choices=USAGE_STATUS_CHOICES)
 
     organization = me.ReferenceField("Organization", dbref=True, required=True)
 
@@ -586,6 +658,34 @@ class Procurement(me.Document):
     created_by = me.ReferenceField("User", dbref=True)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)
+
+    def get_renewal_status(self) -> str | None:
+        """สถานะการต่ออายุที่ปรับค่าเดิม (active / pending) เป็น review แล้ว"""
+        return normalize_renewal_status(self.status)
+
+    def get_renewal_status_label(self) -> str:
+        return dict(RENEWAL_STATUS_CHOICES).get(self.status, self.status or "-")
+
+    def get_usage_status_label(self) -> str:
+        return dict(USAGE_STATUS_CHOICES).get(self.usage_status, "-")
+
+    def compute_usage_status(self, today: datetime.date | None = None) -> str | None:
+        """สถานะการใช้งานจากรายการย่อย: วันเริ่มแรกสุดถึงวันสิ้นสุดสุดท้าย (แบบร่างไม่มี)"""
+        if self.status == "draft":
+            return None
+        items = self.get_items()
+        starts = [item.start_date for item in items if item.start_date]
+        ends = [item.end_date for item in items if item.end_date]
+        return compute_usage_status(min(starts) if starts else None, max(ends) if ends else None, today)
+
+    def refresh_usage_status(self, today: datetime.date | None = None) -> bool:
+        """คำนวณใหม่แล้วเขียนแบบ atomic ถ้าค่าเปลี่ยน (ไม่แตะ updated_date เพราะใช้กันฟอร์มแก้ไขชนกัน)"""
+        value = self.compute_usage_status(today)
+        updated = Procurement.objects(id=self.pk, organization=self.organization).filter(
+            __raw__={"usage_status": {"$ne": value}}
+        ).update_one(set__usage_status=value)
+        self.usage_status = value
+        return bool(updated)
 
     def is_renewed(self) -> bool:
         return self.status == "renewed" or _reference_id(self, "renewed_to") is not None
@@ -626,46 +726,30 @@ class Procurement(me.Document):
 
     def get_payment_status(self, today: datetime.date | None = None) -> str:
         """สถานะที่แย่ที่สุดของทุกรายการย่อย (overdue > upcoming > unpaid) หรือ paid เมื่อจ่ายครบทุกงวด"""
-        return worst_payment_status(item.get_payment_status(today) for item in self.get_items())
+        paying = [item.get_payment_status(today) for item in self.get_items() if item.pays_in_installments()]
+        if not paying and self.get_items():
+            return "paid"  # ไม่มีรายการที่แบ่งจ่ายเป็นงวด = จ่ายแล้วทั้งหมดตอนสร้าง MA
+        return worst_payment_status(paying)
 
     def get_unpaid_installments(self, single: bool = False) -> list:
         """งวดที่ยังไม่ได้บันทึกจ่ายของทุกรายการย่อย ``[(item, ลำดับงวด, installment)]`` เรียงตามวันครบกำหนด
 
-        รายการย่อยที่ไม่ได้ติ๊ก "แบ่งจ่ายเป็นงวด" (จ่ายครั้งเดียว) ถือว่าจ่ายตอนต่ออายุ
-        (``pay_single_installments_on_renewal``) จึงไม่นับ เว้นแต่ ``single=True`` (คืนเฉพาะรายการจ่ายครั้งเดียวแทน)
+        รายการย่อยที่ไม่ได้ติ๊ก "แบ่งจ่ายเป็นงวด" ไม่มีการจ่าย จึงไม่มีงวดให้นับ (``single=True`` จึงคืนค่าว่างเสมอ
+        คงพารามิเตอร์ไว้ให้ ``pay_single_installments_on_renewal`` ซึ่งไม่ทำอะไรแล้ว)
         """
         rows = []
+        if single:
+            return rows
         for item in self.get_items():
-            if (not item.pays_in_installments()) != single:
-                continue
             for index, installment in enumerate(item.get_sorted_installments(), start=1):
                 if installment.due_date and not installment.is_paid():
                     rows.append((item, index, installment))
         return sorted(rows, key=lambda row: row[2].due_date)
 
     def pay_single_installments_on_renewal(self, user) -> int:
-        """ต่ออายุ = จ่าย: รายการย่อยที่ไม่ได้แบ่งจ่ายเป็นงวดและยังไม่จ่าย บันทึกว่าจ่ายแล้ววันนี้ (action ``renewed``)
-
-        แก้แต่ละงวดแบบ atomic ด้วย positional operator คืนจำนวนงวดที่บันทึก
-        """
-        now = datetime.datetime.now()
-        count = 0
-        for item, _, installment in self.get_unpaid_installments(single=True):
-            # ยอดจริงตั้งต้นเป็นยอดที่ต้องจ่าย (ยอดของงวด หรือยอดของรายการเมื่อจ่ายครั้งเดียว) แก้ได้ที่หน้ารายละเอียด
-            due_amount = installment.amount if installment.amount is not None else item.amount
-            entry = PayLogEntry(action="renewed", pressed_at=now, paid_date=now, by=user, paid_amount=due_amount)
-            updated = ProcurementItem.objects(
-                id=item.id,
-                organization=self.organization,
-                __raw__={"installments": {"$elemMatch": {"_id": installment._id, "paid_date": None}}},
-            ).update_one(
-                set__installments__S__paid_date=now,
-                set__installments__S__paid_by=user,
-                set__installments__S__paid_amount=due_amount,
-                set__installments__S__pay_log=[*installment.pay_log, entry],
-            )
-            count += bool(updated)
-        return count
+        """ไม่ทำอะไร (คืน 0): รายการที่ไม่แบ่งจ่ายเป็นงวดไม่มีการจ่าย จึงไม่มีงวดให้บันทึกจ่ายตอนต่ออายุ
+        (เดิมบันทึกงวดเดียวว่าจ่ายแล้วตอนต่ออายุ) คงฟังก์ชันไว้ให้ผู้เรียกเดิม"""
+        return 0
 
     def get_installment_progress(self) -> tuple[int, int]:
         """(จำนวนงวดที่จ่ายแล้ว, จำนวนงวดทั้งหมด) ของทุกรายการย่อย"""
@@ -761,13 +845,13 @@ class Procurement(me.Document):
             if not self.company:
                 self.company = "-"
 
-        # active ที่มีรายการย่อยหมดอายุภายใน 90 วัน (หรือหมดแล้ว) เป็น pending ทันที ไม่ต้องรอ controller รอบ 00:01
-        # และ pending ที่แก้วันสิ้นสุดจนทุกรายการไกลกว่า 90 วันแล้ว กลับเป็น active (ไม่ค้างในหน้ารายการใกล้หมดอายุ)
-        if self.status in ("active", "pending"):
-            end_dates = [item.end_date for item in items if item.end_date]
-            if end_dates:
-                near = min(end_dates).date() <= datetime.date.today() + datetime.timedelta(days=RENEWAL_WINDOW_DAYS)
-                self.status = "pending" if near else "active"
+        # สถานะการใช้งานคำนวณใหม่ทุกครั้งที่บันทึก (controller อัปเดตรายวัน) แบบร่างไม่มี
+        if self.status == "draft":
+            self.usage_status = None
+        else:
+            starts = [item.start_date for item in items if item.start_date]
+            ends = [item.end_date for item in items if item.end_date]
+            self.usage_status = compute_usage_status(min(starts) if starts else None, max(ends) if ends else None)
 
         is_new = self.pk is None
         if is_new:
@@ -904,6 +988,8 @@ class Procurement(me.Document):
             id=self.pk,
             organization=self.organization,
             status=previous_status,
+            # คำขอที่ผู้รับผิดชอบขอ ณ ตอนโหลด ถ้าเปลี่ยนไประหว่างนั้น claim ไม่ได้
+            renewal_request=self.renewal_request,
             renewed_to=None,
         ).update_one(
             set__status="renewed",
@@ -1128,12 +1214,17 @@ def payment_statuses(procurement_ids: Iterable, organization, today: datetime.da
         return {}
     rows = (
         ProcurementItem.objects(organization=organization, procurement__in=list(item_statuses))
-        .only("procurement", "installments")
+        .only("procurement", "installments", "installment_mode")
         .as_pymongo()
     )
     for row in rows:
         procurement_id = getattr(row["procurement"], "id", row["procurement"])
         installments = row.get("installments") or []
+        mode = row.get("installment_mode")
+        # รายการที่ไม่แบ่งจ่ายเป็นงวดจ่ายแล้วตอนสร้าง MA (mode ไม่ระบุ = ข้อมูลเดิม ใช้จำนวนงวด > 1)
+        if not (mode if mode is not None else len(installments) > 1):
+            item_statuses[procurement_id].append("paid")
+            continue
         item_statuses[procurement_id].append(
             item_payment_status(
                 ((installment.get("due_date"), installment.get("paid_date")) for installment in installments), today
@@ -1156,6 +1247,15 @@ class ItemDateOrderedIds:
     END_DATE = [{"$group": {"_id": "$procurement", "date": {"$min": "$end_date"}}}]
     # วันครบกำหนดของงวดที่ยังไม่จ่ายและใกล้ที่สุด
     NEXT_DUE_DATE = [
+        # เฉพาะรายการที่แบ่งจ่ายเป็นงวด (ข้อมูลเดิมที่ mode ไม่ระบุแต่งวดเดียว และ mode = False ไม่มีการจ่าย)
+        {
+            "$match": {
+                "$or": [
+                    {"installment_mode": True},
+                    {"installment_mode": None, "installments.1": {"$exists": True}},
+                ]
+            }
+        },
         {"$unwind": "$installments"},
         {"$match": {"installments.paid_date": None, "installments.due_date": {"$ne": None}}},
         {"$group": {"_id": "$procurement", "date": {"$min": "$installments.due_date"}}},

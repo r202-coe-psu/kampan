@@ -128,7 +128,7 @@ def test_header_edit_cannot_turn_active_ma_back_into_draft(world, client_for, tw
 
     assert response.status_code == 200  # ฟิลด์บังคับยังต้องกรอก ไม่เข้าโหมดแบบร่าง
     two_item_ma.reload()
-    assert two_item_ma.status == "active" and two_item_ma.name == "[TEST] MA สองรายการ"
+    assert two_item_ma.status == "review" and two_item_ma.name == "[TEST] MA สองรายการ"
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +264,7 @@ def test_draft_edit_keeps_full_form_and_can_add_and_remove_items(world, client_f
     )
     assert client.post(_edit_url(world, draft), data=data).status_code == 302
     draft.reload()
-    assert draft.status == "active" and models.ProcurementItem.objects(procurement=draft).count() == 2
+    assert draft.status == "review" and models.ProcurementItem.objects(procurement=draft).count() == 2
 
     # ลบรายการออกจากแบบร่างอีกใบผ่านฟอร์มเต็ม
     draft2 = create_ma(

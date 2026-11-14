@@ -2,6 +2,7 @@
 {% from '/base/html-renderer.html' import date_field %}
 {% from '/base/components/buttons.html' import RenderBackButton %}
 {% from 'procurement/macros/renew_check.html' import renew_check_dialog, renew_check_script %}
+{% from 'procurement/macros/status_badges.html' import usage_badge, renewal_badge %}
 
 {% block title %}รายละเอียด MA{% endblock %}
 {% block dashboard_title %}รายละเอียด MA{% endblock %}
@@ -13,15 +14,6 @@
   "upcoming": ("badge-outline badge-warning font-medium", "ใกล้ครบกำหนด"),
   "unpaid": ("badge-outline badge-ghost font-medium text-base-content/70", "ยังไม่จ่าย"),
 } %}
-{% set renewal_badges = {
-  "draft": ("badge-ghost border border-base-300", "แบบร่าง"),
-  "pending": ("badge-warning", "รอตรวจสอบ"),
-  "disactive": ("badge-error", "หยุดต่ออายุ"),
-  "active": ("badge-success", "กำลังใช้งาน"),
-  "renewed": ("badge-neutral", "ต่ออายุแล้ว"),
-  "renewal-requested": ("badge-info", "ยื่นขอต่ออายุ"),
-} %}
-
 {% macro payment_badge(status) %}
   {% set badge = payment_badges.get(status, payment_badges["unpaid"]) %}
   <span class="badge {{ badge[0] }} badge-sm whitespace-nowrap">{{ badge[1] }}</span>
@@ -60,28 +52,50 @@
   <!-- Top Navigation Bar -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     {{ RenderBackButton(url_for('procurement.products.index', organization_id=organization.id)) }}
-    {% if can_edit %}
-      <div class="flex flex-wrap items-center gap-2">
-        {% if not procurement.is_renewed() %}
-          <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}"
-             data-renew-check="renew_check_{{ procurement.id }}"
-             class="btn btn-success btn-sm text-white shadow-xs gap-1.5">
-            <i class="ph ph-arrows-clockwise text-base"></i> ต่ออายุ
-          </a>
-        {% endif %}
-        {% if procurement.status in ['pending', 'renewal-requested'] %}
-          <button type="button" onclick="document.getElementById('non_renewal_modal').showModal()"
-                  class="btn btn-error btn-sm text-white shadow-xs gap-1.5">
-            <i class="ph ph-x text-base"></i> ไม่ต่ออายุ
-          </button>
-        {% endif %}
+    <div class="flex flex-wrap items-center gap-2">
+      {# ผู้รับผิดชอบขอ (สถานะรอตรวจสอบ) · เจ้าหน้าที่พัสดุ (admin) อนุมัติ (สถานะรอต่ออายุ ตามที่ขอ) #}
+      {# ขณะรอต่ออายุ ผู้รับผิดชอบเปลี่ยนคำขอได้จนกว่า admin จะอนุมัติ (แสดงเฉพาะปุ่มของคำขออีกแบบ) #}
+      {% set current_request = procurement.renewal_request if procurement.status == "renewal-requested" else none %}
+      {% if can_request_renewal and current_request != "renew" %}
+        <button type="button" onclick="document.getElementById('request_renew_modal').showModal()"
+                class="btn btn-success btn-sm text-white shadow-xs gap-1.5">
+          <i class="ph ph-arrows-clockwise text-base"></i> {{ "เปลี่ยนเป็นขอต่ออายุ" if current_request else "ขอต่ออายุ" }}
+        </button>
+      {% endif %}
+      {% if can_request_renewal and current_request != "stop" %}
+        <button type="button" onclick="document.getElementById('request_stop_modal').showModal()"
+                class="btn btn-error btn-sm text-white shadow-xs gap-1.5">
+          <i class="ph ph-x text-base"></i> {{ "เปลี่ยนเป็นขอไม่ต่ออายุ" if current_request else "ขอไม่ต่ออายุ" }}
+        </button>
+      {% endif %}
+      {% if can_approve_renew %}
+        <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id) }}"
+           data-renew-check="renew_check_{{ procurement.id }}"
+           class="btn btn-success btn-sm text-white shadow-xs gap-1.5">
+          <i class="ph ph-arrows-clockwise text-base"></i> อนุมัติต่ออายุ
+        </a>
+      {% endif %}
+      {% if can_approve_stop %}
+        <button type="button" onclick="document.getElementById('non_renewal_modal').showModal()"
+                class="btn btn-error btn-sm text-white shadow-xs gap-1.5">
+          <i class="ph ph-x text-base"></i> อนุมัติไม่ต่ออายุ
+        </button>
+      {% endif %}
+      {% if can_edit %}
         <a href="{{ url_for('procurement.products.edit', procurement_id=procurement.id, organization_id=organization.id) }}"
            class="btn btn-primary btn-sm shadow-xs gap-1.5">
           <i class="ph ph-pencil-simple text-base"></i> แก้ไข MA
         </a>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
+
+  {% if procurement.status == "renewal-requested" %}
+    <div role="alert" class="alert alert-soft alert-info text-base-content shadow-xs rounded-xl" id="renewal-request-notice">
+      <i class="ph ph-hourglass text-xl"></i>
+      <span>ผู้รับผิดชอบ{{ "ขอต่ออายุ" if procurement.renewal_request == "renew" else ("ขอไม่ต่ออายุ" if procurement.renewal_request == "stop" else "ขอต่ออายุ") }}แล้ว รอเจ้าหน้าที่พัสดุอนุมัติ</span>
+    </div>
+  {% endif %}
 
   {% if renewed_to_ma %}
     <div role="alert" class="alert alert-soft alert-info text-base-content shadow-xs rounded-xl">
@@ -165,8 +179,8 @@
             <span class="badge badge-neutral/10 text-base-content/80 border-0 text-xs py-2.5 px-3">
               เลขที่ ม.อ.เบิกจ่าย: <strong class="text-base-content ml-1">{{ procurement.psu_disbursement_number or "-" }}</strong>
             </span>
-            {% set renewal = renewal_badges.get(procurement.status, ("badge-ghost", procurement.status)) %}
-            <span class="badge {{ renewal[0] }} text-xs py-2.5 px-3 font-semibold">{{ renewal[1] }}</span>
+            <span class="inline-flex items-center gap-1 text-xs text-base-content/60">การใช้งาน {{ usage_badge(procurement, "badge-md") }}</span>
+            <span class="inline-flex items-center gap-1 text-xs text-base-content/60">การต่ออายุ {{ renewal_badge(procurement, "badge-md") }}</span>
             {{ payment_badge(ma_status) }}
           </div>
 
@@ -193,6 +207,7 @@
             <div class="text-[11px] text-primary/70 font-medium">บาท</div>
           </div>
 
+          {% if installment_count > 0 %}
           <div class="bg-base-200/60 border border-base-300/80 rounded-2xl p-4 min-w-[150px] flex-1 sm:flex-none">
             <div class="text-xs font-semibold text-base-content/60 flex items-center gap-1.5">
               <i class="ph ph-check-circle text-sm"></i> งวดที่จ่ายแล้ว
@@ -204,6 +219,7 @@
               {% if items|length > 1 %}ทุกรายการย่อย{% else %}งวดทั้งหมด{% endif %}
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
 
@@ -314,7 +330,7 @@
               </button>
             {% endif %}
           {% endif %}
-          {% if can_edit and not procurement.is_renewed() %}
+          {% if can_approve_renew %}
             <a href="{{ url_for('procurement.products.renew', procurement_id=procurement.id, organization_id=organization.id, item_id=item.id) }}"
                data-renew-check="renew_check_{{ procurement.id }}"
                class="btn btn-outline btn-success btn-xs gap-1">
@@ -423,11 +439,12 @@
           </div>
         {% endif %}
 
+        {% if item.pays_in_installments() %}
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-base flex items-center gap-2 text-base-content">
               <i class="ph ph-calendar-dots text-primary text-lg"></i>
-              {{ "งวดการจ่าย" if item.pays_in_installments() else "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" }}
+              งวดการจ่าย
             </h4>
           </div>
           <div class="overflow-x-auto rounded-xl border border-base-200 shadow-xs">
@@ -540,6 +557,7 @@
             </table>
           </div>
         </div>
+        {% endif %}
 
         <!-- ตั้งค่าการเตือน (#28, #29) -->
         <div class="rounded-2xl border border-base-200/80 bg-base-200/20 p-5 space-y-3">
@@ -556,7 +574,7 @@
             {% if item.pays_in_installments() %}
               <div class="bg-base-100 p-3 rounded-xl border border-base-200 shadow-2xs space-y-1">
                 <span class="text-base-content/60 font-medium">เตือนจ่ายงวดล่วงหน้า</span>
-                <p class="font-semibold text-base-content">{{ offset_list(item.payment_reminder_offsets) }} และในวันครบกำหนด</p>
+                <p class="font-semibold text-base-content">{{ offset_list(item.payment_reminder_offsets | select("in", ["7d", "5d", "3d"]) | list) }} และในวันครบกำหนด</p>
               </div>
             {% endif %}
             <div class="bg-base-100 p-3 rounded-xl border border-base-200 shadow-2xs space-y-1">
@@ -670,7 +688,7 @@
         <form method="dialog" class="modal-backdrop"><button>close</button></form>
       </dialog>
 
-      {% for installment in item.installments %}
+      {% for installment in item.get_sorted_installments() %}
         {% set modal_key = item.id ~ "-" ~ installment._id %}
         {% set modal_due = installment.amount if installment.amount is not none else (item.amount if (item.get_installment_count() == 1 or not item.pays_in_installments()) else none) %}
         {% set action_args = {"procurement_id": procurement.id, "item_id": item.id, "installment_id": installment._id, "organization_id": organization.id} %}
@@ -697,8 +715,8 @@
                 </div>
               </fieldset>
               <fieldset class="fieldset">
-                <legend class="fieldset-legend">เลขที่เอกสาร</legend>
-                <input type="text" name="payment_number" maxlength="128" class="input w-full" value="{{ installment.payment_number or '' }}" />
+                <legend class="fieldset-legend">เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร <span class="text-error">*</span></legend>
+                <input type="text" name="payment_number" maxlength="128" required class="input w-full" value="{{ installment.payment_number or '' }}" />
               </fieldset>
               <fieldset class="fieldset">
                 <legend class="fieldset-legend">ยอดที่จ่ายจริง (บาท) <span class="text-base-content/50">ไม่บังคับ</span></legend>
@@ -750,11 +768,41 @@
     {% endif %}
   {% endfor %}
 
-{% if can_edit and procurement.status in ['pending', 'renewal-requested'] %}
+{% if can_request_renewal %}
+  {% for request_value, title, button_class, icon, question, note in [
+    ("renew", "ยืนยันการขอต่ออายุ", "btn-success", "ph-arrows-clockwise", "คุณต้องการขอต่ออายุ MA นี้ใช่หรือไม่?", "เจ้าหน้าที่พัสดุจะเป็นผู้อนุมัติและดำเนินการต่ออายุ"),
+    ("stop", "ยืนยันการขอไม่ต่ออายุ", "btn-error", "ph-x", "คุณต้องการขอไม่ต่ออายุ MA นี้ใช่หรือไม่?", "ต้องรอเจ้าหน้าที่พัสดุอนุมัติ MA จึงจะย้ายไปรายการ MA ไม่ต่ออายุ"),
+  ] if procurement.renewal_request != request_value or procurement.status != "renewal-requested" %}
+  <dialog id="request_{{ request_value }}_modal" class="modal">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold mb-4"><i class="ph {{ icon }} mr-2"></i>{{ title }}</h3>
+      <p class="py-2">{{ question }}</p>
+      <div class="bg-base-200 p-3 rounded-lg mb-4">
+        <p class="font-semibold">{{ procurement.name }}</p>
+        <p class="text-sm text-base-content/60">เลขที่ ม.อ.เบิกจ่าย: {{ procurement.psu_disbursement_number or '-' }}</p>
+      </div>
+      <div role="alert" class="alert alert-info alert-soft mb-4">
+        <i class="ph ph-info"></i>
+        <span class="text-sm">{{ note }}</span>
+      </div>
+      <div class="modal-action">
+        <form method="dialog"><button class="btn btn-outline">ยกเลิก</button></form>
+        <form method="post" action="{{ url_for('procurement.requisitions.request_renewal', requisition_procurement_id=procurement.id, organization_id=organization.id) }}">
+          {{ form.hidden_tag() }}
+          <input type="hidden" name="request" value="{{ request_value }}">
+          <button type="submit" class="btn {{ button_class }} text-white"><i class="ph {{ icon }} mr-1"></i>ยืนยัน</button>
+        </form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+  {% endfor %}
+{% endif %}
+{% if can_approve_stop %}
   <dialog id="non_renewal_modal" class="modal">
     <div class="modal-box">
-      <h3 class="text-lg font-bold text-error mb-4"><i class="ph ph-warning mr-2"></i>ยืนยันการไม่ต่ออายุ</h3>
-      <p class="py-2">คุณต้องการทำให้ MA นี้ไม่ต่ออายุใช่หรือไม่?</p>
+      <h3 class="text-lg font-bold text-error mb-4"><i class="ph ph-warning mr-2"></i>ยืนยันอนุมัติไม่ต่ออายุ</h3>
+      <p class="py-2">ผู้รับผิดชอบขอไม่ต่ออายุ MA นี้ คุณต้องการอนุมัติใช่หรือไม่?</p>
       <div class="bg-base-200 p-3 rounded-lg mb-4">
         <p class="font-semibold">{{ procurement.name }}</p>
         <p class="text-sm text-base-content/60">เลขที่ ม.อ.เบิกจ่าย: {{ procurement.psu_disbursement_number or '-' }}</p>
@@ -767,15 +815,16 @@
         <form method="dialog"><button class="btn btn-outline">ยกเลิก</button></form>
         <form method="post" action="{{ url_for('procurement.requisitions.non_renewal_action', requisition_procurement_id=procurement.id, organization_id=organization.id) }}">
           {{ form.hidden_tag() }}
-          <button type="submit" class="btn btn-error text-white"><i class="ph ph-x mr-1"></i>ยืนยันไม่ต่ออายุ</button>
+          <input type="hidden" name="expected_request" value="{{ procurement.renewal_request or '' }}">
+          <button type="submit" class="btn btn-error text-white"><i class="ph ph-x mr-1"></i>อนุมัติไม่ต่ออายุ</button>
         </form>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
   </dialog>
-  {% endif %}
+{% endif %}
 </div>
-{% if can_edit and not procurement.is_renewed() %}
+{% if can_approve_renew %}
   {{ renew_check_dialog(procurement, organization, form, today, url_for('procurement.payment.index', procurement_id=procurement.id, organization_id=organization.id)) }}
   {{ renew_check_script() }}
 {% endif %}

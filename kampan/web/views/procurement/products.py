@@ -9,6 +9,7 @@ import pandas as pd
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -21,9 +22,11 @@ from flask_login import current_user, login_required
 from mongoengine.queryset.visitor import Q
 
 from kampan import models
-from kampan.models.procurement import _reference_id, payment_statuses, procurement_ids_of
+from kampan.models.procurement import _reference_id, payment_statuses, procurement_ids_of, renewal_status_statuses
+from kampan.utils import ma_assignments
 from kampan.utils.date_utils import format_thai_date_input
 from kampan.web import acl, forms
+from kampan.web.forms.procurement import PSU_NUMBER_REQUIRED_MESSAGE
 
 from . import ma_permissions
 from .ma_pagination import paginate_sorted, resolve_sort
@@ -35,6 +38,8 @@ module = Blueprint("products", __name__, url_prefix="/products")
 NO_EDIT_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์แก้ไข MA รายการนี้"
 NO_RENEW_PERMISSION_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุ MA รายการนี้"
 ALREADY_RENEWED_MESSAGE = "MA รายการนี้ต่ออายุไปแล้ว"
+NOT_RENEWAL_APPROVER_MESSAGE = "เฉพาะเจ้าหน้าที่พัสดุ (admin) เท่านั้นที่อนุมัติการต่ออายุได้"
+RENEW_NOT_REQUESTED_MESSAGE = "ผู้รับผิดชอบยังไม่ได้ขอต่ออายุ MA รายการนี้ หรือสถานะเปลี่ยนไปแล้ว"
 ITEM_FORM_MISMATCH_MESSAGE = "ข้อมูลรายการย่อยไม่ตรงกับรายการที่เลือกแก้ไข กรุณาเปิดหน้าแก้ไขใหม่"
 STALE_FORM_MESSAGE = "MA นี้ถูกแก้ไขหรือบันทึกจ่ายงวดโดยผู้อื่นหลังจากคุณเปิดฟอร์ม กรุณาเปิดหน้าแก้ไขใหม่แล้วบันทึกอีกครั้ง"
 
@@ -58,6 +63,10 @@ def calculate_months_days(start_date, end_date):
         last_day_prev_month = monthrange(prev_year, prev_month)[1]
         days = last_day_prev_month - start.day + end.day
     return months, days
+
+
+# สถานะการต่ออายุที่กรองในรายการ MA ได้ (แบบร่างแยกอยู่ที่ปุ่ม "แบบร่าง")
+FILTERABLE_RENEWAL_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
 
 
 def search_procurements(procurements, organization, text: str):
@@ -90,6 +99,8 @@ def index():
     today = datetime.date.today()
     category = request.args.get("category")
     payment_status = request.args.get("payment_status")
+    usage_status = request.args.get("usage_status")
+    renewal_status = request.args.get("renewal_status")
     upload_success = request.args.get("upload_success", "")
 
     only_my_division = request.args.get("division") == "mine"
@@ -127,6 +138,10 @@ def index():
         procurement_qs = procurement_qs.filter(
             id__in=[procurement_id for procurement_id, status in statuses.items() if status == payment_status]
         )
+    if usage_status in dict(models.USAGE_STATUS_CHOICES):
+        procurement_qs = procurement_qs.filter(usage_status=usage_status)
+    if renewal_status in FILTERABLE_RENEWAL_STATUSES:
+        procurement_qs = procurement_qs.filter(status__in=renewal_status_statuses(renewal_status))
 
     sort = resolve_sort("created_desc")
     form.sort.data = sort
@@ -197,7 +212,7 @@ def _blank_item_data(member) -> dict:
         "responsible_by": [str(member.id)] if member else [],
         "reminder_kind": "ma",
         "expiry_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
-        "payment_reminder_offsets": list(models.DEFAULT_REMINDER_OFFSETS),
+        "payment_reminder_offsets": list(models.DEFAULT_PAYMENT_REMINDER_OFFSETS),
         "has_sub_item_sn": False,
         "has_sub_item_asset": False,
         "sub_items": [{}],
@@ -209,7 +224,9 @@ def _blank_item_data(member) -> dict:
 def _reminder_settings_data(item, include_custom_dates: bool = True) -> dict:
     data = {
         "expiry_reminder_offsets": list(item.expiry_reminder_offsets or []),
-        "payment_reminder_offsets": list(item.payment_reminder_offsets or []),
+        "payment_reminder_offsets": [
+            value for value in item.payment_reminder_offsets or [] if value in dict(models.PAYMENT_REMINDER_OFFSET_CHOICES)
+        ],
         "reminder_offsets_days": [str(days) for days in item.reminder_offsets_days or []],
     }
     if include_custom_dates:
@@ -417,7 +434,7 @@ class InstallmentChangeError(Exception):
 
 INSTALLMENT_OUT_OF_RANGE_MESSAGE = "{item}: งวดครบกำหนด {due} อยู่นอกช่วงของรายการย่อย ({start} - {end}) กรุณาเลือกวันที่ในช่วงสัญญา"
 PAID_INSTALLMENT_REMOVED_MESSAGE = "งวดที่จ่ายแล้วลบไม่ได้ ({item}: งวดครบกำหนด {due})"
-MANY_PAID_INSTALLMENTS_MESSAGE = "{item}: มีงวดที่จ่ายแล้วมากกว่า 1 งวด ปิดการแบ่งจ่ายเป็นงวดไม่ได้"
+PAID_INSTALLMENTS_MODE_OFF_MESSAGE = "{item}: มีงวดที่จ่ายแล้ว ปิดการแบ่งจ่ายเป็นงวดไม่ได้ (จะทำให้ประวัติการจ่ายหาย)"
 
 
 def _due_label(installment) -> str:
@@ -441,23 +458,6 @@ def _check_installments_within_item_period(item) -> None:
                     end=_due_label(models.Installment(due_date=item.end_date)) if end else "-",
                 )
             )
-
-
-def _single_installment(item_name, existing_installments, due_date, amount=None) -> list:
-    """จ่ายครั้งเดียว: เหลืองวดเดียว ครบกำหนดวันสิ้นสุด งวดเดิมที่จ่ายแล้วเก็บสถานะการจ่ายและประวัติไว้ (แก้แค่วันครบกำหนด)"""
-    paid = [installment for installment in existing_installments if installment.is_paid()]
-    if len(paid) > 1:
-        raise InstallmentChangeError(MANY_PAID_INSTALLMENTS_MESSAGE.format(item=item_name))
-    if paid:
-        keep = paid[0]
-    elif existing_installments:
-        keep = sorted(existing_installments, key=lambda installment: installment.due_date or datetime.datetime.max)[-1]
-    else:
-        keep = models.Installment()
-    keep.due_date = due_date
-    if amount is not None:
-        keep.amount = amount
-    return [keep]
 
 
 def _build_installments(item_name, installment_entries, existing_installments) -> list:
@@ -514,15 +514,20 @@ def _build_items(form, organization, existing_items, user, is_draft=False, fallb
         item.reminder_kind = data.reminder_kind.data or "ma"
         item.requires_activation = bool(data.requires_activation.data)
         item.expiry_reminder_offsets = list(data.expiry_reminder_offsets.data or [])
-        item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or [])
+        # จ่ายครั้งเดียว: ช่องเตือนล่วงหน้าถูกซ่อน (ไม่ส่งค่ามา) จึงไม่มีช่วงล่วงหน้า เตือนเฉพาะวันครบกำหนด
+        item.payment_reminder_offsets = list(data.payment_reminder_offsets.data or []) if data.installment_mode.data else []
         item.reminder_offsets_days = data.get_reminder_offsets_days()
         item.custom_reminder_dates = data.get_custom_reminder_dates()
+        was_paying = item.pays_in_installments()
         item.installment_mode = bool(data.installment_mode.data)
         if item.installment_mode:
             item.installments = _build_installments(item.name, data.installments, item.installments)
             _check_installments_within_item_period(item)
         else:
-            item.installments = _single_installment(item.name, list(item.installments), item.end_date, amount=item.amount)
+            # ไม่แบ่งงวด = ไม่มีการจ่าย: ไม่เก็บงวด (แถวที่ส่งมาและงวดเดิมถูกทิ้ง) แต่ห้ามทิ้งงวดที่จ่ายแล้ว (ประวัติการจ่าย)
+            if was_paying and any(installment.is_paid() for installment in item.installments):
+                raise InstallmentChangeError(PAID_INSTALLMENTS_MODE_OFF_MESSAGE.format(item=item.name))
+            item.installments = []
         item.last_updated_by = user
         items.append(item)
     return items, list(existing.values())
@@ -580,7 +585,7 @@ def _clone_item_for_procurement(item: models.ProcurementItem, new_procurement: m
                 for p in inst.pay_log or []
             ],
         )
-        for inst in item.installments or []
+        for inst in (item.installments if item.pays_in_installments() else [])
     ]
     return models.ProcurementItem(
         organization=new_procurement.organization,
@@ -632,7 +637,20 @@ def _duplicate_child_procurements(parent_procurement, items, user):
         child.save_with_items([child_item])
 
 
-def _save_form(form, organization, procurement, existing_items, member, is_draft=False, target_item=None):
+def _publish_draft_children(parent):
+    """เผยแพร่แบบร่างของสัญญาหลัก: สัญญาย่อยที่ยังเป็นแบบร่างเริ่มที่ review (สัญญาย่อยที่เปิดใช้แล้วมีสถานะของตัวเอง ไม่ถูกแตะ)"""
+    for child in models.Procurement.objects(parent_procurement=parent, organization=parent.organization, status="draft"):
+        claimed = models.Procurement.objects(id=child.id, organization=parent.organization, status="draft").update_one(
+            set__status="review"
+        )
+        if claimed:
+            child.status = "review"
+            child.refresh_usage_status()
+
+
+def _save_form(
+    form, organization, procurement, existing_items, member, is_draft=False, target_item=None, responsibles_before=None
+):
     user = current_user._get_current_object()
     is_new = procurement.pk is None
     mode = form.mode
@@ -660,6 +678,12 @@ def _save_form(form, organization, procurement, existing_items, member, is_draft
         except InstallmentChangeError as error:
             return _render_form(form, organization, member, procurement, [str(error)], **render_kwargs)
 
+    if not is_draft and mode in ("header", "item"):
+        # โหมดเต็มตรวจในฟอร์มแล้ว: เลขที่ ม.อ.เบิกจ่ายของหัวจำเป็นเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)
+        psu_number = form.psu_disbursement_number.data if mode == "header" else procurement.psu_disbursement_number
+        if not (psu_number or "").strip() and any(not item.pays_in_installments() for item in items):
+            return _render_form(form, organization, member, procurement, [PSU_NUMBER_REQUIRED_MESSAGE], **render_kwargs)
+
     _apply_header(form, procurement, user, items=items, is_draft=is_draft)
     try:
         procurement.save_with_items(items, removed_items)
@@ -672,8 +696,16 @@ def _save_form(form, organization, procurement, existing_items, member, is_draft
     if len(items) > 1 and not has_children:
         # สร้างใหม่ หรือแบบร่างที่เพิ่งเพิ่มรายการที่ 2 ต้องแยกเป็นสัญญาย่อยตามรายการ
         _duplicate_child_procurements(procurement, items, user)
-    elif has_children:
-        models.Procurement.objects(parent_procurement=procurement).update(set__status=procurement.status)
+    elif has_children and procurement.status != "draft":
+        _publish_draft_children(procurement)
+
+    ma_assignments.notify_new_assignments(
+        procurement,
+        items,
+        responsibles_before or {},
+        current_user._get_current_object(),
+        current_app.config,
+    )
 
     if is_draft:
         flash("บันทึกแบบร่างเรียบร้อยแล้ว", "success")
@@ -707,7 +739,7 @@ def create():
 
     procurement = models.Procurement(
         organization=organization,
-        status="draft" if is_draft else "active",
+        status="draft" if is_draft else "review",
         created_by=current_user._get_current_object(),
     )
     return _save_form(form, organization, procurement, [], member, is_draft=is_draft)
@@ -728,6 +760,8 @@ def edit(procurement_id):
         )
 
     member = ma_permissions.get_member(organization)
+    # ผู้รับผิดชอบก่อนแก้ ใช้หาผู้ที่ถูกเพิ่มใหม่ (ต้องเก็บก่อนฟอร์มแก้ object ของรายการย่อย)
+    responsibles_before = ma_assignments.snapshot_responsibles(procurement)
     action = request.form.get("action") if request.method == "POST" else None
     was_draft = procurement.status == "draft"
     # แบบร่าง = ฟอร์มเต็ม · MA ที่ไม่ใช่แบบร่างแก้ได้แค่หัว หรือรายการเดียว (?item_id=) และเปลี่ยนกลับเป็นแบบร่างไม่ได้
@@ -754,10 +788,17 @@ def edit(procurement_id):
     if is_draft:
         procurement.status = "draft"
     elif was_draft:
-        procurement.status = "active"
+        procurement.status = "review"
 
     return _save_form(
-        form, organization, procurement, procurement.get_items(), member, is_draft=is_draft, target_item=target_item
+        form,
+        organization,
+        procurement,
+        procurement.get_items(),
+        member,
+        is_draft=is_draft,
+        target_item=target_item,
+        responsibles_before=responsibles_before,
     )
 
 
@@ -861,6 +902,17 @@ def renew(procurement_id):
     if old.is_renewed():
         flash(ALREADY_RENEWED_MESSAGE, "error")
         return redirect(detail_url)
+    if not ma_permissions.can_approve_renewal(organization):
+        flash(NOT_RENEWAL_APPROVER_MESSAGE, "error")
+        return redirect(detail_url)
+    if not ma_permissions.renewal_requested_as(old, "renew"):
+        flash(RENEW_NOT_REQUESTED_MESSAGE, "error")
+        return redirect(detail_url)
+
+    if request.method == "POST" and request.form.get("expected_request") != "renew":
+        # คำขอที่ admin เห็นตอนเปิดฟอร์มไม่ใช่ "ต่ออายุ" แล้ว (ผู้รับผิดชอบเปลี่ยนคำขอ) ไม่ต่ออายุ
+        flash(RENEW_NOT_REQUESTED_MESSAGE, "error")
+        return redirect(detail_url)
 
     member = ma_permissions.get_member(organization)
     items = old.get_items()
@@ -881,7 +933,7 @@ def renew(procurement_id):
     user = current_user._get_current_object()
     items_to_save, _ = _build_items(form, organization, [], user)
 
-    new = models.Procurement(organization=organization, status="active", created_by=user)
+    new = models.Procurement(organization=organization, status="review", created_by=user)
     _apply_header(form, new, user)
     if old.parent_procurement:
         new.parent_procurement = old.parent_procurement
@@ -896,6 +948,11 @@ def renew(procurement_id):
     except me.ValidationError as error:
         return _render_form(form, organization, member, form_errors=[error.message], renew_from=old, target_item=target_item)
 
+    try:
+        ma_assignments.notify_new_assignments(new, items_to_save, {}, user, current_app.config)
+    except Exception:
+        # อีเมลแจ้งมอบหมายไม่ทำให้การต่ออายุล้ม
+        logger.exception("notifying assignments of renewed procurement %s failed", new.pk)
     try:
         old.pay_single_installments_on_renewal(user)
     except Exception:

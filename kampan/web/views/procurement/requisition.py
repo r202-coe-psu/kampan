@@ -16,12 +16,13 @@ from flask import (
     g,
 )
 from flask_login import current_user, login_required
+from mongoengine.queryset.visitor import Q
 from flask_mongoengine import Pagination
 from PyPDF2 import PdfMerger
 
 from kampan import models, utils
 from kampan.utils.money import MONEY_PLACES_ERROR, has_money_places, to_money
-from kampan.models.procurement import parent_procurement_ids, procurement_ids_of
+from kampan.models.procurement import REVIEW_STATUSES, parent_procurement_ids, procurement_ids_of
 from kampan.web import feature_flags, forms
 
 from . import ma_permissions
@@ -74,46 +75,103 @@ def generate_next_requisition_code():
     return f"{next_number:04d}/{buddhist_year}"
 
 
-PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "คุณไม่มีสิทธิ์ต่ออายุหรือไม่ต่ออายุ MA รายการนี้"
-
-
-PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอดำเนินการ"
+PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE = "เฉพาะผู้รับผิดชอบของ MA นี้เท่านั้นที่ขอต่ออายุหรือไม่ต่ออายุได้"
+PROCUREMENT_APPROVE_FORBIDDEN_MESSAGE = "เฉพาะเจ้าหน้าที่พัสดุ (admin) เท่านั้นที่อนุมัติการต่ออายุหรือไม่ต่ออายุได้"
+PROCUREMENT_NOT_PENDING_MESSAGE = "รายการนี้ดำเนินการไปแล้ว หรือไม่ได้อยู่ในสถานะรอตรวจสอบ"
+PROCUREMENT_NOT_REQUESTED_MESSAGE = "ผู้รับผิดชอบยังไม่ได้ขอไม่ต่ออายุรายการนี้ หรือสถานะเปลี่ยนไปแล้ว"
+PROCUREMENT_REQUEST_CHANGED_MESSAGE = (
+    "คำขอของผู้รับผิดชอบเปลี่ยนไปหรือสถานะเปลี่ยนแล้ว ไม่ได้อนุมัติ กรุณาโหลดหน้าใหม่แล้วตรวจสอบอีกครั้ง"
+)
 INVALID_REQUEST_MESSAGE = "คำขอไม่ถูกต้องหรือหมดอายุ กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง"
+RENEWAL_REQUEST_LABELS = {"renew": "ขอต่ออายุ", "stop": "ขอไม่ต่ออายุ"}
 
 
-def claim_pending_procurement(
-    procurement, organization, new_status: str, from_statuses: tuple[str, ...] = ("pending", "renewal-requested")
-) -> bool:
-    """เปลี่ยนสถานะ MA จาก ``from_statuses`` แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)"""
+def claim_for_renewal_request(procurement, organization, request_value: str, allow_switch: bool = True) -> bool:
+    """review → renewal-requested พร้อมบันทึกสิ่งที่ขอ แบบ atomic · คืน False ถ้าสถานะเปลี่ยนไปแล้ว (เช่นกดซ้ำ)
+    ผู้รับผิดชอบเปลี่ยนคำขอ (renew <-> stop) ได้ขณะรอต่ออายุ ถ้าขอค่าเดิมซ้ำถือว่ากดซ้ำ (คืน False)
+    ``allow_switch=False`` = จองจากรอตรวจสอบเท่านั้น (ทางคำขอซื้อเดิม)"""
+    condition = Q(status__in=list(REVIEW_STATUSES))
+    if allow_switch:
+        condition = condition | (Q(status="renewal-requested") & Q(renewal_request__ne=request_value))
     return bool(
         models.Procurement.objects(
-            id=procurement.id, organization=organization, status__in=list(from_statuses)
+            condition,
+            id=procurement.id,
+            organization=organization,
+            renewed_to=None,
         ).update_one(
-            set__status=new_status,
+            set__status="renewal-requested",
+            set__renewal_request=request_value,
             set__last_updated_by=current_user._get_current_object(),
             set__updated_date=datetime.datetime.now(),
         )
     )
 
 
-@module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])
+def _detail_url(procurement, organization):
+    return url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id)
+
+
+@module.route("/<requisition_procurement_id>/renewal-request", methods=["POST"])
 @login_required
-def non_renewal_action(requisition_procurement_id):
+def request_renewal(requisition_procurement_id):
+    """ผู้รับผิดชอบกด "ขอต่ออายุ" / "ขอไม่ต่ออายุ" (modal ยืนยัน): รอตรวจสอบ → รอต่ออายุ"""
     organization = g.organization
     if not organization:
         abort(404)
 
     procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
-    if not ma_permissions.can_edit_procurement(procurement, organization):
+    detail_url = _detail_url(procurement, organization)
+    request_value = request.form.get("request")
+    if not forms.procurement.ConfirmActionForm().validate_on_submit() or request_value not in RENEWAL_REQUEST_LABELS:
+        flash(INVALID_REQUEST_MESSAGE, "error")
+        return redirect(detail_url)
+    if not ma_permissions.can_request_renewal(procurement, organization):
         flash(PROCUREMENT_RENEWAL_FORBIDDEN_MESSAGE, "error")
-        return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
+        return redirect(detail_url)
+
+    if not claim_for_renewal_request(procurement, organization, request_value):
+        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
+        return redirect(detail_url)
+    flash(f"{RENEWAL_REQUEST_LABELS[request_value]}เรียบร้อยแล้ว รอเจ้าหน้าที่พัสดุอนุมัติ (เปลี่ยนคำขอได้จนกว่าจะอนุมัติ)", "success")
+    return redirect(detail_url)
+
+
+@module.route("/<requisition_procurement_id>/non-renewal", methods=["POST"])
+@login_required
+def non_renewal_action(requisition_procurement_id):
+    """เจ้าหน้าที่พัสดุ (admin) อนุมัติ "ไม่ต่ออายุ": รอต่ออายุ (ที่ผู้รับผิดชอบขอไม่ต่ออายุ) → ไม่ต่ออายุ
+    (อนุมัติต่ออายุใช้ขั้นตอนต่ออายุเดิม ``products.renew``)"""
+    organization = g.organization
+    if not organization:
+        abort(404)
+
+    procurement = ma_permissions.get_visible_procurement_or_404(requisition_procurement_id, organization)
+    detail_url = _detail_url(procurement, organization)
+    if not ma_permissions.can_approve_renewal(organization):
+        flash(PROCUREMENT_APPROVE_FORBIDDEN_MESSAGE, "error")
+        return redirect(detail_url)
     if not forms.procurement.ConfirmActionForm().validate_on_submit():
         flash(INVALID_REQUEST_MESSAGE, "error")
-        return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
+        return redirect(detail_url)
+    # ฟอร์มอนุมัติส่งค่าคำขอที่ admin เห็นตอนกด ถ้าผู้รับผิดชอบเปลี่ยนคำขอไประหว่างนั้น ไม่เปลี่ยนสถานะ
+    if request.form.get("expected_request") != "stop" or not ma_permissions.renewal_requested_as(procurement, "stop"):
+        flash(PROCUREMENT_REQUEST_CHANGED_MESSAGE, "error")
+        return redirect(detail_url)
 
-    if not claim_pending_procurement(procurement, organization, "disactive"):
-        flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
-    return redirect(url_for("procurement.payment.index", procurement_id=procurement.id, organization_id=organization.id))
+    # claim จากสถานะรอต่ออายุที่ขอไม่ต่ออายุเท่านั้น กันกดซ้ำ / สถานะเปลี่ยนไประหว่างนั้น
+    claimed = models.Procurement.objects(
+        id=procurement.id, organization=organization, status="renewal-requested", renewal_request="stop"
+    ).update_one(
+        set__status="disactive",
+        set__last_updated_by=current_user._get_current_object(),
+        set__updated_date=datetime.datetime.now(),
+    )
+    if not claimed:
+        flash(PROCUREMENT_NOT_REQUESTED_MESSAGE, "error")
+    else:
+        flash("อนุมัติไม่ต่ออายุเรียบร้อยแล้ว", "success")
+    return redirect(detail_url)
 
 
 def _non_renewal_filters(organization, procurements, form):
@@ -191,7 +249,7 @@ def renewal_requested_action(requisition_procurement_id):
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
     # จองการเปลี่ยนสถานะก่อนสร้างคำขอ กันกดซ้ำแล้วได้คำขอ 2 รายการ
-    if not claim_pending_procurement(procurement, organization, "renewal-requested", from_statuses=("pending",)):
+    if not claim_for_renewal_request(procurement, organization, "renew", allow_switch=False):
         flash(PROCUREMENT_NOT_PENDING_MESSAGE, "error")
         return redirect(url_for("procurement.products.index", organization_id=organization.id))
 
@@ -229,7 +287,9 @@ def renewal_requested_action(requisition_procurement_id):
         requisition.save()
     except Exception:
         # สร้างคำขอไม่สำเร็จ คืนสถานะ MA ให้กดใหม่ได้
-        models.Procurement.objects(id=procurement.id, status="renewal-requested").update_one(set__status="pending")
+        models.Procurement.objects(id=procurement.id, status="renewal-requested").update_one(
+            set__status="review", unset__renewal_request=True
+        )
         raise
 
     return redirect(url_for("procurement.products.index", organization_id=organization.id))

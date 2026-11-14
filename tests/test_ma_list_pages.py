@@ -98,6 +98,7 @@ def _item(index, member, end_in_days, installments):
         start_date=TODAY - datetime.timedelta(days=300),
         end_date=TODAY + datetime.timedelta(days=end_in_days),
         responsible_by=[member],
+        installment_mode=True,
         installments=installments,
     )
 

@@ -42,7 +42,8 @@ def world(app, create_org, create_user, assign_user_to_org):
         name="[TEST] MA เดิม",
         company="[TEST] บริษัทเดิม",
         organization=org,
-        status="pending",
+        status="renewal-requested",
+        renewal_request="renew",
         total_amount=Decimal("100000.00"),
         created_by=creator,
     )
@@ -145,7 +146,7 @@ def test_renew_form_is_prefilled_from_old_ma_and_creates_nothing(world, client_f
     assert models.Procurement.objects.count() == 1
     assert models.ProcurementItem.objects.count() == 2
     world.old.reload()
-    assert world.old.status == "pending" and world.old.renewed_to is None
+    assert world.old.status == "renewal-requested" and world.old.renewed_to is None
 
 
 def _renew_form(world, psu="PSU-NEW-1", **overrides):
@@ -170,6 +171,8 @@ def _renew_form(world, psu="PSU-NEW-1", **overrides):
         "items-0-requires_activation": "y",
         "items-0-responsible_by": [str(world.role_responsible.id)],
         "items-0-installments-0-due_date": "2026-12-31",
+        # คำขอที่ admin เห็นตอนเปิดฟอร์ม (ฟอร์มจริงส่งมาเป็น hidden)
+        "expected_request": "renew",
     }
     data.update(overrides)
     return data
@@ -183,16 +186,16 @@ def _old_snapshot(world):
 def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     before = _old_snapshot(world)
 
-    response = client_for(world.responsible).post(_renew_url(world), data=_renew_form(world))
+    response = client_for(world.admin).post(_renew_url(world), data=_renew_form(world))
 
     assert response.status_code == 302
     new = models.Procurement.objects(id__ne=world.old.id).get()
     assert f"/procurement/payment/{new.id}" in response.headers["Location"]
     assert new.renewed_from.id == world.old.id
     assert new.psu_disbursement_number == "PSU-NEW-1"
-    assert new.status == "active"
+    assert new.status == "review"
     assert new.organization.id == world.org.id
-    assert new.created_by.id == world.responsible.id
+    assert new.created_by.id == world.admin.id
     new_items = list(models.ProcurementItem.objects(procurement=new).order_by("id"))
     assert [item.name for item in new_items] == ["[TEST] License A"]
     assert new.total_amount == Decimal("60000.00")
@@ -207,16 +210,12 @@ def test_renew_post_creates_new_ma_and_marks_old_renewed(world, client_for):
     assert world.old.status == "renewed"
     assert world.old.renewed_to.id == new.id
     assert world.old.psu_disbursement_number == "PSU-OLD-1"
-    # รายการที่มีหลายงวดไม่ถูกแตะ ส่วนรายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น (บันทึกจ่ายวันนี้ action renewed)
+    # รายการที่มีหลายงวดไม่ถูกแตะ รายการที่ไม่แบ่งจ่ายเป็นงวดไม่มีการจ่าย ต่ออายุไม่บันทึกจ่ายอะไรให้
     after = _old_snapshot(world)
     assert after[0] == before[0]
     single = models.ProcurementItem.objects(procurement=world.old, name="[TEST] MA B").get()
-    (installment,) = single.installments
-    assert installment.is_paid()
-    assert installment.paid_by.id == world.responsible.id
-    assert [entry.action for entry in installment.pay_log] == ["renewed"]
-    assert installment.paid_amount == Decimal("40000.00")  # ยอดจริงตั้งต้นเป็นยอดที่ต้องจ่าย
-    assert installment.pay_log[0].paid_amount == Decimal("40000.00")
+    assert not any(installment.is_paid() for installment in single.installments)
+    assert all(not entry for installment in single.installments for entry in installment.pay_log)
 
 
 def test_double_submit_creates_only_one_new_ma(world, client_for):
@@ -288,35 +287,75 @@ def test_renewed_ma_cannot_be_renewed_again(world, client_for, method):
     assert models.Procurement.objects.count() == 2
 
 
-def test_renew_from_disactive_ma(world, client_for):
-    world.old.update(set__status="disactive")
+@pytest.mark.parametrize("status, request_value", [
+    ("disactive", "stop"), ("review", None), ("renewal-requested", "stop"), ("draft", None),
+])
+def test_renew_refused_unless_responsible_requested_renewal(world, client_for, status, request_value):
+    """admin ข้ามขั้นตอนขอไม่ได้: ต่ออายุได้เฉพาะ MA ที่ผู้รับผิดชอบขอต่ออายุ (renewal-requested + renew)"""
+    world.old.update(set__status=status, set__renewal_request=request_value)
+    client = client_for(world.admin)
+
+    for response in (client.get(_renew_url(world)), client.post(_renew_url(world), data=_renew_form(world))):
+        assert response.status_code == 302
+    world.old.reload()
+    assert world.old.status == status and world.old.renewed_to is None
+    assert models.Procurement.objects.count() == 1
+
+
+def test_renew_post_is_refused_when_the_request_changed_after_the_form_opened(world, client_for):
+    """admin เปิดฟอร์มตอนขอต่ออายุ แต่ผู้รับผิดชอบเปลี่ยนเป็นไม่ต่ออายุก่อนกดบันทึก: ไม่ต่ออายุ"""
+    world.old.update(set__renewal_request="stop")
 
     response = client_for(world.admin).post(_renew_url(world), data=_renew_form(world))
 
     assert response.status_code == 302
     world.old.reload()
-    assert world.old.status == "renewed"
-    assert world.old.status_before_renewal == "disactive"
-    assert models.Procurement.objects(renewed_from=world.old).count() == 1
+    assert (world.old.status, world.old.renewal_request) == ("renewal-requested", "stop")
+    assert models.Procurement.objects.count() == 1
 
 
-@pytest.mark.parametrize("who", ["admin", "creator", "responsible"])
-def test_renew_allowed_for_users_who_can_edit(world, client_for, who):
+def test_renew_post_without_expected_request_is_refused(world, client_for):
+    data = _renew_form(world)
+    del data["expected_request"]
+
+    client_for(world.admin).post(_renew_url(world), data=data)
+
+    assert models.Procurement.objects.count() == 1
+
+
+def test_renew_claim_loses_when_request_changes_between_check_and_claim(world):
+    """renew_into claim ต้องเทียบคำขอที่โหลดมา ถ้าผู้รับผิดชอบเปลี่ยนไประหว่างนั้น claim ไม่ได้"""
+    stale_view = models.Procurement.objects.get(id=world.old.id)
+    models.Procurement.objects(id=world.old.id).update_one(set__renewal_request="stop")
+    item = models.ProcurementItem(
+        name="[TEST] ใหม่", category="service", start_date=datetime.datetime(2026, 1, 1),
+        end_date=datetime.datetime(2026, 12, 31), amount=Decimal("10.00"),
+    )
+    header = models.Procurement(name="[TEST] ใหม่", company="c", total_amount=Decimal("10.00"))
+
+    with pytest.raises(models.RenewalConflict):
+        stale_view.renew_into(header, [item])
+
+    assert models.Procurement.objects.count() == 1
+
+
+@pytest.mark.parametrize("who, allowed", [("admin", True), ("creator", False), ("responsible", False)])
+def test_only_admin_renews_even_if_others_can_edit(world, client_for, who, allowed):
     client = client_for(getattr(world, who))
 
-    assert client.get(_renew_url(world)).status_code == 200
-    assert client.post(_renew_url(world), data=_renew_form(world)).status_code == 302
-    assert models.Procurement.objects(renewed_from=world.old).count() == 1
+    client.post(_renew_url(world), data=_renew_form(world))
+
+    assert (models.Procurement.objects(renewed_from=world.old).count() == 1) is allowed
 
 
-@pytest.mark.parametrize("who, status", [("head", 302), ("other_staff", 404)])
+@pytest.mark.parametrize("who, status", [("head", 302), ("other_staff", 404), ("creator", 302), ("responsible", 302)])
 def test_renew_refused_for_users_who_cannot_edit(world, client_for, who, status):
     client = client_for(getattr(world, who))
 
     for response in (client.get(_renew_url(world)), client.post(_renew_url(world), data=_renew_form(world))):
         assert response.status_code == status
     world.old.reload()
-    assert world.old.status == "pending"
+    assert world.old.status == "renewal-requested"
     assert models.Procurement.objects.count() == 1
 
 
@@ -327,7 +366,7 @@ def test_renew_other_org_ma_is_404(world, client_for):
     assert client.get(url).status_code == 404
     assert client.post(url, data=_renew_form(world)).status_code == 404
     world.old.reload()
-    assert world.old.status == "pending"
+    assert world.old.status == "renewal-requested"
     assert models.Procurement.objects.count() == 1
 
 
@@ -337,7 +376,7 @@ def test_renew_with_sum_mismatch_keeps_old_ma_unclaimed(world, client_for):
     assert response.status_code == 200
     assert "ขาด 1.00 บาท" in response.get_data(as_text=True)
     world.old.reload()
-    assert world.old.status == "pending" and world.old.renewed_to is None
+    assert world.old.status == "renewal-requested" and world.old.renewed_to is None
     assert models.Procurement.objects.count() == 1
 
 
@@ -352,7 +391,7 @@ def test_failed_save_releases_claim(world, client_for, monkeypatch):
         client.post(_renew_url(world), data=_renew_form(world))
 
     world.old.reload()
-    assert world.old.status == "pending"
+    assert world.old.status == "renewal-requested"
     assert world.old.renewed_to is None
     assert world.old.status_before_renewal is None
     assert models.Procurement.objects.count() == 1
@@ -385,7 +424,7 @@ def test_failed_link_removes_new_ma_and_releases_claim(world, monkeypatch):
         world.old.renew_into(header, [item])
 
     old = models.Procurement.objects.get(id=world.old.id)
-    assert old.status == "pending" and old.renewed_to is None
+    assert old.status == "renewal-requested" and old.renewed_to is None
     assert models.Procurement.objects.count() == 1
     assert models.ProcurementItem.objects.count() == 2
 
@@ -430,6 +469,8 @@ def test_renewed_ma_shows_banners_chain_and_no_renew_button(world, client_for):
     client = client_for(world.admin)
     client.post(_renew_url(world), data=_renew_form(world))
     new = models.Procurement.objects(renewed_from=world.old).get()
+    # MA ใหม่ต้องรอผู้รับผิดชอบขอต่ออายุก่อน admin จึงต่ออายุต่อได้
+    new.update(set__status="renewal-requested", set__renewal_request="renew")
     newest_response = client.post(_renew_url(world, new), data=_renew_form(world, psu="PSU-NEW-3"))
     assert newest_response.status_code == 302
     newest = models.Procurement.objects(renewed_from=new).get()

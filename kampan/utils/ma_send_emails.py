@@ -32,6 +32,8 @@ OFFSET_LABELS = {
     "1m": "30 วัน",
     "15d": "15 วัน",
     "7d": "7 วัน",
+    "5d": "5 วัน",
+    "3d": "3 วัน",
 }
 
 EMAIL_FOOTER = """
@@ -131,8 +133,42 @@ def _reminder_message(log, item, noun: str) -> str:
     return f"แจ้งเตือนตามวันที่ที่ตั้งไว้ ({format_date_th(trigger)})\n{noun} รายการนี้{ending}วันที่ {end_text}"
 
 
+def _detail_procurement(procurement, item):
+    """MA ที่เปิดดูรายการนี้: สัญญาหลักเป็นข้อมูลอ้างอิง ลิงก์ไปสัญญาย่อยที่เป็นสำเนาของรายการแทน"""
+    for child in procurement._matching_children(item):
+        return child
+    return procurement
+
+
+def build_assigned_email(log, settings) -> tuple[str, str]:
+    """(subject, body) ของอีเมลแจ้งการมอบหมายผู้รับผิดชอบ"""
+    item = log.item
+    procurement = log.procurement
+    psu_number = procurement.psu_disbursement_number or "-"
+    assigner = log.created_by.get_resources_fullname_th() if log.created_by else "เจ้าหน้าที่"
+    target = _detail_procurement(procurement, item)
+    ma_url = (
+        f"{get_host_url(settings)}/procurement/payment/{target.id}"
+        f"?organization_id={log._data['organization'].id}#item-{item.id}"
+    )
+    subject = f"[มอบหมาย] คุณได้รับมอบหมายให้เป็นผู้รับผิดชอบ {item.name} (ม.อ.เบิกจ่าย {psu_number})"
+    body = (
+        "เรียน ผู้รับผิดชอบ\n\n"
+        f"{assigner} ได้มอบหมายให้คุณเป็นผู้รับผิดชอบรายการต่อไปนี้\n\n"
+        f"สัญญา MA: {procurement.name} (เลขที่ ม.อ.เบิกจ่าย {psu_number})\n"
+        f"รายการ: {item.name}\n"
+        f"บริษัท: {procurement.company or '-'}\n"
+        f"ช่วงสัญญา: {format_date_th(_as_date(item.start_date))} – {format_date_th(_as_date(item.end_date))}\n\n"
+        "ระบบจะแจ้งเตือนก่อนหมดอายุและก่อนครบกำหนดจ่ายแต่ละงวด และเมื่อใกล้หมดอายุ "
+        "กรุณากด \"ขอต่ออายุ\" หรือ \"ไม่ต่ออายุ\" ที่หน้ารายละเอียด\n" + EMAIL_FOOTER.format(ma_url=ma_url)
+    )
+    return subject, body
+
+
 def build_reminder_email(log, settings) -> tuple[str, str]:
     """(subject, body) ของ reminder นี้"""
+    if log.kind == "assigned":
+        return build_assigned_email(log, settings)
     item = log.item
     procurement = log.procurement
     noun = REMINDER_KIND_NOUNS.get(item.reminder_kind, "MA")
@@ -177,11 +213,31 @@ def _deliver(log, settings) -> tuple[str, str | None]:
     return "sent", None
 
 
+STOPPED_SKIP_NOTE = "MA ไม่ต่ออายุ / ต่ออายุแล้ว / เป็นแบบร่าง จึงไม่ส่งอีเมล"
+
+
+def _is_stopped(log) -> bool:
+    """MA ของ log นี้หยุดเตือนแล้วตอนส่ง (ไม่ต่ออายุ / ต่ออายุแล้ว / แบบร่าง หรือหาไม่พบ) log ที่ค้างคิวไว้ก่อนหน้าจึงไม่ถูกส่ง"""
+    from .reminders import STOPPED_STATUSES
+
+    procurement = models.Procurement.objects(id=log._data["procurement"].id).only("status").first()
+    return procurement is None or procurement.status in STOPPED_STATUSES
+
+
 def send_reminder_job(log_id: str, settings) -> bool:
-    """งานใน worker: ส่งอีเมลของ ReminderLog ที่ยัง queued แล้วเขียนสถานะสุดท้ายใน finally (failed ไม่ retry เอง)"""
+    """งานใน worker: ส่งอีเมลของ ReminderLog ที่ยัง queued แล้วเขียนสถานะสุดท้ายใน finally (failed ไม่ retry เอง)
+
+    ตรวจสถานะ MA ตอนส่งอีกครั้ง: ถ้าหยุดเตือนแล้ว (เช่นอนุมัติไม่ต่ออายุหลังเข้าคิว) ไม่ส่ง และตั้ง log เป็น skipped
+    """
     log = models.ReminderLog.objects(id=log_id, status="queued").first()
     if not log:
         logger.info("reminder log %s is not queued, skip", log_id)
+        return False
+    if _is_stopped(log):
+        models.ReminderLog.objects(id=log.id, status="queued").update_one(
+            set__status="skipped", set__error=STOPPED_SKIP_NOTE
+        )
+        logger.info("reminder log %s skipped: procurement stopped", log_id)
         return False
 
     status, error = "failed", None

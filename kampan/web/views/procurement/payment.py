@@ -64,6 +64,7 @@ def index(procurement_id):
     )
     member = ma_permissions.get_member(organization)
     items = procurement.get_items()
+    can_approve = ma_permissions.can_approve_renewal(organization)
     return render_template(
         "procurement/payment/index.html",
         procurement=procurement,
@@ -71,6 +72,11 @@ def index(procurement_id):
         organization=organization,
         today=datetime.date.today(),
         can_edit=ma_permissions.can_edit_procurement(procurement, organization),
+        can_request_renewal=ma_permissions.can_request_renewal(procurement, organization),
+        can_approve_renew=can_approve
+        and ma_permissions.renewal_requested_as(procurement, "renew")
+        and not procurement.is_renewed(),
+        can_approve_stop=can_approve and ma_permissions.renewal_requested_as(procurement, "stop"),
         form=forms.procurement.InstallmentPaymentForm(formdata=None),
         renewal_chain=chain,
         renewed_from_ma=chain[position - 1] if position > 0 else None,
@@ -79,7 +85,7 @@ def index(procurement_id):
         my_division_id=member.division.id if member and member.division else None,
         reminder_logs=_reminder_logs_by_item(procurement, organization),
         manual_log_form=forms.procurement.ManualReminderLogForm(formdata=None),
-        offset_labels=dict(models.REMINDER_OFFSET_CHOICES),
+        offset_labels=dict(models.ALL_PAYMENT_OFFSET_CHOICES),
         pay_log_users=_pay_log_users(items),
     )
 

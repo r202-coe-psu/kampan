@@ -148,6 +148,8 @@ def test_posting_an_image_to_the_form_is_ignored(world, client_for):
 )
 def test_rendered_ma_pages_have_no_native_select_or_date_input(world, client_for, existing_ma, path):
     client = client_for(world.admin)
+    # หน้าต่ออายุเปิดได้เมื่อผู้รับผิดชอบขอต่ออายุแล้วเท่านั้น
+    models.Procurement.objects(id=existing_ma.id).update(set__status="renewal-requested", set__renewal_request="renew")
     existing_ma.reload()
     response = client.get(path.format(id=existing_ma.id, q=_q(world.org)))
 
@@ -288,7 +290,7 @@ def test_create_ma_duplicates_child_procurements_with_parent_reference(world, cl
     assert master.name in table_html
     # ป้าย "สัญญาย่อย" ไม่แสดงในตารางแล้ว ปุ่มแสดงงวดการจ่ายอยู่ในคอลัมน์ชื่อโครงการแทน
     assert "สัญญาย่อย" not in table_html.split("<tbody>", 1)[-1].split("</tbody>", 1)[0]
-    assert "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" in table_html
+    assert "การจ่ายเงิน (จ่ายแล้วตอนสร้าง MA)" in table_html
     assert "สัญญาย่อยของ:" not in table_html
     assert "[TEST] Sub-item Alpha" in table_html
     assert "[TEST] Sub-item Beta" in table_html
@@ -301,7 +303,8 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
     # 1. Non-installment mode:
     # Form: container has 'hidden' class
     create_html = client.get(f"/procurement/products/create?{_q(world.org)}").get_data(as_text=True)
-    assert 'class="payment-reminder-container hidden" data-payment-reminder>' in create_html
+    # ช่องเตือนจ่ายงวดอยู่ในส่วนแบ่งจ่ายเป็นงวด (ซ่อนพร้อมกันเมื่อสวิตช์ปิด)
+    assert "data-payment-reminder" in create_html
 
     # Create MA without installments
     data_no_inst = ma_form([
@@ -329,7 +332,7 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
         _item(
             amount="20000.00",
             installment_mode="y",
-            payment_reminder_offsets=["1m", "15d"],
+            payment_reminder_offsets=["7d", "3d"],
             installments=[{"due_date": "2026-06-30"}, {"due_date": "2026-12-31"}],
         )
     ], total_amount="20000.00", psu="PSU-WITH-INST")
@@ -339,7 +342,7 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
     ma_inst = models.Procurement.objects.get(psu_disbursement_number="PSU-WITH-INST")
     item_inst = ma_inst.get_items()[0]
     assert item_inst.pays_in_installments() is True
-    assert item_inst.payment_reminder_offsets == ["1m", "15d"]
+    assert item_inst.payment_reminder_offsets == ["7d", "3d"]
 
     # Detail page DOES show "เตือนจ่ายงวดล่วงหน้า"
     detail_inst_html = client.get(f"/procurement/payment/{ma_inst.id}?{_q(world.org)}").get_data(as_text=True)
@@ -348,7 +351,7 @@ def test_payment_reminder_visibility_based_on_installment_mode(world, client_for
 
     # Edit form for installment mode: container does not have hidden class
     edit_html = client.get(_item_edit_url(world, ma_inst)).get_data(as_text=True)
-    assert 'class="payment-reminder-container" data-payment-reminder>' in edit_html
+    assert 'class="payment-reminder-container flex flex-col gap-2 border-t border-base-200 pt-3" data-payment-reminder>' in edit_html
 
 
 def test_edit_buttons_in_detail_page(world, client_for, existing_ma):
@@ -376,49 +379,74 @@ def test_edit_buttons_in_detail_page(world, client_for, existing_ma):
 
 
 def test_non_renewal_workflow_from_detail_page(world, client_for, existing_ma):
-    client = client_for(world.admin)
+    """ขอไม่ต่ออายุ (ผู้รับผิดชอบ) → อนุมัติ (admin) → หน้าไม่ต่ออายุ"""
+    admin = client_for(world.admin)
+    responsible = client_for(world.responsible)
     products_url = f"/procurement/products?{_q(world.org)}"
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
     non_renewal_url = f"/procurement/requisitions/non-renewal?{_q(world.org)}"
 
     # 1. ตารางรายการ MA ไม่มีปุ่มขอต่ออายุ
-    assert "request-renewal" not in client.get(products_url).get_data(as_text=True)
+    assert "request-renewal" not in admin.get(products_url).get_data(as_text=True)
 
-    # 2. หน้ารายละเอียดมีปุ่ม + modal ยืนยัน ไม่ต่ออายุ
-    detail_html = client.get(detail_url).get_data(as_text=True)
+    # 2. รอตรวจสอบ: ผู้รับผิดชอบเห็นปุ่มขอ (modal ยืนยัน) ส่วน admin ยังไม่เห็นปุ่มอนุมัติ
+    assert 'id="request_stop_modal"' in responsible.get(detail_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' not in admin.get(detail_url).get_data(as_text=True)
+
+    # 3. ผู้รับผิดชอบกดขอไม่ต่ออายุ
+    response = responsible.post(
+        f"/procurement/requisitions/{existing_ma.id}/renewal-request?{_q(world.org)}", data={"request": "stop"}
+    )
+    assert response.status_code == 302
+    existing_ma.reload()
+    assert (existing_ma.status, existing_ma.renewal_request) == ("renewal-requested", "stop")
+
+    # 4. admin เห็นปุ่ม + modal อนุมัติ กดยืนยัน: redirect กลับหน้ารายละเอียด และสถานะเป็น disactive
+    detail_html = admin.get(detail_url).get_data(as_text=True)
     assert 'id="non_renewal_modal"' in detail_html
     assert f"/procurement/requisitions/{existing_ma.id}/non-renewal" in detail_html
-
-    # 3. กดยืนยัน: redirect กลับหน้ารายละเอียด และสถานะเป็น disactive
-    response = client.post(f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}")
+    response = admin.post(
+        f"/procurement/requisitions/{existing_ma.id}/non-renewal?{_q(world.org)}", data={"expected_request": "stop"}
+    )
     assert response.status_code == 302
     assert f"/procurement/payment/{existing_ma.id}" in response.headers["Location"]
     existing_ma.reload()
     assert existing_ma.status == "disactive"
 
-    # 4. ขึ้นหน้าไม่ต่ออายุ และปุ่มหายจากหน้ารายละเอียด
-    assert existing_ma.name in client.get(non_renewal_url).get_data(as_text=True)
-    assert 'id="non_renewal_modal"' not in client.get(detail_url).get_data(as_text=True)
+    # 5. ขึ้นหน้าไม่ต่ออายุ และปุ่มหายจากหน้ารายละเอียด
+    assert existing_ma.name in admin.get(non_renewal_url).get_data(as_text=True)
+    assert 'id="non_renewal_modal"' not in admin.get(detail_url).get_data(as_text=True)
 
 
-def test_detail_page_non_renewal_button_visibility(world, client_for, existing_ma):
+def test_detail_page_renewal_button_visibility(world, client_for, existing_ma):
     detail_url = f"/procurement/payment/{existing_ma.id}?{_q(world.org)}"
 
-    # pending + ผู้แก้ไขได้: เห็นปุ่ม
-    existing_ma.status = "pending"
-    existing_ma.save()
-    html = client_for(world.admin).get(detail_url).get_data(as_text=True)
-    assert 'id="non_renewal_modal"' in html and "ไม่ต่ออายุ" in html
+    def page(user):
+        return client_for(user).get(detail_url).get_data(as_text=True)
 
-    # ผู้ดูที่แก้ไม่ได้: ไม่เห็น
-    viewer_html = client_for(world.head).get(detail_url).get_data(as_text=True)
-    assert 'id="non_renewal_modal"' not in viewer_html
+    # รอตรวจสอบ: เฉพาะผู้รับผิดชอบเห็นปุ่มขอ (admin / ผู้สร้าง / ผู้ดูที่แก้ไม่ได้ไม่เห็น)
+    assert 'id="request_renew_modal"' in page(world.responsible)
+    for user in (world.admin, world.creator, world.head):
+        html = page(user)
+        assert 'id="request_renew_modal"' not in html and 'id="non_renewal_modal"' not in html
 
-    # active: ไม่เห็นแม้เป็นผู้แก้ไข
-    existing_ma.status = "active"
-    existing_ma.save()
-    active_html = client_for(world.admin).get(detail_url).get_data(as_text=True)
-    assert 'id="non_renewal_modal"' not in active_html
+    # รอต่ออายุ (ขอไม่ต่ออายุ): เฉพาะ admin เห็นปุ่มอนุมัติ ผู้รับผิดชอบเปลี่ยนคำขอเป็นต่ออายุได้เท่านั้น (ไม่เห็นปุ่มซ้ำ)
+    models.Procurement.objects(id=existing_ma.id).update(set__status="renewal-requested", set__renewal_request="stop")
+    assert 'id="non_renewal_modal"' in page(world.admin)
+    html = page(world.responsible)
+    assert 'id="request_renew_modal"' in html and 'id="request_stop_modal"' not in html
+    assert 'id="non_renewal_modal"' not in html
+    for user in (world.creator, world.head):
+        html = page(user)
+        assert 'id="non_renewal_modal"' not in html and 'id="request_stop_modal"' not in html
+
+    # admin ยืนยันแล้ว (ไม่ต่ออายุ / ต่ออายุแล้ว): ไม่เห็นปุ่มใดเลย แม้เป็น admin หรือผู้รับผิดชอบ
+    for status in ("disactive", "renewed"):
+        models.Procurement.objects(id=existing_ma.id).update(set__status=status)
+        for user in (world.admin, world.responsible):
+            html = page(user)
+            for modal in ("non_renewal_modal", "request_stop_modal", "request_renew_modal"):
+                assert f'id="{modal}"' not in html
 
 
 def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existing_ma):
@@ -429,10 +457,9 @@ def test_products_table_sub_items_toggle_and_quick_pay(world, client_for, existi
     html = client.get(products_url).get_data(as_text=True)
     assert f'id="btn_toggle_{existing_ma.id}"' in html
     assert f'id="sub_items_{existing_ma.id}"' in html
-    assert "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" in html
-    # ไม่ได้ติ๊ก "แบ่งจ่ายเป็นงวด": ไม่แสดงเป็นงวด
-    assert "จ่ายแล้ว 0/1 งวด" not in html
-    assert "งวดที่ 1" not in html.split("<tbody>", 1)[-1].split("</tbody>", 1)[0]
+    assert "งวดการจ่ายเงิน" in html
+    # แบ่งจ่ายเป็นงวด (1 งวด): แสดงความคืบหน้าเป็นงวด
+    assert "จ่ายแล้ว 0/1 งวด" in html
     assert "รายการย่อย (1)" not in html
     item = existing_ma.get_items()[0]
     assert item.name in html
@@ -597,7 +624,7 @@ def test_cannot_delete_active_procurement(world, client_for):
     _create(client, world, form_data)
 
     procurement = models.Procurement.objects.get(parent_procurement=None)
-    assert procurement.status == "active"
+    assert procurement.status == "review"
     proc_id = str(procurement.id)
 
     # Attempt to delete active MA
@@ -655,9 +682,9 @@ def test_edit_draft_to_active(world, client_for):
     )
     assert edit_res.status_code == 200
     procurement.reload()
-    assert procurement.status == "active"
+    assert procurement.status == "review"
     for child in models.Procurement.objects(parent_procurement=procurement):
-        assert child.status == "active"
+        assert child.status == "review"
 
 
 def test_installment_table_shows_due_amount_column(world, client_for):

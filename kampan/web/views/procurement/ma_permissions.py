@@ -1,7 +1,8 @@
 """สิทธิ์ของระบบ MA ที่ใช้ร่วมกันทุกหน้า
 
-- ``edit_checker`` / ``can_edit_procurement``: กติกา "ผู้แก้ไข MA ได้" ใช้กับแก้ไข, ต่ออายุ, ไม่ต่ออายุ,
+- ``edit_checker`` / ``can_edit_procurement``: กติกา "ผู้แก้ไข MA ได้" ใช้กับแก้ไข,
   บันทึกจ่ายงวด และเพิ่ม log การแจ้งเตือนเอง (admin ของหน่วยงาน, ผู้สร้าง MA หรือผู้รับผิดชอบรายการย่อยใดก็ได้)
+  ส่วนขอต่ออายุ (``can_request_renewal``: ผู้รับผิดชอบเท่านั้น) และอนุมัติ (``can_approve_renewal``: admin) แยกต่างหาก
 - ``visible_procurements``: MA ที่ผู้ใช้มองเห็น (#31) ใช้กับทุกหน้าที่แสดง MA
 - ``get_visible_procurement_or_404``: MA ตัวเดียวสำหรับหน้ารายละเอียด / หน้าที่ทำงานกับ MA ตัวเดียว
 
@@ -19,6 +20,8 @@ from kampan import models
 from kampan.models.procurement import procurement_ids_of
 
 # role ที่เห็น MA ทั้งหน่วยงาน (มี role ใดในนี้ก็พอ แม้จะมี staff ด้วย)
+# สถานะที่ admin ยืนยันแล้ว
+CONFIRMED_STATUSES = ("renewed", "disactive")
 WHOLE_ORGANIZATION_ROLES = ("admin", "head", "manager", "supervisor supplier", "director")
 
 
@@ -56,6 +59,9 @@ def edit_checker(organization, user=None) -> Callable[[models.Procurement], bool
     def _can_edit(procurement) -> bool:
         if _reference_id(procurement, "organization") != organization.id:
             return False
+        # admin ยืนยันแล้ว (ต่ออายุแล้ว / ไม่ต่ออายุ) ผู้รับผิดชอบและผู้สร้างแก้อะไรไม่ได้อีก
+        if procurement.status in CONFIRMED_STATUSES:
+            return False
         if _reference_id(procurement, "created_by") == user.id:
             return True
         if member_id is None:
@@ -67,6 +73,43 @@ def edit_checker(organization, user=None) -> Callable[[models.Procurement], bool
 
 def can_edit_procurement(procurement, organization, user=None) -> bool:
     return edit_checker(organization, user)(procurement)
+
+
+def can_request_renewal(procurement, organization, user=None) -> bool:
+    """ผู้รับผิดชอบรายการย่อยของ MA นี้เท่านั้นที่กดขอต่ออายุ / ไม่ต่ออายุได้ (ผู้สร้าง, admin, คนอื่นที่แก้ได้ไม่ใช่)
+    และต้องเป็นสถานะรอตรวจสอบหรือรอต่ออายุ ไม่ใช่แบบร่าง / ต่ออายุแล้ว / ไม่ต่ออายุ / สัญญาหลักที่แยกสัญญาย่อย
+    (อ้างอิงอย่างเดียว)"""
+    # รอตรวจสอบ (ขอครั้งแรก) หรือรอต่ออายุ (เปลี่ยนคำขอ ต่ออายุ <-> ไม่ต่ออายุ ได้จนกว่า admin จะอนุมัติ)
+    if (
+        not organization
+        or procurement.get_renewal_status() not in ("review", "renewal-requested")
+        or procurement.is_renewed()
+    ):
+        return False
+    if _reference_id(procurement, "organization") != organization.id or procurement.has_child_procurements():
+        return False
+    member = get_member(organization, user)
+    if member is None:
+        return False
+    return any(member.id in item.get_responsible_ids() for item in procurement.get_items())
+
+
+def can_approve_renewal(organization, user=None) -> bool:
+    """ผู้อนุมัติการต่ออายุ / ไม่ต่ออายุ: admin ของหน่วยงาน (รวม global admin)"""
+    user = _resolve_user(user)
+    if not organization or not getattr(user, "is_authenticated", False):
+        return False
+    return user.has_organization_roles("admin", organization=organization)
+
+
+def renewal_requested_as(procurement, request_value: str) -> bool:
+    """MA อยู่ในสถานะ "รอต่ออายุ" และสิ่งที่ผู้รับผิดชอบขอตรงกับ ``request_value`` (renew / stop)
+    และไม่ใช่สัญญาหลักที่แยกสัญญาย่อย (อ้างอิงอย่างเดียว) · admin ข้ามขั้นตอนขอไม่ได้"""
+    return (
+        procurement.status == "renewal-requested"
+        and procurement.renewal_request == request_value
+        and not procurement.has_child_procurements()
+    )
 
 
 def _sees_whole_organization(user, member) -> bool:

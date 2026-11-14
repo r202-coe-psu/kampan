@@ -156,7 +156,9 @@ class ProcurementItemForm(Form):
     reminder_kind = fields.SelectField("ประเภทการเตือน", choices=models.REMINDER_KIND_CHOICES, default="ma")
     requires_activation = fields.BooleanField("ต้อง activate เมื่อครบกำหนด")
     expiry_reminder_offsets = OffsetCheckboxField("เตือนหมดอายุล่วงหน้า", choices=models.REMINDER_OFFSET_CHOICES)
-    payment_reminder_offsets = OffsetCheckboxField("เตือนจ่ายงวดล่วงหน้า", choices=models.REMINDER_OFFSET_CHOICES)
+    payment_reminder_offsets = OffsetCheckboxField(
+        "เตือนจ่ายงวดล่วงหน้า", choices=models.PAYMENT_REMINDER_OFFSET_CHOICES
+    )
     # ช่องว่างไม่นับ (แถวที่ยังไม่กรอก)
     reminder_offsets_days = fields.FieldList(fields.StringField(), label="เตือนหมดอายุล่วงหน้า (วัน) กำหนดเอง")
     custom_reminder_dates = fields.FieldList(fields.StringField(), label="วันที่เตือนเจาะจง (พ.ศ.)")
@@ -221,10 +223,17 @@ class ProcurementItemForm(Form):
         ]
 
 
+PSU_NUMBER_REQUIRED_MESSAGE = (
+    "กรุณากรอกเลขที่ ม.อ.เบิกจ่าย เมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA)"
+)
+
+
 class ProcurementHeaderForm(FlaskForm):
+    # บังคับเมื่อมีรายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA) ถ้าทุกรายการแบ่งจ่ายเป็นงวด
+    # ใส่เลขที่เบิกจ่ายตอนบันทึกจ่ายแต่ละงวดแทน ดู validate()
     psu_disbursement_number = fields.StringField(
         "เลขที่ มอ เบิกจ่าย",
-        validators=[validators.InputRequired(message=REQUIRED_MESSAGE), validators.Length(max=128)],
+        validators=[validators.Optional(), validators.Length(max=128)],
     )
     disbursement_date = DateInputField(
         "ลงวันที่",
@@ -341,6 +350,11 @@ class ProcurementHeaderForm(FlaskForm):
         if getattr(self, "is_draft", False) or self.mode != "full":
             return valid
 
+        if not (self.psu_disbursement_number.data or "").strip() and any(
+            not entry.form.installment_mode.data for entry in self.items
+        ):
+            self.psu_disbursement_number.errors = [*self.psu_disbursement_number.errors, PSU_NUMBER_REQUIRED_MESSAGE]
+            valid = False
         # ตรวจผลรวมเมื่อยอดทุกช่องอ่านได้แล้วเท่านั้น (ช่องที่ผิดรูปแบบมี error ของตัวเองอยู่แล้ว)
         amount_fields = [self.total_amount] + [entry.form.amount for entry in self.items]
         if any(field.errors or field.data is None for field in amount_fields):
@@ -357,6 +371,9 @@ class ConfirmActionForm(FlaskForm):
     """ปุ่มยืนยันที่ไม่มีช่องกรอก (ยกเลิกบันทึกจ่าย, ไม่ต่ออายุ): บังคับ POST + CSRF ผ่าน validate_on_submit"""
 
 
+PAYMENT_NUMBER_REQUIRED_MESSAGE = "กรุณากรอกเลขที่ ม.อ.เบิกจ่ายของงวดนี้ก่อนบันทึกจ่าย"
+
+
 class InstallmentPaymentForm(FlaskForm):
     paid_date = DateInputField(
         "วันที่จ่าย",
@@ -364,8 +381,8 @@ class InstallmentPaymentForm(FlaskForm):
         validators=[validators.InputRequired(message="กรุณาระบุวันที่จ่าย")],
     )
     payment_number = fields.StringField(
-        "เลขที่เอกสาร",
-        validators=[validators.Optional(), validators.Length(max=128)],
+        "เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร",
+        validators=[validators.DataRequired(message=PAYMENT_NUMBER_REQUIRED_MESSAGE), validators.Length(max=128)],
     )
     paid_amount = money_field("ยอดที่จ่ายจริง (บาท)", required=False)
 
@@ -411,6 +428,10 @@ def sort_field() -> fields.SelectField:
     return fields.SelectField("เรียงลำดับ", choices=SORT_OPTIONS, validators=[validators.Optional()])
 
 
+# สถานะการต่ออายุที่กรองในรายการ MA ได้ (ไม่มีแบบร่าง และไม่แสดงค่าเดิม active / pending แยก)
+RENEWAL_FILTER_STATUSES = ("review", "renewal-requested", "renewed", "disactive")
+
+
 class ProductFilterForm(FlaskForm):
     name = fields.StringField(
         "ค้นหา",
@@ -424,6 +445,17 @@ class ProductFilterForm(FlaskForm):
     payment_status = fields.SelectField(
         "สถานะการจ่ายเงิน",
         choices=[("", "ทั้งหมด")] + models.PAYEMENT_STATUS_CHOICES,
+        validators=[validators.Optional()],
+    )
+    usage_status = fields.SelectField(
+        "สถานะการใช้งาน",
+        choices=[("", "ทั้งหมด")] + models.USAGE_STATUS_CHOICES,
+        validators=[validators.Optional()],
+    )
+    renewal_status = fields.SelectField(
+        "สถานะการต่ออายุ",
+        choices=[("", "ทั้งหมด")]
+        + [(value, label) for value, label in models.RENEWAL_STATUS_CHOICES if value in RENEWAL_FILTER_STATUSES],
         validators=[validators.Optional()],
     )
     sort = sort_field()

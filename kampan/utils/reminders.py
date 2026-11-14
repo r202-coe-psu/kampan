@@ -22,10 +22,14 @@ OFFSET_DELTAS = {
     "1m": relativedelta(months=1),
     "15d": relativedelta(days=15),
     "7d": relativedelta(days=7),
+    "5d": relativedelta(days=5),
+    "3d": relativedelta(days=3),
 }
+# เตือนจ่ายงวด: วันครบกำหนดเสมอ (offset 0) + 7, 5, 3 วันก่อนที่ติ๊กไว้ (ค่าเดิมอื่นที่เก็บไว้ถูกข้าม)
+PAYMENT_OFFSETS = ("7d", "5d", "3d")
 DUE_OFFSET = "due"
-# MA ที่หยุดเตือนทั้งหมด: ไม่ต่ออายุ / ต่ออายุแล้ว
-STOPPED_STATUSES = ["disactive", "renewed"]
+# MA ที่หยุดเตือนทั้งหมด: ไม่ต่ออายุ / ต่ออายุแล้ว / แบบร่าง
+STOPPED_STATUSES = ["disactive", "renewed", "draft"]
 # trigger ที่เลยมาเกินกี่วันจะไม่ส่งแล้ว ใช้กับทุก kind (กันนำเข้า MA ที่มีงวดค้างย้อนหลัง,
 # กรอกวันในอดีต หรือ controller ล่มนานแล้วยิงเมลย้อนหลัง)
 REMINDER_GRACE_DAYS = 7
@@ -54,11 +58,14 @@ def _as_date(value) -> datetime.date | None:
     return value
 
 
-def _offset_triggers(target: datetime.date, offsets, extra_days=()) -> list[tuple[datetime.date, str]]:
+def _offset_triggers(
+    target: datetime.date, offsets, extra_days=(), include_due=True
+) -> list[tuple[datetime.date, str]]:
     """วัน trigger ของทุกช่วงที่ติ๊ก + จำนวนวันที่กรอกเอง + วันครบกำหนดเอง (1 ครั้ง)"""
     triggers = [(target - OFFSET_DELTAS[key], key) for key in offsets or [] if key in OFFSET_DELTAS]
     triggers += [(target - datetime.timedelta(days=days), str(days)) for days in extra_days or [] if days]
-    triggers.append((target, DUE_OFFSET))
+    if include_due:
+        triggers.append((target, DUE_OFFSET))
     return triggers
 
 
@@ -129,7 +136,8 @@ def _item_candidates(item, today: datetime.date) -> list[dict]:
         due_date = _as_date(installment.due_date)
         if installment.is_paid() or not due_date:
             continue
-        latest = _latest_due(_offset_triggers(due_date, item.payment_reminder_offsets), today)
+        offsets = [key for key in item.payment_reminder_offsets or [] if key in PAYMENT_OFFSETS]
+        latest = _latest_due(_offset_triggers(due_date, offsets), today)
         if latest:
             candidates.append(
                 {"kind": "payment", "trigger": latest, "installment_id": installment._id, "installment_index": index}
@@ -151,7 +159,7 @@ def due_reminders(today: datetime.date) -> list[Reminder]:
     - ทุก kind: ข้าม trigger ที่เก่ากว่า today − 7 วัน (REMINDER_GRACE_DAYS) เช่น MA นำเข้าที่มีงวดค้างย้อนหลัง
     - collapse: ต่อ (รายการย่อย, kind[, งวด]) คืนเฉพาะ trigger ล่าสุดที่ถึงกำหนด ถ้ามี log ที่ trigger_date >= ตัวนั้นแล้วข้าม
       (controller ล่มหลายวันแล้วไม่ยิงเมลค้างหลายฉบับ และไม่มีการเตือนซ้ำหลังเลยกำหนด)
-    - MA ที่ไม่ต่ออายุ / ต่ออายุแล้ว ไม่เตือนเลย
+    - MA ที่ไม่ต่ออายุ / ต่ออายุแล้ว / แบบร่าง ไม่เตือนเลย
     - สัญญาหลักที่มีสัญญาย่อย ไม่เตือนเอง (เตือนจากสัญญาย่อยแทน กันได้เมลซ้ำ)
     """
     stopped_ids = list(models.Procurement.objects(status__in=STOPPED_STATUSES).scalar("id"))

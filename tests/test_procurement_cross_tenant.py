@@ -45,6 +45,7 @@ def _make_procurement(organization, user, name="MA contract", status="pending", 
                 start_date=now,
                 end_date=now + datetime.timedelta(days=200 if status == "active" else 30),
                 responsible_by=responsible or [],
+                installment_mode=True,
                 installments=[models.Installment(due_date=now + datetime.timedelta(days=200 if status == "active" else 30))],
             )
         ]
@@ -220,11 +221,21 @@ def test_state_changing_actions_reject_get(world, client_for, suffix):
     assert models.Requisition.objects.count() == 0
 
 
+def _requested(procurement, request_value="stop"):
+    models.Procurement.objects(id=procurement.id).update(
+        set__status="renewal-requested", set__renewal_request=request_value
+    )
+
+
 def test_non_renewal_action_own_org_post_changes_status(world, client_for):
     procurement_a = _make_procurement(world.org_a, world.admin_a)
+    _requested(procurement_a)
     client = client_for(world.admin_a)
 
-    response = client.post(f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}")
+    response = client.post(
+        f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}",
+        data={"expected_request": "stop"},
+    )
 
     assert response.status_code == 302
     procurement_a.reload()
@@ -235,11 +246,12 @@ def test_non_renewal_action_own_org_post_changes_status(world, client_for):
 def test_non_renewal_action_organization_id_from_form_body(world, client_for):
     """The confirm button posts organization_id in the URL; a form field works too."""
     procurement_a = _make_procurement(world.org_a, world.admin_a)
+    _requested(procurement_a)
     client = client_for(world.admin_a)
 
     response = client.post(
         f"/procurement/requisitions/{procurement_a.id}/non-renewal",
-        data={"organization_id": str(world.org_a.id)},
+        data={"organization_id": str(world.org_a.id), "expected_request": "stop"},
     )
 
     assert response.status_code == 302
@@ -275,6 +287,7 @@ def test_list_pages_still_get(world, client_for, path):
 
 def test_detail_template_renders_non_renewal_form_with_organization(world, client_for):
     procurement_a = _make_procurement(world.org_a, world.admin_a)
+    _requested(procurement_a)
     client = client_for(world.admin_a)
 
     response = client.get(f"/procurement/payment/{procurement_a.id}?organization_id={world.org_a.id}")
@@ -285,7 +298,14 @@ def test_detail_template_renders_non_renewal_form_with_organization(world, clien
     assert f'action="{action}"' in html
     # ปุ่มต่ออายุเดิมที่สร้างคำขอซื้อถูกถอดออกจากหน้า MA (#32) ต่ออายุไปที่ฟอร์มสร้าง MA ใหม่แทน
     assert "/renewal-requested" not in html
+    assert 'name="expected_request" value="stop"' in html
+    # ผู้รับผิดชอบขอไม่ต่ออายุ: ไม่มีปุ่มต่ออายุ (ต่ออายุได้เมื่อขอต่ออายุเท่านั้น)
+    assert f"/procurement/products/{procurement_a.id}/renew?" not in html
+
+    _requested(procurement_a, "renew")
+    html = client.get(f"/procurement/payment/{procurement_a.id}?organization_id={world.org_a.id}").data.decode("utf-8")
     assert f'href="/procurement/products/{procurement_a.id}/renew?organization_id={world.org_a.id}"' in html
+    assert 'id="non_renewal_modal"' not in html
 
 
 # ---------------------------------------------------------------------------
@@ -661,7 +681,7 @@ def test_renewal_requested_action_double_submit_creates_one_requisition(world, c
     assert procurement_a.status == "renewal-requested"
 
 
-@pytest.mark.parametrize("status", ["active", "disactive", "renewal-requested"])
+@pytest.mark.parametrize("status", ["disactive", "renewed", "renewal-requested"])
 def test_renewal_requested_action_rejects_non_pending(world, client_for, status):
     procurement_a = _make_procurement(world.org_a, world.admin_a, status=status, responsible=[world.role_admin_a])
     client = client_for(world.admin_a)
@@ -676,12 +696,16 @@ def test_renewal_requested_action_rejects_non_pending(world, client_for, status)
     assert procurement_a.status == status
 
 
-@pytest.mark.parametrize("status", ["active"])
-def test_non_renewal_action_rejects_non_pending(world, client_for, status):
+@pytest.mark.parametrize("status", ["active", "review", "disactive", "renewed"])
+def test_non_renewal_action_rejects_non_requested(world, client_for, status):
+    """admin อนุมัติไม่ต่ออายุได้เฉพาะ MA ที่ผู้รับผิดชอบขอไม่ต่ออายุแล้ว (ข้ามขั้นตอนขอไม่ได้)"""
     procurement_a = _make_procurement(world.org_a, world.admin_a, status=status)
     client = client_for(world.admin_a)
 
-    response = client.post(f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}")
+    response = client.post(
+        f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}",
+        data={"expected_request": "stop"},
+    )
 
     assert response.status_code == 302
     procurement_a.reload()
@@ -700,7 +724,7 @@ def test_renewal_requested_action_failed_requisition_restores_pending(world, cli
         client.post(f"/procurement/requisitions/{procurement_a.id}/renewal-requested?organization_id={world.org_a.id}")
 
     procurement_a.reload()
-    assert procurement_a.status == "pending"
+    assert procurement_a.status == "review" and procurement_a.renewal_request is None
 
 
 # ---------------------------------------------------------------------------
@@ -740,13 +764,24 @@ def test_renewal_requested_action_staff_responsible_ok(world, client_for, org_a_
     assert models.Requisition.objects.count() == 1
 
 
-def test_non_renewal_action_staff_responsible_ok(world, client_for, org_a_members):
+def test_responsible_requests_stop_and_only_admin_approves(world, client_for, org_a_members):
     procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
-    client = client_for(org_a_members.staff)
+    url = f"/procurement/requisitions/{procurement_a.id}/%s?organization_id={world.org_a.id}"
 
-    response = client.post(f"/procurement/requisitions/{procurement_a.id}/non-renewal?organization_id={world.org_a.id}")
+    # ผู้รับผิดชอบกดอนุมัติเองไม่ได้ (และยังไม่มีคำขอ)
+    client_for(org_a_members.staff).post(url % "non-renewal", data={"expected_request": "stop"})
+    procurement_a.reload()
+    assert procurement_a.status == "pending"
 
-    assert response.status_code == 302
+    client_for(org_a_members.staff).post(url % "renewal-request", data={"request": "stop"})
+    procurement_a.reload()
+    assert (procurement_a.status, procurement_a.renewal_request) == ("renewal-requested", "stop")
+
+    client_for(org_a_members.staff).post(url % "non-renewal", data={"expected_request": "stop"})
+    procurement_a.reload()
+    assert procurement_a.status == "renewal-requested"
+
+    client_for(world.admin_a).post(url % "non-renewal", data={"expected_request": "stop"})
     procurement_a.reload()
     assert procurement_a.status == "disactive"
 
@@ -767,9 +802,24 @@ def test_renewal_actions_refuse_users_without_permission(world, client_for, org_
     assert models.Requisition.objects.count() == 0
 
 
-@pytest.mark.parametrize("who, sees_buttons", [("admin", True), ("staff", True), ("head", False), ("manager", False)])
-def test_detail_shows_renewal_buttons_only_to_permitted_users(world, client_for, org_a_members, who, sees_buttons):
+@pytest.mark.parametrize(
+    "who, state, sees_request, sees_approve",
+    [
+        ("admin", "review", False, False),
+        ("staff", "review", True, False),
+        ("head", "review", False, False),
+        ("manager", "review", False, False),
+        ("admin", "stop", False, True),
+        ("staff", "stop", True, False),
+        ("head", "stop", False, False),
+    ],
+)
+def test_detail_shows_renewal_buttons_only_to_permitted_users(
+    world, client_for, org_a_members, who, state, sees_request, sees_approve
+):
     procurement_a = _make_procurement(world.org_a, world.admin_a, responsible=[org_a_members.role_staff])
+    if state == "stop":
+        _requested(procurement_a, "stop")
     user = world.admin_a if who == "admin" else getattr(org_a_members, who)
     client = client_for(user)
 
@@ -777,8 +827,9 @@ def test_detail_shows_renewal_buttons_only_to_permitted_users(world, client_for,
 
     assert response.status_code == 200
     html = response.data.decode("utf-8")
-    assert (f"/procurement/products/{procurement_a.id}/renew?" in html) is sees_buttons
-    assert ('id="non_renewal_modal"' in html) is sees_buttons
+    assert ('id="request_renew_modal"' in html) is sees_request  # ผู้รับผิดชอบ: ขอ / เปลี่ยนคำขอ
+    assert ('id="non_renewal_modal"' in html) is sees_approve  # admin: อนุมัติไม่ต่ออายุ
+    assert f"/procurement/products/{procurement_a.id}/renew?" not in html  # ต่ออายุได้เมื่อขอต่ออายุเท่านั้น
 
 
 @pytest.mark.parametrize("status", ["//evil.example.com", "/\\evil.example.com", "https://evil.example.com"])
@@ -822,6 +873,9 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     """ต่ออายุแล้ว MA เดิมถูกปิดและหยุดเตือน จึงเตือนก่อนถ้ายังมีงวดที่ไม่ได้บันทึกจ่าย"""
     unpaid = _make_procurement(world.org_a, world.admin_a, name="Unpaid MA", status="pending")
     single = _make_procurement(world.org_a, world.admin_a, name="Single MA", status="pending")
+    models.ProcurementItem.objects(procurement=single).update(set__installment_mode=False)
+    for ma in (unpaid, single):
+        _requested(ma, "renew")
     models.ProcurementItem.objects(procurement=unpaid).update(
         set__installments=[
             models.Installment(due_date=datetime.datetime.now() + datetime.timedelta(days=10), amount=Decimal("500.00")),
@@ -829,6 +883,7 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
         ]
     )
     paid = _make_procurement(world.org_a, world.admin_a, name="Paid MA", status="pending")
+    _requested(paid, "renew")
     models.ProcurementItem.objects(procurement=paid).update(
         set__installments=[models.Installment(due_date=datetime.datetime.now(), paid_date=datetime.datetime.now())]
     )
@@ -845,13 +900,14 @@ def test_renew_links_warn_when_unpaid_installments_exist(world, client_for):
     assert f'data-renew-check="renew_check_{unpaid.id}"' in unpaid_detail
     assert f"/installments/" in unpaid_detail and "/pay?" in unpaid_detail
     assert f'id="renew_check_{paid.id}"' not in paid_detail
-    # รายการที่มีงวดเดียว ต่ออายุ = จ่ายงวดนั้น จึงไม่ต้องเตือน
+    # รายการที่ไม่แบ่งจ่ายเป็นงวด (จ่ายแล้วตอนสร้าง MA) ไม่มีงวดค้าง จึงไม่ต้องเตือน
     assert f'id="renew_check_{single.id}"' not in single_detail
 
 
 def test_split_item_with_one_installment_is_warned_not_paid_by_renewal(world, client_for):
     """ติ๊ก "แบ่งจ่ายเป็นงวด" แม้มีงวดเดียวก็ไม่ใช่จ่ายครั้งเดียว ต้องเตือนและไม่บันทึกจ่ายให้ตอนต่ออายุ"""
     split = _make_procurement(world.org_a, world.admin_a, name="Split MA", status="pending")
+    _requested(split, "renew")
     models.ProcurementItem.objects(procurement=split).update(set__installment_mode=True)
     client = client_for(world.admin_a)
 

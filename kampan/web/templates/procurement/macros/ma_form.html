@@ -382,6 +382,21 @@
           <button type="button" class="btn btn-sm btn-ghost text-primary w-fit" data-action="add-installment">
             <i class="ph ph-plus-circle"></i> เพิ่มงวด
           </button>
+          {# เตือนก่อนงวดจ่าย: เตือนในวันครบกำหนดเสมอ เลือกเพิ่ม 7 / 5 / 3 วันก่อนได้ (ค่าเริ่มต้นไม่ติ๊ก) แสดงเมื่อแบ่งจ่ายเป็นงวด #}
+          <div class="payment-reminder-container flex flex-col gap-2 border-t border-base-200 pt-3" data-payment-reminder>
+            <span class="text-sm font-medium text-base-content">{{ f.payment_reminder_offsets.label.text }}</span>
+            <div class="flex flex-wrap gap-2" data-payment-offsets>
+              {% for value, label in f.payment_reminder_offsets.choices %}
+                <label class="flex items-center gap-2 py-1 px-3 rounded-full border border-base-300 cursor-pointer">
+                  <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ f.payment_reminder_offsets.name }}" value="{{ value }}"
+                         {% if value in (f.payment_reminder_offsets.data or []) %}checked{% endif %} />
+                  <span class="text-sm">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <p class="text-xs text-base-content/60">ระบบส่งอีเมลถึงผู้รับผิดชอบในวันครบกำหนดของงวดที่ยังไม่จ่ายเสมอ ติ๊กเพื่อให้เตือนล่วงหน้าเพิ่ม</p>
+            {{ field_errors(f.payment_reminder_offsets) }}
+          </div>
         </div>
       </section>
 
@@ -404,14 +419,11 @@
       </section>
 
       {# 5. ตั้งค่าการแจ้งเตือน: ใช้ค่าเริ่มต้นได้เลย พับไว้ #}
-      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7 วัน)" %}
+      {% set reminder_summary = "เตือนหมดอายุ " ~ (f.expiry_reminder_offsets.data or [])|length ~ " ช่วง" ~ (" · เตือนจ่ายงวด " ~ (f.payment_reminder_offsets.data or [])|length ~ " ช่วง" if f.installment_mode.data else "") ~ (" · เพิ่มเอง " ~ (custom_days|length + custom_dates|length) ~ " รายการ" if (custom_days or custom_dates) else "") ~ " (ค่าเริ่มต้น 90/60/30 วัน และ 15/7 วัน · เตือนจ่ายงวดตั้งที่ส่วนการจ่ายเงิน)" %}
       {% call collapsible("ph-bell-ringing", "ตั้งค่าการแจ้งเตือน", reminder_summary, reminder_has_error or custom_days or custom_dates) %}
-        <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันครบกำหนด</p>
+        <p class="text-sm text-base-content/70">ส่งอีเมลถึงผู้รับผิดชอบรายการนี้ 1 ฉบับต่อทุกช่วงที่ติ๊ก และอีก 1 ฉบับในวันสิ้นสุด</p>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
           {{ offset_checkboxes(f.expiry_reminder_offsets, "ก่อนวันที่สิ้นสุดของรายการย่อย") }}
-          <div class="payment-reminder-container{% if not f.installment_mode.data %} hidden{% endif %}" data-payment-reminder>
-            {{ offset_checkboxes(f.payment_reminder_offsets, "ก่อนวันครบกำหนดของงวดที่ยังไม่จ่าย") }}
-          </div>
           {{ list_rows(f.reminder_offsets_days, "เช่น 45", "จำนวนวันก่อนวันที่สิ้นสุด (1–730 วัน) เพิ่มจากช่วงที่ติ๊ก", "เพิ่มจำนวนวัน", inputmode="numeric") }}
           {{ list_rows(f.custom_reminder_dates, "28/05/2570", "วว/ดด/ปปปป ปี พ.ศ. ส่งเตือนในวันนั้น", "เพิ่มวันที่") }}
         </div>

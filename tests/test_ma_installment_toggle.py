@@ -35,6 +35,7 @@ def _edit(client, world, procurement, data):
 
 def _pay(client, world, procurement, **data):
     data.setdefault("paid_date", "2026-11-01")
+    data.setdefault("payment_number", "PAY-DEFAULT")
     return client.post(f"{_installment_url(procurement, 'pay')}?{_q(world.org)}", data=data)
 
 
@@ -65,11 +66,11 @@ def _form_for(procurement, **item_overrides):
 
 
 # ---------------------------------------------------------------------------
-# สวิตช์ปิด: จ่ายครั้งเดียว งวดเดียว ครบกำหนดวันสิ้นสุด
+# สวิตช์ปิด: ไม่มีการจ่าย ไม่เก็บงวด
 # ---------------------------------------------------------------------------
 
 
-def test_toggle_off_creates_single_installment_due_on_item_end_date(world, client_for):
+def test_toggle_off_stores_no_installments_and_ignores_posted_rows(world, client_for):
     # ฟอร์มส่งแถวงวดมา 2 แถว (เช่นเหลือจากตอนเปิดสวิตช์) แต่สวิตช์ปิด: ไม่ใช้แถวเหล่านั้น
     data = ma_form(
         [_item(amount="100000.00", end_date="2027-03-15", installments=[{"due_date": "2026-06-30"}, {"due_date": ""}])],
@@ -80,7 +81,8 @@ def test_toggle_off_creates_single_installment_due_on_item_end_date(world, clien
     assert response.status_code == 302
     item = models.ProcurementItem.objects.get()
     assert item.installment_mode is False
-    assert [installment.due_date for installment in item.installments] == [datetime.datetime(2027, 3, 15)]
+    assert list(item.installments) == []
+    assert item.pays_in_installments() is False
 
 
 def test_toggle_off_without_any_installment_rows_still_saves(world, client_for):
@@ -89,10 +91,19 @@ def test_toggle_off_without_any_installment_rows_still_saves(world, client_for):
     response = _create(client_for(world.admin), world, data)
 
     assert response.status_code == 302
-    assert len(models.ProcurementItem.objects.get().installments) == 1
+    assert len(models.ProcurementItem.objects.get().installments) == 0
 
 
-def test_editing_end_date_moves_the_single_installment_and_keeps_paid_state(world, client_for, existing_ma):
+def test_item_without_payment_still_counts_toward_the_ma_total(world, client_for):
+    data = ma_form([_item(amount="99999.00")], total_amount="100000.00")
+
+    response = _create(client_for(world.admin), world, data)
+
+    assert response.status_code == 200  # ผลรวมยอดรายการย่อยไม่ตรงยอด MA ยังตรวจเหมือนเดิม
+    assert models.Procurement.objects.count() == 0
+
+
+def test_editing_end_date_keeps_the_installments_and_paid_state(world, client_for, existing_ma):
     client_for(world.responsible).post(
         f"{_installment_url(existing_ma, 'pay')}?{_q(world.org)}",
         data={"paid_date": "2026-11-01", "payment_number": "PAY-1"},
@@ -108,15 +119,8 @@ def test_editing_end_date_moves_the_single_installment_and_keeps_paid_state(worl
     assert len(item.installments) == 1
     after = item.installments[0]
     assert after._id == before._id
-    assert after.due_date == datetime.datetime(2027, 6, 30)
     assert after.paid_date == datetime.datetime(2026, 11, 1) and after.payment_number == "PAY-1"
     assert [entry.action for entry in after.pay_log] == ["paid"]
-
-
-def test_editing_end_date_of_unpaid_single_installment_moves_its_due_date(world, client_for, existing_ma):
-    _edit(client_for(world.admin), world, existing_ma, _form_for(existing_ma, end_date="2027-01-31"))
-
-    assert _first_installment(existing_ma).due_date == datetime.datetime(2027, 1, 31)
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +180,7 @@ def test_edit_refuses_to_remove_a_paid_installment(world, client_for):
     paid = item.get_sorted_installments()[0]
     client_for(world.admin).post(
         f"/procurement/payment/{procurement.id}/items/{item.id}/installments/{paid._id}/pay?{_q(world.org)}",
-        data={"paid_date": "2026-11-01"},
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-PAID-1"},
     )
     procurement = models.Procurement.objects.get(id=procurement.id)
     form = _form_for(procurement)
@@ -192,24 +196,36 @@ def test_edit_refuses_to_remove_a_paid_installment(world, client_for):
     assert len(after.installments) == 2 and after.get_installment(paid._id).is_paid()
 
 
-def test_turning_toggle_off_keeps_one_installment_and_its_paid_state(world, client_for):
+def test_turning_toggle_off_with_a_paid_installment_is_refused(world, client_for):
+    """ปิดแบ่งจ่ายแล้วงวดทั้งหมดถูกทิ้ง จึงห้ามเมื่อมีงวดที่จ่ายแล้ว (ประวัติการจ่ายจะหาย)"""
     procurement = _on_ma(world, client_for)
     item = _item_doc(procurement)
     paid = item.get_sorted_installments()[0]
     client_for(world.admin).post(
         f"/procurement/payment/{procurement.id}/items/{item.id}/installments/{paid._id}/pay?{_q(world.org)}",
-        data={"paid_date": "2026-11-01"},
+        data={"paid_date": "2026-11-01", "payment_number": "PAY-PAID-1"},
     )
     procurement = models.Procurement.objects.get(id=procurement.id)
+    form = _form_for(procurement)
+    form.pop("items-0-installment_mode")
+
+    response = _edit(client_for(world.admin), world, procurement, form)
+
+    assert response.status_code == 200
+    assert "ปิดการแบ่งจ่ายเป็นงวดไม่ได้" in response.get_data(as_text=True)
+    after = _item_doc(procurement)
+    assert after.installment_mode is True and len(after.installments) == 2 and after.get_installment(paid._id).is_paid()
+
+
+def test_turning_toggle_off_drops_unpaid_installments(world, client_for):
+    procurement = _on_ma(world, client_for)
     form = _form_for(procurement)
     form.pop("items-0-installment_mode")
 
     assert _edit(client_for(world.admin), world, procurement, form).status_code == 302
 
     after = _item_doc(procurement)
-    assert after.installment_mode is False and len(after.installments) == 1
-    assert after.installments[0]._id == paid._id and after.installments[0].is_paid()
-    assert after.installments[0].due_date == after.end_date
+    assert after.installment_mode is False and list(after.installments) == []
 
 
 def test_turning_toggle_off_with_two_paid_installments_is_refused(world, client_for):
@@ -218,7 +234,7 @@ def test_turning_toggle_off_with_two_paid_installments_is_refused(world, client_
     for installment in item.installments:
         client_for(world.admin).post(
             f"/procurement/payment/{procurement.id}/items/{item.id}/installments/{installment._id}/pay?{_q(world.org)}",
-            data={"paid_date": "2026-11-01"},
+            data={"paid_date": "2026-11-01", "payment_number": f"PAY-{installment._id}"},
         )
     procurement = models.Procurement.objects.get(id=procurement.id)
     form = _form_for(procurement)
@@ -380,16 +396,78 @@ def test_edit_paid_installment_logs_edited_action_and_shows_label(world, client_
 # ---------------------------------------------------------------------------
 
 
-def test_reminders_fire_on_end_date_for_toggle_off_item(world, client_for):
+def test_no_payment_reminders_for_toggle_off_item_but_expiry_stays(world, client_for):
     _create(client_for(world.admin), world, ma_form([_item(amount="100000.00", end_date="2027-04-30")]))
 
-    reminders = [r for r in due_reminders(datetime.date(2027, 4, 30)) if r.kind == "payment"]
+    reminders = due_reminders(datetime.date(2027, 4, 30))
 
-    assert [(r.trigger_date, r.offset) for r in reminders] == [(datetime.date(2027, 4, 30), "due")]
-    assert not [r for r in due_reminders(datetime.date(2027, 4, 29)) if r.kind == "payment" and r.offset == "due"]
+    assert [r for r in reminders if r.kind == "payment"] == []
+    assert [(r.kind, r.offset) for r in reminders] == [("expiry", "due")]
 
 
-@pytest.mark.parametrize("periods, mode, count", [(1, False, 1), (4, True, 4)])
+def _payment_item_ma(world, create_ma, offsets, due=datetime.datetime(2027, 4, 30)):
+    return create_ma(
+        world.org,
+        user=world.admin,
+        items=[
+            models.ProcurementItem(
+                name="[TEST] งวด",
+                category="software",
+                amount=Decimal("1000.00"),
+                start_date=datetime.datetime(2027, 1, 1),
+                end_date=datetime.datetime(2027, 12, 31),
+                responsible_by=[world.role_responsible],
+                installment_mode=True,
+                payment_reminder_offsets=offsets,
+                installments=[models.Installment(due_date=due)],
+            )
+        ],
+    )
+
+
+def _payment_triggers(day):
+    return [(r.trigger_date, r.offset) for r in due_reminders(day) if r.kind == "payment"]
+
+
+def test_default_payment_offsets_are_empty_and_only_due_date_reminds(world, create_ma):
+    assert models.DEFAULT_PAYMENT_REMINDER_OFFSETS == []
+    _payment_item_ma(world, create_ma, offsets=[])
+
+    assert _payment_triggers(datetime.date(2027, 4, 23)) == []  # 7 วันก่อน ไม่ได้ติ๊ก
+    assert _payment_triggers(datetime.date(2027, 4, 30)) == [(datetime.date(2027, 4, 30), "due")]
+
+
+@pytest.mark.parametrize("offset, days", [("7d", 7), ("5d", 5), ("3d", 3)])
+def test_ticked_payment_offsets_add_extra_triggers(world, create_ma, offset, days):
+    _payment_item_ma(world, create_ma, offsets=[offset])
+    due = datetime.date(2027, 4, 30)
+
+    assert _payment_triggers(due - datetime.timedelta(days=days)) == [(due - datetime.timedelta(days=days), offset)]
+    assert _payment_triggers(due) == [(due, "due")]
+
+
+def test_legacy_payment_offsets_are_readable_but_ignored(world, create_ma):
+    _payment_item_ma(world, create_ma, offsets=["3m", "15d"])
+
+    assert models.ProcurementItem.objects.get().payment_reminder_offsets == ["3m", "15d"]
+    assert _payment_triggers(datetime.date(2027, 3, 30)) == []  # 3 เดือนก่อน ไม่ส่งแล้ว
+    assert _payment_triggers(datetime.date(2027, 4, 15)) == []
+    assert _payment_triggers(datetime.date(2027, 4, 30)) == [(datetime.date(2027, 4, 30), "due")]
+
+
+def test_legacy_item_with_mode_off_and_stored_single_installment_has_no_payment(world, create_ma):
+    ma = _payment_item_ma(world, create_ma, offsets=[])
+    models.ProcurementItem.objects(procurement=ma).update(set__installment_mode=False)
+    ma = models.Procurement.objects.get(id=ma.id)
+    item = _item_doc(ma)
+
+    assert item.get_payment_status() == "paid" and item.get_sorted_installments() == []
+    assert item.get_installment_count() == 0 and item.get_next_unpaid_installment() is None
+    assert _payment_triggers(datetime.date(2027, 4, 30)) == []
+    assert ma.get_unpaid_installments() == [] and ma.pay_single_installments_on_renewal(world.admin) == 0
+
+
+@pytest.mark.parametrize("periods, mode, count", [(1, False, 0), (4, True, 4)])
 def test_excel_import_turns_installment_mode_on_only_when_more_than_one(world, gridfs_enabled, periods, mode, count):
     from kampan.utils import upload_files
     from test_ma_structure import _excel_row, _upload_document
@@ -400,5 +478,3 @@ def test_excel_import_turns_installment_mode_on_only_when_more_than_one(world, g
 
     item = models.ProcurementItem.objects.get()
     assert item.installment_mode is mode and len(item.installments) == count
-    if not mode:
-        assert item.installments[0].due_date.date() == datetime.date(2026, 12, 31)

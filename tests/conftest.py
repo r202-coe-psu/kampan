@@ -45,6 +45,18 @@ def clean_db():
         pass
 
 
+@pytest.fixture(autouse=True)
+def assignment_emails(monkeypatch):
+    """ไม่ส่ง / ไม่ enqueue อีเมลแจ้งมอบหมาย MA จริงในเทสต์ (เก็บ log ที่ถูกใส่คิวไว้ให้เทสต์ตรวจ)"""
+    from kampan.utils import ma_assignments
+
+    # clean_db ลบ collection (และ unique index ของ dedupe_key) ทุกเทสต์ จึงสร้าง index ใหม่ให้
+    models.ReminderLog.ensure_indexes()
+    queued = []
+    monkeypatch.setattr(ma_assignments, "enqueue_email_job", lambda log, settings: queued.append(log))
+    return queued
+
+
 @pytest.fixture
 def create_org():
     def _create_org(name="Test Org", status="active"):
@@ -214,12 +226,13 @@ def create_ma():
         organization,
         user=None,
         name="MA contract",
-        status="active",
+        status="review",
         responsible=None,
         total_amount="1000.00",
         items=None,
         psu_disbursement_number="PSU-0001",
         company="Vendor Co.",
+        days_to_end=None,
     ):
         now = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         if items is None:
@@ -229,9 +242,14 @@ def create_ma():
                     category="software",
                     amount=Decimal(total_amount),
                     start_date=now - datetime.timedelta(days=335),
-                    end_date=now + datetime.timedelta(days=200 if status == "active" else 30),
+                    end_date=now + datetime.timedelta(days=days_to_end or (200 if status in ("active", "review") else 30)),
                     responsible_by=list(responsible or []),
-                    installments=[models.Installment(due_date=now + datetime.timedelta(days=200 if status == "active" else 30))],
+                    installment_mode=True,
+                    installments=[
+                        models.Installment(
+                            due_date=now + datetime.timedelta(days=days_to_end or (200 if status in ("active", "review") else 30))
+                        )
+                    ],
                     created_by=user,
                     last_updated_by=user,
                 )

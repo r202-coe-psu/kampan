@@ -123,8 +123,8 @@ class ControllerServer:
                     )
                     await asyncio.sleep(time_to_check)
 
-                # สถานะการจ่ายคำนวณสดจากงวด งานนี้เหลือแค่ย้าย MA ที่ใกล้หมดอายุเป็น pending
-                procurements = models.Procurement.objects(status="active").only("id")
+                # สถานะการจ่ายคำนวณสดจากงวด งานนี้อัปเดตสถานะการใช้งาน (usage_status) ของ MA ที่ไม่ใช่แบบร่าง
+                procurements = models.Procurement.objects(status__ne="draft").only("id")
                 for procurement in procurements:
                     data = {
                         "action": "process",

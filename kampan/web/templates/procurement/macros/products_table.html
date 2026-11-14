@@ -1,3 +1,4 @@
+{% from "procurement/macros/status_badges.html" import usage_badge, renewal_badge %}
 {% macro render_products_table(procurements, organization, today, can_edit) %}
 {% set status_badges = {
   "overdue": ("badge-outline badge-error", "border-l-error"),
@@ -11,9 +12,9 @@
       <th class="font-semibold text-base w-[19%]">ชื่อโครงการ</th>
       <th class="font-semibold text-base text-center w-[9%]">เวลาคงเหลือ</th>
       <th class="font-semibold text-base text-center w-[13%]">ผู้รับผิดชอบ / ฝ่าย</th>
-      <th class="font-semibold text-base text-center w-[9%]">ยอดเงินรวม</th>
-      <th class="font-semibold text-base text-center w-[12%]">การจ่ายเงิน</th>
-      <th class="font-semibold text-base text-center w-[9%]">สถานะ</th>
+      <th class="font-semibold text-base text-center w-[8%]">ยอดเงินรวม</th>
+      <th class="font-semibold text-base text-center w-[11%]">การจ่ายเงิน</th>
+      <th class="font-semibold text-base text-center w-[11%]">สถานะ</th>
       <th class="font-semibold text-base text-center w-[9%]"><span class="sr-only">จัดการ</span></th>
     </tr>
   </thead>
@@ -131,12 +132,14 @@
         {% else %}
           <div class="flex flex-col items-center gap-1 cursor-pointer select-none" onclick="toggleMaSubItems('{{ item.id }}')">
             {% if installment_count == 0 %}
-              <span class="badge badge-outline badge-ghost badge-sm whitespace-nowrap text-base-content/60">ไม่มีงวด</span>
+              <span class="badge badge-outline badge-success badge-md font-semibold whitespace-nowrap px-2 gap-1 shadow-xs" data-payment-status="paid-upfront">
+                <i class="ph ph-check-circle text-base"></i> จ่ายแล้ว
+              </span>
             {% elif paid_count == installment_count %}
               <span class="badge badge-outline badge-success badge-md font-semibold whitespace-nowrap px-2 gap-1 shadow-xs">
                 <i class="ph ph-check-circle text-base"></i> จ่ายครบแล้ว
               </span>
-              {% if split.any %}<span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>{% endif %}
+              <span class="text-xs text-success font-medium">({{ paid_count }}/{{ installment_count }} งวด)</span>
             {% else %}
               {% if status == "overdue" %}
                 <div class="badge badge-error badge-md font-semibold whitespace-nowrap px-2 gap-1">
@@ -148,7 +151,7 @@
                 </div>
               {% else %}
                 <div class="badge {{ badge[0] }} badge-md font-semibold whitespace-nowrap px-2">
-                  {% if split.any %}งวด {{ paid_count }}/{{ installment_count }}{% else %}ยังไม่จ่าย{% endif %}
+                  งวด {{ paid_count }}/{{ installment_count }}
                 </div>
               {% endif %}
               {% if next_installment %}
@@ -159,7 +162,7 @@
                 {% endfor %}
                 <div class="text-xs leading-snug text-center text-base-content/80"
                      title="{% if sub_items_list|length > 1 %}{{ next_item.name }} · {% endif %}ครบกำหนด {{ next_installment.due_date | format_thai_date }}">
-                  <span class="block">{% if next_item.pays_in_installments() %}งวดที่ {{ ns.seq }}{% else %}จ่ายครั้งเดียว{% endif %}</span>
+                  <span class="block">งวดที่ {{ ns.seq }}</span>
                   {% if next_days < 0 %}
                     <span class="block font-bold text-error">เลยมา {{ -next_days }} วัน</span>
                   {% elif next_days == 0 %}
@@ -184,29 +187,28 @@
               {% if sub_items_list|length > 1 %}
                 รายการย่อย ({{ sub_items_list|length }})
               {% else %}
-                {% if split.any %}งวดการจ่ายเงิน{% if installment_count > 0 %} ({{ installment_count }} งวด){% endif %}{% else %}การจ่ายเงิน{% endif %}
+                {% if split.any %}งวดการจ่ายเงิน{% if installment_count > 0 %} ({{ installment_count }} งวด){% endif %}{% else %}การจ่ายเงิน (จ่ายแล้ว){% endif %}
               {% endif %}
             </span>
           </button>
         </div>
       </td>
       <td class="text-center">
-        {% if item.status == "pending" %}
-        <span class="badge badge-warning badge-md whitespace-nowrap px-2">รอตรวจสอบ</span>
-        {% elif item.status == "draft" %}
+        {% if is_draft %}
         <span class="badge badge-warning badge-md font-bold whitespace-nowrap px-2 shadow-xs gap-1.5 border border-warning/90">
           <i class="ph ph-file-dashed text-base"></i> แบบร่าง
         </span>
-        {% elif item.status == "disactive" %}
-        <span class="badge badge-error badge-md whitespace-nowrap px-2">ไม่ต่ออายุ</span>
-        {% elif item.status == "active" %}
-        <span class="badge badge-success badge-md whitespace-nowrap px-2">กำลังใช้งาน</span>
-        {% elif item.status == "renewed" %}
-        <span class="badge badge-neutral badge-md whitespace-nowrap px-2">ต่ออายุแล้ว</span>
-        {% elif item.status == "renewal-requested" %}
-        <span class="badge badge-info badge-md whitespace-nowrap px-2 text-white">ขอต่ออายุ</span>
         {% else %}
-        <span class="badge badge-info badge-md whitespace-nowrap px-2">{{ item.status }}</span>
+        <div class="flex flex-col items-center gap-1">
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="text-[11px] text-base-content/60">การใช้งาน</span>
+            {{ usage_badge(item, "badge-sm") }}
+          </div>
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="text-[11px] text-base-content/60">การต่ออายุ</span>
+            {{ renewal_badge(item, "badge-sm") }}
+          </div>
+        </div>
         {% endif %}
       </td>
       <td class="text-center">
@@ -261,7 +263,7 @@
                 <span class="font-semibold text-base">รายการย่อยและการจ่ายเงิน</span>
                 <span class="badge badge-neutral badge-sm">{{ sub_items_list|length }} รายการ</span>
               {% else %}
-                <span class="font-semibold text-base">{{ "งวดการจ่ายเงิน" if split.any else "การจ่ายเงิน (จ่ายครั้งเดียวก่อนสิ้นสุด)" }}</span>
+                <span class="font-semibold text-base">{{ "งวดการจ่ายเงิน" if split.any else "การจ่ายเงิน (จ่ายแล้วตอนสร้าง MA)" }}</span>
                 {% if installment_count > 0 and split.any %}
                   <span class="badge badge-neutral badge-sm">{{ installment_count }} งวด</span>
                 {% endif %}
@@ -320,7 +322,10 @@
             </div>
             {% endif %}
 
-            <!-- Installments Table for this sub-item -->
+            <!-- Installments Table for this sub-item (เฉพาะรายการที่แบ่งจ่ายเป็นงวด) -->
+            {% if not p_item.pays_in_installments() %}
+            <p class="text-sm text-success mt-2">จ่ายแล้ว (ไม่แบ่งจ่ายเป็นงวด จ่ายตอนสร้าง MA)</p>
+            {% else %}
             <div class="overflow-x-auto mt-2">
               <table class="table table-xs w-full bg-base-100">
                 <thead class="bg-base-200/60 text-base-content/70">
@@ -410,6 +415,7 @@
                 </tbody>
               </table>
             </div>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
@@ -524,8 +530,8 @@
               </div>
 
               <div class="form-control">
-                <label class="label py-1"><span class="label-text font-medium">เลขที่เอกสาร / ใบจ่ายเงิน</span></label>
-                <input type="text" name="payment_number" placeholder="เช่น PAY-6701-001" class="input input-bordered input-sm w-full"/>
+                <label class="label py-1"><span class="label-text font-medium">เลขที่ ม.อ.เบิกจ่าย / เลขที่เอกสาร <span class="text-error">*</span></span></label>
+                <input type="text" name="payment_number" required maxlength="128" placeholder="เช่น PAY-6701-001" class="input input-bordered input-sm w-full"/>
               </div>
 
               <div class="form-control">

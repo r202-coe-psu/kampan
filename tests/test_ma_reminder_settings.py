@@ -70,7 +70,9 @@ def test_create_form_checks_default_offsets_for_expiry_and_payment(world, client
     html = client.get(f"/procurement/products/create?organization_id={world.org.id}").get_data(as_text=True)
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == DEFAULTS
-    assert _checked_values(html, "items-0-payment_reminder_offsets") == DEFAULTS
+    # เตือนจ่ายงวดล่วงหน้า (7 / 5 / 3 วัน) ค่าเริ่มต้นไม่ติ๊ก (เตือนวันครบกำหนดเสมอ)
+    assert _checked_values(html, "items-0-payment_reminder_offsets") == []
+    assert re.findall(r'name="items-0-payment_reminder_offsets" value="(\w+)"', html) == ["7d", "5d", "3d"]
     # รายการย่อยที่เพิ่มด้วยปุ่ม (template) ก็ติ๊กค่าเริ่มต้น
     assert _checked_values(html, "items-__I__-expiry_reminder_offsets") == DEFAULTS
 
@@ -82,6 +84,7 @@ def test_create_saves_checked_offsets_custom_days_and_thai_dates(world, client):
         _form(
             world,
             expiry_reminder_offsets=["6m", "1m"],
+            installment_mode="y",
             payment_reminder_offsets=["7d"],
             **{
                 "reminder_offsets_days-0": "45",
@@ -155,7 +158,8 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
         _form(
             world,
             expiry_reminder_offsets=["2m"],
-            payment_reminder_offsets=["1m", "7d"],
+            installment_mode="y",
+            payment_reminder_offsets=["7d", "5d"],
             **{"reminder_offsets_days-0": "45", "custom_reminder_dates-0": "28/05/2570"},
         ),
     )
@@ -167,7 +171,7 @@ def test_edit_form_shows_saved_settings_with_buddhist_year(world, client):
     ).get_data(as_text=True)
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["2m"]
-    assert _checked_values(html, "items-0-payment_reminder_offsets") == ["1m", "7d"]
+    assert _checked_values(html, "items-0-payment_reminder_offsets") == ["7d", "5d"]
     assert _input_values(html, "items-0-reminder_offsets_days") == ["45"]
     assert _input_values(html, "items-0-custom_reminder_dates") == ["28/05/2570"]
 
@@ -196,6 +200,8 @@ def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client
         name="[TEST] MA เดิม",
         company="[TEST] บริษัท",
         organization=world.org,
+        status="renewal-requested",
+        renewal_request="renew",
         total_amount=Decimal("100.00"),
         created_by=world.admin,
     )
@@ -209,7 +215,8 @@ def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client
                 amount=Decimal("100.00"),
                 responsible_by=[world.role_admin],
                 expiry_reminder_offsets=["6m"],
-                payment_reminder_offsets=["15d"],
+                installment_mode=True,
+                payment_reminder_offsets=["5d"],
                 reminder_offsets_days=[45],
                 custom_reminder_dates=[datetime.datetime(2025, 6, 1)],
                 installments=[models.Installment(due_date=datetime.datetime(2025, 12, 31))],
@@ -220,6 +227,18 @@ def test_renew_copies_offsets_and_custom_days_but_not_custom_dates(world, client
     html = client.get(f"/procurement/products/{old.id}/renew?organization_id={world.org.id}").get_data(as_text=True)
 
     assert _checked_values(html, "items-0-expiry_reminder_offsets") == ["6m"]
-    assert _checked_values(html, "items-0-payment_reminder_offsets") == ["15d"]
+    assert _checked_values(html, "items-0-payment_reminder_offsets") == ["5d"]
     assert _input_values(html, "items-0-reminder_offsets_days") == ["45"]
     assert _input_values(html, "items-0-custom_reminder_dates") == []
+
+
+def test_toggle_off_item_stores_no_payment_offsets_and_form_places_them_under_installments(world, client):
+    _create(client, world, _form(world, payment_reminder_offsets=["7d"]))  # ไม่ได้เปิดแบ่งงวด: ช่องเตือนจ่ายไม่ถูกใช้
+    item = models.ProcurementItem.objects.get()
+    assert item.payment_reminder_offsets == []
+
+    html = client.get(f"/procurement/products/create?organization_id={world.org.id}").get_data(as_text=True)
+    page = re.sub(r"<template.*?</template>", "", html, flags=re.S)
+    # ช่องเตือนจ่ายงวดอยู่ใต้ส่วนการจ่ายเงิน (ต่อจากปุ่มเพิ่มงวด) ไม่ได้อยู่ในส่วนตั้งค่าการแจ้งเตือน
+    assert page.index("data-action=\"add-installment\"") < page.index("data-payment-offsets")
+    assert page.index("data-payment-offsets") < page.index("ตั้งค่าการแจ้งเตือน")
