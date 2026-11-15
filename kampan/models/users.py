@@ -40,6 +40,8 @@ class User(me.Document, UserMixin):
         size=(512, 512, False), thumbnail_size=(128, 128, True), collection_name="user_picture"
     )
 
+    signature = me.ImageField(size=(800, 300, False), collection_name="user_signature")
+
     biography = me.StringField(max_length=500)
     created_date = me.DateTimeField(required=True, default=datetime.datetime.now)
     updated_date = me.DateTimeField(required=True, default=datetime.datetime.now, auto_now=True)

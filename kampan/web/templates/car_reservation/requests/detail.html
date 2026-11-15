@@ -34,7 +34,15 @@
     <ul class="steps steps-vertical md:steps-horizontal w-full">
       {% for step in steps %}
       <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
-          data-state="{{ step.state }}">{{ step.label }}</li>
+          data-state="{{ step.state }}">
+        {{ step.label }}
+        {% set approval = reservation.step_approvals | selectattr('step_key', 'equalto', step.key) | first %}
+        {% if approval and approval.decided_by and approval.decided_by.signature %}
+        <img class="h-12 mt-1" data-role="approver-signature"
+             src="{{ url_for('accounts.user_signature', user_id=approval.decided_by.id) }}"
+             alt="ลายเซ็น {{ approval.decided_by.get_name() }}">
+        {% endif %}
+      </li>
       {% endfor %}
     </ul>
   </div>

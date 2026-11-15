@@ -78,4 +78,130 @@
     {% endif %}
   </div>
 </div>
+
+{% if signature_form %}
+<div class="card bg-base-100 border border-base-300 shadow-sm mt-4" data-role="signature-card">
+  <div class="card-body gap-4">
+    <h2 class="card-title text-lg"><i class="ph ph-signature text-primary"></i> ลายเซ็น</h2>
+
+    {% if current_user.signature %}
+    <div class="flex flex-col items-start gap-2">
+      <span class="text-sm text-base-content/70">ลายเซ็นปัจจุบัน</span>
+      <img class="h-16 rounded border border-base-300 bg-white p-1"
+        src="{{ url_for('accounts.user_signature', user_id=current_user.id) }}" alt="ลายเซ็น" data-role="signature-current">
+      <form method="POST" action="{{ url_for('accounts.remove_signature') }}">
+        {{ signature_form.csrf_token }}
+        <button type="submit" class="btn btn-error btn-outline btn-sm">
+          <i class="ph ph-trash"></i>ลบลายเซ็น
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <form method="POST" action="{{ url_for('accounts.upload_signature') }}" enctype="multipart/form-data"
+        class="flex flex-col gap-2">
+        {{ signature_form.csrf_token }}
+        <label class="text-sm text-base-content/70" for="{{ signature_form.signature.id }}">
+          อัปโหลดไฟล์ลายเซ็น (JPEG หรือ PNG ขนาดไม่เกิน 2 MB)
+        </label>
+        <input type="file" id="{{ signature_form.signature.id }}" name="{{ signature_form.signature.name }}"
+          accept="image/jpeg,image/png" class="file-input file-input-bordered file-input-sm w-full" required>
+        <button type="submit" class="btn btn-primary btn-sm self-start">
+          <i class="ph ph-upload-simple"></i>อัปโหลดลายเซ็น
+        </button>
+      </form>
+
+      <form method="POST" action="{{ url_for('accounts.upload_signature') }}" class="flex flex-col gap-2"
+        id="signature-draw-form">
+        {{ signature_form.csrf_token }}
+        <span class="text-sm text-base-content/70">หรือวาดลายเซ็นด้วยเมาส์/นิ้ว</span>
+        <canvas id="signature-pad" width="400" height="150"
+          class="w-full max-w-md rounded border border-base-300 bg-white touch-none cursor-crosshair"></canvas>
+        <input type="hidden" name="{{ signature_form.signature_data.name }}" id="signature-data">
+        <div class="flex gap-2">
+          <button type="button" id="signature-clear" class="btn btn-ghost btn-sm">
+            <i class="ph ph-eraser"></i>ล้าง
+          </button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="ph ph-floppy-disk"></i>บันทึกลายเซ็นที่วาด
+          </button>
+        </div>
+        <p id="signature-empty-hint" class="text-error text-sm hidden">กรุณาวาดลายเซ็นก่อนบันทึก</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var canvas = document.getElementById('signature-pad');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var form = document.getElementById('signature-draw-form');
+    var hidden = document.getElementById('signature-data');
+    var hint = document.getElementById('signature-empty-hint');
+    var drawing = false;
+    var dirty = false;
+
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000000';
+
+    function point(event) {
+      var rect = canvas.getBoundingClientRect();
+      var source = event.touches && event.touches.length ? event.touches[0] : event;
+      return {
+        x: (source.clientX - rect.left) * (canvas.width / rect.width),
+        y: (source.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function start(event) {
+      event.preventDefault();
+      drawing = true;
+      var p = point(event);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+
+    function move(event) {
+      if (!drawing) return;
+      event.preventDefault();
+      var p = point(event);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      dirty = true;
+    }
+
+    function stop() {
+      drawing = false;
+    }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', stop);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', stop);
+
+    document.getElementById('signature-clear').addEventListener('click', function () {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hidden.value = '';
+      dirty = false;
+      hint.classList.add('hidden');
+    });
+
+    form.addEventListener('submit', function (event) {
+      if (!dirty) {
+        event.preventDefault();
+        hint.classList.remove('hidden');
+        return;
+      }
+      hidden.value = canvas.toDataURL('image/png');
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

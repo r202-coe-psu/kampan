@@ -1,4 +1,5 @@
 import datetime
+import io
 import markdown
 import mongoengine as me
 
@@ -149,6 +150,7 @@ def index():
             organization=organization,
             errors=errors,
             picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
     if not organization and "admin" not in current_user.roles:
         return render_template(
@@ -157,6 +159,7 @@ def index():
             organization=organization,
             errors=errors,
             picture_form=forms.accounts.PictureForm(),
+            signature_form=forms.accounts.SignatureForm(),
         )
 
     if "admin" in current_user.roles and organization_id:
@@ -169,6 +172,7 @@ def index():
         organization=organization,
         errors=errors,
         picture_form=forms.accounts.PictureForm(),
+        signature_form=forms.accounts.SignatureForm(),
     )
 
 
@@ -243,6 +247,60 @@ def user_picture(user_id):
         user.picture,
         download_name=user.picture.filename,
         mimetype=user.picture.content_type,
+    )
+
+
+@module.route("/accounts/signature", methods=["POST"])
+@login_required
+def upload_signature():
+    form = forms.accounts.SignatureForm()
+    if not form.validate_on_submit():
+        errors = " ".join(
+            message for messages in form.errors.values() for message in messages
+        )
+        return redirect(url_for("accounts.index", errors=errors))
+
+    user = current_user._get_current_object()
+    image = io.BytesIO(form.image_bytes)
+    if user.signature:
+        user.signature.replace(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    else:
+        user.signature.put(
+            image,
+            filename=form.image_filename,
+            content_type=form.image_content_type,
+        )
+    user.save()
+
+    return redirect(url_for("accounts.index"))
+
+
+@module.route("/accounts/signature/remove", methods=["POST"])
+@login_required
+def remove_signature():
+    user = current_user._get_current_object()
+    if user.signature:
+        user.signature.delete()
+        user.save()
+
+    return redirect(url_for("accounts.index"))
+
+
+@module.route("/accounts/<user_id>/signature")
+@login_required
+def user_signature(user_id):
+    user = models.User.objects(id=user_id).first()
+    if not user or not user.signature:
+        return abort(404)
+
+    return send_file(
+        user.signature,
+        download_name=user.signature.filename or "signature.png",
+        mimetype=user.signature.content_type or "image/png",
     )
 
 
