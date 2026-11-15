@@ -1,4 +1,4 @@
-"""Unit tests ของ helper functions ในโมดูล view kampan.web.views.vehicle_lending.car_feedback"""
+"""Unit tests ของ helper functions ในโมดูล view kampan.web.views.car_reservation.feedback"""
 
 import datetime
 import json
@@ -7,7 +7,7 @@ import pytest
 from bson import DBRef, ObjectId
 
 from kampan import models
-from kampan.web.views.vehicle_lending import car_feedback as car_feedback_view
+from kampan.web.views.car_reservation import feedback as car_feedback_view
 
 
 def build_payload(**overrides):
@@ -226,14 +226,14 @@ def test_get_feedback_template_for_car_is_scoped_by_car_organization(
         assert car_feedback_view.get_feedback_template_for_car(car_a, template_id=template_b.id) is None
 
 
-def test_get_car_trips_only_returns_used_trips(app, create_org, create_car, create_car_application):
+def test_get_car_trips_only_returns_used_trips(app, create_org, create_car, create_car_reservation):
     with app.app_context():
         org = create_org("Org A")
         car = create_car(org, "กก 1111")
-        active = create_car_application(org, car, status="active")
-        completed = create_car_application(org, car, status="completed")
-        create_car_application(org, car, status="disactive")
-        create_car_application(org, car, status="pending on header")
+        active = create_car_reservation(org, car, status="active")
+        completed = create_car_reservation(org, car, status="completed")
+        for status in ("pending", "denied", "cancel_requested", "cancelled"):
+            create_car_reservation(org, car, status=status)
 
         trips = car_feedback_view.get_car_trips(car, org)
 
@@ -271,7 +271,7 @@ def stats_fixture(
     app,
     create_org,
     create_car,
-    create_car_application,
+    create_car_reservation,
     create_feedback_template,
     create_feedback_response,
     make_question,
@@ -283,7 +283,7 @@ def stats_fixture(
         org = create_org("Org A")
         car_one = create_car(org, "กก 1111")
         car_two = create_car(org, "ขข 2222")
-        trip = create_car_application(org, car_one, location="สนามบิน")
+        trip = create_car_reservation(org, car_one, location="สนามบิน")
 
         score = make_question("score", "ให้คะแนนคนขับ")
         boolean = make_question("boolean", "รถสะอาดไหม")
@@ -297,7 +297,7 @@ def stats_fixture(
         create_feedback_response(
             template,
             car_one,
-            car_application=trip,
+            car_reservation=trip,
             created_date=datetime.datetime(2026, 2, 1, 9, 0),
             answers=[
                 make_answer(score, score=5),
@@ -434,7 +434,8 @@ def test_build_response_report_attaches_text_answers_with_car_and_trip(app, stat
         assert text_stat["texts_truncated"] == 0
         assert [item["text"] for item in text_stat["texts"]] == ["รอนาน", "ดีมาก"]
         assert text_stat["texts"][1]["license_plate"] == "กก 1111"
-        assert text_stat["texts"][1]["departure"] == data["trip"].get_departure_datetime()
+        # สนามบิน 15/01/2026 08:00-17:00 (วันเดียวกัน) แสดงช่วงเวลาแบบย่อ
+        assert text_stat["texts"][1]["departure"] == "15/01/2026 08:00 น. - 17:00 น."
 
 
 def test_build_response_report_truncates_text_answers_at_limit(app, stats_fixture, monkeypatch):
@@ -517,7 +518,7 @@ def test_build_response_report_resolves_trips_outside_the_filter(
     app,
     create_org,
     create_car,
-    create_car_application,
+    create_car_reservation,
     create_feedback_template,
     create_feedback_response,
     make_question,
@@ -527,13 +528,13 @@ def test_build_response_report_resolves_trips_outside_the_filter(
     with app.app_context():
         org = create_org("Org A")
         car = create_car(org, "กก 1111")
-        cancelled_trip = create_car_application(org, car, status="disactive", location="ยกเลิกแล้ว")
+        cancelled_trip = create_car_reservation(org, car, status="cancelled", location="ยกเลิกแล้ว")
         text = make_question("text")
         template = create_feedback_template(org, [car], questions=[text])
         create_feedback_response(
             template,
             car,
-            car_application=cancelled_trip,
+            car_reservation=cancelled_trip,
             answers=[make_answer(text, text="ประทับใจ")],
         )
 
@@ -544,7 +545,7 @@ def test_build_response_report_resolves_trips_outside_the_filter(
         assert trips == []
         assert report["response_log"][0]["location"] == "ยกเลิกแล้ว"
         text_stat = report["stats"][str(text.question_id)]
-        assert text_stat["texts"][0]["departure"] == cancelled_trip.get_departure_datetime()
+        assert text_stat["texts"][0]["departure"] == "15/01/2026 08:00 น. - 17:00 น."
 
 
 def test_get_response_choice_counts_groups_by_car_and_trip(app, stats_fixture):

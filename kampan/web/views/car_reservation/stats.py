@@ -10,15 +10,19 @@ from kampan.web import acl
 module = Blueprint("stats", __name__, url_prefix="/stats")
 
 flow = utils.car_reservation_flow
-feedback = utils.car_reservation_feedback
+
+# ช่วงเวลาของสถิติ: (key, ป้าย, จำนวนวันย้อนหลังจากตอนนี้)
+PERIODS = [("week", "1 สัปดาห์", 7), ("month", "1 เดือน", 30), ("year", "1 ปี", 365)]
+DEFAULT_PERIOD = "month"
+
 
 @module.route("/drivers")
 @acl.organization_roles_required(*flow.STATS_ROLES)
 def drivers():
     period = request.args.get("period")
-    days = {key: days for key, _, days in feedback.PERIODS}
+    days = {key: days for key, _, days in PERIODS}
     if period not in days:
-        period = feedback.DEFAULT_PERIOD
+        period = DEFAULT_PERIOD
     now = datetime.datetime.now()
     rows = flow.driver_workload(
         g.organization,
@@ -32,7 +36,7 @@ def drivers():
     return render_template(
         "/car_reservation/stats/drivers.html",
         organization=g.organization,
-        periods=feedback.PERIODS,
+        periods=PERIODS,
         period=period,
         driver_id=driver_id,
         driver_choices=[(str(row.driver.id), row.driver.get_name()) for row in rows],

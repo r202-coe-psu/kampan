@@ -37,7 +37,7 @@ def test_delete_feedback_template_shows_toast(app, login_as, setup, create_feedb
     with app.test_client() as client:
         login_as(client, setup["admin"])
         response = client.post(
-            f"/vehicle_lending/car_feedback/{template.id}/delete?organization_id={setup['org'].id}",
+            f"/car_reservation/feedback/{template.id}/delete?organization_id={setup['org'].id}",
             follow_redirects=True,
         )
 

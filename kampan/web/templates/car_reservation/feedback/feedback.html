@@ -1,4 +1,4 @@
-{% extends '/vehicle_lending/base/car-feedback-page.html' %}
+{% extends '/car_reservation/base/feedback-page.html' %}
 {% block title %}ประเมินความพึงพอใจ - {{ car.license_plate }}{% endblock %}
 
 {% macro render_errors(field) %}
@@ -70,19 +70,19 @@
           </div>
           <i class="ph ph-map-pin-line text-2xl text-base-content/25"></i>
         </div>
-        {% if form.car_application %}
-        <fieldset class="mt-7" id="field-{{ form.car_application.id }}">
-          <label for="{{ form.car_application.id }}" class="mb-2 block text-sm font-semibold text-base-content/70">
-            {{ form.car_application.label.text }}
-            {% if form.car_application.flags.required %}<span class="ml-1 text-error">*</span>{% endif %}
+        {% if form.car_reservation %}
+        <fieldset class="mt-7" id="field-{{ form.car_reservation.id }}">
+          <label for="{{ form.car_reservation.id }}" class="mb-2 block text-sm font-semibold text-base-content/70">
+            {{ form.car_reservation.label.text }}
+            {% if form.car_reservation.flags.required %}<span class="ml-1 text-error">*</span>{% endif %}
           </label>
-          <select id="{{ form.car_application.id }}" name="{{ form.car_application.name }}"
+          <select id="{{ form.car_reservation.id }}" name="{{ form.car_reservation.name }}"
             class="select select-bordered h-auto min-h-14 w-full rounded-md border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15">
-            {% for value, label in form.car_application.choices %}
-            <option value="{{ value }}" {% if form.car_application.data|string == value|string %}selected{% endif %}>{{ label }}</option>
+            {% for value, label in form.car_reservation.choices %}
+            <option value="{{ value }}" {% if form.car_reservation.data|string == value|string %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
-          {{ render_errors(form.car_application) }}
+          {{ render_errors(form.car_reservation) }}
         </fieldset>
         {% else %}
         <div class="mt-7 rounded-md border border-dashed border-base-300 bg-base-200/50 p-4 text-sm leading-6 text-base-content/65">

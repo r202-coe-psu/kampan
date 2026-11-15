@@ -139,14 +139,13 @@
   ('overview',         'ph-users-three',    'ภาพรวม & บทบาทผู้ใช้งาน'),
   ('flow-main',        'ph-flow-arrow',     'Flow ภาพรวมทั้งระบบ'),
   ('cars',             'ph-car',            '1. รถยนต์'),
-  ('car-feedback',     'ph-files',          '2. แบบประเมินรถยนต์'),
-  ('car-applications', 'ph-hand-arrow-up',  '3. การขอใช้รถยนต์'),
-  ('calendar',         'ph-calendar-blank', '4. ปฏิทินการขอใช้รถยนต์'),
-  ('header-approve',   'ph-shield-check',   '5. หัวหน้าฝ่ายอนุมัติ'),
-  ('director-approve', 'ph-signpost',       '6. ผอ. อนุมัติ'),
-  ('admin-approve',    'ph-check-square',   '7. พัสดุอนุมัติ'),
-  ('car-tasks',        'ph-steering-wheel', '8. รายการงาน (พนักงานขับรถ)'),
-  ('history',          'ph-clock',          '9. ประวัติการใช้รถยนต์'),
+  ('car-applications', 'ph-hand-arrow-up',  '2. การขอใช้รถยนต์'),
+  ('calendar',         'ph-calendar-blank', '3. ปฏิทินการขอใช้รถยนต์'),
+  ('header-approve',   'ph-shield-check',   '4. หัวหน้าฝ่ายอนุมัติ'),
+  ('director-approve', 'ph-signpost',       '5. ผอ. อนุมัติ'),
+  ('admin-approve',    'ph-check-square',   '6. พัสดุอนุมัติ'),
+  ('car-tasks',        'ph-steering-wheel', '7. รายการงาน (พนักงานขับรถ)'),
+  ('history',          'ph-clock',          '8. ประวัติการใช้รถยนต์'),
   ('status',           'ph-path',           'ตารางสถานะคำขอ'),
 ] %}
 
@@ -207,8 +206,8 @@
                          'ระบบขอใช้รถยนต์แบ่งการทำงานตามบทบาท (role) ในหน่วยงาน เมนูที่เห็นในแถบด้านซ้ายจะต่างกันตามบทบาทของแต่ละคน') }}
 
         <p class="mt-4 text-sm text-base-content/80">
-          ระบบนี้ประกอบด้วยโมดูลย่อย 9 โมดูล แบ่งเป็น 3 กลุ่ม คือ
-          <span class="font-semibold">กลุ่มตั้งค่าข้อมูลพื้นฐาน</span> (รถยนต์, แบบประเมิน),
+          ระบบนี้ประกอบด้วยโมดูลย่อย 8 โมดูล แบ่งเป็น 3 กลุ่ม คือ
+          <span class="font-semibold">กลุ่มตั้งค่าข้อมูลพื้นฐาน</span> (รถยนต์),
           <span class="font-semibold">กลุ่มขอใช้และอนุมัติ</span> (คำขอ, ปฏิทิน, อนุมัติ 3 ระดับ) และ
           <span class="font-semibold">กลุ่มปฏิบัติงานและรายงาน</span> (รายการงาน, ประวัติการใช้รถ)
         </p>
@@ -245,7 +244,7 @@
               </tr>
               <tr>
                 <td class="table-style font-semibold">เจ้าหน้าที่พัสดุ / ผู้ดูแล<br><span class="text-xs font-normal text-base-content/50">admin</span></td>
-                <td class="table-style">ตั้งค่าข้อมูลรถ, สร้างแบบประเมิน, จ่ายรถและพนักงานขับรถ, อนุมัติขั้นสุดท้าย, ดูรายงาน</td>
+                <td class="table-style">ตั้งค่าข้อมูลรถ, จ่ายรถและพนักงานขับรถ, อนุมัติขั้นสุดท้าย, ดูรายงาน</td>
                 <td class="table-style">ทุกเมนู</td>
               </tr>
               <tr>
@@ -272,10 +271,6 @@
           {{ FlowNode('เพิ่มรถยนต์', 'primary', 'เมนู รถยนต์') }}
           {{ FlowArrow() }}
           {{ FlowNode('ตั้งเลขไมล์เริ่มต้น', 'primary', 'ในฟอร์มรถยนต์') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('สร้างแบบประเมิน', 'primary', 'เมนู แบบประเมินรถยนต์') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('พิมพ์ QR ติดในรถ', 'primary', 'ปุ่ม QR Code') }}
         </div>
 
         <h3 class="mt-6 text-base font-bold text-base-content">ข. วงจรคำขอใช้รถ 1 ใบ (ใช้งานประจำวัน)</h3>
@@ -367,11 +362,7 @@
             <p class="text-base-content/70">รถคันนี้จะไปปรากฏเป็นตัวเลือกในหน้า &ldquo;พัสดุอนุมัติขอใช้รถยนต์&rdquo; และในฟอร์มขอใช้รถทันที</p>
           </li>
           <li class="text-sm">
-            <span class="font-bold text-base-content">4. ปุ่ม QR Code (ถ้าต้องการ)</span>
-            <p class="text-base-content/70">ดาวน์โหลดรูป QR ของรถคันนั้นเป็นไฟล์ PNG สำหรับพิมพ์ติดในรถ ให้ผู้โดยสารสแกนเพื่อทำแบบประเมิน</p>
-          </li>
-          <li class="text-sm">
-            <span class="font-bold text-base-content">5. แก้ไข / ลบ</span>
+            <span class="font-bold text-base-content">4. แก้ไข / ลบ</span>
             <p class="text-base-content/70">
               การลบเป็นการเปลี่ยนสถานะเป็น &ldquo;ไม่สามารถใช้งานได้&rdquo; ไม่ได้ลบข้อมูลจริง
               ประวัติการใช้รถคันนั้นในอดีตจะยังอยู่ครบ
@@ -458,208 +449,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 2. car feedback #}
-      <section id="car-feedback" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(2, 'ph-files', 'แบบประเมินรถยนต์',
-                         'สร้างแบบสอบถามความพึงพอใจ แจกผ่าน QR Code และดูผลสรุปเป็นสถิติ') }}
-
-        <div class="mt-4 flex flex-col gap-2">
-          {{ MetaRow('ผู้ใช้งาน',
-                     RoleBadge('เจ้าหน้าที่พัสดุ / ผู้ดูแล (admin)', 'primary') ~ ' ' ~ RoleBadge('ผู้โดยสารทั่วไป (ไม่ต้องล็อกอิน)', 'success'),
-                     'ph-users-three') }}
-          {{ MetaRow('เมนู', 'แบบประเมินรถยนต์', 'ph-list') }}
-          {{ MetaRow('ใช้เมื่อ', 'ต้องการเก็บความเห็นผู้ใช้บริการเกี่ยวกับรถและพนักงานขับรถ', 'ph-info') }}
-        </div>
-
-        <h3 class="mt-5 text-base font-bold text-base-content">Flow ย่อย</h3>
-        <div class="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-2">
-          {{ FlowNode('สร้างแบบประเมิน', 'primary', 'พัสดุ') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('ผูกกับรถ', 'primary', 'เลือกได้หลายคัน') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('พิมพ์ QR ติดในรถ', 'primary') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('ผู้โดยสารสแกน + ตอบ', 'success', 'ไม่ต้องล็อกอิน') }}
-          {{ FlowArrow() }}
-          {{ FlowNode('ดูผลสรุป', 'primary', 'ปุ่มดูคำตอบ') }}
-        </div>
-
-        <h3 class="mt-5 text-base font-bold text-base-content">ขั้นตอนการใช้งาน</h3>
-        <ol class="mt-3 space-y-3 border-l-2 border-base-300 pl-5">
-          <li class="text-sm">
-            <span class="font-bold text-base-content">1. กด &ldquo;สร้างแบบประเมิน&rdquo;</span>
-            <p class="text-base-content/70">ตั้งชื่อแบบประเมิน ใส่คำอธิบาย และเลือกรถที่จะใช้แบบประเมินชุดนี้ (เลือกได้หลายคัน)</p>
-          </li>
-          <li class="text-sm">
-            <span class="font-bold text-base-content">2. เพิ่มคำถาม</span>
-            <div class="mt-1 text-base-content/70">
-              เลือกชนิดคำถามได้ 5 แบบ และกำหนดได้ว่าข้อไหนบังคับตอบ
-              <div class="mt-2 flex flex-wrap gap-2">
-                <span class="badge badge-sm badge-outline">ให้คะแนน 1&ndash;5</span>
-                <span class="badge badge-sm badge-outline">ข้อความ</span>
-                <span class="badge badge-sm badge-outline">ใช่ / ไม่ใช่</span>
-                <span class="badge badge-sm badge-outline">เลือกตอบข้อเดียว</span>
-                <span class="badge badge-sm badge-outline">เลือกตอบหลายข้อ</span>
-              </div>
-            </div>
-          </li>
-          <li class="text-sm">
-            <span class="font-bold text-base-content">3. บันทึก แล้วกดปุ่ม QR Code</span>
-            <p class="text-base-content/70">
-              ระบบสร้าง QR ต่อรถ 1 คัน เมื่อสแกนจะเปิดหน้าแบบประเมินของรถคันนั้นโดยตรง
-              <span class="font-semibold">ผู้ตอบไม่ต้องเข้าสู่ระบบ</span>
-            </p>
-          </li>
-          <li class="text-sm">
-            <span class="font-bold text-base-content">4. ดูผลสรุป</span>
-            <p class="text-base-content/70">
-              ระบบสรุปให้อัตโนมัติ: คำถามแบบคะแนนแสดงค่าเฉลี่ยและการกระจายคะแนน 1&ndash;5,
-              คำถามแบบตัวเลือกแสดงจำนวนครั้งที่แต่ละตัวเลือกถูกเลือก, คำถามแบบข้อความแสดงรายการคำตอบทั้งหมด
-              และกรองดูเฉพาะรถคันใดคันหนึ่งได้
-            </p>
-          </li>
-        </ol>
-
-        {% call Demo('ฟอร์มสร้างแบบประเมิน', 'แบบประเมินรถยนต์ &rarr; สร้างแบบประเมิน') %}
-        <div class="flex flex-col gap-6">
-          <div class="card bg-base-100 shadow-sm border-t-4 border-t-primary">
-            <div class="card-body">
-              <h2 class="card-title text-lg mb-4">ข้อมูลเบื้องต้น</h2>
-
-              <div class="form-control mb-4">
-                <fieldset class="w-full fieldset">
-                  <legend class="fieldset-legend">ชื่อแบบประเมิน <span class="text-error">*</span></legend>
-                  <label class="input flex items-center gap-2 w-full validator">
-                    <input type="text" value="ประเมินความพึงพอใจการใช้บริการรถยนต์" readonly>
-                  </label>
-                </fieldset>
-              </div>
-
-              <div class="form-control mb-4">
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">รถยนต์ <span class="text-error">*</span></legend>
-                  <div class="relative w-full max-w-full min-w-full">
-                    <div class="input input-bordered w-full h-auto min-h-12 flex flex-wrap items-center gap-2 p-2 cursor-pointer transition-all focus-within:ring-2 focus-within:ring-primary/20">
-                      <div class="flex flex-wrap gap-2">
-                        <div class="badge badge-primary h-auto py-1 px-3 gap-2">
-                          กข 1234 สงขลา
-                          <span class="hover:text-error transition-colors"><i class="ph ph-x-circle text-lg"></i></span>
-                        </div>
-                        <div class="badge badge-primary h-auto py-1 px-3 gap-2">
-                          งจ 5678 สงขลา
-                          <span class="hover:text-error transition-colors"><i class="ph ph-x-circle text-lg"></i></span>
-                        </div>
-                      </div>
-                      <input type="text" placeholder="ค้นหาหรือเลือก..." class="focus:outline-none flex-1 min-w-[120px] h-8 bg-transparent" readonly />
-                    </div>
-                  </div>
-                  <div class="fieldset-label">
-                    <p class="validator-hint"></p>
-                  </div>
-                </fieldset>
-              </div>
-
-              <div class="form-control mb-4">
-                <fieldset class="fieldset w-full">
-                  <legend class="fieldset-legend">รายละเอียด</legend>
-                  <textarea class="w-full h-24 textarea" placeholder="กรอกรายละเอียดที่นี่" readonly></textarea>
-                  <div class="fieldset-label">
-                    <p class="validator-hint"></p>
-                  </div>
-                </fieldset>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-4">
-            <div class="card bg-base-100 shadow-sm relative group border border-base-200 hover:border-primary/30 transition-colors">
-              <div class="card-body p-5">
-                <div class="flex items-start gap-4">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-2">
-                      <i class="ph ph-radio-button text-info"></i>
-                      <span class="text-xs font-bold text-base-content/50 uppercase tracking-wider">เลือกได้ข้อเดียว</span>
-                    </div>
-                    <input type="text" class="input input-bordered w-full text-md" placeholder="ตั้งคำถาม..."
-                           value="พนักงานขับรถสุภาพและตรงต่อเวลาหรือไม่" readonly>
-                    <div class="mt-4 pl-4 flex flex-col gap-2">
-                      <div class="flex items-center gap-2">
-                        <i class="ph ph-circle text-base-content/30 text-lg"></i>
-                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm"
-                               placeholder="ตัวเลือกที่ 1" value="สุภาพมาก" readonly>
-                        <span class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error"><i class="ph ph-x"></i></span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <i class="ph ph-circle text-base-content/30 text-lg"></i>
-                        <input type="text" class="input input-sm border-b border-t-0 border-l-0 border-r-0 rounded-none focus:outline-none w-full max-w-sm"
-                               placeholder="ตัวเลือกที่ 2" value="พอใช้" readonly>
-                        <span class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-error"><i class="ph ph-x"></i></span>
-                      </div>
-                      <span class="btn btn-ghost btn-sm mt-2 text-primary w-fit">
-                        <i class="ph ph-plus"></i> เพิ่มตัวเลือก
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-col items-end gap-2 border-l border-base-200 pl-4">
-                    <div class="form-control">
-                      <label class="label cursor-pointer gap-2">
-                        <span class="label-text text-xs">บังคับ</span>
-                        <input type="checkbox" class="toggle toggle-sm toggle-primary" checked />
-                      </label>
-                    </div>
-                    <div class="divider my-0"></div>
-                    <span class="btn btn-ghost btn-sm text-error h-10 px-2">
-                      <i class="ph ph-trash text-lg"></i>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap justify-center gap-2 mt-4">
-            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
-              <i class="ph ph-star text-warning text-lg"></i> คะแนน (1-5)
-            </span>
-            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
-              <i class="ph ph-text-t text-lg"></i> ข้อความสั้น
-            </span>
-            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
-              <i class="ph ph-toggle-left text-primary text-lg"></i> ใช่/ไม่ใช่
-            </span>
-            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
-              <i class="ph ph-radio-button text-info text-lg"></i> เลือกข้อเดียว
-            </span>
-            <span class="btn btn-outline border-dashed hover:bg-base-200 hover:text-base-content hover:border-base-300">
-              <i class="ph ph-check-square text-success text-lg"></i> เลือกหลายข้อ
-            </span>
-          </div>
-
-          <div class="flex justify-end gap-2 mt-8 py-4 border-t bg-base-100 px-4 rounded-box shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.1)]">
-            <span class="btn btn-ghost">ยกเลิก</span>
-            <span class="btn btn-primary">
-              <i class="ph ph-floppy-disk"></i> บันทึกข้อมูล
-            </span>
-          </div>
-        </div>
-        {% endcall %}
-
-        {{ Note('การลบแบบประเมินเป็นการ <span class="font-semibold">ลบถาวร</span> (ไม่เหมือนการลบรถที่เป็นการปิดสถานะ)
-                 กรุณาดูผลสรุปหรือบันทึกข้อมูลไว้ก่อนลบ',
-                'error', 'ph-warning-circle', 'ระวัง:') }}
-
-        {% if current_user.has_organization_roles("admin") %}
-        <a class="btn btn-sm btn-outline btn-primary mt-4 print:hidden"
-           href="{{ url_for('vehicle_lending.car_feedback.index', organization_id=organization.id) }}">
-          <i class="ph ph-arrow-right"></i> ไปที่หน้าแบบประเมินรถยนต์
-        </a>
-        {% endif %}
-      </section>
-
-      {# ------------------------------------------------ 3. car applications #}
+      {# ------------------------------------------------ 2. car applications #}
       <section id="car-applications" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(3, 'ph-hand-arrow-up', 'การขอใช้รถยนต์',
+        {{ SectionHeader(2, 'ph-hand-arrow-up', 'การขอใช้รถยนต์',
                          'หน้าหลักของผู้ขอใช้รถ ใช้สร้างคำขอ ติดตามสถานะ และพิมพ์ใบขอใช้รถ') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1012,9 +804,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 4. calendar #}
+      {# ------------------------------------------------ 3. calendar #}
       <section id="calendar" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(4, 'ph-calendar-blank', 'ปฏิทินการขอใช้รถยนต์',
+        {{ SectionHeader(3, 'ph-calendar-blank', 'ปฏิทินการขอใช้รถยนต์',
                          'ดูภาพรวมการใช้รถทั้งหน่วยงานเป็นรายเดือน เพื่อเลี่ยงวันที่รถถูกจองแล้ว') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1069,9 +861,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 5. header approve #}
+      {# ------------------------------------------------ 4. header approve #}
       <section id="header-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(5, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์',
+        {{ SectionHeader(4, 'ph-shield-check', 'หัวหน้าฝ่ายอนุมัติขอใช้รถยนต์',
                          'อนุมัติขั้นที่ 1 ก่อนส่งคำขอเข้าสู่ขั้นพัสดุ สำหรับทุกประเภทการใช้รถ') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1119,9 +911,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 6. director approve #}
+      {# ------------------------------------------------ 5. director approve #}
       <section id="director-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(6, 'ph-signpost', 'ผอ. อนุมัติขอใช้รถยนต์',
+        {{ SectionHeader(5, 'ph-signpost', 'ผอ. อนุมัติขอใช้รถยนต์',
                          'อนุมัติคำขอที่ต้องเสนอผู้อำนวยการ คือคำขอประเภทไปต่างจังหวัด') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1160,9 +952,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 7. admin approve #}
+      {# ------------------------------------------------ 6. admin approve #}
       <section id="admin-approve" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(7, 'ph-check-square', 'พัสดุอนุมัติขอใช้รถยนต์',
+        {{ SectionHeader(6, 'ph-check-square', 'พัสดุอนุมัติขอใช้รถยนต์',
                          'อนุมัติขั้นสุดท้าย พร้อมจ่ายรถและพนักงานขับรถให้คำขอ') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1273,9 +1065,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 8. car tasks #}
+      {# ------------------------------------------------ 7. car tasks #}
       <section id="car-tasks" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(8, 'ph-steering-wheel', 'รายการงาน',
+        {{ SectionHeader(7, 'ph-steering-wheel', 'รายการงาน',
                          'หน้าทำงานของพนักงานขับรถ ดูงานที่ได้รับมอบหมาย และปิดงานพร้อมบันทึกเลขไมล์') }}
 
         <div class="mt-4 flex flex-col gap-2">
@@ -1357,9 +1149,9 @@
         {% endif %}
       </section>
 
-      {# ------------------------------------------------ 9. history #}
+      {# ------------------------------------------------ 8. history #}
       <section id="history" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(9, 'ph-clock', 'ประวัติการใช้รถยนต์',
+        {{ SectionHeader(8, 'ph-clock', 'ประวัติการใช้รถยนต์',
                          'คลังข้อมูลงานที่ปิดแล้ว ใช้ตรวจย้อนหลัง แก้ไขข้อมูลที่คลาดเคลื่อน และออกรายงาน PDF') }}
 
         <div class="mt-4 flex flex-col gap-2">

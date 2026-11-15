@@ -31,7 +31,6 @@ MODULE_OF_BLUEPRINT = {
     "vehicle_lending.car_permissions": "car",
     "vehicle_lending.cars": "car",
     "vehicle_lending.car_tasks": "car",
-    "vehicle_lending.car_feedback": "car",
     "vehicle_lending.car_manuals": "car",
     "vehicle_lending.history_car_lending": "car",
     "vehicle_lending.motorcycle_applications": "motorcycle",
@@ -64,9 +63,16 @@ def module_of_blueprint(blueprint_name):
     )
 
 
+# หน้าสาธารณะที่ตรวจโมดูลจากองค์กรของข้อมูลที่เปิดเอง (เช่นองค์กรของรถ) ไม่ใช่องค์กรที่ผู้ที่ login อยู่กำลังดู
+MODULE_GATE_EXEMPT_ENDPOINTS = {"car_reservation.cars.feedback"}
+
+
 def enforce_enabled_module():
     organization = getattr(g, "organization", None)
     if organization is None:
+        return
+
+    if request.endpoint in MODULE_GATE_EXEMPT_ENDPOINTS:
         return
 
     module_key = module_of_blueprint(request.blueprint)

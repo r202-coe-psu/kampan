@@ -147,6 +147,34 @@ def create_car_application():
 
 
 @pytest.fixture
+def create_car_reservation():
+    """เที่ยวรถของระบบจองรถ (CarReservation) ที่ผูกรถแล้ว ใช้เป็นเที่ยวของแบบประเมิน"""
+
+    def _create_car_reservation(
+        organization,
+        car,
+        location="สนามบินหาดใหญ่",
+        status="active",
+        departure_datetime=None,
+    ):
+        departure = departure_datetime or datetime.datetime(2026, 1, 15, 8, 0)
+        reservation = models.CarReservation(
+            organization=organization,
+            car=car,
+            location=location,
+            status=status,
+            request_type="domestic",
+            request_reason="ไปราชการ",
+            departure_datetime=departure,
+            return_datetime=departure + datetime.timedelta(hours=9),
+        )
+        reservation.save()
+        return reservation
+
+    return _create_car_reservation
+
+
+@pytest.fixture
 def make_question():
     """สร้าง QuestionTemplate แบบสั้น ๆ สำหรับประกอบแบบประเมินในเทสต์"""
 
@@ -179,12 +207,15 @@ def create_feedback_template():
 
 @pytest.fixture
 def create_feedback_response():
-    def _create_feedback_response(template, car, answers=None, car_application=None, created_date=None):
+    def _create_feedback_response(
+        template, car, answers=None, car_application=None, car_reservation=None, created_date=None
+    ):
         response = models.CarFeedbackResponse(
             feedback_template=template,
             organization=template.organization,
             car=car,
             car_application=car_application,
+            car_reservation=car_reservation,
             answers=list(answers or []),
             created_date=created_date or datetime.datetime(2026, 2, 1, 10, 0),
         )

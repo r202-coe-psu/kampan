@@ -1,32 +1,114 @@
+"""ฟอร์มแบบประเมินความพึงพอใจการใช้รถของระบบจองรถ: แบบประเมินปรับแต่งได้ต่อรถ"""
+
 from flask_wtf import FlaskForm
-from wtforms import fields, validators
-
-from kampan.utils import car_reservation_feedback as questions
-
-SCORE_CHOICES = [
-    (score, str(score))
-    for score in range(questions.SCORE_MIN, questions.SCORE_MAX + 1)
-]
+from wtforms import fields, validators, widgets
 
 
-def _score_field(label):
-    return fields.RadioField(
-        label,
-        choices=SCORE_CHOICES,
-        coerce=int,
-        validators=[validators.InputRequired(message="กรุณาให้คะแนน")],
+class CarFeedbackTemplateForm(FlaskForm):
+    name = fields.StringField(
+        "ชื่อแบบประเมิน",
+        validators=[validators.DataRequired(message="กรุณาระบุชื่อแบบประเมิน")],
+    )
+    description = fields.StringField("รายละเอียด")
+    cars = fields.SelectMultipleField(
+        "รถยนต์", validators=[validators.DataRequired(message="กรุณาเลือกรถยนต์")]
     )
 
 
-# คำถามกำหนดในโค้ด จึงสร้างฟิลด์คะแนนต่อข้อจาก QUESTION_GROUPS
-FeedbackForm = type(
-    "FeedbackForm",
-    (FlaskForm,),
-    {
-        **{key: _score_field(text) for key, text in questions.SCORE_QUESTIONS},
-        "comment": fields.TextAreaField(
-            "ข้อเสนอแนะเพิ่มเติม",
-            validators=[validators.Optional(), validators.Length(max=2000)],
-        ),
-    },
-)
+class CarFeedbackTemplateDeleteForm(FlaskForm):
+    """ฟอร์มเปล่าไว้บังคับตรวจ CSRF token ของคำสั่งลบแบบประเมิน"""
+
+
+class CarFeedbackResponseFilterForm(FlaskForm):
+    car_id = fields.SelectField(
+        "รถยนต์",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+    car_reservation_id = fields.SelectField(
+        "เที่ยวรถ",
+        validators=[validators.Optional()],
+        validate_choice=False,
+    )
+
+
+def get_dynamic_feedback_form(template, trip_choices=None, default_trip_id=None):
+    class DynamicFeedbackForm(FlaskForm):
+        pass
+
+    if trip_choices:
+        setattr(
+            DynamicFeedbackForm,
+            "car_reservation",
+            fields.SelectField(
+                "เที่ยวที่ใช้บริการ",
+                choices=trip_choices,
+                default=default_trip_id,
+                validators=[validators.DataRequired(message="กรุณาเลือกเที่ยวรถ")],
+            ),
+        )
+
+    for q in template.questions:
+        name = f"answer_{q.question_id}"
+        req = (
+            [validators.DataRequired(message="กรุณาตอบคำถามข้อนี้")]
+            if q.is_required
+            else []
+        )
+
+        if q.question_type == "score":
+            setattr(
+                DynamicFeedbackForm,
+                name,
+                fields.RadioField(
+                    q.question_text,
+                    choices=[
+                        ("1", "1"),
+                        ("2", "2"),
+                        ("3", "3"),
+                        ("4", "4"),
+                        ("5", "5"),
+                    ],
+                    validators=req,
+                ),
+            )
+        elif q.question_type == "text":
+            setattr(
+                DynamicFeedbackForm,
+                name,
+                fields.TextAreaField(q.question_text, validators=req),
+            )
+        elif q.question_type == "boolean":
+            setattr(
+                DynamicFeedbackForm,
+                name,
+                fields.RadioField(
+                    q.question_text,
+                    choices=[("True", "ใช่"), ("False", "ไม่ใช่")],
+                    validators=req,
+                ),
+            )
+        elif q.question_type == "single_choice":
+            setattr(
+                DynamicFeedbackForm,
+                name,
+                fields.RadioField(
+                    q.question_text,
+                    choices=[(c, c) for c in q.choice_list],
+                    validators=req,
+                ),
+            )
+        elif q.question_type == "multiple_choice":
+            setattr(
+                DynamicFeedbackForm,
+                name,
+                fields.SelectMultipleField(
+                    q.question_text,
+                    choices=[(c, c) for c in q.choice_list],
+                    option_widget=widgets.CheckboxInput(),
+                    widget=widgets.ListWidget(prefix_label=False),
+                    validators=req,
+                ),
+            )
+
+    return DynamicFeedbackForm()

@@ -150,9 +150,12 @@ def template_variables(reservation, host_url):
             f"{host_url}/car_reservation/requests/{reservation.id}"
             f"?organization_id={reservation.organization.id}"
         ),
+        # หน้าประเมินสาธารณะของรถคันนั้น เลือกเที่ยวนี้เป็นค่าตั้งต้น (ว่างถ้ายังไม่จัดรถ)
         "feedback_url": (
-            f"{host_url}/car_reservation/feedback/{reservation.id}"
-            f"?organization_id={reservation.organization.id}"
+            f"{host_url}/car_reservation/cars/{reservation.car.id}/feedback"
+            f"?reservation_id={reservation.id}"
+            if reservation.car
+            else ""
         ),
     }
 

@@ -303,7 +303,7 @@ def test_car_reservation_variables_match_what_is_sent(email_type):
 
 def test_car_reservation_variables_carry_trip_details_as_text():
     reservation = _reservation(
-        car=SimpleNamespace(license_plate="กก 1234"),
+        car=SimpleNamespace(id="car789", license_plate="กก 1234"),
         driver=_person("driver"),
         audit_logs=[SimpleNamespace(action="denied", comment="รถไม่ว่าง")],
         status="denied",
@@ -320,4 +320,12 @@ def test_car_reservation_variables_carry_trip_details_as_text():
     assert sent["reason"] == "ประชุม"
     assert sent["comment"] == "รถไม่ว่าง"
     assert sent["request_url"] == "http://x/car_reservation/requests/abc123?organization_id=org1"
-    assert sent["feedback_url"] == "http://x/car_reservation/feedback/abc123?organization_id=org1"
+    assert (
+        sent["feedback_url"]
+        == "http://x/car_reservation/cars/car789/feedback?reservation_id=abc123"
+    )
+
+
+def test_car_reservation_feedback_url_is_empty_until_a_car_is_assigned():
+    sent = car_reservation_email.template_variables(_reservation(), "http://x")
+    assert sent["feedback_url"] == ""

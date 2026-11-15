@@ -14,12 +14,12 @@ MODULE_PAGES = {
         "/vehicle_lending/car_permissions/admin_page",
         "/vehicle_lending/cars",
         "/vehicle_lending/car_tasks",
-        "/vehicle_lending/car_feedback",
         "/vehicle_lending/car_manuals",
         "/vehicle_lending/history_car_lending",
     ],
     "car_reservation": [
         "/car_reservation/requests/",
+        "/car_reservation/feedback/",
     ],
     "motorcycle": [
         "/vehicle_lending/motorcycle_applications/calendar",

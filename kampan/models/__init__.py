@@ -49,7 +49,6 @@ from .requisition_timeline import (
 from .export_file import ExportFile
 from .car_holidays import CarHoliday
 from .car_reservations import CarReservation
-from .car_reservation_feedback import CarReservationFeedback
 
 db = MongoEngine()
 

@@ -5,6 +5,8 @@ from flask_login import current_user
 
 from kampan import models, utils
 
+from . import feedback as feedback_view
+
 module = Blueprint("car_reservation", __name__, url_prefix="/car_reservation")
 
 
@@ -78,13 +80,13 @@ def inject_can_create_insert():
 
 
 @module.context_processor
-def inject_feedback_state():
-    """สถานะแบบประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
+def inject_feedback_link():
+    """ลิงก์ประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
     if not current_user.is_authenticated:
         return {}
     user = current_user._get_current_object()
     return {
-        "feedback_state": lambda reservation: utils.car_reservation_feedback.state_for(
+        "feedback_link": lambda reservation: feedback_view.get_requester_feedback_url(
             reservation, user
         )
     }

@@ -1,4 +1,4 @@
-"""Integration & security tests ของ route แบบประเมินความพึงพอใจการใช้รถยนต์"""
+"""Integration & security tests ของ route แบบประเมินความพึงพอใจการใช้รถยนต์ในระบบจองรถ (car_reservation)"""
 
 import json
 import re
@@ -8,8 +8,8 @@ import pytest
 from kampan import models
 
 
-FEEDBACK_BASE = "/vehicle_lending/car_feedback"
-CARS_BASE = "/vehicle_lending/cars"
+FEEDBACK_BASE = "/car_reservation/feedback"
+CARS_BASE = "/car_reservation/cars"
 
 
 @pytest.fixture
@@ -49,6 +49,9 @@ def two_orgs(create_org, create_user, assign_user_to_org, create_car, create_fee
     def _build():
         org_a = create_org("Org A")
         org_b = create_org("Org B")
+        for org in (org_a, org_b):
+            org.enabled_modules = ["car_reservation"]
+            org.save()
         admin_a = create_user("AdminA", "OrgA")
         admin_b = create_user("AdminB", "OrgB")
         staff_a = create_user("StaffA", "OrgA")
@@ -91,7 +94,7 @@ def test_index_lists_only_templates_of_the_viewing_organization(app, two_orgs, l
             data = two_orgs()
             login_as(client, data["admin_a"])
 
-            response = client.get(f"{FEEDBACK_BASE}?organization_id={data['org_a'].id}")
+            response = client.get(f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}")
             body = response.data.decode()
 
             assert response.status_code == 200
@@ -105,7 +108,7 @@ def test_index_requires_admin_role(app, two_orgs, login_as):
             data = two_orgs()
             login_as(client, data["staff_a"])
 
-            response = client.get(f"{FEEDBACK_BASE}?organization_id={data['org_a'].id}")
+            response = client.get(f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}")
 
             assert response.status_code == 302
             assert "/login" in response.location
@@ -199,7 +202,7 @@ def test_delete_succeeds_with_the_csrf_token_rendered_on_the_page(app, csrf_enab
             data = two_orgs()
             login_as(client, data["admin_a"])
 
-            page = client.get(f"{FEEDBACK_BASE}?organization_id={data['org_a'].id}")
+            page = client.get(f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}")
             token = extract_csrf_token(page.data.decode())
 
             response = client.post(
@@ -646,16 +649,16 @@ def test_view_responses_cross_tenant_is_denied(app, two_orgs, login_as):
 
 
 def test_view_responses_renders_statistics(
-    app, two_orgs, login_as, create_car_application, create_feedback_response, make_answer
+    app, two_orgs, login_as, create_car_reservation, create_feedback_response, make_answer
 ):
     with app.test_client() as client:
         with app.app_context():
             data = two_orgs()
-            trip = create_car_application(data["org_a"], data["car_a"], location="สนามบินหาดใหญ่")
+            trip = create_car_reservation(data["org_a"], data["car_a"], location="สนามบินหาดใหญ่")
             create_feedback_response(
                 data["template_a"],
                 data["car_a"],
-                car_application=trip,
+                car_reservation=trip,
                 answers=[make_answer(data["question_a"], score=5)],
             )
             login_as(client, data["admin_a"])
@@ -671,13 +674,13 @@ def test_view_responses_renders_statistics(
 
 
 def test_view_responses_ignores_unknown_filter_values(
-    app, two_orgs, login_as, create_car_application, create_feedback_response, make_answer
+    app, two_orgs, login_as, create_car_reservation, create_feedback_response, make_answer
 ):
-    """car_id/car_application_id ที่ไม่อยู่ในตัวเลือกต้องถูกมองข้าม ไม่ใช่พังหรือรั่วข้อมูล"""
+    """car_id/car_reservation_id ที่ไม่อยู่ในตัวเลือกต้องถูกมองข้าม ไม่ใช่พังหรือรั่วข้อมูล"""
     with app.test_client() as client:
         with app.app_context():
             data = two_orgs()
-            foreign_trip = create_car_application(data["org_b"], data["car_b"])
+            foreign_trip = create_car_reservation(data["org_b"], data["car_b"])
             create_feedback_response(
                 data["template_a"], data["car_a"], answers=[make_answer(data["question_a"], score=2)]
             )
@@ -686,7 +689,7 @@ def test_view_responses_ignores_unknown_filter_values(
             response = client.get(
                 f"{FEEDBACK_BASE}/{data['template_a'].id}/view"
                 f"?organization_id={data['org_a'].id}"
-                f"&car_id={data['car_b'].id}&car_application_id={foreign_trip.id}"
+                f"&car_id={data['car_b'].id}&car_reservation_id={foreign_trip.id}"
             )
 
             assert response.status_code == 200
@@ -795,7 +798,7 @@ def test_public_feedback_with_unknown_or_malformed_car_id_returns_404(app, two_o
 
 
 def test_public_feedback_post_saves_response_with_organization(
-    app, two_orgs, create_car_application, make_question, create_feedback_template
+    app, two_orgs, create_car_reservation, make_question, create_feedback_template
 ):
     with app.test_client() as client:
         with app.app_context():
@@ -805,12 +808,12 @@ def test_public_feedback_post_saves_response_with_organization(
             template = create_feedback_template(
                 data["org_a"], [data["car_a"]], name="แบบประเมินหลัก", questions=[score, text]
             )
-            trip = create_car_application(data["org_a"], data["car_a"])
+            trip = create_car_reservation(data["org_a"], data["car_a"])
 
             response = client.post(
                 f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}",
                 data={
-                    "car_application": str(trip.id),
+                    "car_reservation": str(trip.id),
                     f"answer_{score.question_id}": "5",
                     f"answer_{text.question_id}": "ประทับใจมาก",
                 },
@@ -821,14 +824,14 @@ def test_public_feedback_post_saves_response_with_organization(
             assert saved is not None
             assert saved.organization == data["org_a"]
             assert saved.car == data["car_a"]
-            assert saved.car_application == trip
+            assert saved.car_reservation == trip
             answers = {answer.question_id: answer for answer in saved.answers}
             assert answers[score.question_id].answer_score == 5
             assert answers[text.question_id].answer_text == "ประทับใจมาก"
 
 
 def test_public_feedback_post_rejects_trip_of_another_car(
-    app, two_orgs, create_car, create_car_application, make_question, create_feedback_template
+    app, two_orgs, create_car, create_car_reservation, make_question, create_feedback_template
 ):
     """เที่ยวของรถคันอื่นต้องไม่ถูกผูกเข้ากับผลตอบรับ"""
     with app.test_client() as client:
@@ -839,13 +842,13 @@ def test_public_feedback_post_rejects_trip_of_another_car(
             template = create_feedback_template(
                 data["org_a"], [data["car_a"]], name="แบบประเมินหลัก", questions=[score]
             )
-            create_car_application(data["org_a"], data["car_a"])
-            foreign_trip = create_car_application(data["org_a"], other_car)
+            create_car_reservation(data["org_a"], data["car_a"])
+            foreign_trip = create_car_reservation(data["org_a"], other_car)
 
             response = client.post(
                 f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}",
                 data={
-                    "car_application": str(foreign_trip.id),
+                    "car_reservation": str(foreign_trip.id),
                     f"answer_{score.question_id}": "5",
                 },
             )
@@ -855,7 +858,7 @@ def test_public_feedback_post_rejects_trip_of_another_car(
 
 
 def test_public_feedback_post_requires_answers_for_required_questions(
-    app, two_orgs, create_car_application, make_question, create_feedback_template
+    app, two_orgs, create_car_reservation, make_question, create_feedback_template
 ):
     with app.test_client() as client:
         with app.app_context():
@@ -864,12 +867,322 @@ def test_public_feedback_post_requires_answers_for_required_questions(
             template = create_feedback_template(
                 data["org_a"], [data["car_a"]], name="แบบประเมินหลัก", questions=[score]
             )
-            trip = create_car_application(data["org_a"], data["car_a"])
+            trip = create_car_reservation(data["org_a"], data["car_a"])
 
             response = client.post(
                 f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}",
-                data={"car_application": str(trip.id)},
+                data={"car_reservation": str(trip.id)},
             )
 
             assert response.status_code == 200
             assert models.CarFeedbackResponse.objects(feedback_template=template).count() == 0
+
+
+# --------------------------------------------------------------------------
+# ?reservation_id= — เที่ยวรถตั้งต้นจากลิงก์ในอีเมล/หน้ารายละเอียดใบขอ (ส่วนเดียวที่เพิ่มจาก logic เดิมของ DIIS)
+# --------------------------------------------------------------------------
+
+
+def selected_trip_ids(html):
+    """id ของ <option> ที่ถูกเลือกอยู่ในตัวเลือกเที่ยวรถของฟอร์มประเมิน"""
+    return re.findall(r'<option value="([0-9a-f]{24})"\s+selected', html)
+
+
+@pytest.fixture
+def two_trips(two_orgs, create_car_reservation):
+    """รถ A มีสองเที่ยว: เที่ยวใกล้เวลาปัจจุบันที่สุด (ตัวเลือกตั้งต้นของระบบ) กับเที่ยวเก่าไกล"""
+
+    def _build():
+        import datetime
+
+        data = two_orgs()
+        now = datetime.datetime.now()
+        data["near_trip"] = create_car_reservation(
+            data["org_a"], data["car_a"], departure_datetime=now + datetime.timedelta(hours=1)
+        )
+        data["far_trip"] = create_car_reservation(
+            data["org_a"], data["car_a"], departure_datetime=now - datetime.timedelta(days=30)
+        )
+        return data
+
+    return _build
+
+
+def test_public_feedback_defaults_to_the_trip_closest_to_now(app, two_trips):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_trips()
+
+            response = client.get(f"{CARS_BASE}/{data['car_a'].id}/feedback")
+
+            assert selected_trip_ids(response.data.decode()) == [str(data["near_trip"].id)]
+
+
+def test_public_feedback_preselects_the_trip_given_by_reservation_id(app, two_trips):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_trips()
+
+            response = client.get(
+                f"{CARS_BASE}/{data['car_a'].id}/feedback?reservation_id={data['far_trip'].id}"
+            )
+
+            assert selected_trip_ids(response.data.decode()) == [str(data["far_trip"].id)]
+
+
+@pytest.mark.parametrize("kind", ["other_car", "other_org", "not_started", "malformed"])
+def test_public_feedback_ignores_a_reservation_id_that_is_not_a_trip_choice(
+    app, two_trips, create_car, create_car_reservation, kind
+):
+    """reservation_id ต้องอยู่ในตัวเลือกเที่ยวของรถคันนี้เท่านั้น ไม่งั้นใช้ค่าตั้งต้นเดิม ไม่รั่วข้อมูลเที่ยวอื่น"""
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_trips()
+            foreign = {
+                "other_car": create_car_reservation(data["org_a"], create_car(data["org_a"], "คค 3333")),
+                "other_org": create_car_reservation(data["org_b"], data["car_b"], location="ลับของ B"),
+                "not_started": create_car_reservation(data["org_a"], data["car_a"], status="pending"),
+            }
+            requested = "not-an-objectid" if kind == "malformed" else str(foreign[kind].id)
+
+            response = client.get(
+                f"{CARS_BASE}/{data['car_a'].id}/feedback?reservation_id={requested}"
+            )
+            body = response.data.decode()
+
+            assert response.status_code == 200
+            assert selected_trip_ids(body) == [str(data["near_trip"].id)]
+            assert "ลับของ B" not in body
+
+
+def test_public_feedback_post_saves_the_trip_chosen_through_reservation_id(
+    app, two_trips, make_question, create_feedback_template
+):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_trips()
+            score = make_question("score", "ให้คะแนนคนขับ", is_required=True)
+            template = create_feedback_template(data["org_a"], [data["car_a"]], questions=[score])
+
+            response = client.post(
+                f"{CARS_BASE}/{data['car_a'].id}/feedback"
+                f"?template_id={template.id}&reservation_id={data['far_trip'].id}",
+                data={
+                    "car_reservation": str(data["far_trip"].id),
+                    f"answer_{score.question_id}": "4",
+                },
+            )
+
+            assert response.status_code == 200
+            saved = models.CarFeedbackResponse.objects(feedback_template=template).get()
+            assert saved.car_reservation == data["far_trip"]
+            assert saved.car_application is None
+
+
+# --------------------------------------------------------------------------
+# โมดูล car_reservation: public route ต้อง 404 เมื่อองค์กรของรถปิดโมดูล และ DIIS ไม่มีแบบประเมินแล้ว
+# --------------------------------------------------------------------------
+
+
+def test_public_feedback_is_404_when_the_car_organization_disabled_the_module(
+    app, two_orgs, create_feedback_template
+):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            data["org_a"].enabled_modules = ["procurement"]
+            data["org_a"].save()
+
+            response = client.get(f"{CARS_BASE}/{data['car_a'].id}/feedback")
+
+            assert response.status_code == 404
+            assert "ให้คะแนน A" not in response.data.decode()
+
+
+def test_public_feedback_opens_for_a_logged_in_user_whose_own_organization_lacks_the_module(
+    app, two_orgs, create_org, create_user, assign_user_to_org, login_as
+):
+    """ผู้ที่ login อยู่ในองค์กรอื่นที่ไม่ได้เปิดโมดูลนี้ ยังสแกน QR ของรถองค์กร A ได้ (ตรวจโมดูลจากองค์กรของรถ)"""
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            other_org = create_org("Org Without Module")
+            other_org.enabled_modules = ["procurement"]
+            other_org.save()
+            passenger = create_user("Passenger", "Other")
+            assign_user_to_org(passenger, other_org, roles=["staff"])
+            login_as(client, passenger)
+
+            response = client.get(f"{CARS_BASE}/{data['car_a'].id}/feedback")
+
+            assert response.status_code == 200
+            assert "ให้คะแนน A" in response.data.decode()
+
+
+@pytest.mark.parametrize("who", ["admin_a", None])
+def test_the_diis_feedback_urls_are_gone(app, two_orgs, login_as, who):
+    """ย้ายแบบประเมินมาที่ระบบจองรถแล้ว: URL เดิมของระบบ DIIS ต้องไม่มีอยู่ ทั้งผู้ดูแลและคนทั่วไป"""
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            if who:
+                login_as(client, data[who])
+            org_id = data["org_a"].id
+            car_id = data["car_a"].id
+            template_id = data["template_a"].id
+
+            for path in (
+                f"/vehicle_lending/car_feedback?organization_id={org_id}",
+                f"/vehicle_lending/car_feedback/create?organization_id={org_id}",
+                f"/vehicle_lending/car_feedback/{template_id}/view?organization_id={org_id}",
+                f"/vehicle_lending/car_feedback/{template_id}/qrcode?organization_id={org_id}",
+                f"/vehicle_lending/cars/{car_id}/feedback",
+                f"/vehicle_lending/cars/{car_id}/qrcode?organization_id={org_id}",
+            ):
+                assert client.get(path).status_code == 404, path
+            assert (
+                client.post(
+                    f"/vehicle_lending/car_feedback/{template_id}/delete?organization_id={org_id}"
+                ).status_code
+                == 404
+            )
+            assert models.CarFeedbackTemplate.objects(id=template_id).count() == 1
+
+
+@pytest.mark.parametrize("role", ["dispatcher", "driver", "staff"])
+def test_only_org_admins_manage_feedback_templates(app, two_orgs, create_user, assign_user_to_org, login_as, role):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            user = create_user("Other", "Role")
+            assign_user_to_org(user, data["org_a"], roles=[role])
+            login_as(client, user)
+            base = f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}"
+
+            assert client.get(base).status_code == 302
+            assert (
+                client.get(f"{FEEDBACK_BASE}/{data['template_a'].id}/view?organization_id={data['org_a'].id}").status_code
+                == 302
+            )
+
+
+@pytest.mark.parametrize("who, sees_item", [("admin_a", True), ("staff_a", False)])
+def test_sidebar_shows_the_feedback_item_to_org_admins_only(app, two_orgs, login_as, who, sees_item):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            href = f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}"
+            page = f"/car_reservation/cars/directory?organization_id={data['org_a'].id}"
+            login_as(client, data[who])
+
+            html = client.get(page).data.decode()
+
+            assert (href in html) is sees_item
+
+
+# --------------------------------------------------------------------------
+# เริ่มจากแบบประเมินมาตรฐาน (seed ตอนสร้างแบบประเมินใหม่)
+# --------------------------------------------------------------------------
+
+
+def prefilled_questions(html):
+    import html as html_lib
+
+    match = re.search(r'id="questionsData" value="([^"]*)"', html)
+    assert match, "ไม่พบ input questions_data"
+    return json.loads(html_lib.unescape(match.group(1)) or "[]")
+
+
+def test_create_form_starts_empty_without_the_standard_preset(app, two_orgs, login_as):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+
+            body = client.get(f"{FEEDBACK_BASE}/create?organization_id={data['org_a'].id}").data.decode()
+
+            assert prefilled_questions(body) == []
+
+
+def test_create_form_can_start_from_the_standard_survey(app, two_orgs, login_as):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+
+            response = client.get(
+                f"{FEEDBACK_BASE}/create?organization_id={data['org_a'].id}&preset=standard"
+            )
+            questions = prefilled_questions(response.data.decode())
+
+            assert response.status_code == 200
+            assert [(q["question_text"], q["question_type"], q["is_required"]) for q in questions] == [
+                ("สภาพรถยนต์ - ความสะอาด", "score", True),
+                ("สภาพรถยนต์ - ความเหมาะสมของรถยนต์กับการเดินทาง", "score", True),
+                ("สภาพรถยนต์ - ความพร้อม (น้ำมัน/สภาพเครื่องยนต์)", "score", True),
+                ("สภาพรถยนต์ - ระบบปรับอากาศ", "score", True),
+                ("พนักงานขับรถยนต์ - การขับขี่ (ความเร็ว/การปฏิบัติตามกฎจราจร)", "score", True),
+                ("พนักงานขับรถยนต์ - การตรงต่อเวลา", "score", True),
+                ("พนักงานขับรถยนต์ - ศึกษาเส้นทางก่อนการเดินทาง", "score", True),
+                ("พนักงานขับรถยนต์ - ความเอื้อเฟื้อ/มีจิตบริการ", "score", True),
+                ("ความพึงพอใจในภาพรวม", "score", True),
+                ("ข้อเสนอแนะเพิ่มเติม", "text", False),
+            ]
+            assert 'value="แบบประเมินความพึงพอใจการใช้บริการรถยนต์"' in response.data.decode()
+            # แค่เติมให้ในฟอร์ม ยังไม่บันทึกอะไรจนกว่าจะกดบันทึก
+            assert models.CarFeedbackTemplate.objects(organization=data["org_a"]).count() == 1
+
+
+def test_the_prefilled_standard_survey_can_be_saved_as_is(app, two_orgs, login_as):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+            page = client.get(
+                f"{FEEDBACK_BASE}/create?organization_id={data['org_a'].id}&preset=standard"
+            ).data.decode()
+
+            response = client.post(
+                f"{FEEDBACK_BASE}/create?organization_id={data['org_a'].id}",
+                data={
+                    "name": "มาตรฐาน",
+                    "cars": [str(data["car_a"].id)],
+                    "questions_data": json.dumps(prefilled_questions(page), ensure_ascii=False),
+                },
+            )
+
+            assert response.status_code == 302
+            saved = models.CarFeedbackTemplate.objects(name="มาตรฐาน").get()
+            assert len(saved.questions) == 10
+            assert saved.questions[-1].question_type == "text"
+            assert saved.questions[-1].is_required is False
+
+
+def test_index_offers_the_standard_survey_button(app, two_orgs, login_as):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+
+            body = client.get(f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}").data.decode()
+
+            assert "เริ่มจากแบบประเมินมาตรฐาน" in body
+            assert f"{FEEDBACK_BASE}/create?organization_id={data['org_a'].id}&amp;preset=standard" in body
+
+
+def test_index_gives_each_car_a_qr_button_pointing_at_the_public_per_car_page(app, two_orgs, login_as):
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+
+            body = client.get(f"{FEEDBACK_BASE}/?organization_id={data['org_a'].id}").data.decode()
+
+            assert 'id="qr-modal"' in body
+            assert (
+                f'data-qr-url="{FEEDBACK_BASE}/{data["template_a"].id}/qrcode'
+                f'?car_id={data["car_a"].id}&amp;organization_id={data["org_a"].id}"'
+            ) in body
+            assert (
+                f'http://localhost{CARS_BASE}/{data["car_a"].id}/feedback?template_id={data["template_a"].id}"'
+            ) in body
