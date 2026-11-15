@@ -1,5 +1,6 @@
 """งานของพนักงานขับรถ: เห็นเฉพาะงานที่ถูกจัดให้ตัวเอง"""
 
+import datetime
 from functools import wraps
 
 from flask import (
@@ -69,6 +70,31 @@ def index():
         completed_tasks=my_tasks("completed").order_by("-departure_datetime")[
             :RECENT_COMPLETED_LIMIT
         ],
+    )
+
+
+@module.route("/summary")
+@driver_required
+def summary():
+    """สรุปงานของ พขร. เองในเดือนปัจจุบัน (ตั้งแต่วันที่ 1 ถึงตอนนี้)"""
+    now = datetime.datetime.now()
+    me = current_user._get_current_object()
+    mine = next(
+        row
+        for row in flow.driver_workload(
+            g.organization,
+            now=now,
+            window_start=now,
+            window_end=now,
+            since=now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        )
+        if row.driver == me
+    )
+    return render_template(
+        "/car_reservation/tasks/summary.html",
+        organization=g.organization,
+        month=now,
+        mine=mine,
     )
 
 

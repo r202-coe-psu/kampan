@@ -36,6 +36,22 @@ def inject_is_driver():
 
 
 @module.context_processor
+def inject_can_view_stats():
+    """เห็นเมนูภาระงานพนักงานขับรถไหม: ผู้จัดรถ ผู้บริหาร และ admin"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_view_stats": False}
+    user = current_user._get_current_object()
+    return {
+        "can_view_stats": "admin" in user.roles
+        or any(
+            utils.car_reservation_flow.has_role(organization, user, role)
+            for role in utils.car_reservation_flow.STATS_ROLES
+        )
+    }
+
+
+@module.context_processor
 def inject_feedback_state():
     """สถานะแบบประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
     if not current_user.is_authenticated:

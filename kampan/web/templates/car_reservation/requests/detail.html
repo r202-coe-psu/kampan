@@ -133,7 +133,7 @@
       <div class="flex flex-col gap-2" data-role="driver-workload">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="font-medium">{{ form.driver.label.text }} (ภาระงานย้อนหลัง 30 วัน)</span>
-          <a href="#" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
+          <a href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id) }}" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
         </div>
         <div class="overflow-x-auto bg-base-100 rounded-box border border-base-300">
           <table class="table table-sm">

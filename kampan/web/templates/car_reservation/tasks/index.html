@@ -2,6 +2,12 @@
 
 {% block title %}รายการงาน{% endblock %}
 
+{% block page_actions %}
+<a class="btn btn-outline btn-sm" href="{{ url_for('car_reservation.tasks.summary', organization_id=organization.id) }}" data-role="summary-link">
+  <i class="ph ph-chart-bar"></i> สรุปงานของฉัน
+</a>
+{% endblock %}
+
 {% block content %}
 <div class="mt-4 flex flex-col gap-4">
   <h2 class="text-lg font-semibold">งานที่ต้องไป</h2>

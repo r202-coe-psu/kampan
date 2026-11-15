@@ -1,0 +1,35 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}สรุปงานของฉัน{% endblock %}
+{% block page_subtitle %}เดือน {{ month.strftime('%m/%Y') }}{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-ghost btn-sm" href="{{ url_for('car_reservation.tasks.index', organization_id=organization.id) }}">
+  <i class="ph ph-arrow-left"></i> กลับรายการงาน
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="stats stats-vertical sm:stats-horizontal w-full border border-base-300 bg-base-100 shadow-sm">
+  <div class="stat">
+    <div class="stat-title">งานในเวลา</div>
+    <div class="stat-value text-primary" data-stat="in_hours">{{ mine.in_hours_jobs }}</div>
+    <div class="stat-desc">งาน</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">งาน OT</div>
+    <div class="stat-value" data-stat="ot">{{ mine.ot_jobs }}</div>
+    <div class="stat-desc">งาน</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">ชั่วโมงรวม</div>
+    <div class="stat-value" data-stat="hours">{{ '%.1f' | format(mine.hours) }}</div>
+    <div class="stat-desc">ชั่วโมง</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">ระยะทางรวม</div>
+    <div class="stat-value" data-stat="km">{{ mine.km }}</div>
+    <div class="stat-desc">กม.</div>
+  </div>
+</div>
+{% endblock %}

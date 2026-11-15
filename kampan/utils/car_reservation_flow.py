@@ -276,6 +276,16 @@ def assignable_drivers(organization):
     return [member.user for member in members if member.user is not None]
 
 
+# ผู้ดูสถิติภาระงานพนักงานขับรถ: ผู้จัดรถ ผู้บริหาร และ admin ของ org (admin ของระบบผ่านอยู่แล้ว)
+STATS_ROLES = (
+    "admin",
+    "dispatcher",
+    "vehicle_unit_head",
+    "strategy_head",
+    "physical_director",
+)
+
+
 @dataclasses.dataclass
 class DriverWorkload:
     """ภาระงานของ พขร. หนึ่งคนช่วง `days` วันล่าสุด (งานที่นับ = เสร็จสิ้นหรือ active)"""
@@ -284,17 +294,24 @@ class DriverWorkload:
     in_hours_jobs: int = 0
     ot_jobs: int = 0
     hours: float = 0.0
+    km: int = 0
     upcoming: int = 0
     busy: bool = False
 
 
-def driver_workload(organization, *, now, window_start, window_end, days=30):
-    """แถวภาระงานของ พขร. ที่จัดได้ทุกคน เรียงงานล่าสุดน้อยไปมาก แล้วชั่วโมงน้อยไปมาก"""
+def driver_workload(
+    organization, *, now, window_start, window_end, days=30, since=None
+):
+    """แถวภาระงานของ พขร. ที่จัดได้ทุกคน เรียงงานล่าสุดน้อยไปมาก แล้วชั่วโมงน้อยไปมาก
+
+    นับงานที่ออกเดินทางตั้งแต่ `since` (ไม่ระบุ = ย้อนหลัง `days` วัน) ถึง `now`
+    km = ผลรวมระยะทาง (เลข กม. กลับ - ออก) ของงานที่ปิดแล้ว
+    """
     rows = {
         driver.id: DriverWorkload(driver=driver)
         for driver in assignable_drivers(organization)
     }
-    since = now - datetime.timedelta(days=days)
+    since = since or now - datetime.timedelta(days=days)
     jobs = models.CarReservation.objects(
         organization=organization,
         driver__in=[row.driver for row in rows.values()],
@@ -311,6 +328,7 @@ def driver_workload(organization, *, now, window_start, window_end, days=30):
         started = job.started_at or job.departure_datetime
         finished = job.completed_at or job.return_datetime or started
         row.hours += (finished - started).total_seconds() / 3600
+        row.km += job.distance_km or 0
     ahead = models.CarReservation.objects(
         organization=organization,
         driver__in=[row.driver for row in rows.values()],
