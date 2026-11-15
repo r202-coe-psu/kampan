@@ -252,3 +252,18 @@ def test_trip_hours_come_from_the_actual_start_and_close_times(world):
 
     reservation.started_at = reservation.completed_at = None
     assert utils.car_reservation_finance.trip_duration(reservation) == (0, 8)
+
+
+def test_travel_times_printed_are_the_actual_start_and_end_the_duration_is_counted_from(
+    world,
+):
+    reservation = world.reservation()
+
+    response = world.client_for(world.head).post(
+        finance_url(world, reservation, "travel"), data=finance_data()
+    )
+
+    text = pdf_text(response)
+    assert "08.40" in text  # started_at, not the planned 08.30
+    assert "16.10" in text  # completed_at, not the planned 16.30
+    assert "08.30" not in text

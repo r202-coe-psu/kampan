@@ -198,10 +198,16 @@ class FinanceData:
         )
 
 
-def trip_duration(reservation):
-    """(วัน, ชั่วโมง) ของทริป: จากเวลาเริ่ม-ปิดงานจริง ถ้าไม่มีใช้เวลาออก-กลับตามใบขอ"""
+def trip_period(reservation):
+    """(ออก, กลับ) ของทริป: เวลาเริ่ม-ปิดงานจริง ถ้าไม่มีใช้เวลาออก-กลับตามใบขอ"""
     start = reservation.started_at or reservation.departure_datetime
     end = reservation.completed_at or reservation.return_datetime or start
+    return start, end
+
+
+def trip_duration(reservation):
+    """(วัน, ชั่วโมง) ของทริป นับจาก trip_period"""
+    start, end = trip_period(reservation)
     seconds = max(int((end - start).total_seconds()), 0)
     return seconds // 86400, seconds % 86400 // 3600
 
@@ -388,8 +394,7 @@ def _reservation_page1(pdf, doc, reservation, data):
         cell = PURPOSE_FIRST if index == 0 else PURPOSE_NEXT
         put(pdf, text, cell, rows["purpose"] + LINE_STEP * index, "left")
 
-    departure = reservation.departure_datetime
-    arrival = reservation.return_datetime or departure
+    departure, arrival = trip_period(reservation)
     check(pdf, BOX_OFFICE_X, rows["depart_date"])  # เดินทางจาก: สำนักงาน
     check(pdf, BOX_OFFICE_X, rows["return_date"])  # กลับถึง: สำนักงาน
     put(pdf, thai_date(departure), DATE_CELL, rows["depart_date"])
