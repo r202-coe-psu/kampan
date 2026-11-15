@@ -659,8 +659,12 @@ def confirm_cancel(app, user):
 
 
 def can_set_overtime(app, user):
-    """ผู้จัดรถสลับสถานะ OT ได้ตราบที่คำขอยัง active"""
-    return app.status == "active" and has_role(app.organization, user, "dispatcher")
+    """ผู้จัดรถแก้สถานะ OT ได้หลังจัดรถแล้ว ระหว่างรอผู้อนุมัติขั้นถัดไป เมื่ออนุมัติครบแล้วล็อก"""
+    return (
+        app.status == "pending"
+        and app.car is not None
+        and has_role(app.organization, user, "dispatcher")
+    )
 
 
 def set_overtime(app, user, is_overtime):

@@ -80,6 +80,7 @@
   {% if reservation.driver %}
   {% call Item('พนักงานขับรถ', role='assigned-driver') %}{{ reservation.driver.get_name() }}{% endcall %}
   {% endif %}
+  {% call Item('งานนอกเวลา (OT)', role='overtime-status') %}{{ 'ใช่' if reservation.is_overtime else 'ไม่ใช่' }}{% endcall %}
   {% if reservation.extra_travelers %}
   {% call Item('ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด', role='extra-travelers', wide=True) %}{{ reservation.extra_travelers }}{% endcall %}
   {% endif %}

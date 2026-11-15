@@ -1659,11 +1659,16 @@ def overtime_url(world, car_application):
     return f"{BASE}/{car_application.id}/overtime?organization_id={world.org.id}"
 
 
-def test_dispatcher_toggles_overtime_on_an_active_reservation_and_it_is_audit_logged(
+def test_dispatcher_toggles_overtime_while_later_approvers_still_decide_and_it_is_audit_logged(
     world,
 ):
     car_application = assigned_request(
-        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=4),
+        status="pending",
+        car=world.car,
+        driver=world.driver,
     )
     assert car_application.is_overtime is False
     client = world.client_for(world.dispatcher)
@@ -1686,7 +1691,12 @@ def test_dispatcher_toggles_overtime_on_an_active_reservation_and_it_is_audit_lo
 
 def test_overtime_toggle_is_the_wtforms_checkbox_and_reflects_the_saved_state(world):
     car_application = assigned_request(
-        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=4),
+        status="pending",
+        car=world.car,
+        driver=world.driver,
     )
     client = world.client_for(world.dispatcher)
 
@@ -1707,7 +1717,12 @@ def test_overtime_toggle_is_the_wtforms_checkbox_and_reflects_the_saved_state(wo
 
 def test_toggling_overtime_logs_the_old_and_new_value(world):
     car_application = assigned_request(
-        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=4),
+        status="pending",
+        car=world.car,
+        driver=world.driver,
     )
     client = world.client_for(world.dispatcher)
 
@@ -1722,7 +1737,12 @@ def test_toggling_overtime_logs_the_old_and_new_value(world):
 
 def test_only_a_dispatcher_can_toggle_overtime(world):
     car_application = assigned_request(
-        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=4),
+        status="pending",
+        car=world.car,
+        driver=world.driver,
     )
 
     for user in (world.requester, world.supervisor, world.driver):
@@ -1732,6 +1752,31 @@ def test_only_a_dispatcher_can_toggle_overtime(world):
         # 403 บางกรณีถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือค่าไม่เปลี่ยน
         assert response.status_code in (302, 403)
 
+    car_application.reload()
+    assert car_application.is_overtime is False
+
+
+@pytest.mark.parametrize("status", ["active", "completed"])
+def test_overtime_is_locked_once_the_request_is_fully_approved(world, status):
+    car_application = assigned_request(
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=4),
+        status=status,
+        car=world.car,
+        driver=world.driver,
+    )
+    client = world.client_for(world.dispatcher)
+
+    doc = lxml_html.fromstring(client.get(detail_url(world, car_application)).get_data(as_text=True))
+    assert not doc.xpath("//form[@data-role='overtime-form']")
+    assert not doc.xpath("//input[@name='is_overtime']")
+    (shown,) = doc.xpath("//*[@data-role='overtime-status']")
+    assert "ไม่ใช่" in shown.text_content()
+
+    response = client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
+
+    assert response.status_code in (302, 403)
     car_application.reload()
     assert car_application.is_overtime is False
 
