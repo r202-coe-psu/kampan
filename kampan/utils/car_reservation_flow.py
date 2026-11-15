@@ -4,6 +4,7 @@
 เปลี่ยน RESERVATION_ROUTES ภายหลังแล้วคำขอเก่ายังเดินตามเส้นทางเดิม
 """
 
+import dataclasses
 import datetime
 
 from kampan import models, utils
@@ -275,6 +276,62 @@ def assignable_drivers(organization):
     return [member.user for member in members if member.user is not None]
 
 
+@dataclasses.dataclass
+class DriverWorkload:
+    """ภาระงานของ พขร. หนึ่งคนช่วง `days` วันล่าสุด (งานที่นับ = เสร็จสิ้นหรือ active)"""
+
+    driver: object
+    in_hours_jobs: int = 0
+    ot_jobs: int = 0
+    hours: float = 0.0
+    upcoming: int = 0
+    busy: bool = False
+
+
+def driver_workload(organization, *, now, window_start, window_end, days=30):
+    """แถวภาระงานของ พขร. ที่จัดได้ทุกคน เรียงงานล่าสุดน้อยไปมาก แล้วชั่วโมงน้อยไปมาก"""
+    rows = {
+        driver.id: DriverWorkload(driver=driver)
+        for driver in assignable_drivers(organization)
+    }
+    since = now - datetime.timedelta(days=days)
+    jobs = models.CarReservation.objects(
+        organization=organization,
+        driver__in=[row.driver for row in rows.values()],
+        status__in=["completed", "active"],
+        departure_datetime__gte=since,
+        departure_datetime__lte=now,
+    )
+    for job in jobs:
+        row = rows[job.driver.id]
+        if job.is_overtime:
+            row.ot_jobs += 1
+        else:
+            row.in_hours_jobs += 1
+        started = job.started_at or job.departure_datetime
+        finished = job.completed_at or job.return_datetime or started
+        row.hours += (finished - started).total_seconds() / 3600
+    ahead = models.CarReservation.objects(
+        organization=organization,
+        driver__in=[row.driver for row in rows.values()],
+        status__in=["pending", "active", "cancel_requested"],
+        return_datetime__gt=window_start,
+        departure_datetime__lt=window_end,
+    )
+    for job in ahead:
+        rows[job.driver.id].busy = True
+    for job in models.CarReservation.objects(
+        organization=organization,
+        driver__in=[row.driver for row in rows.values()],
+        status="active",
+        departure_datetime__gt=now,
+    ):
+        rows[job.driver.id].upcoming += 1
+    return sorted(
+        rows.values(), key=lambda row: (row.in_hours_jobs + row.ot_jobs, row.hours)
+    )
+
+
 def _overlapping_bookings(app, **resource):
     """คำขออื่นของ org ที่จองรถ/คนขับคนเดียวกัน (ผ่านขั้นจัดรถแล้วและยังไม่จบ) เวลาทับกัน"""
     return models.CarReservation.objects(
@@ -287,7 +344,15 @@ def _overlapping_bookings(app, **resource):
     )
 
 
-def approve(app, user, comment="", car=None, driver=None, extra_travelers=""):
+def approve(
+    app,
+    user,
+    comment="",
+    car=None,
+    driver=None,
+    extra_travelers="",
+    is_overtime=False,
+):
     if not can_act(app, user):
         raise FlowError("ไม่มีสิทธิ์อนุมัติขั้นนี้")
 
@@ -306,6 +371,7 @@ def approve(app, user, comment="", car=None, driver=None, extra_travelers=""):
             raise FlowError(f"พนักงานขับรถ {driver.get_name()} มีงานช่วงเวลานี้แล้ว")
         app.car = car
         app.driver = driver
+        app.is_overtime = bool(is_overtime)
         if app.request_type in EXTRA_TRAVELER_TYPES:
             app.extra_travelers = extra_travelers
         audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"
@@ -371,6 +437,25 @@ def confirm_cancel(app, user):
         raise FlowError("ไม่มีสิทธิ์รับทราบการยกเลิก")
     app.status = "cancelled"
     _log(app, "cancel_confirmed", user, step_key="dispatcher")
+    app.save()
+
+
+def can_set_overtime(app, user):
+    """ผู้จัดรถสลับสถานะ OT ได้ตราบที่คำขอยัง active"""
+    return app.status == "active" and has_role(app.organization, user, "dispatcher")
+
+
+def set_overtime(app, user, is_overtime):
+    if not can_set_overtime(app, user):
+        raise FlowError("ไม่มีสิทธิ์แก้สถานะงานนอกเวลา")
+    app.is_overtime = bool(is_overtime)
+    _log(
+        app,
+        "overtime_changed",
+        user,
+        step_key="dispatcher",
+        comment="ตั้งเป็นงานนอกเวลา (OT)" if app.is_overtime else "ตั้งเป็นงานในเวลา",
+    )
     app.save()
 
 

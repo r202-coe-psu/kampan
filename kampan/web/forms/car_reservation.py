@@ -509,6 +509,13 @@ class DispatchDecisionForm(ApprovalDecisionForm):
         "ขออนุมัติให้ ... เดินทางไปด้วย",
         validators=[validators.Optional(), validators.Length(max=516)],
     )
+    is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
+
+
+class OvertimeForm(FlaskForm):
+    """ผู้จัดรถสลับสถานะงานนอกเวลา (OT) ของคำขอที่ active"""
+
+    is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
 def validate_optional_picture(form, field):

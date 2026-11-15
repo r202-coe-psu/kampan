@@ -14,6 +14,7 @@
     <div class="flex flex-wrap items-center gap-2">
       {{ status_badge.render(reservation) }}
       {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+      {% if reservation.is_overtime %}{{ status_badge.overtime() }}{% endif %}
       {% if reservation.status == 'pending' %}
       <span class="font-medium">รอ{{ current_step_label }}</span>
       {% endif %}
@@ -113,7 +114,7 @@
   </div>
 </div>
 
-{% if can_edit or can_cancel or can_confirm_cancel or can_act %}
+{% if can_edit or can_cancel or can_confirm_cancel or can_act or can_set_overtime %}
 <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="action-card">
   <div class="card-body gap-4">
     <h2 class="card-title text-lg"><i class="ph ph-gavel text-primary"></i> การดำเนินการ</h2>
@@ -126,8 +127,52 @@
       {% if form.car is defined %}
       <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
         {{ renderer.render_field(form.car) }}
-        {{ renderer.render_field(form.driver) }}
+        {{ renderer.render_field(form.is_overtime) }}
         {% if asks_extra_travelers %}{{ renderer.render_field(form.extra_travelers) }}{% endif %}
+      </div>
+      <div class="flex flex-col gap-2" data-role="driver-workload">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="font-medium">{{ form.driver.label.text }} (ภาระงานย้อนหลัง 30 วัน)</span>
+          <a href="#" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
+        </div>
+        <div class="overflow-x-auto bg-base-100 rounded-box border border-base-300">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th></th>
+                <th>ชื่อ</th>
+                <th class="text-right">ในเวลา</th>
+                <th class="text-right">OT</th>
+                <th class="text-right">ชม.</th>
+                <th class="text-right">งานที่จะมาถึง</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in workload %}
+              <tr class="hover" data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}">
+                <td>
+                  <input type="radio" class="radio radio-sm radio-primary" name="{{ form.driver.name }}"
+                         id="driver-{{ row.driver.id }}" value="{{ row.driver.id }}"
+                         {% if form.driver.data == row.driver.id|string %}checked{% endif %}>
+                </td>
+                <td><label for="driver-{{ row.driver.id }}" class="cursor-pointer font-medium">{{ row.driver.get_name() }}</label></td>
+                <td class="text-right">{{ row.in_hours_jobs }}</td>
+                <td class="text-right">{{ row.ot_jobs }}</td>
+                <td class="text-right">{{ '%.1f' | format(row.hours) }}</td>
+                <td class="text-right">{{ row.upcoming }}</td>
+                <td>
+                  {% if row.busy %}
+                  <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge"><i class="ph ph-warning"></i> มีงานชน</span>
+                  {% else %}
+                  <span class="badge badge-success badge-soft badge-sm whitespace-nowrap">ว่าง</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
       {% endif %}
       {{ renderer.render_field(form.comment) }}
@@ -136,6 +181,19 @@
                 onclick="document.getElementById('deny-modal').showModal()">ไม่อนุมัติ</button>
         <button type="submit" class="btn btn-success">อนุมัติ</button>
       </div>
+    </form>
+    {% endif %}
+
+    {% if can_set_overtime %}
+    <form method="post" class="flex flex-wrap items-center gap-2" data-role="overtime-form"
+          action="{{ url_for('car_reservation.requests.overtime', request_id=reservation.id, organization_id=organization.id) }}">
+      {{ overtime_form.csrf_token }}
+      <label class="label cursor-pointer gap-2">
+        <input type="checkbox" name="is_overtime" value="y" class="checkbox checkbox-sm"
+               {% if reservation.is_overtime %}checked{% endif %}>
+        <span>{{ overtime_form.is_overtime.label.text }}</span>
+      </label>
+      <button type="submit" class="btn btn-sm btn-primary btn-soft">บันทึก OT</button>
     </form>
     {% endif %}
 

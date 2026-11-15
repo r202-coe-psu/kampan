@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from kampan import models, utils
+from kampan.utils import car_reservation_flow as flow
 from kampan.web import redis_rq
 
 BASE = "/car_reservation/requests"
@@ -1218,6 +1219,44 @@ def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail
     assert "Driver One" in html
 
 
+def test_dispatcher_ticks_overtime_at_the_dispatcher_step_and_the_detail_shows_it(
+    world,
+):
+    car_application = request_at_dispatcher(world)
+
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data={**dispatch_data(world.car, world.driver), "is_overtime": "y"},
+    )
+    assert response.status_code == 302
+
+    car_application.reload()
+    assert car_application.is_overtime is True
+    html = (
+        world.client_for(world.requester)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+    assert 'data-role="overtime-badge"' in html
+
+
+def test_dispatch_without_ticking_overtime_is_an_in_hours_job(world):
+    car_application = request_at_dispatcher(world)
+
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    car_application.reload()
+    assert car_application.is_overtime is False
+    html = (
+        world.client_for(world.requester)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+    assert 'data-role="overtime-badge"' not in html
+
+
 @pytest.mark.parametrize("missing", ["car", "driver", "both"])
 def test_dispatcher_cannot_approve_without_choosing_car_and_driver(world, missing):
     car_application = request_at_dispatcher(world)
@@ -1483,6 +1522,51 @@ def request_with_car_assigned(world):
     car_application.reload()
     assert car_application.car == world.car
     return car_application
+
+
+def overtime_url(world, car_application):
+    return f"{BASE}/{car_application.id}/overtime?organization_id={world.org.id}"
+
+
+def test_dispatcher_toggles_overtime_on_an_active_reservation_and_it_is_audit_logged(
+    world,
+):
+    car_application = assigned_request(
+        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+    )
+    assert car_application.is_overtime is False
+    client = world.client_for(world.dispatcher)
+
+    response = client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.is_overtime is True
+    assert car_application.audit_logs[-1].action == "overtime_changed"
+    assert car_application.audit_logs[-1].actor == world.dispatcher
+    assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานนอกเวลา (OT)"
+
+    client.post(overtime_url(world, car_application), data={})
+
+    car_application.reload()
+    assert car_application.is_overtime is False
+    assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานในเวลา"
+
+
+def test_only_a_dispatcher_can_toggle_overtime(world):
+    car_application = assigned_request(
+        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+    )
+
+    for user in (world.requester, world.supervisor, world.driver):
+        response = world.client_for(user).post(
+            overtime_url(world, car_application), data={"is_overtime": "y"}
+        )
+        # 403 บางกรณีถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือค่าไม่เปลี่ยน
+        assert response.status_code in (302, 403)
+
+    car_application.reload()
+    assert car_application.is_overtime is False
 
 
 def test_cancelling_after_a_car_is_assigned_asks_the_dispatcher_to_acknowledge(world):
@@ -2222,3 +2306,139 @@ def test_detail_shows_the_edit_button_only_to_the_requester_before_approval(worl
         approve_url(world, car_application), data={"comment": ""}
     )
     assert not shows_edit(world.requester)
+
+
+WORKLOAD_NOW = datetime.datetime(2030, 6, 15, 12, 0)
+
+
+def workload_job(world, driver, departure, hours, status="completed", **extra):
+    """งานของ driver ที่ออกเดินทาง departure และกลับหลังจากนั้น hours ชั่วโมง"""
+    job = assigned_request(
+        world,
+        departure,
+        departure + datetime.timedelta(hours=hours),
+        status=status,
+        car=world.car,
+        driver=driver,
+    )
+    for name, value in extra.items():
+        setattr(job, name, value)
+    return job.save()
+
+
+def workload_rows(world, window_start=None, window_end=None):
+    window_start = window_start or WORKLOAD_NOW + datetime.timedelta(days=30)
+    window_end = window_end or window_start + datetime.timedelta(hours=4)
+    return {
+        row.driver.get_name(): row
+        for row in flow.driver_workload(
+            world.org,
+            now=WORKLOAD_NOW,
+            window_start=window_start,
+            window_end=window_end,
+        )
+    }
+
+
+def test_driver_workload_counts_in_hours_ot_jobs_and_hours_of_the_last_30_days(world):
+    day = datetime.timedelta(days=1)
+    # 3 ชม. (ตามเวลากลับตามใบขอ เพราะยังไม่มี completed_at) ในเวลา
+    workload_job(world, world.driver, WORKLOAD_NOW - 5 * day, 3)
+    # 5 ชม. ตามเวลาเริ่ม/ปิดงานจริง (ไม่ใช่ตามใบขอ) และเป็น OT
+    workload_job(
+        world,
+        world.driver,
+        WORKLOAD_NOW - 3 * day,
+        1,
+        is_overtime=True,
+        started_at=WORKLOAD_NOW - 3 * day + datetime.timedelta(hours=1),
+        completed_at=WORKLOAD_NOW - 3 * day + datetime.timedelta(hours=6),
+    )
+    # ไม่นับ: เกิน 30 วัน, ไม่อนุมัติ, ยกเลิก
+    workload_job(world, world.driver, WORKLOAD_NOW - 31 * day, 9)
+    workload_job(world, world.driver, WORKLOAD_NOW - 2 * day, 9, status="denied")
+    workload_job(world, world.driver, WORKLOAD_NOW - 2 * day, 9, status="cancelled")
+    idle = world.add_driver("Idle", "Driver")
+
+    rows = workload_rows(world)
+
+    one = rows["Driver One"]
+    assert (one.in_hours_jobs, one.ot_jobs, one.hours) == (1, 1, 8.0)
+    assert (one.upcoming, one.busy) == (0, False)
+    zero = rows[idle.get_name()]
+    assert (zero.in_hours_jobs, zero.ot_jobs, zero.hours) == (0, 0, 0.0)
+
+
+
+def test_driver_workload_counts_upcoming_jobs_flags_a_clash_and_sorts_least_loaded_first(
+    world,
+):
+    day = datetime.timedelta(days=1)
+    window_start = WORKLOAD_NOW + 10 * day
+    window_end = window_start + datetime.timedelta(hours=4)
+    # Driver One: 2 งานล่าสุด 2 ชม. + 2 ชม. = 4 ชม. และมีงานข้างหน้า 2 งาน (เฉพาะ active)
+    workload_job(world, world.driver, WORKLOAD_NOW - 4 * day, 2)
+    workload_job(world, world.driver, WORKLOAD_NOW - 2 * day, 2)
+    workload_job(world, world.driver, WORKLOAD_NOW + 3 * day, 2, status="active")
+    workload_job(world, world.driver, WORKLOAD_NOW + 4 * day, 2, status="active")
+    workload_job(world, world.driver, WORKLOAD_NOW + 5 * day, 2, status="denied")
+    # Light: 1 งานล่าสุด 1 ชม. และงานข้างหน้าที่ชนช่วงเวลาที่กำลังจัด
+    light = world.add_driver("Light", "Driver")
+    workload_job(world, light, WORKLOAD_NOW - 1 * day, 1)
+    workload_job(
+        world, light, window_start + datetime.timedelta(hours=2), 3, status="active"
+    )
+    # Lighter: 1 งานล่าสุด 0.5 ชม. (งานเท่ากับ Light แต่ชั่วโมงน้อยกว่า)
+    lighter = world.add_driver("Lighter", "Driver")
+    workload_job(world, lighter, WORKLOAD_NOW - 1 * day, 0.5)
+    # Idle: ไม่มีงานเลย
+    world.add_driver("Idle", "Driver")
+
+    rows = flow.driver_workload(
+        world.org, now=WORKLOAD_NOW, window_start=window_start, window_end=window_end
+    )
+
+    assert [
+        (row.driver.get_name(), row.upcoming, row.busy, row.hours) for row in rows
+    ] == [
+        ("Idle Driver", 0, False, 0.0),
+        ("Lighter Driver", 0, False, 0.5),
+        ("Light Driver", 1, True, 1.0),
+        ("Driver One", 2, False, 4.0),
+    ]
+
+
+def test_dispatcher_detail_lists_drivers_least_loaded_first_and_marks_the_busy_one(
+    world,
+):
+    now = datetime.datetime.now().replace(microsecond=0)
+    day = datetime.timedelta(days=1)
+    idle = world.add_driver("Idle", "Driver")
+    busy = world.add_driver("Busy", "Driver")
+    car_application = request_at_dispatcher(world)
+    # Driver One งานล่าสุด 2 งาน, Busy 1 งาน ส่วน Idle ไม่มี
+    workload_job(world, world.driver, now - 4 * day, 2)
+    workload_job(world, world.driver, now - 2 * day, 2)
+    workload_job(world, busy, now - 3 * day, 1)
+    workload_job(
+        world,
+        busy,
+        car_application.departure_datetime + datetime.timedelta(hours=1),
+        2,
+        status="active",
+    )
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    rows = re.findall(r'data-role="driver-row" data-driver-id="(\w+)" data-busy="(\w+)"', html)
+    assert rows == [
+        (str(idle.id), "false"),
+        (str(busy.id), "true"),
+        (str(world.driver.id), "false"),
+    ]
+    assert html.count('data-role="busy-badge"') == 1
+    assert 'data-role="workload-dashboard-link"' in html

@@ -217,12 +217,18 @@ def detail(request_id):
             (str(car.id), car_choice_label(car))
             for car in flow.assignable_cars(g.organization)
         ]
+        workload = flow.driver_workload(
+            g.organization,
+            now=datetime.datetime.now(),
+            window_start=reservation.departure_datetime,
+            window_end=reservation.return_datetime or reservation.departure_datetime,
+        )
         form.driver.choices = [
-            (str(user.id), user.get_name())
-            for user in flow.assignable_drivers(g.organization)
+            (str(row.driver.id), row.driver.get_name()) for row in workload
         ]
     else:
         form = forms.car_reservation.ApprovalDecisionForm()
+        workload = []
     return render_template(
         "/car_reservation/requests/detail.html",
         organization=g.organization,
@@ -239,7 +245,12 @@ def detail(request_id):
             reservation, current_user._get_current_object()
         ),
         cancel_form=forms.car_reservation.CancelRequestForm(),
+        can_set_overtime=flow.can_set_overtime(
+            reservation, current_user._get_current_object()
+        ),
+        overtime_form=forms.car_reservation.OvertimeForm(obj=reservation),
         form=form,
+        workload=workload,
         deny_form=forms.car_reservation.DenyDecisionForm(),
     )
 
@@ -339,6 +350,7 @@ def approve(request_id):
             if ObjectId.is_valid(form.driver.data)
             else None,
             "extra_travelers": (form.extra_travelers.data or "").strip(),
+            "is_overtime": form.is_overtime.data,
         }
     try:
         flow.approve(
@@ -400,6 +412,29 @@ def deny(request_id):
     utils.car_reservation_email.notify(reservation, "denied")
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
     return redirect_to_detail
+
+
+@module.route("/<request_id>/overtime", methods=["POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def overtime(request_id):
+    reservation = get_request_or_404(request_id)
+    form = forms.car_reservation.OvertimeForm()
+    try:
+        flow.set_overtime(
+            reservation,
+            current_user._get_current_object(),
+            form.is_overtime.data,
+        )
+    except flow.FlowError:
+        abort(403)
+    flash("บันทึกสถานะงานนอกเวลาเรียบร้อยแล้ว", "success")
+    return redirect(
+        url_for(
+            "car_reservation.requests.detail",
+            request_id=reservation.id,
+            organization_id=g.organization.id,
+        )
+    )
 
 
 @module.route("/<request_id>/cancel", methods=["POST"])

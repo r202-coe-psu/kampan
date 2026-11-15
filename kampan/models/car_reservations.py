@@ -64,6 +64,7 @@ AUDIT_ACTIONS = [
     ("cancelled", "ยกเลิก"),
     ("started", "เริ่มงาน"),
     ("completed", "ปิดงาน"),
+    ("overtime_changed", "เปลี่ยนสถานะงานนอกเวลา"),
 ]
 
 
@@ -211,6 +212,7 @@ class CarReservation(me.Document):
     project_file = me.FileField(collection_name="car_reservation_project_files")
 
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
+    is_overtime = me.BooleanField(default=False)  # งานนอกเวลา (OT) ผู้จัดรถเป็นผู้ติ๊ก
 
     status = me.StringField(default="pending", choices=RESERVATION_STATUS)
     route_snapshot = me.ListField(me.StringField())  # เส้นทางอนุมัติที่ตรึงไว้ตอนยื่น
