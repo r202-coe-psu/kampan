@@ -25,3 +25,8 @@
 {% macro overtime() %}
   <span class="badge badge-info badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="overtime-badge">นอกเวลา (OT)</span>
 {% endmacro %}
+
+{# ป้ายงานแทรก (ผู้จัดรถเพิ่มให้ พขร. ที่มีงานอยู่แล้วในวันนั้น) #}
+{% macro insert() %}
+  <span class="badge badge-secondary badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="insert-badge">งานแทรก</span>
+{% endmacro %}

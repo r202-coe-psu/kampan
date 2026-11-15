@@ -38,6 +38,7 @@
                 {{ reservation.request_reason }}
               </a>
               {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
+              {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
             </td>
             <td>{{ reservation.get_request_type_display() }}</td>
             <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>

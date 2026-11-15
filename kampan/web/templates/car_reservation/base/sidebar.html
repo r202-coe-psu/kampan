@@ -25,6 +25,10 @@
     {{ MenuItem(['car_reservation.requests.create_urgent'], 'ph-lightning', 'ขอใช้รถเร่งด่วน',
                 url_for('car_reservation.requests.create_urgent', organization_id=organization.id)) }}
     {% endif %}
+    {% if can_create_insert %}
+    {{ MenuItem(['car_reservation.requests.create_insert'], 'ph-plus-circle', 'เพิ่มงานแทรก',
+                url_for('car_reservation.requests.create_insert', organization_id=organization.id)) }}
+    {% endif %}
     {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
                 url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
 

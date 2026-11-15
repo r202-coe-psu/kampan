@@ -2671,3 +2671,513 @@ def test_sidebar_offers_the_settings_link_only_to_org_admins(world, org_admin):
         org_admin
     )
     assert f'href="{SETTINGS_URL}?' not in sidebar_of(world.requester)
+
+
+INSERT_URL = f"{BASE}/insert"
+
+
+def insert_url(world):
+    return f"{INSERT_URL}?organization_id={world.org.id}"
+
+
+@pytest.fixture
+def insert_world(world):
+    """พขร. world.driver มีงาน active ของวัน DAY (08:00-17:00) แล้ว และมีรถคันที่สองไว้ใช้กับงานแทรก"""
+    world.second_car = models.vehicles.Car(
+        license_plate="ขข 5678", organization=world.org, status="active"
+    ).save()
+    world.main_job = assigned_request(
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=9),
+        car=world.car,
+        driver=world.driver,
+    )
+    return world
+
+
+def insert_data(world, **overrides):
+    day = DAY.date().isoformat()
+    data = {
+        "driver": str(world.driver.id),
+        "car": str(world.second_car.id),
+        "departure_date": day,
+        "departure_time": "10:00",
+        "return_date": day,
+        "return_time": "11:30",
+        "location": "สนามบินหาดใหญ่",
+        "request_reason": "ไปรับพัสดุด่วน",
+        "insert_scope": "in_province",
+        "contact_name": "ผู้ใช้รถ ตัวจริง",
+        "contact_email": "actual.user@example.com",
+    }
+    data.update(overrides)
+    return data
+
+
+def post_insert(world, **overrides):
+    return world.client_for(world.dispatcher).post(
+        insert_url(world), data=insert_data(world, **overrides)
+    )
+
+
+def insert_jobs(world):
+    return models.CarReservation.objects(organization=world.org, is_insert=True)
+
+
+def test_dispatcher_adds_an_insert_job_that_is_active_at_once_and_logged(insert_world):
+    response = post_insert(insert_world, is_overtime="y")
+    assert response.status_code == 302, response.get_data(as_text=True)
+
+    [job] = insert_jobs(insert_world)
+    assert job.status == "active"
+    assert job.request_type == "domestic"
+    assert job.province_scope == "in_province"
+    assert job.insert_scope == "in_province"
+    assert job.creator == insert_world.dispatcher
+    assert job.car == insert_world.second_car
+    assert job.driver == insert_world.driver
+    assert job.is_overtime is True
+    assert job.location == "สนามบินหาดใหญ่"
+    assert job.contact_email == "actual.user@example.com"
+    assert job.departure_datetime == DAY + datetime.timedelta(hours=2)
+    assert job.return_datetime == DAY + datetime.timedelta(hours=3, minutes=30)
+    assert [(log.action, log.comment) for log in job.audit_logs] == [
+        ("submitted", "งานแทรก")
+    ]
+
+
+TASKS_BASE = "/car_reservation/tasks"
+
+
+def drivers_task_list(world):
+    page = world.client_for(world.driver).get(
+        f"{TASKS_BASE}/?organization_id={world.org.id}"
+    )
+    assert page.status_code == 200
+    return page.get_data(as_text=True)
+
+
+def test_insert_job_shows_up_in_the_drivers_task_list_with_an_insert_badge(
+    insert_world,
+):
+    post_insert(insert_world, location="สนามบินหาดใหญ่")
+
+    html = drivers_task_list(insert_world)
+
+    cards = html.split('data-role="task-card"')[1:]
+    [insert_card] = [card for card in cards if "สนามบินหาดใหญ่" in card]
+    assert 'data-role="insert-badge"' in insert_card
+    assert "งานแทรก" in insert_card
+    assert "งานแทรก" not in [card for card in cards if "ที่อื่น" in card][0]
+
+
+def test_driver_starts_and_closes_an_insert_job_with_its_own_mileage(insert_world):
+    post_insert(insert_world)
+    [job] = insert_jobs(insert_world)
+    client = insert_world.client_for(insert_world.driver)
+
+    started = client.post(
+        f"{TASKS_BASE}/{job.id}/start?organization_id={insert_world.org.id}"
+    )
+    closed = client.post(
+        f"{TASKS_BASE}/{job.id}/close?organization_id={insert_world.org.id}",
+        data={
+            "mileage_out": "500",
+            "mileage_in": "512",
+            "expense_case": "fleet_card",
+        },
+    )
+
+    assert started.status_code == 302
+    assert closed.status_code == 302, closed.get_data(as_text=True)
+    job.reload()
+    assert job.status == "completed"
+    assert job.started_at is not None
+    assert job.distance_km == 12
+    insert_world.main_job.reload()
+    assert insert_world.main_job.status == "active"
+    assert insert_world.main_job.last_mileage is None
+
+
+@pytest.mark.parametrize("scope", ["out_of_province", "abroad", ""])
+def test_insert_job_scope_must_be_in_campus_or_in_province(insert_world, scope):
+    response = post_insert(insert_world, insert_scope=scope)
+
+    assert response.status_code == 200
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_in_campus_scope_is_accepted(insert_world):
+    assert post_insert(insert_world, insert_scope="in_campus").status_code == 302
+
+    [job] = insert_jobs(insert_world)
+    assert job.insert_scope == "in_campus"
+    assert job.province_scope == "in_province"
+
+
+def test_insert_job_must_end_after_it_starts(insert_world):
+    response = post_insert(insert_world, return_time="10:00")
+
+    assert response.status_code == 200
+    assert "เวลาสิ้นสุดต้องหลังเวลาเริ่ม" in response.get_data(as_text=True)
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_is_refused_for_a_driver_with_no_other_job_that_day(insert_world):
+    next_day = (DAY.date() + datetime.timedelta(days=1)).isoformat()
+
+    response = post_insert(
+        insert_world, departure_date=next_day, return_date=next_day
+    )
+
+    assert response.status_code == 200
+    assert "พนักงานขับรถไม่มีงานในวันนี้" in response.get_data(as_text=True)
+    assert insert_jobs(insert_world).count() == 0
+
+
+@pytest.mark.parametrize("status", ["pending", "completed", "denied", "cancelled"])
+def test_only_an_active_job_of_the_driver_counts_as_a_job_that_day(
+    insert_world, status
+):
+    insert_world.main_job.status = status
+    insert_world.main_job.save()
+
+    response = post_insert(insert_world)
+
+    assert response.status_code == 200
+    assert "พนักงานขับรถไม่มีงานในวันนี้" in response.get_data(as_text=True)
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_another_drivers_job_does_not_count_for_the_chosen_driver(insert_world):
+    idle = insert_world.add_driver("Idle", "Driver")
+
+    response = post_insert(insert_world, driver=str(idle.id))
+
+    assert response.status_code == 200
+    assert "พนักงานขับรถไม่มีงานในวันนี้" in response.get_data(as_text=True)
+
+
+def test_insert_job_for_a_car_that_is_already_booked_is_refused(insert_world):
+    # รถคันที่สองถูกจองไว้ในช่วงเวลาเดียวกันโดย พขร. อีกคน
+    assigned_request(
+        insert_world,
+        DAY + datetime.timedelta(hours=1),
+        DAY + datetime.timedelta(hours=4),
+        car=insert_world.second_car,
+        driver=insert_world.add_driver("Other", "Driver"),
+    )
+
+    response = post_insert(insert_world)
+
+    assert response.status_code == 200
+    assert "ขข 5678" in response.get_data(as_text=True)
+    assert insert_jobs(insert_world).count() == 0
+
+
+@pytest.mark.parametrize("who", ["requester", "supervisor", "stranger"])
+def test_only_a_dispatcher_can_open_or_submit_the_insert_form(insert_world, who):
+    client = insert_world.client_for(getattr(insert_world, who))
+
+    got = client.get(insert_url(insert_world))
+    posted = client.post(insert_url(insert_world), data=insert_data(insert_world))
+
+    assert got.status_code in (302, 403)
+    assert posted.status_code in (302, 403)
+    assert insert_jobs(insert_world).count() == 0
+
+
+def test_insert_job_page_shows_the_insert_badge_on_the_detail(insert_world):
+    post_insert(insert_world)
+    [job] = insert_jobs(insert_world)
+
+    page = insert_world.client_for(insert_world.dispatcher).get(
+        detail_url(insert_world, job)
+    )
+
+    assert 'data-role="insert-badge"' in page.get_data(as_text=True)
+
+
+def test_sidebar_offers_the_insert_job_link_only_to_dispatchers(world):
+    def sidebar_of(user):
+        page = world.client_for(user).get(f"{BASE}/?organization_id={world.org.id}")
+        assert page.status_code == 200
+        return page.get_data(as_text=True)
+
+    assert f'href="{INSERT_URL}?organization_id={world.org.id}"' in sidebar_of(
+        world.dispatcher
+    )
+    assert "เพิ่มงานแทรก" in sidebar_of(world.dispatcher)
+    assert "เพิ่มงานแทรก" not in sidebar_of(world.requester)
+
+
+CLOSED_AT = datetime.datetime(2030, 3, 10, 17, 0)
+
+
+@pytest.mark.parametrize(
+    "now, expected",
+    [
+        (CLOSED_AT + datetime.timedelta(hours=1), "pending"),
+        (CLOSED_AT + datetime.timedelta(days=2), "pending"),
+        (CLOSED_AT + datetime.timedelta(days=4), "auto_confirmed"),
+    ],
+    ids=["same day", "2 days", "4 days"],
+)
+def test_close_confirmation_turns_into_auto_confirmed_after_3_days_without_a_reply(
+    now, expected
+):
+    reservation = models.CarReservation(completed_at=CLOSED_AT)
+
+    assert reservation.close_confirmation_status(now) == expected
+
+
+@pytest.mark.parametrize("answer", ["confirmed", "disputed"])
+def test_an_answered_close_confirmation_stays_as_answered_after_3_days(answer):
+    reservation = models.CarReservation(
+        completed_at=CLOSED_AT, close_confirmation=answer
+    )
+
+    assert (
+        reservation.close_confirmation_status(CLOSED_AT + datetime.timedelta(days=4))
+        == answer
+    )
+
+
+def test_a_trip_that_is_not_closed_has_no_close_confirmation_status():
+    reservation = models.CarReservation()
+
+    assert reservation.close_confirmation_status(CLOSED_AT) is None
+
+
+CONFIRM_ENDED_AT = datetime.datetime.now().replace(second=0, microsecond=0)
+
+
+def closed_trip(world, closed_ago=datetime.timedelta(days=1), **extra):
+    """งานที่ พขร. ปิดแล้วเมื่อ closed_ago ที่แล้ว (เริ่มงานก่อนปิด 3 ชม.) ผู้ขอคือ world.requester"""
+    completed = CONFIRM_ENDED_AT - closed_ago
+    job = assigned_request(
+        world,
+        DAY,
+        DAY + datetime.timedelta(hours=9),
+        status="completed",
+        car=world.car,
+        driver=world.driver,
+    )
+    job.started_at = completed - datetime.timedelta(hours=3)
+    job.completed_at = completed
+    for name, value in extra.items():
+        setattr(job, name, value)
+    return job.save()
+
+
+def confirmation_url(world, reservation):
+    return f"{BASE}/{reservation.id}/close_confirmation?organization_id={world.org.id}"
+
+
+def confirmation_section(world, reservation, user=None):
+    page = world.client_for(user or world.requester).get(detail_url(world, reservation))
+    html = page.get_data(as_text=True)
+    if 'data-role="close-confirmation"' not in html:
+        return ""
+    return html.split('data-role="close-confirmation"')[1].split("</section>")[0]
+
+
+def test_requester_sees_the_recorded_trip_times_and_the_two_answer_buttons(world):
+    job = closed_trip(world)
+
+    section = confirmation_section(world, job)
+
+    assert job.started_at.strftime("%d/%m/%Y %H:%M") in section
+    assert job.completed_at.strftime("%d/%m/%Y %H:%M") in section
+    assert 'value="correct"' in section
+    assert 'value="incorrect"' in section
+    assert 'name="actual_end_date"' in section
+    assert 'name="actual_end_time"' in section
+
+
+def test_requester_confirms_the_recorded_times_are_correct(world):
+    job = closed_trip(world)
+
+    response = world.client_for(world.requester).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+
+    assert response.status_code == 302, response.get_data(as_text=True)
+    job.reload()
+    assert job.close_confirmation == "confirmed"
+    assert job.close_confirmed_by == world.requester
+    assert job.close_confirmed_at is not None
+    assert job.audit_logs[-1].action == "close_confirmed"
+    assert job.audit_logs[-1].actor == world.requester
+    assert 'data-status="confirmed"' in confirmation_section(world, job)
+
+
+def dispute(world, job, user=None, **overrides):
+    data = {
+        "decision": "incorrect",
+        "actual_end_date": CONFIRM_ENDED_AT.date().isoformat(),
+        "actual_end_time": "20:30",
+        "note": "พขร. กดปิดงานช้า",
+    }
+    data.update(overrides)
+    return world.client_for(user or world.requester).post(
+        confirmation_url(world, job), data=data
+    )
+
+
+def test_requester_disputes_the_closing_time_and_dispatchers_are_emailed(
+    world, mock_redis_queue
+):
+    job = closed_trip(world)
+
+    response = dispute(world, job)
+
+    assert response.status_code == 302, response.get_data(as_text=True)
+    job.reload()
+    assert job.close_confirmation == "disputed"
+    assert job.close_confirmed_by == world.requester
+    assert job.close_reported_end == CONFIRM_ENDED_AT.replace(hour=20, minute=30)
+    assert job.close_dispute_note == "พขร. กดปิดงานช้า"
+    assert job.audit_logs[-1].action == "close_disputed"
+    assert "20:30" in job.audit_logs[-1].comment
+    assert 'data-status="disputed"' in confirmation_section(world, job)
+    assert "20:30" in confirmation_section(world, job)
+    [email] = email_jobs(mock_redis_queue, "close_disputed")
+    assert email[0] == str(job.id)
+    assert email[2] == [world.dispatcher.email]
+
+
+def test_disputing_without_the_actual_end_time_is_refused(world, mock_redis_queue):
+    job = closed_trip(world)
+
+    response = dispute(world, job, actual_end_date="", actual_end_time="")
+
+    assert response.status_code == 302
+    job.reload()
+    assert job.close_confirmation is None
+    assert email_jobs(mock_redis_queue, "close_disputed") == []
+
+
+def test_close_disputed_email_tells_the_dispatcher_what_the_requester_reported(
+    app, world, sent_emails
+):
+    job = closed_trip(world)
+    dispute(world, job)
+
+    with app.app_context():
+        utils.car_reservation_email.send_car_reservation_email(
+            str(job.id), "close_disputed", [world.dispatcher.email], "https://x.test"
+        )
+
+    [email] = sent_emails
+    assert "เวลาปิดงาน" in email["subject"]
+    assert "พขร. กดปิดงานช้า" in email["body"]
+    assert "20:30" in email["body"]
+    assert f"/car_reservation/requests/{job.id}" in email["body"]
+
+
+def test_the_requester_can_answer_only_once(world):
+    job = closed_trip(world)
+    assert dispute(world, job).status_code == 302
+
+    again = world.client_for(world.requester).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+
+    assert again.status_code in (302, 403)
+    job.reload()
+    assert job.close_confirmation == "disputed"
+    assert [log.action for log in job.audit_logs] == ["close_disputed"]
+    assert 'value="correct"' not in confirmation_section(world, job)
+
+
+def test_after_3_days_without_an_answer_the_close_is_auto_confirmed_and_closed_to_answers(
+    world, mock_redis_queue
+):
+    job = closed_trip(world, closed_ago=datetime.timedelta(days=4))
+
+    section = confirmation_section(world, job)
+    response = dispute(world, job)
+
+    assert 'data-status="auto_confirmed"' in section
+    assert "ยืนยันอัตโนมัติ" in section
+    assert 'value="correct"' not in section
+    assert response.status_code in (302, 403)
+    job.reload()
+    assert job.close_confirmation is None
+    assert email_jobs(mock_redis_queue, "close_disputed") == []
+
+
+def test_a_trip_closed_less_than_3_days_ago_waits_for_the_requester(world):
+    job = closed_trip(world, closed_ago=datetime.timedelta(days=2))
+
+    assert 'data-status="pending"' in confirmation_section(world, job)
+
+
+@pytest.mark.parametrize("who", ["stranger", "supervisor", "dispatcher", "driver"])
+def test_only_the_creator_can_answer_the_close_confirmation(world, who):
+    job = closed_trip(world)
+
+    response = dispute(world, job, user=getattr(world, who))
+
+    assert response.status_code in (302, 403)
+    job.reload()
+    assert job.close_confirmation is None
+    assert 'value="correct"' not in confirmation_section(
+        world, job, user=getattr(world, who)
+    )
+
+
+@pytest.mark.parametrize("status", ["active", "pending", "cancelled"])
+def test_only_a_closed_trip_can_be_answered(world, status):
+    job = closed_trip(world, status=status)
+
+    response = world.client_for(world.requester).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+
+    assert response.status_code in (302, 403)
+    job.reload()
+    assert job.close_confirmation is None
+
+
+def test_when_the_creator_is_the_dispatcher_only_an_admin_can_answer(
+    world, org_admin, create_user
+):
+    job = closed_trip(world, creator=world.dispatcher)
+
+    refused = world.client_for(world.dispatcher).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+    other = world.client_for(world.requester).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+    assert refused.status_code in (302, 403)
+    assert other.status_code in (302, 403)
+    job.reload()
+    assert job.close_confirmation is None
+
+    answered = world.client_for(org_admin).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+
+    assert answered.status_code == 302
+    job.reload()
+    assert job.close_confirmation == "confirmed"
+    assert job.close_confirmed_by == org_admin
+
+
+def test_a_system_admin_can_answer_for_a_trip_created_by_the_dispatcher(
+    world, create_user
+):
+    system_admin = create_user("Root", "Admin", roles=["admin"])
+    job = closed_trip(world, creator=world.dispatcher)
+
+    answered = world.client_for(system_admin).post(
+        confirmation_url(world, job), data={"decision": "correct"}
+    )
+
+    assert answered.status_code == 302
+    job.reload()
+    assert job.close_confirmation == "confirmed"

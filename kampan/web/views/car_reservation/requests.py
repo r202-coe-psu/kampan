@@ -270,6 +270,72 @@ def create_urgent():
     )
 
 
+@module.route("/insert", methods=["GET", "POST"])
+@acl.organization_roles_required("dispatcher")
+def create_insert():
+    """ผู้จัดรถเพิ่มงานแทรกให้ พขร. ที่มีงานอยู่แล้วในวันนั้น (active ทันที ไม่ต้องอนุมัติ)"""
+    organization = g.organization
+    user = current_user._get_current_object()
+    if not flow.can_create_insert(organization, user):
+        abort(403)  # system admin ผ่านตัว decorator แต่ไม่ได้ถือ role ผู้จัดรถ
+
+    form = forms.car_reservation.InsertJobForm()
+    form.car.choices = [
+        (str(car.id), car_choice_label(car)) for car in flow.assignable_cars(organization)
+    ]
+    form.driver.choices = [
+        (str(driver.id), driver.get_name())
+        for driver in flow.assignable_drivers(organization)
+    ]
+
+    if form.validate_on_submit():
+        reservation = models.CarReservation(
+            organization=organization,
+            creator=user,
+            updater=user,
+            location=form.location.data,
+            request_reason=form.request_reason.data,
+            insert_scope=form.insert_scope.data,
+            contact_name=form.contact_name.data.strip(),
+            contact_email=form.contact_email.data.strip(),
+            departure_datetime=datetime.datetime.combine(
+                form.departure_date.data, form.departure_time.data
+            ),
+            return_datetime=datetime.datetime.combine(
+                form.return_date.data, form.return_time.data
+            ),
+        )
+        try:
+            flow.submit_insert(
+                reservation,
+                user,
+                car=models.vehicles.Car.objects(
+                    id=object_id_or_none(form.car.data), organization=organization
+                ).first(),
+                driver=models.User.objects(
+                    id=object_id_or_none(form.driver.data)
+                ).first(),
+                is_overtime=form.is_overtime.data,
+            )
+        except flow.FlowError as error:
+            flash(str(error), "danger")
+        else:
+            flash("เพิ่มงานแทรกเรียบร้อยแล้ว", "success")
+            return redirect(
+                url_for(
+                    "car_reservation.requests.detail",
+                    request_id=reservation.id,
+                    organization_id=organization.id,
+                )
+            )
+
+    return render_template(
+        "/car_reservation/requests/insert.html",
+        organization=organization,
+        form=form,
+    )
+
+
 def stepper(reservation):
     """รายการขั้นของเส้นทางพร้อมสถานะ done/current/waiting/denied"""
     decisions = {
@@ -336,6 +402,12 @@ def detail(request_id):
         form=form,
         workload=workload,
         deny_form=forms.car_reservation.DenyDecisionForm(),
+        close_status=reservation.close_confirmation_status(),
+        close_confirmation_days=models.car_reservations.CLOSE_CONFIRMATION_DAYS,
+        can_confirm_close=flow.can_confirm_close(
+            reservation, current_user._get_current_object()
+        ),
+        close_form=forms.car_reservation.CloseConfirmationForm(),
     )
 
 
@@ -562,3 +634,45 @@ def confirm_cancel(request_id):
             organization_id=g.organization.id,
         )
     )
+
+
+@module.route("/<request_id>/close_confirmation", methods=["POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def close_confirmation(request_id):
+    """ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว)"""
+    reservation = get_request_or_404(request_id)
+    user = current_user._get_current_object()
+    if not flow.can_confirm_close(reservation, user):
+        abort(403)
+    form = forms.car_reservation.CloseConfirmationForm()
+    if not form.validate_on_submit():
+        abort(400)
+
+    correct = form.decision.data == "correct"
+    reported_end = (
+        datetime.datetime.combine(form.actual_end_date.data, form.actual_end_time.data)
+        if form.actual_end_date.data and form.actual_end_time.data
+        else None
+    )
+    redirect_to_detail = redirect(
+        url_for(
+            "car_reservation.requests.detail",
+            request_id=reservation.id,
+            organization_id=g.organization.id,
+        )
+    )
+    try:
+        flow.confirm_close(
+            reservation,
+            user,
+            correct=correct,
+            reported_end=reported_end,
+            note=form.note.data or "",
+        )
+    except flow.FlowError as error:
+        flash(str(error), "danger")
+        return redirect_to_detail
+    if not correct:
+        utils.car_reservation_email.notify(reservation, "close_disputed")
+    flash("บันทึกการยืนยันเวลาปิดงานเรียบร้อยแล้ว", "success")
+    return redirect_to_detail

@@ -183,6 +183,54 @@ class UrgentDomesticReservationForm(DomesticReservationForm):
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
 
 
+class InsertJobForm(FlaskForm):
+    """ผู้จัดรถเพิ่มงานแทรกให้ พขร. ที่มีงานอยู่แล้วในวันนั้น: งานสั้น ไม่ผ่านการอนุมัติ
+
+    choices ของรถ/พขร. ตั้งจาก org ตอนสร้างหน้า ส่วนสิทธิ์และเวลาชนกันตรวจที่ engine
+    """
+
+    driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
+    car = fields.SelectField("รถ", choices=[], validate_choice=False)
+    departure_date = fields.DateField(
+        "วันเริ่มงาน", validators=[validators.InputRequired()]
+    )
+    departure_time = fields.TimeField(
+        "เวลาเริ่มงาน", validators=[validators.InputRequired()]
+    )
+    return_date = fields.DateField(
+        "วันสิ้นสุดงาน", validators=[validators.InputRequired()]
+    )
+    return_time = fields.TimeField(
+        "เวลาสิ้นสุดงาน", validators=[validators.InputRequired()]
+    )
+    location = fields.StringField(
+        "สถานที่",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
+    request_reason = fields.StringField(
+        "เหตุผล",
+        validators=[validators.DataRequired(), validators.Length(max=516)],
+    )
+    insert_scope = fields.SelectField(
+        "พื้นที่",
+        choices=models.car_reservations.INSERT_SCOPES,
+        validators=[validators.DataRequired()],
+    )
+    contact_name = fields.StringField(
+        "ชื่อผู้ติดต่อรับแจ้งสถานะ",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    contact_email = fields.StringField(
+        "อีเมลผู้ติดต่อรับแจ้งสถานะ",
+        validators=[
+            validators.DataRequired(),
+            validators.Length(max=256),
+            validators.Regexp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", message="รูปแบบอีเมลไม่ถูกต้อง"),
+        ],
+    )
+    is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
+
+
 class PassengerRowForm(Form):
     """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
 
@@ -591,6 +639,25 @@ class CancelRequestForm(FlaskForm):
     reason = fields.TextAreaField(
         "เหตุผลที่ยกเลิก (ถ้ามี)",
         validators=[validators.Optional(), validators.Length(max=516)],
+    )
+
+
+class CloseConfirmationForm(FlaskForm):
+    """ผู้ขอยืนยันเวลาปิดงานของ พขร.: ถูกต้อง หรือ ไม่ถูกต้อง พร้อมเวลาสิ้นสุดจริง (และหมายเหตุ)"""
+
+    decision = fields.SelectField(
+        "คำตอบ",
+        choices=[("correct", "ถูกต้อง"), ("incorrect", "ไม่ถูกต้อง")],
+        validators=[validators.DataRequired()],
+    )
+    actual_end_date = fields.DateField(
+        "วันสิ้นสุดงานจริง", validators=[validators.Optional()]
+    )
+    actual_end_time = fields.TimeField(
+        "เวลาสิ้นสุดงานจริง", validators=[validators.Optional()]
+    )
+    note = fields.StringField(
+        "หมายเหตุ", validators=[validators.Optional(), validators.Length(max=516)]
     )
 
 

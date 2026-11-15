@@ -61,6 +61,15 @@ RESERVATION_ROUTES = {
 URGENT_ROUTE = ["dispatcher", "physical_director"]
 URGENT_REQUEST_TYPE = "domestic"
 
+# งานแทรก: ผู้จัดรถเพิ่มเอง ไม่ผ่านการอนุมัติ (ลงชื่อขั้นผู้จัดรถไว้ให้เห็นในหน้ารายละเอียด)
+INSERT_ROUTE = ["dispatcher"]
+INSERT_REQUEST_TYPE = "domestic"
+INSERT_PROVINCE_SCOPE = "in_province"
+INSERT_COMMENT = "งานแทรก"
+INSERT_END_NOT_AFTER_START = "เวลาสิ้นสุดต้องหลังเวลาเริ่ม"
+CLOSE_REPORTED_END_REQUIRED = "กรุณาระบุเวลาสิ้นสุดงานจริง"
+INSERT_DRIVER_HAS_NO_JOB = "พนักงานขับรถไม่มีงานในวันนี้"
+
 MAX_ADVANCE_DAYS = 30
 TOO_FAR_AHEAD = "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน"
 
@@ -169,6 +178,68 @@ def submit_urgent(app, dispatcher, car, driver, is_overtime=False):
     app.status = "pending"
     _log(app, "submitted", dispatcher)
     approve(app, dispatcher, car=car, driver=driver, is_overtime=is_overtime)
+
+
+def can_create_insert(organization, user):
+    """เฉพาะผู้ที่ถือ role ผู้จัดรถของ org เพิ่มงานแทรกได้"""
+    return has_role(organization, user, "dispatcher")
+
+
+def submit_insert(app, dispatcher, car, driver, is_overtime=False):
+    """ผู้จัดรถเพิ่มงานแทรก: ใบขอในประเทศในจังหวัดที่ active ทันที ไม่มีขั้นอนุมัติ"""
+    if not can_create_insert(app.organization, dispatcher):
+        raise FlowError("ไม่มีสิทธิ์เพิ่มงานแทรก")
+    if app.return_datetime <= app.departure_datetime:
+        raise FlowError(INSERT_END_NOT_AFTER_START)
+    if car is None or driver is None:
+        raise FlowError(CAR_AND_DRIVER_REQUIRED)
+    if car not in assignable_cars(app.organization) or driver not in (
+        assignable_drivers(app.organization)
+    ):
+        raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
+    if not _has_active_job_that_day(app, driver):
+        raise FlowError(INSERT_DRIVER_HAS_NO_JOB)
+    if _overlapping_bookings(app, car=car).first():
+        raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+    app.is_insert = True
+    app.request_type = INSERT_REQUEST_TYPE
+    app.province_scope = INSERT_PROVINCE_SCOPE
+    app.car = car
+    app.driver = driver
+    app.is_overtime = bool(is_overtime)
+    app.route_snapshot = list(INSERT_ROUTE)
+    app.current_step = len(app.route_snapshot)
+    app.status = "active"
+    app.step_approvals.append(
+        models.car_reservations.StepApproval(
+            step_key="dispatcher",
+            label=step_label("dispatcher"),
+            decision="approved",
+            decided_by=dispatcher,
+            decided_at=datetime.datetime.now(),
+            comment=INSERT_COMMENT,
+        )
+    )
+    _log(app, "submitted", dispatcher, comment=INSERT_COMMENT)
+    app.save()
+
+
+def _has_active_job_that_day(app, driver):
+    """driver มีงาน active อื่นที่คาบเกี่ยววันเดียวกับวันเริ่มของงานนี้"""
+    day_start = datetime.datetime.combine(
+        app.departure_datetime.date(), datetime.time.min
+    )
+    return (
+        models.CarReservation.objects(
+            organization=app.organization,
+            driver=driver,
+            status="active",
+            id__ne=app.id,
+            departure_datetime__lt=day_start + datetime.timedelta(days=1),
+            return_datetime__gte=day_start,
+        ).first()
+        is not None
+    )
 
 
 def can_edit(app, user):
@@ -570,3 +641,45 @@ def close_trip(
     if app.car is not None:
         app.car.last_mileage = mileage_in
         app.car.save()
+
+
+def _is_admin(organization, user):
+    return "admin" in user.roles or has_role(organization, user, "admin")
+
+
+def can_confirm_close(app, user, now=None):
+    """ผู้ขอยืนยันเวลาปิดงานได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน
+
+    ผู้ขอคือผู้สร้างคำขอ แต่ถ้าผู้สร้างเป็นผู้จัดรถ (คำขอเร่งด่วน/งานแทรก) ไม่มีผู้ขอตัวจริงในระบบ
+    จึงให้เฉพาะ admin (ของระบบหรือของ org) ตอบแทน
+    """
+    if (
+        user is None
+        or app.status != "completed"
+        or app.close_confirmation_status(now) != "pending"
+    ):
+        return False
+    if has_role(app.organization, app.creator, "dispatcher"):
+        return _is_admin(app.organization, user)
+    return user == app.creator
+
+
+def confirm_close(app, user, correct, reported_end=None, note="", now=None):
+    """ผู้ขอตอบว่าเวลาเริ่ม/ปิดงานที่ พขร. บันทึกถูกต้อง หรือไม่ถูกต้อง (ต้องแจ้งเวลาสิ้นสุดจริง)"""
+    if not can_confirm_close(app, user, now):
+        raise FlowError("ไม่มีสิทธิ์ยืนยันเวลาปิดงานนี้")
+    if not correct and reported_end is None:
+        raise FlowError(CLOSE_REPORTED_END_REQUIRED)
+    app.close_confirmed_by = user
+    app.close_confirmed_at = now or datetime.datetime.now()
+    if correct:
+        app.close_confirmation = "confirmed"
+        _log(app, "close_confirmed", user)
+    else:
+        note = (note or "").strip()
+        app.close_confirmation = "disputed"
+        app.close_reported_end = reported_end
+        app.close_dispute_note = note
+        comment = f"เวลาสิ้นสุดจริง {reported_end.strftime('%d/%m/%Y %H:%M')} น."
+        _log(app, "close_disputed", user, comment=f"{comment} ({note})" if note else comment)
+    app.save()

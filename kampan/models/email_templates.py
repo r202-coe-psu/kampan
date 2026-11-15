@@ -23,6 +23,7 @@ EMAIL_TYPE = [
     ("car_reservation_cancel_requested", "จองรถ: ขอยกเลิกใบขอใช้รถ"),
     ("car_reservation_cancelled", "จองรถ: ยกเลิกใบขอใช้รถ"),
     ("car_reservation_completed", "จองรถ: ปิดงาน ขอให้ประเมินความพึงพอใจ"),
+    ("car_reservation_close_disputed", "จองรถ: ผู้ขอแจ้งเวลาปิดงานไม่ถูกต้อง"),
 ]
 
 EMAIL_SYSTEMS = [
@@ -109,6 +110,11 @@ EMAIL_TYPE_INFO = {
         "system": "car_reservation",
         "recipient": "ผู้ขอใช้รถ",
         "trigger": "เมื่อพนักงานขับรถปิดงาน พร้อมลิงก์แบบประเมินความพึงพอใจ",
+    },
+    "car_reservation_close_disputed": {
+        "system": "car_reservation",
+        "recipient": "ผู้ดำรงตำแหน่งและผู้รับมอบหมายของงานจัดรถ (dispatcher)",
+        "trigger": "เมื่อผู้ขอแจ้งว่าเวลาปิดงานที่พนักงานขับรถบันทึกไม่ถูกต้อง",
     },
 }
 

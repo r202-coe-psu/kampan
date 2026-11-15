@@ -65,6 +65,19 @@ def inject_can_create_urgent():
 
 
 @module.context_processor
+def inject_can_create_insert():
+    """เห็นเมนูเพิ่มงานแทรกไหม: เฉพาะผู้จัดรถ (role dispatcher) ของ org ที่ดูอยู่"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_create_insert": False}
+    return {
+        "can_create_insert": utils.car_reservation_flow.can_create_insert(
+            organization, current_user._get_current_object()
+        )
+    }
+
+
+@module.context_processor
 def inject_feedback_state():
     """สถานะแบบประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
     if not current_user.is_authenticated:

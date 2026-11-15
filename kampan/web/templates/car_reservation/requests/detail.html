@@ -15,6 +15,7 @@
       {{ status_badge.render(reservation) }}
       {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
       {% if reservation.is_overtime %}{{ status_badge.overtime() }}{% endif %}
+      {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
       {% if reservation.status == 'pending' %}
       <span class="font-medium">รอ{{ current_step_label }}</span>
       {% endif %}
@@ -88,6 +89,7 @@
 {% endif %}
 
 {% include '/car_reservation/requests/_trip_report.html' %}
+{% include '/car_reservation/requests/_close_confirmation.html' %}
 {% include '/car_reservation/feedback/_link.html' %}
 
 <div class="card bg-base-100 border border-base-300 shadow-sm">

@@ -14,6 +14,12 @@ PROVINCE_SCOPES = [
     ("out_of_province", "ต่างจังหวัด"),
 ]
 
+# พื้นที่ของงานแทรก (เลือกได้เฉพาะสองแบบนี้)
+INSERT_SCOPES = [
+    ("in_campus", "ในมหาวิทยาลัย"),
+    ("in_province", "ในจังหวัด"),
+]
+
 RESERVATION_STATUS = [
     ("pending", "รออนุมัติ"),
     ("active", "อนุมัติแล้ว"),
@@ -52,6 +58,13 @@ EXPENSE_CASES = [
     ("fleet_card", "เติมฟลีตการ์ดน้ำมัน"),
 ]
 
+# ผู้ขอยืนยันเวลาปิดงานของ พขร. ("auto_confirmed" ไม่เก็บลงฐานข้อมูล คำนวณจากเวลา)
+CLOSE_CONFIRMATIONS = [
+    ("confirmed", "ถูกต้อง"),
+    ("disputed", "ไม่ถูกต้อง"),
+]
+CLOSE_CONFIRMATION_DAYS = 3
+
 STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่อนุมัติ")]
 
 AUDIT_ACTIONS = [
@@ -65,6 +78,8 @@ AUDIT_ACTIONS = [
     ("started", "เริ่มงาน"),
     ("completed", "ปิดงาน"),
     ("overtime_changed", "เปลี่ยนสถานะงานนอกเวลา"),
+    ("close_confirmed", "ผู้ขอยืนยันเวลาปิดงาน"),
+    ("close_disputed", "ผู้ขอแจ้งเวลาปิดงานไม่ถูกต้อง"),
 ]
 
 
@@ -214,6 +229,10 @@ class CarReservation(me.Document):
     is_urgent = me.BooleanField(default=False)  # ยื่นล่วงหน้าน้อยกว่าที่กำหนดและผู้ขอยืนยันแล้ว
     is_overtime = me.BooleanField(default=False)  # งานนอกเวลา (OT) ผู้จัดรถเป็นผู้ติ๊ก
 
+    # งานแทรก: ผู้จัดรถเพิ่มให้ พขร. ที่มีงานอยู่แล้วในวันนั้น ไม่ผ่านการอนุมัติ
+    is_insert = me.BooleanField(default=False)
+    insert_scope = me.StringField(choices=INSERT_SCOPES)
+
     status = me.StringField(default="pending", choices=RESERVATION_STATUS)
     route_snapshot = me.ListField(me.StringField())  # เส้นทางอนุมัติที่ตรึงไว้ตอนยื่น
     current_step = me.IntField(default=0)
@@ -234,6 +253,27 @@ class CarReservation(me.Document):
     cost_baht = me.DecimalField(min_value=0, max_value=1e12, precision=2)
     started_at = me.DateTimeField()
     completed_at = me.DateTimeField()
+
+    # ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน)
+    close_confirmation = me.StringField(choices=CLOSE_CONFIRMATIONS)
+    close_confirmed_by = me.ReferenceField("User", dbref=True)
+    close_confirmed_at = me.DateTimeField()
+    close_reported_end = me.DateTimeField()  # เวลาสิ้นสุดจริงที่ผู้ขอแจ้งตอนตอบ "ไม่ถูกต้อง"
+    close_dispute_note = me.StringField(default="", max_length=516)
+
+    def close_confirmation_status(self, now=None):
+        """สถานะการยืนยันเวลาปิดงาน: None (ยังไม่ปิดงาน), pending, confirmed, disputed, auto_confirmed
+
+        ไม่มีใครตอบภายใน 3 วันหลัง completed_at ถือว่า auto_confirmed (ไม่มี scheduler จึงคำนวณตอนอ่าน)
+        """
+        if self.completed_at is None:
+            return None
+        if self.close_confirmation:
+            return self.close_confirmation
+        now = now or datetime.datetime.now()
+        if now - self.completed_at > datetime.timedelta(days=CLOSE_CONFIRMATION_DAYS):
+            return "auto_confirmed"
+        return "pending"
 
     @property
     def distance_km(self):

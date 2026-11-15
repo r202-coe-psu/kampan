@@ -239,6 +239,7 @@ CAR_RESERVATION_TYPES = [
     "car_reservation_cancel_requested",
     "car_reservation_cancelled",
     "car_reservation_completed",
+    "car_reservation_close_disputed",
 ]
 
 
