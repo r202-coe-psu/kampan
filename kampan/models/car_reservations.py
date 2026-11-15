@@ -56,6 +56,7 @@ STEP_DECISIONS = [("approved", "อนุมัติ"), ("denied", "ไม่�
 
 AUDIT_ACTIONS = [
     ("submitted", "ยื่นคำขอ"),
+    ("edited", "แก้ไขคำขอ"),
     ("approved", "อนุมัติ"),
     ("denied", "ไม่อนุมัติ"),
     ("cancel_requested", "ขอยกเลิก"),

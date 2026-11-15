@@ -144,6 +144,27 @@ def submit(app, actor):
     app.save()
 
 
+def can_edit(app, user):
+    """ผู้ขอแก้ไขคำขอตัวเองได้จนกว่าผู้บังคับบัญชา (ขั้นแรก) จะตัดสิน"""
+    return (
+        user is not None
+        and user == app.creator
+        and app.status == "pending"
+        and app.current_step == 0
+        and not app.step_approvals
+    )
+
+
+def edit(app, user):
+    """บันทึกการแก้ไขที่ view ตั้งค่าลงคำขอแล้ว: ตรึงเส้นทางใหม่ตามพื้นที่เดินทางและลงประวัติ"""
+    if not can_edit(app, user):
+        raise FlowError("ไม่มีสิทธิ์แก้ไขคำขอนี้")
+    app.route_snapshot = route_for(app.request_type, app.province_scope)
+    app.updater = user
+    _log(app, "edited", user)
+    app.save()
+
+
 def current_step_key(app):
     if app.status != "pending" or app.current_step >= len(app.route_snapshot):
         return None

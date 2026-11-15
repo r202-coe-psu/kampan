@@ -1,3 +1,5 @@
+import datetime
+
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import Form, fields, validators, widgets
@@ -58,6 +60,32 @@ class CommonReservationForm(FlaskForm):
 
     def attach_files(self, reservation):
         """เก็บไฟล์แนบของฟอร์ม (ถ้ามี) ลงคำขอก่อนบันทึก"""
+
+    # ฟิลด์ที่ตอนแก้ไขไม่ต้องกรอกใหม่ถ้าไม่ต้องการเปลี่ยน (เช่น ไฟล์แนบเดิม)
+    def allow_existing_attachments(self):
+        pass
+
+    def prefill(self, reservation):
+        """ตั้งค่าเริ่มต้นของฟอร์มจากคำขอเดิม (หน้าแก้ไข) โดยดึงจากฟิลด์ร่วมก่อน แล้วจาก details"""
+        details = reservation.details
+        for name, field in self._fields.items():
+            if name in ("csrf_token", "confirm_urgent", "project_file", "passengers"):
+                continue
+            for source in (reservation, details):
+                if source is not None and hasattr(source, name):
+                    field.data = getattr(source, name)
+                    break
+        self.departure_date.data = reservation.departure_datetime.date()
+        self.departure_time.data = reservation.departure_datetime.time()
+        self.return_date.data = reservation.return_datetime.date()
+        self.return_time.data = reservation.return_datetime.time()
+        self.pickup_time.data = _parse_hhmm(reservation.pickup_time)
+
+
+def _parse_hhmm(value):
+    if not value:
+        return None
+    return datetime.datetime.strptime(value, PICKUP_TIME_FORMAT).time()
 
 
 class DomesticReservationForm(CommonReservationForm):
@@ -180,6 +208,17 @@ class AirportReservationForm(CommonReservationForm):
         validators=[validators.DataRequired("กรุณายืนยันสิทธิ์การขอใช้รถ")],
     )
 
+    def prefill(self, reservation):
+        super().prefill(reservation)
+        details = reservation.details
+        self.flight_arrival_time.data = _parse_hhmm(details.arrival_time)
+        self.flight_departure_time.data = _parse_hhmm(details.departure_time)
+        self.passengers.process(
+            None,
+            [{"name": row.name, "phone": row.phone} for row in details.passengers],
+        )
+        self.eligibility_confirmed.data = True
+
     def validate_passengers(self, field):
         if not self.filled_passengers():
             raise validators.ValidationError("ต้องระบุผู้โดยสารอย่างน้อย 1 คน")
@@ -280,6 +319,10 @@ class WelfareReservationForm(CommonReservationForm):
             )
         ],
     )
+
+    def prefill(self, reservation):
+        super().prefill(reservation)
+        self.direct_relative_confirmed.data = True
 
     def reservation_fields(self):
         return {
@@ -400,11 +443,25 @@ class AbroadReservationForm(CommonReservationForm):
             requester_position=self.requester_position.data,
         )
 
+    def allow_existing_attachments(self):
+        self.project_file.validators = [
+            check
+            for check in self.project_file.validators
+            if not isinstance(check, FileRequired)
+        ]
+
     def attach_files(self, reservation):
         upload = self.project_file.data
-        reservation.project_file.put(
-            upload, filename=upload.filename, content_type=upload.content_type
-        )
+        if not upload:
+            return
+        if reservation.project_file:
+            reservation.project_file.replace(
+                upload, filename=upload.filename, content_type=upload.content_type
+            )
+        else:
+            reservation.project_file.put(
+                upload, filename=upload.filename, content_type=upload.content_type
+            )
 
 
 FORM_BY_REQUEST_TYPE = {

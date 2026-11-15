@@ -70,26 +70,11 @@ def inbox():
     )
 
 
-@module.route("/new", methods=["GET", "POST"])
-@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
-def create():
-    organization = g.organization
-    request_type = request.args.get("type")
-    if request_type is None:
-        return render_template(
-            "/car_reservation/requests/choose_type.html", organization=organization
-        )
-    if request_type not in dict(models.car_reservations.RESERVATION_TYPES):
-        abort(404)
+def validate_submission(form, organization, request_type):
+    """ตรวจฟอร์มคำขอตามกฎร่วม (ล่วงหน้าเกินกำหนด วันกลับ รถวันหยุด ขอกะทันหัน) ทั้งตอนยื่นและตอนแก้ไข
 
-    form = forms.car_reservation.reservation_form_for(request_type)
-
-    user = current_user._get_current_object()
-    member = models.OrganizationUserRole.objects(
-        user=user, organization=organization, status="active"
-    ).first()
-    division = member.division if member else None
-
+    คืน (ผ่านหรือไม่, จำนวนวันทำการขั้นต่ำที่ต้องยืนยันเร่งด่วน (None ถ้าไม่ต้อง), เป็นคำขอเร่งด่วนหรือไม่)
+    """
     submitted = form.validate_on_submit()
     if submitted and flow.is_too_far_ahead(form.departure_date.data):
         form.departure_date.errors.append(flow.TOO_FAR_AHEAD)
@@ -121,6 +106,32 @@ def create():
         else:
             short_notice_days = flow.min_business_days(request_type)
             submitted = False
+    return submitted, short_notice_days, is_urgent
+
+
+@module.route("/new", methods=["GET", "POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def create():
+    organization = g.organization
+    request_type = request.args.get("type")
+    if request_type is None:
+        return render_template(
+            "/car_reservation/requests/choose_type.html", organization=organization
+        )
+    if request_type not in dict(models.car_reservations.RESERVATION_TYPES):
+        abort(404)
+
+    form = forms.car_reservation.reservation_form_for(request_type)
+
+    user = current_user._get_current_object()
+    member = models.OrganizationUserRole.objects(
+        user=user, organization=organization, status="active"
+    ).first()
+    division = member.division if member else None
+
+    submitted, short_notice_days, is_urgent = validate_submission(
+        form, organization, request_type
+    )
     if submitted and not flow.has_division_head(organization, division, excluding=user):
         flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
     elif submitted:
@@ -209,6 +220,7 @@ def detail(request_id):
         current_step_label=flow.step_label(current_key) if current_key else "",
         can_act=flow.can_act(reservation, current_user._get_current_object()),
         asks_extra_travelers=reservation.request_type in flow.EXTRA_TRAVELER_TYPES,
+        can_edit=flow.can_edit(reservation, current_user._get_current_object()),
         can_cancel=flow.can_cancel(
             reservation, current_user._get_current_object()
         ),
@@ -218,6 +230,62 @@ def detail(request_id):
         cancel_form=forms.car_reservation.CancelRequestForm(),
         form=form,
         deny_form=forms.car_reservation.DenyDecisionForm(),
+    )
+
+
+@module.route("/<request_id>/edit", methods=["GET", "POST"])
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def edit(request_id):
+    """ผู้ขอแก้ไขคำขอตัวเองได้จนกว่าผู้บังคับบัญชาจะตัดสิน (ประเภทใบขอเปลี่ยนไม่ได้)"""
+    organization = g.organization
+    reservation = get_request_or_404(request_id)
+    user = current_user._get_current_object()
+    if not flow.can_edit(reservation, user):
+        abort(403)
+
+    request_type = reservation.request_type
+    form = forms.car_reservation.reservation_form_for(request_type)
+    form.allow_existing_attachments()
+    if request.method == "GET":
+        form.prefill(reservation)
+
+    submitted, short_notice_days, is_urgent = validate_submission(
+        form, organization, request_type
+    )
+    if submitted:
+        for name, value in {
+            **form.reservation_fields(),
+            "details": form.build_details(),
+            "is_urgent": is_urgent,
+            "departure_datetime": datetime.datetime.combine(
+                form.departure_date.data, form.departure_time.data
+            ),
+            "return_datetime": datetime.datetime.combine(
+                form.return_date.data, form.return_time.data
+            ),
+        }.items():
+            setattr(reservation, name, value)
+        form.attach_files(reservation)
+        flow.edit(reservation, user)
+        flash("แก้ไขคำขอใช้รถเรียบร้อยแล้ว", "success")
+        return redirect(
+            url_for(
+                "car_reservation.requests.detail",
+                request_id=reservation.id,
+                organization_id=organization.id,
+            )
+        )
+
+    return render_template(
+        "/car_reservation/requests/form.html",
+        organization=organization,
+        form=form,
+        short_notice_days=short_notice_days,
+        request_type=request_type,
+        request_type_label=dict(models.car_reservations.RESERVATION_TYPES)[
+            request_type
+        ],
+        reservation=reservation,
     )
 
 

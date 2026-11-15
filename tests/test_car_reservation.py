@@ -1675,17 +1675,6 @@ def test_status_badge_shows_cancel_states_in_their_own_tone(world, status, tone)
     assert tone in badge.split("</span>")[0]
 
 
-def test_a_submitted_request_has_no_edit_route(world):
-    car_application = world.submit_domestic_request()
-
-    for user in (world.requester, world.supervisor):
-        for method in ("get", "post"):
-            response = getattr(world.client_for(user), method)(
-                f"{BASE}/{car_application.id}/edit?organization_id={world.org.id}"
-            )
-            assert response.status_code == 404
-
-
 def test_only_the_creator_can_cancel_a_request(world):
     before_car = world.submit_domestic_request()
     after_car = request_with_car_assigned(world)
@@ -2032,3 +2021,133 @@ def test_other_systems_emails_keep_the_default_app_name(app, smtp_html):
 
     assert len(smtp_html) == 1
     assert "DIIS INVENTORY" in smtp_html[0]
+
+
+def edit_url(world, car_application):
+    return f"{BASE}/{car_application.id}/edit?organization_id={world.org.id}"
+
+
+def test_requester_edits_own_request_while_it_waits_at_the_first_step(world):
+    car_application = world.submit_domestic_request()
+    data = world.request_data()
+    data.update(
+        location="เชียงใหม่",
+        request_reason="อบรมเชิงปฏิบัติการ",
+        departure_time="09:30",
+    )
+
+    response = world.client_for(world.requester).post(
+        edit_url(world, car_application), data=data
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.location == "เชียงใหม่"
+    assert car_application.request_reason == "อบรมเชิงปฏิบัติการ"
+    assert car_application.departure_datetime.strftime("%H:%M") == "09:30"
+    assert car_application.status == "pending"
+    assert car_application.current_step == 0
+    assert [log.action for log in car_application.audit_logs] == [
+        "submitted",
+        "edited",
+    ]
+    assert car_application.audit_logs[-1].actor == world.requester
+
+
+def test_requester_cannot_edit_once_the_supervisor_has_approved(world):
+    car_application = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
+    )
+    data = world.request_data()
+    data["location"] = "เชียงใหม่"
+
+    response = world.client_for(world.requester).post(
+        edit_url(world, car_application), data=data
+    )
+
+    # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือข้อมูลไม่เปลี่ยน
+    assert response.status_code in (302, 403)
+    assert not response.headers.get("Location", "").startswith(BASE)
+    car_application.reload()
+    assert car_application.location == "กรุงเทพฯ"
+    assert "edited" not in [log.action for log in car_application.audit_logs]
+
+
+def test_nobody_but_the_requester_can_edit_the_request(world):
+    car_application = world.submit_domestic_request()
+    data = world.request_data()
+    data["location"] = "เชียงใหม่"
+
+    for other in (world.supervisor, world.dispatcher, world.stranger):
+        client = world.client_for(other)
+        # 403 ถูก acl แปลงเป็น redirect; สิ่งที่ยืนยันคือไม่ได้ไปหน้าฟอร์มและข้อมูลไม่เปลี่ยน
+        got = client.get(edit_url(world, car_application))
+        assert got.status_code in (302, 403)
+        assert "name=\"phone\"" not in got.get_data(as_text=True)
+        posted = client.post(edit_url(world, car_application), data=data)
+        assert posted.status_code in (302, 403)
+        assert not posted.headers.get("Location", "").startswith(BASE)
+
+    car_application.reload()
+    assert car_application.location == "กรุงเทพฯ"
+
+
+@pytest.mark.parametrize("request_type", ["domestic", "airport", "welfare", "abroad"])
+def test_edit_form_of_every_request_type_opens_with_the_saved_values(
+    world, request_type
+):
+    car_application = world.submit_request(request_type)
+
+    page = world.client_for(world.requester).get(edit_url(world, car_application))
+
+    html = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert 'value="081-234-5678"' in html
+    assert 'value="08:00"' in html
+    assert "บันทึกการแก้ไข" in html
+
+
+def test_abroad_request_is_edited_without_attaching_the_project_file_again(world):
+    car_application = world.submit_request("abroad")
+    data = world.request_data("abroad")
+    del data["project_file"]
+    data["country"] = "สิงคโปร์"
+
+    response = world.client_for(world.requester).post(
+        edit_url(world, car_application), data=data
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.details.country == "สิงคโปร์"
+    assert car_application.project_file.read() == b"%PDF-1.4 project"
+
+
+def test_editing_the_province_scope_re_snapshots_the_route(world):
+    car_application = world.submit_domestic_request()
+    data = world.request_data(province_scope="out_of_province")
+
+    response = world.client_for(world.requester).post(
+        edit_url(world, car_application), data=data
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.route_snapshot[-1] == "physical_director"
+
+
+def test_detail_shows_the_edit_button_only_to_the_requester_before_approval(world):
+    car_application = world.submit_domestic_request()
+
+    def shows_edit(user):
+        page = world.client_for(user).get(detail_url(world, car_application))
+        return 'data-role="edit-request"' in page.get_data(as_text=True)
+
+    assert shows_edit(world.requester)
+    assert not shows_edit(world.supervisor)
+
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
+    )
+    assert not shows_edit(world.requester)

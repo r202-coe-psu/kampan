@@ -103,7 +103,7 @@
   </div>
 </div>
 
-{% if can_cancel or can_confirm_cancel or can_act %}
+{% if can_edit or can_cancel or can_confirm_cancel or can_act %}
 <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="action-card">
   <div class="card-body gap-4">
     <h2 class="card-title text-lg"><i class="ph ph-gavel text-primary"></i> การดำเนินการ</h2>
@@ -135,6 +135,15 @@
       {{ cancel_form.csrf_token }}
       <button type="submit" class="btn btn-warning">รับทราบการยกเลิก</button>
     </form>
+    {% endif %}
+
+    {% if can_edit %}
+    <div>
+      <a class="btn btn-primary btn-soft" data-role="edit-request"
+         href="{{ url_for('car_reservation.requests.edit', request_id=reservation.id, organization_id=organization.id) }}">
+        <i class="ph ph-pencil-simple"></i> แก้ไข
+      </a>
+    </div>
     {% endif %}
 
     {% if can_cancel %}
