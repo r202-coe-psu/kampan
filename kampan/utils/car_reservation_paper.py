@@ -103,6 +103,35 @@ def _details_context(reservation):
     return context
 
 
+def _money(value):
+    text = f"{value:,.2f}"
+    return text[:-3] if text.endswith(".00") else text
+
+
+def _trip_report_context(reservation):
+    """ช่อง "เลข ก.ม. ออก/กลับ รวมระยะทาง เป็นเงิน" ท้ายใบ: เติมเมื่อ พขร. ปิดงานแล้วเท่านั้น"""
+    distance = reservation.distance_km
+    if distance is None:
+        return {}
+    context = {
+        "km_out": reservation.last_mileage_before,
+        "km_in": reservation.last_mileage,
+        "km_total": distance,
+    }
+    if reservation.cost_baht is not None:
+        context["trip_cost"] = _money(reservation.cost_baht)
+    start, end = reservation.started_at, reservation.completed_at
+    if start and end:
+        minutes = max(int((end - start).total_seconds()), 0) // 60
+        context.update(
+            trip_start_time=start.strftime("%H:%M"),
+            trip_end_time=end.strftime("%H:%M"),
+            trip_hours=minutes // 60,
+            trip_minutes=minutes % 60,
+        )
+    return context
+
+
 def build_context(reservation):
     car_type = (reservation.car.vehicle_type if reservation.car else "") or ""
     unit = reservation.requester_unit or (
@@ -128,9 +157,15 @@ def build_context(reservation):
         "dep_time": reservation.departure_datetime.strftime("%H:%M"),
         **_date_parts("dep", reservation.departure_datetime),
     }
+    if "physical_director" in reservation.route_snapshot:
+        context["route_to_physical_director"] = "yes"  # วงกลม "เรียน O ผู้อำนวยการกองกายภาพ"
+    creator = reservation.creator
+    if creator and creator.signature:
+        context["requester_signature"] = creator.signature.read()
     if reservation.return_datetime:
         context["ret_time"] = reservation.return_datetime.strftime("%H:%M")
         context.update(_date_parts("ret", reservation.return_datetime))
+    context.update(_trip_report_context(reservation))
     context.update(_details_context(reservation))
     return context
 
@@ -282,6 +317,9 @@ def _draw_overlay(layout, context, signers, route, page_width, page_height):
     for check in layout.checks:
         if _is_checked(context.get(check.var, ""), check.match):
             _draw_check(pdf, check.cx, check.cy)
+    creator_signature = context.get("requester_signature")
+    if layout.requester_image and creator_signature:
+        _draw_image(pdf, creator_signature, *layout.requester_image)
     stamps = _stamp_assignments(layout, route)
     for key, signer in signers.items():
         sign = layout.signs.get(key)

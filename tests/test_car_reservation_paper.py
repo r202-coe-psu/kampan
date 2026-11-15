@@ -1,6 +1,7 @@
 """ใบขอใช้รถ (พิมพ์ PDF): เติมข้อมูลคำขอลงแบบฟอร์มทางการของแต่ละประเภท พร้อมชื่อ/ลายเซ็นผู้อนุมัติ"""
 
 import datetime
+import decimal
 import io
 from unittest.mock import MagicMock, patch
 
@@ -266,6 +267,76 @@ def test_each_request_type_fills_its_own_form_with_its_type_specific_details(
     text = pdf_text(response)
     for expected in shown:
         assert expected in text
+
+
+def complete_trip(reservation, km_out=1000, km_in=1250, cost="1500"):
+    reservation.last_mileage_before = km_out
+    reservation.last_mileage = km_in
+    reservation.cost_baht = decimal.Decimal(cost)
+    reservation.started_at = datetime.datetime(2026, 12, 3, 8, 45)
+    reservation.completed_at = datetime.datetime(2026, 12, 4, 17, 10)
+    reservation.save()
+    return reservation
+
+
+def test_a_completed_trip_fills_the_trip_report_line_at_the_bottom_of_the_form(world):
+    reservation = complete_trip(world.reservation("domestic"))
+
+    text = pdf_text(world.paper(world.requester, reservation))
+
+    for expected in ("1000", "1250", "250", "1,500"):  # กม.ออก, กม.กลับ, ระยะทางรวม, เป็นเงิน
+        assert expected in text
+
+
+def test_a_trip_that_is_not_completed_leaves_the_trip_report_line_blank(world):
+    reservation = world.reservation("domestic")
+
+    text = pdf_text(world.paper(world.requester, reservation))
+
+    assert "1,500" not in text
+    assert "1250" not in text
+
+
+def test_a_completed_welfare_trip_also_fills_its_times_and_duration(world):
+    reservation = complete_trip(world.reservation("welfare"), km_out=500, km_in=640, cost="2750.5")
+
+    text = pdf_text(world.paper(world.requester, reservation))
+
+    for expected in ("500", "640", "140", "2,750.50", "08:45", "17:10"):
+        assert expected in text
+    assert "32" in text and "25" in text  # 08:45 -> 17:10 วันถัดไป = 32 ชั่วโมง 25 นาที
+
+
+@pytest.mark.parametrize("request_type", ["domestic", "airport", "welfare", "abroad"])
+def test_the_requesters_own_signature_image_is_placed_on_the_form(world, request_type):
+    reservation = world.reservation(request_type, approved_steps=0)
+    before = image_count(world.paper(world.requester, reservation))
+    world.requester.signature.put(
+        io.BytesIO(png_bytes()), filename="sign.png", content_type="image/png"
+    )
+    world.requester.save()
+
+    after = image_count(world.paper(world.requester, reservation))
+
+    assert after == before + 1  # แบบฟอร์มต่างประเทศมีตราครุฑอยู่ในต้นฉบับแล้ว
+
+
+def page_content(response):
+    return pdf_page(response).get_contents().get_data()
+
+
+def test_the_attention_circle_to_the_physical_director_is_ticked_only_when_the_route_reaches_him(
+    world,
+):
+    in_province = world.reservation("domestic", approved_steps=0)
+    out_of_province = world.reservation(
+        "domestic", approved_steps=0, province_scope="out_of_province"
+    )
+
+    plain = page_content(world.paper(world.requester, in_province))
+    ticked = page_content(world.paper(world.requester, out_of_province))
+
+    assert len(ticked) > len(plain)  # เครื่องหมายถูกเป็นเส้นที่วาดเพิ่ม (ตำแหน่งตรวจดูด้วยตา)
 
 
 def test_detail_page_offers_the_print_button_only_to_users_who_may_print(world):

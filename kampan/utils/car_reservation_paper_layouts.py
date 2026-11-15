@@ -62,6 +62,7 @@ class Layout(NamedTuple):
     checks: tuple
     signs: dict  # step_key -> Sign
     stamps: tuple  # ช่อง Stamp เรียงตามลำดับขั้นของเส้นทางที่ไม่มีช่องลงนาม
+    requester_image: Optional[Tuple[float, float, float, float]] = None  # ลายเซ็นผู้ขอใช้รถ
 
 
 def _check_circle(var, match, x0, x1, y_max):
@@ -103,6 +104,10 @@ DOMESTIC = Layout(
         Field("car_plate", 388, 531, 467.9, "left"),
         Field("driver_name", 153, 459, 486.2, "left"),
         Field("extra_travelers", 163, 369, 520.2, "left"),
+        Field("km_out", 113, 195, 805.5),
+        Field("km_in", 257, 338, 805.5),
+        Field("km_total", 393, 430, 805.5),
+        Field("trip_cost", 485, 521, 805.5),
     ),
     checks=(
         _check_circle("vehicle_kind", "บัส", 191.0, 201.1, 190.5),
@@ -117,6 +122,7 @@ DOMESTIC = Layout(
         _check_circle("car_type", "ตู้", 213.7, 223.8, 467.4),
         _check_circle("car_type", "เก๋ง", 241.2, 251.4, 467.4),
         _check_circle("car_type", "มินิบัส", 275.8, 286.0, 467.4),
+        _check_circle("route_to_physical_director", "yes", 92.7, 102.8, 670.1),
     ),
     signs={
         "supervisor": Sign(
@@ -146,6 +152,7 @@ DOMESTIC = Layout(
         ),
     },
     stamps=(Stamp(62, 566, 205),),
+    requester_image=(300, 410, 343, 22),
 )
 
 # ---------------------------------------------------------------- สนามบิน
@@ -180,6 +187,10 @@ AIRPORT = Layout(
         Field("car_type_other", 330, 367, 595.6),
         Field("car_plate", 480, 524, 595.6, "left"),
         Field("driver_name", 100, 186, 609.9, "left"),
+        Field("km_out", 132, 211, 780.8),
+        Field("km_in", 268, 342, 780.8),
+        Field("km_total", 397, 421, 780.8),
+        Field("trip_cost", 469, 505, 780.8),
     ),
     checks=(
         Check("transfer", "pickup", 256, 163.1),
@@ -206,6 +217,7 @@ AIRPORT = Layout(
         ),
     },
     stamps=(Stamp(80, 650, 220), Stamp(80, 700, 220)),
+    requester_image=(355, 457, 514, 22),
 )
 
 # ---------------------------------------------------------------- สวัสดิการ
@@ -235,6 +247,14 @@ WELFARE = Layout(
         Field("car_plate", 118, 210, 501.0, "left"),
         Field("driver_name", 258, 415, 501.0, "left"),
         Field("driver_name", 131, 257, 613.8, "left"),
+        Field("km_out", 220, 322, 638.0),
+        Field("trip_start_time", 388, 438, 638.0),
+        Field("km_in", 220, 322, 662.2),
+        Field("trip_end_time", 380, 438, 662.2),
+        Field("km_total", 168, 227, 686.4),
+        Field("trip_hours", 310, 368, 686.4),
+        Field("trip_minutes", 398, 440, 686.4),
+        Field("trip_cost", 322, 382, 710.5),
     ),
     checks=(
         _check_paren("employee_type", "พนักงานมหาวิทยาลัย", 300.7, 312.0, 156.3),
@@ -247,6 +267,7 @@ WELFARE = Layout(
         _check_paren("event_type", "ฌาปนกิจศพ", 217.7, 232.3, 203.8),
         _check_paren("car_type", "บัส", 469.4, 486.9, 482.9),
         _check_paren("car_type", "ตู้", 517.4, 534.7, 482.9),
+        Check("route_to_physical_director", "yes", 75.2, 441.2),
     ),
     signs={
         "supervisor": Sign(
@@ -270,6 +291,7 @@ WELFARE = Layout(
         ),
     },
     stamps=(Stamp(50, 505, 205), Stamp(50, 537, 205)),
+    requester_image=(300, 415, 335, 22),
 )
 
 # ---------------------------------------------------------------- ต่างประเทศ
@@ -338,6 +360,7 @@ ABROAD = Layout(
         ),
     },
     stamps=(Stamp(72, 322, 172), Stamp(72, 364, 172), Stamp(72, 406, 172)),
+    requester_image=(285, 405, 332, 22),
 )
 
 LAYOUTS = {
