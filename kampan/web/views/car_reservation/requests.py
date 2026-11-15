@@ -148,7 +148,7 @@ def create():
     submitted, short_notice_days, is_urgent = validate_submission(
         form, organization, request_type
     )
-    if submitted and not flow.has_division_head(organization, division, excluding=user):
+    if submitted and not flow.has_division_head(organization, division):
         flash("ฝ่ายของคุณยังไม่มีหัวหน้าฝ่าย กรุณาติดต่อผู้ดูแลระบบ", "danger")
     elif submitted:
         reservation = models.CarReservation(

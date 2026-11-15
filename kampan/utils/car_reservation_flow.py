@@ -285,7 +285,8 @@ def has_division_head(organization, division, excluding=None):
 
 
 def _is_division_head(app, user):
-    if app.division is None or user == app.creator:
+    # หัวหน้าฝ่ายที่ยื่นเองอนุมัติขั้นนี้เองได้ (ชั่วคราว รอยืนยันกับกอง)
+    if app.division is None:
         return False
     return (
         models.OrganizationUserRole.objects(

@@ -677,12 +677,8 @@ def test_only_a_head_of_the_requesters_division_approves_the_supervisor_step(
     assert car_application.current_step == 1
 
 
-def test_a_head_cannot_approve_their_own_request_but_another_head_can(
-    world, create_user
-):
-    colleague_head = create_user("ColleagueHead", "Six")
-    world.assign_in_division(colleague_head, ["head"], world.division)
-
+def test_a_head_who_is_the_only_head_submits_and_approves_their_own_request(world):
+    # ชั่วคราว (ยังเป็นคำถามเปิด): หัวหน้าฝ่ายอนุมัติขั้นผู้บังคับบัญชาของคำขอตัวเองได้
     response = world.client_for(world.supervisor).post(
         f"{BASE}/new?organization_id={world.org.id}&type=domestic",
         data=world.request_data(),
@@ -696,13 +692,8 @@ def test_a_head_cannot_approve_their_own_request_but_another_head_can(
         approve_url(world, car_application), data={"comment": ""}
     )
     car_application.reload()
-    assert car_application.current_step == 0
-
-    world.client_for(colleague_head).post(
-        approve_url(world, car_application), data={"comment": ""}
-    )
-    car_application.reload()
     assert car_application.current_step == 1
+    assert car_application.step_approvals[0].decided_by == world.supervisor
 
 
 def test_submission_is_refused_when_the_division_has_no_head(world, create_user):
