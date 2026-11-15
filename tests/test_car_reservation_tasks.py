@@ -292,12 +292,79 @@ def test_an_earlier_task_of_another_car_does_not_block(world, create_car):
     assert later.status == "completed"
 
 
+def start_url(world, reservation):
+    return f"{BASE}/{reservation.id}/start?organization_id={world.org.id}"
+
+
+def test_driver_starts_a_task_and_the_start_is_audited(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.driver).post(start_url(world, reservation))
+
+    reservation.reload()
+    assert response.status_code == 302
+    assert reservation.started_at is not None
+    assert reservation.status == "active"
+    last = reservation.audit_logs[-1]
+    assert (last.action, last.actor) == ("started", world.driver)
+    assert last.get_action_display() == "เริ่มงาน"
+
+
+def test_pressing_start_again_keeps_the_first_start_time(world):
+    reservation = world.reservation()
+    client = world.client_for(world.driver)
+    client.post(start_url(world, reservation))
+    reservation.reload()
+    first = reservation.started_at
+
+    client.post(start_url(world, reservation))
+
+    reservation.reload()
+    assert reservation.started_at == first
+    assert [log.action for log in reservation.audit_logs].count("started") == 1
+
+
+def test_another_driver_cannot_start_the_task(world):
+    reservation = world.reservation()
+
+    response = world.client_for(world.other_driver).post(start_url(world, reservation))
+
+    reservation.reload()
+    assert response.status_code in (302, 403)
+    assert reservation.started_at is None
+
+
+def test_task_card_offers_start_before_start_and_close_after(world):
+    reservation = world.reservation()
+    client = world.client_for(world.driver)
+
+    before = client.get(world.list_url).get_data(as_text=True)
+    client.post(start_url(world, reservation))
+    after = client.get(world.list_url).get_data(as_text=True)
+
+    assert f"/{reservation.id}/start" in before
+    assert f"/{reservation.id}/start" not in after
+    assert f"/{reservation.id}/close" in after
+
+
+def test_driver_can_still_close_a_task_that_was_never_started(world):
+    reservation = world.reservation()
+
+    close(world, reservation)
+
+    reservation.reload()
+    assert reservation.status == "completed"
+    assert reservation.started_at is None
+
+
 def test_task_list_offers_close_only_for_tasks_that_can_be_closed_now(world):
     earlier = world.reservation(departure=datetime.datetime(2031, 1, 5, 8, 0))
     later = world.reservation(departure=datetime.datetime(2031, 1, 9, 8, 0))
     done = world.reservation(status="completed")
+    client = world.client_for(world.driver)
+    client.post(start_url(world, earlier))
 
-    html = world.client_for(world.driver).get(world.list_url).get_data(as_text=True)
+    html = client.get(world.list_url).get_data(as_text=True)
 
     assert f"/{earlier.id}/close" in html
     assert f"/{later.id}/close" not in html
@@ -335,10 +402,45 @@ def test_request_detail_has_no_trip_report_before_the_task_is_closed(world):
     assert 'data-role="trip-report"' not in response.get_data(as_text=True)
 
 
+def test_a_driver_opening_the_car_reservation_home_lands_on_the_task_list(world):
+    home = f"/car_reservation/requests/?organization_id={world.org.id}"
+
+    response = world.client_for(world.driver).get(home)
+
+    assert response.status_code == 302
+    assert "/car_reservation/tasks" in response.headers["Location"]
+
+
+def test_a_requester_opening_the_car_reservation_home_stays_there(world):
+    home = f"/car_reservation/requests/?organization_id={world.org.id}"
+
+    response = world.client_for(world.requester).get(home)
+
+    assert response.status_code == 200
+
+
+def test_a_driver_who_is_also_a_dispatcher_keeps_the_home(world):
+    both = world.driver
+    membership = models.OrganizationUserRole.objects(
+        organization=world.org, user=both
+    ).get()
+    membership.roles = ["driver", "dispatcher"]
+    membership.save()
+    home = f"/car_reservation/requests/?organization_id={world.org.id}"
+
+    response = world.client_for(both).get(home)
+
+    assert response.status_code == 200
+
+
 def test_task_menu_is_in_the_sidebar_only_for_drivers(world):
     home = f"/car_reservation/requests/?organization_id={world.org.id}"
 
-    as_driver = world.client_for(world.driver).get(home).get_data(as_text=True)
+    as_driver = (
+        world.client_for(world.driver)
+        .get(home, follow_redirects=True)
+        .get_data(as_text=True)
+    )
     as_staff = world.client_for(world.requester).get(home).get_data(as_text=True)
     as_admin = world.client_for(world.org_admin).get(home).get_data(as_text=True)
 

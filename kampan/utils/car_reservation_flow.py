@@ -384,6 +384,22 @@ def can_close(app, user):
     )
 
 
+def can_start(app, user):
+    """พขร. ของงานนี้กดเริ่มงานได้ (เงื่อนไขเดียวกับการปิดงาน)"""
+    return can_close(app, user)
+
+
+def start_trip(app, user):
+    """บันทึกเวลาเริ่มงานครั้งแรกเท่านั้น: กดซ้ำไม่เปลี่ยนเวลาและไม่ลงประวัติซ้ำ"""
+    if not can_start(app, user):
+        raise FlowError("ไม่มีสิทธิ์เริ่มงานนี้")
+    if app.started_at is not None:
+        return
+    app.started_at = datetime.datetime.now()
+    _log(app, "started", user)
+    app.save()
+
+
 def earlier_active_task(app):
     """งาน active ของรถคันเดียวกันที่ออกเดินทางก่อนงานนี้ (ต้องปิดก่อน) ไม่มีคือ None"""
     if app.car is None:

@@ -84,6 +84,19 @@ def get_task_or_404(task_id):
     return task
 
 
+@module.route("/<task_id>/start", methods=["POST"])
+@driver_required
+def start(task_id):
+    task = get_task_or_404(task_id)
+    user = current_user._get_current_object()
+    if not flow.can_start(task, user):
+        abort(403)
+    flow.start_trip(task, user)
+    return redirect(
+        url_for("car_reservation.tasks.index", organization_id=g.organization.id)
+    )
+
+
 @module.route("/<task_id>/close", methods=["GET", "POST"])
 @driver_required
 def close(task_id):

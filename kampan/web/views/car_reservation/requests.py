@@ -46,6 +46,14 @@ def get_request_or_404(request_id):
 @module.route("/")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def index():
+    user = current_user._get_current_object()
+    if flow.has_role(g.organization, user, "driver") and not flow.is_approver(
+        g.organization, user
+    ):
+        # พขร. ล้วนไม่ได้ขอใช้รถ: พาไปหน้างานของตัวเอง
+        return redirect(
+            url_for("car_reservation.tasks.index", organization_id=g.organization.id)
+        )
     reservations = models.CarReservation.objects(
         organization=g.organization, creator=current_user._get_current_object()
     ).order_by("-created_date")
