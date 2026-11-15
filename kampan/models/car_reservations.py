@@ -253,6 +253,13 @@ class CarReservation(me.Document):
     cost_baht = me.DecimalField(min_value=0, max_value=1e12, precision=2)
     started_at = me.DateTimeField()
     completed_at = me.DateTimeField()
+    # IP ที่ พขร. ปิดงาน และผลเทียบกับช่วง IP ของมหาวิทยาลัย (None = ไม่ได้ตั้งช่วงไว้ ไม่มีผลตรวจ)
+    closed_ip = me.StringField()
+    # รูปเลขไมล์ก่อนออก/หลังกลับ ถ่ายด้วยกล้องในหน้าปิดงาน และเวลาที่เซิร์ฟเวอร์รับรูป
+    mileage_photo_out = me.FileField(collection_name="car_reservation_mileage_photo_out")
+    mileage_photo_in = me.FileField(collection_name="car_reservation_mileage_photo_in")
+    mileage_photos_at = me.DateTimeField()
+    closed_off_campus = me.BooleanField(default=None)
 
     # ผู้ขอยืนยันเวลาเริ่ม/ปิดงานที่ พขร. บันทึก (ตอบได้ครั้งเดียว ภายใน 3 วันหลังปิดงาน)
     close_confirmation = me.StringField(choices=CLOSE_CONFIRMATIONS)

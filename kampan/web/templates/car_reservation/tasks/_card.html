@@ -7,6 +7,7 @@
       <span class="flex flex-wrap items-center gap-1">
         {% if task.is_insert %}{{ status_badge.insert() }}{% endif %}
         {{ status_badge.render(task) }}
+        {% if task.closed_off_campus %}{{ status_badge.off_campus() }}{% endif %}
       </span>
     </div>
     <p class="text-sm text-base-content/70">{{ task.get_request_type_display() }}</p>

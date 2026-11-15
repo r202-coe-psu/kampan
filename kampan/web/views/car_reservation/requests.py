@@ -386,6 +386,9 @@ def detail(request_id):
         steps=stepper(reservation),
         current_step_label=flow.step_label(current_key) if current_key else "",
         can_act=flow.can_act(reservation, current_user._get_current_object()),
+        can_view_mileage_photos=flow.can_view_mileage_photos(
+            reservation, current_user._get_current_object()
+        ),
         asks_extra_travelers=reservation.request_type in flow.EXTRA_TRAVELER_TYPES,
         can_edit=flow.can_edit(reservation, current_user._get_current_object()),
         can_cancel=flow.can_cancel(
@@ -478,6 +481,28 @@ def project_file(request_id):
         reservation.project_file,
         download_name=reservation.project_file.filename,
         mimetype=reservation.project_file.content_type,
+    )
+
+
+@module.route("/<request_id>/mileage_photo/<side>")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def mileage_photo(request_id, side):
+    """รูปเลขไมล์ที่ พขร. ถ่ายตอนปิดงาน (side = out ก่อนออก / in หลังกลับ)"""
+    reservation = get_request_or_404(request_id)
+    if not flow.can_view_mileage_photos(
+        reservation, current_user._get_current_object()
+    ):
+        abort(403)
+    photo = {
+        "out": reservation.mileage_photo_out,
+        "in": reservation.mileage_photo_in,
+    }.get(side)
+    if not photo:
+        abort(404)
+    return send_file(
+        photo,
+        download_name=photo.filename,
+        mimetype=photo.content_type,
     )
 
 

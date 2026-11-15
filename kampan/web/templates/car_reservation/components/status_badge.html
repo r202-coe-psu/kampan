@@ -21,6 +21,11 @@
   <span class="badge badge-error badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="urgent-badge">เร่งด่วน</span>
 {% endmacro %}
 
+{# ป้ายเตือน: พขร. ปิดงานจาก IP นอกช่วงของมหาวิทยาลัย #}
+{% macro off_campus() %}
+  <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="off-campus-badge"><i class="ph ph-warning"></i> ปิดงานนอกมหาวิทยาลัย</span>
+{% endmacro %}
+
 {# ป้ายงานนอกเวลา (OT) ที่ผู้จัดรถติ๊กไว้ #}
 {% macro overtime() %}
   <span class="badge badge-info badge-soft badge-sm whitespace-nowrap font-medium align-middle" data-role="overtime-badge">นอกเวลา (OT)</span>

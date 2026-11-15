@@ -582,6 +582,18 @@ def can_close(app, user):
     )
 
 
+def can_view_mileage_photos(app, user):
+    """รูปเลขไมล์: ผู้ขอ พขร. ของงาน ผู้จัดรถ/ผู้อนุมัติ และ admin ขององค์กร"""
+    if user is None:
+        return False
+    return (
+        app.creator == user
+        or app.driver == user
+        or has_role(app.organization, user, "admin")
+        or is_approver(app.organization, user)
+    )
+
+
 def can_start(app, user):
     """พขร. ของงานนี้กดเริ่มงานได้ (เงื่อนไขเดียวกับการปิดงาน)"""
     return can_close(app, user)
@@ -615,7 +627,16 @@ def earlier_active_task(app):
 
 
 def close_trip(
-    app, user, mileage_out, mileage_in, expense_case, fuel_liters=None, cost_baht=None
+    app,
+    user,
+    mileage_out,
+    mileage_in,
+    expense_case,
+    fuel_liters=None,
+    cost_baht=None,
+    client_ip=None,
+    photo_out=None,
+    photo_in=None,
 ):
     """ปิดงาน: บันทึกรายงานท้ายใบ (กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย เป็นเงิน) และอัปเดตเลขไมล์รถ"""
     if not can_close(app, user):
@@ -635,6 +656,21 @@ def close_trip(
     app.expense_case = expense_case
     app.cost_baht = cost_baht
     app.completed_at = datetime.datetime.now()
+    for photo_field, upload in (
+        (app.mileage_photo_out, photo_out),
+        (app.mileage_photo_in, photo_in),
+    ):
+        photo_field.replace(
+            upload, filename=upload.filename, content_type=upload.content_type
+        )
+    app.mileage_photos_at = app.completed_at
+    networks = app.organization.car_reservation_campus_networks
+    app.closed_ip = client_ip
+    app.closed_off_campus = (
+        not utils.campus_network.ip_in_networks(client_ip, networks)
+        if networks
+        else None
+    )
     app.status = "completed"
     _log(app, "completed", user)
     app.save()

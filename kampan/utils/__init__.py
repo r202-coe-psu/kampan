@@ -23,3 +23,4 @@ from . import business_days
 from . import car_reservation_flow
 from . import car_reservation_email
 from . import car_reservation_feedback
+from . import campus_network

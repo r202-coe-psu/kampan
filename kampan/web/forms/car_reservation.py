@@ -1,11 +1,13 @@
 import datetime
+import io
 
 from flask_wtf import FlaskForm
+from PIL import Image, UnidentifiedImageError
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import Form, fields, validators, widgets
 from wtforms import SelectField, SelectMultipleField
 
-from kampan import models
+from kampan import models, utils
 from kampan.web.forms import accounts
 
 
@@ -626,6 +628,15 @@ class SettingsForm(FlaskForm):
         "เบอร์โทรศัพท์ติดต่อฝ่ายจองรถ",
         validators=[validators.Optional(), validators.Length(max=32)],
     )
+    car_reservation_campus_networks = fields.TextAreaField(
+        "ช่วง IP ของมหาวิทยาลัย (หนึ่งช่วงต่อบรรทัด เช่น 10.0.0.0/8)",
+        validators=[validators.Optional()],
+    )
+
+    def validate_car_reservation_campus_networks(self, field):
+        for line in utils.campus_network.split_lines(field.data):
+            if utils.campus_network.parse_network(line) is None:
+                raise validators.ValidationError(f"ช่วง IP ไม่ถูกต้อง: {line}")
 
 
 class DenyDecisionForm(FlaskForm):
@@ -661,6 +672,28 @@ class CloseConfirmationForm(FlaskForm):
     )
 
 
+MAX_MILEAGE_PHOTO_BYTES = 5 * 1024 * 1024
+
+
+def validate_mileage_photo(form, field):
+    """รูปเลขไมล์ต้องเป็นภาพ JPEG/PNG จริง ไม่เกิน 5 MB"""
+    upload = field.data
+    if not upload:
+        return
+    content = upload.read(MAX_MILEAGE_PHOTO_BYTES + 1)
+    upload.seek(0)
+    if len(content) > MAX_MILEAGE_PHOTO_BYTES:
+        raise validators.ValidationError("รูปเลขไมล์ต้องมีขนาดไม่เกิน 5 MB")
+    try:
+        with Image.open(io.BytesIO(content)) as image:
+            image.verify()
+            image_format = image.format
+    except (UnidentifiedImageError, OSError, SyntaxError):
+        image_format = None
+    if image_format not in ("JPEG", "PNG"):
+        raise validators.ValidationError("รูปเลขไมล์ต้องเป็นภาพ JPEG หรือ PNG")
+
+
 class TripCloseForm(FlaskForm):
     """พนักงานขับรถปิดงาน: เลข กม. ออก/กลับ น้ำมัน กรณีค่าใช้จ่าย และเป็นเงิน (ท้ายใบขอใช้รถ)"""
 
@@ -690,4 +723,18 @@ class TripCloseForm(FlaskForm):
         places=2,
         validators=[validators.Optional(), validators.NumberRange(min=0)],
         widget=widgets.NumberInput(step="0.01"),
+    )
+    mileage_photo_out = FileField(
+        "รูปเลขไมล์ก่อนออก",
+        validators=[
+            FileRequired("กรุณาถ่ายรูปเลขไมล์ก่อนออก"),
+            validate_mileage_photo,
+        ],
+    )
+    mileage_photo_in = FileField(
+        "รูปเลขไมล์หลังกลับ",
+        validators=[
+            FileRequired("กรุณาถ่ายรูปเลขไมล์หลังกลับ"),
+            validate_mileage_photo,
+        ],
     )

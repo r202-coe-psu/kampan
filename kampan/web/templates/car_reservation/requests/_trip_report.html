@@ -17,6 +17,21 @@
       <div><dt class="font-semibold">เป็นเงิน (บาท)</dt><dd>{{ reservation.cost_baht | format_amount }}</dd></div>
       {% endif %}
     </dl>
+    {% if can_view_mileage_photos and reservation.mileage_photo_out and reservation.mileage_photo_in %}
+    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2" data-role="mileage-photos">
+      {% for side, label in (('out', 'รูปเลขไมล์ก่อนออก'), ('in', 'รูปเลขไมล์หลังกลับ')) %}
+      <a class="block" target="_blank" rel="noopener"
+         href="{{ url_for('car_reservation.requests.mileage_photo', request_id=reservation.id, side=side, organization_id=organization.id) }}">
+        <img class="w-full rounded-box" alt="{{ label }}" loading="lazy"
+             src="{{ url_for('car_reservation.requests.mileage_photo', request_id=reservation.id, side=side, organization_id=organization.id) }}">
+        <span class="text-sm">{{ label }}</span>
+      </a>
+      {% endfor %}
+      {% if reservation.mileage_photos_at %}
+      <p class="text-sm text-base-content/70 sm:col-span-2">ระบบรับรูปเมื่อ {{ reservation.mileage_photos_at.strftime('%d/%m/%Y %H:%M') }} น.</p>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endif %}

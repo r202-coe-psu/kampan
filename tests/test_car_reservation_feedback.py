@@ -1,6 +1,8 @@
 """แบบประเมินความพึงพอใจของระบบจองรถ: ผู้ขอประเมินหลังปิดงาน และผู้ดูแลองค์กรดูผลสรุป"""
 
+import base64
 import datetime
+import io
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -469,6 +471,11 @@ def test_sidebar_shows_the_results_item_to_org_admins_only(world):
     assert results_href not in staff_html
 
 
+PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+)
+
+
 def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
     world, mock_redis_queue
 ):
@@ -476,7 +483,13 @@ def test_driver_closing_the_trip_emails_the_requester_the_survey_link_job(
 
     response = world.client_for(world.driver).post(
         f"/car_reservation/tasks/{reservation.id}/close?organization_id={world.org.id}",
-        data={"mileage_out": "0", "mileage_in": "120", "expense_case": "fleet_card"},
+        data={
+            "mileage_out": "0",
+            "mileage_in": "120",
+            "expense_case": "fleet_card",
+            "mileage_photo_out": (io.BytesIO(PNG_BYTES), "out.png"),
+            "mileage_photo_in": (io.BytesIO(PNG_BYTES), "in.png"),
+        },
     )
 
     assert response.status_code == 302

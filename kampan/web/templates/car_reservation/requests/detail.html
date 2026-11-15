@@ -16,6 +16,7 @@
       {% if reservation.is_urgent %}{{ status_badge.urgent() }}{% endif %}
       {% if reservation.is_overtime %}{{ status_badge.overtime() }}{% endif %}
       {% if reservation.is_insert %}{{ status_badge.insert() }}{% endif %}
+      {% if reservation.closed_off_campus %}{{ status_badge.off_campus() }}{% endif %}
       {% if reservation.status == 'pending' %}
       <span class="font-medium">รอ{{ current_step_label }}</span>
       {% endif %}

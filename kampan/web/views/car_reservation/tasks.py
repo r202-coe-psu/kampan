@@ -144,6 +144,9 @@ def close(task_id):
                 expense_case=form.expense_case.data,
                 fuel_liters=form.fuel_liters.data,
                 cost_baht=form.cost_baht.data,
+                client_ip=request.remote_addr,
+                photo_out=form.mileage_photo_out.data,
+                photo_in=form.mileage_photo_in.data,
             )
         except flow.MileageError as error:
             form.mileage_in.errors = [*form.mileage_in.errors, str(error)]

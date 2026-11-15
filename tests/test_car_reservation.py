@@ -10,6 +10,7 @@ import pytest
 from kampan import models, utils
 from kampan.utils import car_reservation_flow as flow
 from kampan.web import redis_rq
+from tests.test_car_reservation_tasks import PNG_BYTES
 
 BASE = "/car_reservation/requests"
 
@@ -2786,6 +2787,8 @@ def test_driver_starts_and_closes_an_insert_job_with_its_own_mileage(insert_worl
             "mileage_out": "500",
             "mileage_in": "512",
             "expense_case": "fleet_card",
+            "mileage_photo_out": (io.BytesIO(PNG_BYTES), "out.png"),
+            "mileage_photo_in": (io.BytesIO(PNG_BYTES), "in.png"),
         },
     )
 

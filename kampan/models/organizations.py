@@ -141,6 +141,9 @@ class Organization(me.Document):
     # เบอร์ติดต่อฝ่ายจองรถ แสดงในหน้ายืนยันขอใช้รถกะทันหัน (ว่าง = ไม่แสดง)
     car_reservation_contact_phone = me.StringField(default="", max_length=32)
 
+    # ช่วง IP (CIDR) ของมหาวิทยาลัย ใช้ตรวจว่า พขร. ปิดงานจากในมหาวิทยาลัยหรือไม่ (ว่าง = ไม่ตรวจ)
+    car_reservation_campus_networks = me.ListField(me.StringField())
+
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
 
