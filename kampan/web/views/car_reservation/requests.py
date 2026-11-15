@@ -64,6 +64,19 @@ def index():
     )
 
 
+def quick_decision_form(route, dom_id):
+    """ฟอร์มใน modal อนุมัติ/ไม่อนุมัติของกล่องรออนุมัติ: next ตั้งเป็น URL กล่องนี้ และ id ไม่ซ้ำต่อ modal"""
+    form_class = (
+        forms.car_reservation.DenyDecisionForm
+        if route == "deny"
+        else forms.car_reservation.QuickApprovalForm
+    )
+    form = form_class(
+        next=url_for("car_reservation.requests.inbox", organization_id=g.organization.id)
+    )
+    return forms.car_reservation.with_id_suffix(form, dom_id)
+
+
 @module.route("/inbox")
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def inbox():
@@ -73,7 +86,10 @@ def inbox():
         organization=g.organization,
         reservations=waiting,
         step_key=flow.current_step_key,
-        csrf_form=forms.car_reservation.ApprovalDecisionForm(),
+        quick_form=quick_decision_form,
+        inbox_url=url_for(
+            "car_reservation.requests.inbox", organization_id=g.organization.id
+        ),
         step_label=lambda app: flow.step_label(
             flow.current_step_key(app) or "dispatcher"
         ),
@@ -391,7 +407,7 @@ def detail(request_id):
         can_view_mileage_photos=flow.can_view_mileage_photos(
             reservation, current_user._get_current_object()
         ),
-        asks_extra_travelers=reservation.request_type in flow.EXTRA_TRAVELER_TYPES,
+        asks_extra_travelers=flow.asks_extra_travelers(reservation),
         can_print_paper=flow.can_print_paper(
             reservation, current_user._get_current_object()
         ),
@@ -535,10 +551,10 @@ def paper(request_id):
     )
 
 
-def inbox_url_if_requested():
+def inbox_url_if_requested(form):
     """URL กล่องรออนุมัติของ org นี้ ถ้าฟอร์มส่ง next มาตรงกับมันเป๊ะ (whitelist เดียว ไม่รับ URL อื่น)"""
     inbox_url = url_for("car_reservation.requests.inbox", organization_id=g.organization.id)
-    return inbox_url if request.form.get("next") == inbox_url else None
+    return inbox_url if form.next.data == inbox_url else None
 
 
 @module.route("/<request_id>/approve", methods=["POST"])
@@ -594,7 +610,7 @@ def approve(request_id):
     )
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
     return redirect(
-        inbox_url_if_requested()
+        inbox_url_if_requested(form)
         or url_for(
             "car_reservation.requests.detail",
             request_id=reservation.id,
@@ -628,7 +644,7 @@ def deny(request_id):
     )
     utils.car_reservation_email.notify(reservation, "denied")
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
-    inbox_url = inbox_url_if_requested()
+    inbox_url = inbox_url_if_requested(form)
     return redirect(inbox_url) if inbox_url else redirect_to_detail
 
 

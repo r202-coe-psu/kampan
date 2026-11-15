@@ -24,7 +24,7 @@
       {% for field, label in ((form.mileage_photo_out, 'รูปเลขไมล์ก่อนออก'), (form.mileage_photo_in, 'รูปเลขไมล์หลังกลับ')) %}
       <fieldset class="fieldset" data-photo="{{ field.name }}">
         <legend class="fieldset-legend">{{ label }} <span class="text-error">*</span></legend>
-        <input type="file" name="{{ field.name }}" accept="image/jpeg,image/png" class="hidden">
+        {{ field(class_="hidden", accept="image/jpeg,image/png", required=False) }}
         <video class="w-full rounded-box bg-base-300 aspect-video" autoplay playsinline muted></video>
         <img class="w-full rounded-box hidden" alt="{{ label }}">
         <canvas class="hidden"></canvas>

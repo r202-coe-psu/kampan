@@ -105,7 +105,7 @@
 		<form method="GET"
 			action="{{ url_for('car_reservation.feedback.view_responses', template_id=template.id, organization_id=organization.id) }}"
 			class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-sm lg:flex-row lg:items-end">
-			<input type="hidden" name="organization_id" value="{{ organization.id }}">
+			{{ form.organization_id }}
 
 			<div class="flex-1">
 				{{ renderer.render_select_field(form.car_id) }}

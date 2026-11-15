@@ -544,9 +544,14 @@ def test_project_file_is_downloadable_only_by_members_of_the_requests_org(
     assert refused.status_code == 404
 
 
-@pytest.mark.parametrize("request_type", ["domestic", "abroad"])
-def test_dispatcher_records_extra_travelers_for_domestic_and_abroad(world, request_type):
-    car_application = world.submit_request(request_type)
+@pytest.mark.parametrize(
+    "request_type, province_scope",
+    [("domestic", "out_of_province"), ("abroad", "in_province")],
+)
+def test_dispatcher_records_extra_travelers_for_out_of_province_domestic_and_abroad(
+    world, request_type, province_scope
+):
+    car_application = world.submit_request(request_type, province_scope)
     world.client_for(world.supervisor).post(
         approve_url(world, car_application), data=step_data(world, "supervisor")
     )
@@ -564,6 +569,79 @@ def test_dispatcher_records_extra_travelers_for_domestic_and_abroad(world, reque
     assert car_application.extra_travelers == "นายสมหวัง ขับดี และนางสาวใจเย็น"
     page = world.client_for(world.requester).get(detail_url(world, car_application))
     assert "นายสมหวัง ขับดี และนางสาวใจเย็น" in page.get_data(as_text=True)
+
+
+def test_dispatcher_has_no_extra_travelers_field_for_an_in_province_domestic_and_ignores_it(
+    world,
+):
+    car_application = world.submit_request("domestic", "in_province")
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    form_page = world.client_for(world.dispatcher).get(detail_url(world, car_application))
+    assert 'name="extra_travelers"' not in form_page.get_data(as_text=True)
+    data = step_data(world, "dispatcher")
+    data["extra_travelers"] = "นายสมหวัง ขับดี"
+    world.client_for(world.dispatcher).post(approve_url(world, car_application), data=data)
+
+    car_application.reload()
+    assert car_application.current_step == 2
+    assert car_application.extra_travelers == ""
+
+
+def test_dispatcher_extra_travelers_field_is_labelled_with_the_form_item_3_wording(world):
+    car_application = world.submit_request("domestic", "out_of_province")
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data=step_data(world, "supervisor")
+    )
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    assert "ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด" in html
+    assert "ตามช่อง (3) ของใบขอใช้รถ เช่น ชื่อพนักงานขับรถ หรือผู้ช่วย คั่นด้วยจุลภาค" in html
+
+
+def test_dispatcher_form_has_an_overtime_checkbox_and_a_car_dropdown(world):
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    (form,) = doc.xpath("//form[.//*[@name='car']]")
+    (overtime,) = form.xpath(".//input[@type='checkbox'][@name='is_overtime']")
+    assert "checkbox" in overtime.get("class").split()
+    (car,) = form.xpath(".//select[@name='car']")
+    assert "กก 1234" in car.text_content()
+
+
+def test_dispatcher_form_orders_driver_table_then_car_then_overtime_then_extra_travelers_then_comment(
+    world,
+):
+    car_application = request_at_dispatcher(world, province_scope="out_of_province")
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    positions = [
+        html.index('data-role="driver-workload"'),
+        html.index('name="car"'),
+        html.index('id="is_overtime"'),
+        html.index('name="extra_travelers"'),
+        html.index('name="comment"'),
+    ]
+    assert positions == sorted(positions)
 
 
 @pytest.mark.parametrize("request_type", ["airport", "welfare"])
@@ -1193,8 +1271,8 @@ def dispatch_data(car, driver, comment=""):
     return {"comment": comment, "car": str(car.id), "driver": str(driver.id)}
 
 
-def request_at_dispatcher(world):
-    car_application = world.submit_domestic_request()
+def request_at_dispatcher(world, **submit_args):
+    car_application = world.submit_request(**submit_args)
     response = world.client_for(world.supervisor).post(
         approve_url(world, car_application), data={"comment": ""}
     )
@@ -1220,7 +1298,7 @@ def test_dispatcher_step_logs_the_assignment_as_changes_and_skips_what_stayed_th
 
 
 def test_dispatcher_step_logs_overtime_and_extra_travelers_when_set(world):
-    car_application = request_at_dispatcher(world)
+    car_application = request_at_dispatcher(world, province_scope="out_of_province")
 
     world.client_for(world.dispatcher).post(
         approve_url(world, car_application),
@@ -1234,7 +1312,7 @@ def test_dispatcher_step_logs_overtime_and_extra_travelers_when_set(world):
     car_application.reload()
     changes = changes_of(car_application.audit_logs[-1])
     assert changes["งานนอกเวลา (OT)"] == ("ไม่ใช่", "ใช่")
-    assert changes["ขออนุมัติให้ ... เดินทางไปด้วย"] == ("-", "นายสมชาย")
+    assert changes["ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด"] == ("-", "นายสมชาย")
 
 
 def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail(world):
@@ -1604,6 +1682,27 @@ def test_dispatcher_toggles_overtime_on_an_active_reservation_and_it_is_audit_lo
     car_application.reload()
     assert car_application.is_overtime is False
     assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานในเวลา"
+
+
+def test_overtime_toggle_is_the_wtforms_checkbox_and_reflects_the_saved_state(world):
+    car_application = assigned_request(
+        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+    )
+    client = world.client_for(world.dispatcher)
+
+    def checkbox():
+        html = client.get(detail_url(world, car_application)).get_data(as_text=True)
+        doc = lxml_html.fromstring(html)
+        (box,) = doc.xpath("//form[@data-role='overtime-form']//input[@type='checkbox']")
+        return doc, box
+
+    doc, box = checkbox()
+    assert (box.get("id"), box.get("name"), box.get("checked")) == ("is_overtime", "is_overtime", None)
+    assert doc.xpath("//form[@data-role='overtime-form']//label[@for='is_overtime']")
+
+    client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
+
+    assert checkbox()[1].get("checked") is not None
 
 
 def test_toggling_overtime_logs_the_old_and_new_value(world):
@@ -2596,6 +2695,48 @@ def test_dispatcher_detail_lists_drivers_least_loaded_first_and_marks_the_busy_o
     assert 'data-role="workload-dashboard-link"' in html
 
 
+def test_dispatcher_driver_radios_are_rendered_by_the_wtforms_radio_field_in_workload_order(
+    world,
+):
+    idle = world.add_driver("Idle", "Driver")
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    rows = doc.xpath("//tr[@data-role='driver-row']")
+    radios = [row.xpath(".//input[@type='radio']")[0] for row in rows]
+    # id ของ RadioField คือ driver-<ลำดับ> และ value เป็น id ของ พขร. ในแถวนั้น (เรียงตามภาระงาน)
+    assert [(r.get("id"), r.get("name"), r.get("value")) for r in radios] == [
+        (f"driver-{index}", "driver", row.get("data-driver-id"))
+        for index, row in enumerate(rows)
+    ]
+    assert {r.get("value") for r in radios} == {str(idle.id), str(world.driver.id)}
+    for radio in radios:
+        assert doc.xpath(f"//label[@for='{radio.get('id')}']")
+        assert "radio-primary" in radio.get("class")
+
+
+def test_dispatch_approve_without_a_driver_choice_is_refused_and_nothing_advances(
+    world,
+):
+    car_application = request_at_dispatcher(world)
+
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data={"car": str(world.car.id), "driver": "not-a-driver-id"},
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 1
+    assert car_application.driver is None
+
+
 URGENT_URL = f"{BASE}/urgent"
 
 
@@ -3344,6 +3485,33 @@ def test_inbox_row_at_a_plain_step_offers_quick_approve_and_deny_that_return_to_
     assert row.xpath(".//button[@data-role='quick-deny']")
     assert deny_form[0].xpath(".//textarea[@name='comment'][@required]")
     assert not row.xpath(".//*[@data-role='dispatch-link']")
+
+
+def test_quick_decision_fields_are_wtforms_fields_with_unique_ids_and_matching_labels(
+    world,
+):
+    world.submit_domestic_request()
+    world.submit_domestic_request()
+    page = world.client_for(world.supervisor).get(inbox_url(world))
+    doc = lxml_html.fromstring(page.get_data(as_text=True))
+
+    dialogs = doc.xpath("//dialog[starts-with(@id, 'quick-')]")
+    # 2 คำขอ x (ตาราง + การ์ดมือถือ) x (อนุมัติ + ไม่อนุมัติ)
+    assert len(dialogs) == 8
+    textareas = doc.xpath("//dialog//textarea[@name='comment']")
+    nexts = doc.xpath("//dialog//input[@name='next']")
+    assert len(textareas) == len(nexts) == 8
+    for field in textareas + nexts:
+        assert field.get("id")
+    ids = [field.get("id") for field in textareas + nexts]
+    assert len(set(ids)) == len(ids)
+    for textarea in textareas:
+        assert textarea.xpath(f"ancestor::form//label[@for='{textarea.get('id')}']")
+        assert textarea.get("maxlength") == "516"
+    deny_boxes = doc.xpath("//dialog[starts-with(@id, 'quick-deny-')]//textarea")
+    assert len(deny_boxes) == 4 and all(t.get("required") is not None for t in deny_boxes)
+    approve_boxes = doc.xpath("//dialog[starts-with(@id, 'quick-approve-')]//textarea")
+    assert len(approve_boxes) == 4 and all(t.get("required") is None for t in approve_boxes)
 
 
 def test_inbox_row_at_the_dispatcher_step_links_to_the_detail_to_dispatch_instead_of_quick_approve(

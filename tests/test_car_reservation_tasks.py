@@ -765,6 +765,29 @@ def test_close_page_captures_photos_with_the_camera_and_has_no_visible_file_pick
     assert all('class="hidden"' in tag for tag in file_inputs)
 
 
+def test_close_page_photo_inputs_are_the_wtforms_file_fields_the_camera_script_fills(world):
+    reservation = world.reservation()
+
+    html = (
+        world.client_for(world.driver).get(close_url(world, reservation)).get_data(as_text=True)
+    )
+
+    from lxml import html as lxml_html
+
+    doc = lxml_html.fromstring(html)
+    inputs = doc.xpath("//form[@id='close-form']//fieldset[@data-photo]//input[@type='file']")
+    assert [(i.get("id"), i.get("name"), i.get("accept")) for i in inputs] == [
+        ("mileage_photo_out", "mileage_photo_out", "image/jpeg,image/png"),
+        ("mileage_photo_in", "mileage_photo_in", "image/jpeg,image/png"),
+    ]
+    # ซ่อนไว้ และต้องไม่มี required (ช่องที่ซ่อนจะโฟกัสไม่ได้ ทำให้เบราว์เซอร์บล็อกการส่งฟอร์ม)
+    assert all(i.get("class") == "hidden" and i.get("required") is None for i in inputs)
+    # ชื่อ data-photo ที่สคริปต์ใช้ตั้งชื่อไฟล์ ต้องตรงกับชื่อ field
+    assert [f.get("data-photo") for f in doc.xpath("//fieldset[@data-photo]")] == [
+        i.get("name") for i in inputs
+    ]
+
+
 def test_request_detail_shows_both_odometer_photos_to_those_who_may_see_them(world):
     reservation = world.reservation()
     close(world, reservation)

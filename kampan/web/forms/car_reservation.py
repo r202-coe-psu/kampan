@@ -635,6 +635,25 @@ class ApprovalDecisionForm(FlaskForm):
     comment = fields.StringField(
         "ความเห็น", validators=[validators.Optional(), validators.Length(max=516)]
     )
+    # ปุ่มลัดในกล่องรออนุมัติส่งมา: view ยอมรับเฉพาะ URL กล่องรออนุมัติของ org เป๊ะ ๆ
+    next = fields.HiddenField()
+
+
+class QuickApprovalForm(ApprovalDecisionForm):
+    """อนุมัติจากกล่องรออนุมัติ (modal): ความเห็นเป็น textarea ชื่อ field เดียวกับ ApprovalDecisionForm"""
+
+    comment = fields.TextAreaField(
+        "ความเห็น (ไม่บังคับ)",
+        validators=[validators.Optional(), validators.Length(max=516)],
+    )
+
+
+def with_id_suffix(form, suffix):
+    """ให้ id ของทุก field ไม่ซ้ำเมื่อวางหลายฟอร์มชนิดเดียวกันในหน้าเดียว (name คงเดิม จึงโพสต์เหมือนเดิม)"""
+    for field in form:
+        field.id = f"{field.id}-{suffix}"
+        field.label.field_id = field.id
+    return form
 
 
 class DispatchDecisionForm(ApprovalDecisionForm):
@@ -645,9 +664,10 @@ class DispatchDecisionForm(ApprovalDecisionForm):
     """
 
     car = fields.SelectField("รถ", choices=[], validate_choice=False)
-    driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
+    driver = fields.RadioField("พนักงานขับรถ", choices=[], validate_choice=False)
     extra_travelers = fields.StringField(
-        "ขออนุมัติให้ ... เดินทางไปด้วย",
+        "ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด",
+        description="ตามช่อง (3) ของใบขอใช้รถ เช่น ชื่อพนักงานขับรถ หรือผู้ช่วย คั่นด้วยจุลภาค",
         validators=[validators.Optional(), validators.Length(max=516)],
     )
     is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
@@ -719,11 +739,30 @@ class SettingsForm(FlaskForm):
                 raise validators.ValidationError(f"ช่วง IP ไม่ถูกต้อง: {line}")
 
 
+class DriverStatsFilterForm(FlaskForm):
+    """ตัวกรอง dashboard ภาระงาน พขร. (GET จึงไม่มี CSRF) ช่วงเวลาเป็น hidden (ค่าที่ไม่รู้จักถูกแทนด้วยค่าเริ่มต้นใน view)
+
+    organization_id ต้องติดไปกับ query ทุกครั้งที่ส่งฟอร์ม; driver choices ตั้งจาก พขร. ของ org ใน view
+    """
+
+    class Meta:
+        csrf = False
+
+    organization_id = fields.HiddenField()
+    period = fields.HiddenField("ช่วงเวลา")
+    driver = fields.SelectField(
+        "พนักงานขับรถ",
+        choices=[],
+        render_kw={"onchange": "this.form.submit()"},
+    )
+
+
 class DenyDecisionForm(FlaskForm):
     comment = fields.TextAreaField(
         "เหตุผลที่ไม่อนุมัติ",
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
+    next = fields.HiddenField()
 
 
 class CancelRequestForm(FlaskForm):

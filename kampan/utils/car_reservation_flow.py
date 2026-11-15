@@ -85,8 +85,11 @@ CAR_AND_DRIVER_REQUIRED = "กรุณาเลือกรถและพน�
 CAR_OR_DRIVER_NOT_ASSIGNABLE = "รถหรือพนักงานขับรถที่เลือกไม่พร้อมใช้งาน"
 
 
-# ใบที่ผู้จัดรถระบุผู้ร่วมเดินทางเพิ่มได้ตอนจัดรถ ("ขออนุมัติให้ ... เดินทางไปด้วย")
-EXTRA_TRAVELER_TYPES = ("domestic", "abroad")
+def asks_extra_travelers(app):
+    """ผู้จัดรถระบุผู้ร่วมเดินทางเพิ่มได้ตอนจัดรถ (ช่อง (3) ของใบ): เฉพาะในประเทศต่างจังหวัดและต่างประเทศ"""
+    return app.request_type == "abroad" or (
+        app.request_type == "domestic" and app.province_scope == "out_of_province"
+    )
 
 HOLIDAY_ONLY_VEHICLES = ("เก๋ง", "มินิบัส")
 HOLIDAY_ONLY_VEHICLE_ERROR = (
@@ -158,7 +161,7 @@ ASSIGNMENT_LABELS = {
     "car": "รถ",
     "driver": "พนักงานขับรถ",
     "is_overtime": "งานนอกเวลา (OT)",
-    "extra_travelers": "ขออนุมัติให้ ... เดินทางไปด้วย",
+    "extra_travelers": "ขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด",
 }
 TRIP_REPORT_LABELS = {
     "mileage_out": "เลข กม. ออก",
@@ -584,7 +587,7 @@ def approve(
         app.car = car
         app.driver = driver
         app.is_overtime = bool(is_overtime)
-        if app.request_type in EXTRA_TRAVELER_TYPES:
+        if asks_extra_travelers(app):
             app.extra_travelers = extra_travelers
         changes = diff_fields(before, _assignment_snapshot(app), ASSIGNMENT_LABELS)
         audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"

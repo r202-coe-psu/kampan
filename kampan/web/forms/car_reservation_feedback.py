@@ -13,6 +13,8 @@ class CarFeedbackTemplateForm(FlaskForm):
     cars = fields.SelectMultipleField(
         "รถยนต์", validators=[validators.DataRequired(message="กรุณาเลือกรถยนต์")]
     )
+    # JSON ของคำถามที่ตัวสร้างคำถามฝั่งเบราว์เซอร์ประกอบขึ้น: view แยกและตรวจด้วย parse_questions_payload
+    questions_data = fields.HiddenField()
 
 
 class CarFeedbackTemplateDeleteForm(FlaskForm):
@@ -20,6 +22,7 @@ class CarFeedbackTemplateDeleteForm(FlaskForm):
 
 
 class CarFeedbackResponseFilterForm(FlaskForm):
+    organization_id = fields.HiddenField()
     car_id = fields.SelectField(
         "รถยนต์",
         validators=[validators.Optional()],

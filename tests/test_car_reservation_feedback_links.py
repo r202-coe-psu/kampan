@@ -175,7 +175,7 @@ def test_the_link_leads_to_the_public_survey_page_with_the_trip_selected(world):
     assert response.status_code == 200
     assert "แบบประเมินรถเก๋ง" in body
     assert "ให้คะแนนบริการ" in body
-    assert re.findall(r'<option value="([0-9a-f]{24})"\s+selected', body) == [str(reservation.id)]
+    assert re.findall(r'<option(?=[^>]*\sselected)[^>]*\svalue="([0-9a-f]{24})"', body) == [str(reservation.id)]
 
 
 PNG_BYTES = base64.b64decode(

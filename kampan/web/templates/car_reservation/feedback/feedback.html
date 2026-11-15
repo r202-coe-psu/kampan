@@ -76,12 +76,7 @@
             {{ form.car_reservation.label.text }}
             {% if form.car_reservation.flags.required %}<span class="ml-1 text-error">*</span>{% endif %}
           </label>
-          <select id="{{ form.car_reservation.id }}" name="{{ form.car_reservation.name }}"
-            class="select select-bordered h-auto min-h-14 w-full rounded-md border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15">
-            {% for value, label in form.car_reservation.choices %}
-            <option value="{{ value }}" {% if form.car_reservation.data|string == value|string %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
+          {{ form.car_reservation(class_="select select-bordered h-auto min-h-14 w-full rounded-md border-base-300 bg-base-100 py-3 text-sm leading-6 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15") }}
           {{ render_errors(form.car_reservation) }}
         </fieldset>
         {% else %}
@@ -136,9 +131,7 @@
             <fieldset>
               {{ question_label(field, loop.index) }}
               <div class="mt-5 pl-12 sm:pl-12">
-                <textarea name="{{ field.name }}" id="{{ field.id }}" rows="4"
-                  class="textarea textarea-bordered w-full rounded-md border-base-300 bg-base-100 text-sm leading-7 shadow-sm outline-none transition placeholder:text-base-content/35 focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  placeholder="เขียนความคิดเห็นหรือข้อเสนอแนะของคุณ">{{ field.data if field.data else field.default if field.default else '' }}</textarea>
+                {{ field(rows=4, class_="textarea textarea-bordered w-full rounded-md border-base-300 bg-base-100 text-sm leading-7 shadow-sm outline-none transition placeholder:text-base-content/35 focus:border-primary focus:ring-4 focus:ring-primary/15", placeholder="เขียนความคิดเห็นหรือข้อเสนอแนะของคุณ") }}
                 {{ render_errors(field) }}
               </div>
             </fieldset>

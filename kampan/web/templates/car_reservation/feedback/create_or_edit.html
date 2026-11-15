@@ -61,7 +61,7 @@
 			</div>
 		</section>
 
-		<input type="hidden" name="questions_data" id="questionsData" value="{{ questions_data or '' }}">
+		{{ form.questions_data(id="questionsData") }}
 		<div class="rounded-box border border-dashed border-primary/30 bg-primary/5 px-5 py-5 sm:px-6">
 			<p class="mb-3 text-sm font-semibold text-base-content/70">เพิ่มประเภทคำถาม</p>
 			<div class="flex flex-wrap gap-2">

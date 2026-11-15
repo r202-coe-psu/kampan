@@ -703,10 +703,9 @@ def create_or_edit(template_id):
         form.cars.data = [str(car.id) for car in template.cars]
 
     # เริ่มจากแบบประเมินมาตรฐาน: เติมชื่อและคำถามให้ในฟอร์มสร้างใหม่ ยังไม่บันทึกจนกว่าแอดมินจะกดบันทึก
-    prefilled_questions = ""
     if not template and request.method == "GET" and request.args.get("preset") == "standard":
         form.name.data = STANDARD_TEMPLATE_NAME
-        prefilled_questions = standard_questions_payload()
+        form.questions_data.data = standard_questions_payload()
 
     def render_form(questions_error=None, status_code=200):
         return (
@@ -718,7 +717,6 @@ def create_or_edit(template_id):
                 cars=cars,
                 car_choices=car_choices,
                 form=form,
-                questions_data=request.form.get("questions_data", "") or prefilled_questions,
                 questions_error=questions_error,
             ),
             status_code,
@@ -734,7 +732,7 @@ def create_or_edit(template_id):
         return abort(400, "Invalid car selection")
 
     try:
-        questions = parse_questions_payload(request.form.get("questions_data"))
+        questions = parse_questions_payload(form.questions_data.data)
     except QuestionPayloadError as error:
         return render_form(questions_error=str(error), status_code=400)
 
@@ -841,6 +839,7 @@ def view_responses(template_id):
         (str(car.id), f"{car.license_plate} · {car_response_counts.get(str(car.id), 0)} ผลตอบรับ") for car in cars
     ]
     form.car_id.data = car_id or ""
+    form.organization_id.data = str(organization.id)
 
     if trip_choices:
         trip_placeholder = f"ทุกเที่ยว ({len(trip_choices)} เที่ยว)"

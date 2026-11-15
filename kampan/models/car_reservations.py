@@ -249,7 +249,7 @@ class CarReservation(me.Document):
     step_approvals = me.ListField(me.EmbeddedDocumentField(StepApproval))
     audit_logs = me.ListField(me.EmbeddedDocumentField(ReservationAuditLog))
 
-    # ผู้จัดรถขออนุมัติให้ ... เดินทางไปด้วย (เฉพาะ domestic และ abroad)
+    # ผู้จัดรถขออนุมัติให้ผู้ร่วมเดินทางไปปฏิบัติงานต่างจังหวัด (เฉพาะ domestic ต่างจังหวัด และ abroad)
     extra_travelers = me.StringField(default="", max_length=516)
 
     car = me.ReferenceField("Car", dbref=True)

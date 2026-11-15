@@ -673,6 +673,27 @@ def test_view_responses_renders_statistics(
             assert "สนามบินหาดใหญ่" in body
 
 
+def test_view_responses_filter_carries_the_organization_through_a_wtforms_hidden_field(
+    app, two_orgs, login_as
+):
+    from lxml import html as lxml_html
+
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_orgs()
+            login_as(client, data["admin_a"])
+
+            response = client.get(
+                f"{FEEDBACK_BASE}/{data['template_a'].id}/view?organization_id={data['org_a'].id}"
+            )
+
+            doc = lxml_html.fromstring(response.data.decode())
+            hidden = doc.xpath("//form[@method='GET']//input[@name='organization_id']")
+            assert [(i.get("id"), i.get("type"), i.get("value")) for i in hidden] == [
+                ("organization_id", "hidden", str(data["org_a"].id))
+            ]
+
+
 def test_view_responses_ignores_unknown_filter_values(
     app, two_orgs, login_as, create_car_reservation, create_feedback_response, make_answer
 ):
@@ -857,6 +878,39 @@ def test_public_feedback_post_rejects_trip_of_another_car(
             assert models.CarFeedbackResponse.objects(feedback_template=template).count() == 0
 
 
+def test_public_feedback_trip_select_and_text_answers_are_rendered_by_the_wtforms_fields(
+    app, two_trips, make_question, create_feedback_template
+):
+    from lxml import html as lxml_html
+
+    with app.test_client() as client:
+        with app.app_context():
+            data = two_trips()
+            required_text = make_question("text", "ข้อเสนอแนะหลัก", is_required=True)
+            optional_text = make_question("text", "ข้อเสนอแนะเพิ่มเติม")
+            template = create_feedback_template(
+                data["org_a"], [data["car_a"]], questions=[required_text, optional_text]
+            )
+
+            response = client.get(
+                f"{CARS_BASE}/{data['car_a'].id}/feedback?template_id={template.id}"
+            )
+
+            doc = lxml_html.fromstring(response.data.decode())
+            (trip_select,) = doc.xpath("//select[@name='car_reservation']")
+            # DataRequired ของ WTForms ทำให้ field ถูกวาดพร้อม required
+            assert trip_select.get("id") == "car_reservation"
+            assert trip_select.get("required") is not None
+            required_box, optional_box = [
+                doc.xpath(f"//textarea[@name='answer_{q.question_id}']")[0]
+                for q in (required_text, optional_text)
+            ]
+            assert required_box.get("id") == f"answer_{required_text.question_id}"
+            assert required_box.get("required") is not None
+            assert optional_box.get("required") is None
+            assert "textarea" in required_box.get("class").split()
+
+
 def test_public_feedback_post_requires_answers_for_required_questions(
     app, two_orgs, create_car_reservation, make_question, create_feedback_template
 ):
@@ -885,7 +939,7 @@ def test_public_feedback_post_requires_answers_for_required_questions(
 
 def selected_trip_ids(html):
     """id ของ <option> ที่ถูกเลือกอยู่ในตัวเลือกเที่ยวรถของฟอร์มประเมิน"""
-    return re.findall(r'<option value="([0-9a-f]{24})"\s+selected', html)
+    return re.findall(r'<option(?=[^>]*\sselected)[^>]*\svalue="([0-9a-f]{24})"', html)
 
 
 @pytest.fixture
@@ -1086,11 +1140,11 @@ def test_sidebar_shows_the_feedback_item_to_org_admins_only(app, two_orgs, login
 
 
 def prefilled_questions(html):
-    import html as html_lib
+    from lxml import html as lxml_html
 
-    match = re.search(r'id="questionsData" value="([^"]*)"', html)
-    assert match, "ไม่พบ input questions_data"
-    return json.loads(html_lib.unescape(match.group(1)) or "[]")
+    inputs = lxml_html.fromstring(html).xpath("//input[@id='questionsData'][@name='questions_data'][@type='hidden']")
+    assert len(inputs) == 1, "ไม่พบ input questions_data"
+    return json.loads(inputs[0].get("value") or "[]")
 
 
 def test_create_form_starts_empty_without_the_standard_preset(app, two_orgs, login_as):

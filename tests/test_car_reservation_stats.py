@@ -4,6 +4,7 @@ import datetime
 import re
 
 import pytest
+from lxml import html as lxml_html
 
 from kampan import models
 
@@ -146,6 +147,43 @@ def test_driver_filter_narrows_the_table_to_one_driver(world):
     )
 
     assert list(rows_of(response)) == ["Bravo Driver"]
+
+
+def filter_form_of(world, **query):
+    response = world.client_for(world.managers["dispatcher"]).get(
+        world.url(DRIVERS_URL, **query)
+    )
+    assert response.status_code == 200
+    doc = lxml_html.fromstring(response.get_data(as_text=True))
+    (form,) = doc.xpath("//form[@data-role='driver-filter']")
+    return form
+
+
+def test_driver_filter_is_a_wtforms_get_form_that_keeps_the_selected_driver_and_period(
+    world,
+):
+    form = filter_form_of(world, driver=world.other_driver.id, period="week")
+
+    assert form.get("method") == "get"
+    (select,) = form.xpath(".//select[@name='driver']")
+    assert select.get("id") == "driver"
+    assert select.get("onchange") == "this.form.submit()"
+    assert form.xpath(".//label[@for='driver']") or form.xpath(".//legend")
+    options = {o.get("value"): o.get("selected") is not None for o in select.xpath(".//option")}
+    assert options[""] is False
+    assert options[str(world.other_driver.id)] is True
+    assert len(options) == 3  # ทุกคน + พขร. 2 คน
+    hidden = {i.get("name"): (i.get("id"), i.get("value")) for i in form.xpath(".//input[@type='hidden']")}
+    assert hidden == {
+        "organization_id": ("organization_id", str(world.org.id)),
+        "period": ("period", "week"),
+    }
+
+
+def test_driver_filter_falls_back_to_the_month_period_for_an_unknown_one(world):
+    form = filter_form_of(world, period="decade")
+
+    assert form.xpath(".//input[@name='period']/@value") == ["month"]
 
 
 @pytest.mark.parametrize(

@@ -12,14 +12,9 @@
     {% endfor %}
   </div>
   <form method="get" class="flex items-center gap-2" data-role="driver-filter">
-    <input type="hidden" name="organization_id" value="{{ organization.id }}">
-    <input type="hidden" name="period" value="{{ period }}">
-    <select name="driver" class="select select-sm w-full sm:w-56" aria-label="พนักงานขับรถ" onchange="this.form.submit()">
-      <option value="">พนักงานขับรถทุกคน</option>
-      {% for id, name in driver_choices %}
-      <option value="{{ id }}" {{ 'selected' if id == driver_id else '' }}>{{ name }}</option>
-      {% endfor %}
-    </select>
+    {{ form.organization_id }}
+    {{ form.period }}
+    {{ renderer.render_select_field(form.driver, class_="select-sm sm:w-56") }}
   </form>
 </div>
 
