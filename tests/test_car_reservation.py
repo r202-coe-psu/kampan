@@ -1352,21 +1352,15 @@ DAY = datetime.datetime.combine(
 
 
 @pytest.mark.parametrize("blocking_status", ["pending", "active", "cancel_requested"])
-@pytest.mark.parametrize("clash", ["car", "driver"])
-def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
-    world, clash, blocking_status
-):
-    other_car = models.vehicles.Car(
-        organization=world.org, license_plate="งง 2222", status="active"
-    ).save()
+def test_a_car_already_booked_in_an_overlapping_time_is_refused(world, blocking_status):
     other_driver = world.add_driver("Other", "Driver")
     assigned_request(
         world,
         DAY + datetime.timedelta(hours=2),
         DAY + datetime.timedelta(hours=6),
         status=blocking_status,
-        car=world.car if clash == "car" else other_car,
-        driver=world.driver if clash == "driver" else other_driver,
+        car=world.car,
+        driver=other_driver,
     )
     car_application = at_dispatcher_with_times(
         world, DAY, DAY + datetime.timedelta(hours=9)
@@ -1382,10 +1376,33 @@ def test_car_or_driver_already_booked_in_an_overlapping_time_is_refused(
     assert car_application.current_step == 1
     assert car_application.car is None
     html = client.get(detail_url(world, car_application)).get_data(as_text=True)
-    if clash == "car":
-        assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
-    else:
-        assert "พนักงานขับรถ Driver One มีงานช่วงเวลานี้แล้ว" in html
+    assert "รถ กก 1234 มีงานช่วงเวลานี้แล้ว" in html
+
+
+def test_a_driver_with_an_overlapping_job_can_still_be_assigned_another_car(world):
+    other_car = models.vehicles.Car(
+        organization=world.org, license_plate="งง 2222", status="active"
+    ).save()
+    assigned_request(
+        world,
+        DAY + datetime.timedelta(hours=2),
+        DAY + datetime.timedelta(hours=6),
+        status="active",
+        car=other_car,
+        driver=world.driver,
+    )
+    car_application = at_dispatcher_with_times(
+        world, DAY, DAY + datetime.timedelta(hours=9)
+    )
+
+    response = world.client_for(world.dispatcher).post(
+        approve_url(world, car_application), data=dispatch_data(world.car, world.driver)
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.current_step == 2
+    assert car_application.driver == world.driver
 
 
 @pytest.mark.parametrize(

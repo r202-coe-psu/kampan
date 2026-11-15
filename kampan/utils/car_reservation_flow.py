@@ -367,8 +367,6 @@ def approve(
             raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
         if _overlapping_bookings(app, car=car).first():
             raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
-        if _overlapping_bookings(app, driver=driver).first():
-            raise FlowError(f"พนักงานขับรถ {driver.get_name()} มีงานช่วงเวลานี้แล้ว")
         app.car = car
         app.driver = driver
         app.is_overtime = bool(is_overtime)
