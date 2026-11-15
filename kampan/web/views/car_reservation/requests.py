@@ -22,6 +22,7 @@ module = Blueprint("requests", __name__, url_prefix="/requests")
 
 ANY_ORGANIZATION_ROLE = [role for role, _ in models.organizations.ORGANIZATION_ROLES]
 flow = utils.car_reservation_flow
+finance = utils.car_reservation_finance
 
 
 def car_choice_label(car):
@@ -415,6 +416,9 @@ def detail(request_id):
             reservation, current_user._get_current_object()
         ),
         close_form=forms.car_reservation.CloseConfirmationForm(),
+        finance_documents=finance.documents_for_reservation(reservation)
+        if finance.can_issue(g.organization, current_user._get_current_object())
+        else [],
     )
 
 
@@ -719,3 +723,34 @@ def close_confirmation(request_id):
         utils.car_reservation_email.notify(reservation, "close_disputed")
     flash("บันทึกการยืนยันเวลาปิดงานเรียบร้อยแล้ว", "success")
     return redirect_to_detail
+
+
+def finance_filename(reservation, doc):
+    return f"car-finance-{doc}-{reservation.id}.pdf"
+
+
+@module.route("/<request_id>/finance/<doc>", methods=["GET", "POST"])
+@acl.organization_roles_required(*finance.FINANCE_ROLES)
+def finance_document(request_id, doc):
+    reservation = get_request_or_404(request_id)
+    if doc not in finance.documents_for(reservation.request_type):
+        abort(404)
+    if reservation.status != "completed":
+        abort(403)
+    form = forms.car_reservation_finance.FinanceForm()
+    if form.validate_on_submit():
+        pdf = finance.render(doc, reservation, finance.FinanceData.from_form(form))
+        return send_file(
+            io.BytesIO(pdf),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=finance_filename(reservation, doc),
+        )
+    return render_template(
+        "/car_reservation/requests/finance_form.html",
+        organization=g.organization,
+        reservation=reservation,
+        doc=doc,
+        doc_label=finance.DOCUMENT_LABELS[doc],
+        form=form,
+    )

@@ -1,0 +1,64 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}{{ doc_label }}{% endblock %}
+
+{% block page_subtitle %}{{ reservation.driver.get_name() if reservation.driver else '' }} · {{ reservation.location }}{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 border border-base-300 shadow-sm max-w-3xl">
+  <form method="post" class="card-body gap-4" data-role="finance-form"
+        action="{{ url_for('car_reservation.requests.finance_document', request_id=reservation.id, doc=doc, organization_id=organization.id) }}">
+    {{ form.csrf_token }}
+    <p class="text-sm text-base-content/60">กรอกตัวเลขที่ต้องการให้ปรากฏในเอกสาร ช่องที่เว้นว่างถือเป็น 0 ระบบคำนวณยอดรวมและจำนวนเงินตัวอักษรให้</p>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="font-semibold">อ้างอิงบันทึกอนุมัติ</h3>
+      <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+        {{ renderer.render_field(form.memo_number) }}
+        {{ renderer.render_field(form.memo_date) }}
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="font-semibold">ค่าเบี้ยเลี้ยงเดินทาง</h3>
+      <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+        {{ renderer.render_field(form.allowance_type) }}
+        {{ renderer.render_number_field(form.allowance_days) }}
+        {{ renderer.render_number_field(form.allowance_amount) }}
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="font-semibold">ค่าเช่าที่พักและค่าพาหนะ</h3>
+      <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+        {{ renderer.render_number_field(form.lodging_days) }}
+        {{ renderer.render_number_field(form.lodging_amount) }}
+        {{ renderer.render_number_field(form.vehicle_cost) }}
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="font-semibold">เงินช่วยเหลือค่าอาหาร พขร. (ค่าใช้จ่ายอื่นและใบสำคัญรับเงิน)</h3>
+      <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+        {{ renderer.render_number_field(form.meal_rate_1) }}
+        {{ renderer.render_number_field(form.meal_days_1) }}
+        {{ renderer.render_number_field(form.meal_rate_2) }}
+        {{ renderer.render_number_field(form.meal_days_2) }}
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h3 class="font-semibold">หลักฐานประกอบ</h3>
+      <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+        {{ renderer.render_number_field(form.evidence_count) }}
+      </div>
+    </section>
+
+    <div class="card-actions justify-end">
+      <a class="btn btn-ghost"
+         href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ย้อนกลับ</a>
+      <button type="submit" class="btn btn-primary"><i class="ph ph-download-simple"></i> ดาวน์โหลด PDF</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

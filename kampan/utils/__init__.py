@@ -25,3 +25,4 @@ from . import car_reservation_paper
 from . import car_reservation_email
 from . import car_reservation_feedback
 from . import campus_network
+from . import car_reservation_finance
