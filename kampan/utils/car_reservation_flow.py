@@ -331,6 +331,17 @@ def can_act(app, user):
     return has_role(app.organization, user, key)
 
 
+def can_print_paper(app, user):
+    """พิมพ์ใบขอใช้รถได้: ผู้ขอ, ผู้อนุมัติ/หัวหน้าฝ่าย (รวมผู้จัดรถ) หรือ admin ของ org"""
+    if user is None:
+        return False
+    return (
+        user == app.creator
+        or is_approver(app.organization, user)
+        or has_role(app.organization, user, "admin")
+    )
+
+
 def can_confirm_cancel(app, user):
     return app.status == "cancel_requested" and has_role(
         app.organization, user, "dispatcher"

@@ -28,6 +28,14 @@
       <i class="ph ph-calendar-blank"></i>
       ยื่นเมื่อ {{ reservation.created_date.strftime('%d/%m/%Y %H:%M') }} น.
     </p>
+    {% if can_print_paper %}
+    <div>
+      <a href="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id) }}"
+         target="_blank" rel="noopener" class="btn btn-sm btn-outline" data-role="print-paper">
+        <i class="ph ph-printer"></i> พิมพ์ใบขอใช้รถ (PDF)
+      </a>
+    </div>
+    {% endif %}
   </div>
 </div>
 

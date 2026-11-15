@@ -1,4 +1,5 @@
 import datetime
+import io
 
 from bson import ObjectId
 from flask import (
@@ -390,6 +391,9 @@ def detail(request_id):
             reservation, current_user._get_current_object()
         ),
         asks_extra_travelers=reservation.request_type in flow.EXTRA_TRAVELER_TYPES,
+        can_print_paper=flow.can_print_paper(
+            reservation, current_user._get_current_object()
+        ),
         can_edit=flow.can_edit(reservation, current_user._get_current_object()),
         can_cancel=flow.can_cancel(
             reservation, current_user._get_current_object()
@@ -503,6 +507,20 @@ def mileage_photo(request_id, side):
         photo,
         download_name=photo.filename,
         mimetype=photo.content_type,
+    )
+
+
+@module.route("/<request_id>/paper")
+@acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
+def paper(request_id):
+    """ใบขอใช้รถ (PDF) ตามแบบฟอร์มทางการของประเภทใบขอ"""
+    reservation = get_request_or_404(request_id)
+    if not flow.can_print_paper(reservation, current_user._get_current_object()):
+        abort(403)
+    return send_file(
+        io.BytesIO(utils.car_reservation_paper.render_pdf(reservation)),
+        mimetype="application/pdf",
+        download_name=f"car_request_{reservation.id}.pdf",
     )
 
 
