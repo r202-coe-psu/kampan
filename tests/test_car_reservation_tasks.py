@@ -189,6 +189,25 @@ def test_closing_sets_the_cars_mileage_to_the_return_reading(world):
     assert world.car.last_mileage == 10250
 
 
+def test_closing_logs_the_trip_report_as_changes(world):
+    reservation = world.reservation()
+
+    close(world, reservation)
+
+    reservation.reload()
+    changes = {
+        change.label: (change.old, change.new)
+        for change in reservation.audit_logs[-1].changes
+    }
+    assert changes == {
+        "เลข กม. ออก": ("-", "10000"),
+        "เลข กม. กลับ": ("-", "10250"),
+        "น้ำมัน (ลิตร)": ("-", "20.50"),
+        "กรณีค่าใช้จ่าย": ("-", "เติมฟลีตการ์ดน้ำมัน"),
+        "เป็นเงิน (บาท)": ("-", "1,200.50"),
+    }
+
+
 def test_closing_is_audited_as_completed_by_the_driver(world):
     reservation = world.reservation()
 

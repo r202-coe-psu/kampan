@@ -1202,6 +1202,41 @@ def request_at_dispatcher(world):
     return car_application
 
 
+def test_dispatcher_step_logs_the_assignment_as_changes_and_skips_what_stayed_the_same(
+    world,
+):
+    car_application = request_at_dispatcher(world)
+
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data=dispatch_data(world.car, world.driver),
+    )
+
+    car_application.reload()
+    assert changes_of(car_application.audit_logs[-1]) == {
+        "รถ": ("-", "กก 1234"),
+        "พนักงานขับรถ": ("-", "Driver One"),
+    }
+
+
+def test_dispatcher_step_logs_overtime_and_extra_travelers_when_set(world):
+    car_application = request_at_dispatcher(world)
+
+    world.client_for(world.dispatcher).post(
+        approve_url(world, car_application),
+        data={
+            **dispatch_data(world.car, world.driver),
+            "is_overtime": "y",
+            "extra_travelers": "นายสมชาย",
+        },
+    )
+
+    car_application.reload()
+    changes = changes_of(car_application.audit_logs[-1])
+    assert changes["งานนอกเวลา (OT)"] == ("ไม่ใช่", "ใช่")
+    assert changes["ขออนุมัติให้ ... เดินทางไปด้วย"] == ("-", "นายสมชาย")
+
+
 def test_dispatcher_assigns_car_and_driver_then_everyone_sees_them_on_the_detail(world):
     car_application = request_at_dispatcher(world)
 
@@ -1569,6 +1604,21 @@ def test_dispatcher_toggles_overtime_on_an_active_reservation_and_it_is_audit_lo
     car_application.reload()
     assert car_application.is_overtime is False
     assert car_application.audit_logs[-1].comment == "ตั้งเป็นงานในเวลา"
+
+
+def test_toggling_overtime_logs_the_old_and_new_value(world):
+    car_application = assigned_request(
+        world, DAY, DAY + datetime.timedelta(hours=4), car=world.car, driver=world.driver
+    )
+    client = world.client_for(world.dispatcher)
+
+    client.post(overtime_url(world, car_application), data={"is_overtime": "y"})
+    client.post(overtime_url(world, car_application), data={})
+
+    car_application.reload()
+    on, off = car_application.audit_logs[-2:]
+    assert changes_of(on) == {"งานนอกเวลา (OT)": ("ไม่ใช่", "ใช่")}
+    assert changes_of(off) == {"งานนอกเวลา (OT)": ("ใช่", "ไม่ใช่")}
 
 
 def test_only_a_dispatcher_can_toggle_overtime(world):
@@ -2225,6 +2275,90 @@ def test_requester_edits_own_request_while_it_waits_at_the_first_step(world):
         "edited",
     ]
     assert car_application.audit_logs[-1].actor == world.requester
+
+
+def changes_of(log):
+    """รายการแก้ไขของ log หนึ่งรายการเป็น {ชื่อข้อมูล: (เดิม, ใหม่)}"""
+    return {change.label: (change.old, change.new) for change in log.changes}
+
+
+def test_edit_log_records_exactly_the_fields_that_changed(world):
+    car_application = world.submit_domestic_request()
+    data = world.request_data()
+    data.update(
+        location="เชียงใหม่",
+        request_reason="อบรมเชิงปฏิบัติการ",
+        departure_time="09:30",
+    )
+
+    world.client_for(world.requester).post(edit_url(world, car_application), data=data)
+
+    car_application.reload()
+    assert changes_of(car_application.audit_logs[-1]) == {
+        "สถานที่ปฏิบัติงาน": ("กรุงเทพฯ", "เชียงใหม่"),
+        "วัตถุประสงค์การเดินทาง": ("ประชุมวิชาการ", "อบรมเชิงปฏิบัติการ"),
+        "เวลาออกเดินทาง": ("08:00", "09:30"),
+    }
+
+
+def test_editing_without_any_change_logs_an_edit_with_no_changes(world):
+    car_application = world.submit_domestic_request()
+
+    world.client_for(world.requester).post(
+        edit_url(world, car_application), data=world.request_data()
+    )
+
+    car_application.reload()
+    last = car_application.audit_logs[-1]
+    assert last.action == "edited"
+    assert last.comment == "ไม่มีการเปลี่ยนแปลง"
+    assert list(last.changes) == []
+
+
+def test_edit_log_shows_airport_passengers_dates_and_choices_as_readable_text(world):
+    car_application = world.submit_request("airport")
+    data = world.request_data("airport")
+    new_flight_date = datetime.date.today() + datetime.timedelta(days=22)
+    data.update(
+        transfer="dropoff",
+        flight_date=new_flight_date.isoformat(),
+        in_office_of_president="y",
+        cost_responsibilities=["เบี้ยเลี้ยง", "ค่าน้ำมันเชื้อเพลิง"],
+        **{
+            "passengers-1-name": "สมหญิง รักดี",
+            "passengers-1-phone": "089-333-4444",
+        },
+    )
+
+    world.client_for(world.requester).post(edit_url(world, car_application), data=data)
+
+    car_application.reload()
+    assert changes_of(car_application.audit_logs[-1]) == {
+        "ต้องการให้รถไป": ("รับ", "ส่ง"),
+        "วันที่": (
+            (datetime.date.today() + datetime.timedelta(days=20)).strftime("%d/%m/%Y"),
+            new_flight_date.strftime("%d/%m/%Y"),
+        ),
+        "รายชื่อผู้โดยสาร": (
+            "สมชาย ใจดี (089-111-2222)",
+            "สมชาย ใจดี (089-111-2222), สมหญิง รักดี (089-333-4444)",
+        ),
+        "หน่วยงานในสำนักงานอธิการบดี": ("ไม่ใช่", "ใช่"),
+        "ยินดีรับผิดชอบ": ("-", "ค่าน้ำมันเชื้อเพลิง, เบี้ยเลี้ยง"),
+    }
+
+
+def test_edit_log_names_the_attached_project_file_of_an_abroad_request(world):
+    car_application = world.submit_request("abroad")
+    data = world.request_data("abroad")
+    data["project_file"] = project_file(b"%PDF-1.4 v2", "project_v2.pdf")
+
+    world.client_for(world.requester).post(edit_url(world, car_application), data=data)
+
+    car_application.reload()
+    assert changes_of(car_application.audit_logs[-1]) == {
+        "เอกสารโครงการ": ("project.pdf", "project_v2.pdf")
+    }
 
 
 def test_requester_cannot_edit_once_the_supervisor_has_approved(world):

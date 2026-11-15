@@ -92,8 +92,17 @@ class StepApproval(me.EmbeddedDocument):
     comment = me.StringField(default="")
 
 
+class FieldChange(me.EmbeddedDocument):
+    """ข้อมูลหนึ่งช่องที่ถูกแก้ใน log หนึ่งรายการ (เดิม/ใหม่เก็บเป็นข้อความที่แสดงผล)"""
+
+    field = me.StringField(required=True)
+    label = me.StringField(default="")
+    old = me.StringField(default="")
+    new = me.StringField(default="")
+
+
 class ReservationAuditLog(me.EmbeddedDocument):
-    """ประวัติของคำขอ: ใคร ทำอะไร ขั้นไหน เมื่อไร"""
+    """ประวัติของคำขอ: ใคร ทำอะไร ขั้นไหน เมื่อไร และข้อมูลที่แก้ (ถ้ามี)"""
 
     action = me.StringField(choices=AUDIT_ACTIONS, required=True)
     actor = me.ReferenceField("User", dbref=True)
@@ -101,6 +110,7 @@ class ReservationAuditLog(me.EmbeddedDocument):
     step_key = me.StringField(default="")
     step_label = me.StringField(default="")
     comment = me.StringField(default="")
+    changes = me.ListField(me.EmbeddedDocumentField(FieldChange))
 
     def get_action_display(self):
         return dict(AUDIT_ACTIONS).get(self.action, self.action)

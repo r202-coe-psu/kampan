@@ -440,6 +440,7 @@ def edit(request_id):
         form, organization, request_type
     )
     if submitted:
+        before = form.describe(reservation)
         for name, value in {
             **form.reservation_fields(),
             "details": form.build_details(),
@@ -453,7 +454,13 @@ def edit(request_id):
         }.items():
             setattr(reservation, name, value)
         form.attach_files(reservation)
-        flow.edit(reservation, user)
+        flow.edit(
+            reservation,
+            user,
+            changes=flow.diff_fields(
+                before, form.describe(reservation), form.change_labels()
+            ),
+        )
         flash("แก้ไขคำขอใช้รถเรียบร้อยแล้ว", "success")
         return redirect(
             url_for(

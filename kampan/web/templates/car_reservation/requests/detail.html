@@ -118,6 +118,41 @@
             โดย {{ log.actor.get_name() if log.actor else '-' }}
           </p>
           {% if log.comment %}<p class="text-base-content/70">{{ log.comment }}</p>{% endif %}
+          {% if log.changes %}
+          {% set dialog_id = 'audit-details-' ~ loop.index %}
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <span class="badge badge-ghost badge-sm">แก้ไข {{ log.changes | length }} รายการ</span>
+            <button type="button" class="btn btn-xs btn-outline btn-primary" data-role="audit-details"
+                    onclick="document.getElementById('{{ dialog_id }}').showModal()">ดูรายละเอียด</button>
+          </div>
+          <dialog id="{{ dialog_id }}" class="modal">
+            <div class="modal-box max-w-2xl">
+              <h3 class="text-lg font-bold">{{ log.get_action_display() }}{% if log.step_label %} ({{ log.step_label }}){% endif %}</h3>
+              <p class="text-sm text-base-content/60">โดย {{ log.actor.get_name() if log.actor else '-' }} · {{ log.created_date.strftime('%d/%m/%Y %H:%M') }}</p>
+              {% if log.comment %}<p class="mt-1 text-base-content/70">{{ log.comment }}</p>{% endif %}
+              <div class="mt-4 overflow-x-auto bg-base-100 rounded-box border border-base-300">
+                <table class="table table-sm">
+                  <thead>
+                    <tr><th>ข้อมูล</th><th>เดิม</th><th>ใหม่</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for change in log.changes %}
+                    <tr>
+                      <td class="font-medium">{{ change.label }}</td>
+                      <td class="text-base-content/60 line-through">{{ change.old }}</td>
+                      <td class="font-bold">{{ change.new }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-action">
+                <form method="dialog"><button class="btn">ปิด</button></form>
+              </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+          </dialog>
+          {% endif %}
         </div>
         {% if not loop.last %}<hr class="bg-base-300" />{% endif %}
       </li>

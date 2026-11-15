@@ -8,6 +8,7 @@ import dataclasses
 import datetime
 
 from kampan import models, utils
+from kampan.utils.template_filters import format_amount
 
 RESERVATION_STEP_LABELS = {
     "supervisor": "ผู้บังคับบัญชา",
@@ -138,7 +139,74 @@ def step_label(step_key):
     return RESERVATION_STEP_LABELS.get(step_key, step_key)
 
 
-def _log(app, action, actor, step_key="", comment=""):
+NO_CHANGES_COMMENT = "ไม่มีการเปลี่ยนแปลง"
+
+
+def diff_fields(before, after, labels):
+    """ช่องที่ค่าเปลี่ยน (before/after = {ชื่อช่อง: ข้อความแสดงผล}) เรียงตาม labels"""
+    return [
+        models.car_reservations.FieldChange(
+            field=name, label=label, old=before[name], new=after[name]
+        )
+        for name, label in labels.items()
+        if before.get(name) != after.get(name)
+    ]
+
+
+NO_VALUE_TEXT = "-"
+ASSIGNMENT_LABELS = {
+    "car": "รถ",
+    "driver": "พนักงานขับรถ",
+    "is_overtime": "งานนอกเวลา (OT)",
+    "extra_travelers": "ขออนุมัติให้ ... เดินทางไปด้วย",
+}
+TRIP_REPORT_LABELS = {
+    "mileage_out": "เลข กม. ออก",
+    "mileage_in": "เลข กม. กลับ",
+    "fuel_liters": "น้ำมัน (ลิตร)",
+    "expense_case": "กรณีค่าใช้จ่าย",
+    "cost_baht": "เป็นเงิน (บาท)",
+}
+
+
+def _yes_no(value):
+    return "ใช่" if value else "ไม่ใช่"
+
+
+def _text_or_dash(value):
+    return NO_VALUE_TEXT if value in (None, "") else str(value)
+
+
+def _amount_or_dash(value):
+    return NO_VALUE_TEXT if value is None else format_amount(value)
+
+
+def _assignment_snapshot(app):
+    """ค่าที่ขั้นผู้จัดรถกำหนด (รถ พขร. OT ผู้ร่วมเดินทาง) เป็นข้อความแสดงผล"""
+    return {
+        "car": app.car.license_plate if app.car else NO_VALUE_TEXT,
+        "driver": app.driver.get_name() if app.driver else NO_VALUE_TEXT,
+        "is_overtime": _yes_no(app.is_overtime),
+        "extra_travelers": _text_or_dash(app.extra_travelers),
+    }
+
+
+def _trip_report_snapshot(app):
+    """รายงานท้ายใบที่ พขร. กรอกตอนปิดงาน เป็นข้อความแสดงผล"""
+    return {
+        "mileage_out": _text_or_dash(app.last_mileage_before),
+        "mileage_in": _text_or_dash(app.last_mileage),
+        "fuel_liters": _amount_or_dash(app.fuel_liters),
+        "expense_case": _text_or_dash(
+            dict(models.car_reservations.EXPENSE_CASES).get(
+                app.expense_case, app.expense_case
+            )
+        ),
+        "cost_baht": _amount_or_dash(app.cost_baht),
+    }
+
+
+def _log(app, action, actor, step_key="", comment="", changes=()):
     app.audit_logs.append(
         models.car_reservations.ReservationAuditLog(
             action=action,
@@ -146,6 +214,7 @@ def _log(app, action, actor, step_key="", comment=""):
             step_key=step_key,
             step_label=step_label(step_key) if step_key else "",
             comment=comment,
+            changes=list(changes),
         )
     )
 
@@ -253,13 +322,22 @@ def can_edit(app, user):
     )
 
 
-def edit(app, user):
-    """บันทึกการแก้ไขที่ view ตั้งค่าลงคำขอแล้ว: ตรึงเส้นทางใหม่ตามพื้นที่เดินทางและลงประวัติ"""
+def edit(app, user, changes=()):
+    """บันทึกการแก้ไขที่ view ตั้งค่าลงคำขอแล้ว: ตรึงเส้นทางใหม่ตามพื้นที่เดินทางและลงประวัติ
+
+    changes = ช่องที่เปลี่ยน (จาก diff_fields) เก็บไว้กับ log ให้เปิดดูเดิม/ใหม่ได้
+    """
     if not can_edit(app, user):
         raise FlowError("ไม่มีสิทธิ์แก้ไขคำขอนี้")
     app.route_snapshot = route_for(app.request_type, app.province_scope)
     app.updater = user
-    _log(app, "edited", user)
+    _log(
+        app,
+        "edited",
+        user,
+        comment="" if changes else NO_CHANGES_COMMENT,
+        changes=changes,
+    )
     app.save()
 
 
@@ -492,6 +570,7 @@ def approve(
 
     key = current_step_key(app)
     audit_comment = comment
+    changes = []
     if key == "dispatcher":
         if car is None or driver is None:
             raise FlowError(CAR_AND_DRIVER_REQUIRED)
@@ -501,11 +580,13 @@ def approve(
             raise FlowError(CAR_OR_DRIVER_NOT_ASSIGNABLE)
         if _overlapping_bookings(app, car=car).first():
             raise FlowError(f"รถ {car.license_plate} มีงานช่วงเวลานี้แล้ว")
+        before = _assignment_snapshot(app)
         app.car = car
         app.driver = driver
         app.is_overtime = bool(is_overtime)
         if app.request_type in EXTRA_TRAVELER_TYPES:
             app.extra_travelers = extra_travelers
+        changes = diff_fields(before, _assignment_snapshot(app), ASSIGNMENT_LABELS)
         audit_comment = f"จัดรถ {car.license_plate} พนักงานขับรถ {driver.get_name()}"
         if comment:
             audit_comment += f" ({comment})"
@@ -519,7 +600,9 @@ def approve(
             comment=comment,
         )
     )
-    _log(app, "approved", user, step_key=key, comment=audit_comment)
+    _log(
+        app, "approved", user, step_key=key, comment=audit_comment, changes=changes
+    )
     app.current_step += 1
     if app.current_step >= len(app.route_snapshot):
         app.status = "active"
@@ -580,6 +663,7 @@ def can_set_overtime(app, user):
 def set_overtime(app, user, is_overtime):
     if not can_set_overtime(app, user):
         raise FlowError("ไม่มีสิทธิ์แก้สถานะงานนอกเวลา")
+    before = _assignment_snapshot(app)
     app.is_overtime = bool(is_overtime)
     _log(
         app,
@@ -587,6 +671,11 @@ def set_overtime(app, user, is_overtime):
         user,
         step_key="dispatcher",
         comment="ตั้งเป็นงานนอกเวลา (OT)" if app.is_overtime else "ตั้งเป็นงานในเวลา",
+        changes=diff_fields(
+            before,
+            _assignment_snapshot(app),
+            {"is_overtime": ASSIGNMENT_LABELS["is_overtime"]},
+        ),
     )
     app.save()
 
@@ -669,6 +758,7 @@ def close_trip(
             f"{earlier.location} ({earlier.departure_datetime.strftime('%d/%m/%Y %H:%M')} น.)"
         )
 
+    before = _trip_report_snapshot(app)
     app.last_mileage_before = mileage_out
     app.last_mileage = mileage_in
     app.fuel_liters = fuel_liters
@@ -691,7 +781,12 @@ def close_trip(
         else None
     )
     app.status = "completed"
-    _log(app, "completed", user)
+    _log(
+        app,
+        "completed",
+        user,
+        changes=diff_fields(before, _trip_report_snapshot(app), TRIP_REPORT_LABELS),
+    )
     app.save()
     if app.car is not None:
         app.car.last_mileage = mileage_in

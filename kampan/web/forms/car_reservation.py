@@ -81,6 +81,63 @@ class CommonReservationForm(FlaskForm):
     def allow_existing_attachments(self):
         pass
 
+    def _tracked_fields(self):
+        return [
+            (name, field)
+            for name, field in self._fields.items()
+            if name not in UNTRACKED_FIELDS
+        ]
+
+    def change_labels(self):
+        """{ชื่อฟิลด์: ป้ายภาษาไทย} ของข้อมูลคำขอที่ลงประวัติเมื่อแก้ไข เรียงตามฟอร์ม"""
+        return {name: field.label.text for name, field in self._tracked_fields()}
+
+    def describe(self, reservation):
+        """{ชื่อฟิลด์: ข้อความแสดงผลของค่าที่เก็บในคำขอ} ไว้เทียบก่อน-หลังแก้ไข"""
+        return {
+            name: self._display(field, self._stored_value(reservation, name))
+            for name, field in self._tracked_fields()
+        }
+
+    @staticmethod
+    def _stored_value(reservation, name):
+        if name in TRIP_MOMENT_FIELDS:
+            moment = getattr(reservation, TRIP_MOMENT_FIELDS[name])
+            return moment.date() if name.endswith("date") else moment.time()
+        if name == "project_file":
+            return reservation.project_file.filename if reservation.project_file else None
+        name = DETAIL_ATTRIBUTES.get(name, name)
+        for source in (reservation, reservation.details):
+            if source is not None and hasattr(source, name):
+                return getattr(source, name)
+        return None
+
+    @staticmethod
+    def _display(field, value):
+        choices = {
+            (choice[0] if isinstance(choice, tuple) else choice): (
+                choice[1] if isinstance(choice, tuple) else choice
+            )
+            for choice in (getattr(field, "choices", None) or [])
+        }
+        if isinstance(value, list):
+            if choices:
+                value = [key for key in choices if key in value]
+            parts = [
+                f"{item.name} ({item.phone})" if hasattr(item, "phone") else choices.get(item, item)
+                for item in value
+            ]
+            return ", ".join(parts) or NO_VALUE_TEXT
+        if isinstance(value, bool):
+            return "ใช่" if value else "ไม่ใช่"
+        if isinstance(value, datetime.date):
+            return value.strftime(DISPLAY_DATE_FORMAT)
+        if isinstance(value, datetime.time):
+            return value.strftime(PICKUP_TIME_FORMAT)
+        if value in (None, ""):
+            return NO_VALUE_TEXT
+        return str(choices.get(value, value))
+
     def prefill(self, reservation):
         """ตั้งค่าเริ่มต้นของฟอร์มจากคำขอเดิม (หน้าแก้ไข) โดยดึงจากฟิลด์ร่วมก่อน แล้วจาก details"""
         details = reservation.details
@@ -102,6 +159,28 @@ def _parse_hhmm(value):
     if not value:
         return None
     return datetime.datetime.strptime(value, PICKUP_TIME_FORMAT).time()
+
+
+NO_VALUE_TEXT = "-"
+DISPLAY_DATE_FORMAT = "%d/%m/%Y"
+# ฟิลด์ฟอร์มที่ไม่ใช่ข้อมูลของคำขอ (ไม่ลงประวัติการแก้ไข)
+UNTRACKED_FIELDS = (
+    "csrf_token",
+    "confirm_urgent",
+    "eligibility_confirmed",
+    "direct_relative_confirmed",
+)
+# ฟิลด์ฟอร์มที่ชื่อต่างจากฟิลด์ใน details
+DETAIL_ATTRIBUTES = {
+    "flight_arrival_time": "arrival_time",
+    "flight_departure_time": "departure_time",
+}
+TRIP_MOMENT_FIELDS = {
+    "departure_date": "departure_datetime",
+    "departure_time": "departure_datetime",
+    "return_date": "return_datetime",
+    "return_time": "return_datetime",
+}
 
 
 class DomesticReservationForm(CommonReservationForm):
@@ -264,6 +343,7 @@ class AirportReservationForm(CommonReservationForm):
     )
     passengers = fields.FieldList(
         fields.FormField(PassengerRowForm),
+        "รายชื่อผู้โดยสาร",
         min_entries=models.car_reservations.AIRPORT_MAX_PASSENGERS,
         max_entries=models.car_reservations.AIRPORT_MAX_PASSENGERS,
     )

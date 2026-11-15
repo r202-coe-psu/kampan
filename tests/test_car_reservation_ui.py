@@ -375,6 +375,65 @@ def test_detail_audit_log_is_a_timeline_with_one_entry_per_action(world):
     assert "เห็นชอบ" in words(entries[1]) and "02/01/2031 09:05" in words(entries[1])
 
 
+def change(label, old, new):
+    return models.car_reservations.FieldChange(
+        field=label, label=label, old=old, new=new
+    )
+
+
+def edited_reservation(world):
+    return world.reservation(
+        audit_logs=[
+            audit("submitted", actor=world.staff),
+            audit(
+                "edited",
+                actor=world.staff,
+                comment="แก้ไขสถานที่",
+                changes=[
+                    change("สถานที่ปฏิบัติงาน", "กรุงเทพฯ", "เชียงใหม่"),
+                    change("เวลาออกเดินทาง", "08:00", "09:30"),
+                ],
+            ),
+        ]
+    )
+
+
+def test_detail_audit_entry_with_changes_offers_a_details_button_with_the_count(world):
+    log = find(detail(world, world.staff, edited_reservation(world)), "ul", "timeline", data_role="audit-log")[0]
+
+    submitted, edited = find(log, "li")
+    assert "แก้ไข 2 รายการ" in words(edited)
+    button = find(edited, "button", "btn", data_role="audit-details")[0]
+    assert words(button) == "ดูรายละเอียด"
+    assert "แก้ไข" not in words(submitted)
+    assert not find(submitted, "button", data_role="audit-details")
+    assert not find(submitted, "dialog")
+
+
+def test_detail_audit_details_modal_lists_what_changed_from_old_to_new(world):
+    log = find(detail(world, world.staff, edited_reservation(world)), "ul", "timeline", data_role="audit-log")[0]
+    edited = find(log, "li")[1]
+    button = find(edited, "button", data_role="audit-details")[0]
+    dialog = find(edited, "dialog", "modal")[0]
+
+    assert dialog.get("id") and dialog.get("id") in button.get("onclick")
+    box = find(dialog, "div", "modal-box")[0]
+    summary = words(box)
+    for expected in ("แก้ไขคำขอ", "Staff", "02/01/2031 09:05", "แก้ไขสถานที่"):
+        assert expected in summary
+    table = find(box, "table", "table")[0]
+    assert [words(th) for th in table.xpath(".//thead//th")] == ["ข้อมูล", "เดิม", "ใหม่"]
+    rows = table.xpath(".//tbody/tr")
+    assert [[words(td) for td in row.xpath("./td")] for row in rows] == [
+        ["สถานที่ปฏิบัติงาน", "กรุงเทพฯ", "เชียงใหม่"],
+        ["เวลาออกเดินทาง", "08:00", "09:30"],
+    ]
+    old, new = rows[0].xpath("./td")[1:]
+    assert "line-through" in old.get("class") and "text-base-content/60" in old.get("class")
+    assert "font-bold" in new.get("class")
+    assert find(dialog, "form", "modal-backdrop", method="dialog")
+
+
 def action_card(doc):
     cards = find(doc, "div", "card", data_role="action-card")
     return cards[0] if cards else None
