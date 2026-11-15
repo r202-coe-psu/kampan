@@ -1,0 +1,14 @@
+{# ขั้นอนุมัติของคำขอ: ผ่านแล้ว = เขียวเข้ม (step-done), ขั้นที่ค้างอยู่ = เขียวเข้ม + วงกระพริบ (step-current),
+   ไม่อนุมัติ = แดง (step-error), ยังไม่ถึง = เทา  ·  สีและ animation อยู่ใน static/css/setup.css #}
+{% macro ApprovalSteps(steps, class_='steps-vertical md:steps-horizontal w-full') %}
+{% set state_class = {'done': 'step-done', 'current': 'step-current', 'denied': 'step-error'} %}
+<ul class="steps {{ class_ }}">
+  {% for step in steps %}
+  <li class="step {{ state_class.get(step.state, '') }}" data-state="{{ step.state }}"
+      {% if step.state == 'current' %}aria-current="step"{% endif %}>
+    {{ step.label }}
+    {% if caller %}{{ caller(step) }}{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}

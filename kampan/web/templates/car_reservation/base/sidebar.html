@@ -44,7 +44,7 @@
 
     <li class="menu-title">รถ</li>
     {% if is_driver %}
-    {{ MenuItem(['car_reservation.tasks.index', 'car_reservation.tasks.close'], 'ph-steering-wheel', 'รายการงาน',
+    {{ MenuItem(['car_reservation.tasks.index', 'car_reservation.tasks.close'], 'ph-user', 'รายการงาน',
                 url_for('car_reservation.tasks.index', organization_id=organization.id)) }}
     {% endif %}
     {{ MenuItem(['car_reservation.cars.directory'], 'ph-identification-card', 'ข้อมูลรถและพนักงานขับรถ',

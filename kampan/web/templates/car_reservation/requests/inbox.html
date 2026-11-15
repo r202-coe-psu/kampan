@@ -8,7 +8,7 @@
 {% set detail_url = url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) %}
 {% set inbox_url = url_for('car_reservation.requests.inbox', organization_id=organization.id) %}
 {% if key == 'dispatcher' %}
-<a class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="dispatch-link"{% if block %} style="grid-column: 1 / -1"{% endif %} href="{{ detail_url }}"><i class="ph ph-steering-wheel"></i> จัดรถ</a>
+<a class="btn btn-success {% if block %}btn-md btn-block{% else %}btn-sm{% endif %}" data-role="dispatch-link"{% if block %} style="grid-column: 1 / -1"{% endif %} href="{{ detail_url }}"><i class="ph ph-user"></i> จัดรถ</a>
 {% elif key %}
 {% set approve_id = 'quick-approve-' ~ reservation.id ~ suffix %}
 {% set deny_id = 'quick-deny-' ~ reservation.id ~ suffix %}

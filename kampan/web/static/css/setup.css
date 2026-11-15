@@ -280,3 +280,24 @@ fieldset {
 .select select option::checkmark {
   display: none;
 }
+
+/* ขั้นอนุมัติของระบบจองรถ (car_reservation/components/approval_steps.html)
+   ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เขียวเข้มเหมือนกัน + วงกระพริบสีเขียว */
+.step-done::after,
+.step-current::after,
+.step-done + .step-done::before,
+.step-done + .step-current::before {
+  --step-bg: var(--color-green-700);
+  --step-fg: var(--color-white);
+}
+.step-current::after {
+  animation: step-current-pulse 1.6s ease-out infinite;
+}
+@keyframes step-current-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-green-600) 70%, transparent); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-current::after { animation: none; }
+}

@@ -301,7 +301,13 @@ def test_detail_stepper_has_one_step_per_route_step_with_its_state_and_is_respon
         ("ผู้จัดรถ", "current"),
         ("หัวหน้าหน่วยยานพาหนะ", "waiting"),
     ]
-    assert ["step-primary" in li.get("class").split() for li in steps] == [True, True, False]
+    # ผ่านแล้ว = เขียวเข้ม, ขั้นที่ค้างอยู่ = เขียว + วงกระพริบ, ยังไม่ถึง = ไม่มีสี
+    assert [
+        [c for c in li.get("class").split() if c in ("step-done", "step-current", "step-primary")]
+        for li in steps
+    ] == [["step-done"], ["step-current"], []]
+    assert words(steps[1]).startswith("ผู้จัดรถ")
+    assert steps[1].get("aria-current") == "step"
 
 
 def test_detail_stepper_marks_the_denied_step_as_an_error(world):

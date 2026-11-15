@@ -144,7 +144,7 @@
   ('header-approve',   'ph-shield-check',   '4. หัวหน้าฝ่ายอนุมัติ'),
   ('director-approve', 'ph-signpost',       '5. ผอ. อนุมัติ'),
   ('admin-approve',    'ph-check-square',   '6. พัสดุอนุมัติ'),
-  ('car-tasks',        'ph-steering-wheel', '7. รายการงาน (พนักงานขับรถ)'),
+  ('car-tasks',        'ph-user', '7. รายการงาน (พนักงานขับรถ)'),
   ('history',          'ph-clock',          '8. ประวัติการใช้รถยนต์'),
   ('status',           'ph-path',           'ตารางสถานะคำขอ'),
 ] %}
@@ -1067,7 +1067,7 @@
 
       {# ------------------------------------------------ 7. car tasks #}
       <section id="car-tasks" class="segment scroll-mt-4 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-        {{ SectionHeader(7, 'ph-steering-wheel', 'รายการงาน',
+        {{ SectionHeader(7, 'ph-user', 'รายการงาน',
                          'หน้าทำงานของพนักงานขับรถ ดูงานที่ได้รับมอบหมาย และปิดงานพร้อมบันทึกเลขไมล์') }}
 
         <div class="mt-4 flex flex-col gap-2">

@@ -35,7 +35,7 @@
 
   <div class="card bg-base-100 border border-base-300 shadow-sm">
     <div class="card-body gap-4">
-      {{ ListHeader('พนักงานขับรถ', drivers | length, icon='ph-steering-wheel') }}
+      {{ ListHeader('พนักงานขับรถ', drivers | length, icon='ph-user') }}
       {% if drivers %}
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {% for driver in drivers %}
@@ -56,7 +56,7 @@
         {% endfor %}
       </div>
       {% else %}
-      {{ EmptyState('ph-steering-wheel', 'ยังไม่มีพนักงานขับรถ', description='ยังไม่มีสมาชิกที่เป็นพนักงานขับรถในหน่วยงานนี้') }}
+      {{ EmptyState('ph-user', 'ยังไม่มีพนักงานขับรถ', description='ยังไม่มีสมาชิกที่เป็นพนักงานขับรถในหน่วยงานนี้') }}
       {% endif %}
     </div>
   </div>

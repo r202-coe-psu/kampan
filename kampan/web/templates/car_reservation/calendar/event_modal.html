@@ -1,3 +1,4 @@
+{% from '/car_reservation/components/approval_steps.html' import ApprovalSteps %}
 {# ป๊อปอัปรายละเอียดคำขอบนปฏิทินการจองรถ แยกจากของ DIIS เพื่อปรับหน้าตาได้อิสระ #}
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
 {% macro row(icon, label) %}
@@ -32,17 +33,12 @@
       {% call row('ph-identification-card', 'รถ') %}<span data-role="assigned-car">{{ reservation.car.license_plate }}{% if reservation.car.vehicle_type %} ({{ reservation.car.vehicle_type }}){% endif %}</span>{% endcall %}
       {% endif %}
       {% if reservation.driver %}
-      {% call row('ph-steering-wheel', 'พนักงานขับรถ') %}<span data-role="assigned-driver">{{ reservation.driver.get_name() }}</span>{% endcall %}
+      {% call row('ph-user', 'พนักงานขับรถ') %}<span data-role="assigned-driver">{{ reservation.driver.get_name() }}</span>{% endcall %}
       {% endif %}
     </div>
 
     <h4 class="mt-4 font-semibold">สถานะการอนุมัติ</h4>
-    <ul class="steps steps-vertical mt-2 w-full">
-      {% for step in steps %}
-      <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
-          data-state="{{ step.state }}">{{ step.label }}</li>
-      {% endfor %}
-    </ul>
+    {{ ApprovalSteps(steps, class_='steps-vertical mt-2 w-full') }}
 
     <div class="modal-action">
       <a class="btn btn-primary btn-soft"

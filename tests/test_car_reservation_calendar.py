@@ -193,6 +193,7 @@ def test_modal_stepper_marks_where_a_pending_request_is_in_its_route(world):
 
     states = re.findall(r'data-state="(\w+)"', html)
     assert states == ["done", "current", "waiting"]
+    assert 'class="step step-current"' in html
 
 
 def test_modal_of_another_organizations_reservation_is_404(world, create_org):

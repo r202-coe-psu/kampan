@@ -2,6 +2,7 @@
 {% import '/car_reservation/components/status_badge.html' as status_badge %}
 {% from '/car_reservation/components/info_card.html' import InfoCard, Item %}
 {% from '/base/components/modals.html' import DeleteModal %}
+{% from '/car_reservation/components/approval_steps.html' import ApprovalSteps %}
 
 {% block title %}คำขอใช้รถ{% endblock %}
 
@@ -42,20 +43,14 @@
 <div class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-4">
     <h2 class="card-title text-lg"><i class="ph ph-path text-primary"></i> สถานะการอนุมัติ</h2>
-    <ul class="steps steps-vertical md:steps-horizontal w-full">
-      {% for step in steps %}
-      <li class="step {{ 'step-primary' if step.state in ('done', 'current') else '' }} {{ 'step-error' if step.state == 'denied' else '' }}"
-          data-state="{{ step.state }}">
-        {{ step.label }}
-        {% set approval = reservation.step_approvals | selectattr('step_key', 'equalto', step.key) | first %}
-        {% if approval and approval.decided_by and approval.decided_by.signature %}
-        <img class="h-12 mt-1" data-role="approver-signature"
-             src="{{ url_for('accounts.user_signature', user_id=approval.decided_by.id) }}"
-             alt="ลายเซ็น {{ approval.decided_by.get_name() }}">
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
+    {% call(step) ApprovalSteps(steps) %}
+      {% set approval = reservation.step_approvals | selectattr('step_key', 'equalto', step.key) | first %}
+      {% if approval and approval.decided_by and approval.decided_by.signature %}
+      <img class="h-12 mt-1" data-role="approver-signature"
+           src="{{ url_for('accounts.user_signature', user_id=approval.decided_by.id) }}"
+           alt="ลายเซ็น {{ approval.decided_by.get_name() }}">
+      {% endif %}
+    {% endcall %}
   </div>
 </div>
 

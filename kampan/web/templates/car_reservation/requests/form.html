@@ -35,7 +35,7 @@
     {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
 
     {% if urgent_by_dispatcher is defined %}
-    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-steering-wheel') %}
+    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-user') %}
     <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
       {{ renderer.render_select_field(form.car) }}
       {{ renderer.render_select_field(form.driver) }}
