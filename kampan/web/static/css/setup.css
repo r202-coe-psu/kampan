@@ -291,7 +291,13 @@ fieldset {
   --step-fg: var(--color-white);
 }
 .step-current::after {
+  /* daisyUI ใช้ radius แบบ infinity ทำให้วงกระพริบ (box-shadow) เป็นเหลี่ยม: ใช้ 50% แทน */
+  border-radius: 50%;
   animation: step-current-pulse 1.6s ease-out infinite;
+}
+/* .steps ของ daisyUI ตัด overflow: เผื่อที่ให้วงกระพริบ (กว้างสุด 10px) ไม่โดนตัด */
+.steps:has(.step-current) {
+  padding-block: 12px;
 }
 @keyframes step-current-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-green-600) 70%, transparent); }
