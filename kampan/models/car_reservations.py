@@ -188,6 +188,9 @@ class CarReservation(me.Document):
 
     requester_unit = me.StringField(default="", max_length=256)  # คณะ/หน่วยงานของผู้ขอ
     phone = me.StringField(default="", max_length=32)
+    # ผู้ติดต่อรับแจ้งสถานะ: อีเมลนี้ได้รับทุกอีเมลที่ส่งถึงผู้ขอด้วย
+    contact_name = me.StringField(default="", max_length=256)
+    contact_email = me.StringField(default="", max_length=256)
     location = me.StringField(default="", max_length=516, required=True)
     request_reason = me.StringField(default="", max_length=516, required=True)
     departure_datetime = me.DateTimeField(required=True, default=datetime.datetime.now)

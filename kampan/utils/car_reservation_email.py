@@ -84,6 +84,10 @@ def recipients_for(reservation, event):
         email = getattr(person, "email", None)
         if email and email not in emails:
             emails.append(email)
+    # ผู้ติดต่อรับแจ้งสถานะได้รับทุกอีเมลที่ส่งถึงผู้ขอ
+    if reservation.creator in people and reservation.contact_email:
+        if reservation.contact_email not in emails:
+            emails.append(reservation.contact_email)
     return emails
 
 
@@ -120,6 +124,7 @@ def template_variables(reservation, host_url):
     return {
         "organization_name": reservation.organization.name,
         "requester_name": reservation.creator.get_name(),
+        "contact_name": reservation.contact_name or reservation.creator.get_name(),
         "request_type_label": dict(models.car_reservations.RESERVATION_TYPES)[
             reservation.request_type
         ],

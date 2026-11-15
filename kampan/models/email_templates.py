@@ -204,6 +204,7 @@ EMAIL_TEMPLATE_VARIABLES = {
 _CAR_RESERVATION_VARIABLES = [
     ("organization_name", "ชื่อองค์กร"),
     ("requester_name", "ชื่อผู้ขอใช้รถ"),
+    ("contact_name", "ชื่อผู้ติดต่อรับแจ้งสถานะ"),
     ("request_type_label", "ประเภทใบขอ"),
     ("destination", "สถานที่ปลายทาง"),
     ("departure", "วันเวลาออกเดินทาง"),

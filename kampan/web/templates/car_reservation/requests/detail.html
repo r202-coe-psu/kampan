@@ -44,6 +44,8 @@
   {% call Item('ผู้ขอ') %}{{ reservation.creator.get_name() if reservation.creator else '-' }}{% endcall %}
   {% call Item('คณะ/หน่วยงาน') %}{{ reservation.requester_unit or '-' }}{% endcall %}
   {% call Item('เบอร์โทร') %}{{ reservation.phone or '-' }}{% endcall %}
+  {% call Item('ผู้ติดต่อรับแจ้งสถานะ') %}{{ reservation.contact_name or '-' }}{% endcall %}
+  {% call Item('อีเมลผู้ติดต่อ') %}{{ reservation.contact_email or '-' }}{% endcall %}
 {% endcall %}
 
 {% call InfoCard('การเดินทาง', icon='ph-map-pin') %}

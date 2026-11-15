@@ -278,6 +278,8 @@ def _reservation(car=None, driver=None, audit_logs=(), status="pending"):
         id="abc123",
         organization=SimpleNamespace(id="org1", name="Org"),
         creator=_person("requester"),
+        contact_name="",
+        contact_email="",
         request_type="domestic",
         location="หาดใหญ่",
         departure_datetime=datetime.datetime(2026, 12, 25, 8, 30),

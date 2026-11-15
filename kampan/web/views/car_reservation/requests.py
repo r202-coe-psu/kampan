@@ -128,6 +128,9 @@ def create():
         user=user, organization=organization, status="active"
     ).first()
     division = member.division if member else None
+    if request.method == "GET":
+        form.contact_name.data = user.get_name()
+        form.contact_email.data = user.email
 
     submitted, short_notice_days, is_urgent = validate_submission(
         form, organization, request_type

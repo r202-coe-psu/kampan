@@ -2,6 +2,7 @@
 
 import datetime
 import io
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -145,6 +146,8 @@ def world(app, create_org, create_user, assign_user_to_org, login_as, create_car
         data = {
             "requester_unit": "คณะวิศวกรรมศาสตร์",
             "phone": "081-234-5678",
+            "contact_name": s.requester.get_name(),
+            "contact_email": s.requester.email,  # เหมือนค่าเริ่มต้นของฟอร์ม
             "location": "กรุงเทพฯ",
             "request_reason": "ประชุมวิชาการ",
             "departure_date": departure.isoformat(),
@@ -1841,6 +1844,74 @@ def test_denying_notifies_only_the_requester(world, mock_redis_queue):
     assert len(jobs) == 1
     request_id, event, recipients, _ = jobs[0]
     assert (request_id, event) == (str(car_application.id), "denied")
+    assert recipients == [world.requester.email]
+
+
+def test_submitting_saves_the_status_contact_and_shows_it_on_the_detail_page(world):
+    data = world.request_data("domestic")
+    data.update(contact_name="สมศรี ผู้ประสานงาน", contact_email="somsri@example.com")
+
+    assert post_new(world, data).status_code == 302
+
+    saved = models.CarReservation.objects(creator=world.requester).first()
+    html = world.client_for(world.requester).get(detail_url(world, saved)).get_data(
+        as_text=True
+    )
+    assert "สมศรี ผู้ประสานงาน" in html
+    assert "somsri@example.com" in html
+
+
+def test_submitting_without_a_contact_email_shows_the_form_again_and_saves_nothing(
+    world,
+):
+    data = world.request_data("domestic")
+    data["contact_email"] = ""
+
+    response = post_new(world, data)
+
+    assert response.status_code == 200
+    assert models.CarReservation.objects(creator=world.requester).count() == 0
+
+
+def test_new_request_form_is_prefilled_with_the_requesters_name_and_email(world):
+    html = (
+        world.client_for(world.requester)
+        .get(f"{BASE}/new?organization_id={world.org.id}&type=domestic")
+        .get_data(as_text=True)
+    )
+
+    assert re.search(
+        rf'name="contact_email"[^>]*value="{re.escape(world.requester.email)}"', html
+    )
+    assert re.search(
+        rf'name="contact_name"[^>]*value="{re.escape(world.requester.get_name())}"',
+        html,
+    )
+
+
+def deny_after_submitting_with_contact(world, contact_email):
+    data = world.request_data("domestic")
+    data["contact_email"] = contact_email
+    post_new(world, data)
+    car_application = models.CarReservation.objects(creator=world.requester).first()
+    world.client_for(world.supervisor).post(
+        deny_url(world, car_application), data={"comment": "ไม่จำเป็นต้องเดินทาง"}
+    )
+
+
+def test_denying_also_emails_the_status_contact(world, mock_redis_queue):
+    deny_after_submitting_with_contact(world, "secretary@example.com")
+
+    recipients = email_jobs(mock_redis_queue, "denied")[0][2]
+    assert recipients == [world.requester.email, "secretary@example.com"]
+
+
+def test_contact_email_equal_to_the_requesters_is_emailed_only_once(
+    world, mock_redis_queue
+):
+    deny_after_submitting_with_contact(world, world.requester.email)
+
+    recipients = email_jobs(mock_redis_queue, "denied")[0][2]
     assert recipients == [world.requester.email]
 
 

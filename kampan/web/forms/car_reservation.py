@@ -23,6 +23,18 @@ class CommonReservationForm(FlaskForm):
         "เบอร์โทรศัพท์ผู้ขอใช้รถ",
         validators=[validators.DataRequired(), validators.Length(max=32)],
     )
+    contact_name = fields.StringField(
+        "ชื่อผู้ติดต่อรับแจ้งสถานะ",
+        validators=[validators.DataRequired(), validators.Length(max=256)],
+    )
+    contact_email = fields.StringField(
+        "อีเมลผู้ติดต่อรับแจ้งสถานะ",
+        validators=[
+            validators.DataRequired(),
+            validators.Length(max=256),
+            validators.Regexp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", message="รูปแบบอีเมลไม่ถูกต้อง"),
+        ],
+    )
     departure_date = fields.DateField(
         "วันออกเดินทาง", validators=[validators.InputRequired()]
     )
@@ -50,6 +62,8 @@ class CommonReservationForm(FlaskForm):
             # ฟอร์มที่ตัด requester_unit ออก (เช่น สวัสดิการใช้สังกัด) ตั้งค่านี้เองต่อจากนี้
             "requester_unit": self.requester_unit.data if self.requester_unit else "",
             "phone": self.phone.data,
+            "contact_name": self.contact_name.data.strip(),
+            "contact_email": self.contact_email.data.strip(),
             "pickup_place": self.pickup_place.data,
             "pickup_time": self.pickup_time.data.strftime(PICKUP_TIME_FORMAT),
         }
