@@ -72,6 +72,8 @@ def inbox():
         "/car_reservation/requests/inbox.html",
         organization=g.organization,
         reservations=waiting,
+        step_key=flow.current_step_key,
+        csrf_form=forms.car_reservation.ApprovalDecisionForm(),
         step_label=lambda app: flow.step_label(
             flow.current_step_key(app) or "dispatcher"
         ),
@@ -533,6 +535,12 @@ def paper(request_id):
     )
 
 
+def inbox_url_if_requested():
+    """URL กล่องรออนุมัติของ org นี้ ถ้าฟอร์มส่ง next มาตรงกับมันเป๊ะ (whitelist เดียว ไม่รับ URL อื่น)"""
+    inbox_url = url_for("car_reservation.requests.inbox", organization_id=g.organization.id)
+    return inbox_url if request.form.get("next") == inbox_url else None
+
+
 @module.route("/<request_id>/approve", methods=["POST"])
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def approve(request_id):
@@ -586,7 +594,8 @@ def approve(request_id):
     )
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
     return redirect(
-        url_for(
+        inbox_url_if_requested()
+        or url_for(
             "car_reservation.requests.detail",
             request_id=reservation.id,
             organization_id=g.organization.id,
@@ -619,7 +628,8 @@ def deny(request_id):
     )
     utils.car_reservation_email.notify(reservation, "denied")
     flash("บันทึกการไม่อนุมัติเรียบร้อยแล้ว", "success")
-    return redirect_to_detail
+    inbox_url = inbox_url_if_requested()
+    return redirect(inbox_url) if inbox_url else redirect_to_detail
 
 
 @module.route("/<request_id>/overtime", methods=["POST"])

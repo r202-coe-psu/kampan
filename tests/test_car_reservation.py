@@ -3318,3 +3318,111 @@ def test_a_system_admin_can_answer_for_a_trip_created_by_the_dispatcher(
     assert answered.status_code == 302
     job.reload()
     assert job.close_confirmation == "confirmed"
+
+
+def inbox_rows(world, user):
+    page = world.client_for(user).get(inbox_url(world))
+    assert page.status_code == 200
+    doc = lxml_html.fromstring(page.get_data(as_text=True))
+    return doc.xpath("//table[contains(@class, 'table')]/tbody/tr")
+
+
+def test_inbox_row_at_a_plain_step_offers_quick_approve_and_deny_that_return_to_the_inbox(
+    world,
+):
+    car_application = world.submit_domestic_request()
+
+    (row,) = inbox_rows(world, world.supervisor)
+
+    approve_form = row.xpath(f".//form[@action='{approve_url(world, car_application)}']")
+    deny_form = row.xpath(f".//form[@action='{deny_url(world, car_application)}']")
+    assert len(approve_form) == 1 and len(deny_form) == 1
+    for form in (approve_form[0], deny_form[0]):
+        assert form.get("method") == "post"
+        assert form.xpath(".//input[@name='next']/@value") == [inbox_url(world)]
+    assert row.xpath(".//button[@data-role='quick-approve']")
+    assert row.xpath(".//button[@data-role='quick-deny']")
+    assert deny_form[0].xpath(".//textarea[@name='comment'][@required]")
+    assert not row.xpath(".//*[@data-role='dispatch-link']")
+
+
+def test_inbox_row_at_the_dispatcher_step_links_to_the_detail_to_dispatch_instead_of_quick_approve(
+    world,
+):
+    car_application = world.submit_domestic_request()
+    world.client_for(world.supervisor).post(
+        approve_url(world, car_application), data={"comment": ""}
+    )
+
+    (row,) = inbox_rows(world, world.dispatcher)
+
+    (link,) = row.xpath(".//a[@data-role='dispatch-link']")
+    assert link.get("href") == detail_url(world, car_application)
+    assert "จัดรถ" in link.text_content()
+    assert not row.xpath(".//*[@data-role='quick-approve']")
+    assert not row.xpath(".//form[contains(@action, '/approve')]")
+
+
+def test_approve_with_next_set_to_the_inbox_returns_there_and_still_advances(world):
+    car_application = world.submit_domestic_request()
+
+    response = world.client_for(world.supervisor).post(
+        approve_url(world, car_application),
+        data={"comment": "", "next": inbox_url(world)},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == inbox_url(world)
+    car_application.reload()
+    assert car_application.current_step == 1
+
+
+def test_deny_with_next_set_to_the_inbox_returns_there_and_denies(world):
+    car_application = world.submit_domestic_request()
+
+    response = world.client_for(world.supervisor).post(
+        deny_url(world, car_application),
+        data={"comment": "ไม่เหมาะสม", "next": inbox_url(world)},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == inbox_url(world)
+    car_application.reload()
+    assert car_application.status == "denied"
+
+
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://evil.example",
+        "//evil.example/car_reservation/requests/inbox",
+        "/car_reservation/requests/inbox?organization_id=000000000000000000000000",
+    ],
+)
+@pytest.mark.parametrize("action", ["approve", "deny"])
+def test_next_that_is_not_this_orgs_inbox_is_ignored_and_the_detail_is_shown(
+    world, action, next_url
+):
+    car_application = world.submit_domestic_request()
+
+    response = world.client_for(world.supervisor).post(
+        f"{BASE}/{car_application.id}/{action}?organization_id={world.org.id}",
+        data={"comment": "เหตุผล", "next": next_url},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == detail_url(world, car_application)
+
+
+def test_denying_with_next_but_without_a_reason_is_still_refused(world):
+    car_application = world.submit_domestic_request()
+
+    response = world.client_for(world.supervisor).post(
+        deny_url(world, car_application),
+        data={"comment": "", "next": inbox_url(world)},
+    )
+
+    assert response.status_code == 302
+    car_application.reload()
+    assert car_application.status == "pending"
+    assert car_application.current_step == 0
