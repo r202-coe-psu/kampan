@@ -18,7 +18,7 @@
         <thead>
           <tr>
             <th>เลขที่</th>
-            <th>เรื่อง</th>
+            <th>วัตถุประสงค์</th>
             <th>ผู้ขอ</th>
             <th>ประเภท</th>
             <th>ปลายทาง</th>
@@ -41,8 +41,10 @@
             <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
             <td><span class="badge badge-warning badge-soft badge-sm whitespace-nowrap">{{ step_label(reservation) }}</span></td>
             <td class="text-right">
-              <a class="btn btn-sm btn-primary"
-                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดู</a>
+              <a class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" data-tip="ดูรายละเอียด" aria-label="ดูรายละเอียด" data-role="view-request"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
             </td>
           </tr>
           {% endfor %}
@@ -66,7 +68,7 @@
           <div class="text-sm">รอ: {{ step_label(reservation) }}</div>
           <div class="card-actions mt-2">
             <a class="btn btn-sm btn-primary"
-               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">ดู</a>
+               href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}"><i class="ph ph-eye"></i> ดูรายละเอียด</a>
           </div>
         </div>
       </div>

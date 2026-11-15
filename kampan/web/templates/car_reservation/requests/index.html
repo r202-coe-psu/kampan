@@ -23,10 +23,11 @@
       <table class="table">
         <thead>
           <tr>
-            <th>เรื่อง</th>
+            <th>วัตถุประสงค์</th>
             <th>ประเภท</th>
             <th>วันออกเดินทาง</th>
             <th>สถานะ</th>
+            <th class="w-px"></th>
           </tr>
         </thead>
         <tbody>
@@ -43,6 +44,12 @@
             <td>{{ reservation.get_request_type_display() }}</td>
             <td>{{ reservation.departure_datetime.strftime('%d/%m/%Y %H:%M') }} น.</td>
             <td>{{ status_badge.render(reservation) }} {% include '/car_reservation/feedback/_link.html' %}</td>
+            <td class="text-right">
+              <a class="btn btn-ghost btn-sm btn-square tooltip tooltip-left" data-tip="ดูรายละเอียด" aria-label="ดูรายละเอียด" data-role="view-request"
+                 href="{{ url_for('car_reservation.requests.detail', request_id=reservation.id, organization_id=organization.id) }}">
+                <i class="ph ph-eye text-lg"></i>
+              </a>
+            </td>
           </tr>
           {% endfor %}
         </tbody>

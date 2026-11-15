@@ -490,3 +490,20 @@ def test_module_pages_use_theme_colors_only(world, path, query):
         for el in doc.xpath("//*[contains(concat(' ', normalize-space(@class), ' '), ' drawer ')]")
     )
     assert HARDCODED_COLOR.findall(body) == []
+
+
+@pytest.mark.parametrize(
+    "user_attr, path", [("staff", "/requests/"), ("dispatcher", "/requests/inbox")]
+)
+def test_every_request_row_has_an_eye_button_that_opens_the_detail(world, user_attr, path):
+    reservation = world.reservation(request_reason="ประชุมวิชาการ")
+
+    doc = world.page(getattr(world, user_attr), path)
+
+    rows = find(doc, "tr", within="//table[" + has_class("table") + "]/tbody")
+    assert len(rows) == 1
+    view = find(rows[0], "a", data_role="view-request")
+    assert len(view) == 1
+    assert f"/requests/{reservation.id}" in view[0].get("href")
+    assert view[0].get("aria-label") == "ดูรายละเอียด"
+    assert view[0].xpath(".//i[" + has_class("ph-eye") + "]")
