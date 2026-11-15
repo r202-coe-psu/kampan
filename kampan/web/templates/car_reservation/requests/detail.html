@@ -173,41 +173,40 @@
           <span class="font-medium">{{ form.driver.label.text }} (ภาระงานย้อนหลัง 30 วัน)</span>
           <a href="{{ url_for('car_reservation.stats.drivers', organization_id=organization.id) }}" class="link link-primary text-sm" data-role="workload-dashboard-link">ดู dashboard ภาระงาน</a>
         </div>
-        <div class="overflow-x-auto bg-base-100 rounded-box border border-base-300">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th></th>
-                <th>ชื่อ</th>
-                <th class="text-right">ในเวลา</th>
-                <th class="text-right">OT</th>
-                <th class="text-right">ชม.</th>
-                <th class="text-right">งานที่จะมาถึง</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {# choices ของ form.driver ตั้งจาก workload ลำดับเดียวกัน จึงจับคู่แถวกับ subfield ด้วย loop.index0 #}
-              {% for subfield in form.driver %}
-              {% set row = workload[loop.index0] %}
-              <tr class="hover" data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}">
-                <td>{{ subfield(class_="radio radio-sm radio-primary") }}</td>
-                <td><label for="{{ subfield.id }}" class="cursor-pointer font-medium">{{ row.driver.get_name() }}</label></td>
-                <td class="text-right">{{ row.in_hours_jobs }}</td>
-                <td class="text-right">{{ row.ot_jobs }}</td>
-                <td class="text-right">{{ '%.1f' | format(row.hours) }}</td>
-                <td class="text-right">{{ row.upcoming }}</td>
-                <td>
-                  {% if row.busy %}
-                  <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge"><i class="ph ph-warning"></i> มีงานชน</span>
-                  {% else %}
-                  <span class="badge badge-success badge-soft badge-sm whitespace-nowrap">ว่าง</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        {# แถวเดียวต่อ พขร. เป็น label ที่ครอบ radio: มือถือเป็นการ์ดสองบรรทัด (ชื่อ+ป้ายสถานะ / สถิติย่อ) เดสก์ท็อปเป็นกริดแบบตาราง ไม่ต้องเลื่อนแนวนอน #}
+        {% set cols = 'md:grid-cols-[auto_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_6.5rem_7rem]' %}
+        <div class="rounded-box border border-base-300 bg-base-100 divide-y divide-base-300" role="radiogroup">
+          <div class="hidden md:grid {{ cols }} items-center gap-x-3 px-3 py-2 text-xs font-semibold text-base-content/70" aria-hidden="true">
+            <span class="w-5"></span>
+            <span>ชื่อ</span>
+            <span class="text-right">ในเวลา</span>
+            <span class="text-right">OT</span>
+            <span class="text-right">ชม.</span>
+            <span class="text-right">งานที่จะมาถึง</span>
+            <span>สถานะ</span>
+          </div>
+          {# choices ของ form.driver ตั้งจาก workload ลำดับเดียวกัน จึงจับคู่แถวกับ subfield ด้วย loop.index0 #}
+          {% for subfield in form.driver %}
+          {% set row = workload[loop.index0] %}
+          <label for="{{ subfield.id }}" class="grid grid-cols-[auto_minmax(0,1fr)_auto] {{ cols }} items-center gap-x-3 gap-y-1 px-3 py-2 cursor-pointer hover:bg-base-200 has-[:checked]:bg-primary/10"
+                 data-role="driver-row" data-driver-id="{{ row.driver.id }}" data-busy="{{ 'true' if row.busy else 'false' }}">
+            {{ subfield(class_="radio radio-sm radio-primary") }}
+            <span class="font-medium break-words">{{ row.driver.get_name() }}</span>
+            <span class="col-start-2 col-span-2 row-start-2 flex flex-wrap gap-x-3 text-xs text-base-content/70 md:contents md:text-sm md:text-base-content">
+              <span class="md:text-right"><span class="md:hidden">ในเวลา </span>{{ row.in_hours_jobs }}</span>
+              <span class="md:text-right"><span class="md:hidden">OT </span>{{ row.ot_jobs }}</span>
+              <span class="md:text-right">{{ '%.1f' | format(row.hours) }}<span class="md:hidden"> ชม.</span></span>
+              <span class="md:text-right"><span class="md:hidden">ที่จะมาถึง </span>{{ row.upcoming }}</span>
+            </span>
+            <span class="col-start-3 row-start-1 md:col-auto md:row-auto">
+              {% if row.busy %}
+              <span class="badge badge-warning badge-soft badge-sm whitespace-nowrap" data-role="busy-badge"><i class="ph ph-warning"></i> มีงานชน</span>
+              {% else %}
+              <span class="badge badge-success badge-soft badge-sm whitespace-nowrap">ว่าง</span>
+              {% endif %}
+            </span>
+          </label>
+          {% endfor %}
         </div>
       </div>
       <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">

@@ -2753,7 +2753,7 @@ def test_dispatcher_driver_radios_are_rendered_by_the_wtforms_radio_field_in_wor
     )
 
     doc = lxml_html.fromstring(html)
-    rows = doc.xpath("//tr[@data-role='driver-row']")
+    rows = doc.xpath("//*[@data-role='driver-row']")
     radios = [row.xpath(".//input[@type='radio']")[0] for row in rows]
     # id ของ RadioField คือ driver-<ลำดับ> และ value เป็น id ของ พขร. ในแถวนั้น (เรียงตามภาระงาน)
     assert [(r.get("id"), r.get("name"), r.get("value")) for r in radios] == [
@@ -3639,3 +3639,46 @@ def test_denying_with_next_but_without_a_reason_is_still_refused(world):
     car_application.reload()
     assert car_application.status == "pending"
     assert car_application.current_step == 0
+
+
+def test_dispatcher_driver_picker_has_no_horizontal_scroll_and_one_radio_per_driver(world):
+    second = world.add_driver("Second", "Driver")
+    car_application = request_at_dispatcher(world)
+
+    html = (
+        world.client_for(world.dispatcher)
+        .get(detail_url(world, car_application))
+        .get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    (picker,) = doc.xpath("//*[@data-role='driver-workload']")
+    # ตารางกว้างกว่าจอมือถือ: ต้องไม่มีทั้งตารางและตัวห่อที่เลื่อนแนวนอน
+    assert not picker.xpath(".//table")
+    assert not picker.xpath(".//*[contains(concat(' ', normalize-space(@class), ' '), ' overflow-x-auto ')]")
+    # radio field เดียวต่อคน (ไม่ render ซ้ำสำหรับมือถือ/เดสก์ท็อป ไม่งั้นส่ง driver สองค่า)
+    radios = picker.xpath(".//input[@type='radio'][@name='driver']")
+    assert sorted(r.get("value") for r in radios) == sorted([str(world.driver.id), str(second.id)])
+    assert len({r.get("id") for r in radios}) == len(radios)
+    rows = picker.xpath(".//*[@data-role='driver-row']")
+    assert [r.get("data-driver-id") for r in rows] == [r.get("value") for r in radios]
+    for row in rows:
+        assert row.get("data-busy") in ("true", "false")
+        assert len(row.xpath(".//input[@type='radio'][@name='driver']")) == 1
+        text = " ".join(row.text_content().split())
+        # สถิติครบอยู่ในแถวเดียวกัน (บรรทัดย่อบนมือถือ) พร้อมป้ายสถานะ
+        for label in ("ในเวลา", "OT", "ชม.", "ที่จะมาถึง", "ว่าง"):
+            assert label in text
+
+
+def test_quick_deny_modal_keeps_the_required_asterisk_inside_the_label_line(world):
+    world.submit_domestic_request()
+    page = world.client_for(world.supervisor).get(inbox_url(world))
+    doc = lxml_html.fromstring(page.get_data(as_text=True))
+
+    dialogs = doc.xpath("//dialog[starts-with(@id, 'quick-deny-')]")
+    assert dialogs
+    for dialog in dialogs:
+        (textarea,) = dialog.xpath(".//textarea[@name='comment']")
+        (label,) = dialog.xpath(f".//label[@for='{textarea.get('id')}']")
+        assert label.xpath("./span[contains(@class, 'text-error')][normalize-space()='*']")

@@ -818,3 +818,27 @@ def test_request_detail_hides_the_odometer_photos_from_other_colleagues(
     )
 
     assert "mileage_photo" not in html
+
+
+def test_close_page_camera_video_and_preview_share_one_fixed_aspect_box(world):
+    from lxml import html as lxml_html
+
+    reservation = world.reservation()
+
+    html = (
+        world.client_for(world.driver).get(close_url(world, reservation)).get_data(as_text=True)
+    )
+
+    doc = lxml_html.fromstring(html)
+    blocks = doc.xpath("//form[@id='close-form']//fieldset[@data-photo]")
+    assert len(blocks) == 2
+    for block in blocks:
+        (video,) = block.xpath(".//video")
+        (preview,) = block.xpath(".//img")
+        video_classes = set(video.get("class").split())
+        preview_classes = set(preview.get("class").split())
+        aspects = {c for c in video_classes if c.startswith("aspect-")}
+        assert aspects and aspects == {c for c in preview_classes if c.startswith("aspect-")}
+        # สตรีม 4:3 ต้องไม่ถูก letterbox ด้วย aspect-video (16:9)
+        assert "aspect-video" not in video_classes
+        assert "object-cover" in video_classes and "object-cover" in preview_classes

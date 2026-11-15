@@ -25,8 +25,8 @@
       <fieldset class="fieldset" data-photo="{{ field.name }}">
         <legend class="fieldset-legend">{{ label }} <span class="text-error">*</span></legend>
         {{ field(class_="hidden", accept="image/jpeg,image/png", required=False) }}
-        <video class="w-full rounded-box bg-base-300 aspect-video" autoplay playsinline muted></video>
-        <img class="w-full rounded-box hidden" alt="{{ label }}">
+        <video class="w-full rounded-box bg-base-300 aspect-[4/3] object-cover" autoplay playsinline muted></video>
+        <img class="w-full rounded-box aspect-[4/3] object-cover hidden" alt="{{ label }}">
         <canvas class="hidden"></canvas>
         <button type="button" class="btn btn-secondary btn-lg w-full" data-action="shoot">
           <i class="ph ph-camera"></i> ถ่ายรูป

@@ -33,7 +33,7 @@
       <dt class="text-base-content/60">ขั้นที่รอ</dt><dd>{{ step_label(reservation) }}</dd>
     </dl>
     <div class="mt-4 flex w-full flex-col gap-1">
-      {{ quick.comment.label(class_="text-sm font-medium") }}{% if quick.comment.flags.required %}<span class="text-error">*</span>{% endif %}
+      <label for="{{ quick.comment.id }}" class="text-sm font-medium">{{ quick.comment.label.text }}{% if quick.comment.flags.required %} <span class="text-error">*</span>{% endif %}</label>
       {{ quick.comment(class_="textarea w-full", rows=3) }}
     </div>
     <div class="modal-action">
