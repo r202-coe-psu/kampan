@@ -112,7 +112,7 @@ class DomesticReservationForm(CommonReservationForm):
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     request_reason = fields.StringField(
-        "เรื่อง",
+        "วัตถุประสงค์การเดินทาง",
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     passenger_number = fields.IntegerField(
@@ -470,7 +470,7 @@ class AbroadReservationForm(CommonReservationForm):
         "ประเทศ", validators=[validators.DataRequired(), validators.Length(max=256)]
     )
     request_reason = fields.StringField(
-        "เรื่อง",
+        "วัตถุประสงค์การเดินทาง",
         validators=[validators.DataRequired(), validators.Length(max=516)],
     )
     coordinator_name = fields.StringField(

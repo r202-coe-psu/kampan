@@ -1,3 +1,5 @@
+{% from '/car_reservation/components/form_section.html' import FormSection %}
+{% call FormSection('รถและจุดหมาย', icon='ph-globe-hemisphere-east') %}
 <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
   {{ renderer.render_field(form.section) }}
   {{ renderer.render_field(form.document_number) }}
@@ -10,4 +12,5 @@
   {{ renderer.render_field(form.coordinator_name) }}
   {{ renderer.render_field(form.coordinator_phone) }}
 </div>
-{{ renderer.render_field(form.request_reason) }}
+{{ renderer.render_field(form.request_reason, placeholder="เช่น ประชุมวิชาการ, ศึกษาดูงาน, รับ-ส่งวิทยากร") }}
+{% endcall %}

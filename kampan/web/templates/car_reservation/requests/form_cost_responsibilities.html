@@ -1,6 +1,9 @@
-{{ renderer.render_checkbox(form.in_office_of_president) }}
-<div id="cost-responsibilities" class="{{ '' if form.in_office_of_president.data else 'hidden' }}">
-  <p class="text-sm text-base-content/70">ข้อความในตารางนี้ใช้เฉพาะการขอใช้รถยนต์ของหน่วยงานในสำนักงานอธิการบดีเท่านั้น</p>
+<label class="flex w-fit cursor-pointer items-center gap-2 font-medium">
+  {{ form.in_office_of_president(class_="checkbox checkbox-primary") }}
+  <span>{{ form.in_office_of_president.label.text }}</span>
+</label>
+<div id="cost-responsibilities" class="{{ '' if form.in_office_of_president.data else 'hidden' }} rounded-box border border-base-300 bg-base-200/50 p-4">
+  <p class="text-sm text-base-content/70">ใช้เฉพาะการขอใช้รถยนต์ของหน่วยงานในสำนักงานอธิการบดีเท่านั้น</p>
   {{ renderer.render_checkbox_list_field(form.cost_responsibilities) }}
 </div>
 <script>

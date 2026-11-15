@@ -1,3 +1,5 @@
+{% from '/car_reservation/components/form_section.html' import FormSection %}
+{% call FormSection('รายละเอียดงาน', icon='ph-hand-heart') %}
 {{ renderer.render_radio_field(form.employee_type) }}
 {{ renderer.render_field(form.affiliation) }}
 {{ renderer.render_radio_field(form.vehicle_kind) }}
@@ -12,3 +14,4 @@
 {{ renderer.render_checkbox(form.direct_relative_confirmed) }}
 {% for error in form.direct_relative_confirmed.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
 <p class="text-sm text-base-content/70">หมายเหตุ การขอใช้รถประเภทนี้ ขอได้เฉพาะตนเอง และญาติสายตรงเท่านั้น</p>
+{% endcall %}

@@ -209,27 +209,44 @@ def form_sections(doc):
 
 
 @pytest.mark.parametrize(
-    "request_type, extra_sections",
+    "request_type, type_sections, extra_sections",
     [
-        ("domestic", ["ค่าใช้จ่าย"]),
-        ("airport", ["ค่าใช้จ่าย"]),
-        ("welfare", []),
-        ("abroad", ["แนบไฟล์"]),
+        ("domestic", ["รถที่ต้องการ", "จุดหมายและวัตถุประสงค์"], ["ค่าใช้จ่าย"]),
+        ("airport", ["เที่ยวบินและผู้โดยสาร"], ["ค่าใช้จ่าย"]),
+        ("welfare", ["รายละเอียดงาน"], []),
+        ("abroad", ["รถและจุดหมาย"], ["แนบไฟล์"]),
     ],
 )
-def test_request_form_groups_fields_under_headed_sections(world, request_type, extra_sections):
+def test_request_form_groups_fields_under_headed_sections(
+    world, request_type, type_sections, extra_sections
+):
     doc = world.page(world.staff, "/requests/new", type=request_type)
 
     sections = form_sections(doc)
-    assert list(sections) == ["ข้อมูลผู้ขอ", "การเดินทาง", "ข้อมูลเฉพาะของแบบฟอร์ม", *extra_sections]
+    assert list(sections) == ["ข้อมูลผู้ขอ", "การเดินทาง", *type_sections, *extra_sections]
     # ใบสวัสดิการใช้ "สังกัด" ในส่วนเฉพาะแบบฟอร์มแทนหน่วยงานผู้ขอ
     assert ("requester_unit" in sections["ข้อมูลผู้ขอ"]) == (request_type != "welfare")
     assert "phone" in sections["ข้อมูลผู้ขอ"]
     assert {"departure_date", "return_time", "pickup_place"} <= sections["การเดินทาง"]
+    if request_type == "domestic":
+        assert {"vehicle_kind", "vehicle_count", "passenger_number"} == sections["รถที่ต้องการ"]
+        assert {"province_scope", "location", "request_reason"} <= sections[
+            "จุดหมายและวัตถุประสงค์"
+        ]
     if request_type == "abroad":
         assert "project_file" in sections["แนบไฟล์"]
     if extra_sections == ["ค่าใช้จ่าย"]:
         assert {"in_office_of_president", "cost_responsibilities"} <= sections["ค่าใช้จ่าย"]
+
+
+@pytest.mark.parametrize("request_type", ["domestic", "abroad"])
+def test_the_trip_purpose_field_says_what_it_asks_for(world, request_type):
+    html = world.client_for(world.staff).get(
+        f"/car_reservation/requests/new?organization_id={world.org.id}&type={request_type}"
+    ).get_data(as_text=True)
+
+    assert "วัตถุประสงค์การเดินทาง" in html
+    assert 'placeholder="เช่น ประชุมวิชาการ' in html
 
 
 def test_request_form_has_a_submit_area_with_cancel_and_submit(world):

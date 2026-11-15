@@ -1,3 +1,5 @@
+{% from '/car_reservation/components/form_section.html' import FormSection %}
+{% call FormSection('เที่ยวบินและผู้โดยสาร', icon='ph-airplane-tilt') %}
 {{ renderer.render_radio_field(form.transfer) }}
 <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
   {{ renderer.render_field(form.flight_number) }}
@@ -18,3 +20,4 @@
 </fieldset>
 {{ renderer.render_checkbox(form.eligibility_confirmed) }}
 {% for error in form.eligibility_confirmed.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
+{% endcall %}
