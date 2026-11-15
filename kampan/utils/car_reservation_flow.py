@@ -363,6 +363,13 @@ def is_approver(organization, user):
     )
 
 
+def is_driver_only(organization, user):
+    """พนักงานขับรถล้วน (ถือ role driver แต่ไม่ได้อนุมัติ) ไม่ได้ขอใช้รถ: ใช้หน้างานของตัวเองแทนหน้าคำขอ"""
+    return has_role(organization, user, "driver") and not is_approver(
+        organization, user
+    )
+
+
 def inbox_for(organization, user):
     """คำขอที่รออนุมัติหรือรอรับทราบการยกเลิก และ user ทำแทนขั้นปัจจุบันได้ เรียงตามวันเดินทาง"""
     waiting = models.CarReservation.objects(

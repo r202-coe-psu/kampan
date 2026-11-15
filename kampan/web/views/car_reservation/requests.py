@@ -49,9 +49,7 @@ def get_request_or_404(request_id):
 @acl.organization_roles_required(*ANY_ORGANIZATION_ROLE)
 def index():
     user = current_user._get_current_object()
-    if flow.has_role(g.organization, user, "driver") and not flow.is_approver(
-        g.organization, user
-    ):
+    if flow.is_driver_only(g.organization, user):
         # พขร. ล้วนไม่ได้ขอใช้รถ: พาไปหน้างานของตัวเอง
         return redirect(
             url_for("car_reservation.tasks.index", organization_id=g.organization.id)

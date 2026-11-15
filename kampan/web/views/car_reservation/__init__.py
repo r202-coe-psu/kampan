@@ -38,6 +38,39 @@ def inject_is_driver():
 
 
 @module.context_processor
+def inject_can_request():
+    """เห็นเมนูคำขอของฉัน/ยื่นคำขอไหม: ทุกคนยกเว้นพนักงานขับรถล้วน (ซึ่งถูกพาไปหน้ารายการงานแทน)"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_request": False}
+    return {
+        "can_request": not utils.car_reservation_flow.is_driver_only(
+            organization, current_user._get_current_object()
+        )
+    }
+
+
+@module.context_processor
+def inject_can_switch_system():
+    """เห็นเมนูเปลี่ยนระบบไหม: ต่อเมื่อหน้าเลือกระบบเปิดได้จริง คือ org มีหลายระบบและผู้ใช้มีฝ่าย (ยกเว้น admin ของระบบ)"""
+    from kampan.web.views import MODULE_KEY_HOME_ENDPOINTS
+
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_switch_system": False}
+    enabled_modules = [
+        key for key in MODULE_KEY_HOME_ENDPOINTS if organization.has_module(key)
+    ]
+    return {
+        "can_switch_system": len(enabled_modules) > 1
+        and (
+            "admin" in current_user.roles
+            or bool(current_user.get_current_division(organization))
+        )
+    }
+
+
+@module.context_processor
 def inject_can_view_stats():
     """เห็นเมนูภาระงานพนักงานขับรถไหม: ผู้จัดรถ ผู้บริหาร และ admin"""
     organization = getattr(g, "organization", None)
