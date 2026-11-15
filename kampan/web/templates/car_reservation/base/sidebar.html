@@ -21,6 +21,10 @@
                 url_for('car_reservation.requests.index', organization_id=organization.id)) }}
     {{ MenuItem(['car_reservation.requests.create'], 'ph-hand-arrow-up', 'ยื่นคำขอ',
                 url_for('car_reservation.requests.create', organization_id=organization.id), 'data-open-new-request') }}
+    {% if can_create_urgent %}
+    {{ MenuItem(['car_reservation.requests.create_urgent'], 'ph-lightning', 'ขอใช้รถเร่งด่วน',
+                url_for('car_reservation.requests.create_urgent', organization_id=organization.id)) }}
+    {% endif %}
     {{ MenuItem(['car_reservation.calendar.index'], 'ph-calendar-dots', 'ปฏิทินการจองรถ',
                 url_for('car_reservation.calendar.index', organization_id=organization.id)) }}
 
@@ -51,6 +55,10 @@
     {% endif %}
 
     <li class="menu-title">ตั้งค่า</li>
+    {% if current_user.has_organization_roles("admin") %}
+    {{ MenuItem(['car_reservation.settings.index'], 'ph-gear', 'ตั้งค่า',
+                url_for('car_reservation.settings.index', organization_id=organization.id)) }}
+    {% endif %}
     {{ MenuItem([], 'ph-swap', 'เปลี่ยนระบบ', url_for('site.select_system', organization_id=organization.id)) }}
     {% endif %}
 

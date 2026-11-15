@@ -52,6 +52,19 @@ def inject_can_view_stats():
 
 
 @module.context_processor
+def inject_can_create_urgent():
+    """เห็นเมนูขอใช้รถเร่งด่วนไหม: เฉพาะผู้จัดรถ (role dispatcher) ของ org ที่ดูอยู่"""
+    organization = getattr(g, "organization", None)
+    if organization is None or not current_user.is_authenticated:
+        return {"can_create_urgent": False}
+    return {
+        "can_create_urgent": utils.car_reservation_flow.can_create_urgent(
+            organization, current_user._get_current_object()
+        )
+    }
+
+
+@module.context_processor
 def inject_feedback_state():
     """สถานะแบบประเมินของใบขอ (ใช้กับ partial feedback/_link.html ในหน้ารายละเอียดและคำขอของฉัน)"""
     if not current_user.is_authenticated:

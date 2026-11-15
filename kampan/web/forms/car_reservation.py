@@ -172,6 +172,17 @@ class DomesticReservationForm(CommonReservationForm):
         )
 
 
+class UrgentDomesticReservationForm(DomesticReservationForm):
+    """ผู้จัดรถสร้างใบขอในประเทศเร่งด่วน: ฟิลด์เดียวกับใบปกติ + เลือกรถ พขร. และ OT ในฟอร์มเดียว
+
+    choices ของรถ/พขร. ตั้งจาก org ตอนสร้างหน้า ส่วนสิทธิ์และเวลาชนกันตรวจที่ engine
+    """
+
+    car = fields.SelectField("รถ", choices=[], validate_choice=False)
+    driver = fields.SelectField("พนักงานขับรถ", choices=[], validate_choice=False)
+    is_overtime = fields.BooleanField("งานนอกเวลา (OT)")
+
+
 class PassengerRowForm(Form):
     """หนึ่งแถวของรายชื่อผู้โดยสารสนามบิน (แถวว่างทั้งแถวคือไม่ใช้)"""
 
@@ -557,6 +568,15 @@ class CarForm(FlaskForm):
             FileAllowed(["jpg", "jpeg", "png"], "อนุญาตเฉพาะไฟล์ภาพ JPEG หรือ PNG"),
             validate_optional_picture,
         ],
+    )
+
+
+class SettingsForm(FlaskForm):
+    """ตั้งค่าของระบบจองรถที่แอดมินองค์กรแก้ได้"""
+
+    car_reservation_contact_phone = fields.StringField(
+        "เบอร์โทรศัพท์ติดต่อฝ่ายจองรถ",
+        validators=[validators.Optional(), validators.Length(max=32)],
     )
 
 

@@ -78,8 +78,10 @@ def inbox():
     )
 
 
-def validate_submission(form, organization, request_type):
+def validate_submission(form, organization, request_type, urgent_by_dispatcher=False):
     """ตรวจฟอร์มคำขอตามกฎร่วม (ล่วงหน้าเกินกำหนด วันกลับ รถวันหยุด ขอกะทันหัน) ทั้งตอนยื่นและตอนแก้ไข
+
+    urgent_by_dispatcher: ผู้จัดรถสร้างเอง ข้ามกฎรถวันหยุดและขอกะทันหัน (ที่เหลือยังตรวจ)
 
     คืน (ผ่านหรือไม่, จำนวนวันทำการขั้นต่ำที่ต้องยืนยันเร่งด่วน (None ถ้าไม่ต้อง), เป็นคำขอเร่งด่วนหรือไม่)
     """
@@ -94,6 +96,7 @@ def validate_submission(form, organization, request_type):
         submitted = False
     if (
         submitted
+        and not urgent_by_dispatcher
         and request_type == "domestic"
         and not flow.vehicle_allowed_for_trip(
             organization,
@@ -106,8 +109,10 @@ def validate_submission(form, organization, request_type):
         submitted = False
     short_notice_days = None
     is_urgent = False
-    if submitted and flow.is_short_notice(
-        organization, request_type, form.departure_date.data
+    if (
+        submitted
+        and not urgent_by_dispatcher
+        and flow.is_short_notice(organization, request_type, form.departure_date.data)
     ):
         if form.confirm_urgent.data:
             is_urgent = True
@@ -183,6 +188,85 @@ def create():
         request_type_label=dict(models.car_reservations.RESERVATION_TYPES)[
             request_type
         ],
+    )
+
+
+def object_id_or_none(value):
+    return ObjectId(value) if ObjectId.is_valid(value) else None
+
+
+@module.route("/urgent", methods=["GET", "POST"])
+@acl.organization_roles_required("dispatcher")
+def create_urgent():
+    """ผู้จัดรถสร้างคำขอใช้รถในประเทศเร่งด่วนแทนผู้ใช้รถจริง พร้อมจัดรถ/พขร. ในฟอร์มเดียว"""
+    organization = g.organization
+    user = current_user._get_current_object()
+    if not flow.can_create_urgent(organization, user):
+        abort(403)  # system admin ผ่านตัว decorator แต่ไม่ได้ถือ role ผู้จัดรถ
+
+    request_type = flow.URGENT_REQUEST_TYPE
+    if request.args.get("type", request_type) != request_type:
+        abort(404)  # คำขอเร่งด่วนมีเฉพาะใบขอในประเทศ
+    form = forms.car_reservation.UrgentDomesticReservationForm()
+    form.car.choices = [
+        (str(car.id), car_choice_label(car)) for car in flow.assignable_cars(organization)
+    ]
+    form.driver.choices = [
+        (str(driver.id), driver.get_name())
+        for driver in flow.assignable_drivers(organization)
+    ]
+
+    submitted, _, _ = validate_submission(
+        form, organization, request_type, urgent_by_dispatcher=True
+    )
+    if submitted:
+        reservation = models.CarReservation(
+            organization=organization,
+            creator=user,
+            updater=user,
+            request_type=request_type,
+            details=form.build_details(),
+            **form.reservation_fields(),
+            departure_datetime=datetime.datetime.combine(
+                form.departure_date.data, form.departure_time.data
+            ),
+            return_datetime=datetime.datetime.combine(
+                form.return_date.data, form.return_time.data
+            ),
+        )
+        try:
+            flow.submit_urgent(
+                reservation,
+                user,
+                car=models.vehicles.Car.objects(
+                    id=object_id_or_none(form.car.data), organization=organization
+                ).first(),
+                driver=models.User.objects(
+                    id=object_id_or_none(form.driver.data)
+                ).first(),
+                is_overtime=form.is_overtime.data,
+            )
+        except flow.FlowError as error:
+            flash(str(error), "danger")
+        else:
+            utils.car_reservation_email.notify(reservation, "approved")
+            flash("สร้างคำขอเร่งด่วนเรียบร้อยแล้ว รอผู้อำนวยการกองกายภาพอนุมัติ", "success")
+            return redirect(
+                url_for(
+                    "car_reservation.requests.detail",
+                    request_id=reservation.id,
+                    organization_id=organization.id,
+                )
+            )
+
+    return render_template(
+        "/car_reservation/requests/form.html",
+        organization=organization,
+        form=form,
+        short_notice_days=None,
+        request_type=request_type,
+        request_type_label="ขอใช้รถเร่งด่วน (ผู้จัดรถสร้างแทนผู้ใช้รถ)",
+        urgent_by_dispatcher=True,
     )
 
 

@@ -2459,3 +2459,215 @@ def test_dispatcher_detail_lists_drivers_least_loaded_first_and_marks_the_busy_o
     ]
     assert html.count('data-role="busy-badge"') == 1
     assert 'data-role="workload-dashboard-link"' in html
+
+
+URGENT_URL = f"{BASE}/urgent"
+
+
+def urgent_url(world):
+    return f"{URGENT_URL}?organization_id={world.org.id}"
+
+
+def urgent_data(world, days_ahead=1, **overrides):
+    """ฟอร์มคำขอเร่งด่วนของผู้จัดรถ: ฟิลด์ domestic + ผู้ใช้รถจริง + เลือกรถ/พขร."""
+    data = world.request_data("domestic", days_ahead=days_ahead)
+    data.update(
+        contact_name="ผู้ใช้รถ ตัวจริง",
+        contact_email="actual.user@example.com",
+        car=str(world.car.id),
+        driver=str(world.driver.id),
+    )
+    data.update(overrides)
+    return data
+
+
+def test_dispatcher_creates_an_urgent_request_that_skips_to_the_physical_director(
+    world,
+):
+    response = world.client_for(world.dispatcher).post(
+        urgent_url(world), data=urgent_data(world, is_overtime="y")
+    )
+    assert response.status_code == 302, response.get_data(as_text=True)
+
+    reservation = models.CarReservation.objects(organization=world.org).first()
+    assert reservation.is_urgent is True
+    assert reservation.creator == world.dispatcher
+    assert reservation.request_type == "domestic"
+    assert reservation.route_snapshot == ["dispatcher", "physical_director"]
+    assert reservation.current_step == 1
+    assert reservation.status == "pending"
+    assert reservation.car == world.car
+    assert reservation.driver == world.driver
+    assert reservation.is_overtime is True
+    assert reservation.contact_email == "actual.user@example.com"
+    [dispatch] = reservation.step_approvals
+    assert (dispatch.step_key, dispatch.decision, dispatch.decided_by) == (
+        "dispatcher",
+        "approved",
+        world.dispatcher,
+    )
+    approved = [log for log in reservation.audit_logs if log.action == "approved"]
+    assert "กก 1234" in approved[0].comment
+    assert world.driver.get_name() in approved[0].comment
+
+
+def create_urgent_request(world, **overrides):
+    response = world.client_for(world.dispatcher).post(
+        urgent_url(world), data=urgent_data(world, **overrides)
+    )
+    assert response.status_code == 302, response.get_data(as_text=True)
+    return models.CarReservation.objects(organization=world.org).order_by("-id").first()
+
+
+def test_physical_director_approves_an_urgent_request_and_the_contact_is_emailed(
+    world, mock_redis_queue
+):
+    reservation = create_urgent_request(world)
+    director = world.holders["physical_director"]
+    assert inbox_shows(world, director, reservation)
+    assert email_jobs(mock_redis_queue, "approved")[-1][2] == [director.email]
+
+    response = world.client_for(director).post(
+        approve_url(world, reservation), data={"comment": ""}
+    )
+
+    assert response.status_code == 302
+    reservation.reload()
+    assert reservation.status == "active"
+    [active] = email_jobs(mock_redis_queue, "active")
+    assert "actual.user@example.com" in active[2]
+
+
+@pytest.mark.parametrize("who", ["requester", "supervisor", "stranger"])
+def test_only_a_dispatcher_can_open_or_submit_the_urgent_form(world, who):
+    client = world.client_for(getattr(world, who))
+
+    got = client.get(urgent_url(world))
+    posted = client.post(urgent_url(world), data=urgent_data(world))
+
+    assert got.status_code in (302, 403)
+    assert posted.status_code in (302, 403)
+    assert models.CarReservation.objects.count() == 0
+
+
+def test_the_urgent_form_is_domestic_only(world):
+    client = world.client_for(world.dispatcher)
+
+    assert client.get(urgent_url(world) + "&type=airport").status_code == 404
+    page = client.get(urgent_url(world)).get_data(as_text=True)
+    assert 'name="province_scope"' in page
+    assert 'name="transfer"' not in page
+
+
+def test_urgent_request_is_not_blocked_by_the_holiday_only_vehicle_rule(world):
+    weekday = upcoming(0)  # วันจันทร์
+    data = urgent_data(world, vehicle_kind="เก๋ง")
+    data.update(trip_on(data, weekday, weekday))
+
+    response = world.client_for(world.dispatcher).post(urgent_url(world), data=data)
+
+    assert response.status_code == 302
+
+
+def test_urgent_request_for_a_car_that_is_already_booked_is_refused(world):
+    first = create_urgent_request(world)
+
+    clash = world.client_for(world.dispatcher).post(
+        urgent_url(world), data=urgent_data(world)
+    )
+
+    assert clash.status_code == 200
+    assert "กก 1234" in clash.get_data(as_text=True)
+    assert models.CarReservation.objects.count() == 1
+    assert models.CarReservation.objects.first() == first
+
+
+def test_urgent_request_returning_before_departure_is_refused(world):
+    data = urgent_data(world)
+    data["return_date"] = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+
+    response = world.client_for(world.dispatcher).post(urgent_url(world), data=data)
+
+    assert response.status_code == 200
+    assert "วันกลับต้องไม่ก่อนวันออกเดินทาง" in response.get_data(as_text=True)
+    assert models.CarReservation.objects.count() == 0
+
+
+def test_sidebar_offers_the_urgent_request_link_only_to_dispatchers(world):
+    def sidebar_of(user):
+        page = world.client_for(user).get(f"{BASE}/?organization_id={world.org.id}")
+        assert page.status_code == 200
+        return page.get_data(as_text=True)
+
+    assert f'href="{URGENT_URL}?organization_id={world.org.id}"' in sidebar_of(
+        world.dispatcher
+    )
+    assert "ขอใช้รถเร่งด่วน" in sidebar_of(world.dispatcher)
+    assert "ขอใช้รถเร่งด่วน" not in sidebar_of(world.requester)
+
+
+SETTINGS_URL = "/car_reservation/settings"
+
+
+def settings_url(world):
+    return f"{SETTINGS_URL}?organization_id={world.org.id}"
+
+
+@pytest.fixture
+def org_admin(world, create_user, assign_user_to_org):
+    admin = create_user("OrgAdmin", "Six")
+    assign_user_to_org(admin, world.org, roles=["admin"])
+    return admin
+
+
+def short_notice_page(world):
+    response = post_new(world, world.request_data(days_ahead=1))
+    assert response.status_code == 200
+    return response.get_data(as_text=True)
+
+
+def test_short_notice_confirmation_shows_the_phone_org_admins_configured(
+    world, org_admin
+):
+    saved = world.client_for(org_admin).post(
+        settings_url(world), data={"car_reservation_contact_phone": "074-123456"}
+    )
+    assert saved.status_code == 302
+
+    html = short_notice_page(world)
+
+    assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
+    assert 'href="tel:074-123456"' in html
+
+
+def test_short_notice_confirmation_has_no_phone_line_until_one_is_configured(world):
+    html = short_notice_page(world)
+
+    assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
+    assert "tel:" not in html
+
+
+@pytest.mark.parametrize("who", ["requester", "dispatcher", "stranger"])
+def test_only_org_admins_can_open_or_change_the_car_reservation_settings(world, who):
+    client = world.client_for(getattr(world, who))
+
+    got = client.get(settings_url(world))
+    posted = client.post(
+        settings_url(world), data={"car_reservation_contact_phone": "074-999999"}
+    )
+
+    assert got.status_code in (302, 403)
+    assert posted.status_code in (302, 403)
+    world.org.reload()
+    assert not world.org.car_reservation_contact_phone
+
+
+def test_sidebar_offers_the_settings_link_only_to_org_admins(world, org_admin):
+    def sidebar_of(user):
+        page = world.client_for(user).get(f"{BASE}/?organization_id={world.org.id}")
+        return page.get_data(as_text=True)
+
+    assert f'href="{SETTINGS_URL}?organization_id={world.org.id}"' in sidebar_of(
+        org_admin
+    )
+    assert f'href="{SETTINGS_URL}?' not in sidebar_of(world.requester)

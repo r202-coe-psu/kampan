@@ -57,6 +57,10 @@ RESERVATION_ROUTES = {
 }
 
 
+# คำขอเร่งด่วนที่ผู้จัดรถสร้างเอง: ขั้นผู้จัดรถอนุมัติไปแล้วตอนสร้าง เหลือผู้อำนวยการกองกายภาพ
+URGENT_ROUTE = ["dispatcher", "physical_director"]
+URGENT_REQUEST_TYPE = "domestic"
+
 MAX_ADVANCE_DAYS = 30
 TOO_FAR_AHEAD = "ขอใช้รถล่วงหน้าได้ไม่เกิน 30 วัน"
 
@@ -143,6 +147,28 @@ def submit(app, actor):
     app.status = "pending"
     _log(app, "submitted", actor)
     app.save()
+
+
+def can_create_urgent(organization, user):
+    """เฉพาะผู้ที่ถือ role ผู้จัดรถของ org สร้างคำขอเร่งด่วนได้ (system admin ก็ต้องถือ role นี้)"""
+    return has_role(organization, user, "dispatcher")
+
+
+def submit_urgent(app, dispatcher, car, driver, is_overtime=False):
+    """ผู้จัดรถสร้างคำขอเร่งด่วน: ตรึงเส้นทางสั้นแล้วอนุมัติขั้นผู้จัดรถพร้อมรถ/พขร. ในทีเดียว
+
+    ถ้าจัดรถไม่ผ่าน (รถชน ไม่พร้อมใช้) FlowError จะถูกยกก่อนบันทึกอะไรลงฐานข้อมูล
+    """
+    if app.request_type != URGENT_REQUEST_TYPE or not can_create_urgent(
+        app.organization, dispatcher
+    ):
+        raise FlowError("ไม่มีสิทธิ์สร้างคำขอเร่งด่วน")
+    app.is_urgent = True
+    app.route_snapshot = list(URGENT_ROUTE)
+    app.current_step = 0
+    app.status = "pending"
+    _log(app, "submitted", dispatcher)
+    approve(app, dispatcher, car=car, driver=driver, is_overtime=is_overtime)
 
 
 def can_edit(app, user):

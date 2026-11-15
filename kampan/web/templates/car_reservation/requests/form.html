@@ -5,7 +5,7 @@
 
 {% block dashboard_title %}{{ request_type_label }}{% endblock %}
 
-{% block page_subtitle %}กรอกข้อมูลให้ครบถ้วน ช่องที่มี <span class="text-error">*</span> จำเป็นต้องกรอก{% endblock %}
+{% block page_subtitle %}{% if urgent_by_dispatcher is defined %}ชื่อและอีเมลผู้ติดต่อคือผู้ใช้รถจริง จะได้รับแจ้งสถานะทางอีเมล · {% endif %}กรอกข้อมูลให้ครบถ้วน ช่องที่มี <span class="text-error">*</span> จำเป็นต้องกรอก{% endblock %}
 
 {% block content %}
 <form method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300 shadow-sm">
@@ -36,6 +36,16 @@
     {% include '/car_reservation/requests/form_' ~ request_type ~ '.html' %}
     {% endcall %}
 
+    {% if urgent_by_dispatcher is defined %}
+    {% call FormSection('จัดรถและพนักงานขับรถ', icon='ph-steering-wheel') %}
+    <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+      {{ renderer.render_select_field(form.car) }}
+      {{ renderer.render_select_field(form.driver) }}
+    </div>
+    {{ renderer.render_checkbox(form.is_overtime) }}
+    {% endcall %}
+    {% endif %}
+
     {% if request_type in ('domestic', 'airport') %}
     {% call FormSection('ค่าใช้จ่าย', icon='ph-coins') %}
     {% include '/car_reservation/requests/form_cost_responsibilities.html' %}
@@ -50,6 +60,11 @@
     <div class="alert alert-warning" role="alert">
       <div>
         <p>ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ ต้องยืนยันก่อนยื่นคำขอแบบเร่งด่วน</p>
+        {% if organization.car_reservation_contact_phone %}
+        <p data-role="contact-phone">สอบถามฝ่ายจองรถ โทร
+          <a class="link link-hover font-medium" href="tel:{{ organization.car_reservation_contact_phone }}">{{ organization.car_reservation_contact_phone }}</a>
+        </p>
+        {% endif %}
         <label class="label cursor-pointer justify-start gap-2">
           <input type="checkbox" name="confirm_urgent" value="y" class="checkbox checkbox-sm">
           <span>{{ form.confirm_urgent.label.text }}</span>
@@ -65,7 +80,7 @@
       <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
       {% else %}
       <a class="btn btn-ghost" href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}">ยกเลิก</a>
-      <button type="submit" class="btn btn-primary">ยื่นคำขอ</button>
+      <button type="submit" class="btn btn-primary">{{ 'สร้างคำขอเร่งด่วน' if urgent_by_dispatcher is defined else 'ยื่นคำขอ' }}</button>
       {% endif %}
     </div>
   </div>

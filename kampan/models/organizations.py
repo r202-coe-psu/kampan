@@ -138,6 +138,9 @@ class Organization(me.Document):
     # None = ยังไม่เคยตั้งค่า ใช้ 8 role เดิม (role ผู้อนุมัติของระบบจองรถซ่อนจนกว่าจะเปิด)
     enabled_roles = me.ListField(me.StringField(choices=ORGANIZATION_ROLES), default=None)
 
+    # เบอร์ติดต่อฝ่ายจองรถ แสดงในหน้ายืนยันขอใช้รถกะทันหัน (ว่าง = ไม่แสดง)
+    car_reservation_contact_phone = me.StringField(default="", max_length=32)
+
     created_by = me.ReferenceField("User", dbref=True)
     last_updated_by = me.ReferenceField("User", dbref=True)
 
