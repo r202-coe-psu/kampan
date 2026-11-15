@@ -24,7 +24,6 @@ FONT_NAME = "THSarabunNew"
 FONT_PATH = PAPERS_DIR.parent / "fonts/THSarabunNew.ttf"
 MIN_FONT_SIZE = 9
 BASELINE_LIFT = 6.0  # ข้อความนั่งเหนือเส้นจุด: baseline = ขอบล่างบรรทัด - ค่านี้
-STAMP_HEIGHT = 29.5
 
 THAI_MONTHS = [
     "มกราคม",
@@ -273,35 +272,7 @@ def _draw_sign(pdf, sign, signer):
         )
 
 
-def _draw_stamp(pdf, stamp, signer):
-    """ตราตรวจทาน: ภาพลายเซ็นทางซ้าย, ตำแหน่ง/ชื่อ/วันที่ทางขวา"""
-    image_w = 52
-    text_x0, text_x1 = stamp.x + image_w + 6, stamp.x + stamp.w
-    if signer.signature:
-        _draw_image(
-            pdf,
-            signer.signature,
-            stamp.x,
-            stamp.x + image_w,
-            stamp.y + STAMP_HEIGHT - 2,
-            STAMP_HEIGHT - 4,
-        )
-    line = stamp.y + 8.5
-    for text, size in (
-        (signer.position, 9.5),
-        (signer.name, 10.5),
-        (signer.date_text(short=True, prefix=True), 9.5),
-    ):
-        _draw_text(pdf, text, text_x0, text_x1, line + BASELINE_LIFT, "left", size)
-        line += 9.8
-
-
-def _stamp_assignments(layout, route):
-    """ขั้นของเส้นทางที่แบบฟอร์มไม่มีช่องลงนามให้ จับคู่กับตราตามลำดับ"""
-    return dict(zip([key for key in route if key not in layout.signs], layout.stamps))
-
-
-def _draw_overlay(layout, context, signers, route, page_width, page_height):
+def _draw_overlay(layout, context, signers, page_width, page_height):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=(page_width, page_height))
     for field in layout.fields:
@@ -320,13 +291,11 @@ def _draw_overlay(layout, context, signers, route, page_width, page_height):
     creator_signature = context.get("requester_signature")
     if layout.requester_image and creator_signature:
         _draw_image(pdf, creator_signature, *layout.requester_image)
-    stamps = _stamp_assignments(layout, route)
+    # ขั้นที่แบบฟอร์มจริงไม่มีช่องลงนาม ไม่พิมพ์ (ดูได้ในประวัติการดำเนินการของคำขอ)
     for key, signer in signers.items():
         sign = layout.signs.get(key)
         if isinstance(sign, Sign):
             _draw_sign(pdf, sign, signer)
-        elif key in stamps:
-            _draw_stamp(pdf, stamps[key], signer)
     pdf.showPage()
     pdf.save()
     buffer.seek(0)
@@ -342,7 +311,6 @@ def render_pdf(reservation):
         layout,
         build_context(reservation),
         approved_signers(reservation),
-        reservation.route_snapshot,
         float(page.mediabox.width),
         float(page.mediabox.height),
     )

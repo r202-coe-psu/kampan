@@ -346,3 +346,24 @@ def test_detail_page_offers_the_print_button_only_to_users_who_may_print(world):
     for user, offered in ((world.requester, True), (world.stranger, False)):
         html = world.client_for(user).get(url).get_data(as_text=True)
         assert ("พิมพ์ใบขอใช้รถ (PDF)" in html) is offered
+
+
+@pytest.mark.parametrize(
+    "request_type, province_scope, unprinted",
+    [
+        ("domestic", "in_province", ["กนกดาริน"]),  # หัวหน้าหน่วยยานพาหนะ
+        ("airport", None, ["กนกดาริน"]),
+        ("welfare", None, ["กนกดาริน", "ยุทธนา"]),  # + หัวหน้างานยุทธศาสตร์
+        ("abroad", None, ["กนกดาริน", "ยุทธนา", "วศิน"]),  # + รองอธิการบดี
+    ],
+)
+def test_steps_without_a_signature_box_on_the_official_form_are_not_printed(
+    world, request_type, province_scope, unprinted
+):
+    # ตัดสินแล้ว: ขั้นที่แบบฟอร์มจริงไม่มีช่องลงนาม ไม่พิมพ์ (ดูได้ในประวัติการดำเนินการ)
+    reservation = world.reservation(request_type, province_scope=province_scope)
+
+    text = pdf_text(world.paper(world.requester, reservation))
+
+    for name in unprinted:
+        assert name not in text

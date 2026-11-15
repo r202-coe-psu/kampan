@@ -48,20 +48,11 @@ class Sign(NamedTuple):
     check: Optional[Tuple[float, float]] = None  # (cx, cy) ติ๊กเมื่อขั้นนี้อนุมัติ
 
 
-class Stamp(NamedTuple):
-    """ช่องตราตรวจทานสำหรับขั้นที่แบบฟอร์มไม่มีช่องลงนามให้ (มุมบนซ้ายของตรา และความกว้าง)"""
-
-    x: float
-    y: float
-    w: float
-
-
 class Layout(NamedTuple):
     filename: str
     fields: tuple
     checks: tuple
     signs: dict  # step_key -> Sign
-    stamps: tuple  # ช่อง Stamp เรียงตามลำดับขั้นของเส้นทางที่ไม่มีช่องลงนาม
     requester_image: Optional[Tuple[float, float, float, float]] = None  # ลายเซ็นผู้ขอใช้รถ
 
 
@@ -151,7 +142,6 @@ DOMESTIC = Layout(
             check=(277.8, 685.0),
         ),
     },
-    stamps=(Stamp(62, 566, 205),),
     requester_image=(300, 410, 343, 22),
 )
 
@@ -216,7 +206,6 @@ AIRPORT = Layout(
             date=(342, 467, 752.2, "center", 15),
         ),
     },
-    stamps=(Stamp(80, 650, 220), Stamp(80, 700, 220)),
     requester_image=(355, 457, 514, 22),
 )
 
@@ -290,7 +279,6 @@ WELFARE = Layout(
             date_short=True,
         ),
     },
-    stamps=(Stamp(50, 505, 205), Stamp(50, 537, 205)),
     requester_image=(300, 415, 335, 22),
 )
 
@@ -359,7 +347,6 @@ ABROAD = Layout(
             check=(274.0, 707.6),
         ),
     },
-    stamps=(Stamp(72, 322, 172), Stamp(72, 364, 172), Stamp(72, 406, 172)),
     requester_image=(285, 405, 332, 22),
 )
 
