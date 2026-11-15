@@ -8,7 +8,7 @@
 {% block page_subtitle %}{% if urgent_by_dispatcher is defined %}ชื่อและอีเมลผู้ติดต่อคือผู้ใช้รถจริง จะได้รับแจ้งสถานะทางอีเมล · {% endif %}กรอกข้อมูลให้ครบถ้วน ช่องที่มี <span class="text-error">*</span> จำเป็นต้องกรอก{% endblock %}
 
 {% block content %}
-<form method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300 shadow-sm">
+<form id="reservation-form" method="post" enctype="multipart/form-data" class="card bg-base-100 border border-base-300 shadow-sm">
   <div class="card-body gap-8">
     {{ form.csrf_token }}
 
@@ -55,22 +55,50 @@
     {% endif %}
 
     {% if short_notice_days %}
-    <div class="flex gap-3 rounded-box border-2 border-warning bg-warning/10 p-4 text-base-content" role="alert" data-role="short-notice">
-      <i class="ph-fill ph-warning text-2xl text-warning shrink-0"></i>
-      <div class="flex flex-col gap-2">
-        <p class="font-semibold">ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ</p>
-        <p class="text-sm">หน่วยยานพาหนะอาจจัดรถให้ไม่ทัน ต้องยืนยันก่อนยื่นคำขอแบบเร่งด่วน</p>
+    <dialog class="modal modal-bottom sm:modal-middle" id="short-notice-modal" data-role="short-notice" open
+            aria-labelledby="short-notice-title">
+      <div class="modal-box flex flex-col gap-4 border-t-4 border-warning">
+        <div class="flex items-start gap-3">
+          <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-warning/15">
+            <i class="ph ph-warning text-2xl text-warning"></i>
+          </span>
+          <div class="flex flex-col gap-1">
+            <h3 id="short-notice-title" class="text-lg font-bold">ขอรถล่วงหน้าน้อยกว่า {{ short_notice_days }} วันทำการ</h3>
+            <p class="text-base-content/80">หน่วยยานพาหนะอาจจัดรถให้ไม่ทัน ถ้ายืนยัน คำขอนี้จะถูกยื่นแบบ <span class="font-semibold">เร่งด่วน</span></p>
+          </div>
+        </div>
         {% if organization.car_reservation_contact_phone %}
-        <p class="text-sm" data-role="contact-phone">สอบถามฝ่ายจองรถ โทร
-          <a class="link font-semibold" href="tel:{{ organization.car_reservation_contact_phone }}">{{ organization.car_reservation_contact_phone }}</a>
-        </p>
+        <a class="flex items-center gap-3 rounded-box border border-base-300 bg-base-200/60 p-3 hover:border-primary"
+           data-role="contact-phone" href="tel:{{ organization.car_reservation_contact_phone }}">
+          <i class="ph ph-phone text-xl text-primary"></i>
+          <span class="flex flex-col">
+            <span class="text-sm text-base-content/70">สอบถามฝ่ายจองรถ</span>
+            <span class="font-semibold">{{ organization.car_reservation_contact_phone }}</span>
+          </span>
+        </a>
         {% endif %}
-        <label class="flex w-fit cursor-pointer items-center gap-2 rounded-field border border-base-content/20 bg-base-100 px-3 py-2 font-medium">
-          <input type="checkbox" name="confirm_urgent" value="y" class="checkbox checkbox-warning border-base-content/50">
-          <span>{{ form.confirm_urgent.label.text }}</span>
-        </label>
+        <div class="modal-action mt-0 flex-col-reverse gap-2 sm:flex-row">
+          <button type="button" class="btn btn-ghost" data-role="short-notice-back">กลับไปแก้วันเดินทาง</button>
+          <button type="submit" form="reservation-form" name="confirm_urgent" value="y" class="btn btn-warning">
+            <i class="ph ph-check"></i> รับทราบ และยื่นคำขอเร่งด่วน
+          </button>
+        </div>
       </div>
-    </div>
+    </dialog>
+    <script>
+      (function () {
+        var modal = document.getElementById("short-notice-modal");
+        if (modal.showModal) {
+          modal.removeAttribute("open");
+          modal.showModal();
+        }
+        modal.querySelector('[data-role="short-notice-back"]').addEventListener("click", function () {
+          modal.close();
+          var date = document.getElementById("{{ form.departure_date.id }}");
+          if (date) { date.scrollIntoView({ block: "center" }); date.focus(); }
+        });
+      })();
+    </script>
     {% endif %}
 
     <div class="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t border-base-300 bg-base-100/95 px-6 py-4 backdrop-blur sm:flex-row sm:justify-end"

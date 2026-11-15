@@ -6,6 +6,7 @@ import re
 from unittest.mock import MagicMock, patch
 
 import pytest
+from lxml import html as lxml_html
 
 from kampan import models, utils
 from kampan.utils import car_reservation_flow as flow
@@ -1003,8 +1004,16 @@ def test_request_departing_in_under_3_business_days_asks_for_urgent_confirmation
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "ขอรถล่วงหน้าน้อยกว่า 3 วันทำการ" in html
-    assert 'name="confirm_urgent"' in html
     assert models.CarReservation.objects(creator=world.requester).count() == 0
+    # popup แจ้งเตือนเปิดเองทันที กด "รับทราบ" = ยืนยันแบบเร่งด่วนและยื่นฟอร์มเดิม
+    doc = lxml_html.fromstring(html)
+    (dialog,) = doc.xpath('//dialog[@data-role="short-notice"]')
+    assert dialog.get("open") is not None
+    (ack,) = dialog.xpath('.//button[@name="confirm_urgent"]')
+    assert ack.get("type") == "submit" and ack.get("value") == "y"
+    assert "รับทราบ" in ack.text_content()
+    form_id = ack.get("form") or dialog.xpath("ancestor::form/@id")[0]
+    assert doc.xpath(f'//form[@id="{form_id}"]')
 
 
 def test_confirmed_short_notice_request_is_saved_as_urgent_and_shows_badge(world):

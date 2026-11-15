@@ -1,5 +1,5 @@
-<label class="flex w-fit cursor-pointer items-center gap-2 font-medium">
-  {{ form.in_office_of_president(class_="checkbox checkbox-primary") }}
+<label class="flex w-fit cursor-pointer items-center gap-3 font-medium">
+  {{ form.in_office_of_president(class_="checkbox checkbox-primary border-2 rounded-md") }}
   <span>{{ form.in_office_of_president.label.text }}</span>
 </label>
 <div id="cost-responsibilities" class="{{ '' if form.in_office_of_president.data else 'hidden' }} rounded-box border border-base-300 bg-base-200/50 p-4">

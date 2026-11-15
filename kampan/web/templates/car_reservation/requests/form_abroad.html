@@ -1,6 +1,6 @@
 {% from '/car_reservation/components/form_section.html' import FormSection %}
 {% call FormSection('รถและจุดหมาย', icon='ph-globe-hemisphere-east') %}
-<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+<div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
   {{ renderer.render_field(form.section) }}
   {{ renderer.render_field(form.document_number) }}
   {{ renderer.render_select_field(form.vehicle_kind) }}

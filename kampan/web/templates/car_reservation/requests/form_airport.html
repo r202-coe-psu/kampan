@@ -1,7 +1,7 @@
 {% from '/car_reservation/components/form_section.html' import FormSection %}
 {% call FormSection('เที่ยวบินและผู้โดยสาร', icon='ph-airplane-tilt') %}
 {{ renderer.render_radio_field(form.transfer) }}
-<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+<div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
   {{ renderer.render_field(form.flight_number) }}
   {{ renderer.render_field(form.flight_date) }}
   {{ renderer.render_field(form.flight_arrival_time) }}
@@ -11,13 +11,16 @@
 <fieldset class="fieldset">
   <legend class="fieldset-legend">รายชื่อผู้โดยสาร (สูงสุด 5 คน)</legend>
   {% for row in form.passengers %}
-  <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+  <div class="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
     {{ renderer.render_field(row.form.name) }}
     {{ renderer.render_field(row.form.phone) }}
   </div>
   {% endfor %}
   {% for error in form.passengers.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
 </fieldset>
-{{ renderer.render_checkbox(form.eligibility_confirmed) }}
+<label class="flex w-fit cursor-pointer items-center gap-3 font-medium">
+  {{ form.eligibility_confirmed(class_="checkbox checkbox-primary border-2 rounded-md") }}
+  <span>{{ form.eligibility_confirmed.label.text }}{% if form.eligibility_confirmed.flags.required %} <span class="text-error">*</span>{% endif %}</span>
+</label>
 {% for error in form.eligibility_confirmed.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
 {% endcall %}
