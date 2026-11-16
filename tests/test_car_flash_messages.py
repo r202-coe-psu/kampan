@@ -14,10 +14,9 @@ def setup(create_org, create_user, assign_user_to_org, create_car):
 
 
 def _assert_toast(html, message, tone="alert-success"):
-    toast = html[html.index('class="toast') :]
-    assert message in toast
-    assert "data-toast" in toast
-    assert tone in toast
+    category = tone.removeprefix("alert-")
+    toast = html[html.index(f'data-toast-category="{category}"') :]
+    assert message in toast[: toast.index("</div>")]
 
 
 def test_delete_car_shows_toast(app, login_as, setup):
