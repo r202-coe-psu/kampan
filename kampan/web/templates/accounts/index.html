@@ -1,4 +1,5 @@
 {% extends '/base/template-page-login.html' %}
+{% from '/base/components/file_dropzone.html' import FileDropzone %}
 
 {% block dashboard_title %}
 ข้อมูลผู้ใช้งาน
@@ -6,133 +7,178 @@
 
 {% block breadcrumbs %}
 {% if current_user.has_roles(['admin']) %}
-<a class="btn  btn-primary" href="{{ url_for('users.index') }}"><i class="ph ph-user"></i></i>Administrator</a>
+<a class="btn btn-primary btn-sm" href="{{ url_for('users.index') }}"><i class="ph ph-shield-check"></i>Administrator</a>
 {% endif %}
 {% endblock %}
 
-{% macro row_detail(text) -%}
-<div class="col-span-1">
-  <h3 class="text-lg font-semibold">{{ text }}</h3>
+{% macro DetailRow(icon, label, value) -%}
+<div class="flex items-start gap-3 py-3">
+  <i class="ph {{ icon }} mt-0.5 text-lg text-primary"></i>
+  <div class="min-w-0">
+    <dt class="text-sm text-base-content/60">{{ label }}</dt>
+    <dd class="font-medium break-words">{{ value or '-' }}</dd>
+  </div>
 </div>
 {%- endmacro %}
 
 {% block content %}
+{% set org_role = current_user.get_current_organization_user_role() %}
+{% set appointment = org_role.display_appointment() if org_role else None %}
+{% set division = current_user.get_current_division() %}
+
 {% if errors %}
-<dialog role="dialog" class="modal upload_errors " open>
-  <div class="modal-box">
-    <div class="text-2xl font-bold">
-      เกิดปัญหา
-    </div>
-    <div class="overflow-y-auto">
-      <span class="text-error">
-        <b>{{ errors }}</b><br>
-      </span>
-    </div>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn-error btn">
-          ยืนยัน
-          <i class="ph ph-check"></i>
+<div role="alert" class="alert alert-error alert-soft mb-4">
+  <i class="ph ph-warning-circle text-xl"></i>
+  <span>{{ errors }}</span>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+  {# ── โปรไฟล์ ── #}
+  <section class="card border border-base-300 bg-base-100 shadow-sm lg:row-span-2 lg:self-start" data-role="profile-card">
+    <div class="card-body items-center gap-4 text-center">
+      <div class="avatar {% if not current_user.get_picture() %}avatar-placeholder{% endif %}">
+        {% if current_user.get_picture() %}
+        <div class="w-28 rounded-full ring-2 ring-primary/30 ring-offset-2 ring-offset-base-100">
+          <img src="{{ current_user.get_picture() }}" alt="รูปโปรไฟล์">
+        </div>
+        {% else %}
+        <div class="w-28 rounded-full bg-primary/10 text-primary">
+          <i class="ph ph-user text-5xl"></i>
+        </div>
+        {% endif %}
+      </div>
+
+      <div>
+        <h2 class="text-xl font-bold">{{ current_user.get_first_name_th() }} {{ current_user.get_last_name_th() }}</h2>
+        {% if appointment %}<p class="text-base-content/70">{{ appointment }}</p>{% endif %}
+        {% if division %}<span class="badge badge-soft badge-primary mt-2">{{ division.name }}</span>{% endif %}
+      </div>
+
+      {% if picture_form %}
+      <form method="POST" action="{{ url_for('accounts.upload_picture') }}" enctype="multipart/form-data"
+        class="flex w-full flex-col gap-3 border-t border-base-300 pt-4">
+        {{ picture_form.csrf_token }}
+        {{ FileDropzone(picture_form.picture, 'เปลี่ยนรูปโปรไฟล์', icon='ph-camera', preview_class='size-24 rounded-full object-cover') }}
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="ph ph-upload-simple"></i>บันทึกรูปโปรไฟล์
         </button>
       </form>
+      {% endif %}
     </div>
-  </div>
-</dialog>
-{% endif %}
-<div class="mt-4 border border-gray-300 bg-white rounded-2xl p-6 shadow-sm">
-  <div class="mb-4">
-    <h2 class="text-2xl font-bold">ข้อมูลผู้ใช้งาน</h2>
-  </div>
-  {% if current_user.get_picture() %}
-  <img class="w-32 h-32 rounded-full object-cover mx-auto mb-4" src="{{ current_user.get_picture() }}">
-  {% endif %}
-  {% if picture_form %}
-  <form method="POST" action="{{ url_for('accounts.upload_picture') }}" enctype="multipart/form-data"
-    class="flex flex-col items-center gap-2 mb-6">
-    {{ picture_form.csrf_token }}
-    <label class="text-sm text-base-content/70" for="{{ picture_form.picture.id }}">
-      รูปโปรไฟล์ (JPEG หรือ PNG ขนาดไม่เกิน 2 MB)
-    </label>
-    <input type="file" id="{{ picture_form.picture.id }}" name="{{ picture_form.picture.name }}"
-      accept="image/jpeg,image/png" class="file-input file-input-bordered file-input-sm" required>
-    <button type="submit" class="btn btn-primary btn-sm">
-      <i class="ph ph-upload-simple"></i>อัปโหลดรูปโปรไฟล์
-    </button>
-  </form>
-  {% endif %}
-  <div class="grid grid-cols-2 gap-4">
-    {{ row_detail("ชื่อ :") }}
-    {{ row_detail(current_user.get_first_name_th() ) }}
-    {{ row_detail("นามสกุล :") }}
-    {{ row_detail(current_user.get_last_name_th() ) }}
+  </section>
 
-    {% if current_user.get_current_organization_user_role() %}
-    {{ row_detail("ตำแหน่ง :") }}
-    {{ row_detail((current_user.get_current_organization_user_role()).display_appointment() if
-    (current_user.get_current_organization_user_role()).display_appointment() else "-" ) }}
-    {% endif %}
+  {# ── ข้อมูลบัญชี ── #}
+  <section class="card border border-base-300 bg-base-100 shadow-sm lg:col-span-2">
+    <div class="card-body">
+      <h2 class="card-title text-lg"><i class="ph ph-identification-card text-primary"></i>ข้อมูลบัญชี</h2>
+      <dl class="grid grid-cols-1 divide-base-300 sm:grid-cols-2 sm:gap-x-6">
+        {{ DetailRow('ph-user', 'ชื่อ', current_user.get_first_name_th()) }}
+        {{ DetailRow('ph-user', 'นามสกุล', current_user.get_last_name_th()) }}
+        {{ DetailRow('ph-briefcase', 'ตำแหน่ง', appointment) }}
+        {{ DetailRow('ph-users-three', 'สังกัดฝ่าย', division.name if division else None) }}
+        {{ DetailRow('ph-buildings', 'หน่วยงาน', organization.name if organization else None) }}
+        {{ DetailRow('ph-envelope-simple', 'อีเมล', current_user.email) }}
+      </dl>
+    </div>
+  </section>
 
-    {% if current_user.get_current_division() %}
-    {{ row_detail("สังกัดฝ่าย :") }}
-    {{ row_detail((current_user.get_current_division()).name ) }}
-    {% endif %}
-  </div>
-</div>
+  {# ── ลายเซ็น ── #}
+  {% if signature_form %}
+  <section class="card border border-base-300 bg-base-100 shadow-sm lg:col-span-2" data-role="signature-card">
+    <div class="card-body gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="card-title text-lg"><i class="ph ph-signature text-primary"></i>ลายเซ็น</h2>
+        <span class="text-sm text-base-content/60">ใช้พิมพ์ลงเอกสารคำขอและเอกสารที่ท่านอนุมัติ</span>
+      </div>
 
-{% if signature_form %}
-<div class="card bg-base-100 border border-base-300 shadow-sm mt-4" data-role="signature-card">
-  <div class="card-body gap-4">
-    <h2 class="card-title text-lg"><i class="ph ph-signature text-primary"></i> ลายเซ็น</h2>
-
-    {% if current_user.signature %}
-    <div class="flex flex-col items-start gap-2">
-      <span class="text-sm text-base-content/70">ลายเซ็นปัจจุบัน</span>
-      <img class="h-16 rounded border border-base-300 bg-white p-1"
-        src="{{ url_for('accounts.user_signature', user_id=current_user.id) }}" alt="ลายเซ็น" data-role="signature-current">
-      <form method="POST" action="{{ url_for('accounts.remove_signature') }}">
-        {{ signature_form.csrf_token }}
-        <button type="submit" class="btn btn-error btn-outline btn-sm">
+      {% if current_user.signature %}
+      <div class="flex flex-wrap items-center gap-4 rounded-box border border-base-300 bg-base-200/40 p-4">
+        <img class="h-20 w-full sm:w-auto max-w-full rounded-box border border-base-300 bg-white object-contain p-2"
+          src="{{ url_for('accounts.user_signature', user_id=current_user.id) }}" alt="ลายเซ็น" data-role="signature-current">
+        <div class="flex min-w-48 flex-1 flex-col items-start gap-1">
+          <span class="badge badge-soft badge-success whitespace-nowrap"><i class="ph ph-check-circle"></i>มีลายเซ็นแล้ว</span>
+          <span class="text-sm text-base-content/70">อัปโหลดหรือวาดใหม่ด้านล่างเพื่อแทนที่</span>
+        </div>
+        <button type="button" class="btn btn-error btn-outline btn-sm" onclick="signature_remove_modal.showModal()">
           <i class="ph ph-trash"></i>ลบลายเซ็น
         </button>
-      </form>
-    </div>
-    {% endif %}
-
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <form method="POST" action="{{ url_for('accounts.upload_signature') }}" enctype="multipart/form-data"
-        class="flex flex-col gap-2">
-        {{ signature_form.csrf_token }}
-        <label class="text-sm text-base-content/70" for="{{ signature_form.signature.id }}">
-          อัปโหลดไฟล์ลายเซ็น (JPEG หรือ PNG ขนาดไม่เกิน 2 MB)
-        </label>
-        <input type="file" id="{{ signature_form.signature.id }}" name="{{ signature_form.signature.name }}"
-          accept="image/jpeg,image/png" class="file-input file-input-bordered file-input-sm w-full" required>
-        <button type="submit" class="btn btn-primary btn-sm self-start">
-          <i class="ph ph-upload-simple"></i>อัปโหลดลายเซ็น
-        </button>
-      </form>
-
-      <form method="POST" action="{{ url_for('accounts.upload_signature') }}" class="flex flex-col gap-2"
-        id="signature-draw-form">
-        {{ signature_form.csrf_token }}
-        <span class="text-sm text-base-content/70">หรือวาดลายเซ็นด้วยเมาส์/นิ้ว</span>
-        <canvas id="signature-pad" width="400" height="150"
-          class="w-full max-w-md rounded border border-base-300 bg-white touch-none cursor-crosshair"></canvas>
-        <input type="hidden" name="{{ signature_form.signature_data.name }}" id="signature-data">
-        <div class="flex gap-2">
-          <button type="button" id="signature-clear" class="btn btn-ghost btn-sm">
-            <i class="ph ph-eraser"></i>ล้าง
-          </button>
-          <button type="submit" class="btn btn-primary btn-sm">
-            <i class="ph ph-floppy-disk"></i>บันทึกลายเซ็นที่วาด
-          </button>
+      </div>
+      <dialog id="signature_remove_modal" class="modal">
+        <div class="modal-box">
+          <h3 class="text-lg font-bold">ลบลายเซ็น?</h3>
+          <p class="py-2 text-base-content/70">เอกสารที่พิมพ์หลังจากนี้จะไม่มีลายเซ็นของท่าน จนกว่าจะเพิ่มใหม่</p>
+          <div class="modal-action">
+            <form method="dialog"><button class="btn btn-ghost">ยกเลิก</button></form>
+            <form method="POST" action="{{ url_for('accounts.remove_signature') }}">
+              {{ signature_form.csrf_token }}
+              <button type="submit" class="btn btn-error"><i class="ph ph-trash"></i>ลบลายเซ็น</button>
+            </form>
+          </div>
         </div>
-        <p id="signature-empty-hint" class="text-error text-sm hidden">กรุณาวาดลายเซ็นก่อนบันทึก</p>
-      </form>
-    </div>
-  </div>
-</div>
+        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+      </dialog>
+      {% else %}
+      <div role="alert" class="alert alert-warning alert-soft">
+        <i class="ph ph-info text-xl"></i>
+        <span>ยังไม่มีลายเซ็น เอกสารที่พิมพ์จะเว้นช่องลายเซ็นของท่านว่างไว้</span>
+      </div>
+      {% endif %}
 
+      <div class="tabs tabs-box">
+        <label class="tab gap-2">
+          <input type="radio" name="signature_tabs" checked>
+          <i class="ph ph-upload-simple"></i>อัปโหลดไฟล์
+        </label>
+        <div class="tab-content mt-3">
+          <form method="POST" action="{{ url_for('accounts.upload_signature') }}" enctype="multipart/form-data"
+            class="flex flex-col gap-3">
+            {{ signature_form.csrf_token }}
+            {{ FileDropzone(signature_form.signature, 'ไฟล์ลายเซ็น', hint='JPEG หรือ PNG ขนาดไม่เกิน 2 MB · แนะนำ PNG พื้นหลังโปร่งใส',
+                            icon='ph-file-image', preview_class='h-24 max-w-full') }}
+            <button type="submit" class="btn btn-primary btn-sm self-end">
+              <i class="ph ph-floppy-disk"></i>บันทึกลายเซ็น
+            </button>
+          </form>
+        </div>
+
+        <label class="tab gap-2">
+          <input type="radio" name="signature_tabs">
+          <i class="ph ph-pencil-simple-line"></i>วาดลายเซ็น
+        </label>
+        <div class="tab-content mt-3">
+          <form method="POST" action="{{ url_for('accounts.upload_signature') }}" class="flex flex-col gap-3"
+            id="signature-draw-form">
+            {{ signature_form.csrf_token }}
+            <div class="relative mx-auto w-full max-w-2xl">
+              <canvas id="signature-pad" width="800" height="300"
+                class="aspect-[8/3] w-full touch-none cursor-crosshair rounded-box border-2 border-dashed border-base-300 bg-white"></canvas>
+              <span class="pointer-events-none absolute inset-x-8 bottom-10 border-b border-base-300"></span>
+              <span id="signature-placeholder" class="pointer-events-none absolute inset-0 flex items-center justify-center text-base-content/40">
+                เซ็นชื่อที่นี่ด้วยเมาส์หรือนิ้ว
+              </span>
+            </div>
+            <input type="hidden" name="{{ signature_form.signature_data.name }}" id="signature-data">
+            <p id="signature-empty-hint" class="hidden text-sm text-error">กรุณาวาดลายเซ็นก่อนบันทึก</p>
+            <div class="flex justify-end gap-2">
+              <button type="button" id="signature-clear" class="btn btn-ghost btn-sm">
+                <i class="ph ph-eraser"></i>ล้าง
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="ph ph-floppy-disk"></i>บันทึกลายเซ็นที่วาด
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/forms/file_dropzone.js') }}"></script>
 <script>
   (function () {
     var canvas = document.getElementById('signature-pad');
@@ -141,10 +187,11 @@
     var form = document.getElementById('signature-draw-form');
     var hidden = document.getElementById('signature-data');
     var hint = document.getElementById('signature-empty-hint');
+    var placeholder = document.getElementById('signature-placeholder');
     var drawing = false;
     var dirty = false;
 
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#000000';
@@ -172,7 +219,11 @@
       var p = point(event);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
-      dirty = true;
+      if (!dirty) {
+        dirty = true;
+        placeholder.classList.add('hidden');
+        hint.classList.add('hidden');
+      }
     }
 
     function stop() {
@@ -190,6 +241,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       hidden.value = '';
       dirty = false;
+      placeholder.classList.remove('hidden');
       hint.classList.add('hidden');
     });
 
@@ -203,5 +255,4 @@
     });
   })();
 </script>
-{% endif %}
 {% endblock %}
