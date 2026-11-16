@@ -608,6 +608,8 @@ def approve(request_id):
     utils.car_reservation_email.notify(
         reservation, "active" if reservation.status == "active" else "approved"
     )
+    if dispatching:
+        utils.car_reservation_email.notify_in_app(reservation, "driver_assigned")
     flash("บันทึกการอนุมัติเรียบร้อยแล้ว", "success")
     return redirect(
         inbox_url_if_requested(form)

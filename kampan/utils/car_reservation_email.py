@@ -81,6 +81,8 @@ def people_for(reservation, event):
         people = [reservation.creator]
     elif event == "close_disputed":
         people = _role_members(reservation, "dispatcher")
+    elif event == "driver_assigned":
+        people = [reservation.driver]
     else:
         people = []
     return people
@@ -102,9 +104,7 @@ def recipients_for(reservation, event):
 
 
 def notify(reservation, event, actor=None):
-    if actor is None and has_request_context() and current_user.is_authenticated:
-        actor = current_user._get_current_object()
-    _notify_in_app(reservation, event, actor)
+    notify_in_app(reservation, event, actor)
 
     recipients = recipients_for(reservation, event)
     if not recipients:
@@ -132,10 +132,14 @@ IN_APP_TITLES = {
     "cancelled": "คำขอใช้รถถูกยกเลิก",
     "completed": "ปิดงานเที่ยวรถแล้ว",
     "close_disputed": "ผู้ขอโต้แย้งการปิดงาน",
+    "driver_assigned": "คุณได้รับมอบหมายงานขับรถ",
 }
 
 
-def _notify_in_app(reservation, event, actor):
+def notify_in_app(reservation, event, actor=None):
+    """แจ้งเตือนในระบบอย่างเดียว (driver_assigned ไม่มีอีเมล)"""
+    if actor is None and has_request_context() and current_user.is_authenticated:
+        actor = current_user._get_current_object()
     utils_notifications.send(
         reservation.organization,
         people_for(reservation, event),
