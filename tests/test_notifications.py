@@ -31,3 +31,31 @@ def test_dispatcher_assigning_a_driver_notifies_the_driver_and_the_next_approver
     assert events_of(world.driver, world.org) == ["driver_assigned"]
     assert events_of(world.holders["vehicle_unit_head"], world.org) == ["approved"]
     assert events_of(world.dispatcher, world.org) == ["approved"]  # จากขั้นผู้บังคับบัญชา
+
+
+NOTI = "/car_reservation/notifications"
+
+
+def test_opening_a_notification_marks_it_read_and_goes_to_the_request(world):
+    car_application = world.submit_request()
+    notification = notifications.inbox(world.supervisor, world.org).first()
+
+    response = world.client_for(world.supervisor).get(
+        f"{NOTI}/{notification.id}/open?organization_id={world.org.id}"
+    )
+
+    assert response.status_code == 302
+    assert str(car_application.id) in response.headers["Location"]
+    assert notifications.unread_count(world.supervisor, world.org) == 0
+
+
+def test_a_user_cannot_open_someone_elses_notification(world):
+    world.submit_request()
+    notification = notifications.inbox(world.supervisor, world.org).first()
+
+    response = world.client_for(world.stranger).get(
+        f"{NOTI}/{notification.id}/open?organization_id={world.org.id}"
+    )
+
+    assert response.status_code == 404
+    assert notifications.unread_count(world.supervisor, world.org) == 1
