@@ -1,6 +1,6 @@
 {% extends '/organizations/base/default-organization-page.html' %}
 {% from '/base/components/empty_state.html' import EmptyState %}
-{% from '/base/components/role_badge.html' import RoleBadge %}
+{% from '/base/components/role_badge.html' import RoleBadge, RoleBadges %}
 
 {% block title %}เพิ่มสมาชิก{% endblock %}
 {% block dashboard_title %}เพิ่มสมาชิก{% endblock %}
@@ -34,18 +34,28 @@
 
     {# 1. เลือกผู้ใช้ #}
     <section class="segment border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
-      {{ StepTitle(1, "เลือกผู้ใช้", "ผู้ใช้ที่ยังไม่ได้อยู่ใน %s" | format(organization.name)) }}
+      {{ StepTitle(1, "เลือกผู้ใช้", "เลือกได้หลายคน ทุกคนจะได้ตำแหน่งและแผนกเดียวกัน") }}
       {% if candidates %}
-      <label class="input mt-4 w-full">
+      <div class="mt-4 flex min-h-10 flex-wrap items-center gap-2 rounded-box bg-base-200 p-2" data-tray>
+        <span class="px-1 text-sm text-base-content/60" data-tray-empty>ยังไม่ได้เลือกใคร</span>
+      </div>
+      <label class="input mt-3 w-full">
         <i class="ph ph-magnifying-glass opacity-60"></i>
         <input type="search" placeholder="ค้นหาชื่อหรืออีเมล" data-user-search autocomplete="off" />
       </label>
-      <ul class="mt-3 max-h-[26rem] overflow-y-auto rounded-box border border-base-300" data-user-list>
+      <div class="mt-3 flex items-center justify-between px-1 text-sm">
+        <label class="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="checkbox checkbox-sm" data-select-visible />
+          เลือกทุกคนที่แสดง
+        </label>
+        <span class="text-base-content/60" data-visible-count>{{ candidates | length }} คน</span>
+      </div>
+      <ul class="mt-2 max-h-[26rem] overflow-y-auto rounded-box border border-base-300" data-user-list>
         {% for user in candidates %}
         <li data-filter-text="{{ user.get_name() }} {{ user.first_name }} {{ user.last_name }} {{ user.email }}">
           <label class="flex cursor-pointer items-center gap-3 border-b border-base-300 px-3 py-2.5 hover:bg-base-200 has-[:checked]:bg-primary/10">
-            <input type="radio" class="radio radio-primary radio-sm" name="{{ form.members.name }}" value="{{ user.id }}"
-              data-name="{{ user.get_name() }}" {% if form.members.data == user.id | string %}checked{% endif %} />
+            <input type="checkbox" class="checkbox checkbox-primary checkbox-sm" name="{{ form.members.name }}" value="{{ user.id }}"
+              data-name="{{ user.get_name() }}" {% if form.members.data and user.id | string in form.members.data %}checked{% endif %} />
             <span class="min-w-0 flex-1">
               <span class="block break-words font-medium">{{ user.get_name() }}</span>
               <span class="block break-all text-sm text-base-content/60">{{ user.email }}</span>
@@ -108,11 +118,42 @@
     <div class="flex justify-end gap-2">
       <a class="btn btn-ghost" href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">ยกเลิก</a>
       <button type="submit" class="btn btn-primary" data-submit>
-        <i class="ph ph-user-circle-plus"></i> เพิ่มสมาชิก
+        <i class="ph ph-user-circle-plus"></i> <span data-submit-label>เพิ่มสมาชิก</span>
       </button>
     </div>
   </div>
 </form>
+
+{# สมาชิกที่เพิ่มล่าสุด: แถวที่เพิ่งเพิ่มจากการกดครั้งก่อนจะถูกไฮไลต์ #}
+<section class="segment mt-6 border border-base-300 bg-base-100 rounded-2xl p-6 shadow-sm">
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="text-lg font-bold">เพิ่มล่าสุด</h2>
+    <a class="link link-hover text-sm" href="{{ url_for('organizations.members.index', organization_id=organization.id) }}">ดูสมาชิกทั้งหมด</a>
+  </div>
+  {% if recent_members %}
+  <ul class="mt-3 divide-y divide-base-300">
+    {% for org_user in recent_members %}
+    {% set is_new = org_user.id | string in just_added %}
+    <li class="flex flex-col gap-2 rounded-box px-3 py-3 sm:flex-row sm:items-center {% if is_new %}bg-success/10{% endif %}">
+      <div class="min-w-0 flex-1">
+        <p class="break-words font-medium">
+          {{ org_user.display_fullname() }}
+          {% if is_new %}<span class="badge badge-success badge-sm ml-1">เพิ่งเพิ่ม</span>{% endif %}
+        </p>
+        <p class="text-sm text-base-content/60">
+          {{ org_user.division.name if org_user.division else "ยังไม่ระบุแผนก" }}{% if org_user.appointment %}, {{ org_user.appointment }}{% endif %}
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-1">{{ RoleBadges(org_user.role_items()) }}</div>
+      <span class="text-sm text-base-content/60 sm:w-28 sm:text-right">{{ org_user.created_date.strftime('%d/%m/%Y %H:%M') }}</span>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('organizations.members.edit_roles', organization_id=organization.id, org_user_id=org_user.id) }}">แก้ไข</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {{ EmptyState('ph-users', 'ยังไม่มีสมาชิก', description='สมาชิกที่เพิ่มจะแสดงที่นี่', size='sm') }}
+  {% endif %}
+</section>
 {% endblock content %}
 
 {% block additional_js %}
@@ -125,6 +166,49 @@
     var empty = form.querySelector('[data-user-empty]');
     var summary = form.querySelector('[data-summary]');
     var submit = form.querySelector('[data-submit]');
+    var submitLabel = form.querySelector('[data-submit-label]');
+    var tray = form.querySelector('[data-tray]');
+    var trayEmpty = form.querySelector('[data-tray-empty]');
+    var selectVisible = form.querySelector('[data-select-visible]');
+    var visibleCount = form.querySelector('[data-visible-count]');
+    var userSelector = 'input[name="{{ form.members.name }}"]';
+
+    function visibleBoxes() {
+      return Array.prototype.filter.call(rows, function (row) {
+        return !row.classList.contains('hidden');
+      }).map(function (row) { return row.querySelector(userSelector); });
+    }
+
+    function renderTray(users) {
+      if (!tray) return;
+      tray.querySelectorAll('[data-chip]').forEach(function (chip) { chip.remove(); });
+      trayEmpty.classList.toggle('hidden', users.length > 0);
+      users.forEach(function (box) {
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'badge badge-primary gap-1';
+        chip.dataset.chip = '';
+        chip.setAttribute('aria-label', 'เอา ' + box.dataset.name + ' ออก');
+        chip.textContent = box.dataset.name;
+        var icon = document.createElement('i');
+        icon.className = 'ph ph-x';
+        chip.appendChild(icon);
+        chip.addEventListener('click', function () {
+          box.checked = false;
+          update();
+        });
+        tray.appendChild(chip);
+      });
+    }
+
+    function syncSelectVisible() {
+      if (!selectVisible) return;
+      var boxes = visibleBoxes();
+      var checked = boxes.filter(function (b) { return b.checked; }).length;
+      selectVisible.checked = boxes.length > 0 && checked === boxes.length;
+      selectVisible.indeterminate = checked > 0 && checked < boxes.length;
+      selectVisible.disabled = boxes.length === 0;
+    }
 
     if (search) {
       search.addEventListener('input', function () {
@@ -136,22 +220,34 @@
           if (match) shown += 1;
         });
         if (empty) empty.classList.toggle('hidden', shown > 0);
+        if (visibleCount) visibleCount.textContent = shown + ' คน';
+        syncSelectVisible();
+      });
+    }
+
+    if (selectVisible) {
+      selectVisible.addEventListener('change', function () {
+        visibleBoxes().forEach(function (b) { b.checked = selectVisible.checked; });
+        update();
       });
     }
 
     function update() {
-      var user = form.querySelector('input[name="{{ form.members.name }}"]:checked');
+      var users = Array.prototype.slice.call(form.querySelectorAll(userSelector + ':checked'));
       var roles = form.querySelectorAll('input[name="{{ form.roles.name }}"]:checked').length;
-      submit.disabled = !user || roles === 0;
-      if (!user && roles === 0) {
+      submit.disabled = users.length === 0 || roles === 0;
+      submitLabel.textContent = users.length > 1 ? 'เพิ่ม ' + users.length + ' คน' : 'เพิ่มสมาชิก';
+      if (users.length === 0 && roles === 0) {
         summary.textContent = 'เลือกผู้ใช้และตำแหน่งอย่างน้อยหนึ่งตำแหน่ง';
-      } else if (!user) {
+      } else if (users.length === 0) {
         summary.textContent = 'ยังไม่ได้เลือกผู้ใช้';
       } else if (roles === 0) {
-        summary.textContent = 'เพิ่ม ' + user.dataset.name + ' — ยังไม่ได้เลือกตำแหน่ง';
+        summary.textContent = 'เลือกแล้ว ' + users.length + ' คน ยังไม่ได้เลือกตำแหน่ง';
       } else {
-        summary.textContent = 'เพิ่ม ' + user.dataset.name + ' ด้วย ' + roles + ' ตำแหน่ง';
+        summary.textContent = 'เพิ่ม ' + users.length + ' คน ด้วย ' + roles + ' ตำแหน่ง';
       }
+      renderTray(users);
+      syncSelectVisible();
     }
 
     form.addEventListener('change', update);

@@ -126,3 +126,25 @@ def test_edit_roles_keeps_a_role_the_organization_has_since_disabled(world):
     assert response.status_code == 302
     world.member_role.reload()
     assert sorted(world.member_role.roles) == ["admin", "president", "staff"]
+
+
+def _toasts(html):
+    import re
+
+    return re.findall(r'<div[^>]*data-toast[^>]*data-toast-category="(\w+)"[^>]*>(.*?)</div>', html, re.S)
+
+
+def test_edit_roles_success_shows_a_success_toast_on_the_members_page(world):
+    response = _edit(world, ["staff", "admin"])
+
+    page = world.client.get(response.headers["Location"]).get_data(as_text=True)
+    assert [category for category, _ in _toasts(page)] == ["success"]
+    assert "บันทึกตำแหน่งของ" in page
+
+
+def test_edit_roles_refused_shows_an_error_toast_with_the_reason(world):
+    response = _edit(world, ["driver", "dispatcher"])
+
+    toasts = _toasts(response.get_data(as_text=True))
+    assert [category for category, _ in toasts] == ["error"]
+    assert DRIVER_CANNOT_APPROVE in toasts[0][1]

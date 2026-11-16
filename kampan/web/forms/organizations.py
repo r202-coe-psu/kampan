@@ -88,8 +88,9 @@ class OrganizationRoleEditForm(FlaskForm):
 
 
 class OrganizationAddMemberForm(FlaskForm):
-    members = fields.SelectField(
+    members = fields.SelectMultipleField(
         "เลือกสมาชิก",
+        validators=[validators.InputRequired(message="เลือกผู้ใช้อย่างน้อยหนึ่งคน")],
     )
     roles = fields.SelectMultipleField(
         "ระดับผู้ใช้งาน",
