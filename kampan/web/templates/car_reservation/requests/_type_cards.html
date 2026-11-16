@@ -15,5 +15,19 @@
     </a>
   </li>
   {% endfor %}
+  {% if can_create_urgent %}
+  {# ผู้จัดรถยื่นแทนผู้ใช้รถได้ทันที ไม่ต้องล่วงหน้า (เฉพาะใบขอในประเทศ) #}
+  <li>
+    <a class="flex items-center gap-3 rounded-box border border-base-300 px-4 py-3 transition hover:border-primary hover:bg-primary/5"
+       href="{{ url_for('car_reservation.requests.create_urgent', organization_id=organization.id, date=date) }}">
+      <i class="ph ph-lightning text-2xl text-primary"></i>
+      <span class="min-w-0 flex-1">
+        <span class="block font-medium">ขอใช้รถเร่งด่วน</span>
+        <span class="block text-sm text-base-content/60">สำหรับผู้จัดรถ ยื่นแทนผู้ใช้รถได้ทันทีพร้อมจัดรถและพนักงานขับรถ</span>
+      </span>
+      <i class="ph ph-caret-right text-base-content/40"></i>
+    </a>
+  </li>
+  {% endif %}
 </ul>
 {% endmacro %}

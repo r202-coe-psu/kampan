@@ -95,3 +95,31 @@ def test_date_param_is_passed_on_to_the_type_links_and_ignored_when_invalid(worl
     assert len(type_links(with_date)) == 8  # picker cards + modal
     assert all("date=2026-12-05" in href for href in type_links(with_date))
     assert "date=" not in " ".join(type_links(bad_date))
+
+
+def urgent_links(html):
+    return re.findall(r'href="([^"]*requests/urgent\?[^"]*)"', html)
+
+
+def test_staff_picker_has_no_urgent_option(world):
+    page = world.client.get(f"{BASE}/?organization_id={world.org.id}")
+
+    dialog = re.search(
+        r'<dialog[^>]*id="new-request-modal".*?</dialog>', page.get_data(as_text=True), re.S
+    ).group(0)
+    assert urgent_links(dialog) == []
+
+
+def test_dispatcher_picker_lists_urgent_as_a_fifth_option(
+    app, world, create_user, assign_user_to_org, login_as
+):
+    dispatcher = create_user("Picker", "Dispatcher")
+    assign_user_to_org(dispatcher, world.org, roles=["dispatcher"])
+    client = login_as(app.test_client(), dispatcher)
+
+    for url in (f"{BASE}/?organization_id={world.org.id}", f"{BASE}/new?organization_id={world.org.id}"):
+        html = client.get(url).get_data(as_text=True)
+        cards = re.search(r"<ul[^>]*data-request-type-cards.*?</ul>", html, re.S).group(0)
+        assert len(type_links(cards)) == 4
+        assert len(urgent_links(cards)) == 1
+        assert "ขอใช้รถเร่งด่วน" in cards
