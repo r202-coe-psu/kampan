@@ -1,0 +1,27 @@
+{# กล่องลากไฟล์มาวาง (drag & drop) ที่ยังเป็น <input type="file"> จริง จึงคลิกเลือกไฟล์ / ใช้คีย์บอร์ดได้เหมือนเดิม
+   พฤติกรรม (ไฮไลต์ตอนลาก, พรีวิวรูป, ตรวจชนิด/ขนาดไฟล์ก่อนส่ง) อยู่ใน static/js/forms/file_dropzone.js
+   field = FileField ของ WTForms, max_bytes ต้องตรงกับที่ฝั่ง server ตรวจ #}
+{% macro FileDropzone(field, title, hint='JPEG หรือ PNG ขนาดไม่เกิน 2 MB', accept='image/jpeg,image/png',
+                      max_bytes=2097152, icon='ph-upload-simple', preview_class='max-h-32') %}
+<label class="file-dropzone group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-box border-2 border-dashed border-base-300 bg-base-200/40 p-6 text-center transition-colors hover:border-primary hover:bg-primary/5 focus-within:border-primary"
+       data-dropzone data-accept="{{ accept }}" data-max-bytes="{{ max_bytes }}">
+  <input type="file" id="{{ field.id }}" name="{{ field.name }}" accept="{{ accept }}" class="sr-only" required>
+
+  <span data-dropzone-empty class="flex flex-col items-center gap-2">
+    <span class="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <i class="ph {{ icon }} text-2xl"></i>
+    </span>
+    <span class="font-medium">{{ title }}</span>
+    <span class="text-sm text-base-content/70">ลากไฟล์มาวางที่นี่ หรือ <span class="link link-primary">คลิกเพื่อเลือกไฟล์</span></span>
+    <span class="text-xs text-base-content/60">{{ hint }}</span>
+  </span>
+
+  <span data-dropzone-filled class="hidden flex-col items-center gap-2">
+    <img data-dropzone-preview alt="ตัวอย่างไฟล์ที่เลือก" class="{{ preview_class }} rounded-box border border-base-300 bg-white object-contain p-1">
+    <span data-dropzone-name class="max-w-full truncate text-sm font-medium"></span>
+    <span class="text-xs text-base-content/60">คลิกหรือลากไฟล์ใหม่มาวางเพื่อเปลี่ยน</span>
+  </span>
+
+  <span data-dropzone-error class="hidden text-sm text-error" role="alert"></span>
+</label>
+{% endmacro %}
