@@ -8,6 +8,15 @@
 
 {% block dashboard_title %}{{ reservation.get_request_type_display() }}{% endblock %}
 
+{% block page_actions %}
+{% if can_print_paper %}
+<button type="button" class="btn btn-sm btn-primary" data-role="preview-paper"
+        onclick="document.getElementById('paper-preview-modal').showModal()">
+  <i class="ph ph-file-pdf"></i> ดูตัวอย่าง PDF
+</button>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="flex flex-col gap-4">
 <div class="card bg-base-100 border border-base-300 shadow-sm" data-role="request-summary">
@@ -284,6 +293,35 @@
                     hidden=deny_form.csrf_token) %}
   {{ renderer.render_field(deny_form.comment) }}
 {% endcall %}
+{% endif %}
+{% if can_print_paper %}
+<dialog id="paper-preview-modal" class="modal" data-src="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id) }}">
+  <div class="modal-box flex h-[90vh] w-11/12 max-w-5xl flex-col gap-3 p-4">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="flex items-center gap-2 text-lg font-bold"><i class="ph ph-file-pdf text-primary"></i> ตัวอย่างใบขอใช้รถ (PDF)</h3>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('car_reservation.requests.paper', request_id=reservation.id, organization_id=organization.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline"><i class="ph ph-arrow-square-out"></i> เปิดในแท็บใหม่</a>
+        <form method="dialog"><button class="btn btn-sm btn-ghost btn-circle" aria-label="ปิด"><i class="ph ph-x"></i></button></form>
+      </div>
+    </div>
+    <div class="relative min-h-0 flex-1 overflow-hidden rounded-box border border-base-300 bg-base-200">
+      <span class="loading loading-spinner loading-lg absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"></span>
+      <iframe title="ตัวอย่างใบขอใช้รถ" class="relative h-full w-full" data-role="paper-frame"></iframe>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<script>
+  (function () {
+    var modal = document.getElementById('paper-preview-modal');
+    if (!modal) return;
+    var frame = modal.querySelector('iframe');
+    // โหลด PDF เมื่อเปิด modal ครั้งแรกเท่านั้น ไม่ต้องสร้างไฟล์ทุกครั้งที่เปิดหน้า
+    new MutationObserver(function () {
+      if (modal.open && !frame.getAttribute('src')) frame.setAttribute('src', modal.dataset.src);
+    }).observe(modal, { attributes: true, attributeFilter: ['open'] });
+  })();
+</script>
 {% endif %}
 </div>
 {% endblock %}

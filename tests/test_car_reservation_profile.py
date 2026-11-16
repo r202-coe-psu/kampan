@@ -45,3 +45,20 @@ def test_profile_page_requires_membership(app, world, create_user, login_as):
         login_as(client, outsider)
         page = client.get(f"/car_reservation/profile?organization_id={org.id}")
     assert page.status_code in (302, 403)
+
+
+def test_request_detail_has_a_preview_button_and_modal_pointing_at_the_paper_pdf(
+    app, world, login_as, create_car
+):
+    org, user = world
+    reservation = models.CarReservation(
+        organization=org, creator=user, request_type="domestic",
+        request_reason="ทดสอบ", status="pending",
+    ).save()
+    with app.test_client() as client:
+        login_as(client, user)
+        page = client.get(f"/car_reservation/requests/{reservation.id}?organization_id={org.id}")
+    body = page.data.decode()
+    assert page.status_code == 200
+    assert 'data-role="preview-paper"' in body
+    assert f"/requests/{reservation.id}/paper" in body
