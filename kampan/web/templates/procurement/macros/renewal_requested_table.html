@@ -115,7 +115,7 @@
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% if item.tor_document.filename %}
                       <a href="{{ url_for('procurement.requisitions.download', requisition_procurement_id=item.id, filename=item.tor_document.filename) }}"
-                         class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                         class="btn btn-outline btn-primary btn-sm"
                          target="_blank">
                         <i class="ph ph-file-arrow-down"></i>
                       </a>
@@ -126,7 +126,7 @@
                   <!--- เอกสาร -->
                   <td class="px-4 py-3 whitespace-nowrap text-center">
                     {% set document_url = url_for('procurement.requisitions.document', requisition_procurement_id=item.id) %}
-                    <button class="btn btn-outline btn-sm text-blue-700 border-blue-300 hover:bg-blue-50"
+                    <button class="btn btn-outline btn-primary btn-sm"
                             onclick="openPrintDateModal('{{ item.id }}','{{ document_url }}','{{ item.created_date.strftime("%Y-%m-%d") if item.created_date else '' }}')">
                       <i class="ph ph-file-arrow-down"></i>
                     </button>

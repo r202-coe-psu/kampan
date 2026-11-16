@@ -341,14 +341,14 @@
                                         <div class="flex items-center gap-2">
                                           {% if step.key == 'details_specified' and is_done %}
                                             <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                               class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                               class="btn btn-xs btn-soft btn-primary transition-all"
                                                title="ดูรายละเอียดที่ระบุ">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
                                           {% endif %}
                                           {% if step.key == 'order_confirmed' and is_done %}
                                             <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                               class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                               class="btn btn-xs btn-soft btn-primary transition-all"
                                                title="ดูข้อมูลการยืนยันแหล่งเงิน">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
@@ -356,7 +356,7 @@
 
                                           {% if step.key == 'payment_processed' and is_done %}
                                             <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                               class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                               class="btn btn-xs btn-soft btn-primary transition-all"
                                                title="ดูข้อมูลกระบวนการเสร็จสิ้น">
                                               <i class="ph ph-file-text"></i> ดูรายละเอียด
                                             </a>
@@ -581,7 +581,7 @@
                                 {% if step.key == 'details_specified' and is_done %}
                                   <div class="mt-2 text-left">
                                     <a href="{{ url_for('procurement.requisition_timeline.details_specified', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                       class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                       class="btn btn-xs btn-soft btn-primary transition-all"
                                        title="ดูรายละเอียดที่ระบุ">
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
                                     </a>
@@ -590,7 +590,7 @@
                                 {% if step.key == 'order_confirmed' and is_done %}
                                   <div class="mt-2 text-left">
                                     <a href="{{ url_for('procurement.requisition_timeline.billing_modal', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                       class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                       class="btn btn-xs btn-soft btn-primary transition-all"
                                        title="ดูข้อมูลการยืนยันแหล่งเงิน">
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
                                     </a>
@@ -600,7 +600,7 @@
                                 {% if step.key == 'payment_processed' and is_done %}
                                   <div class="mt-2 text-left">
                                     <a href="{{ url_for('procurement.requisition_timeline.completed_submit', requisition_timeline_id=item.id, organization_id=organization.id) }}"
-                                       class="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all"
+                                       class="btn btn-xs btn-soft btn-primary transition-all"
                                        title="ดูข้อมูลกระบวนการเสร็จสิ้น">
                                       <i class="ph ph-file-text"></i> ดูรายละเอียด
                                     </a>
