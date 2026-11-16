@@ -6,7 +6,7 @@
 
 {% block page_actions %}
 <a class="btn btn-outline btn-sm" href="{{ url_for('accounts.index', organization_id=organization.id) }}">
-  <i class="ph ph-gear"></i>แก้ไขรูปและลายเซ็น
+  แก้ไขรูปและลายเซ็น
 </a>
 {% endblock %}
 
@@ -24,18 +24,18 @@
       </div>
       <h2 class="text-xl font-bold">{{ current_user.get_first_name_th() }} {{ current_user.get_last_name_th() }}</h2>
       <p class="break-all text-sm text-base-content/70">{{ current_user.email }}</p>
-      {% if division %}<span class="badge badge-soft badge-primary">{{ division.name }}</span>{% endif %}
+      {% if division %}<span class="badge badge-ghost badge-sm">{{ division.name }}</span>{% endif %}
     </div>
   </section>
 
   <div class="flex flex-col gap-4 lg:col-span-2">
     <section class="card border border-base-300 bg-base-100 shadow-sm">
       <div class="card-body">
-        <h2 class="card-title text-lg"><i class="ph ph-identification-badge text-primary"></i>บทบาทในระบบจองรถ</h2>
+        <h2 class="card-title text-lg">บทบาทในระบบจองรถ</h2>
         <p class="text-sm text-base-content/70">{{ organization.name }}{% if org_role and org_role.display_appointment() %} · {{ org_role.display_appointment() }}{% endif %}</p>
         <div class="flex flex-wrap gap-2" data-role="role-badges">
           {% for key, label in role_items %}
-          <span class="badge badge-soft badge-primary">{{ label }}</span>
+          <span class="badge badge-ghost badge-sm">{{ label }}</span>
           {% else %}
           <span class="text-sm text-base-content/60">ยังไม่ได้รับบทบาท</span>
           {% endfor %}
@@ -46,11 +46,11 @@
     <section class="card border border-base-300 bg-base-100 shadow-sm">
       <div class="card-body gap-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="card-title text-lg"><i class="ph ph-signature text-primary"></i>ลายเซ็น</h2>
+          <h2 class="card-title text-lg">ลายเซ็น</h2>
           {% if current_user.signature %}
-          <span class="badge badge-soft badge-success"><i class="ph ph-check-circle"></i>มีลายเซ็นแล้ว</span>
+          <span class="badge badge-soft badge-success badge-sm tone-deep-success">มีลายเซ็นแล้ว</span>
           {% else %}
-          <span class="badge badge-soft badge-warning"><i class="ph ph-warning"></i>ยังไม่มีลายเซ็น</span>
+          <span class="badge badge-soft badge-warning badge-sm">ยังไม่มีลายเซ็น</span>
           {% endif %}
         </div>
         {% if current_user.signature %}
@@ -63,7 +63,7 @@
     <section class="card border border-base-300 bg-base-100 shadow-sm" data-role="request-summary">
       <div class="card-body gap-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="card-title text-lg"><i class="ph ph-car text-primary"></i>คำขอของฉัน</h2>
+          <h2 class="card-title text-lg">คำขอของฉัน</h2>
           <a class="link link-primary text-sm" href="{{ url_for('car_reservation.requests.index', organization_id=organization.id) }}">ดูทั้งหมด ({{ total }})</a>
         </div>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -13,7 +13,6 @@ HOME = "/car_reservation/requests/"
 
 MY_REQUESTS = "คำขอของฉัน"
 NEW_REQUEST = "ยื่นคำขอ"
-URGENT = "ขอใช้รถเร่งด่วน"
 INSERT = "เพิ่มงานแทรก"
 CALENDAR = "ปฏิทินการจองรถ"
 INBOX = "รายการรออนุมัติ"
@@ -26,7 +25,8 @@ SETTINGS = "ตั้งค่า"
 SWITCH_SYSTEM = "เปลี่ยนระบบ"
 
 EVERYONE = {MY_REQUESTS, NEW_REQUEST, CALENDAR, DIRECTORY}
-DISPATCH = EVERYONE | {URGENT, INSERT, INBOX, STATS}
+# ขอใช้รถเร่งด่วนย้ายไปอยู่ใน modal เลือกประเภทคำขอแล้ว (test_car_reservation_new_request_picker.py)
+DISPATCH = EVERYONE | {INSERT, INBOX, STATS}
 EXECUTIVE = EVERYONE | {INBOX, STATS}
 ADMIN = EVERYONE | {STATS, MANAGE_CARS, FEEDBACK, SETTINGS}
 
@@ -80,11 +80,15 @@ class SidebarLinks(HTMLParser):
 def sidebar_links(response):
     parser = SidebarLinks()
     parser.feed(response.get_data(as_text=True))
+    # ลิงก์โปรไฟล์ท้าย sidebar มีให้ทุก role จึงไม่นับในตารางเมนูตาม role
     return [
         (text, href)
         for text, href in parser.links
-        if urlsplit(href).path.startswith("/car_reservation")
-        or urlsplit(href).path == "/select_system"
+        if (
+            urlsplit(href).path.startswith("/car_reservation")
+            or urlsplit(href).path == "/select_system"
+        )
+        and urlsplit(href).path != "/car_reservation/profile"
     ]
 
 

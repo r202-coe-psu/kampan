@@ -8,49 +8,12 @@
     <input id="drawer-menu" type="checkbox" class="drawer-toggle" />
     <div class="drawer-content bg-base-200 min-h-screen">
       <div class="flex min-h-screen flex-col">
-        {# แถบบน: ปุ่มเมนูเฉพาะจอที่ sidebar ซ่อนอยู่ (ต่ำกว่า 2xl) · ไอคอนโปรไฟล์ชี้เมาส์แล้วเปิดเมนูย่อย คลิกไปหน้าโปรไฟล์ #}
-        {% from "/base/components/user_avatar.html" import UserAvatar %}
-        <div class="navbar border-b border-base-300 bg-base-100" data-role="topbar">
-          <label for="drawer-menu" class="btn btn-square btn-ghost drawer-button 2xl:hidden" aria-label="เปิดเมนู">
+        {# จอต่ำกว่า 2xl sidebar ซ่อนอยู่ จึงมีแถบเล็กไว้เปิดเมนู ส่วนโปรไฟล์อยู่ท้าย sidebar #}
+        <div class="flex items-center gap-2 border-b border-base-300 bg-base-100 px-2 py-2 2xl:hidden">
+          <label for="drawer-menu" class="btn btn-square btn-ghost drawer-button" aria-label="เปิดเมนู">
             <i class="ph ph-size ph-list"></i>
           </label>
-          <span class="ml-2 flex-1 font-bold 2xl:hidden">ระบบจองรถ</span>
-          <div class="flex flex-1 justify-end">
-            <div class="dropdown dropdown-end dropdown-hover" data-role="profile-menu">
-              <a tabindex="0" role="button" class="btn btn-ghost btn-circle avatar" aria-label="โปรไฟล์ของฉัน"
-                 href="{{ url_for('car_reservation.profile.index', organization_id=organization.id) if organization else '#' }}">
-                {{ UserAvatar(current_user, size="w-9 h-9") }}
-              </a>
-              <div tabindex="0" class="dropdown-content z-30 w-72 pt-2">
-                <div class="card border border-base-300 bg-base-100 shadow-lg">
-                  <div class="card-body gap-3 p-4">
-                    <div class="flex items-center gap-3">
-                      <div class="avatar {% if not current_user.get_picture() %}avatar-placeholder{% endif %}">
-                        {% if current_user.get_picture() %}
-                        <div class="w-12 rounded-full"><img src="{{ current_user.get_picture() }}" alt=""></div>
-                        {% else %}
-                        <div class="w-12 rounded-full bg-primary/10 text-primary"><i class="ph ph-user text-2xl"></i></div>
-                        {% endif %}
-                      </div>
-                      <div class="min-w-0">
-                        <p class="truncate font-bold">{{ current_user.get_resources_fullname_th() }}</p>
-                        <p class="truncate text-xs text-base-content/70">{{ current_user.email }}</p>
-                      </div>
-                    </div>
-                    {% if organization %}
-                    <div class="flex flex-wrap gap-1">
-                      {% for label in current_user.get_organization_role_labels(organization) %}
-                      <span class="badge badge-soft badge-primary badge-sm">{{ label }}</span>
-                      {% endfor %}
-                    </div>
-                    <a class="btn btn-primary btn-sm" href="{{ url_for('car_reservation.profile.index', organization_id=organization.id) }}"><i class="ph ph-user-circle"></i>ดูโปรไฟล์</a>
-                    {% endif %}
-                    <a class="btn btn-ghost btn-sm justify-start" href="{{ url_for('accounts.logout') }}"><i class="ph ph-sign-out"></i>ออกจากระบบ</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <span class="flex items-center gap-1.5 font-bold"><i class="ph ph-car-profile text-xl! text-primary" aria-hidden="true"></i>ระบบจองรถ</span>
         </div>
         <main class="w-full flex-1 px-4 py-6 lg:px-10">
           <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

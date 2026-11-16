@@ -28,14 +28,18 @@ def test_profile_page_shows_name_roles_and_request_counts(app, world, login_as):
     assert 'data-role="request-summary"' in body
 
 
-def test_every_car_reservation_page_has_the_profile_menu_linking_to_the_profile(app, world, login_as):
+def test_sidebar_user_block_links_to_the_profile_and_there_is_no_topbar(app, world, login_as):
     org, user = world
     with app.test_client() as client:
         login_as(client, user)
         page = client.get(f"/car_reservation/requests/?organization_id={org.id}")
     body = page.data.decode()
-    assert 'data-role="profile-menu"' in body
-    assert f"/car_reservation/profile?organization_id={org.id}" in body
+    assert 'data-role="topbar"' not in body
+    assert 'data-role="profile-menu"' not in body
+    assert (
+        f'data-role="sidebar-profile" href="/car_reservation/profile?organization_id={org.id}"'
+        in body
+    )
 
 
 def test_profile_page_requires_membership(app, world, create_user, login_as):

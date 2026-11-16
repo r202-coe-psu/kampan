@@ -99,3 +99,13 @@ def test_the_notifications_page_lists_only_my_notifications_in_this_organization
     assert page.status_code == 200
     assert "มีคำขอใช้รถรอการอนุมัติ" in html
     assert "ของอีก org" not in html
+
+
+def test_sidebar_has_a_bell_that_polls_the_unread_count(world):
+    html = world.client_for(world.supervisor).get(
+        f"/car_reservation/requests/?organization_id={world.org.id}"
+    ).get_data(as_text=True)
+
+    assert 'data-role="notification-bell"' in html
+    assert f"{NOTI}/badge?organization_id={world.org.id}" in html
+    assert "every 60s" in html
