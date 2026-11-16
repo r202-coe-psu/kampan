@@ -62,3 +62,48 @@ def test_request_detail_has_a_preview_button_and_modal_pointing_at_the_paper_pdf
     assert page.status_code == 200
     assert 'data-role="preview-paper"' in body
     assert f"/requests/{reservation.id}/paper" in body
+
+
+def switcher_links(body):
+    from lxml import html as lxml_html
+
+    doc = lxml_html.fromstring(body)
+    return doc.xpath("//dialog[@id='organization_switcher_modal']//a/@href")
+
+
+def test_switching_organization_from_car_reservation_stays_in_car_reservation(
+    app, world, create_org, assign_user_to_org, login_as
+):
+    from urllib.parse import parse_qs, urlparse
+
+    org, user = world
+    other = create_org("Other Car Org")
+    other.enabled_modules = ["car_reservation"]
+    other.enabled_roles = [key for key, _ in models.organizations.ORGANIZATION_ROLES]
+    other.save()
+    assign_user_to_org(user, other, roles=["staff"])
+    with app.test_client() as client:
+        login_as(client, user)
+        page = client.get(f"/car_reservation/requests/?organization_id={org.id}")
+    nexts = [parse_qs(urlparse(h).query).get("next", [""])[0] for h in switcher_links(page.data.decode())]
+    assert nexts and all(n.startswith("/car_reservation/requests") for n in nexts)
+
+
+def test_switching_to_an_organization_without_car_reservation_goes_to_the_system_picker(
+    app, world, create_org, assign_user_to_org, login_as
+):
+    from urllib.parse import parse_qs, urlparse
+
+    org, user = world
+    other = create_org("No Car Org")
+    other.enabled_modules = ["inventory"]
+    other.save()
+    assign_user_to_org(user, other, roles=["staff"])
+    with app.test_client() as client:
+        login_as(client, user)
+        page = client.get(f"/car_reservation/requests/?organization_id={org.id}")
+    links = {
+        parse_qs(urlparse(h).query)["organization_id"][0]: parse_qs(urlparse(h).query).get("next")
+        for h in switcher_links(page.data.decode())
+    }
+    assert links[str(other.id)] is None

@@ -19,6 +19,7 @@ def add_date_url(url):
 MODULE_HOME_ENDPOINTS = {
     "procurement": "procurement.requisitions.renewal_requested",
     "vehicle_lending": "vehicle_lending.car_applications.calendar",
+    "car_reservation": "car_reservation.requests.index",
     "organizations": "organizations.overview.index",
 }
 INVENTORY_HOME_ENDPOINT = "item_orders.index"
@@ -56,6 +57,10 @@ def switch_organization_next_url(organization):
             return None
         # โมดูลคลังพัสดุอยู่ที่ blueprint ระดับบนสุดหลายตัว จึงใช้หน้าแรกร่วมกัน
         endpoint = INVENTORY_HOME_ENDPOINT
+
+    # หน่วยงานปลายทางไม่ได้เปิดระบบจองรถ: ไม่พาไปหน้าที่เข้าไม่ได้ ให้ไปหน้าเลือกระบบแทน
+    if module_name == "car_reservation" and not organization.has_module("car_reservation"):
+        return None
 
     try:
         return url_for(endpoint, organization_id=str(organization.id))
