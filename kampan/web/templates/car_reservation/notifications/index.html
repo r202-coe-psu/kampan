@@ -1,0 +1,28 @@
+{% extends "/car_reservation/base/default-page.html" %}
+
+{% block title %}การแจ้งเตือน{% endblock %}
+
+{% block page_actions %}
+<form method="post" action="{{ url_for('car_reservation.notifications.read_all', organization_id=organization.id) }}">
+  <button type="submit" class="btn btn-outline btn-sm"><i class="ph ph-checks"></i> อ่านทั้งหมด</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<section class="card border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body gap-1 p-2 sm:p-4">
+    {% for notification in notifications %}
+    {% include "/car_reservation/notifications/_item.html" %}
+    {% else %}
+    <p class="p-10 text-center text-base-content/60">ยังไม่มีการแจ้งเตือน</p>
+    {% endfor %}
+  </div>
+</section>
+{% if page > 1 or has_next %}
+<div class="join mt-4 flex justify-center">
+  {% if page > 1 %}<a class="join-item btn btn-sm" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, page=page - 1) }}">«</a>{% endif %}
+  <span class="join-item btn btn-sm btn-disabled">หน้า {{ page }}</span>
+  {% if has_next %}<a class="join-item btn btn-sm" href="{{ url_for('car_reservation.notifications.index', organization_id=organization.id, page=page + 1) }}">»</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -59,3 +59,43 @@ def test_a_user_cannot_open_someone_elses_notification(world):
 
     assert response.status_code == 404
     assert notifications.unread_count(world.supervisor, world.org) == 1
+
+
+def test_bell_shows_the_unread_count_and_the_latest_notifications(world):
+    world.submit_request()
+    client = world.client_for(world.supervisor)
+
+    badge = client.get(f"{NOTI}/badge?organization_id={world.org.id}").get_data(as_text=True)
+    menu = client.get(f"{NOTI}/menu?organization_id={world.org.id}").get_data(as_text=True)
+
+    assert 'data-role="notification-count"' in badge and ">1<" in badge
+    assert "มีคำขอใช้รถรอการอนุมัติ" in menu
+
+
+def test_read_all_clears_the_unread_count(world):
+    world.submit_request()
+
+    response = world.client_for(world.supervisor).post(
+        f"{NOTI}/read-all?organization_id={world.org.id}"
+    )
+
+    assert response.status_code == 302
+    assert notifications.unread_count(world.supervisor, world.org) == 0
+
+
+def test_the_notifications_page_lists_only_my_notifications_in_this_organization(
+    world, create_org
+):
+    world.submit_request()
+    other_org = create_org("Other Org")
+    notifications.send(
+        other_org, [world.supervisor], module="car_reservation", event="submitted",
+        title="ของอีก org",
+    )
+
+    page = world.client_for(world.supervisor).get(f"{NOTI}?organization_id={world.org.id}")
+
+    html = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert "มีคำขอใช้รถรอการอนุมัติ" in html
+    assert "ของอีก org" not in html

@@ -1,0 +1,10 @@
+<a href="{{ url_for('car_reservation.notifications.open', notification_id=notification.id, organization_id=organization.id) }}"
+   class="flex items-start gap-3 rounded-box p-3 hover:bg-base-200 {% if not notification.read_at %}bg-primary/5{% endif %}"
+   data-role="notification-item">
+  <span class="mt-1.5 size-2 shrink-0 rounded-full {% if notification.read_at %}bg-transparent{% else %}bg-primary{% endif %}"></span>
+  <span class="min-w-0 flex-1">
+    <span class="block text-sm {% if not notification.read_at %}font-semibold{% endif %}">{{ notification.title }}</span>
+    {% if notification.message %}<span class="block truncate text-xs text-base-content/70">{{ notification.message }}</span>{% endif %}
+    <span class="block text-xs text-base-content/50">{{ notification.created_date | format_date('%d/%m/%Y %H:%M') }}</span>
+  </span>
+</a>
