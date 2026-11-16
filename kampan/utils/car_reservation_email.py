@@ -6,7 +6,8 @@ notify() คำนวณผู้รับตามเหตุการณ์�
 import logging
 import pathlib
 
-from flask import current_app, has_app_context
+from flask import current_app, has_app_context, has_request_context, url_for
+from flask_login import current_user
 from jinja2 import Environment, FileSystemLoader, TemplateError
 from jinja2.sandbox import SandboxedEnvironment
 
@@ -14,6 +15,7 @@ from kampan import models
 from kampan.web import redis_rq
 
 from . import config, email_utils, car_reservation_flow, template_filters
+from . import notifications as utils_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +62,8 @@ def _role_members(reservation, role):
     return car_reservation_flow.members_with_role(reservation.organization, role)
 
 
-def recipients_for(reservation, event):
-    """อีเมลผู้รับของเหตุการณ์ (ไม่ซ้ำ ข้ามคนไม่มีอีเมล) เรียงตามลำดับที่พบ"""
+def people_for(reservation, event):
+    """ผู้ใช้ที่ต้องรู้เหตุการณ์นี้ (ใช้ทั้งอีเมลและแจ้งเตือนในระบบ)"""
     if event == "submitted":
         people = _division_heads(reservation)
     elif event == "approved":
@@ -81,7 +83,12 @@ def recipients_for(reservation, event):
         people = _role_members(reservation, "dispatcher")
     else:
         people = []
+    return people
 
+
+def recipients_for(reservation, event):
+    """อีเมลผู้รับของเหตุการณ์ (ไม่ซ้ำ ข้ามคนไม่มีอีเมล) เรียงตามลำดับที่พบ"""
+    people = people_for(reservation, event)
     emails = []
     for person in people:
         email = getattr(person, "email", None)
@@ -94,7 +101,11 @@ def recipients_for(reservation, event):
     return emails
 
 
-def notify(reservation, event):
+def notify(reservation, event, actor=None):
+    if actor is None and has_request_context() and current_user.is_authenticated:
+        actor = current_user._get_current_object()
+    _notify_in_app(reservation, event, actor)
+
     recipients = recipients_for(reservation, event)
     if not recipients:
         return None
@@ -108,6 +119,37 @@ def notify(reservation, event):
         ),
         timeout=600,
         job_timeout=600,
+    )
+
+
+# หัวข้อแจ้งเตือนในระบบของแต่ละเหตุการณ์
+IN_APP_TITLES = {
+    "submitted": "มีคำขอใช้รถรอการอนุมัติ",
+    "approved": "มีคำขอใช้รถรอการอนุมัติ",
+    "active": "คำขอใช้รถได้รับการอนุมัติ",
+    "denied": "คำขอใช้รถไม่ได้รับการอนุมัติ",
+    "cancel_requested": "มีคำขอยกเลิกการใช้รถ",
+    "cancelled": "คำขอใช้รถถูกยกเลิก",
+    "completed": "ปิดงานเที่ยวรถแล้ว",
+    "close_disputed": "ผู้ขอโต้แย้งการปิดงาน",
+}
+
+
+def _notify_in_app(reservation, event, actor):
+    utils_notifications.send(
+        reservation.organization,
+        people_for(reservation, event),
+        module="car_reservation",
+        event=event,
+        title=IN_APP_TITLES[event],
+        actor=actor,
+        ref=reservation,
+        message=reservation.location,
+        url=url_for(
+            "car_reservation.requests.detail",
+            request_id=reservation.id,
+            organization_id=reservation.organization.id,
+        ),
     )
 
 
