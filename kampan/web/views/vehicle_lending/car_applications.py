@@ -20,6 +20,17 @@ from ... import redis_rq
 module = Blueprint("car_applications", __name__, url_prefix="/car_applications")
 
 
+def selectable_cars(organization, car_application_id=None):
+    query = me.Q(status="active")
+    if car_application_id:
+        car_application = models.vehicle_applications.CarApplication.objects(
+            id=car_application_id, organization=organization
+        ).first()
+        if car_application and car_application.car:
+            query |= me.Q(id=car_application.car.id)
+    return models.vehicles.Car.objects(query, organization=organization)
+
+
 @module.route("", methods=["GET", "POST"])
 @acl.organization_roles_required(
     "admin", "endorser", "staff", "head", "supervisor supplier"
@@ -81,7 +92,7 @@ def create_or_edit(car_application_id):
 
     form.car.choices = [("", "ไม่ได้ระบุ")] + [
         (str(car.id), car.license_plate)
-        for car in models.vehicles.Car.objects(organization=organization)
+        for car in selectable_cars(organization, car_application_id)
     ]
     form.driver.choices = [("", "ไม่ได้ระบุ")] + [
         (str(user.id), user.get_resources_fullname_th())
@@ -133,7 +144,7 @@ def create_or_edit(car_application_id):
 
         form.car.choices = [("", "ไม่ได้ระบุ")] + [
             (str(car.id), car.license_plate)
-            for car in models.vehicles.Car.objects(organization=organization)
+            for car in selectable_cars(organization, car_application_id)
         ]
         form.driver.choices = [("", "ไม่ได้ระบุ")] + [
             (str(user.id), user.get_resources_fullname_th())

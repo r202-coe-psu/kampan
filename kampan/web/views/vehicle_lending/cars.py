@@ -27,7 +27,7 @@ module = Blueprint("cars", __name__, url_prefix="/cars")
 def index():
     organization_id = request.args.get("organization_id")
     organization = models.Organization.objects(id=organization_id, status="active").first()
-    cars = models.vehicles.Car.objects(organization=organization)
+    cars = models.vehicles.Car.objects(organization=organization, status="active")
     return render_template("/vehicle_lending/cars/index.html", organization=organization, cars=cars)
 
 
@@ -104,8 +104,11 @@ def image(car_id, filename):
 @acl.organization_roles_required("admin", "supervisor supplier")
 def delete(car_id):
     organization_id = request.args.get("organization_id")
+    organization = models.Organization.objects(id=organization_id, status="active").first()
+    car = models.vehicles.Car.objects(id=car_id, organization=organization).first()
+    if not car:
+        return abort(404)
 
-    car = models.vehicles.Car.objects().get(id=car_id)
     car.status = "disactive"
     car.save()
 
